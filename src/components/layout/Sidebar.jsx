@@ -372,7 +372,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
         </motion.div>
       </div>
 
-      {/* Help & Support Footer */}
+      {/* Help & Support Footer  */}
       <motion.div 
         className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-gray-100"
         variants={itemVariants}
@@ -443,7 +443,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </motion.div>
+      </motion.div> 
     </motion.div>
   );
 }
