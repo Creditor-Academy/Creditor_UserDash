@@ -79,31 +79,28 @@ export function clearUserData() {
   window.dispatchEvent(new Event('userRoleChanged'));
 }
 
+import { getAuthHeader } from './authHeader';
+
 export async function fetchUserProfile() {
   try {
-    console.log("🔍 userService: Fetching profile from:", `${import.meta.env.VITE_API_BASE_URL}/api/user/getUserProfile`);
-    
+    const token = localStorage.getItem('authToken');
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/getUserProfile`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
       credentials: 'include',
     });
-    
-    console.log("🔍 userService: Response status:", response.status);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("❌ userService: Fetch profile failed:", response.status, errorText);
       throw new Error(`Failed to fetch user profile: ${response.status} ${errorText}`);
     }
-    
+
     const result = await response.json();
-    console.log("✅ userService: Fetch profile success:", result);
-    return result.data; // Return only the user object
+    return result.data;
   } catch (error) {
-    console.error("❌ userService: Fetch profile error:", error);
     throw error;
   }
 }
@@ -165,5 +162,123 @@ export async function fetchAllCourses() {
   } catch (error) {
     console.error("❌ userService: Fetch courses error:", error);
     throw error;
+  }
+}
+
+// Fetch courses for a specific user by their userId
+export async function fetchUserCoursesByUserId(userId) {
+  try {
+    if (!userId) {
+      throw new Error('fetchUserCoursesByUserId: userId is required');
+    }
+
+    const base = `${import.meta.env.VITE_API_BASE_URL}`;
+    const url = `${base}/api/course/getUserCoursesByUserId`;
+
+    console.log("🔍 userService: Fetching courses for user (POST with body { userId }):", { url, userId });
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Accept': 'application/json',
+        ...getAuthHeader()
+      },
+      credentials: 'include',
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ userService: Fetch user courses failed:", response.status, errorText);
+      throw new Error(`Failed to fetch user courses: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log("✅ userService: Fetch user courses success:", result);
+    return result.data || result;
+  } catch (error) {
+    console.error("❌ userService: Fetch user courses error:", error);
+    throw error;
+  }
+}
+
+export async function updateProfilePicture(formData) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/updateProfilePictureS3`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update profile picture: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("❌ userService: Update profile picture error:", error);
+    throw error;
+  }
+}
+
+export async function fetchDetailedUserProfile(userId) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/instructor/getUserAllData`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        userId: userId
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.success && data.code === 200) {
+      return data.data;
+    } else {
+      throw new Error(data.message || 'Failed to fetch user profile');
+    }
+  } catch (error) {
+    console.error('Error fetching detailed user profile:', error);
+    throw error;
+  }
+}
+
+
+export async function logoutUser() {
+  try {
+    const response = await fetch('https://creditor-backend-1-iijy.onrender.com/api/auth/logout', {
+      method: 'GET',
+      credentials: 'include', // Important for sending cookies
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to logout');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Even if the API call fails, we should still clear local data
+    return false;
   }
 }

@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import UserDetailsModal from "@/components/UserDetailsModal";
+import { getAuthHeader } from "../services/authHeader";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-9upi.onrender.com";
 
 const ManageUsers = () => {
   const { userRole, hasRole } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -26,6 +29,19 @@ const ManageUsers = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successData, setSuccessData] = useState({ courseTitle: "", addedUsers: [] });
+  
+  // Password change modal state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccessData, setPasswordSuccessData] = useState({ 
+    changedUsers: [], 
+    newPassword: "", 
+    failedUpdates: [] 
+  });
+  const [showPasswordSuccessModal, setShowPasswordSuccessModal] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const [updatingRole, setUpdatingRole] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -37,15 +53,114 @@ const ManageUsers = () => {
   // User details modal state
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUserForDetails, setSelectedUserForDetails] = useState(null);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(5);
+  // Sorting state
+  const [sortOption, setSortOption] = useState("alpha_asc");
 
   useEffect(() => {
     fetchUsers();
     fetchCourses();
   }, []);
+
+  // Handle userId from search navigation
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    console.log('🔍 Search navigation - userId:', userId);
+    console.log('🔍 Search navigation - users.length:', users.length);
+    
+    if (userId && users.length > 0) {
+      const user = users.find(u => u.id === userId);
+      console.log('🔍 Search navigation - found user:', user);
+      
+      if (user) {
+        // Fetch detailed user profile data before opening modal
+        fetchDetailedUserProfile(userId);
+        // Clear the query parameter after processing
+        setSearchParams({});
+      } else {
+        console.warn('⚠️ Search navigation - User not found in users array');
+        // Try to refresh users list to see if the user appears
+        console.log('🔄 Refreshing users list to find the user...');
+        fetchUsers();
+      }
+    } else if (userId && users.length === 0) {
+      console.log('🔍 Search navigation - Waiting for users to load...');
+    }
+  }, [searchParams, users, setSearchParams]);
+
+  // Handle case where user might be found after users list is refreshed
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    if (userId && users.length > 0 && !showUserDetailsModal) {
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        console.log('🔍 User found after refresh, opening modal...');
+        fetchDetailedUserProfile(userId);
+        setSearchParams({});
+      }
+    }
+  }, [users, searchParams, showUserDetailsModal, setSearchParams]);
+
+  // Function to fetch detailed user profile and open modal
+  const fetchDetailedUserProfile = async (userId) => {
+    try {
+      setLoadingUserDetails(true);
+      console.log('🔍 Searching for user with ID:', userId);
+      console.log('🔍 Available users:', users);
+      console.log('🔍 User IDs in users array:', users.map(u => u.id));
+      
+      // Since the users array from /api/user/all should already contain detailed data,
+      // we can use that directly. If we need to refresh the data, we can do so here.
+      const user = users.find(u => u.id === userId);
+      console.log('🔍 Found user:', user);
+      
+      if (user) {
+        console.log('🔍 User data for modal:', {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          phone: user.phone,
+          location: user.location,
+          website: user.website,
+          createdAt: user.createdAt,
+          is_active: user.is_active,
+          last_login: user.last_login,
+          activity_log: user.activity_log
+        });
+        setSelectedUserForDetails(user);
+        setShowUserDetailsModal(true);
+      } else {
+        console.warn('⚠️ User not found in users array, userId:', userId);
+        // If user is not found, we might need to refresh the users list
+        // or the user ID from search might not match the user ID from /api/user/all
+      }
+    } catch (error) {
+      console.error('❌ Error processing user profile:', error);
+      // Fallback to basic user data if processing fails
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        setSelectedUserForDetails(user);
+        setShowUserDetailsModal(true);
+      }
+    } finally {
+      setLoadingUserDetails(false);
+    }
+  };
+
+  // Function to close user details modal and clear search params
+  const handleCloseUserDetailsModal = () => {
+    setShowUserDetailsModal(false);
+    setSelectedUserForDetails(null);
+    // Clear any remaining search params
+    if (searchParams.get('userId')) {
+      setSearchParams({});
+    }
+  };
 
   // Update time differences every minute to keep them current
   useEffect(() => {
@@ -66,22 +181,27 @@ const ManageUsers = () => {
     }
   }, [forceUpdate]);
 
+  const getAuthConfig = () => ({
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(getAuthHeader() || {}), // getAuthHeader should return { Authorization: 'Bearer ...' }
+    },
+    credentials: 'include',
+    withCredentials: true,
+  });
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError("");
-      
-      // Record the API call time
       const currentTime = new Date();
       setApiCallTime(currentTime);
-      
-      // Backend's HttpOnly token cookie will be automatically sent with the request
-      const response = await axios.get(`${API_BASE}/api/user/all`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true, // Include cookies in the request
-      });
+
+      const response = await axios.get(
+        `${API_BASE}/api/user/all`,
+        getAuthConfig()
+      );
 
       if (response.data && response.data.code === 200) {
         const fetchedUsers = response.data.data || [];
@@ -111,23 +231,17 @@ const ManageUsers = () => {
 
   const fetchCourses = async () => {
     try {
-      // Backend's HttpOnly token cookie will be automatically sent with the request
-      const response = await axios.get(`${API_BASE}/api/course/getAllCourses`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true, // Include cookies in the request
-      });
+      const response = await axios.get(
+        `${API_BASE}/api/course/getAllCourses`,
+        getAuthConfig()
+      );
 
       if (response.data && response.data.data) {
-        // Filter to only show published courses
         const publishedCourses = response.data.data.filter(course => 
           course.course_status === 'PUBLISHED'
         );
         setCourses(publishedCourses);
       } else if (response.data && Array.isArray(response.data)) {
-        // Handle case where response.data is directly an array
-        // Filter to only show published courses
         const publishedCourses = response.data.filter(course => 
           course.course_status === 'PUBLISHED'
         );
@@ -204,6 +318,29 @@ const ManageUsers = () => {
     }
   };
 
+  // Helper to get last visited timestamp (ms) for sorting
+  const getLastVisitedTimestamp = (user) => {
+    if (user?.activity_log && user.activity_log.length > 0) {
+      const latest = user.activity_log.reduce((latestLog, log) => {
+        const t = new Date(log.createdAt || log.created_at || log.timestamp || log.time).getTime();
+        return t > latestLog ? t : latestLog;
+      }, 0);
+      return latest || null;
+    }
+    return null;
+  };
+
+  // Helper to get createdAt timestamp (ms) for sorting "just added"
+  const getCreatedAtTimestamp = (user) => {
+    const created = user?.createdAt || user?.created_at || user?.created_on || user?.createdDate;
+    if (!created) return null;
+    const t = new Date(created).getTime();
+    return isNaN(t) ? null : t;
+  };
+
+  // Helper to get full name for alphabetical sorting
+  const getFullName = (user) => `${user.first_name || ""} ${user.last_name || ""}`.trim().toLowerCase();
+
   // Helper function to get last visited from activity_log
   const getLastVisited = (user) => {
     if (user.activity_log && user.activity_log.length > 0) {
@@ -242,16 +379,52 @@ const ManageUsers = () => {
     return matchesSearch && matchesRole;
   });
 
+  // Sort users based on selected option (applied after filter, before pagination)
+  const sortedUsers = useMemo(() => {
+    const arr = [...filteredUsers];
+    switch (sortOption) {
+      case "alpha_asc":
+        arr.sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
+        break;
+      case "alpha_desc":
+        arr.sort((a, b) => getFullName(b).localeCompare(getFullName(a)));
+        break;
+      case "never_visited":
+        arr.sort((a, b) => {
+          const aVisited = getLastVisitedTimestamp(a);
+          const bVisited = getLastVisitedTimestamp(b);
+          if (aVisited === null && bVisited !== null) return -1;
+          if (aVisited !== null && bVisited === null) return 1;
+          // fallback alphabetical
+          return getFullName(a).localeCompare(getFullName(b));
+        });
+        break;
+      case "just_added":
+        arr.sort((a, b) => {
+          const aCreated = getCreatedAtTimestamp(a);
+          const bCreated = getCreatedAtTimestamp(b);
+          if (aCreated === null && bCreated === null) return 0;
+          if (aCreated === null) return 1;
+          if (bCreated === null) return -1;
+          return bCreated - aCreated; // newest first
+        });
+        break;
+      default:
+        break;
+    }
+    return arr;
+  }, [filteredUsers, sortOption]);
+
   // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
 
   // Reset to first page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterRole]);
+  }, [searchTerm, filterRole, sortOption]);
 
   // Modified handleSelectAll to accumulate selections across pages
   const handleSelectAll = () => {
@@ -330,76 +503,19 @@ const ManageUsers = () => {
     try {
       setAddingToCourse(true);
       setError("");
-      
       let response;
-      
-      // Different API endpoints based on the current filter role
-      if (filterRole === "user") {
-        // Add learners to course
-        // console.log('🔄 Adding learners to course:', { course_id: selectedCourse, learnerIds: selectedUsers });
-        // console.log('📋 Available courses:', courses.map(c => ({ id: c.id, title: c.title })));
-        // console.log('🎯 Selected course details:', courses.find(c => c.id === selectedCourse));
-        
-        // Check if the selected course actually exists
-        const selectedCourseData = courses.find(c => c.id === selectedCourse);
-        if (!selectedCourseData) {
-          throw new Error(`Course with ID "${selectedCourse}" not found. Available courses: ${courses.map(c => c.id).join(', ')}`);
-        }
-        
-        response = await axios.post(`${API_BASE}/api/course/addLearnerToCourse`, {
-          course_id: selectedCourse,
-          learnerIds: selectedUsers
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-        });
-      } else if (filterRole === "instructor") {
-        // Add instructors to course
-        // console.log('🔄 Adding instructors to course:', { course_id: selectedCourse, learnerIds: selectedUsers });
-        // console.log('📋 Available courses:', courses.map(c => ({ id: c.id, title: c.title })));
-        // console.log('🎯 Selected course details:', courses.find(c => c.id === selectedCourse));
-        
-        // Check if the selected course actually exists
-        const selectedCourseData = courses.find(c => c.id === selectedCourse);
-        if (!selectedCourseData) {
-          throw new Error(`Course with ID "${selectedCourse}" not found. Available courses: ${courses.map(c => c.id).join(', ')}`);
-        }
-        
-        response = await axios.post(`${API_BASE}/api/course/addLearnerToCourse`, {
-          course_id: selectedCourse,
-          learnerIds: selectedUsers
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-        });
+      const selectedCourseData = courses.find(c => c.id === selectedCourse);
+      if (!selectedCourseData) {
+        throw new Error(`Course with ID "${selectedCourse}" not found. Available courses: ${courses.map(c => c.id).join(', ')}`);
       }
-    
-       else if (filterRole === "admin") {
-        // Add admins to course
-        // console.log('🔄 Adding admins to course:', { course_id: selectedCourse, learnerIds: selectedUsers });
-        // console.log('📋 Available courses:', courses.map(c => ({ id: c.id, title: c.title })));
-        // console.log('🎯 Selected course details:', courses.find(c => c.id === selectedCourse));
-        
-        // Check if the selected course actually exists
-        const selectedCourseData = courses.find(c => c.id === selectedCourse);
-        if (!selectedCourseData) {
-          throw new Error(`Course with ID "${selectedCourse}" not found. Available courses: ${courses.map(c => c.id).join(', ')}`);
-        }
-        
-        response = await axios.post(`${API_BASE}/api/course/addLearnerToCourse`, {
+      response = await axios.post(
+        `${API_BASE}/api/course/addLearnerToCourse`,
+        {
           course_id: selectedCourse,
           learnerIds: selectedUsers
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          withCredentials: true,
-        });
-      }
+        },
+        getAuthConfig()
+      );
 
       if (response.data && (response.data.success || response.data.code === 200 || response.data.code === 201)) {
         // Get the selected course title
@@ -423,12 +539,10 @@ const ManageUsers = () => {
         
         // After successful addition, verify the users are actually in the course
         try {
-          const verifyResponse = await axios.get(`${API_BASE}/api/course/${selectedCourse}/getAllUsersByCourseId`, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            withCredentials: true,
-          });
+          const verifyResponse = await axios.get(
+            `${API_BASE}/api/course/${selectedCourse}/getAllUsersByCourseId`,
+            getAuthConfig()
+          );
           
           // console.log('✅ Course users verification response:', verifyResponse.data);
           // console.log('📋 Users in course after addition:', verifyResponse.data?.data || []);
@@ -523,14 +637,13 @@ const ManageUsers = () => {
               try {
                 // console.log(`🔄 Attempting to add user ${userId} individually...`);
                 
-                const individualResponse = await axios.post(`${API_BASE}/api/course/addInstructor/${selectedCourse}`, {
-                  instructorIds: [userId]
-                }, {
-                  headers: {
-                    'Content-Type': 'application/json',
+                const individualResponse = await axios.post(
+                  `${API_BASE}/api/course/addInstructor/${selectedCourse}`,
+                  {
+                    instructorIds: [userId]
                   },
-                  withCredentials: true,
-                });
+                  getAuthConfig()
+                );
                 
                 if (individualResponse.status >= 200 && individualResponse.status < 300) {
                   successfulAdds.push(userId);
@@ -612,14 +725,11 @@ const ManageUsers = () => {
       // });
       
       // Make API call to make users instructors using the correct endpoint and payload
-      const response = await axios.post(`${API_BASE}/api/user/make-instructors`, {
-        user_ids: selectedUsers
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
+      const response = await axios.post(
+        `${API_BASE}/api/user/make-instructors`,
+        { user_ids: selectedUsers },
+        getAuthConfig()
+      );
 
       // Detailed analysis of the response
       // console.log('🔍 Detailed response analysis:', {
@@ -691,15 +801,14 @@ const ManageUsers = () => {
             try {
               // console.log(`🔄 Enrolling instructors in course: ${course.title} (${course.id})`);
               
-              const enrollmentResponse = await axios.post(`${API_BASE}/api/course/addLearnerToCourse`, {
-                course_id: course.id,
-                learnerIds: selectedUsers
-              }, {
-                headers: {
-                  'Content-Type': 'application/json',
+              const enrollmentResponse = await axios.post(
+                `${API_BASE}/api/course/addLearnerToCourse`,
+                {
+                  course_id: course.id,
+                  learnerIds: selectedUsers
                 },
-                withCredentials: true,
-              });
+                getAuthConfig()
+              );
               
               return { course, success: true, response: enrollmentResponse.data };
             } catch (enrollmentError) {
@@ -809,14 +918,11 @@ const ManageUsers = () => {
       // });
       
       // Make API call to make users admins
-      const response = await axios.post(`${API_BASE}/api/user/make-admins`, {
-        user_ids: selectedUsers
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
+      const response = await axios.post(
+        `${API_BASE}/api/user/make-admins`,
+        { user_ids: selectedUsers },
+        getAuthConfig()
+      );
 
       // Check if the request was successful (HTTP 200-299)
       if (response.status >= 200 && response.status < 300) {
@@ -898,7 +1004,7 @@ const ManageUsers = () => {
     if (selectedUsers.length === 0) return;
     
     try {
-      setUpdatingRole(true); // Reuse the same loading state
+      setUpdatingRole(true);
       setError("");
       
       // console.log('🔄 Making user API call:', {
@@ -909,14 +1015,11 @@ const ManageUsers = () => {
       // });
       
       // Make API call to make users regular users
-      const response = await axios.post(`${API_BASE}/api/user/make-users`, {
-        user_ids: selectedUsers
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
+      const response = await axios.post(
+        `${API_BASE}/api/user/make-users`,
+        { user_ids: selectedUsers },
+        getAuthConfig()
+      );
 
       // Check if the request was successful (HTTP 200-299)
       if (response.status >= 200 && response.status < 300) {
@@ -1009,12 +1112,10 @@ const ManageUsers = () => {
       // });
       
       // Make API call to delete user using the correct endpoint format
-      const response = await axios.delete(`${API_BASE}/api/user/${userToDelete.id}`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
+      const response = await axios.delete(
+        `${API_BASE}/api/user/${userToDelete.id}`,
+        getAuthConfig()
+      );
 
       if (response.data && (response.data.success || response.data.code === 200 || response.data.code === 201)) {
         // console.log('✅ User deleted successfully');
@@ -1103,12 +1204,10 @@ const ManageUsers = () => {
     try {
       // console.log('🔍 Manually checking course users for course:', courseId);
       
-      const response = await axios.get(`${API_BASE}/api/course/${courseId}/getAllUsersByCourseId`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        `${API_BASE}/api/course/${courseId}/getAllUsersByCourseId`,
+        getAuthConfig()
+      );
       
       // console.log('✅ Course users check response:', response.data);
       // console.log('📋 All users in course:', response.data?.data || []);
@@ -1131,6 +1230,102 @@ const ManageUsers = () => {
     } catch (error) {
       console.error('❌ Error checking course users:', error);
       alert(`Error checking course users: ${error.message}`);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match. Please try again.');
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+      setPasswordError("");
+      
+      // console.log('🔄 Changing password API call:', {
+      //   url: `${API_BASE}/api/user/change-password`,
+      //   payload: { user_ids: selectedUsers, new_password: newPassword },
+      //   selectedUsers
+      // });
+      
+      // Make API call to change password for users
+      const response = await axios.post(
+        `${API_BASE}/api/user/change-password`,
+        { user_ids: selectedUsers, new_password: newPassword },
+        getAuthConfig()
+      );
+
+      if (response.data && (response.data.success || response.data.code === 200 || response.data.code === 201)) {
+        // console.log('✅ Password changed successfully');
+        
+        // Get the selected users data
+        const updatedUsers = users.filter(user => selectedUsers.includes(user.id));
+        
+        // Set success data and show success modal
+        setPasswordSuccessData({
+          changedUsers: updatedUsers,
+          newPassword: newPassword,
+          failedUpdates: []
+        });
+        setShowPasswordSuccessModal(true);
+        
+        // Close password change modal and reset
+        setShowPasswordModal(false);
+        setNewPassword("");
+        setConfirmPassword("");
+        
+        // Send email to users with new password information
+        // console.log('📨 Sending email to users with new password information...');
+        try {
+          const emailResponse = await axios.post(
+            `${API_BASE}/api/user/send-password-email`,
+            { user_ids: selectedUsers, new_password: newPassword },
+            getAuthConfig()
+          );
+          
+          // console.log('✅ Email sent successfully:', emailResponse.data);
+        } catch (emailError) {
+          console.error('❌ Error sending email:', emailError);
+          // console.error('❌ Email error details:', {
+          //   status: emailError.response?.status,
+          //   statusText: emailError.response?.statusText,
+          //   data: emailError.response?.data,
+          //   message: emailError.message,
+          //   url: emailError.config?.url,
+          //   method: emailError.config?.method,
+          //   payload: emailError.config?.data
+          // });
+        }
+      } else {
+        throw new Error(response.data?.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      console.error('❌ Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url,
+        method: error.config?.method,
+        payload: error.config?.data
+      });
+      
+      // Handle specific error cases
+      if (error.response?.status === 400) {
+        setPasswordError('Invalid request. Please check your selection and try again.');
+      } else if (error.response?.status === 401) {
+        setPasswordError('Authentication failed. Please log in again.');
+      } else if (error.response?.status === 403) {
+        setPasswordError('You do not have permission to perform this action.');
+      } else if (error.response?.status === 500) {
+        setPasswordError(`Server error: ${error.response?.data?.message || 'Internal server error occurred. Please try again.'}`);
+      } else {
+        setPasswordError('Failed to change password. Please try again.');
+      }
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -1250,6 +1445,18 @@ const ManageUsers = () => {
             >
               Admin
             </button>
+            {/* Sort dropdown */}
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Sort users"
+            >
+              <option value="alpha_asc">Alphabetical (A → Z)</option>
+              <option value="alpha_desc">Alphabetical (Z → A)</option>
+              <option value="never_visited">Never Visited (Top)</option>
+              <option value="just_added">Just Added (Newest)</option>
+            </select>
           </div>
         </div>
       </div>
@@ -1292,13 +1499,58 @@ const ManageUsers = () => {
                 </button>
               )}
               {filterRole === "instructor" && (
-                <div className="text-sm text-gray-500 italic">
-                  {/* No role changes available for instructors */}
+                <div className="flex gap-2">
+                  {/* <button
+                    onClick={handleMakeAdmin}
+                    disabled={updatingRole}
+                    className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Promote to Admin (replaces all existing roles)"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    {updatingRole ? 'Updating...' : 'Make Admin'}
+                  </button>
+                  <button
+                    onClick={handleMakeUser}
+                    disabled={updatingRole}
+                    className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Demote to User (replaces all existing roles)"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    {updatingRole ? 'Updating...' : 'Make User'}
+                  </button> */}
                 </div>
               )}
+              {/* {filterRole === "admin" && (
+                <button
+                  onClick={handleMakeUser}
+                  disabled={updatingRole}
+                  className="px-4 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Demote to User (replaces all existing roles)"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  {updatingRole ? 'Updating...' : 'Make User'}
+                </button>
+              )} */}
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                title="Change Password"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0v4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 11h14a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                </svg>
+                Change Password
+              </button>
               <button
                 onClick={() => setShowCourseModal(true)}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1478,6 +1730,235 @@ const ManageUsers = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Change Password for {selectedUsers.length} User(s)</h3>
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setPasswordError("");
+                }}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            {passwordError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">{passwordError}</p>
+              </div>
+            )}
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-700">
+                <strong>Note:</strong> An email will be sent to the selected users with their new password information.
+              </p>
+            </div>
+            
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setNewPassword("");
+                  setConfirmPassword("");
+                  setPasswordError("");
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangePassword}
+                disabled={!newPassword || !confirmPassword || changingPassword}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {changingPassword ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Changing...
+                  </>
+                ) : (
+                  'Change Password'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Success Modal */}
+      {showPasswordSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-lg w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {passwordSuccessData.failedUpdates.length === 0 
+                  ? 'Password Changed Successfully!'
+                  : 'Password Update Completed'
+                }
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPasswordSuccessModal(false);
+                  setPasswordSuccessData({ changedUsers: [], newPassword: "", failedUpdates: [] });
+                }}
+                className="text-gray-500 hover:text-gray-700 text-xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              {/* Summary Section */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    {passwordSuccessData.changedUsers.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-blue-800">✅ Success:</span>
+                        <span className="text-sm text-blue-700">{passwordSuccessData.changedUsers.length} user(s)</span>
+                      </div>
+                    )}
+                    {passwordSuccessData.failedUpdates.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-red-800">❌ Failed:</span>
+                        <span className="text-sm text-red-700">{passwordSuccessData.failedUpdates.length} user(s)</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-xs text-blue-600">
+                    Total: {passwordSuccessData.changedUsers.length + passwordSuccessData.failedUpdates.length} user(s)
+                  </div>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-3">
+                {passwordSuccessData.failedUpdates.length === 0 
+                  ? `You have successfully changed the password for ${passwordSuccessData.changedUsers.length} user(s).`
+                  : `Password update completed with some issues.`
+                }
+              </p>
+              
+              {/* Show successful updates */}
+              {passwordSuccessData.changedUsers.length > 0 && (
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm font-medium text-green-800">New Password Set</p>
+                    <p className="text-sm text-green-700 font-mono bg-green-100 px-2 py-1 rounded mt-1">{passwordSuccessData.newPassword}</p>
+                    <p className="text-xs text-green-600 mt-2">
+                      An email has been sent to each user with their new password information.
+                    </p>
+                  </div>
+                  
+                  <div className="max-h-48 overflow-y-auto mb-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      ✅ Successfully updated passwords for:
+                    </p>
+                    <div className="space-y-2">
+                      {passwordSuccessData.changedUsers.map((user) => (
+                        <div key={user.id} className="flex items-center gap-3 p-2 bg-green-50 rounded-lg border border-green-200">
+                          <div className="h-8 w-8 rounded-full bg-green-300 flex items-center justify-center">
+                            <span className="text-xs font-medium text-green-700">
+                              {user.first_name?.[0]}{user.last_name?.[0]}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {/* Show failed updates */}
+              {passwordSuccessData.failedUpdates.length > 0 && (
+                <div className="max-h-48 overflow-y-auto mb-4">
+                  <p className="text-sm font-medium text-red-700 mb-2">
+                    ❌ Failed to update passwords for:
+                  </p>
+                  <div className="space-y-2">
+                    {passwordSuccessData.failedUpdates.map((failedUpdate) => (
+                      <div key={failedUpdate.user.id} className="flex items-center gap-3 p-2 bg-red-50 rounded-lg border border-red-200">
+                        <div className="h-8 w-8 rounded-full bg-red-300 flex items-center justify-center">
+                          <span className="text-xs font-medium text-red-700">
+                            {failedUpdate.user.first_name?.[0]}{failedUpdate.user.last_name?.[0]}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">
+                            {failedUpdate.user.first_name} {failedUpdate.user.last_name}
+                          </p>
+                          <p className="text-xs text-gray-500">{failedUpdate.user.email}</p>
+                          <p className="text-xs text-red-600 mt-1">
+                            Error: {failedUpdate.error}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setShowPasswordSuccessModal(false);
+                  setPasswordSuccessData({ changedUsers: [], newPassword: "", failedUpdates: [] });
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                {passwordSuccessData.failedUpdates.length === 0 ? 'Close' : 'Done'}
               </button>
             </div>
           </div>
@@ -1735,14 +2216,12 @@ const ManageUsers = () => {
       {/* User Details Modal */}
       <UserDetailsModal
         isOpen={showUserDetailsModal}
-        onClose={() => {
-          setShowUserDetailsModal(false);
-          setSelectedUserForDetails(null);
-        }}
+        onClose={handleCloseUserDetailsModal}
         user={selectedUserForDetails}
+        isLoading={loadingUserDetails}
       />
     </div>
   );
 };
 
-export default ManageUsers; 
+export default ManageUsers;

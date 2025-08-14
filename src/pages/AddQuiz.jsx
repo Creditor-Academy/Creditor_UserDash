@@ -6,11 +6,13 @@ import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, Eye, Plus, Trash2, Trophy } from "lucide-react";
+import { Search, Clock, ChevronLeft, Play, Eye, Plus, Trash2, Trophy, Edit } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import QuizModal from '@/components/courses/QuizModal';
 import QuizScoresModal from '@/components/courses/QuizScoresModal';
-import { fetchQuizzesByModule, fetchAllQuizzes, getQuizById } from '@/services/quizServices';
+import EditQuestionModal from '@/components/courses/EditQuestionModal';
+import { fetchQuizzesByModule, fetchAllQuizzes, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
+import { toast } from "sonner";
 
 const COURSES_PER_PAGE = 5;
 
@@ -33,6 +35,12 @@ const CreateQuizPage = () => {
   const [previewError, setPreviewError] = useState(null);
   const [showScoresModal, setShowScoresModal] = useState(false);
   const [selectedQuizForScores, setSelectedQuizForScores] = useState(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState(null);
+  const [editingQuiz, setEditingQuiz] = useState(null);
+  const [isAddingQuestions, setIsAddingQuestions] = useState(false);
+  const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
+  const [selectedQuestionForEdit, setSelectedQuestionForEdit] = useState(null);
 
   const isAllowed = allowedScormUserIds.includes(currentUserId);
 
@@ -165,12 +173,35 @@ const CreateQuizPage = () => {
     }
   };
 
-  const handleDeleteQuiz = async (module) => {
-    if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-      return;
+  const handleDeleteQuiz = async (quiz) => {
+    setQuizToDelete(quiz);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleEditQuiz = (quiz) => {
+    setEditingQuiz(quiz);
+    setSelectedModuleForQuiz(quiz.module_id);
+    setIsAddingQuestions(false);
+    setShowQuizModal(true);
+  };
+
+  const handleAddQuestions = (quiz) => {
+    setEditingQuiz(quiz);
+    setSelectedModuleForQuiz(quiz.module_id);
+    setIsAddingQuestions(true);
+    setShowQuizModal(true);
+  };
+
+  const handleEditQuestion = (question) => {
+    setSelectedQuestionForEdit(question);
+    setShowEditQuestionModal(true);
+  };
+
+  const handleQuestionUpdated = () => {
+    // Refresh the preview data if it's currently open
+    if (previewQuizData) {
+      handlePreviewQuiz(previewQuizData);
     }
-    alert(`Delete quiz for module ${module.id}`);
-    // Implement actual delete logic here
   };
 
   const handleViewScores = (quiz, courseId) => {
@@ -412,6 +443,14 @@ const CreateQuizPage = () => {
                                         </Button>
 
                                         <Button
+                                          onClick={() => handleEditQuiz(quiz)}
+                                          className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition duration-200"
+                                          title="Edit Quiz"
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </Button>
+
+                                        <Button
                                           onClick={() => handleDeleteQuiz(quiz)}
                                           className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition duration-200"
                                           title="Delete Quiz"
@@ -419,19 +458,13 @@ const CreateQuizPage = () => {
                                           <Trash2 className="w-4 h-4" />
                                         </Button>
 
-                                        {(!quiz.questions || quiz.questions.length === 0) &&
-                                          (!quiz.question_count || quiz.question_count === 0) && (
-                                            <Button
-                                              onClick={() => {
-                                                setSelectedModuleForQuiz(mod.id);
-                                                setShowQuizModal(true);
-                                              }}
-                                              className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition duration-200"
-                                              title="Add Questions"
-                                            >
-                                              <Plus className="w-4 h-4" />
-                                            </Button>
-                                          )}
+                                        <Button
+                                          onClick={() => handleAddQuestions(quiz)}
+                                          className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition duration-200"
+                                          title="Add Questions"
+                                        >
+                                          <Plus className="w-4 h-4" />
+                                        </Button>
                                       </div>
 
 
@@ -512,7 +545,17 @@ const CreateQuizPage = () => {
                     const options = q.question_options && q.question_options.length > 0 ? q.question_options : (q.options || []);
                     return (
                       <div key={q.id} className="mb-6">
-                        <div className="font-medium text-gray-900 mb-2">{idx + 1}. {q.question}</div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-medium text-gray-900">{idx + 1}. {q.question}</div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditQuestion(q)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
                         {options.length > 0 && (
                           <div className="space-y-2 ml-4">
                             {options.map(opt => (
@@ -542,6 +585,8 @@ const CreateQuizPage = () => {
         isOpen={showQuizModal}
         onClose={() => {
           setShowQuizModal(false);
+          setEditingQuiz(null);
+          setIsAddingQuestions(false);
           // Refresh quizzes for all modules when modal closes
           if (isAllowed && selectedModuleForQuiz) {
             fetchAndSetModuleQuizzes(selectedModuleForQuiz);
@@ -549,6 +594,9 @@ const CreateQuizPage = () => {
         }}
         moduleId={selectedModuleForQuiz}
         onQuizCreated={handleQuizCreatedOrUpdated}
+        editingQuiz={editingQuiz}
+        onQuizUpdated={handleQuizCreatedOrUpdated}
+        isAddingQuestions={isAddingQuestions}
       />
 
       <QuizScoresModal
@@ -559,6 +607,51 @@ const CreateQuizPage = () => {
         }}
         quiz={selectedQuizForScores}
         courseId={courses.find(c => c.modules?.some(m => m.id === selectedQuizForScores?.module_id))?.id}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && quizToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Deletion</h3>
+            <p className="text-gray-700 mb-4">
+              Are you sure you want to delete the quiz "{quizToDelete.title}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteConfirmation(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={async () => {
+                try {
+                  await deleteQuiz(quizToDelete.id);
+                  setAllQuizzes(prev => prev.filter(q => q.id !== quizToDelete.id));
+                  setModuleQuizzes(prev => {
+                    const moduleId = quizToDelete.module_id;
+                    return {
+                      ...prev,
+                      [moduleId]: prev[moduleId]?.filter(q => q.id !== quizToDelete.id) || []
+                    };
+                  });
+                  setShowDeleteConfirmation(false);
+                  setQuizToDelete(null);
+                  toast.success('Quiz deleted successfully!');
+                } catch (err) {
+                  console.error('Error deleting quiz:', err);
+                  toast.error('Failed to delete quiz.');
+                }
+              }}>Delete</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <EditQuestionModal
+        isOpen={showEditQuestionModal}
+        onClose={() => {
+          setShowEditQuestionModal(false);
+          setSelectedQuestionForEdit(null);
+        }}
+        question={selectedQuestionForEdit}
+        quizId={previewQuizData?.id}
+        onQuestionUpdated={handleQuestionUpdated}
       />
     </div>
   );
