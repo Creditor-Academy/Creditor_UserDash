@@ -2,128 +2,110 @@ import axios from 'axios';
 
 const ACCESS_TOKEN_KEY = 'token';
 const LOGIN_TIME_KEY = 'loginTime';
-const TOKEN_EXPIRY_MINUTES = 30; // 30 minutes token lifetime
-const TOKEN_REFRESH_BUFFER = 60000; // 1 minute before expiry
 const REFRESH_ENDPOINT = 'https://creditor-backend-1-iijy.onrender.com/api/auth/refresh';
 
-let refreshTimeout = null;
+let isRefreshing = false;
+let failedQueue = [];
 
-// Format time for console logs
-const formatTime = () => {
-  return new Date().toLocaleTimeString();
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
 };
 
-// Show token status with emoji for better visibility
-const logTokenStatus = (message, isError = false) => {
-  const prefix = isError ? '❌' : '🔑';
-  console.log(`[${formatTime()}] ${prefix} ${message}`);
-};
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: 'https://creditor-backend-1-iijy.onrender.com/api',
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle token refresh
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If error is not 401 or it's a retry request, reject
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // If already refreshing, add to queue
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      })
+      .then(token => {
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return api(originalRequest);
+      })
+      .catch(err => Promise.reject(err));
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const response = await axios.post(REFRESH_ENDPOINT, {}, { withCredentials: true });
+      
+      if (response.data.accessToken) {
+        const newToken = response.data.accessToken;
+        localStorage.setItem(ACCESS_TOKEN_KEY, newToken);
+        
+        // Update the auth header
+        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        
+        // Process the queue
+        processQueue(null, newToken);
+        
+        // Retry the original request
+        return api(originalRequest);
+      }
+      
+      throw new Error('No access token in response');
+    } catch (refreshError) {
+      console.error('Token refresh failed:', refreshError);
+      // Clear auth data and redirect to login
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(LOGIN_TIME_KEY);
+      window.dispatchEvent(new Event('tokenRefreshFailed'));
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+);
 
 // Save login time when user logs in
 const saveLoginTime = () => {
   const loginTime = Date.now();
-  const expiryTime = new Date(loginTime + (TOKEN_EXPIRY_MINUTES * 60 * 1000));
   localStorage.setItem(LOGIN_TIME_KEY, loginTime.toString());
-  logTokenStatus(`🔐 Login successful! Token will expire at ${expiryTime.toLocaleTimeString()}`);
+  console.log(`[${new Date().toLocaleTimeString()}] � Login successful!`);
   return loginTime;
-};
-
-// Calculate remaining time until token expiry
-const getRemainingTime = () => {
-  const loginTime = localStorage.getItem(LOGIN_TIME_KEY);
-  if (!loginTime) {
-    logTokenStatus('No login time found', true);
-    return 0;
-  }
-  
-  const loginTimeNum = parseInt(loginTime, 10);
-  const expiryTime = loginTimeNum + (TOKEN_EXPIRY_MINUTES * 60 * 1000);
-  const remaining = expiryTime - Date.now();
-  
-  // Log time remaining in minutes and seconds
-  const minutes = Math.floor(remaining / 60000);
-  const seconds = Math.floor((remaining % 60000) / 1000);
-  
-  if (remaining > 0) {
-    logTokenStatus(`⏳ Token will expire in ${minutes}m ${seconds}s`);
-  }
-  
-  return Math.max(0, remaining);
-};
-
-// Set up automatic token refresh based on login time
-const setupTokenRefresh = (onRefreshSuccess, onRefreshError) => {
-  // Clear any existing timeout
-  if (refreshTimeout) {
-    clearTimeout(refreshTimeout);
-    refreshTimeout = null;
-  }
-
-  const remainingTime = getRemainingTime();
-  
-  // If no valid login time or token already expired, don't set up refresh
-  if (remainingTime <= 0) {
-    logTokenStatus('❌ Not setting up refresh - no valid session', true);
-    if (onRefreshError) onRefreshError(new Error('No valid session'));
-    return;
-  }
-
-  const refreshTime = Math.max(0, remainingTime - TOKEN_REFRESH_BUFFER);
-  const refreshAt = new Date(Date.now() + refreshTime);
-  
-  // Log when the next refresh will occur
-  const refreshInMinutes = Math.ceil(refreshTime / 60000);
-  logTokenStatus(`🔄 Auto-refresh scheduled in ${refreshInMinutes} minute${refreshInMinutes !== 1 ? 's' : ''} at ~${refreshAt.toLocaleTimeString()}`);
-
-  // Set up refresh before token expires
-  refreshTimeout = setTimeout(() => {
-    logTokenStatus('🔄 Attempting to refresh access token...');
-    refreshToken()
-      .then(() => {
-        logTokenStatus('✅ Token refreshed successfully!');
-        if (onRefreshSuccess) onRefreshSuccess();
-      })
-      .catch((error) => {
-        logTokenStatus(`❌ Refresh failed: ${error.message}`, true);
-        if (onRefreshError) onRefreshError(error);
-      });
-  }, refreshTime);
-};
-
-// Refresh the access token using the refresh token from cookies
-const refreshToken = async () => {
-  try {
-    const response = await axios.post(REFRESH_ENDPOINT, {}, {
-      withCredentials: true // Important for sending cookies
-    });
-
-    if (response.data.accessToken) {
-      const newToken = response.data.accessToken;
-      localStorage.setItem(ACCESS_TOKEN_KEY, newToken);
-      
-      // Update login time to extend the session
-      const newLoginTime = saveLoginTime();
-      const newExpiry = new Date(newLoginTime + (TOKEN_EXPIRY_MINUTES * 60 * 1000));
-      logTokenStatus(`🔄 Token refreshed! New expiry at ${newExpiry.toLocaleTimeString()}`);
-      
-      return newToken;
-    }
-    
-    throw new Error('No access token in response');
-  } catch (error) {
-    logTokenStatus(`❌ Refresh error: ${error.message}`, true);
-    throw error;
-  }
-};
-
-// Clear the refresh timeout and login time
-const clearTokenRefresh = () => {
-  if (refreshTimeout) {
-    clearTimeout(refreshTimeout);
-    refreshTimeout = null;
-  }
-  localStorage.removeItem(LOGIN_TIME_KEY);
-  logTokenStatus('Token refresh system cleared');
 };
 
 // Check if user is authenticated
@@ -131,10 +113,17 @@ const isAuthenticated = () => {
   return !!localStorage.getItem(ACCESS_TOKEN_KEY);
 };
 
+// Logout function
+const logout = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(LOGIN_TIME_KEY);
+  delete api.defaults.headers.common['Authorization'];
+  window.dispatchEvent(new Event('tokenRefreshFailed'));
+};
+
 export { 
-  setupTokenRefresh, 
+  api,
   saveLoginTime, 
-  refreshToken, 
-  clearTokenRefresh, 
-  isAuthenticated 
+  isAuthenticated,
+  logout
 };
