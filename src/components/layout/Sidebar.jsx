@@ -148,12 +148,16 @@ export function Sidebar({ collapsed, setCollapsed }) {
 
   // Help section navigation items
   const helpItems = [
-    // { icon: FileQuestion, label: "FAQs", path: "/dashboard/faqs" },
-    // { icon: MessageSquare, label: "Contact Support", path: "/dashboard/support" },
-    // { icon: BookOpen, label: "User Guides", path: "/dashboard/guides" },
+    { icon: FileQuestion, label: "FAQs", path: "/dashboard/faqs" },
+    { icon: MessageSquare, label: "Contact Support", path: "/dashboard/support" },
+    { icon: BookOpen, label: "User Guides", path: "/dashboard/guides" },
     { icon: Contact, label: "Create Ticket", path: "/dashboard/support/ticket" },
     { icon: FileQuestion, label: "My Tickets", path: "/dashboard/support/tickets" }
   ];
+
+  // Debug logging for help items
+  console.log('Help items loaded:', helpItems);
+  console.log('Help items count:', helpItems.length);
 
   // Animation variants with smooth transition
   const sidebarVariants = {
@@ -188,6 +192,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
       variants={sidebarVariants}
       animate={collapsed ? "collapsed" : "expanded"}
       initial={false}
+      style={{ minHeight: '100vh' }}
     >
       {/* Header */}
       <div className={cn(
@@ -270,7 +275,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 overflow-hidden py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white">
+      <div className="flex-1 overflow-hidden py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white min-h-0">
         <motion.div 
           className="space-y-2 overflow-hidden px-2"
           variants={listVariants}
@@ -374,74 +379,95 @@ export function Sidebar({ collapsed, setCollapsed }) {
 
       {/* Help & Support Footer */}
       <motion.div 
-        className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-gray-100"
+        className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-gray-100 relative z-10"
         variants={itemVariants}
+        initial="hidden"
+        animate="show"
+        style={{ minHeight: '80px' }}
       >
-        {collapsed ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <motion.button 
-                      className="w-full flex justify-center p-3 hover:bg-gray-200 rounded-xl transition-all duration-200 text-gray-600 group shadow-sm"
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <HelpCircle size={24} />
-                    </motion.button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    side="right" 
-                    align="start" 
-                    className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
+        {/* Debug info - remove this in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-400 mb-2 text-center">
+            Debug: {helpItems.length} help items loaded
+          </div>
+        )}
+        
+        {helpItems.length > 0 ? (
+          <>
+            {collapsed ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <motion.button 
+                          className="w-full flex justify-center p-3 hover:bg-gray-200 rounded-xl transition-all duration-200 text-gray-600 group shadow-sm"
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <HelpCircle size={24} />
+                        </motion.button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        side="right" 
+                        align="start" 
+                        className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
+                      >
+                        {helpItems.map((item, index) => (
+                          <DropdownMenuItem key={index} asChild>
+                            <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
+                              <item.icon size={16} />
+                              <span>{item.label}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="bg-gray-900 text-white shadow-xl">Help & Support</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <motion.button 
+                    className="w-full justify-start px-4 py-3 text-sm font-semibold bg-white hover:bg-gray-100 rounded-xl flex items-center gap-3 group transition-all duration-200 text-gray-700 shadow-sm border border-gray-200"
+                    whileTap={{ y: 0 }}
                   >
-                    {helpItems.map((item, index) => (
-                      <DropdownMenuItem key={index} asChild>
+                    <HelpCircle size={18} />
+                    <span>Help & Support</span>
+                    <ChevronDown size={14} className="ml-auto transition-transform duration-200 group-hover:rotate-180" />
+                  </motion.button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="end" 
+                  className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
+                >
+                  {helpItems.map((item, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                    >
+                      <DropdownMenuItem asChild>
                         <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
-                          <item.icon size={16} />
+                          <item.icon size={16} className="text-gray-500" />
                           <span>{item.label}</span>
                         </Link>
                       </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 text-white shadow-xl">Help & Support</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                    </motion.div>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <motion.button 
-                className="w-full justify-start px-4 py-3 text-sm font-semibold bg-white hover:bg-gray-100 rounded-xl flex items-center gap-3 group transition-all duration-200 text-gray-700 shadow-sm border border-gray-200"
-                whileTap={{ y: 0 }}
-              >
-                <HelpCircle size={18} />
-                <span>Help & Support</span>
-                <ChevronDown size={14} className="ml-auto transition-transform duration-200 group-hover:rotate-180" />
-              </motion.button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="end" 
-              className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
-            >
-              {helpItems.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                >
-                  <DropdownMenuItem asChild>
-                    <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
-                      <item.icon size={16} className="text-gray-500" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                </motion.div>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          // Fallback if no help items are available
+          <div className="text-center text-gray-500 text-sm p-2">
+            <HelpCircle size={20} className="mx-auto mb-2 text-gray-400" />
+            <span className="block">Help & Support</span>
+            <span className="text-xs text-gray-400">No options available</span>
+          </div>
         )}
       </motion.div>
     </motion.div>
