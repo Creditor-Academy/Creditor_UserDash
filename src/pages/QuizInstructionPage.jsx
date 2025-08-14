@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, Clock, BookOpen, AlertTriangle, Loader2, CheckCircle, Award, BarChart2 } from "lucide-react";
-import { getModuleQuizById, startQuiz } from "@/services/quizService";
+import { getModuleQuizById, startQuiz } from "@/services/quizServices";
 import { toast } from "sonner";
 
 function QuizInstructionPage() {

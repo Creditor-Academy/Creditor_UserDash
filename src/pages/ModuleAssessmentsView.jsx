@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronLeft, Clock, GraduationCap, ChevronDown, BookOpen, Loader2, CheckCircle, XCircle, Award, BarChart2, HelpCircle } from "lucide-react";
 import { fetchCourseModules } from "@/services/courseService";
-import { getModuleQuizzes } from "@/services/quizService";
+import { getModuleQuizzes } from "@/services/quizServices";
 
 // Assessment sections - only Quiz for now
 const assessmentSections = [
