@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, Clock, BookOpen, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getQuizResults } from "@/services/quizService";
 // Results are derived from the submit response passed via navigation state
 
 function QuizResultsPage() {
@@ -29,30 +30,25 @@ function QuizResultsPage() {
       try {
         setIsLoading(true);
         
-        // Check if we have results data from navigation state
-        if (!quizResults) {
-          console.error('No quiz results found in navigation state');
-          setError('No quiz results found. Please complete the quiz first.');
+        if (quizResults) {
+          // Use the provided navigation state
+          setQuizData(quizSession || {});
+          setResults(quizResults);
+          console.log('Quiz results loaded from navigation state:', { quizResults, answers, quizSession, startedAt });
           return;
         }
         
-        // Set the data from navigation state
-        setQuizData(quizSession);
-        // Use results from navigation state directly (no fallback fetch)
-        setResults(quizResults);
-        
-        console.log('Quiz results loaded:', {
-          quizResults,
-          answers,
-          quizSession,
-          startedAt
-        });
-        
-        // Validate that we have the expected data for logs only
-        if (!quizResults?.score && !quizResults?.data?.score && !Array.isArray(quizResults?.answers) && !Array.isArray(quizResults?.data?.answers)) {
-          console.warn('Quiz results possibly missing score/answers:', quizResults);
+        // Fallback: fetch latest results for this quiz
+        if (quizId) {
+          console.warn('No quiz results in navigation state; fetching latest results for quiz:', quizId);
+          const fetched = await getQuizResults(quizId);
+          setResults(fetched);
+          // Provide minimal quiz info so the page renders
+          setQuizData({ quiz: { id: quizId, title: fetched?.quiz?.title || `Quiz ${quizId}` }, title: fetched?.quiz?.title });
+          return;
         }
         
+        setError('No quiz selected.');
       } catch (err) {
         console.error('Error initializing results:', err);
         setError('Failed to load quiz results');
@@ -63,7 +59,7 @@ function QuizResultsPage() {
     };
 
     initializeResults();
-  }, [quizResults, quizSession, answers, startedAt]);
+  }, [quizId, quizResults, quizSession, answers, startedAt]);
 
   const getScoreColor = (score) => {
     if (score >= 90) return 'text-green-600';
@@ -303,6 +299,41 @@ function QuizResultsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
+              {/* Question Type Summary */}
+              <div>
+                <h4 className="font-semibold mb-3">Question Type Summary</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {(() => {
+                    const typeStats = {};
+                    detailedAnswers.forEach((answer, index) => {
+                      const questionData = quizData?.questions?.find(q => 
+                        String(q.id) === String(answer.questionId) || 
+                        String(q._id) === String(answer.questionId) ||
+                        String(q.questionId) === String(answer.questionId)
+                      );
+                      const questionType = questionData?.type || questionData?.question_type || 'Unknown';
+                      if (!typeStats[questionType]) {
+                        typeStats[questionType] = { total: 0, correct: 0 };
+                      }
+                      typeStats[questionType].total++;
+                      if (answer.isCorrect) typeStats[questionType].correct++;
+                    });
+                    
+                    return Object.entries(typeStats).map(([type, stats]) => (
+                      <div key={type} className="p-3 bg-gray-50 rounded-lg border">
+                        <p className="text-sm font-medium text-gray-600">{type}</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {stats.correct}/{stats.total}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {Math.round((stats.correct / stats.total) * 100)}%
+                        </p>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+              
               {/* Question Review */}
               <div>
                 <h4 className="font-semibold mb-3">Question Review</h4>
@@ -318,6 +349,16 @@ function QuizResultsPage() {
                       // Get user's actual answer text from the answers passed via navigation
                       const userAnswerData = answers?.[answer.questionId];
                       
+                      // Debug logging for answer data
+                      console.log(`Question ${index + 1} answer data:`, {
+                        questionId: answer.questionId,
+                        userAnswerData,
+                        answerData: answer,
+                        questionData,
+                        isCorrect: answer.isCorrect,
+                        correctAnswer: answer.correctAnswer
+                      });
+                      
                       return (
                         <div key={`${answer.questionId}-${index}`} className="p-4 border rounded-lg">
                           <div className="flex items-start gap-3">
@@ -327,13 +368,31 @@ function QuizResultsPage() {
                               {index + 1}
                             </div>
                             <div className="flex-1">
+                              {/* Question Type Badge */}
+                              <div className="mb-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {(() => {
+                                    const type = questionData?.type || questionData?.question_type || 'Unknown Type';
+                                    const typeMap = {
+                                      'mcq': 'Multiple Choice',
+                                      'scq': 'Single Choice',
+                                      'truefalse': 'True/False',
+                                      'fill_blank': 'Fill in the Blank',
+                                      'one_word': 'One Word Answer',
+                                      'descriptive': 'Descriptive'
+                                    };
+                                    return typeMap[type.toLowerCase()] || type;
+                                  })()}
+                                </Badge>
+                              </div>
+                              
                               {/* Question Text */}
                               <p className="font-medium mb-3 text-lg">
                                 {questionData?.question || questionData?.questionText || questionData?.text || questionData?.content || `Question ${index + 1}`}
                               </p>
                               
-                              {/* Options Display */}
-                              {questionData?.options && Array.isArray(questionData.options) && (
+                              {/* Options Display for MCQ/SCQ questions */}
+                              {questionData?.options && Array.isArray(questionData.options) && questionData.options.length > 0 && (
                                 <div className="space-y-2 mb-3">
                                   <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
                                   {questionData.options.map((option, optIndex) => {
@@ -361,6 +420,43 @@ function QuizResultsPage() {
                                       </div>
                                     );
                                   })}
+                                </div>
+                              )}
+                              
+                              {/* User Answer Display for Text-based questions */}
+                              {userAnswerData && (
+                                <div className="space-y-2 mb-3">
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Your Answer:</p>
+                                  <div className={`p-3 rounded-lg border ${
+                                    answer.isCorrect 
+                                      ? 'bg-green-100 border-green-300 text-green-800' 
+                                      : 'bg-red-100 border-red-300 text-red-800'
+                                  }`}>
+                                    <span className="font-medium">
+                                      {Array.isArray(userAnswerData) ? userAnswerData.join(', ') : String(userAnswerData)}
+                                    </span>
+                                    {answer.isCorrect && (
+                                      <CheckCircle className="inline ml-2 h-4 w-4" />
+                                    )}
+                                    {!answer.isCorrect && (
+                                      <XCircle className="inline ml-2 h-4 w-4" />
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Correct Answer Display for Text-based questions */}
+                              {!answer.isCorrect && (answer.correctAnswer || answer.correct_answer || questionData?.correct_answer) && (
+                                <div className="space-y-2 mb-3">
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Correct Answer:</p>
+                                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <span className="font-medium text-green-800">
+                                      {(() => {
+                                        const correctAns = answer.correctAnswer || answer.correct_answer || questionData?.correct_answer;
+                                        return Array.isArray(correctAns) ? correctAns.join(', ') : String(correctAns);
+                                      })()}
+                                    </span>
+                                  </div>
                                 </div>
                               )}
                               

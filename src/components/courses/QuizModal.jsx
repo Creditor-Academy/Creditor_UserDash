@@ -16,6 +16,15 @@ const QUESTION_TYPES = [
   { label: 'One Word Answer', value: 'ONE_WORD' },
 ];
 
+// Alternative question type values that might be expected by the backend
+const BACKEND_QUESTION_TYPES = {
+  MCQ_SINGLE: 'MCQ_SINGLE',
+  MCQ_MULTIPLE: 'MCQ_MULTIPLE', 
+  TRUE_FALSE: 'TRUE_FALSE',
+  FILL_UPS: 'FILL_UPS',
+  ONE_WORD: 'ONE_WORD'
+};
+
 const QuizModal = ({ 
   isOpen, 
   onClose, 
@@ -246,6 +255,9 @@ const QuizModal = ({
     setLoading(true);
     setError('');
     try {
+      // Debug: Log the questions state
+      console.log('Questions state before creating payload:', questions);
+      
       const payload = {
         texts: questions.map(q => q.text),
         correctAnswers: questions.map(q => {
@@ -272,6 +284,9 @@ const QuizModal = ({
           return [];
         }),
       };
+      
+      // Debug: Log the payload being sent
+      console.log('Sending payload to API:', JSON.stringify(payload, null, 2));
       
       // Validate that all questions have required data
       const validationErrors = [];

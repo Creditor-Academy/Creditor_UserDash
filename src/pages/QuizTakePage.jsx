@@ -163,7 +163,9 @@ function QuizTakePage() {
       console.log(`Processing question ${questionId}:`, {
         question,
         answer,
-        questionType: question?.type
+        questionType: question?.type,
+        backendQuestionType: question?.question_type,
+        resolvedType: question.type?.toLowerCase() || question.question_type?.toLowerCase()
       });
       
       if (!question) {
@@ -177,8 +179,9 @@ function QuizTakePage() {
         answer: null
       };
       
-      // Handle different question types
-      switch (question.type?.toLowerCase()) {
+      // Handle different question types - also check backend question_type if frontend type is missing
+      const questionType = question.type?.toLowerCase() || question.question_type?.toLowerCase();
+      switch (questionType) {
         case 'mcq':
         case 'multiple_choice':
         case 'multiple choice':
@@ -257,9 +260,21 @@ function QuizTakePage() {
         case 'fill_blank':
         case 'fill in the blank':
         case 'fillintheblank':
+        case 'fill_ups':
           formattedAnswer.selectedOptionId = null;
           formattedAnswer.answer = Array.isArray(answer) ? answer : [answer];
           console.log(`Fill blank question ${questionId} formatted:`, formattedAnswer);
+          break;
+          
+        case 'one_word':
+        case 'oneword':
+        case 'one word':
+        case 'single_word':
+        case 'singleword':
+        case 'one_word':
+          formattedAnswer.selectedOptionId = null;
+          formattedAnswer.answer = Array.isArray(answer) ? answer[0] : String(answer);
+          console.log(`One word question ${questionId} formatted:`, formattedAnswer);
           break;
           
         case 'matching':
@@ -376,11 +391,13 @@ function QuizTakePage() {
     console.log('Rendering question:', {
       id: question.id,
       type: question.type,
+      backendType: question.question_type,
       question: question.question,
       questionText: question.questionText,
       text: question.text,
       content: question.content,
       questionField: question.question,
+      options: question.options,
       allFields: Object.keys(question),
       fullQuestion: question
     });
@@ -405,14 +422,72 @@ function QuizTakePage() {
       return index;
     };
 
-    // Handle missing question type
+    // Handle missing question type - check for backend question_type field
     if (!question.type) {
-      console.warn('Question type is missing, defaulting to MCQ');
-      // Default to MCQ if type is missing
-      if (question.options && Array.isArray(question.options)) {
+      // Try to get type from backend field
+      const backendType = question.question_type;
+      if (backendType) {
+        console.log('Using backend question_type:', backendType);
+        // Map backend type to frontend type
+        switch (backendType.toUpperCase()) {
+          case 'MCQ':
+            question.type = 'mcq';
+            break;
+          case 'SCQ':
+            question.type = 'scq';
+            break;
+          case 'TRUE_FALSE':
+            question.type = 'truefalse';
+            break;
+          case 'FILL_UPS':
+            question.type = 'fill_blank';
+            break;
+          case 'ONE_WORD':
+            question.type = 'one_word';
+            break;
+          default:
+            question.type = backendType.toLowerCase();
+        }
+        console.log('Mapped question type from', backendType, 'to', question.type);
+      } else {
+        console.warn('Question type is missing, defaulting to MCQ');
+        // Default to MCQ if type is missing
+        if (question.options && Array.isArray(question.options)) {
+          return (
+            <div className="space-y-3">
+              {question.options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    value={getOptionValue(option, index)}
+                    checked={userAnswer === getOptionValue(option, index)}
+                    onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-gray-700">{renderOptionText(option)}</span>
+                </label>
+              ))}
+            </div>
+          );
+        }
+      }
+    }
+
+    // Ensure we have the correct type for rendering
+    const renderType = question.type?.toLowerCase() || question.question_type?.toLowerCase();
+    console.log('Rendering question with type:', renderType, 'original type:', question.type, 'backend type:', question.question_type, 'options:', question.options);
+    
+    switch (renderType) {
+      case 'mcq_single':
+      case 'scq':
+      case 'single_choice':
+      case 'single choice':
+      case 'singlechoice':
+        // Single selection using radio buttons
         return (
           <div className="space-y-3">
-            {question.options.map((option, index) => (
+            {question.options?.map((option, index) => (
               <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
                 <input
                   type="radio"
@@ -427,10 +502,8 @@ function QuizTakePage() {
             ))}
           </div>
         );
-      }
-    }
 
-    switch (question.type?.toLowerCase()) {
+      case 'mcq_multiple':
       case 'mcq':
       case 'multiple_choice':
       case 'multiple choice':
@@ -463,30 +536,10 @@ function QuizTakePage() {
           </div>
         );
 
-      case 'scq':
-      case 'single_choice':
-      case 'single choice':
-      case 'singlechoice':
-        return (
-          <div className="space-y-3">
-            {question.options?.map((option, index) => (
-              <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  name={`question-${question.id}`}
-                  value={getOptionValue(option, index)}
-                  checked={userAnswer === getOptionValue(option, index)}
-                  onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-gray-700">{renderOptionText(option)}</span>
-              </label>
-            ))}
-          </div>
-        );
 
-      case 'truefalse':
+
       case 'true_false':
+      case 'truefalse':
       case 'true-false':
       case 'true false':
         return (
@@ -523,22 +576,86 @@ function QuizTakePage() {
             />
           </div>
         );
-
-      case 'fill_blank':
-      case 'fill_blank':
-      case 'fill in the blank':
-      case 'fillintheblank':
+        
+      case 'one_word':
         return (
           <div>
             <input
               type="text"
               value={userAnswer || ''}
               onChange={(e) => handleAnswer(question.id, e.target.value)}
-              placeholder="Type your answer here..."
+              placeholder="Enter one word answer..."
+              maxLength={50}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <p className="text-sm text-gray-500 mt-2">Please provide a single word or short phrase answer.</p>
           </div>
         );
+        
+      case 'fill_blank':
+        return (
+          <div>
+            <input
+              type="text"
+              value={userAnswer || ''}
+              onChange={(e) => handleAnswer(question.id, e.target.value)}
+              placeholder="Fill in the blank..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500 mt-2">Please provide the missing word or phrase.</p>
+          </div>
+        );
+
+      case 'fill_ups':
+        return (
+          <div>
+            <input
+              type="text"
+              value={userAnswer || ''}
+              onChange={(e) => handleAnswer(question.id, e.target.value)}
+              placeholder="Fill in the blank..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500 mt-2">Please provide the missing word or phrase.</p>
+          </div>
+        );
+
+      case 'mcq':
+        // Handle MCQ questions - check if they actually have options
+        if (question.options && Array.isArray(question.options) && question.options.length > 0) {
+          // Regular MCQ with options
+          return (
+            <div className="space-y-3">
+              {question.options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    value={getOptionValue(option, index)}
+                    checked={userAnswer === getOptionValue(option, index)}
+                    onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-gray-700">{renderOptionText(option)}</span>
+                </label>
+              ))}
+            </div>
+          );
+        } else {
+          // MCQ with no options - likely a text input question
+          return (
+            <div>
+              <input
+                type="text"
+                value={userAnswer || ''}
+                onChange={(e) => handleAnswer(question.id, e.target.value)}
+                placeholder="Enter your answer..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500 mt-2">Please provide your answer.</p>
+            </div>
+          );
+        }
 
       default:
         console.warn('Unsupported question type:', question.type, 'Question data:', question);

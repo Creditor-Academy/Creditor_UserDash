@@ -85,12 +85,15 @@ function QuizInstructionPage() {
       if (startResponse.questions && Array.isArray(startResponse.questions)) {
         questions = startResponse.questions;
         console.log('Questions found in start response');
+        console.log('Sample question structure:', questions[0]);
       } else if (startResponse.quiz && startResponse.quiz.questions) {
         questions = startResponse.quiz.questions;
         console.log('Questions found in start response.quiz');
+        console.log('Sample question structure:', questions[0]);
       } else if (startResponse.data && startResponse.data.questions) {
         questions = startResponse.data.questions;
         console.log('Questions found in start response.data');
+        console.log('Sample question structure:', questions[0]);
       }
       
       // 2. If no questions in start response, try to get from existing quiz data
@@ -117,34 +120,97 @@ function QuizInstructionPage() {
       const normalizeQuestion = (q, index) => {
         const normalizedId =
           q?.id || q?._id || q?.question_id || q?.questionId || `${index + 1}`;
-        // Derive type from common fields or infer from structure
-        const rawType =
-          q?.type || q?.question_type || q?.questionType || q?.kind || "";
-        let inferredType = String(rawType).toLowerCase();
-        if (!inferredType || inferredType === "unknown") {
-          if (Array.isArray(q?.options)) inferredType = "mcq";
-          else if (Array.isArray(q?.matchPairs)) inferredType = "matching";
-          else if (
-            Array.isArray(q?.choices) || Array.isArray(q?.answers)
-          )
-            inferredType = "mcq";
-          else inferredType = "descriptive";
+        
+        // Get the question type from the backend field 'question_type' or fallback to 'type'
+        const rawType = q?.question_type || q?.type || q?.questionType || q?.kind || "";
+        
+        // Map backend question types to frontend types
+        let normalizedType = "";
+        if (rawType) {
+          switch (rawType.toUpperCase()) {
+            case 'MCQ':
+              normalizedType = 'mcq';
+              break;
+            case 'SCQ':
+              normalizedType = 'scq';
+              break;
+            case 'TRUE_FALSE':
+              normalizedType = 'truefalse';
+              break;
+            case 'FILL_UPS':
+              normalizedType = 'fill_blank';
+              break;
+            case 'ONE_WORD':
+              normalizedType = 'one_word';
+              break;
+            default:
+              normalizedType = rawType.toLowerCase();
+          }
         }
+        
+        // If no type found, infer from structure
+        if (!normalizedType) {
+          if (Array.isArray(q?.options) && q.options.length > 0) {
+            normalizedType = "mcq";
+          } else if (q?.options === null || q?.options === undefined) {
+            // Backend sends null options for non-MCQ questions
+            // Use the backend question_type if available, don't default to descriptive
+            if (rawType) {
+              switch (rawType.toUpperCase()) {
+                case 'ONE_WORD':
+                  normalizedType = 'one_word';
+                  break;
+                case 'FILL_UPS':
+                  normalizedType = 'fill_blank';
+                  break;
+                case 'TRUE_FALSE':
+                  normalizedType = 'truefalse';
+                  break;
+                case 'SCQ':
+                  normalizedType = 'scq';
+                  break;
+                default:
+                  normalizedType = rawType.toLowerCase();
+              }
+            } else {
+              normalizedType = "descriptive";
+            }
+          } else {
+            normalizedType = "descriptive";
+          }
+        }
+        
         // Prefer a unified options array if present under different keys
         const unifiedOptions =
           q?.options || q?.choices || q?.answerOptions || null;
 
-        return {
+        const normalizedQuestion = {
           ...q,
           id: normalizedId,
-          type: inferredType,
+          type: normalizedType,
           options: unifiedOptions ?? q?.options,
         };
+        
+        console.log('Normalized question:', {
+          originalType: q?.question_type || q?.type,
+          normalizedType: normalizedType,
+          options: normalizedQuestion.options,
+          id: normalizedQuestion.id
+        });
+        
+        return normalizedQuestion;
       };
 
       if (questions.length > 0) {
         questions = questions.map((q, idx) => normalizeQuestion(q, idx));
         console.log("Normalized questions:", questions);
+        console.log("Question types found:", questions.map(q => ({ 
+          id: q.id, 
+          type: q.type, 
+          backendType: q.question_type,
+          options: q.options,
+          hasOptions: Array.isArray(q.options) && q.options.length > 0
+        })));
       }
 
       // 4. Final check - if we still have no questions, show error

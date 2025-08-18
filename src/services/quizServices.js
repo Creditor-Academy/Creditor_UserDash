@@ -6,10 +6,12 @@ const QUIZ_API_URL = 'http://localhost:9000/api/quiz/Quiz';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  return {
+  const headers = {
     'Content-Type': 'application/json',
     ...getAuthHeader(),
   };
+  console.log('Auth headers being sent:', headers);
+  return headers;
 };
 
 export async function createQuiz(quizData) {
@@ -27,17 +29,31 @@ export async function createQuiz(quizData) {
 }
 
 export async function bulkUploadQuestions(quizId, questionsPayload) {
+  console.log('Sending request to:', `${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/bulk-upload`);
+  console.log('Payload:', JSON.stringify(questionsPayload, null, 2));
+  
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/bulk-upload`, {
     method: 'POST',
     headers: getAuthHeaders(),
     body: JSON.stringify(questionsPayload),
     credentials: 'include',
   });
+  
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to bulk upload questions (${response.status})`);
+    let errorMessage = `Failed to bulk upload questions (${response.status})`;
+    try {
+      const errorData = await response.json();
+      console.error('API Error Response:', errorData);
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch (e) {
+      console.error('Could not parse error response:', e);
+    }
+    throw new Error(errorMessage);
   }
-  return await response.json();
+  
+  const result = await response.json();
+  console.log('API Success Response:', result);
+  return result;
 }
 
 /**
