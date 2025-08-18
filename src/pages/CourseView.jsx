@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award } from "lucide-react";
+import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
 
 export function CourseView() {
   const { courseId } = useParams();
+  const location = useLocation();
+  const hasAccess = location.state?.isAccessible ?? true;
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -16,6 +18,7 @@ export function CourseView() {
   const [filteredModules, setFilteredModules] = useState([]);
   const [error, setError] = useState("");
   const [totalDuration, setTotalDuration] = useState(0);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -99,6 +102,15 @@ export function CourseView() {
     );
   }
 
+  const formatDuration = (minutes) => {
+    if (minutes === 0) return '0 min';
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours === 0) return `${minutes} min`;
+    if (remainingMinutes === 0) return `${hours} hr`;
+    return `${hours} hr ${remainingMinutes} min`;
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <main className="flex-1">
@@ -115,66 +127,59 @@ export function CourseView() {
           {/* Course Details Section */}
           {courseDetails && (
             <div className="mb-8">
-              <Card className="overflow-hidden">
-                <div className="relative h-32 bg-gradient-to-r from-blue-600 to-purple-600">
-                  <img 
-                    src={courseDetails.thumbnail || courseDetails.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                    alt={courseDetails.title}
-                    className="w-full h-full object-cover opacity-20"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600/80 to-purple-600/80"></div>
-                  
-                  {/* Category Badge - Positioned at top right if exists */}
-                  {courseDetails.category && (
-                    <div className="absolute top-4 right-6">
-                      <Badge variant="outline" className="text-white border-white/30">
-                        {courseDetails.category}
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  {/* Course Title and Description - Centered vertically */}
-                  <div className="absolute inset-0 flex flex-col justify-center left-6 right-6">
-                    <h1 className="text-2xl font-bold text-white mb-2">{courseDetails.title}</h1>
-                    <p className="text-blue-100 text-sm line-clamp-2">{courseDetails.description}</p>
-                  </div>
-                </div>
+              <Card className="overflow-hidden shadow-xl border-0">
+                {/* Course Title and Description at the top */}
                 <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <BookOpen className="h-5 w-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Total Modules</p>
-                        <p className="font-semibold">{modules.length}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-100 rounded-lg">
-                        <Clock className="h-5 w-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Duration</p>
-                        <p className="font-semibold">
-                          {totalDuration > 0 ? `${totalDuration} min` : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  {courseDetails.instructor && (
-                    <div className="mt-6 pt-6 border-t">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-orange-100 rounded-lg">
-                          <Award className="h-5 w-5 text-orange-600" />
+                  <div className="max-w-4xl">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{courseDetails.title}</h1>
+                    <p className={`text-gray-600 text-md leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}>
+                      {courseDetails.description}
+                    </p>
+                    {courseDetails.description.length > 150 && (
+                      <Button 
+                        variant="link"
+                        className="text-blue-600 hover:text-blue-800 p-0 h-auto mt-2 text-md font-medium hover:underline"
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                      >
+                        {isDescriptionExpanded ? 'Show Less' : 'Show More'}
+                      </Button>
+                    )}
+                    
+                    {/* Course Stats with reduced size and compact layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-100">
+                        <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                          <BookOpen className="h-5 w-5 text-white" />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Instructor</p>
-                          <p className="font-semibold">{courseDetails.instructor}</p>
+                          <p className="text-xs font-medium text-green-700">Total Modules</p>
+                          <p className="text-lg font-bold text-green-800">{modules.length}</p>
                         </div>
                       </div>
+                      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+                        <div className="p-2 bg-purple-500 rounded-lg shadow-md">
+                          <Clock className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-purple-700">Duration</p>
+                          <p className="text-lg font-bold text-purple-800">
+                            {totalDuration > 0 ? formatDuration(totalDuration) : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      {courseDetails.instructor && (
+                        <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-100">
+                          <div className="p-2 bg-orange-500 rounded-lg shadow-md">
+                            <Award className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-orange-700">Instructor</p>
+                            <p className="text-sm font-bold text-orange-800">{courseDetails.instructor}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -211,24 +216,23 @@ export function CourseView() {
               {filteredModules.map((module) => {
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!hasAccess || !module.resource_url) ? 'opacity-75' : ''}`}>
                       <div className="aspect-video relative overflow-hidden">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute top-3 right-3">
-                          <Badge 
-                            className={`${
-                              module.module_status === 'PUBLISHED' 
-                                ? 'bg-green-100 text-green-800 border-green-200' 
-                                : 'bg-amber-50 text-amber-900 border-amber-200'
-                            } border font-medium px-3 py-1 rounded-full shadow-sm`}
-                          >
-                            {module.module_status}
-                          </Badge>
-                        </div>
+                        {/* Lock overlay for locked modules (non-enrolled or no content) */}
+                        {((!hasAccess) || !module.resource_url) && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="bg-white/95 rounded-full p-4 shadow-xl">
+                              <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       {/* Fixed height for content area, flex-grow to fill space */}
                       <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
@@ -251,17 +255,28 @@ export function CourseView() {
                       </div>
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
-                        <CardFooter className="p-0">
-                          {module.resource_url ? (
-                            <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
-                              <Button className="w-full">
-                                <Play size={16} className="mr-2" />
-                                Start Module
-                              </Button>
-                            </Link>
+                        <CardFooter className="p-0 flex flex-col gap-2">
+                          {hasAccess && module.resource_url ? (
+                            <>
+                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
+                                <Button className="w-full">
+                                  <Play size={16} className="mr-2" />
+                                  Start Module
+                                </Button>
+                              </Link>
+                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
+                                {/* <Button variant="outline" className="w-full">
+                                  <FileText size={16} className="mr-2" />
+                                  Start Assessment
+                                </Button> */}
+                              </Link>
+                            </>
                           ) : (
                             <Button className="w-full" variant="outline" disabled>
-                              No Content Available
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                              Locked Module
                             </Button>
                           )}
                         </CardFooter>

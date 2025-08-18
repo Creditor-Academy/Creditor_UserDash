@@ -42,7 +42,7 @@ import { motion } from "framer-motion";
 const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownContent, onNavigate }) => {
   const handleClick = () => {
     if (onNavigate) {
-      onNavigate();
+      onNavigate(href);
     }
   };
 
@@ -121,9 +121,14 @@ export function Sidebar({ collapsed, setCollapsed }) {
     return location.pathname === path;
   };
 
-  const handleNavigate = () => {
-    if (collapsed) {
+  const handleNavigate = (path) => {
+    // Keep sidebar collapsed when on instructor portal
+    if (collapsed && path !== "/instructor") {
       setCollapsed(false);
+    }
+    // Collapse sidebar when navigating to instructor portal
+    if (path === "/instructor") {
+      setCollapsed(true);
     }
   };
 
@@ -367,7 +372,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
         </motion.div>
       </div>
 
-      {/* Help & Support Footer */}
+      {/* Help & Support Footer  */}
       <motion.div 
         className="border-t border-gray-200 p-4 bg-gradient-to-r from-gray-50 to-gray-100"
         variants={itemVariants}
@@ -438,7 +443,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-      </motion.div>
+      </motion.div> 
     </motion.div>
   );
 }
