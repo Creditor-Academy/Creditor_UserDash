@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,9 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export function CourseView() {
   const { courseId } = useParams();
@@ -19,6 +22,15 @@ export function CourseView() {
   const [error, setError] = useState("");
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [unlockedModules, setUnlockedModules] = useState([]);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({
+    name: "",
+    email: ""
+  });
+  const [paymentErrors, setPaymentErrors] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,6 +61,105 @@ export function CourseView() {
     };
     if (courseId) fetchData();
   }, [courseId]);
+
+  // Load unlocked modules from localStorage after modules are loaded
+  useEffect(() => {
+    if (!courseId || modules.length === 0) return;
+    const userId = localStorage.getItem('userId') || 'guest';
+    const key = `unlocks:${userId}:${courseId}`;
+    try {
+      const saved = JSON.parse(localStorage.getItem(key) || '[]');
+      // keep only ids that still exist in current modules
+      const validIds = new Set(modules.map(m => String(m.id)));
+      const filtered = Array.isArray(saved) ? saved.filter(id => validIds.has(String(id))) : [];
+      setUnlockedModules(filtered);
+    } catch {
+      setUnlockedModules([]);
+    }
+  }, [courseId, modules]);
+
+  const sortedModules = useMemo(() => {
+    if (!modules || modules.length === 0) return [];
+    const copy = [...modules];
+    copy.sort((a, b) => {
+      const ao = a.order ?? Number.MAX_SAFE_INTEGER;
+      const bo = b.order ?? Number.MAX_SAFE_INTEGER;
+      if (ao !== bo) return ao - bo;
+      // fallback stable sort by id string
+      return String(a.id).localeCompare(String(b.id));
+    });
+    return copy;
+  }, [modules]);
+
+  const nextUnlockableModuleId = useMemo(() => {
+    // Find the first module in sorted order that is not unlocked
+    for (let i = 0; i < sortedModules.length; i++) {
+      const m = sortedModules[i];
+      if (!unlockedModules.includes(String(m.id))) {
+        return String(m.id);
+      }
+    }
+    return null;
+  }, [sortedModules, unlockedModules]);
+
+  const saveUnlocks = (updated) => {
+    const userId = localStorage.getItem('userId') || 'guest';
+    const key = `unlocks:${userId}:${courseId}`;
+    localStorage.setItem(key, JSON.stringify(updated));
+  };
+
+  const getModulePrice = (module, index) => {
+    // Prefer explicit price if present; else derive a stable demo price
+    if (module && module.price) return Number(module.price);
+    const base = 9.99;
+    const delta = (index % 3) * 5; // 0, 5, 10
+    return base + delta;
+  };
+
+  const handleUnlock = async (module) => {
+    const idStr = String(module.id);
+    if (nextUnlockableModuleId !== idStr) {
+      toast.warning('Please unlock previous lessons first');
+      return;
+    }
+    if (isProcessingPayment) return;
+    setSelectedModule(module);
+    setIsPaymentOpen(true);
+  };
+
+  const validatePayment = () => {
+    const errors = {};
+    if (!paymentForm.name.trim()) errors.name = 'Name is required';
+    if (!paymentForm.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) errors.email = 'Valid email required';
+    setPaymentErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handlePaymentSubmit = async (e) => {
+    e?.preventDefault?.();
+    if (!selectedModule) return;
+    if (!validatePayment()) return;
+    try {
+      setIsProcessingPayment(true);
+      await new Promise(res => setTimeout(res, 1200));
+      const idStr = String(selectedModule.id);
+      const updated = Array.from(new Set([...
+        unlockedModules,
+        idStr
+      ]));
+      setUnlockedModules(updated);
+      saveUnlocks(updated);
+      setIsPaymentOpen(false);
+      toast.success('Lesson unlocked. Note: This does not enroll you; My Courses will not include this course.');
+      setPaymentForm({ name: '', email: '' });
+      setPaymentErrors({});
+      setSelectedModule(null);
+    } catch (e) {
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -214,9 +325,13 @@ export function CourseView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredModules.map((module) => {
+                const isUnlocked = hasAccess || unlockedModules.includes(String(module.id));
+                const sortedIndex = sortedModules.findIndex(m => String(m.id) === String(module.id));
+                const price = getModulePrice(module, sortedIndex);
+                const isNextUnlockable = nextUnlockableModuleId === String(module.id);
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!hasAccess || !module.resource_url) ? 'opacity-75' : ''}`}>
+                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!isUnlocked) ? 'opacity-75' : ''}`}>
                       <div className="aspect-video relative overflow-hidden">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
@@ -224,7 +339,7 @@ export function CourseView() {
                           className="w-full h-full object-cover"
                         />
                         {/* Lock overlay for locked modules (non-enrolled or no content) */}
-                        {((!hasAccess) || !module.resource_url) && (
+                        {!isUnlocked && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="bg-white/95 rounded-full p-4 shadow-xl">
                               <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,12 +366,13 @@ export function CourseView() {
                               <span>{module.estimated_duration || 0} min</span>
                             </div>
                           </div>
+                          {/* Price/status row removed to avoid duplication with button label */}
                         </CardContent>
                       </div>
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          {hasAccess && module.resource_url ? (
+                          {isUnlocked && module.resource_url ? (
                             <>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
                                 <Button className="w-full">
@@ -272,12 +388,22 @@ export function CourseView() {
                               </Link>
                             </>
                           ) : (
-                            <Button className="w-full" variant="outline" disabled>
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                              Locked Module
-                            </Button>
+                            <div className="w-full flex flex-col gap-2">
+                              <Button 
+                                className="w-full"
+                                variant={isNextUnlockable ? "default" : "outline"}
+                                disabled={!isNextUnlockable || isProcessingPayment}
+                                onClick={() => handleUnlock(module)}
+                              >
+                                <>Unlock for ${price.toFixed(2)}</>
+                              </Button>
+                              {!isNextUnlockable && (
+                                <span className="text-xs text-muted-foreground text-center">Unlock previous first</span>
+                              )}
+                              {!module.resource_url && (
+                                <span className="text-[10px] text-muted-foreground text-center">Content coming soon — unlocking is for demo only</span>
+                              )}
+                            </div>
                           )}
                         </CardFooter>
                       </div>
@@ -289,6 +415,50 @@ export function CourseView() {
           )}
         </div>
       </main>
+      <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Unlock lesson</DialogTitle>
+            <DialogDescription>
+              {selectedModule ? (
+                <span>
+                  {selectedModule.title} — ${selectedModule ? getModulePrice(selectedModule, sortedModules.findIndex(m => String(m.id) === String(selectedModule.id))).toFixed(2) : ''}
+                </span>
+              ) : (
+                <span>Complete your payment details</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePaymentSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" value={paymentForm.name} onChange={(e) => setPaymentForm({ ...paymentForm, name: e.target.value })} placeholder="John Doe" />
+                {paymentErrors.name && <p className="text-xs text-red-600 mt-1">{paymentErrors.name}</p>}
+              </div>
+              <div>
+                <Label htmlFor="email">User ID</Label>
+                <Input id="email" type="email" value={paymentForm.email} onChange={(e) => setPaymentForm({ ...paymentForm, email: e.target.value })} placeholder="john@example.com" />
+                {paymentErrors.email && <p className="text-xs text-red-600 mt-1">{paymentErrors.email}</p>}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsPaymentOpen(false)} disabled={isProcessingPayment}>Cancel</Button>
+              <Button type="submit" disabled={isProcessingPayment}>
+                {isProcessingPayment ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                    Processing
+                  </span>
+                ) : (
+                  'Pay now'
+                )}
+              </Button>
+            </DialogFooter>
+            <p className="text-[10px] text-muted-foreground text-center">Demo payment only. No real charges are made.</p>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
