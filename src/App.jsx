@@ -193,6 +193,7 @@ function App() {
                   <Route path="assessments" element={<ModuleAssessmentsView />} />
                   <Route path="lesson/:lessonId">
                     <Route index element={<LessonView />} />
+                    <Route path="view" element={<LessonBuilder viewMode={true} />} />
                     <Route path="detail" element={<LessonDetail />} />
                   </Route>
                 </Route>

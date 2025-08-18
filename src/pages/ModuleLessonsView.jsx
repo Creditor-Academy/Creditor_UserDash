@@ -56,6 +56,11 @@ const ModuleLessonsView = () => {
   const [lessonToDelete, setLessonToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Lesson update state
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
   // Fetch module and lessons data
   useEffect(() => {
     fetchModuleLessons();
@@ -181,6 +186,74 @@ const ModuleLessonsView = () => {
     }
   };
 
+  const handleUpdateLesson = async () => {
+    if (!currentLesson) return;
+    
+    try {
+      setIsUpdating(true);
+      
+      const response = await axios.put(
+        `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
+        {
+          title: currentLesson.title,
+          description: currentLesson.description,
+          duration: parseInt(currentLesson.duration) || 0,
+          order: parseInt(currentLesson.order) || 1,
+          status: currentLesson.status
+        },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          }
+        }
+      );
+      
+      // Update the lesson in the state
+      setLessons(prev => prev.map(lesson => 
+        lesson.id === currentLesson.id ? response.data.data || response.data : lesson
+      ));
+      
+      setShowUpdateDialog(false);
+      
+      toast({
+        title: "Success",
+        description: "Lesson updated successfully!",
+      });
+      
+    } catch (error) {
+      console.error("Error updating lesson:", error);
+      let errorMessage = "Failed to update lesson. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleOpenUpdateDialog = (lesson) => {
+    setCurrentLesson({
+      ...lesson,
+      duration: lesson.duration || 0,
+      order: lesson.order || 1,
+      status: lesson.status || 'DRAFT'
+    });
+    setShowUpdateDialog(true);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewLesson(prev => ({
@@ -220,7 +293,8 @@ const ModuleLessonsView = () => {
   };
 
   const handleLessonClick = (lessonId) => {
-    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lessonId}`);
+    // Navigate to LessonBuilder in view mode
+    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lessonId}/view`);
   };
 
   const handleAddLesson = () => {
@@ -233,11 +307,15 @@ const ModuleLessonsView = () => {
     try {
       setIsDeleting(true);
       
+      // Use the exact same endpoint format as in Postman
       await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com/api'}/course/${courseId}/modules/${moduleId}/lesson/${lessonToDelete.id}/delete`,
+        `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${lessonToDelete.id}/delete`,
         {
-          headers: getAuthHeader(),
           withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          }
         }
       );
       
@@ -257,6 +335,8 @@ const ModuleLessonsView = () => {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       toast({
@@ -376,13 +456,13 @@ const ModuleLessonsView = () => {
                     className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
                     onClick={(e) => {
                       e.stopPropagation();
-                      // Handle edit click
+                      handleOpenUpdateDialog(lesson);
                     }}
                   >
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Edit</span>
                   </Button>
-                  <Button 
+                  {/* <Button 
                     variant="outline" 
                     size="icon" 
                     className="h-8 w-8 text-purple-600 hover:bg-purple-50 border-purple-200"
@@ -393,7 +473,7 @@ const ModuleLessonsView = () => {
                   >
                     <Settings className="h-4 w-4" />
                     <span className="sr-only">Settings</span>
-                  </Button>
+                  </Button> */}
                   <Button 
                     variant="outline" 
                     size="icon" 
@@ -532,6 +612,114 @@ const ModuleLessonsView = () => {
                   Creating...
                 </>
               ) : 'Create Lesson'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Lesson Dialog */}
+      <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Update Lesson</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to update the lesson.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Lesson Title *</Label>
+              <Input
+                id="title"
+                name="title"
+                value={currentLesson?.title}
+                onChange={(e) => setCurrentLesson(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter lesson title"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={currentLesson?.description}
+                onChange={(e) => setCurrentLesson(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter lesson description"
+                rows={3}
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (minutes) *</Label>
+                <Input
+                  id="duration"
+                  name="duration"
+                  type="number"
+                  min="1"
+                  value={currentLesson?.duration}
+                  onChange={(e) => setCurrentLesson(prev => ({ ...prev, duration: e.target.value }))}
+                  placeholder="e.g. 30"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="order">Order *</Label>
+                <Input
+                  id="order"
+                  name="order"
+                  type="number"
+                  min="1"
+                  value={currentLesson?.order}
+                  onChange={(e) => setCurrentLesson(prev => ({ ...prev, order: e.target.value }))}
+                  placeholder="Lesson order"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={currentLesson?.status} 
+                onValueChange={(value) => setCurrentLesson(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="PUBLISHED">Published</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter className="sticky bottom-0 bg-background pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowUpdateDialog(false)}
+              disabled={isUpdating}
+              type="button"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateLesson}
+              disabled={!currentLesson?.title || !currentLesson?.description || isUpdating}
+              type="submit"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : 'Update Lesson'}
             </Button>
           </DialogFooter>
         </DialogContent>

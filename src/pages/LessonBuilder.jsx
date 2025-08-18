@@ -88,7 +88,7 @@ const headingToolbar = [
 
 // --- END ADDED ---
 
-const LessonBuilder = () => {
+const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('blocks');
@@ -101,6 +101,7 @@ const LessonBuilder = () => {
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [savedLesson, setSavedLesson] = useState(null);
   const [lessons, setLessons] = useState([]);
+  const [isViewMode, setIsViewMode] = useState(initialViewMode);
 
   // --- UPDATED: Modal states for editing ---
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -177,24 +178,7 @@ const LessonBuilder = () => {
     loadLessonData();
   }, [lessonId]);
 
-  // Fetch all lessons for the current course and module
-  const fetchLessons = async () => {
-    const apiUrl = `https://creditor-backend-testing-branch.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`;
-    try {
-      const response = await axios.get(apiUrl);
-      console.log('LESSONS API RESPONSE:', response.data); // Debug: check structure
-      setLessons(response.data.lessons || response.data); // Use correct property
-    } catch (error) {
-      console.error('Error fetching lessons:', error);
-    }
-  };
 
-  // Fetch lessons on mount and after saving
-  useEffect(() => {
-    if (courseId && moduleId) {
-      fetchLessons();
-    }
-  }, [courseId, moduleId]);
 
   // Content block types available in the sidebar
   const contentBlockTypes = [
@@ -389,6 +373,10 @@ const LessonBuilder = () => {
     ['clean']
   ];
 
+  const toggleViewMode = () => {
+    setIsViewMode(!isViewMode);
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen bg-gray-50 items-center justify-center">
@@ -402,93 +390,98 @@ const LessonBuilder = () => {
 
   return (
     <div className="flex min-h-screen w-full bg-gradient-to-br from-gray-50 to-white">
-      {/* Main Sidebar */}
-      <div className="fixed top-0 left-0 h-screen z-30">
-        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      </div>
-
-      {/* Content Blocks Sidebar */}
-      <div 
-        className="fixed top-0 h-screen z-20 bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-80"
-        style={{
-          left: collapsed ? "4.5rem" : "17rem"
-        }}
-      >
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Content Blocks</h1>
-          <p className="text-sm text-gray-600">Click blocks to add them to your lesson</p>
+      {/* Sidebar - Only show in edit mode */}
+      {!isViewMode && (
+        <div className="fixed top-0 left-0 h-screen z-30">
+          <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
         </div>
+      )}
 
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab('blocks')}
-            className={`flex-1 px-4 py-3 text-sm font-medium ${
-              activeTab === 'blocks' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Blocks
-          </button>
-          <button
-            onClick={() => setActiveTab('templates')}
-            className={`flex-1 px-4 py-3 text-sm font-medium ${
-              activeTab === 'templates' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Templates
-          </button>
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex-1 px-4 py-3 text-sm font-medium ${
-              activeTab === 'settings' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Settings
-          </button>
-        </div>
+      {/* Content Blocks Sidebar - Only show in edit mode */}
+      {!isViewMode && (
+        <div 
+          className="fixed top-0 h-screen z-20 bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-80"
+          style={{
+            left: collapsed ? "4.5rem" : "17rem"
+          }}
+        >
+          <div className="p-6 border-b border-gray-200">
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Content Blocks</h1>
+            <p className="text-sm text-gray-600">Click blocks to add them to your lesson</p>
+          </div>
 
-        {/* Content Blocks List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {contentBlockTypes.map((blockType) => (
-            <Card 
-              key={blockType.id}
-              className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
-              onClick={() => handleBlockClick(blockType)}
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('blocks')}
+              className={`flex-1 px-4 py-3 text-sm font-medium ${
+                activeTab === 'blocks' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                    {blockType.icon}
+              Blocks
+            </button>
+            <button
+              onClick={() => setActiveTab('templates')}
+              className={`flex-1 px-4 py-3 text-sm font-medium ${
+                activeTab === 'templates' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Templates
+            </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex-1 px-4 py-3 text-sm font-medium ${
+                activeTab === 'settings' 
+                  ? 'text-blue-600 border-b-2 border-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Settings
+            </button>
+          </div>
+
+          {/* Content Blocks List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {contentBlockTypes.map((blockType) => (
+              <Card 
+                key={blockType.id}
+                className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
+                onClick={() => handleBlockClick(blockType)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      {blockType.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium text-gray-900">{blockType.title}</h3>
+                      <p className="text-xs text-gray-500 mt-1">{blockType.description}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-medium text-gray-900">{blockType.title}</h3>
-                    <p className="text-xs text-gray-500 mt-1">{blockType.description}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content Area */}
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300"
-        style={{ 
-          marginLeft: collapsed ? "calc(4.5rem + 20rem)" : "calc(17rem + 20rem)"
-        }}
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${
+          isViewMode ? 'ml-0' : collapsed ? 'ml-[calc(4.5rem+20rem)]' : 'ml-[calc(17rem+20rem)]'
+        }`}
       >
         {/* Header */}
         <header
-          className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 h-16 transition-all duration-300"
-          style={{ 
-            marginLeft: collapsed ? "calc(4.5rem + 20rem)" : "calc(17rem + 20rem)"
+          className={`fixed top-0 z-10 bg-white border-b border-gray-200 h-16 transition-all duration-300 ${
+            isViewMode ? 'left-0 right-0' : 'left-[calc(4.5rem+20rem)] right-0'
+          }`}
+          style={{
+            marginLeft: isViewMode ? '0' : collapsed ? 'calc(4.5rem + 20rem)' : 'calc(17rem + 20rem)'
           }}
         >
           <div className="max-w-7xl mx-auto w-full">
@@ -508,148 +501,197 @@ const LessonBuilder = () => {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <Input
-                value={lessonTitle}
-                onChange={(e) => setLessonTitle(e.target.value)}
-                className="text-lg font-semibold border-none bg-transparent px-0 focus-visible:ring-0"
-                placeholder="Enter lesson title..."
-              />
+              {isViewMode ? (
+                <h1 className="text-lg font-semibold">{lessonTitle}</h1>
+              ) : (
+                <Input
+                  value={lessonTitle}
+                  onChange={(e) => setLessonTitle(e.target.value)}
+                  className="text-lg font-semibold border-none bg-transparent px-0 focus-visible:ring-0"
+                  placeholder="Enter lesson title..."
+                />
+              )}
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onClick={handleSave}>
-                Save as Draft
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={toggleViewMode}
+                className="flex items-center gap-1"
+              >
+                {isViewMode ? (
+                  <>
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Preview
+                  </>
+                )}
               </Button>
-              <Button variant="outline" size="sm" onClick={handlePreview}>
-                Preview
-              </Button>
-              <Button size="sm" onClick={handleUpdate}>
-                Update
-              </Button>
+              
+              {!isViewMode && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleSave}>
+                    Save as Draft
+                  </Button>
+                  <Button size="sm" onClick={handleUpdate}>
+                    Update
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Main Content Canvas */}
         <div className="flex-1 p-6 overflow-y-auto">
-          {contentBlocks.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 max-w-2xl mx-auto">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                    Start Building Your Lesson
-                  </h2>
-                  <p className="text-gray-600 mb-6">
-                    Choose content blocks from the sidebar to create engaging learning content.
-                  </p>
-                  <Button 
-                    onClick={() => setShowTextTypeModal(true)}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Text Block
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
+          {isViewMode ? (
+            // View Mode Content
+            <div className="max-w-4xl mx-auto">
               {contentBlocks.map((block, index) => (
-                <Card 
-                  key={block.id} 
-                  className="border border-gray-200"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, block.id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, block.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">
-                          {block.title}
-                        </Badge>
-                        <span className="text-sm text-gray-500">Block {index + 1}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="cursor-move"
-                          title="Drag to reorder"
-                        >
-                          <GripVertical className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditBlock(block.id)}
-                          title="Edit"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeContentBlock(block.id)}
-                          className="text-red-600 hover:text-red-700"
-                          title="Remove"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {block.type && (
-                      <div>
-                        {block.textType === 'heading-paragraph' && (
-                          <div className="space-y-3">
-                            <div
-                              className="prose"
-                              dangerouslySetInnerHTML={{ __html: block.heading }}
-                            />
-                            <div
-                              className="prose"
-                              dangerouslySetInnerHTML={{ __html: block.content }}
-                            />
-                          </div>
-                        )}
-                        {block.textType === 'subheading-paragraph' && (
-                          <div className="space-y-3">
-                            <div
-                              className="prose"
-                              dangerouslySetInnerHTML={{ __html: block.subheading }}
-                            />
-                            <div
-                              className="prose"
-                              dangerouslySetInnerHTML={{ __html: block.content }}
-                            />
-                          </div>
-                        )}
-                        {block.textType === 'paragraph' && (
-                          <div
-                            className="prose"
-                            dangerouslySetInnerHTML={{ __html: block.content }}
-                          />
-                        )}
-                        {(block.type === 'statement' || block.type === 'quote') && (
-                          <div
-                            className="prose"
-                            dangerouslySetInnerHTML={{ __html: block.content }}
-                          />
-                        )}
-                        {block.type === 'list' && (
-                          <div
-                            className="prose"
-                            dangerouslySetInnerHTML={{ __html: block.content }}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <div key={block.id} className="mb-8">
+                  {block.type === 'text' && block.textType === 'heading-paragraph' && block.heading && (
+                    <h1 className="text-3xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: block.heading }} />
+                  )}
+                  {block.type === 'text' && block.textType === 'subheading-paragraph' && block.subheading && (
+                    <h2 className="text-2xl font-semibold mb-3" dangerouslySetInnerHTML={{ __html: block.subheading }} />
+                  )}
+                  {block.content && (
+                    <div 
+                      className="prose max-w-none"
+                      dangerouslySetInnerHTML={{ __html: block.content }}
+                    />
+                  )}
+                </div>
               ))}
             </div>
+          ) : (
+            // Edit Mode Content
+            <>
+              {contentBlocks.length === 0 ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 max-w-2xl mx-auto">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                        Start Building Your Lesson
+                      </h2>
+                      <p className="text-gray-600 mb-6">
+                        Choose content blocks from the sidebar to create engaging learning content.
+                      </p>
+                      <Button 
+                        onClick={() => setShowTextTypeModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Text Block
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contentBlocks.map((block, index) => (
+                    <Card 
+                      key={block.id} 
+                      className="border border-gray-200"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, block.id)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, block.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline">
+                              {block.title}
+                            </Badge>
+                            <span className="text-sm text-gray-500">Block {index + 1}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="cursor-move"
+                              title="Drag to reorder"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditBlock(block.id)}
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeContentBlock(block.id)}
+                              className="text-red-600 hover:text-red-700"
+                              title="Remove"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {block.type && (
+                          <div>
+                            {block.textType === 'heading-paragraph' && block.heading && (
+                              <div className="space-y-3">
+                                <div
+                                  className="prose"
+                                  dangerouslySetInnerHTML={{ __html: block.heading }}
+                                />
+                                <div
+                                  className="prose"
+                                  dangerouslySetInnerHTML={{ __html: block.content }}
+                                />
+                              </div>
+                            )}
+                            {block.textType === 'subheading-paragraph' && block.subheading && (
+                              <div className="space-y-3">
+                                <div
+                                  className="prose"
+                                  dangerouslySetInnerHTML={{ __html: block.subheading }}
+                                />
+                                <div
+                                  className="prose"
+                                  dangerouslySetInnerHTML={{ __html: block.content }}
+                                />
+                              </div>
+                            )}
+                            {block.textType === 'paragraph' && (
+                              <div
+                                className="prose"
+                                dangerouslySetInnerHTML={{ __html: block.content }}
+                              />
+                            )}
+                            {(block.type === 'statement' || block.type === 'quote') && (
+                              <div
+                                className="prose"
+                                dangerouslySetInnerHTML={{ __html: block.content }}
+                              />
+                            )}
+                            {block.type === 'list' && (
+                              <div
+                                className="prose"
+                                dangerouslySetInnerHTML={{ __html: block.content }}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
 
