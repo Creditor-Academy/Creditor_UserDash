@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import UserDetailsModal from "@/components/UserDetailsModal";
 import { getAuthHeader } from "../services/authHeader";
 
@@ -8,6 +9,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-
 
 const ManageUsers = () => {
   const { userRole, hasRole } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,15 +53,114 @@ const ManageUsers = () => {
   // User details modal state
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUserForDetails, setSelectedUserForDetails] = useState(null);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(5);
+  // Sorting state
+  const [sortOption, setSortOption] = useState("alpha_asc");
 
   useEffect(() => {
     fetchUsers();
     fetchCourses();
   }, []);
+
+  // Handle userId from search navigation
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    console.log('🔍 Search navigation - userId:', userId);
+    console.log('🔍 Search navigation - users.length:', users.length);
+    
+    if (userId && users.length > 0) {
+      const user = users.find(u => u.id === userId);
+      console.log('🔍 Search navigation - found user:', user);
+      
+      if (user) {
+        // Fetch detailed user profile data before opening modal
+        fetchDetailedUserProfile(userId);
+        // Clear the query parameter after processing
+        setSearchParams({});
+      } else {
+        console.warn('⚠️ Search navigation - User not found in users array');
+        // Try to refresh users list to see if the user appears
+        console.log('🔄 Refreshing users list to find the user...');
+        fetchUsers();
+      }
+    } else if (userId && users.length === 0) {
+      console.log('🔍 Search navigation - Waiting for users to load...');
+    }
+  }, [searchParams, users, setSearchParams]);
+
+  // Handle case where user might be found after users list is refreshed
+  useEffect(() => {
+    const userId = searchParams.get('userId');
+    if (userId && users.length > 0 && !showUserDetailsModal) {
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        console.log('🔍 User found after refresh, opening modal...');
+        fetchDetailedUserProfile(userId);
+        setSearchParams({});
+      }
+    }
+  }, [users, searchParams, showUserDetailsModal, setSearchParams]);
+
+  // Function to fetch detailed user profile and open modal
+  const fetchDetailedUserProfile = async (userId) => {
+    try {
+      setLoadingUserDetails(true);
+      console.log('🔍 Searching for user with ID:', userId);
+      console.log('🔍 Available users:', users);
+      console.log('🔍 User IDs in users array:', users.map(u => u.id));
+      
+      // Since the users array from /api/user/all should already contain detailed data,
+      // we can use that directly. If we need to refresh the data, we can do so here.
+      const user = users.find(u => u.id === userId);
+      console.log('🔍 Found user:', user);
+      
+      if (user) {
+        console.log('🔍 User data for modal:', {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          phone: user.phone,
+          location: user.location,
+          website: user.website,
+          createdAt: user.createdAt,
+          is_active: user.is_active,
+          last_login: user.last_login,
+          activity_log: user.activity_log
+        });
+        setSelectedUserForDetails(user);
+        setShowUserDetailsModal(true);
+      } else {
+        console.warn('⚠️ User not found in users array, userId:', userId);
+        // If user is not found, we might need to refresh the users list
+        // or the user ID from search might not match the user ID from /api/user/all
+      }
+    } catch (error) {
+      console.error('❌ Error processing user profile:', error);
+      // Fallback to basic user data if processing fails
+      const user = users.find(u => u.id === userId);
+      if (user) {
+        setSelectedUserForDetails(user);
+        setShowUserDetailsModal(true);
+      }
+    } finally {
+      setLoadingUserDetails(false);
+    }
+  };
+
+  // Function to close user details modal and clear search params
+  const handleCloseUserDetailsModal = () => {
+    setShowUserDetailsModal(false);
+    setSelectedUserForDetails(null);
+    // Clear any remaining search params
+    if (searchParams.get('userId')) {
+      setSearchParams({});
+    }
+  };
 
   // Update time differences every minute to keep them current
   useEffect(() => {
@@ -217,6 +318,29 @@ const ManageUsers = () => {
     }
   };
 
+  // Helper to get last visited timestamp (ms) for sorting
+  const getLastVisitedTimestamp = (user) => {
+    if (user?.activity_log && user.activity_log.length > 0) {
+      const latest = user.activity_log.reduce((latestLog, log) => {
+        const t = new Date(log.createdAt || log.created_at || log.timestamp || log.time).getTime();
+        return t > latestLog ? t : latestLog;
+      }, 0);
+      return latest || null;
+    }
+    return null;
+  };
+
+  // Helper to get createdAt timestamp (ms) for sorting "just added"
+  const getCreatedAtTimestamp = (user) => {
+    const created = user?.createdAt || user?.created_at || user?.created_on || user?.createdDate;
+    if (!created) return null;
+    const t = new Date(created).getTime();
+    return isNaN(t) ? null : t;
+  };
+
+  // Helper to get full name for alphabetical sorting
+  const getFullName = (user) => `${user.first_name || ""} ${user.last_name || ""}`.trim().toLowerCase();
+
   // Helper function to get last visited from activity_log
   const getLastVisited = (user) => {
     if (user.activity_log && user.activity_log.length > 0) {
@@ -255,16 +379,52 @@ const ManageUsers = () => {
     return matchesSearch && matchesRole;
   });
 
+  // Sort users based on selected option (applied after filter, before pagination)
+  const sortedUsers = useMemo(() => {
+    const arr = [...filteredUsers];
+    switch (sortOption) {
+      case "alpha_asc":
+        arr.sort((a, b) => getFullName(a).localeCompare(getFullName(b)));
+        break;
+      case "alpha_desc":
+        arr.sort((a, b) => getFullName(b).localeCompare(getFullName(a)));
+        break;
+      case "never_visited":
+        arr.sort((a, b) => {
+          const aVisited = getLastVisitedTimestamp(a);
+          const bVisited = getLastVisitedTimestamp(b);
+          if (aVisited === null && bVisited !== null) return -1;
+          if (aVisited !== null && bVisited === null) return 1;
+          // fallback alphabetical
+          return getFullName(a).localeCompare(getFullName(b));
+        });
+        break;
+      case "just_added":
+        arr.sort((a, b) => {
+          const aCreated = getCreatedAtTimestamp(a);
+          const bCreated = getCreatedAtTimestamp(b);
+          if (aCreated === null && bCreated === null) return 0;
+          if (aCreated === null) return 1;
+          if (bCreated === null) return -1;
+          return bCreated - aCreated; // newest first
+        });
+        break;
+      default:
+        break;
+    }
+    return arr;
+  }, [filteredUsers, sortOption]);
+
   // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const currentUsers = sortedUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(sortedUsers.length / usersPerPage);
 
   // Reset to first page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterRole]);
+  }, [searchTerm, filterRole, sortOption]);
 
   // Modified handleSelectAll to accumulate selections across pages
   const handleSelectAll = () => {
@@ -1285,6 +1445,18 @@ const ManageUsers = () => {
             >
               Admin
             </button>
+            {/* Sort dropdown */}
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Sort users"
+            >
+              <option value="alpha_asc">Alphabetical (A → Z)</option>
+              <option value="alpha_desc">Alphabetical (Z → A)</option>
+              <option value="never_visited">Never Visited (Top)</option>
+              <option value="just_added">Just Added (Newest)</option>
+            </select>
           </div>
         </div>
       </div>
@@ -1352,7 +1524,7 @@ const ManageUsers = () => {
                   </button> */}
                 </div>
               )}
-              {filterRole === "admin" && (
+              {/* {filterRole === "admin" && (
                 <button
                   onClick={handleMakeUser}
                   disabled={updatingRole}
@@ -1364,7 +1536,7 @@ const ManageUsers = () => {
                   </svg>
                   {updatingRole ? 'Updating...' : 'Make User'}
                 </button>
-              )}
+              )} */}
               <button
                 onClick={() => setShowPasswordModal(true)}
                 className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
@@ -2044,11 +2216,9 @@ const ManageUsers = () => {
       {/* User Details Modal */}
       <UserDetailsModal
         isOpen={showUserDetailsModal}
-        onClose={() => {
-          setShowUserDetailsModal(false);
-          setSelectedUserForDetails(null);
-        }}
+        onClose={handleCloseUserDetailsModal}
         user={selectedUserForDetails}
+        isLoading={loadingUserDetails}
       />
     </div>
   );
