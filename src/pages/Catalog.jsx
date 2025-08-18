@@ -150,7 +150,7 @@ export function CatalogPage() {
                 <div>
                   <div className="flex items-center mb-6">
                     <Star className="h-5 w-5 text-yellow-500 mr-2" />
-                    <h2 className="text-2xl font-semibold text-gray-900">Starter Catalogs</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900">Starter Courses</h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {starterCatalogs.map((catalog) => (
@@ -212,7 +212,7 @@ export function CatalogPage() {
                 <div>
                   <div className="flex items-center mb-6">
                     <Gem className="h-5 w-5 text-purple-500 mr-2" />
-                    <h2 className="text-2xl font-semibold text-gray-900">Premium Catalogs</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900">Premium Courses</h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {premiumCatalogs.map((catalog) => (
