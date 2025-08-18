@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Plus, BookOpen, Clock, ArrowLeft, Eye, Trash2 } from "lucide-react";
 import axios from "axios";
-
+import { getAuthHeader } from '../services/authHeader';
 const InstructorCourseModulesPage = () => {
   const navigate = useNavigate();
   const { courseId } = useParams();
@@ -106,7 +106,7 @@ const InstructorCourseModulesPage = () => {
           setLessonsLoading(false);
           return;
         }
-        const apiUrl = `https://creditor-backend-testing-branch.onrender.com/api/course/${courseId}/modules/${module.id}/lesson/all-lessons`;
+        const apiUrl = `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${module.id}/lesson/all-lessons`;
         console.log("Fetching lessons from:", apiUrl);
 
         const response = await axios.get(apiUrl, {
@@ -295,9 +295,9 @@ const InstructorCourseModulesPage = () => {
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
-                          onClick={() => toggleViewLessons(mod)}
+                          onClick={() => navigate(`/dashboard/courses/${courseId}/module/${mod.id}/lessons`)}
                         >
-                          {expandedModuleId === mod.id ? 'Hide Lessons' : 'View Lessons'}
+                          View Lessons
                         </Button>
                       </div>
                     </div>

@@ -69,7 +69,7 @@ const lessonsDatabase = {
         <h3>1. Statutory Business Trusts</h3>
         <p>These are trusts created under specific state statutes that govern their formation and operation. They offer standardized structures with well-defined legal frameworks.</p>
         
-        <h3>2. Common Law Business Trusts</h3>
+        <h3>2. Common  Law Business Trusts</h3>
         <p>Also known as Massachusetts Trusts, these are created under common law principles without specific statutory authorization. They offer greater flexibility but may face more legal uncertainty.</p>
         
         <h3>3. Real Estate Investment Trusts (REITs)</h3>

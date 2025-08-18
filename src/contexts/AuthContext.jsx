@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getUserRole, getUserRoles, setUserRole as setUserRoleUtil, setUserRoles as setUserRolesUtil, clearUserData, isInstructorOrAdmin as checkInstructorOrAdmin, logoutUser } from '@/services/userService';
-import { setupTokenRefresh, clearTokenRefresh, saveLoginTime, isAuthenticated } from '@/services/tokenService';
+import { saveLoginTime, isAuthenticated } from '@/services/tokenService';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -31,15 +31,8 @@ export const AuthProvider = ({ children }) => {
         setUserRoleState(role);
         setUserRolesState(roles);
         
-        setupTokenRefresh(
-          () => {
-            console.log('Token refresh successful');
-          },
-          (error) => {
-            console.error('Token refresh failed:', error);
-            logout();
-          }
-        );
+        // Token refresh is now handled automatically by the tokenService
+        console.log('User authenticated, token refresh system initialized');
       }
       
       setIsLoading(false);
@@ -48,7 +41,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
     
     return () => {
-      clearTokenRefresh();
+      // clearTokenRefresh(); // Removed this line as it's no longer needed
     };
   }, []);
 
@@ -58,7 +51,7 @@ export const AuthProvider = ({ children }) => {
       saveLoginTime();
       setIsAuth(true);
     } else {
-      clearTokenRefresh();
+      // clearTokenRefresh(); // Removed this line as it's no longer needed
       localStorage.removeItem('token');
       setIsAuth(false);
     }
@@ -88,7 +81,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       clearUserData();
-      clearTokenRefresh();
+      // clearTokenRefresh(); // Removed this line as it's no longer needed
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
       Cookies.remove('token');
