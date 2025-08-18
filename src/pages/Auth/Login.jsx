@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 function ForgotPassword({ onBack, email, onEmailChange }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isEmailSent, setIsEmailSent] = useState(false);
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,17 +26,12 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
     setIsLoading(true);
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
-      
-      // Simulate API call for now
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
       setIsEmailSent(true);
-      toast.success("Password reset email sent successfully!");
+      toast.success(response.data?.message || "Password reset email sent successfully!");
     } catch (error) {
       console.error("Forgot password error:", error);
-      toast.error("Failed to send reset email. Please try again.");
+      toast.error(error.response?.data?.message || "Failed to send reset email. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -393,7 +389,7 @@ export function Login() {
                   </div>
 
                   {/* Forgot Password Link */}
-                  {/* <div className="text-right">
+                  <div className="text-right">
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
@@ -402,7 +398,7 @@ export function Login() {
                     >
                       Forgot Password?
                     </button>
-                  </div> */}
+                  </div>
 
                   {/* Submit Button */}
                   <Button 
