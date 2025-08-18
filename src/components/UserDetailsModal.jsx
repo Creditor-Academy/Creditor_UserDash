@@ -316,6 +316,20 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                         </a>
                       </div>
                     )}
+                    {user.social_handles.linkedin && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">LinkedIn:</span>
+                        <a 
+                          href={user.social_handles.linkedin} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-600 hover:underline"
+                        >
+                          {user.social_handles.linkedin}
+                        </a>
+                      </div>
+                    )}
                     {user.social_handles.facebook && (
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-gray-500" />
