@@ -293,8 +293,8 @@ const ModuleLessonsView = () => {
   };
 
   const handleLessonClick = (lessonId) => {
-    // Navigate to LessonBuilder in view mode
-    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lessonId}/view`);
+    // Navigate directly to the LessonBuilder with the lesson ID
+    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lessonId}/builder`);
   };
 
   const handleAddLesson = () => {

@@ -29,5 +29,4 @@ export default defineConfig(({ mode }) => ({
 // https://sharebackend-sdkp.onrender.com
 // https://creditor-backend-1-iijy.onrender.com
 // https://creditor-backend-9upi.onrender.com
-// https://sharebackend-sdkp.onrender.com
 

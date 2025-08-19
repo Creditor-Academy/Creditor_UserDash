@@ -96,7 +96,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [lessonTitle, setLessonTitle] = useState('New Lesson');
   const [lessonData, setLessonData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(true); // Set to true by default
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [savedLesson, setSavedLesson] = useState(null);
@@ -389,13 +389,11 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-gradient-to-br from-gray-50 to-white">
-      {/* Sidebar - Only show in edit mode */}
-      {!isViewMode && (
-        <div className="fixed top-0 left-0 h-screen z-30">
-          <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-        </div>
-      )}
+    <div className="flex min-h-screen w-full bg-white">
+      {/* Main Sidebar (Dashboard, Courses, etc.) */}
+      {/* <div className="fixed top-0 left-0 h-screen z-30">
+        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+      </div> */}
 
       {/* Content Blocks Sidebar - Only show in edit mode */}
       {!isViewMode && (
@@ -411,7 +409,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-gray-200">
+          {/* <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab('blocks')}
               className={`flex-1 px-4 py-3 text-sm font-medium ${
@@ -432,17 +430,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
             >
               Templates
             </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`flex-1 px-4 py-3 text-sm font-medium ${
-                activeTab === 'settings' 
-                  ? 'text-blue-600 border-b-2 border-blue-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Settings
-            </button>
-          </div>
+          </div> */}
 
           {/* Content Blocks List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -472,25 +460,15 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${
-          isViewMode ? 'ml-0' : collapsed ? 'ml-[calc(4.5rem+20rem)]' : 'ml-[calc(17rem+20rem)]'
+          isViewMode 
+            ? 'ml-0' 
+            : collapsed 
+              ? 'ml-[calc(4.5rem+20rem)]' 
+              : 'ml-[calc(17rem+20rem)]'
         }`}
       >
-        {/* Header */}
-        <header
-          className={`fixed top-0 z-10 bg-white border-b border-gray-200 h-16 transition-all duration-300 ${
-            isViewMode ? 'left-0 right-0' : 'left-[calc(4.5rem+20rem)] right-0'
-          }`}
-          style={{
-            marginLeft: isViewMode ? '0' : collapsed ? 'calc(4.5rem + 20rem)' : 'calc(17rem + 20rem)'
-          }}
-        >
-          <div className="max-w-7xl mx-auto w-full">
-            <DashboardHeader sidebarCollapsed={collapsed} />
-          </div>
-        </header>
-
         {/* Lesson Builder Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 mt-16">
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button 
@@ -500,6 +478,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 className="flex items-center space-x-2"
               >
                 <ArrowLeft className="h-4 w-4" />
+                <span>Back</span>
               </Button>
               {isViewMode ? (
                 <h1 className="text-lg font-semibold">{lessonTitle}</h1>
@@ -507,7 +486,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 <Input
                   value={lessonTitle}
                   onChange={(e) => setLessonTitle(e.target.value)}
-                  className="text-lg font-semibold border-none bg-transparent px-0 focus-visible:ring-0"
+                  className="text-lg font-semibold border-none bg-transparent px-0 focus-visible:ring-0 w-full max-w-2xl"
                   placeholder="Enter lesson title..."
                 />
               )}
@@ -522,12 +501,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               >
                 {isViewMode ? (
                   <>
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-4 w-4 mr-1" />
                     Edit
                   </>
                 ) : (
                   <>
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4 mr-1" />
                     Preview
                   </>
                 )}

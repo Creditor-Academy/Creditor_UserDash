@@ -195,6 +195,7 @@ function App() {
                     <Route index element={<LessonView />} />
                     <Route path="view" element={<LessonBuilder viewMode={true} />} />
                     <Route path="detail" element={<LessonDetail />} />
+                    <Route path="builder" element={<LessonBuilder />} />
                   </Route>
                 </Route>
               </Route>
