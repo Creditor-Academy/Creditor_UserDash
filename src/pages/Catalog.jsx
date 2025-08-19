@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { BookOpen, Clock, Search, Loader2, FolderOpen } from "lucide-react";
+import { BookOpen, Search, Loader2, FolderOpen, Star, Gem } from "lucide-react";
 import { Link } from "react-router-dom";
-import { fetchAllCatalogs, searchCatalogs, fetchCatalogCourses, testCatalogAPI } from "@/services/catalogService";
+import { fetchAllCatalogs, fetchCatalogCourses, testCatalogAPI } from "@/services/catalogService";
 
 export function CatalogPage() {
   const [catalogs, setCatalogs] = useState([]);
@@ -21,15 +13,12 @@ export function CatalogPage() {
   const [courseCounts, setCourseCounts] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  
-  // Fetch catalogs from backend
   useEffect(() => {
     const fetchCatalogsAndCounts = async () => {
       try {
         setLoading(true);
         const data = await fetchAllCatalogs();
         setCatalogs(data || []);
-        // Fetch course counts for each catalog
         const counts = {};
         await Promise.all(
           (data || []).map(async (catalog) => {
@@ -46,13 +35,9 @@ export function CatalogPage() {
     };
 
     fetchCatalogsAndCounts();
-    
-    // Test API endpoints for debugging
-    testCatalogAPI().then(result => {
-    });
+    testCatalogAPI().then(result => {});
   }, []);
 
-  // Extract categories from fetched catalogs
   const categories = Array.from(new Set((catalogs || []).map(catalog => catalog.category || "General")));
 
   const filteredCatalogs = (catalogs || []).filter(catalog => {
@@ -64,15 +49,38 @@ export function CatalogPage() {
     return matchesSearch && matchesCategory;
   });
 
+  const starterNames = ["Roadmap Series", "Start Your Passive Income Now"]; 
+  const isStarter = (catalog) => starterNames.some(name => (catalog.name || "").trim().toLowerCase() === name.toLowerCase());
+  const starterCatalogs = filteredCatalogs.filter(isStarter);
+  // Create a stable order for Premium catalogs based on requested priority
+  const idToIndex = new Map(filteredCatalogs.map((c, idx) => [c.id, idx]));
+  const getPriority = (name = "") => {
+    const n = name.toLowerCase();
+    if (n.includes("become private") || n.includes("sov 101")) return 1; // Become Private + SOV 101
+    if (n.includes("operate private")) return 2; // Operate Private
+    if (n.includes("business credit") || n.includes("i want")) return 3; // Business credit + I want..
+    if (n.includes("class recordings") || n.includes("class recording")) return 4; // Class Recordings
+    return 999; // Others keep original order after prioritized ones
+  };
+  const premiumCatalogs = filteredCatalogs
+    .filter(c => !isStarter(c))
+    .slice()
+    .sort((a, b) => {
+      const pa = getPriority(a.name);
+      const pb = getPriority(b.name);
+      if (pa !== pb) return pa - pb;
+      return (idToIndex.get(a.id) ?? 0) - (idToIndex.get(b.id) ?? 0);
+    });
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
         <main className="flex-1">
           <div className="container py-6 max-w-7xl">
             <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 text-blue-600">
                 <Loader2 className="h-6 w-6 animate-spin" />
-                <span>Loading catalogs...</span>
+                <span className="font-medium">Loading catalogs...</span>
               </div>
             </div>
           </div>
@@ -86,13 +94,19 @@ export function CatalogPage() {
       <div className="flex flex-col min-h-screen">
         <main className="flex-1">
           <div className="container py-6 max-w-7xl">
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <p className="text-red-600 mb-4">{error}</p>
-                <Button onClick={() => window.location.reload()}>
-                  Try Again
-                </Button>
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+              <div className="bg-red-100 p-4 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
               </div>
+              <p className="text-red-600 font-medium">{error}</p>
+              <Button 
+                onClick={() => window.location.reload()}
+                className="mt-2 bg-blue-600 hover:bg-blue-700"
+              >
+                Try Again
+              </Button>
             </div>
           </div>
         </main>
@@ -101,81 +115,160 @@ export function CatalogPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <main className="flex-1">
-        <div className="container py-6 max-w-7xl">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">Course Catalogs</h1>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search catalogs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-[360px]"
-                />
+        <div className="container py-8 max-w-7xl">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Course Catalogs</h1>
+              <p className="text-gray-500 mt-1">Browse our collection of learning paths</p>
+            </div>
+            <div className="relative w-full md:w-auto">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
-              
-              {/* Remove Select for All Categories and category filter logic */}
+              <Input
+                placeholder="Search catalogs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full md:w-80 py-2 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
           </div>
           
-          {filteredCatalogs.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No catalogs found matching your criteria.</p>
+          {(starterCatalogs.length + premiumCatalogs.length === 0) ? (
+            <div className="text-center py-16 bg-white rounded-xl shadow-sm">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
+                <Search className="h-6 w-6 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">No catalogs found</h3>
+              <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCatalogs.map((catalog) => (
-                <div key={catalog.id} className="group overflow-hidden rounded-lg border bg-card hover:shadow-md transition-all">
-                  <div className="aspect-video w-full relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
-                    {catalog.thumbnail ? (
-                      <img
-                        src={catalog.thumbnail}
-                        alt={catalog.name}
-                        className="w-full h-full object-cover"
-                        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                      />
-                    ) : null}
-                    <div
-                      className="absolute inset-0 flex items-center justify-center"
-                      style={{ display: catalog.thumbnail ? 'none' : 'flex' }}
-                    >
-                      <FolderOpen className="h-16 w-16 text-blue-500" />
-                    </div>
-                    {/* Remove all Badge components that display catalog.category or 'General' in catalog cards */}
+            <div className="space-y-12">
+              {starterCatalogs.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-6">
+                    <Star className="h-5 w-5 text-yellow-500 mr-2" />
+                    <h2 className="text-2xl font-semibold text-gray-900">Starter Courses</h2>
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {starterCatalogs.map((catalog) => (
+                      <div key={catalog.id} className="group overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all duration-200">
+                        <div className="aspect-video w-full relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
+                          {catalog.thumbnail ? (
+                            <img
+                              src={catalog.thumbnail}
+                              alt={catalog.name}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                          ) : null}
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200"
+                            style={{ display: catalog.thumbnail ? 'none' : 'flex' }}
+                          >
+                            <FolderOpen className="h-16 w-16 text-blue-600 opacity-80" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                        </div>
 
-                  <div className="p-4 space-y-2">
-                    <h3 className="font-semibold text-lg line-clamp-1">{catalog.name}</h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2">{catalog.description}</p>
+                        <div className="p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">{catalog.name}</h3>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Starter
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm line-clamp-2">{catalog.description}</p>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" />
-                        {courseCounts[catalog.id] || 0} courses
-                      </span>
-                    </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4 text-blue-500" />
+                              {courseCounts[catalog.id] || 0} courses
+                            </span>
+                          </div>
 
-                    <div className="flex items-center justify-between">
-                      {/* Remove all Badge components that display catalog.category or 'General' in catalog cards */}
-                      {/* <span className="text-sm text-muted-foreground">
-                        Created: {new Date(catalog.created_at || Date.now()).toLocaleDateString()}
-                      </span> */}
-                    </div>
-
-                    <Button className="w-full mt-2" asChild>
-                      <Link 
-                        to={`/dashboard/catalog/${catalog.id}`}
-                        state={{ catalog: catalog }}
-                      >
-                        View Courses
-                      </Link>
-                    </Button>
+                          <Button 
+                            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                            asChild
+                          >
+                            <Link 
+                              to={`/dashboard/catalog/${catalog.id}`}
+                              state={{ catalog: catalog }}
+                              className="flex items-center justify-center"
+                            >
+                              Explore Catalog
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {premiumCatalogs.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-6">
+                    <Gem className="h-5 w-5 text-purple-500 mr-2" />
+                    <h2 className="text-2xl font-semibold text-gray-900">Premium Courses</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {premiumCatalogs.map((catalog) => (
+                      <div key={catalog.id} className="group overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all duration-200">
+                        <div className="aspect-video w-full relative overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-100">
+                          {catalog.thumbnail ? (
+                            <img
+                              src={catalog.thumbnail}
+                              alt={catalog.name}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                          ) : null}
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-100 to-indigo-200"
+                            style={{ display: catalog.thumbnail ? 'none' : 'flex' }}
+                          >
+                            <FolderOpen className="h-16 w-16 text-purple-600 opacity-80" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-indigo-500"></div>
+                        </div>
+
+                        <div className="p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">{catalog.name}</h3>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              Premium
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm line-clamp-2">{catalog.description}</p>
+
+                          <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4 text-purple-500" />
+                              {courseCounts[catalog.id] || 0} courses
+                            </span>
+                          </div>
+
+                          <Button 
+                            className="w-full mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200"
+                            asChild
+                          >
+                            <Link 
+                              to={`/dashboard/catalog/${catalog.id}`}
+                              state={{ catalog: catalog }}
+                              className="flex items-center justify-center"
+                            >
+                              Explore Catalog
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
