@@ -68,7 +68,7 @@ function UpcomingCourses() {
   }, []);
 
   return (
-    <div className="mb-16 relative">
+    <div className="mb-16 relative max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-8 px-1">
         <div>
@@ -81,7 +81,7 @@ function UpcomingCourses() {
       {canScrollLeft && (
         <button
           onClick={() => scroll("left")}
-          className="absolute left-0 top-[55%] -translate-y-1/2 z-10 bg-white/80 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
+          className="absolute left-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll left"
         >
           <ChevronLeft className="h-5 w-5 text-gray-700" />
@@ -90,7 +90,7 @@ function UpcomingCourses() {
       {canScrollRight && (
         <button
           onClick={() => scroll("right")}
-          className="absolute right-0 top-[55%] -translate-y-1/2 z-10 bg-white/80 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
+          className="absolute right-0 top-[55%] -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-lg hover:bg-white transition-all border border-white/20 hover:shadow-xl hover:scale-110"
           aria-label="Scroll right"
         >
           <ChevronRight className="h-5 w-5 text-gray-700" />
@@ -105,9 +105,9 @@ function UpcomingCourses() {
         {UPCOMING_COURSES.map((item, index) => (
           <div
             key={item.id}
-            className={`flex-shrink-0 basis-full sm:basis-[calc((100%-1.5rem)/2)] lg:basis-[calc((100%-3rem)/3)] rounded-xl border border-white/20 overflow-hidden snap-start 
+            className={`flex-shrink-0 w-80 rounded-xl border border-white/20 overflow-hidden snap-start 
               transition-all duration-500 group hover:opacity-100
-              ${index > 2 ? 'opacity-80' : 'opacity-100'} 
+              ${index > 1 ? 'opacity-80' : 'opacity-100'} 
               hover:shadow-2xl hover:-translate-y-2 hover:z-10 hover:border-blue-300/50`}
             style={{
               background: 'linear-gradient(to bottom right, rgba(255,255,255,0.2), rgba(255,255,255,0.05))',
