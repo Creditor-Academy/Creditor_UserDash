@@ -400,7 +400,7 @@ export function DashboardHeader() {
           <div className="flex items-center gap-3">
             
             {/* Notification Bell */}
-            <button
+            {/* <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
@@ -410,7 +410,7 @@ export function DashboardHeader() {
                   {unreadNotifications > 9 ? '9+' : unreadNotifications}
                 </span>
               )}
-            </button>
+            </button> */}
             
             {/* Profile Dropdown */}
             <div className="ml-2">
