@@ -49,9 +49,22 @@ export function CatalogPage() {
     return matchesSearch && matchesCategory;
   });
 
+  // Starter: keep Roadmap Series only
   const starterNames = ["Roadmap Series", "Start Your Passive Income Now"]; 
   const isStarter = (catalog) => starterNames.some(name => (catalog.name || "").trim().toLowerCase() === name.toLowerCase());
   const starterCatalogs = filteredCatalogs.filter(isStarter);
+
+  // Master Class: empty for now
+  const isMasterClass = (catalog) => false; // Keep empty for now
+  const masterCatalogs = filteredCatalogs.filter(isMasterClass);
+
+  // Course Recordings section: catalogs whose name indicates recordings
+  const isRecording = (catalog) => {
+    const n = (catalog.name || "").toLowerCase();
+    return n.includes("class recordings") || n.includes("class recording") || n.includes("course recordings") || n.includes("course recording");
+  };
+  const recordingCatalogs = filteredCatalogs.filter(isRecording);
+
   // Create a stable order for Premium catalogs based on requested priority
   const idToIndex = new Map(filteredCatalogs.map((c, idx) => [c.id, idx]));
   const getPriority = (name = "") => {
@@ -63,7 +76,7 @@ export function CatalogPage() {
     return 999; // Others keep original order after prioritized ones
   };
   const premiumCatalogs = filteredCatalogs
-    .filter(c => !isStarter(c))
+    .filter(c => !isStarter(c) && !isMasterClass(c) && !isRecording(c))
     .slice()
     .sort((a, b) => {
       const pa = getPriority(a.name);
@@ -208,6 +221,77 @@ export function CatalogPage() {
                 </div>
               )}
 
+              {/* Divider between sections */}
+              {(starterCatalogs.length > 0 && (masterCatalogs.length > 0 || premiumCatalogs.length > 0 || recordingCatalogs.length > 0)) && (
+                <div className="border-t border-gray-200 my-10" />
+              )}
+
+              {masterCatalogs.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-6">
+                    <Gem className="h-5 w-5 text-purple-500 mr-2" />
+                    <h2 className="text-2xl font-semibold text-gray-900">Master Class</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {masterCatalogs.map((catalog) => (
+                      <div key={catalog.id} className="group overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all duration-200">
+                        <div className="aspect-video w-full relative overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-100">
+                          {catalog.thumbnail ? (
+                            <img
+                              src={catalog.thumbnail}
+                              alt={catalog.name}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                          ) : null}
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-100 to-indigo-200"
+                            style={{ display: catalog.thumbnail ? 'none' : 'flex' }}
+                          >
+                            <FolderOpen className="h-16 w-16 text-purple-600 opacity-80" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-indigo-500"></div>
+                        </div>
+
+                        <div className="p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">{catalog.name}</h3>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              Master Class
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm line-clamp-2">{catalog.description}</p>
+
+                          <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4 text-purple-500" />
+                              {courseCounts[catalog.id] || 0} courses
+                            </span>
+                          </div>
+
+                          <Button 
+                            className="w-full mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200"
+                            asChild
+                          >
+                            <Link 
+                              to={`/dashboard/catalog/${catalog.id}`}
+                              state={{ catalog: catalog }}
+                              className="flex items-center justify-center"
+                            >
+                              Explore Catalog
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(masterCatalogs.length > 0 && (premiumCatalogs.length > 0 || recordingCatalogs.length > 0)) && (
+                <div className="border-t border-gray-200 my-10" />
+              )}
+
               {premiumCatalogs.length > 0 && (
                 <div>
                   <div className="flex items-center mb-6">
@@ -253,6 +337,72 @@ export function CatalogPage() {
 
                           <Button 
                             className="w-full mt-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-200"
+                            asChild
+                          >
+                            <Link 
+                              to={`/dashboard/catalog/${catalog.id}`}
+                              state={{ catalog: catalog }}
+                              className="flex items-center justify-center"
+                            >
+                              Explore Catalog
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(premiumCatalogs.length > 0 && recordingCatalogs.length > 0) && (
+                <div className="border-t border-gray-200 my-10" />
+              )}
+
+              {recordingCatalogs.length > 0 && (
+                <div>
+                  <div className="flex items-center mb-6">
+                    <BookOpen className="h-5 w-5 text-blue-600 mr-2" />
+                    <h2 className="text-2xl font-semibold text-gray-900">Course Recordings</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {recordingCatalogs.map((catalog) => (
+                      <div key={catalog.id} className="group overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all duration-200">
+                        <div className="aspect-video w-full relative overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-100">
+                          {catalog.thumbnail ? (
+                            <img
+                              src={catalog.thumbnail}
+                              alt={catalog.name}
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                          ) : null}
+                          <div
+                            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-200"
+                            style={{ display: catalog.thumbnail ? 'none' : 'flex' }}
+                          >
+                            <FolderOpen className="h-16 w-16 text-blue-600 opacity-80" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                        </div>
+
+                        <div className="p-5 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <h3 className="font-semibold text-lg text-gray-900 line-clamp-1">{catalog.name}</h3>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              Recordings
+                            </span>
+                          </div>
+                          <p className="text-gray-600 text-sm line-clamp-2">{catalog.description}</p>
+
+                          <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
+                            <span className="flex items-center gap-1">
+                              <BookOpen className="h-4 w-4 text-blue-600" />
+                              {courseCounts[catalog.id] || 0} courses
+                            </span>
+                          </div>
+
+                          <Button 
+                            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
                             asChild
                           >
                             <Link 

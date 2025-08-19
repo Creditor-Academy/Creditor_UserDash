@@ -669,6 +669,127 @@ export function Dashboard() {
             </div>
           </div>
 
+          {/* Upcoming Courses */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Upcoming Courses</h2>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-600 font-medium">Coming Soon</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Advanced Legal Studies */}
+              <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <div className="h-48 bg-gradient-to-br from-blue-500 to-blue-600 relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1589994965851-a8f479c573a9?q=80&w=1000"
+                    alt="Advanced Legal Studies"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute bottom-4 left-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Advanced Legal Studies</h3>
+                  <p className="text-gray-600 text-sm mb-3">Deep dive into complex legal frameworks and advanced case studies.</p>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Duration: 25 hours</span>
+                    <span>Level: Advanced</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* International Business Law */}
+              <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <div className="h-48 bg-gradient-to-br from-purple-500 to-purple-600 relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?q=80&w=1000"
+                    alt="International Business Law"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute bottom-4 left-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9m0 9c-5 0-9-4-9-9s4-9 9-9" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">International Business Law</h3>
+                  <p className="text-gray-600 text-sm mb-3">Master cross-border transactions and global business regulations.</p>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Duration: 20 hours</span>
+                    <span>Level: Intermediate</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Digital Forensics */}
+              <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <div className="h-48 bg-gradient-to-br from-emerald-500 to-emerald-600 relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+                    alt="Digital Forensics"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute bottom-4 left-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Digital Forensics</h3>
+                  <p className="text-gray-600 text-sm mb-3">Learn modern digital investigation techniques and cybercrime analysis.</p>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Duration: 18 hours</span>
+                    <span>Level: Advanced</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Environmental Law */}
+              <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <div className="h-48 bg-gradient-to-br from-orange-500 to-orange-600 relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=1000"
+                    alt="Environmental Law"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute bottom-4 left-4">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Environmental Law</h3>
+                  <p className="text-gray-600 text-sm mb-3">Explore sustainability regulations and environmental protection laws.</p>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Duration: 15 hours</span>
+                    <span>Level: Intermediate</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Upcoming Features */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
