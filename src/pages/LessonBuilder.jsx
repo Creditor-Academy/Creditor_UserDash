@@ -69,6 +69,10 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreview, setVideoPreview] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [showTextEditorDialog, setShowTextEditorDialog] = useState(false);
+  const [editorTitle, setEditorTitle] = useState('');
+  const [editorHtml, setEditorHtml] = useState('');
+  const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
 
   const blockRefs = React.useRef({});
 
@@ -151,7 +155,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
-      setShowTextTypeModal(true);
+      handleTextEditorOpen();
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
     } else {
@@ -196,11 +200,19 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const handleEditBlock = (blockId) => {
     const block = contentBlocks.find(b => b.id === blockId);
     if (!block) return;
-    setCurrentBlock(block);
-    setEditorContent(block.content || '');
-    setEditorHeading(block.heading || '');
-    setEditorSubheading(block.subheading || '');
-    setEditModalOpen(true);
+    
+    if (block.type === 'text') {
+      setCurrentTextBlockId(blockId);
+      setEditorTitle(block.title);
+      setEditorHtml(block.content);
+      setShowTextEditorDialog(true);
+    } else {
+      setCurrentBlock(block);
+      setEditorContent(block.content || '');
+      setEditorHeading(block.heading || '');
+      setEditorSubheading(block.subheading || '');
+      setEditModalOpen(true);
+    }
   };
 
   const handleEditorSave = () => {
@@ -326,6 +338,50 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
     setContentBlocks(prev => [...prev, newBlock]);
     handleVideoDialogClose();
+  };
+
+  const handleTextEditorOpen = () => {
+    setShowTextEditorDialog(true);
+    setEditorTitle('');
+    setEditorHtml('');
+    setCurrentTextBlockId(null);
+  };
+
+  const handleTextEditorClose = () => {
+    setShowTextEditorDialog(false);
+    setEditorTitle('');
+    setEditorHtml('');
+    setCurrentTextBlockId(null);
+  };
+
+  const handleTextEditorSave = () => {
+    if (!editorTitle.trim()) {
+      alert('Please enter a title for the text block');
+      return;
+    }
+
+    if (currentTextBlockId) {
+      // Update existing block
+      setContentBlocks(blocks => 
+        blocks.map(block => 
+          block.id === currentTextBlockId 
+            ? { ...block, title: editorTitle, content: editorHtml }
+            : block
+        )
+      );
+    } else {
+      // Add new block
+      const newBlock = {
+        id: `block_${Date.now()}`,
+        type: 'text',
+        title: editorTitle,
+        content: editorHtml,
+        order: contentBlocks.length + 1
+      };
+      setContentBlocks([...contentBlocks, newBlock]);
+    }
+    
+    handleTextEditorClose();
   };
 
   useEffect(() => {
@@ -819,7 +875,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                     aria-hidden="true"
                   >
                     <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 015.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
                       strokeWidth={2}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -885,41 +941,68 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Text Type Selection Modal */}
-      {/* <Dialog open={showTextTypeModal} onOpenChange={setShowTextTypeModal}> */}
-        {/* <DialogContent className="sm:max-w-2xl"> */}
-          {/* <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>Choose Text Type</DialogTitle>
+      {/* Text Editor Dialog */}
+      <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {currentTextBlockId ? 'Edit Text Block' : 'Add Text Block'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={editorTitle}
+                onChange={(e) => setEditorTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a title for this text block"
+                required
+              />
             </div>
-          </DialogHeader> */}
-          
-          {/* <div className="grid gap-4 mt-4">
-            {textTypeOptions.map((option) => (
-              <Card 
-                key={option.id}
-                className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
-                onClick={() => handleTextTypeSelect(option)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      {option.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-sm font-medium text-gray-900">{option.title}</h3>
-                      <p className="text-xs text-gray-500 mt-1">{option.description}</p>
-                      <div className="mt-3 p-3 bg-gray-50 rounded-md text-sm text-gray-700">
-                        {option.preview}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div> */}
-        {/* </DialogContent> */}
-      {/* </Dialog> */}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Content
+              </label>
+              <div className="border border-gray-300 rounded-md">
+                <ReactQuill
+                  theme="snow"
+                  value={editorHtml}
+                  onChange={setEditorHtml}
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'indent': '-1'}, { 'indent': '+1' }],
+                      ['link', 'image'],
+                      ['clean']
+                    ]
+                  }}
+                  placeholder="Start typing your content here..."
+                  style={{ height: '300px' }}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleTextEditorClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleTextEditorSave}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!editorTitle.trim()}
+            >
+              {currentTextBlockId ? 'Update' : 'Add'} Text Block
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Block Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
