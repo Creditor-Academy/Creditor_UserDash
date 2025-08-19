@@ -224,7 +224,7 @@ function QuizTakePage() {
               }
             });
             formattedAnswer.selectedOptionId = selectedIds.length > 0 ? selectedIds : null;
-            formattedAnswer.answer = selectedTexts;
+            formattedAnswer.answer = selectedTexts; // Always send as array for MCQ
           }
           console.log(`MCQ question ${questionId} formatted:`, formattedAnswer);
           break;
@@ -262,7 +262,7 @@ function QuizTakePage() {
         case 'fillintheblank':
         case 'fill_ups':
           formattedAnswer.selectedOptionId = null;
-          formattedAnswer.answer = Array.isArray(answer) ? answer : [answer];
+          formattedAnswer.answer = Array.isArray(answer) ? answer : [answer]; // Always send as array for fill-ups
           console.log(`Fill blank question ${questionId} formatted:`, formattedAnswer);
           break;
           

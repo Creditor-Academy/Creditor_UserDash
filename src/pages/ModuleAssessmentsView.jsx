@@ -454,11 +454,29 @@ function ModuleAssessmentsView() {
                                       </div>
                                       
                                       {isLocked ? (
-                                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                                          <div className="flex items-center gap-2 text-red-700">
-                                            <XCircle size={16} />
-                                            <span className="text-sm font-medium">You have reached the maximum attempts for this quiz</span>
+                                        <div className="mt-4 space-y-3">
+                                          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                            <div className="flex items-center gap-2 text-red-700">
+                                              <XCircle size={16} />
+                                              <span className="text-sm font-medium">Your attempts are over</span>
+                                            </div>
                                           </div>
+                                          <button
+                                            type="button"
+                                            onClick={async () => {
+                                              try {
+                                                const latest = await getUserLatestQuizAttempt(quiz.quizId || quiz.id);
+                                                setLastAttempt(latest);
+                                                setIsLastAttemptOpen(true);
+                                              } catch (e) {
+                                                setLastAttempt(null);
+                                                setIsLastAttemptOpen(true);
+                                              }
+                                            }}
+                                            className="w-full text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md px-3 py-2 bg-white hover:bg-gray-50 transition-colors"
+                                          >
+                                            View Score
+                                          </button>
                                         </div>
                                       ) : (
                                         (() => {

@@ -299,40 +299,6 @@ function QuizResultsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {/* Question Type Summary */}
-              <div>
-                <h4 className="font-semibold mb-3">Question Type Summary</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {(() => {
-                    const typeStats = {};
-                    detailedAnswers.forEach((answer, index) => {
-                      const questionData = quizData?.questions?.find(q => 
-                        String(q.id) === String(answer.questionId) || 
-                        String(q._id) === String(answer.questionId) ||
-                        String(q.questionId) === String(answer.questionId)
-                      );
-                      const questionType = questionData?.type || questionData?.question_type || 'Unknown';
-                      if (!typeStats[questionType]) {
-                        typeStats[questionType] = { total: 0, correct: 0 };
-                      }
-                      typeStats[questionType].total++;
-                      if (answer.isCorrect) typeStats[questionType].correct++;
-                    });
-                    
-                    return Object.entries(typeStats).map(([type, stats]) => (
-                      <div key={type} className="p-3 bg-gray-50 rounded-lg border">
-                        <p className="text-sm font-medium text-gray-600">{type}</p>
-                        <p className="text-lg font-bold text-gray-900">
-                          {stats.correct}/{stats.total}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {Math.round((stats.correct / stats.total) * 100)}%
-                        </p>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              </div>
               
               {/* Question Review */}
               <div>
@@ -422,28 +388,8 @@ function QuizResultsPage() {
                                   })}
                                 </div>
                               )}
+                    
                               
-                              {/* User Answer Display for Text-based questions */}
-                              {userAnswerData && (
-                                <div className="space-y-2 mb-3">
-                                  <p className="text-sm font-medium text-gray-700 mb-2">Your Answer:</p>
-                                  <div className={`p-3 rounded-lg border ${
-                                    answer.isCorrect 
-                                      ? 'bg-green-100 border-green-300 text-green-800' 
-                                      : 'bg-red-100 border-red-300 text-red-800'
-                                  }`}>
-                                    <span className="font-medium">
-                                      {Array.isArray(userAnswerData) ? userAnswerData.join(', ') : String(userAnswerData)}
-                                    </span>
-                                    {answer.isCorrect && (
-                                      <CheckCircle className="inline ml-2 h-4 w-4" />
-                                    )}
-                                    {!answer.isCorrect && (
-                                      <XCircle className="inline ml-2 h-4 w-4" />
-                                    )}
-                                  </div>
-                                </div>
-                              )}
                               
                               {/* Correct Answer Display for Text-based questions */}
                               {!answer.isCorrect && (answer.correctAnswer || answer.correct_answer || questionData?.correct_answer) && (
@@ -507,10 +453,7 @@ function QuizResultsPage() {
 
       {/* Action Buttons */}
       <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          <BookOpen className="mr-2 h-4 w-4" />
-          Back to Quiz
-        </Button>
+        
         
         <div className="flex gap-3">
           <Button 
@@ -531,24 +474,8 @@ function QuizResultsPage() {
         </div>
       </div>
 
-      {/* Congratulations or Encouragement */}
-      {isPassed ? (
-        <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
-          <Trophy className="h-12 w-12 text-green-600 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-green-800 mb-2">Congratulations!</h3>
-          <p className="text-green-700">
-            You've successfully completed this quiz. Keep up the great work and continue learning!
-          </p>
-        </div>
-      ) : (
-        <div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-          <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-yellow-800 mb-2">Keep Learning!</h3>
-          <p className="text-yellow-700">
-            Don't worry about this attempt. Review the material and try again. Every attempt is a learning opportunity!
-          </p>
-        </div>
-      )}
+
+      
     </div>
   );
 }
