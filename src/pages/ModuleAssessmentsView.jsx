@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronLeft, Clock, GraduationCap, ChevronDown, BookOpen, Loader2, CheckCircle, XCircle, Award, BarChart2, HelpCircle } from "lucide-react";
 import { fetchCourseModules } from "@/services/courseService";
-import { getModuleQuizzes, getQuizRemainingAttempts, getQuizResults } from "@/services/quizService";
+import { getModuleQuizzes, getQuizRemainingAttempts, getQuizResults, getUserLatestQuizAttempt } from "@/services/quizService";
+import LastAttemptModal from "@/components/LastAttemptModal";
 
 // Assessment sections - only Quiz for now
 const assessmentSections = [
@@ -32,6 +33,8 @@ function ModuleAssessmentsView() {
   const [filteredQuizzes, setFilteredQuizzes] = useState([]);
   const [quizAttempts, setQuizAttempts] = useState({});
   const [error, setError] = useState("");
+  const [isLastAttemptOpen, setIsLastAttemptOpen] = useState(false);
+  const [lastAttempt, setLastAttempt] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -477,6 +480,16 @@ function ModuleAssessmentsView() {
                                               navigate(`/dashboard/quiz/results/${qid}?module=${moduleId}&category=${selectedQuizType}`);
                                             }
                                           };
+                                          const viewLatestScore = async () => {
+                                            try {
+                                              const latest = await getUserLatestQuizAttempt(qid);
+                                              setLastAttempt(latest);
+                                              setIsLastAttemptOpen(true);
+                                            } catch (e) {
+                                              setLastAttempt(null);
+                                              setIsLastAttemptOpen(true);
+                                            }
+                                          };
                                           
                                           return (
                                             <div className="mt-4 flex items-center gap-3">
@@ -490,7 +503,16 @@ function ModuleAssessmentsView() {
                                                   <ChevronLeft className="w-4 h-4 ml-1 rotate-180 transition-transform group-hover:translate-x-1" />
                                                 </div>
                                               </Link>
-                                              
+                                              {hasAttempted && (
+                                                <button
+                                                  type="button"
+                                                  onClick={viewLatestScore}
+                                                  className="text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md px-3 py-1.5 bg-white hover:bg-gray-50"
+                                                >
+                                                  View Score
+                                                </button>
+                                              )}
+                                                
                                             </div>
                                           );
                                         })()
@@ -511,6 +533,7 @@ function ModuleAssessmentsView() {
           ))}
         </div>
       </main>
+      <LastAttemptModal isOpen={isLastAttemptOpen} onClose={setIsLastAttemptOpen} attempt={lastAttempt} />
     </div>
   );
 }

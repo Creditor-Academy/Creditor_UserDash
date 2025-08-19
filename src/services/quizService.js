@@ -330,3 +330,29 @@ export const getQuizRemainingAttempts = async (quizId) => {
     throw error;
   }
 };
+
+/**
+ * Get the user's latest attempt for a quiz (including score)
+ * @param {string} quizId - The quiz ID (e.g., "quiz-2" or raw ID)
+ * @returns {Promise<Object>} Latest attempt details
+ */
+export async function getUserLatestQuizAttempt(quizId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/quiz/user/quiz/${quizId}/latest-attempt`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch latest attempt: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error fetching user latest quiz attempt:', error);
+    throw error;
+  }
+}
