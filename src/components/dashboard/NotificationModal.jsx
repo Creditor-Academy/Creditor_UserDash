@@ -44,6 +44,36 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
       color: "bg-orange-100",
       dotColor: "bg-orange-500",
       read: true
+    },
+    {
+      id: "4",
+      type: "payment",
+      title: "Payment Due",
+      description: "Your monthly subscription payment of $29.99 is due in 3 days",
+      time: "2 hours ago",
+      color: "bg-red-100",
+      dotColor: "bg-red-500",
+      read: false
+    },
+    {
+      id: "5",
+      type: "payment",
+      title: "Payment Reminder",
+      description: "Course enrollment fee of $99.99 will be charged on March 15th",
+      time: "1 day ago",
+      color: "bg-yellow-100",
+      dotColor: "bg-yellow-500",
+      read: false
+    },
+    {
+      id: "6",
+      type: "payment",
+      title: "Payment Successful",
+      description: "Your payment of $49.99 for Premium Plan has been processed",
+      time: "3 days ago",
+      color: "bg-emerald-100",
+      dotColor: "bg-emerald-500",
+      read: true
     }
   ]);
 
@@ -53,7 +83,10 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
     courseUpdates: true,
     assignmentReminders: true,
     systemAnnouncements: true,
-    groupActivities: false
+    groupActivities: false,
+    paymentNotifications: true,
+    paymentReminders: true,
+    paymentDueAlerts: true
   });
 
   // Initialize unread count when modal opens
@@ -98,7 +131,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
         
         <div className="px-4 pb-4">
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-3 h-8 bg-gray-100 rounded-lg p-1">
+            <TabsList className="grid w-full grid-cols-4 mb-3 h-8 bg-gray-100 rounded-lg p-1">
               <TabsTrigger 
                 value="all" 
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
@@ -110,6 +143,12 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
               >
                 Unread
+              </TabsTrigger>
+              <TabsTrigger 
+                value="payment" 
+                className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
+              >
+                Payment
               </TabsTrigger>
               <TabsTrigger 
                 value="settings" 
@@ -201,6 +240,58 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
               )}
               
               {notifications.filter(n => !n.read).length > 0 && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-4 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
+                  onClick={handleMarkAllAsRead}
+                >
+                  Mark All as Read
+                </Button>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="payment" className="space-y-2 mt-3">
+              {notifications.filter(n => n.type === "payment").length > 0 ? (
+                notifications
+                  .filter(n => n.type === "payment")
+                  .map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className={`w-2 h-2 rounded-full ${notification.dotColor} mt-1.5 flex-shrink-0`} />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 text-xs">
+                            {notification.title}
+                          </h4>
+                          <p className="text-gray-700 text-xs mt-1">
+                            {notification.description}
+                          </p>
+                          <p className="text-blue-600 text-xs mt-1.5">
+                            {notification.time}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsRead(notification.id)}
+                            className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                          >
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500 text-xs">No payment notifications</p>
+                </div>
+              )}
+              
+              {notifications.filter(n => n.type === "payment" && !n.read).length > 0 && (
                 <Button
                   variant="outline"
                   className="w-full mt-4 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
@@ -315,6 +406,60 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                     onCheckedChange={(checked) => {
                       setNotificationSettings({...notificationSettings, groupActivities: checked});
                       toast.success("Group activity settings updated");
+                    }}
+                    className="scale-75"
+                  />
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <h5 className="text-xs font-medium text-gray-900">Payment Notifications</h5>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="payment-notifications" className="flex flex-col">
+                    <span className="text-xs text-gray-900">Payment Notifications</span>
+                    <span className="text-xs text-gray-500">Payment confirmations and receipts</span>
+                  </Label>
+                  <Switch 
+                    id="payment-notifications" 
+                    checked={notificationSettings.paymentNotifications}
+                    onCheckedChange={(checked) => {
+                      setNotificationSettings({...notificationSettings, paymentNotifications: checked});
+                      toast.success("Payment notification settings updated");
+                    }}
+                    className="scale-75"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="payment-reminders" className="flex flex-col">
+                    <span className="text-xs text-gray-900">Payment Reminders</span>
+                    <span className="text-xs text-gray-500">Upcoming payment notifications</span>
+                  </Label>
+                  <Switch 
+                    id="payment-reminders" 
+                    checked={notificationSettings.paymentReminders}
+                    onCheckedChange={(checked) => {
+                      setNotificationSettings({...notificationSettings, paymentReminders: checked});
+                      toast.success("Payment reminder settings updated");
+                    }}
+                    className="scale-75"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="payment-due-alerts" className="flex flex-col">
+                    <span className="text-xs text-gray-900">Payment Due Alerts</span>
+                    <span className="text-xs text-gray-500">Urgent payment due notifications</span>
+                  </Label>
+                  <Switch 
+                    id="payment-due-alerts" 
+                    checked={notificationSettings.paymentDueAlerts}
+                    onCheckedChange={(checked) => {
+                      setNotificationSettings({...notificationSettings, paymentDueAlerts: checked});
+                      toast.success("Payment due alert settings updated");
                     }}
                     className="scale-75"
                   />
