@@ -158,6 +158,15 @@ export function Login() {
         // Store tokens
         localStorage.setItem('authToken', response.data.accessToken);
         localStorage.setItem('token', response.data.accessToken); // For backward compatibility
+
+        // Persist using tokenService and schedule proactive refresh (~5 minutes default)
+        try {
+          const { storeAccessToken } = await import('@/services/tokenService');
+          storeAccessToken(response.data.accessToken);
+          console.log('[Auth] Login success. Using validation-based refresh only.');
+        } catch (e) {
+          console.warn('[Auth] Could not schedule proactive refresh after login:', e?.message || e);
+        }
         
         // Set authentication state
         setAuth(response.data.accessToken);
