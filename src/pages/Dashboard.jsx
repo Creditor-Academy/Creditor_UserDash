@@ -356,7 +356,13 @@ export function Dashboard() {
   // Carousel state for My Courses
   const courseScrollRef = useRef(null);
   const [scrollIndex, setScrollIndex] = useState(0);
-  const visibleCards = 2;
+  const [isSmallScreen, setIsSmallScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : true);
+  useEffect(() => {
+    const handleResize = () => setIsSmallScreen(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const visibleCards = isSmallScreen ? 1 : 2;
   const totalCards = userCourses.length;
 
   const handleScroll = (direction) => {
@@ -419,7 +425,7 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-blue-600" size={20} />
@@ -491,7 +497,7 @@ export function Dashboard() {
                     {scrollIndex > 0 && (
                       <button
                         onClick={() => handleScroll(-1)}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
+                        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
                         style={{ marginLeft: '-24px' }}
                         aria-label="Scroll left"
                       >
@@ -501,13 +507,13 @@ export function Dashboard() {
                     {/* Cards Row */}
                     <div
                       ref={courseScrollRef}
-                      className="flex gap-6 overflow-x-hidden scroll-smooth px-1"
+                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 custom-horizontal-scroll"
                       style={{ scrollBehavior: 'smooth' }}
                     >
                       {userCourses.map((course) => (
                         <div
                           key={course.id}
-                          className="min-w-[320px] max-w-xs flex-shrink-0"
+                          className="min-w-[260px] sm:min-w-[320px] max-w-xs flex-shrink-0"
                         >
                           <CourseCard {...course} />
                         </div>
@@ -517,7 +523,7 @@ export function Dashboard() {
                     {scrollIndex < userCourses.length - visibleCards && userCourses.length > visibleCards && (
                       <button
                         onClick={() => handleScroll(1)}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
+                        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
                         style={{ marginRight: '-24px' }}
                         aria-label="Scroll right"
                       >
