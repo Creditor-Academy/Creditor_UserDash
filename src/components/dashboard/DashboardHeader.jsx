@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User } from "lucide-react";
+import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User, Menu as MenuIcon } from "lucide-react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
@@ -13,7 +13,7 @@ import { fetchUserCourses } from "@/services/courseService";
 import { fetchDetailedUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 
-export function DashboardHeader() {
+export function DashboardHeader({ sidebarCollapsed, setSidebarCollapsed }) {
   const { isInstructorOrAdmin } = useAuth();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
@@ -35,6 +35,24 @@ export function DashboardHeader() {
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get current page title based on route
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path.includes('dashboard')) return 'Dashboard';
+    if (path.includes('courses')) {
+      if (path.includes('builder')) return 'Lesson Builder';
+      if (path.includes('modules')) return 'Course Modules';
+      return 'My Courses';
+    }
+    if (path.includes('profile')) return 'My Profile';
+    if (path.includes('messages')) return 'Messages';
+    if (path.includes('groups')) return 'Groups';
+    if (path.includes('catalog')) return 'Course Catalog';
+    if (path.includes('progress')) return 'My Progress';
+    return 'Dashboard';
+  };
 
   // Fetch enrolled courses on component mount
   useEffect(() => {
@@ -224,6 +242,20 @@ export function DashboardHeader() {
               LMS Athena 
             </h1>
           </button>
+          
+          {/* Toggle Sidebar */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <MenuIcon className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+          
+          {/* Page Title */}
+          {/* <h1 className="text-lg font-semibold">{getPageTitle()}</h1> */}
           
           {/* Search Bar */}
           <div className="flex-1 max-w-md mx-8 relative">

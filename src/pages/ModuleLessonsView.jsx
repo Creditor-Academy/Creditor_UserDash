@@ -292,9 +292,11 @@ const ModuleLessonsView = () => {
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
-  const handleLessonClick = (lessonId) => {
-    // Navigate directly to the LessonBuilder with the lesson ID
-    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lessonId}/builder`);
+  const handleLessonClick = (lesson) => {
+    // Navigate to the LessonBuilder with the lesson data in state
+    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`, {
+      state: { lessonData: lesson }
+    });
   };
 
   const handleAddLesson = () => {
@@ -442,7 +444,7 @@ const ModuleLessonsView = () => {
                 <Button 
                   variant="outline" 
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => handleLessonClick(lesson.id)}
+                  onClick={() => handleLessonClick(lesson)}
                 >
                   <Play className="h-4 w-4" /> View Lesson
                 </Button>

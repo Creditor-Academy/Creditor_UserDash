@@ -69,7 +69,7 @@ import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
-import LessonBuilder from "@/pages/LessonBuilder";
+import LessonBuilder from "./pages/LessonBuilder";
 import LandingPage from "@/pages/LandingPage";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
@@ -140,13 +140,13 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/lesson-builder/:courseId/:moduleId/:lessonId"
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/builder" 
             element={
-              <ProtectedRoute>
+              <DashboardLayout>
                 <LessonBuilder />
-              </ProtectedRoute>
-            }
+              </DashboardLayout>
+            } 
           />
           <Route
             path="/instructor/add-users"
