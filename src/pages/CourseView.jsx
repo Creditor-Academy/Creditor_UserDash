@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
+import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText, Lock, ShieldCheck, CreditCard, Wallet, Banknote, ArrowRight, CheckCircle2 } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -26,11 +26,21 @@ export function CourseView() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('stripe');
+  const [isGatewayOpen, setIsGatewayOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     name: "",
     email: ""
   });
   const [paymentErrors, setPaymentErrors] = useState({});
+
+  // Visual metadata for payment methods
+  const paymentMethods = [
+    { id: 'stripe', label: 'Stripe', description: 'Cards, wallets', gradient: 'from-indigo-500 to-purple-600', Icon: CreditCard },
+    { id: 'westcoast', label: 'Westcoast', description: 'ACH & bank transfer', gradient: 'from-emerald-500 to-teal-600', Icon: Banknote },
+    { id: 'paypal', label: 'PayPal', description: 'PayPal balance, bank', gradient: 'from-yellow-400 to-amber-500', Icon: Wallet },
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -139,26 +149,9 @@ export function CourseView() {
     e?.preventDefault?.();
     if (!selectedModule) return;
     if (!validatePayment()) return;
-    try {
-      setIsProcessingPayment(true);
-      await new Promise(res => setTimeout(res, 1200));
-      const idStr = String(selectedModule.id);
-      const updated = Array.from(new Set([...
-        unlockedModules,
-        idStr
-      ]));
-      setUnlockedModules(updated);
-      saveUnlocks(updated);
-      setIsPaymentOpen(false);
-      toast.success('Lesson unlocked. Note: This does not enroll you; My Courses will not include this course.');
-      setPaymentForm({ name: '', email: '' });
-      setPaymentErrors({});
-      setSelectedModule(null);
-    } catch (e) {
-      toast.error('Payment failed. Please try again.');
-    } finally {
-      setIsProcessingPayment(false);
-    }
+    // Move to checkout modal instead of unlocking immediately
+    setIsPaymentOpen(false);
+    setIsCheckoutOpen(true);
   };
 
   useEffect(() => {
@@ -416,7 +409,21 @@ export function CourseView() {
         </div>
       </main>
       <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-[520px] relative" style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', margin: 0 }}>
+          {/* Progress Stepper */}
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-lg border">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-medium">1</div>
+                <span className="text-sm font-medium text-gray-700">Details</span>
+              </div>
+              <div className="w-8 h-0.5 bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-500 text-xs flex items-center justify-center font-medium">2</div>
+                <span className="text-sm text-gray-500">Payment</span>
+              </div>
+            </div>
+          </div>
           <DialogHeader>
             <DialogTitle>Unlock lesson</DialogTitle>
             <DialogDescription>
@@ -451,12 +458,181 @@ export function CourseView() {
                     Processing
                   </span>
                 ) : (
-                  'Pay now'
+                  'Continue'
                 )}
               </Button>
             </DialogFooter>
             <p className="text-[10px] text-muted-foreground text-center">Demo payment only. No real charges are made.</p>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Checkout Modal - method selection + order summary */}
+      <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+        <DialogContent className="sm:max-w-[860px] relative" style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', margin: 0 }}>
+          {/* Progress Stepper */}
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-lg border">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-600 text-white text-xs flex items-center justify-center font-medium">
+                  <CheckCircle2 className="h-3 w-3" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Details</span>
+              </div>
+              <div className="w-8 h-0.5 bg-blue-600"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-medium">2</div>
+                <span className="text-sm font-medium text-gray-700">Payment</span>
+              </div>
+            </div>
+          </div>
+          <DialogHeader>
+            <DialogTitle>Checkout</DialogTitle>
+            <DialogDescription>Select a payment method and review your order</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Payment Methods */}
+            <Card className="border-0 shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-green-600" /> Secure payment</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {paymentMethods.map(({ id, label, description, gradient, Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setSelectedPaymentMethod(id)}
+                    className={`w-full text-left rounded-lg p-4 border transition group relative overflow-hidden ${selectedPaymentMethod === id ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <div className={`absolute inset-0 opacity-10 bg-gradient-to-r ${gradient}`}></div>
+                    <div className="flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-9 w-9 rounded-md flex items-center justify-center text-white bg-gradient-to-r ${gradient} shadow`}>
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{label}</p>
+                          <p className="text-xs text-muted-foreground">{description}</p>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded ${selectedPaymentMethod === id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>{selectedPaymentMethod === id ? 'Selected' : 'Select'}</span>
+                    </div>
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Order Summary */}
+            <Card className="border-0 shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-md bg-gray-50 border border-gray-100">
+                  <div className="h-12 w-16 rounded bg-white overflow-hidden flex items-center justify-center border">
+                    <img src={selectedModule?.thumbnail || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=400'} alt="thumb" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium line-clamp-1">{selectedModule?.title || '—'}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-1">{courseDetails?.title || '—'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Amount</p>
+                    <p className="font-semibold">${selectedModule ? getModulePrice(selectedModule, sortedModules.findIndex(m => String(m.id) === String(selectedModule.id))).toFixed(2) : '0.00'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Encrypted checkout</span>
+                  <span className="flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> Buyer protection</span>
+                </div>
+                <div className="border-t pt-3 flex items-center justify-between">
+                  <span className="text-sm">Total</span>
+                  <span className="text-xl font-bold">${selectedModule ? getModulePrice(selectedModule, sortedModules.findIndex(m => String(m.id) === String(selectedModule.id))).toFixed(2) : '0.00'}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button className="flex-1" onClick={() => setIsCheckoutOpen(false)} variant="outline">Cancel</Button>
+                  <Button className="flex-1" onClick={() => setIsGatewayOpen(true)}>
+                    Continue <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center">You will be redirected to {selectedPaymentMethod} to complete your purchase.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Simulated Payment Gateway Modal */}
+      <Dialog open={isGatewayOpen} onOpenChange={setIsGatewayOpen}>
+        <DialogContent className="sm:max-w-[520px] relative" style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', margin: 0 }}>
+          {/* Progress Stepper */}
+          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-lg border">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-600 text-white text-xs flex items-center justify-center font-medium">
+                  <CheckCircle2 className="h-3 w-3" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Details</span>
+              </div>
+              <div className="w-8 h-0.5 bg-green-600"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-600 text-white text-xs flex items-center justify-center font-medium">
+                  <CheckCircle2 className="h-3 w-3" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">Payment</span>
+              </div>
+              <div className="w-8 h-0.5 bg-blue-600"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-medium">3</div>
+                <span className="text-sm font-medium text-gray-700">Complete</span>
+              </div>
+            </div>
+          </div>
+          <DialogHeader>
+            <DialogTitle>Pay with {selectedPaymentMethod?.charAt(0).toUpperCase() + selectedPaymentMethod?.slice(1)}</DialogTitle>
+            <DialogDescription>Simulated gateway — choose an outcome to continue.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Charge</span>
+              <span className="font-semibold">${selectedModule ? getModulePrice(selectedModule, sortedModules.findIndex(m => String(m.id) === String(selectedModule.id))).toFixed(2) : '0.00'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Lesson</span>
+              <span className="text-sm font-medium">{selectedModule?.title || '—'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Course</span>
+              <span className="text-sm font-medium">{courseDetails?.title || '—'}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsGatewayOpen(false)}>Cancel</Button>
+            <Button onClick={async () => {
+              // Simulate successful payment return
+              setIsGatewayOpen(false);
+              setIsCheckoutOpen(false);
+              try {
+                setIsProcessingPayment(true);
+                await new Promise(res => setTimeout(res, 800));
+                const idStr = String(selectedModule.id);
+                const updated = Array.from(new Set([...
+                  unlockedModules,
+                  idStr
+                ]));
+                setUnlockedModules(updated);
+                saveUnlocks(updated);
+                toast.success('Payment successful via ' + selectedPaymentMethod + '. Lesson unlocked.');
+                setPaymentForm({ name: '', email: '' });
+                setPaymentErrors({});
+                setSelectedModule(null);
+              } catch (e) {
+                toast.error('Payment failed. Please try again.');
+              } finally {
+                setIsProcessingPayment(false);
+              }
+            }}>Complete Payment</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
