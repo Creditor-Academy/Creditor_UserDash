@@ -1,4 +1,6 @@
+import { getAccessToken } from './tokenService';
+
 export function getAuthHeader() {
-  const token = localStorage.getItem('authToken');
+  const token = getAccessToken();
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
