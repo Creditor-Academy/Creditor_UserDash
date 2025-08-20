@@ -83,12 +83,11 @@ import { getAuthHeader } from './authHeader';
 
 export async function fetchUserProfile() {
   try {
-    const token = localStorage.getItem('authToken');
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/getUserProfile`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...getAuthHeader()
       },
       credentials: 'include',
     });
@@ -114,6 +113,7 @@ export async function updateUserProfile(profileData) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...getAuthHeader(),
       },
       credentials: 'include',
       body: JSON.stringify(profileData),
