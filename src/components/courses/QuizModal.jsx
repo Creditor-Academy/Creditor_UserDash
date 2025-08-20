@@ -258,29 +258,65 @@ const QuizModal = ({
       // Debug: Log the questions state
       console.log('Questions state before creating payload:', questions);
       
+      const mapFrontendTypeToBackend = (t) => {
+        switch (t) {
+          case 'MCQ_SINGLE':
+            return 'SCQ';
+          case 'MCQ_MULTIPLE':
+            return 'MCQ';
+          case 'TRUE_FALSE':
+            return 'TRUE_FALSE';
+          case 'FILL_UPS':
+            return 'FILL_UPS';
+          case 'ONE_WORD':
+            return 'ONE_WORD';
+          default:
+            return t;
+        }
+      };
+
       const payload = {
         texts: questions.map(q => q.text),
         correctAnswers: questions.map(q => {
           if (q.type === 'MCQ_SINGLE') {
             const correct = q.options.find(opt => opt.isCorrect);
-            return correct ? correct.text : '';
+            return correct ? String(correct.text || '').trim() : '';
           } else if (q.type === 'MCQ_MULTIPLE') {
-            // For multiple correct, join all correct answers with comma
-            const correctOptions = q.options.filter(opt => opt.isCorrect).map(opt => opt.text);
-            return correctOptions.join(', ');
+            const correctOptions = q.options
+              .filter(opt => opt.isCorrect)
+              .map(opt => String(opt.text || '').trim());
+            // Join without spaces to match backend examples: "2,3,5,7"
+            return correctOptions.join(',');
           } else if (q.type === 'TRUE_FALSE') {
             const correct = q.options.find(opt => opt.isCorrect);
-            return correct ? correct.text : '';
-          } else if (q.type === 'FILL_UPS' || q.type === 'ONE_WORD') {
-            return q.correctAnswer;
+            return correct ? String(correct.text || '').toLowerCase().trim() : '';
+          } else if (q.type === 'FILL_UPS') {
+            // Normalize multiple blanks: remove extra spaces around commas
+            return String(q.correctAnswer || '')
+              .split(',')
+              .map(s => s.trim())
+              .join(',');
+          } else if (q.type === 'ONE_WORD') {
+            return String(q.correctAnswer || '').trim();
           }
           return '';
         }),
-        question_types: questions.map(q => q.type),
+        question_types: questions.map(q => mapFrontendTypeToBackend(q.type)),
         question_options: questions.map(q => {
-          if (q.type === 'MCQ_SINGLE' || q.type === 'MCQ_MULTIPLE' || q.type === 'TRUE_FALSE') {
-            return q.options;
+          if (q.type === 'MCQ_SINGLE' || q.type === 'MCQ_MULTIPLE') {
+            return q.options.map(opt => ({
+              text: String(opt.text || '').trim(),
+              isCorrect: Boolean(opt.isCorrect),
+            }));
           }
+          if (q.type === 'TRUE_FALSE') {
+            // Ensure lowercase true/false option texts for backend consistency
+            return q.options.map((opt, idx) => ({
+              text: String(opt.text || (idx === 0 ? 'true' : 'false')).toLowerCase(),
+              isCorrect: Boolean(opt.isCorrect),
+            }));
+          }
+          // For non-option types, send empty array to preserve index alignment
           return [];
         }),
       };
