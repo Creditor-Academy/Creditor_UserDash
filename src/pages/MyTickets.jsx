@@ -38,10 +38,20 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-
 
 const statusColor = (status) => {
   switch (status?.toUpperCase()) {
-    case "OPEN": return "default";
-    case "CLOSED": return "secondary";
-    case "PENDING": return "outline";
-    default: return "outline";
+    case "OPEN":
+      return "default";
+    case "CLOSED":
+      return "secondary";
+    case "PENDING":
+      return "outline";
+    case "RESOLVED":
+      return "success"; // green
+    case "IN_PROGRESS":
+    case "IN-PROGRESS":
+    case "IN PROGRESS":
+      return "warning"; // yellow
+    default:
+      return "outline";
   }
 };
 
