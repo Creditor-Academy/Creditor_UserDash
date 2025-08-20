@@ -275,33 +275,35 @@ const SupportTicketsPage = () => {
         </CardHeader>
         <CardContent className="p-2 flex-1 flex flex-col min-h-0">
           {/* Search and Filter Section */}
-          <div className="flex flex-col lg:flex-row gap-2 mb-2 flex-shrink-0">
-            <div className="relative flex-1 min-w-0">
-              <div className="text-xs text-gray-500 italic mb-1">
-                💡 Click any row to view details
-              </div>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search tickets..."
-                className="pl-10 w-full h-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+                    <div className="mb-2 flex-shrink-0">
+            <div className="text-xs text-gray-500 italic mb-1">
+              💡 Click any row to view details
             </div>
-            <div className="w-full lg:w-36">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="flex items-center gap-2 w-full h-8">
-                  <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="PENDING">Open</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="RESOLVED">Resolved</SelectItem>
-                  <SelectItem value="CLOSED">Closed</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search tickets..."
+                  className="pl-10 w-full h-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="w-48 flex-shrink-0">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="flex items-center gap-2 w-full h-8">
+                    <Filter className="h-4 w-4" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="PENDING">Open</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="RESOLVED">Resolved</SelectItem>
+                    <SelectItem value="CLOSED">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -338,7 +340,7 @@ const SupportTicketsPage = () => {
                     {filteredTickets.map((ticket) => (
                       <React.Fragment key={ticket.id}>
                         <TableRow 
-                          className="hover:bg-blue-50/60 border-b align-top cursor-pointer transition-all duration-200 hover:shadow-sm"
+                          className={`${expandedTicket === ticket.id ? 'bg-blue-50/60' : 'hover:bg-blue-50/60'} border-b align-top cursor-pointer transition-all duration-200 hover:shadow-sm`}
                           onClick={() => toggleTicketExpansion(ticket.id)}
                         >
                           <TableCell className="py-1">
@@ -359,16 +361,16 @@ const SupportTicketsPage = () => {
                           <TableCell className="py-1">
                             <div className="flex items-center justify-center">
                               {expandedTicket === ticket.id ? (
-                                <ChevronUp className="h-3 w-3 text-blue-500 transition-transform duration-200" />
+                                <ChevronUp className="h-3 w-3 text-blue-600 transition-transform duration-200" />
                               ) : (
-                                <ChevronDown className="h-3 w-3 text-gray-500 transition-transform duration-200" />
+                                <ChevronDown className="h-3 w-3 text-gray-400 transition-transform duration-200" />
                               )}
                             </div>
                           </TableCell>
                         </TableRow>
                         {expandedTicket === ticket.id && (
                           <TableRow>
-                            <TableCell colSpan={4} className="bg-blue-50/30 p-2 border-l-4 border-l-blue-200">
+                            <TableCell colSpan={4} className="bg-blue-50/30 p-2 border-l-4 border-l-blue-400">
                               <div className="grid gap-2">
                                 {/* Summary Row (compact - no duplicates) */}
                                 <div className="grid grid-cols-2 gap-3 text-xs">
