@@ -4,7 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical, Volume2, Play, Youtube, Link2, Package } from 'lucide-react';
+import { 
+  ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical, 
+  Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video, 
+  HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon
+} from 'lucide-react';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -73,83 +77,73 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [editorTitle, setEditorTitle] = useState('');
   const [editorHtml, setEditorHtml] = useState('');
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageTitle, setImageTitle] = useState('');
+  const [imageDescription, setImageDescription] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [audioTitle, setAudioTitle] = useState('');
+  const [audioDescription, setAudioDescription] = useState('');
+  const [audioFile, setAudioFile] = useState(null);
+  const [audioPreview, setAudioPreview] = useState('');
+  const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
+  const [youtubeTitle, setYoutubeTitle] = useState('');
+  const [youtubeDescription, setYoutubeDescription] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeError, setYoutubeError] = useState('');
+  const [currentYoutubeBlock, setCurrentYoutubeBlock] = useState(null);
 
   const blockRefs = React.useRef({});
-
-  // const textTypeOptions = [
-  //   {
-  //     id: 'paragraph',
-  //     title: 'Paragraph',
-  //     description: 'Simple text paragraph',
-  //     icon: <FileText className="h-6 w-6 text-blue-600" />,
-  //     preview: 'This is a sample paragraph text that would appear in your lesson content.'
-  //   },
-  //   {
-  //     id: 'heading-paragraph',
-  //     title: 'Heading + Paragraph',
-  //     description: 'Main heading with content',
-  //     icon: <div className="h-6 w-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">H1</div>,
-  //     preview: (
-  //       <div>
-  //         <div className="text-xl font-bold mb-2">Main Heading</div>
-  //         <div>Content paragraph goes here.</div>
-  //       </div>
-  //     )
-  //   },
-  //   {
-  //     id: 'subheading-paragraph',
-  //     title: 'Subheading + Paragraph',
-  //     description: 'Subheading with content',
-  //     icon: <div className="h-6 w-6 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">H2</div>,
-  //     preview: (
-  //       <div>
-  //         <div className="text-lg font-semibold mb-2">Subheading</div>
-  //         <div>Content paragraph goes here.</div>
-  //       </div>
-  //     )
-  //   }
-  // ];
 
   const contentBlockTypes = [
     {
       id: 'text',
-      title: 'Text/HTML',
-      icon: <FileText className="h-5 w-5" />
+      title: 'Text',
+      
+      icon: <FileTextIcon className="h-5 w-5" />
     },
     {
       id: 'image',
       title: 'Image',
-      icon: <Volume2 className="h-5 w-5" />
+      
+      icon: <Image className="h-5 w-5" />
     },
     {
       id: 'video',
       title: 'Video',
-      icon: <Play className="h-5 w-5" />
+      
+      icon: <Video className="h-5 w-5" />
     },
     {
       id: 'audio',
       title: 'Audio',
+      
       icon: <Volume2 className="h-5 w-5" />
     },
     {
       id: 'youtube',
       title: 'YouTube',
+      
       icon: <Youtube className="h-5 w-5" />
-    },
-    {
-      id: 'pdf',
-      title: 'PDF',
-      icon: <Package className="h-5 w-5" />
     },
     {
       id: 'link',
       title: 'Link',
-      icon: <Link2 className="h-5 w-5" />
+      
+      icon: <LinkIcon className="h-5 w-5" />
+    },
+    {
+      id: 'pdf',
+      title: 'PDF',
+      
+      icon: <FileTextIcon className="h-5 w-5" />
     },
     {
       id: 'scorm',
-      title: 'Scorm',
-      icon: <Package className="h-5 w-5" />
+      title: 'SCORM',
+      
+      icon: <Box className="h-5 w-5" />
     }
   ];
 
@@ -158,6 +152,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       handleTextEditorOpen();
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
+    } else if (blockType.id === 'image') {
+      setShowImageDialog(true);
+    } else if (blockType.id === 'audio') {
+      setShowAudioDialog(true);
+    } else if (blockType.id === 'youtube') {
+      setShowYoutubeDialog(true);
     } else {
       addContentBlock(blockType);
     }
@@ -206,6 +206,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setEditorTitle(block.title);
       setEditorHtml(block.content);
       setShowTextEditorDialog(true);
+    } else if (block.type === 'youtube') {
+      setCurrentYoutubeBlock(block);
+      setYoutubeTitle(block.youtubeTitle);
+      setYoutubeDescription(block.youtubeDescription || '');
+      setYoutubeUrl(block.youtubeUrl);
+      setShowYoutubeDialog(true);
     } else {
       setCurrentBlock(block);
       setEditorContent(block.content || '');
@@ -384,6 +390,249 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     handleTextEditorClose();
   };
 
+  const handleImageDialogClose = () => {
+    setShowImageDialog(false);
+    setImageTitle('');
+    setImageDescription('');
+    setImageFile(null);
+    setImagePreview('');
+    setCurrentBlock(null);
+  };
+
+  const handleImageInputChange = (e) => {
+    const { name, value, files } = e.target;
+    
+    if (name === 'file' && files && files[0]) {
+      const file = files[0];
+      
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload only JPG or PNG images');
+        return;
+      }
+      
+      // Check file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Image size should be less than 10MB');
+        return;
+      }
+      
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else if (name === 'title') {
+      setImageTitle(value);
+    } else if (name === 'description') {
+      setImageDescription(value);
+    }
+  };
+
+  const handleAddImage = () => {
+    if (!imageTitle || !imageFile) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Handle both File object and string URL cases
+    let imageUrl = '';
+    if (imageFile && typeof imageFile === 'object' && 'name' in imageFile) {
+      // It's a File object
+      imageUrl = URL.createObjectURL(imageFile);
+    } else if (typeof imageFile === 'string') {
+      // It's already a URL string
+      imageUrl = imageFile;
+    } else if (imagePreview) {
+      // Fallback to imagePreview if available
+      imageUrl = imagePreview;
+    }
+
+    const newBlock = {
+      id: currentBlock?.id || `image-${Date.now()}`,
+      type: 'image',
+      title: 'Image',
+      imageTitle: imageTitle,
+      imageDescription: imageDescription,
+      imageFile: imageFile,
+      imageUrl: imageUrl,
+      timestamp: new Date().toISOString()
+    };
+
+    if (currentBlock) {
+      // Update existing block
+      setContentBlocks(prev => 
+        prev.map(block => block.id === currentBlock.id ? newBlock : block)
+      );
+      setCurrentBlock(null);
+    } else {
+      // Add new block
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
+    
+    handleImageDialogClose();
+  };
+
+  const handleEditImage = (blockId) => {
+    const block = contentBlocks.find(b => b.id === blockId);
+    if (block) {
+      setCurrentBlock(block);
+      setImageTitle(block.imageTitle);
+      setImageDescription(block.imageDescription || '');
+      setImageFile(block.imageFile);
+      setImagePreview(block.imageUrl);
+      setShowImageDialog(true);
+    }
+  };
+
+  const handleAudioDialogClose = () => {
+    setShowAudioDialog(false);
+    setAudioTitle('');
+    setAudioDescription('');
+    setAudioFile(null);
+    setAudioPreview('');
+    setCurrentBlock(null);
+  };
+
+  const handleAudioInputChange = (e) => {
+    const { name, value, files } = e.target;
+    
+    if (name === 'file' && files && files[0]) {
+      const file = files[0];
+      
+      // Check file type
+      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload only MP3, WAV, or OGG audio files');
+        return;
+      }
+      
+      // Check file size (20MB max)
+      if (file.size > 20 * 1024 * 1024) {
+        alert('Audio size should be less than 20MB');
+        return;
+      }
+      
+      setAudioFile(file);
+      setAudioPreview(URL.createObjectURL(file));
+    } else if (name === 'title') {
+      setAudioTitle(value);
+    } else if (name === 'description') {
+      setAudioDescription(value);
+    }
+  };
+
+  const handleAddAudio = () => {
+    if (!audioTitle || !audioFile) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    // Handle both File object and string URL cases
+    let audioUrl = '';
+    if (audioFile && typeof audioFile === 'object' && 'name' in audioFile) {
+      // It's a File object
+      audioUrl = URL.createObjectURL(audioFile);
+    } else if (typeof audioFile === 'string') {
+      // It's already a URL string
+      audioUrl = audioFile;
+    } else if (audioPreview) {
+      // Fallback to audioPreview if available
+      audioUrl = audioPreview;
+    }
+
+    const newBlock = {
+      id: currentBlock?.id || `audio-${Date.now()}`,
+      type: 'audio',
+      title: 'Audio',
+      audioTitle: audioTitle,
+      audioDescription: audioDescription,
+      audioFile: audioFile,
+      audioUrl: audioUrl,
+      timestamp: new Date().toISOString()
+    };
+
+    if (currentBlock) {
+      // Update existing block
+      setContentBlocks(prev => 
+        prev.map(block => block.id === currentBlock.id ? newBlock : block)
+      );
+      setCurrentBlock(null);
+    } else {
+      // Add new block
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
+    
+    handleAudioDialogClose();
+  };
+
+  const handleEditAudio = (blockId) => {
+    const block = contentBlocks.find(b => b.id === blockId);
+    if (block) {
+      setCurrentBlock(block);
+      setAudioTitle(block.audioTitle);
+      setAudioDescription(block.audioDescription || '');
+      setAudioFile(block.audioFile);
+      setAudioPreview(block.audioUrl);
+      setShowAudioDialog(true);
+    }
+  };
+
+  const handleAddYoutubeVideo = () => {
+    if (!youtubeTitle || !youtubeUrl) {
+      setYoutubeError('Please fill in all required fields');
+      return;
+    }
+
+    const videoId = extractYoutubeId(youtubeUrl);
+    if (!videoId) {
+      setYoutubeError('Please enter a valid YouTube URL');
+      return;
+    }
+
+    const newBlock = {
+      id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
+      type: 'youtube',
+      title: 'YouTube Video',
+      youtubeTitle: youtubeTitle,
+      youtubeDescription: youtubeDescription,
+      youtubeUrl: youtubeUrl,
+      youtubeId: videoId,
+      timestamp: new Date().toISOString()
+    };
+
+    if (currentYoutubeBlock) {
+      setContentBlocks(prev => 
+        prev.map(block => block.id === currentYoutubeBlock.id ? newBlock : block)
+      );
+    } else {
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
+    
+    handleYoutubeDialogClose();
+  };
+
+  const extractYoutubeId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const handleYoutubeDialogClose = () => {
+    setShowYoutubeDialog(false);
+    setYoutubeTitle('');
+    setYoutubeDescription('');
+    setYoutubeUrl('');
+    setYoutubeError('');
+    setCurrentYoutubeBlock(null);
+  };
+
+  const handleEditYoutubeVideo = (block) => {
+    setCurrentYoutubeBlock(block);
+    setYoutubeTitle(block.youtubeTitle);
+    setYoutubeDescription(block.youtubeDescription || '');
+    setYoutubeUrl(block.youtubeUrl);
+    setShowYoutubeDialog(true);
+  };
+
   useEffect(() => {
     const collapseSidebar = () => {
       if (setSidebarCollapsed) {
@@ -480,31 +729,52 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         {/* Content Blocks Sidebar - Only show in edit mode */}
         {!isViewMode && (
           <div 
-            className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-64 flex-shrink-0"
+            className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
             style={{
               left: sidebarCollapsed ? "4.5rem" : "17rem"
             }}
           >
-            <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <h1 className="text-lg font-semibold text-gray-900">Content Library</h1>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {contentBlockTypes.map((blockType) => (
-                  <Card 
-                    key={blockType.id}
-                    className="cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 h-24 flex flex-col"
-                    onClick={() => handleBlockClick(blockType)}
-                  >
-                    <CardContent className="flex flex-col items-center justify-center p-2 h-full">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 mb-1">
-                        {blockType.icon}
-                      </div>
-                      <h3 className="text-xs font-medium text-gray-900 text-center">{blockType.title}</h3>
-                    </CardContent>
-                  </Card>
-                ))}
+            <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-full">
+              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <h2 className="text-lg font-bold text-gray-800 flex items-center">
+                  
+                  Content Library
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Drag and drop content blocks to build your lesson
+                </p>
               </div>
+              
+              <div className="p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {contentBlockTypes.map((blockType) => (
+                    <Card 
+                      key={blockType.id}
+                      className="cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 h-28 flex flex-col group hover:border-indigo-200 hover:bg-indigo-50"
+                      onClick={() => handleBlockClick(blockType)}
+                    >
+                      <CardContent className="flex flex-col items-center justify-center p-3 h-full">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2 group-hover:bg-indigo-200 transition-colors">
+                          {blockType.icon}
+                        </div>
+                        <h3 className="text-xs font-medium text-gray-800 text-center">
+                          {blockType.title}
+                        </h3>
+                        <p className="text-[10px] text-gray-500 text-center mt-1 line-clamp-1">
+                          {blockType.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              {/* <div className="p-3 border-t border-gray-200 bg-gray-50">
+                <p className="text-xs text-gray-500 text-center">
+                  Drag blocks to the right to build your lesson
+                </p>
+              </div> */}
             </div>
           </div>
         )}
@@ -642,6 +912,139 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           </div>
                         </div>
                       )}
+                      {block.type === 'image' && (
+                        <div className="relative group">
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => handleEditImage(block.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => removeContentBlock(block.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">{block.imageTitle}</h3>
+                          {block.imageDescription && (
+                            <p className="text-gray-600 mb-4">{block.imageDescription}</p>
+                          )}
+                          {block.imageUrl && (
+                            <div className="mt-2">
+                              <img
+                                src={block.imageUrl}
+                                alt={block.imageTitle}
+                                className="max-w-full h-auto rounded-lg"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {block.type === 'audio' && (
+                        <div className="relative group">
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => handleEditAudio(block.id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => removeContentBlock(block.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">{block.audioTitle}</h3>
+                          {block.audioDescription && (
+                            <p className="text-gray-600 mb-4">{block.audioDescription}</p>
+                          )}
+                          {block.audioUrl && (
+                            <div className="mt-2">
+                              <audio 
+                                src={block.audioUrl}
+                                controls
+                                className="w-full rounded-lg border border-gray-200"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {block.type === 'youtube' && (
+                        <div className="relative group my-6 w-full">
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => handleEditYoutubeVideo(block)}
+                              title="Edit Video"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => removeContentBlock(block.id)}
+                              title="Remove Video"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                            <div 
+                              className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, block.id)}
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                          </div>
+                          
+                          <h3 className="text-xl font-semibold mb-2">{block.youtubeTitle}</h3>
+                          {block.youtubeDescription && (
+                            <p className="text-gray-600 mb-4">{block.youtubeDescription}</p>
+                          )}
+                          
+                          <div className="w-full max-w-4xl mx-auto">
+                            <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden shadow-lg">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
+                                className="absolute top-0 left-0 w-full h-full"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                title={block.youtubeTitle || 'YouTube video player'}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {block.content && (
                         <div 
                           className="prose max-w-none"
@@ -658,7 +1061,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                     <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
                       <div className="text-center">
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 max-w-2xl">
-                          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                          <h2 className="text-xl font-bold text-gray-900 mb-2">
                             Start Building Your Lesson
                           </h2>
                           <p className="text-gray-600 mb-6">
@@ -825,6 +1228,139 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                     </div>
                                   </div>
                                 )}
+                                {block.type === 'image' && (
+                                  <div className="relative group">
+                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => handleEditImage(block.id)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => removeContentBlock(block.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
+                                      >
+                                        <GripVertical className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">{block.imageTitle}</h3>
+                                    {block.imageDescription && (
+                                      <p className="text-gray-600 mb-4">{block.imageDescription}</p>
+                                    )}
+                                    {block.imageUrl && (
+                                      <div className="mt-2">
+                                        <img
+                                          src={block.imageUrl}
+                                          alt={block.imageTitle}
+                                          className="max-w-full h-auto rounded-lg"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {block.type === 'audio' && (
+                                  <div className="relative group">
+                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => handleEditAudio(block.id)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => removeContentBlock(block.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
+                                      >
+                                        <GripVertical className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">{block.audioTitle}</h3>
+                                    {block.audioDescription && (
+                                      <p className="text-gray-600 mb-4">{block.audioDescription}</p>
+                                    )}
+                                    {block.audioUrl && (
+                                      <div className="mt-2">
+                                        <audio 
+                                          src={block.audioUrl}
+                                          controls
+                                          className="w-full rounded-lg border border-gray-200"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {block.type === 'youtube' && (
+                                  <div className="relative group my-6">
+                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => handleEditYoutubeVideo(block)}
+                                        title="Edit Video"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => removeContentBlock(block.id)}
+                                        title="Remove Video"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                      <div 
+                                        className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, block.id)}
+                                      >
+                                        <GripVertical className="h-4 w-4" />
+                                      </div>
+                                    </div>
+                                    
+                                    <h3 className="text-xl font-semibold mb-2">{block.youtubeTitle}</h3>
+                                    {block.youtubeDescription && (
+                                      <p className="text-gray-600 mb-4">{block.youtubeDescription}</p>
+                                    )}
+                                    
+                                    <div className="w-full max-w-4xl mx-auto">
+                                      <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden shadow-lg">
+                                        <iframe
+                                          src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
+                                          className="absolute top-0 left-0 w-full h-full"
+                                          frameBorder="0"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                          allowFullScreen
+                                          title={block.youtubeTitle || 'YouTube video player'}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </CardContent>
@@ -867,20 +1403,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               </label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                 <div className="space-y-1 text-center">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 015.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
                   <div className="flex text-sm text-gray-600">
                     <label
                       htmlFor="video-upload"
@@ -1127,6 +1649,247 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Dialog */}
+      <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Image</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Image Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={imageTitle}
+                onChange={handleImageInputChange}
+                className="w-full p-2 border rounded"
+                placeholder="Enter image title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                name="description"
+                value={imageDescription}
+                onChange={handleImageInputChange}
+                className="w-full p-2 border rounded h-24"
+                placeholder="Enter image description"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Image File <span className="text-red-500">*</span>
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div className="space-y-1 text-center">
+                  <div className="flex text-sm text-gray-600">
+                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                      <span>Upload a file</span>
+                      <input
+                        type="file"
+                        name="file"
+                        className="sr-only"
+                        accept="image/jpeg, image/png, image/jpg"
+                        onChange={handleImageInputChange}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    JPG, PNG up to 10MB
+                  </p>
+                </div>
+              </div>
+              {imagePreview && (
+                <div className="mt-4">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="max-w-full h-auto max-h-64 rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleImageDialogClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddImage} disabled={!imageTitle || !imageFile}>
+              Add Image
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Audio Dialog */}
+      <Dialog open={showAudioDialog} onOpenChange={handleAudioDialogClose}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Audio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Audio Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={audioTitle}
+                onChange={handleAudioInputChange}
+                className="w-full p-2 border rounded"
+                placeholder="Enter audio title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                name="description"
+                value={audioDescription}
+                onChange={handleAudioInputChange}
+                className="w-full p-2 border rounded h-24"
+                placeholder="Enter audio description"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Audio File <span className="text-red-500">*</span>
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div className="space-y-1 text-center">
+                  <div className="flex text-sm text-gray-600">
+                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                      <span>Upload a file</span>
+                      <input
+                        type="file"
+                        name="file"
+                        className="sr-only"
+                        accept="audio/mpeg, audio/wav, audio/ogg"
+                        onChange={handleAudioInputChange}
+                      />
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    MP3, WAV, OGG up to 20MB
+                  </p>
+                </div>
+              </div>
+              {audioPreview && (
+                <div className="mt-4">
+                  <audio 
+                    src={audioPreview}
+                    controls
+                    className="w-full rounded-lg border border-gray-200"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleAudioDialogClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddAudio} disabled={!audioTitle || !audioFile}>
+              Add Audio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* YouTube Dialog */}
+      <Dialog open={showYoutubeDialog} onOpenChange={handleYoutubeDialogClose}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add YouTube Video</DialogTitle>
+            <p className="text-sm text-gray-500">Add a YouTube video by pasting its URL</p>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Video Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={youtubeTitle}
+                onChange={(e) => setYoutubeTitle(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter video title"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                YouTube Video URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://www.youtube.com/watch?v=..."
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+              </p>
+              {youtubeError && (
+                <p className="text-sm text-red-500 mt-1">{youtubeError}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                value={youtubeDescription}
+                onChange={(e) => setYoutubeDescription(e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a description for your video (optional)"
+              />
+            </div>
+
+            {youtubeUrl && extractYoutubeId(youtubeUrl) && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                <div className="aspect-w-16 aspect-h-9">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${extractYoutubeId(youtubeUrl)}`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-64 rounded-lg border border-gray-200"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleYoutubeDialogClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddYoutubeVideo}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Add Video
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
