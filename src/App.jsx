@@ -92,6 +92,8 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import SignupPage from "@/pages/SignupPage";
+import PaymentPage from "@/pages/PaymentPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import  ModuleView  from "@/pages/ModuleView";
@@ -113,6 +115,8 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
           <Route path="/" element={<LandingPage />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />

@@ -1,11 +1,13 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import masterclassMembership from '../assets/masteclassmembership.png';
 
-
 const MasterHero = () => {
+  const navigate = useNavigate();
+
   const handleSignUp = () => {
-    window.open('https://www.creditoracademy.com/page/show/153616?portal_id=14800', '_blank');
+    navigate('/signup', { state: { fromHome: true } });
   };
 
   return (

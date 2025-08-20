@@ -696,6 +696,7 @@ const ManageUsers = () => {
           setError(`Some ${filterRole}s are already assigned to this course. This is normal and won't affect their access.`);
           setShowCourseModal(false);
           setSelectedCourse("");
+          
           setSelectedUsers([]);
         }
       } else if (error.response?.status === 400) {
