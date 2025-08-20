@@ -33,6 +33,27 @@ function QuizTakePage() {
   const totalQuestions = questions.length;
   const progress = totalQuestions > 0 ? ((currentQuestion + 1) / totalQuestions) * 100 : 0;
 
+  // Load answers from localStorage on component mount
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem(`quiz_${quizId}_answers`);
+    if (savedAnswers) {
+      try {
+        const parsedAnswers = JSON.parse(savedAnswers);
+        setAnswers(parsedAnswers);
+        console.log('Loaded saved answers from localStorage:', parsedAnswers);
+      } catch (error) {
+        console.error('Error parsing saved answers:', error);
+      }
+    }
+  }, [quizId]);
+
+  // Save answers to localStorage whenever answers change
+  useEffect(() => {
+    if (Object.keys(answers).length > 0) {
+      localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(answers));
+    }
+  }, [answers, quizId]);
+
   // Initialize quiz session from passed data
   useEffect(() => {
     const initializeQuiz = async () => {
@@ -107,20 +128,14 @@ function QuizTakePage() {
 
   const handleAnswer = async (questionId, answer) => {
     // Update local state immediately for responsive UI
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: answer
-    }));
-    
-    // Optionally save answer to backend for auto-save functionality
-    // This can help prevent data loss if the user's session expires
-    try {
-      await saveAnswer(quizId, questionId, answer);
-    } catch (error) {
-      // Don't show error to user for auto-save, just log it
-      console.warn('Failed to auto-save answer:', error);
-      // The answer is still saved locally, so it will be sent on final submit
-    }
+    setAnswers(prev => {
+      const updated = { ...prev, [questionId]: answer };
+      // Persist immediately to localStorage as required
+      try {
+        localStorage.setItem(`quiz_${quizId}_answers`, JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
   const handleNext = () => {
@@ -135,44 +150,202 @@ function QuizTakePage() {
     }
   };
 
+  // Format answers for API submission
+  const formatAnswersForSubmission = (answersMap) => {
+    const formattedAnswers = [];
+    
+    console.log('Formatting answers for submission. Raw answers:', answersMap);
+    console.log('Questions data for formatting:', questions);
+    
+    Object.entries(answersMap).forEach(([questionId, answer]) => {
+      const question = questions.find(q => String(q.id) === String(questionId) || String(q._id) === String(questionId) || String(q.questionId) === String(questionId));
+      
+      console.log(`Processing question ${questionId}:`, {
+        question,
+        answer,
+        questionType: question?.type,
+        backendQuestionType: question?.question_type,
+        resolvedType: question.type?.toLowerCase() || question.question_type?.toLowerCase()
+      });
+      
+      if (!question) {
+        console.warn(`Question not found for ID: ${questionId}`);
+        return;
+      }
+      
+      const formattedAnswer = {
+        questionId: String(question.id ?? questionId),
+        selectedOptionId: null,
+        answer: null
+      };
+      
+      // Handle different question types - also check backend question_type if frontend type is missing
+      const questionType = question.type?.toLowerCase() || question.question_type?.toLowerCase();
+      switch (questionType) {
+        case 'mcq':
+        case 'multiple_choice':
+        case 'multiple choice':
+        case 'multiplechoice':
+        case 'scq':
+        case 'single_choice':
+        case 'single choice':
+        case 'singlechoice':
+          // Map selected values to option IDs and human-readable texts
+          {
+            const selectedValues = Array.isArray(answer) ? answer : [answer];
+            const optionList = Array.isArray(question.options) ? question.options : [];
+            const selectedIds = [];
+            const selectedTexts = [];
+            selectedValues.forEach((val) => {
+              let resolved = null;
+              let resolvedIndex = -1;
+              for (let i = 0; i < optionList.length; i += 1) {
+                const opt = optionList[i];
+                if (
+                  String(opt?.optionId) === String(val) ||
+                  String(opt?.id) === String(val) ||
+                  String(opt?._id) === String(val) ||
+                  String(opt?.value) === String(val) ||
+                  String(opt?.text) === String(val) ||
+                  String(i) === String(val)
+                ) {
+                  resolved = opt;
+                  resolvedIndex = i;
+                  break;
+                }
+              }
+              if (resolved) {
+                const idForBackend = resolved.optionId ?? resolved.id ?? resolved._id ?? resolved.value ?? resolvedIndex;
+                if (idForBackend != null) selectedIds.push(String(idForBackend));
+                selectedTexts.push(resolved.text ?? resolved.label ?? resolved.value ?? String(val));
+              } else {
+                // Fallback when options don't have matching id/value
+                selectedTexts.push(String(val));
+              }
+            });
+            formattedAnswer.selectedOptionId = selectedIds.length > 0 ? selectedIds : null;
+            formattedAnswer.answer = selectedTexts; // Always send as array for MCQ
+          }
+          console.log(`MCQ question ${questionId} formatted:`, formattedAnswer);
+          break;
+          
+        case 'truefalse':
+        case 'true_false':
+        case 'true-false':
+        case 'true false':
+          formattedAnswer.selectedOptionId = null;
+          {
+            const selectedValues = Array.isArray(answer) ? answer : [answer];
+            // Normalize to capitalized True/False to align with backend examples
+            const normalized = selectedValues.map(v => {
+              const s = String(v).toLowerCase();
+              return s === 'true' ? 'True' : s === 'false' ? 'False' : String(v);
+            });
+            formattedAnswer.answer = normalized;
+          }
+          console.log(`True/False question ${questionId} formatted:`, formattedAnswer);
+          break;
+          
+        case 'descriptive':
+        case 'text':
+        case 'essay':
+        case 'long_answer':
+        case 'long answer':
+          formattedAnswer.selectedOptionId = null;
+          // For descriptive-like answers, backend expects a string (not array)
+          formattedAnswer.answer = Array.isArray(answer) ? answer[0] : String(answer);
+          console.log(`Descriptive question ${questionId} formatted:`, formattedAnswer);
+          break;
+          
+        case 'fill_blank':
+        case 'fill in the blank':
+        case 'fillintheblank':
+        case 'fill_ups':
+          formattedAnswer.selectedOptionId = null;
+          formattedAnswer.answer = Array.isArray(answer) ? answer : [answer]; // Always send as array for fill-ups
+          console.log(`Fill blank question ${questionId} formatted:`, formattedAnswer);
+          break;
+          
+        case 'one_word':
+        case 'oneword':
+        case 'one word':
+        case 'single_word':
+        case 'singleword':
+        case 'one_word':
+          formattedAnswer.selectedOptionId = null;
+          formattedAnswer.answer = Array.isArray(answer) ? answer[0] : String(answer);
+          console.log(`One word question ${questionId} formatted:`, formattedAnswer);
+          break;
+          
+        case 'matching':
+        case 'match':
+          formattedAnswer.selectedOptionId = null;
+          formattedAnswer.answer = Array.isArray(answer) ? answer : [answer];
+          console.log(`Matching question ${questionId} formatted:`, formattedAnswer);
+          break;
+
+        default:
+          // Default handling - treat as array
+          formattedAnswer.selectedOptionId = null;
+          formattedAnswer.answer = Array.isArray(answer) ? answer : [answer];
+          console.log(`Default question ${questionId} formatted:`, formattedAnswer);
+          break;
+      }
+      
+      formattedAnswers.push(formattedAnswer);
+    });
+    
+    console.log('Final formatted answers:', formattedAnswers);
+    return formattedAnswers;
+  };
+
   const handleSubmit = async () => {
-    if (Object.keys(answers).length === 0) {
+    // Always read the latest saved answers from localStorage
+    let savedAnswers = {};
+    try {
+      const raw = localStorage.getItem(`quiz_${quizId}_answers`);
+      savedAnswers = raw ? JSON.parse(raw) : answers;
+    } catch {
+      savedAnswers = answers;
+    }
+
+    if (!savedAnswers || Object.keys(savedAnswers).length === 0) {
       toast.error('Please answer at least one question before submitting.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      console.log('Submitting quiz with answers:', answers);
-      console.log('Answers count:', Object.keys(answers).length);
+      // Format answers for API submission
+      const formattedAnswers = formatAnswersForSubmission(savedAnswers);
+      
+      console.log('Submitting quiz with formatted answers:', formattedAnswers);
+      console.log('Raw answers object:', savedAnswers);
+      console.log('Questions data:', questions);
+      console.log('Answers count:', Object.keys(savedAnswers).length);
       console.log('Total questions:', totalQuestions);
       console.log('Quiz ID:', quizId);
       
       // Validate that we have answers for most questions
-      const answeredCount = Object.keys(answers).length;
+      const answeredCount = Object.keys(savedAnswers).length;
       const unansweredCount = totalQuestions - answeredCount;
       
       if (unansweredCount > 0) {
         console.log(`Warning: ${unansweredCount} questions are unanswered`);
       }
       
-      // Call the submit quiz API with user answers
-      const result = await submitQuiz(quizId, answers);
+      // Call the submit quiz API with formatted answers
+      const result = await submitQuiz(quizId, { answers: formattedAnswers });
       console.log('Quiz submission result:', result);
-      console.log('Quiz submission result structure:', {
-        hasData: !!result.data,
-        hasScore: !!result.score,
-        hasGrade: !!result.grade,
-        hasRemarks: !!result.remarks,
-        hasPassed: !!result.passed,
-        fullResult: result
-      });
+      
+      // Clear localStorage after successful submission
+      try { localStorage.removeItem(`quiz_${quizId}_answers`); } catch {}
       
       // Extract the response data
       const responseData = result.data || result;
       
       // Validate the response contains scoring information
-      if (!responseData.score && responseData.score !== 0) {
+      if (responseData.score === undefined) {
         console.warn('Quiz submitted but no score received from backend');
         console.warn('Response data:', responseData);
       }
@@ -182,7 +355,7 @@ function QuizTakePage() {
       // Navigate to results page with the data from backend
       const navigationState = { 
         quizResults: responseData,
-        answers: answers,
+        answers: savedAnswers,
         quizSession: quizData,
         startedAt: startedAt
       };
@@ -218,11 +391,13 @@ function QuizTakePage() {
     console.log('Rendering question:', {
       id: question.id,
       type: question.type,
+      backendType: question.question_type,
       question: question.question,
       questionText: question.questionText,
       text: question.text,
       content: question.content,
       questionField: question.question,
+      options: question.options,
       allFields: Object.keys(question),
       fullQuestion: question
     });
@@ -247,58 +422,69 @@ function QuizTakePage() {
       return index;
     };
 
-    // Handle missing question type
+    // Handle missing question type - check for backend question_type field
     if (!question.type) {
-      console.warn('Question type is missing, defaulting to MCQ');
-      // Default to MCQ if type is missing
-      if (question.options && Array.isArray(question.options)) {
-        return (
-          <div className="space-y-3">
-            {question.options.map((option, index) => (
-              <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  name={`question-${question.id}`}
-                  value={getOptionValue(option, index)}
-                  checked={userAnswer === getOptionValue(option, index)}
-                  onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-gray-700">{renderOptionText(option)}</span>
-              </label>
-            ))}
-          </div>
-        );
+      // Try to get type from backend field
+      const backendType = question.question_type;
+      if (backendType) {
+        console.log('Using backend question_type:', backendType);
+        // Map backend type to frontend type
+        switch (backendType.toUpperCase()) {
+          case 'MCQ':
+            question.type = 'mcq';
+            break;
+          case 'SCQ':
+            question.type = 'scq';
+            break;
+          case 'TRUE_FALSE':
+            question.type = 'truefalse';
+            break;
+          case 'FILL_UPS':
+            question.type = 'fill_blank';
+            break;
+          case 'ONE_WORD':
+            question.type = 'one_word';
+            break;
+          default:
+            question.type = backendType.toLowerCase();
+        }
+        console.log('Mapped question type from', backendType, 'to', question.type);
+      } else {
+        console.warn('Question type is missing, defaulting to MCQ');
+        // Default to MCQ if type is missing
+        if (question.options && Array.isArray(question.options)) {
+          return (
+            <div className="space-y-3">
+              {question.options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    value={getOptionValue(option, index)}
+                    checked={userAnswer === getOptionValue(option, index)}
+                    onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-gray-700">{renderOptionText(option)}</span>
+                </label>
+              ))}
+            </div>
+          );
+        }
       }
     }
 
-    switch (question.type?.toLowerCase()) {
-      case 'mcq':
-      case 'multiple_choice':
-      case 'multiple choice':
-      case 'multiplechoice':
-        return (
-          <div className="space-y-3">
-            {question.options?.map((option, index) => (
-              <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
-                <input
-                  type="radio"
-                  name={`question-${question.id}`}
-                  value={getOptionValue(option, index)}
-                  checked={userAnswer === getOptionValue(option, index)}
-                  onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <span className="text-gray-700">{renderOptionText(option)}</span>
-              </label>
-            ))}
-          </div>
-        );
-
+    // Ensure we have the correct type for rendering
+    const renderType = question.type?.toLowerCase() || question.question_type?.toLowerCase();
+    console.log('Rendering question with type:', renderType, 'original type:', question.type, 'backend type:', question.question_type, 'options:', question.options);
+    
+    switch (renderType) {
+      case 'mcq_single':
       case 'scq':
       case 'single_choice':
       case 'single choice':
       case 'singlechoice':
+        // Single selection using radio buttons
         return (
           <div className="space-y-3">
             {question.options?.map((option, index) => (
@@ -317,8 +503,43 @@ function QuizTakePage() {
           </div>
         );
 
-      case 'truefalse':
+      case 'mcq_multiple':
+      case 'mcq':
+      case 'multiple_choice':
+      case 'multiple choice':
+      case 'multiplechoice':
+        // Multiple selection using checkboxes
+        return (
+          <div className="space-y-3">
+            {question.options?.map((option, index) => {
+              const value = getOptionValue(option, index);
+              const checked = Array.isArray(userAnswer) ? userAnswer.some(v => String(v) === String(value)) : false;
+              const toggleSelection = (current, val) => {
+                const currentArr = Array.isArray(current) ? [...current] : [];
+                const exists = currentArr.some(v => String(v) === String(val));
+                return exists ? currentArr.filter(v => String(v) !== String(val)) : [...currentArr, val];
+              };
+              return (
+                <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    name={`question-${question.id}`}
+                    value={value}
+                    checked={checked}
+                    onChange={() => handleAnswer(question.id, toggleSelection(userAnswer, value))}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-gray-700">{renderOptionText(option)}</span>
+                </label>
+              );
+            })}
+          </div>
+        );
+
+
+
       case 'true_false':
+      case 'truefalse':
       case 'true-false':
       case 'true false':
         return (
@@ -355,22 +576,86 @@ function QuizTakePage() {
             />
           </div>
         );
-
-      case 'fill_blank':
-      case 'fill_blank':
-      case 'fill in the blank':
-      case 'fillintheblank':
+        
+      case 'one_word':
         return (
           <div>
             <input
               type="text"
               value={userAnswer || ''}
               onChange={(e) => handleAnswer(question.id, e.target.value)}
-              placeholder="Type your answer here..."
+              placeholder="Enter one word answer..."
+              maxLength={50}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            <p className="text-sm text-gray-500 mt-2">Please provide a single word or short phrase answer.</p>
           </div>
         );
+        
+      case 'fill_blank':
+        return (
+          <div>
+            <input
+              type="text"
+              value={userAnswer || ''}
+              onChange={(e) => handleAnswer(question.id, e.target.value)}
+              placeholder="Fill in the blank..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500 mt-2">Please provide the missing word or phrase.</p>
+          </div>
+        );
+
+      case 'fill_ups':
+        return (
+          <div>
+            <input
+              type="text"
+              value={userAnswer || ''}
+              onChange={(e) => handleAnswer(question.id, e.target.value)}
+              placeholder="Fill in the blank..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-sm text-gray-500 mt-2">Please provide the missing word or phrase.</p>
+          </div>
+        );
+
+      case 'mcq':
+        // Handle MCQ questions - check if they actually have options
+        if (question.options && Array.isArray(question.options) && question.options.length > 0) {
+          // Regular MCQ with options
+          return (
+            <div className="space-y-3">
+              {question.options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg border hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name={`question-${question.id}`}
+                    value={getOptionValue(option, index)}
+                    checked={userAnswer === getOptionValue(option, index)}
+                    onChange={() => handleAnswer(question.id, getOptionValue(option, index))}
+                    className="w-4 h-4 text-blue-600"
+                  />
+                  <span className="text-gray-700">{renderOptionText(option)}</span>
+                </label>
+              ))}
+            </div>
+          );
+        } else {
+          // MCQ with no options - likely a text input question
+          return (
+            <div>
+              <input
+                type="text"
+                value={userAnswer || ''}
+                onChange={(e) => handleAnswer(question.id, e.target.value)}
+                placeholder="Enter your answer..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500 mt-2">Please provide your answer.</p>
+            </div>
+          );
+        }
 
       default:
         console.warn('Unsupported question type:', question.type, 'Question data:', question);

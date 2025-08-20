@@ -428,42 +428,62 @@ const CreateQuizPage = () => {
                                                                           <div className="flex gap-2 mt-2 md:mt-0">
                                         <Button
                                           onClick={() => handlePreviewQuiz(quiz)}
-                                          className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Preview Quiz"
+                                          className="group relative overflow-hidden bg-slate-600 hover:bg-slate-700 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Eye className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Eye className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Preview
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleViewScores(quiz, course.id)}
-                                          className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="View Scores"
+                                          className="group relative overflow-hidden bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Trophy className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Trophy className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Scores
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleEditQuiz(quiz)}
-                                          className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Edit Quiz"
+                                          className="group relative overflow-hidden bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Edit className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Edit className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Edit
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleDeleteQuiz(quiz)}
-                                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Delete Quiz"
+                                          className="group relative overflow-hidden bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Trash2 className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Trash2 className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Delete
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleAddQuestions(quiz)}
-                                          className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Add Questions"
+                                          className="group relative overflow-hidden bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Plus className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Add
+                                            </span>
+                                          </div>
                                         </Button>
                                       </div>
 
