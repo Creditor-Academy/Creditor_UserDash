@@ -106,6 +106,9 @@ export async function createEvent(formData, selectedCourse, userRole) {
     
     const data = await makeApiCall(url, {
       method: 'POST',
+      headers: {
+        ...getAuthHeader()
+      },
       body: JSON.stringify(payload)
     });
     
@@ -122,6 +125,9 @@ export async function updateEvent(eventId, payload) {
     
     const data = await makeApiCall(url, {
       method: 'PATCH',
+      headers: {
+        ...getAuthHeader()
+      },
       body: JSON.stringify(payload)
     });
     
@@ -137,7 +143,10 @@ export async function deleteEvent(eventId) {
     const url = `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}`;
     
     const data = await makeApiCall(url, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        ...getAuthHeader()
+      }
     });
     
     return data;
@@ -153,6 +162,9 @@ export async function deleteOccurrence(eventId, occurrenceStartTime) {
     
     const data = await makeApiCall(url, {
       method: 'POST',
+      headers: {
+        ...getAuthHeader()
+      },
       body: JSON.stringify({ occurrenceDate: occurrenceStartTime })
     });
     
@@ -166,7 +178,12 @@ export async function deleteOccurrence(eventId, occurrenceStartTime) {
 export async function fetchEventDetails(eventId) {
   try {
     const url = `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}`;
-    const data = await makeApiCall(url, { method: 'GET' });
+    const data = await makeApiCall(url, { 
+      method: 'GET',
+      headers: {
+        ...getAuthHeader()
+      }
+    });
     return data;
   } catch (error) {
     throw error;
@@ -177,7 +194,12 @@ export async function fetchEventDetails(eventId) {
 export async function fetchDeletedOccurrences(eventId) {
   try {
     const url = `${import.meta.env.VITE_API_BASE_URL}/calendar/events/${eventId}/deleted-occurrences`;
-    const data = await makeApiCall(url, { method: 'GET' });
+    const data = await makeApiCall(url, { 
+      method: 'GET',
+      headers: {
+        ...getAuthHeader()
+      }
+    });
     return data;
   } catch (error) {
     throw error;
@@ -191,6 +213,9 @@ export async function restoreOccurrence(eventId, occurrenceDate) {
     
     const data = await makeApiCall(url, {
       method: 'POST',
+      headers: {
+        ...getAuthHeader()
+      },
       body: JSON.stringify({ occurrenceDate: occurrenceDate })
     });
     
