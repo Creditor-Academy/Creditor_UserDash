@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User } from "lucide-react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationModal from "./NotificationModal";
+import { fetchNotifications } from "@/services/notificationService";
 import InboxModal from "./InboxModal";
 import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
@@ -26,7 +27,8 @@ export function DashboardHeader() {
   const [isLoadingEnrolled, setIsLoadingEnrolled] = useState(true);
   const [showEnrollmentAlert, setShowEnrollmentAlert] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
-  const [unreadNotifications, setUnreadNotifications] = useState(2); // Default count
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [latestNotifications, setLatestNotifications] = useState([]);
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -35,6 +37,26 @@ export function DashboardHeader() {
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Poll notifications periodically for real-time badge updates
+  useEffect(() => {
+    let timerId;
+    const tick = async () => {
+      try {
+        const res = await fetchNotifications();
+        const list = res?.data?.notifications || res?.data?.data || [];
+        setLatestNotifications(list);
+        const unread = list.filter(n => !n.read).length;
+        setUnreadNotifications(unread);
+      } catch (e) {
+        // silent fail
+      }
+    };
+    // initial tick and 30s polling
+    tick();
+    timerId = setInterval(tick, 30000);
+    return () => clearInterval(timerId);
+  }, []);
 
   // Fetch enrolled courses on component mount
   useEffect(() => {
@@ -401,7 +423,19 @@ export function DashboardHeader() {
             
             {/* Notification Bell */}
             <button
-              onClick={() => setNotificationModalOpen(true)}
+              onClick={async () => {
+                try {
+                  const res = await fetchNotifications();
+                  const list = res?.data?.notifications || res?.data?.data || [];
+                  setLatestNotifications(list);
+                  const unread = list.filter(n => !n.read).length;
+                  setUnreadNotifications(unread);
+                } catch (e) {
+                  console.error('Failed to fetch notifications:', e);
+                } finally {
+                  setNotificationModalOpen(true);
+                }
+              }}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
               <BellDot className="h-6 w-6" />
@@ -430,6 +464,7 @@ export function DashboardHeader() {
           open={notificationModalOpen} 
           onOpenChange={setNotificationModalOpen}
           onNotificationUpdate={handleNotificationUpdate}
+          notificationsFromApi={latestNotifications}
         />
         
         {/* Inbox Modal */}
