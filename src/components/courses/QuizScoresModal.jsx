@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { 
   Trophy, 
   Users, 
@@ -14,7 +15,8 @@ import {
   Eye,
   X,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Search
 } from 'lucide-react';
 import { fetchQuizAdminAnalytics, fetchQuizAdminScores } from '@/services/quizServices';
 import { fetchCourseUsers } from '@/services/courseService';
@@ -29,6 +31,7 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('scores');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (isOpen && quiz?.id) {
@@ -122,6 +125,41 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
   };
 
   const stats = calculateStats();
+
+  // Filter users based on search query
+  const filteredAdminScores = adminScores.filter(user => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      user.name?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.userId?.toString().includes(query)
+    );
+  });
+
+  // Filter regular scores based on search query
+  const filteredScores = scores.filter(score => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const user = courseUsers.find(u => u.id === score.user_id);
+    return (
+      user?.name?.toLowerCase().includes(query) ||
+      user?.email?.toLowerCase().includes(query) ||
+      score.user_id?.toString().includes(query)
+    );
+  });
+
+  // Filter attempts based on search query
+  const filteredAttempts = attempts.filter(attempt => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const user = courseUsers.find(u => u.id === attempt.user_id);
+    return (
+      user?.name?.toLowerCase().includes(query) ||
+      user?.email?.toLowerCase().includes(query) ||
+      attempt.user_id?.toString().includes(query)
+    );
+  });
 
   if (!isOpen) return null;
 
@@ -263,10 +301,22 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
               {/* Tab Content */}
               {activeTab === 'scores' && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold mb-4">User Scores</h3>
-                  {adminScores.length ? (
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">User Scores</h3>
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  {filteredAdminScores.length ? (
                     <div className="space-y-4">
-                      {adminScores.map((user) => {
+                      {filteredAdminScores.map((user) => {
                         const attemptsArr = Array.isArray(user.attempts) ? user.attempts : [];
                         const latestAttempt = attemptsArr
                           .slice()
@@ -324,14 +374,16 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
                         );
                       })}
                     </div>
-                  ) : scores.length === 0 ? (
+                  ) : filteredScores.length === 0 ? (
                     <div className="text-center py-8">
                       <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No scores available yet</p>
+                      <p className="text-gray-500">
+                        {searchQuery.trim() ? 'No users found matching your search' : 'No scores available yet'}
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {scores.map((score, index) => {
+                      {filteredScores.map((score, index) => {
                         const user = courseUsers.find(u => u.id === score.user_id);
                         const gradeColor = getGradeColor(score.score);
                         const grade = getGrade(score.score);
@@ -545,15 +597,29 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
 
               {activeTab === 'attempts' && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold mb-4">User Attempts</h3>
-                  {attempts.length === 0 ? (
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">User Attempts</h3>
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  {filteredAttempts.length === 0 ? (
                     <div className="text-center py-8">
                       <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-500">No attempts recorded yet</p>
+                      <p className="text-gray-500">
+                        {searchQuery.trim() ? 'No users found matching your search' : 'No attempts recorded yet'}
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {attempts.map((attempt, index) => {
+                      {filteredAttempts.map((attempt, index) => {
                         const user = courseUsers.find(u => u.id === attempt.user_id);
                         
                         return (
