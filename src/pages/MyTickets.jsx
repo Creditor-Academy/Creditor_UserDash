@@ -4,8 +4,6 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getAuthHeader } from '../services/authHeader';
-
 import { 
   Search, 
   Plus, 
@@ -33,16 +31,27 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import axios from "axios";
-import { toast } from "sonner";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-9upi.onrender.com";
+import { useAuth } from "@/contexts/AuthContext";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-testing-branch.onrender.com";
 
 const statusColor = (status) => {
   switch (status?.toUpperCase()) {
-    case "OPEN": return "default";
-    case "CLOSED": return "secondary";
-    case "PENDING": return "outline";
-    default: return "outline";
+    case "OPEN":
+      return "default";
+    case "CLOSED":
+      return "secondary";
+    case "PENDING":
+      return "outline";
+    case "RESOLVED":
+      return "success"; // green
+    case "IN_PROGRESS":
+    case "IN-PROGRESS":
+    case "IN PROGRESS":
+      return "warning"; // yellow
+    default:
+      return "outline";
   }
 };
 
@@ -56,6 +65,7 @@ const priorityColor = (priority) => {
 };
 
 export default function MyTickets() {
+  const { isInstructorOrAdmin } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,6 +74,9 @@ export default function MyTickets() {
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
+
+  // Check if user is instructor or admin
+  const isInstructor = isInstructorOrAdmin();
 
   // Fetch tickets from backend
   const fetchTickets = async () => {
@@ -75,7 +88,6 @@ export default function MyTickets() {
       const response = await axios.get(`${API_BASE}/api/support-tickets/user/me`, {
         headers: {
           'Content-Type': 'application/json',
-      ...getAuthHeader(),
         },
         withCredentials: true,
       });
@@ -89,11 +101,10 @@ export default function MyTickets() {
       console.error('Error fetching tickets:', err);
       setError(err.response?.data?.message || err.message || 'Failed to load tickets');
       
-      if (err.response?.status === 401) {
-        toast.error('Authentication failed. Please log in again.');
-      } else {
-        toast.error('Failed to load tickets. Please try again.');
-      }
+      // Silently handle errors on this page; no toast banners
+      // Optionally, log to console or set local state if needed
+      // console.warn('Ticket fetch error', err);
+      
     } finally {
       setLoading(false);
     }
@@ -103,7 +114,14 @@ export default function MyTickets() {
     fetchTickets();
   }, []);
 
-  const filteredTickets = tickets.filter((ticket) => {
+  // Sort tickets by creation date (newest first) before filtering
+  const sortedTickets = [...tickets].sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0);
+    const dateB = new Date(b.createdAt || 0);
+    return dateB - dateA; // Descending order (newest first)
+  });
+
+  const filteredTickets = sortedTickets.filter((ticket) => {
     const matchesSearch = 
       ticket.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -148,6 +166,27 @@ export default function MyTickets() {
     }
   };
 
+  if (isInstructor) {
+    return (
+      <div className="fixed inset-0 bg-blue-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
+          <div className="text-blue-600 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+          <p className="text-gray-600 mb-6">Only users can access this page.</p>
+          <Button asChild>
+            <Link to="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white">
+              Go to Dashboard
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container py-8 max-w-6xl">
@@ -178,25 +217,6 @@ export default function MyTickets() {
         </Button>
       </div>
 
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-red-700 text-sm">{error}</span>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchTickets}
-              className="border-red-200 text-red-600 hover:bg-red-50"
-            >
-              Retry
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Filters and Search */}
       <Card className="p-4 mb-6">
