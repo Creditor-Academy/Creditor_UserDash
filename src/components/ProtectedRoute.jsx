@@ -20,9 +20,22 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   if (isCheckingAuth || isAuthLoading || isUserLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying authentication...</p>
+        <div
+          className="text-center"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          data-testid="auth-loader"
+        >
+          <div className="relative mx-auto mb-6 h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-4 border-blue-600/90 border-t-transparent motion-safe:animate-spin"></div>
+            <div className="absolute inset-0 rounded-full bg-blue-500/10 blur-sm animate-ping"></div>
+          </div>
+          <p className="text-gray-800 font-medium">Verifying your access…</p>
+          <p className="mt-1 text-sm text-gray-600 animate-pulse">Fetching your profile and permissions</p>
+          <div className="mt-6 mx-auto h-1 w-40 overflow-hidden rounded-full bg-blue-200/60">
+            <div className="h-full w-1/2 bg-blue-600/80 animate-pulse"></div>
+          </div>
         </div>
       </div>
     );

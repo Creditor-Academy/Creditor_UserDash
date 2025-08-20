@@ -84,8 +84,13 @@ import api from './apiClient';
 
 export async function fetchUserProfile() {
   try {
-    const response = await api.get('/api/user/getUserProfile', {
-      withCredentials: true,
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/getUserProfile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      credentials: 'include',
     });
     return response.data?.data ?? response.data;
   } catch (error) {
@@ -98,7 +103,15 @@ export async function updateUserProfile(profileData) {
     console.log("📤 userService: Updating profile to:", `/api/user/updateUserProfile`);
     console.log("📤 userService: Update data:", profileData);
     
-    const response = await api.put('/api/user/updateUserProfile', profileData);
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/updateUserProfile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+      body: JSON.stringify(profileData),
+    });
     
     console.log("✅ userService: Update profile success:", response.data);
     return response.data;

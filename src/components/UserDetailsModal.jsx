@@ -204,7 +204,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -222,65 +222,49 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
                   <span className="text-lg font-medium text-gray-700">
                     {user.first_name?.[0]}{user.last_name?.[0]}
                   </span>
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-semibold text-gray-900 break-words">
                     {user.first_name} {user.last_name}
                   </h3>
-                  <p className="text-sm text-gray-500">{user.email}</p>
+                  <p className="text-sm text-gray-500 break-all">{user.email}</p>
                   <Badge className={`mt-2 ${getRoleBadgeColor(userRole)}`}>
                     {userRole}
                   </Badge>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Email:</span>
-                  <span className="text-sm font-medium">{user.email}</span>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Email:</span>
+                  </div>
+                  <span className="text-sm font-medium break-all sm:ml-6">{user.email}</span>
                 </div>
                 
-                {user.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Phone:</span>
-                    <span className="text-sm font-medium">{user.phone}</span>
-                  </div>
-                )}
-
                 {user.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Location:</span>
-                    <span className="text-sm font-medium">{user.location}</span>
-                  </div>
-                )}
-
-                {user.dob && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Date of Birth:</span>
-                    <span className="text-sm font-medium">
-                      {new Date(user.dob).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600">Location:</span>
+                    </div>
+                    <span className="text-sm font-medium break-words sm:ml-6">{user.location}</span>
                   </div>
                 )}
 
                 {user.gender && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Gender:</span>
-                    <span className="text-sm font-medium capitalize">{user.gender}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600">Gender:</span>
+                    </div>
+                    <span className="text-sm font-medium capitalize sm:ml-6">{user.gender}</span>
                   </div>
                 )}
 
@@ -292,7 +276,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                       href={user.website} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-blue-600 hover:underline"
+                      className="text-sm font-medium text-blue-600 hover:underline break-all"
                     >
                       {user.website}
                     </a>
@@ -310,9 +294,23 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                           href={user.social_handles.instagram} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-blue-600 hover:underline"
+                          className="text-sm font-medium text-blue-600 hover:underline break-all"
                         >
                           {user.social_handles.instagram}
+                        </a>
+                      </div>
+                    )}
+                    {user.social_handles.linkedin && (
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">LinkedIn:</span>
+                        <a 
+                          href={user.social_handles.linkedin} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-600 hover:underline break-all"
+                        >
+                          {user.social_handles.linkedin}
                         </a>
                       </div>
                     )}
@@ -324,7 +322,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                           href={user.social_handles.facebook} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-sm font-medium text-blue-600 hover:underline"
+                          className="text-sm font-medium text-blue-600 hover:underline break-all"
                         >
                           {user.social_handles.facebook}
                         </a>
@@ -345,7 +343,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
                   <span className="text-sm text-gray-600">Joined:</span>
@@ -636,7 +634,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 gap-4 text-sm">
                 <div>
                   <span className="text-gray-600">User ID:</span>
                   <span className="ml-2 font-mono text-xs">{user.id}</span>
