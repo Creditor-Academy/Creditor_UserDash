@@ -12,6 +12,7 @@ import {
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { getLinkPreview } from 'link-preview-js';
 
 // Register font sizes
 const Size = Quill.import('formats/size');
@@ -93,6 +94,14 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [youtubeError, setYoutubeError] = useState('');
   const [currentYoutubeBlock, setCurrentYoutubeBlock] = useState(null);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkDescription, setLinkDescription] = useState('');
+  const [linkError, setLinkError] = useState('');
+  const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
+  const [linkPreview, setLinkPreview] = useState(null);
+  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
 
   const blockRefs = React.useRef({});
 
@@ -158,6 +167,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setShowAudioDialog(true);
     } else if (blockType.id === 'youtube') {
       setShowYoutubeDialog(true);
+    } else if (blockType.id === 'link') {
+      setShowLinkDialog(true);
     } else {
       addContentBlock(blockType);
     }
@@ -212,6 +223,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setYoutubeDescription(block.youtubeDescription || '');
       setYoutubeUrl(block.youtubeUrl);
       setShowYoutubeDialog(true);
+    } else if (block.type === 'link') {
+      setCurrentLinkBlock(block);
+      setLinkTitle(block.linkTitle);
+      setLinkUrl(block.linkUrl);
+      setLinkDescription(block.linkDescription || '');
+      setShowLinkDialog(true);
     } else {
       setCurrentBlock(block);
       setEditorContent(block.content || '');
@@ -633,6 +650,56 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     setShowYoutubeDialog(true);
   };
 
+  const handleLinkDialogClose = () => {
+    setShowLinkDialog(false);
+    setLinkTitle('');
+    setLinkUrl('');
+    setLinkDescription('');
+    setLinkError('');
+    setCurrentLinkBlock(null);
+    setLinkPreview(null);
+  };
+
+  const handleLinkInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'title') {
+      setLinkTitle(value);
+    } else if (name === 'url') {
+      setLinkUrl(value);
+    } else if (name === 'description') {
+      setLinkDescription(value);
+    }
+  };
+
+  const handleAddLink = () => {
+    if (!linkTitle || !linkUrl) {
+      setLinkError('Please fill in all required fields');
+      return;
+    }
+
+    const newBlock = {
+      id: currentLinkBlock?.id || `link-${Date.now()}`,
+      type: 'link',
+      title: 'Link',
+      linkTitle: linkTitle,
+      linkUrl: linkUrl,
+      linkDescription: linkDescription,
+      linkImage: linkPreview?.images?.[0],
+      linkSiteName: linkPreview?.siteName,
+      timestamp: new Date().toISOString()
+    };
+
+    if (currentLinkBlock) {
+      setContentBlocks(prev => 
+        prev.map(block => block.id === currentLinkBlock.id ? newBlock : block)
+      );
+    } else {
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
+    
+    handleLinkDialogClose();
+  };
+
   useEffect(() => {
     const collapseSidebar = () => {
       if (setSidebarCollapsed) {
@@ -711,6 +778,46 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
     loadLessonData();
   }, [courseId, moduleId, lessonId, navigate, location.state]);
+
+  useEffect(() => {
+    const fetchLinkPreview = async () => {
+      if (!linkUrl) {
+        setLinkPreview(null);
+        return;
+      }
+
+      try {
+        setIsFetchingPreview(true);
+        const preview = await getLinkPreview(linkUrl, {
+          timeout: 5000,
+          headers: {
+            'user-agent': 'googlebot',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        });
+        setLinkPreview(preview);
+        
+        // Auto-fill title and description if they're empty
+        if (!linkTitle && preview.title) {
+          setLinkTitle(preview.title);
+        }
+        if (!linkDescription && preview.description) {
+          setLinkDescription(preview.description);
+        }
+      } catch (error) {
+        console.error('Error fetching link preview:', error);
+        setLinkPreview(null);
+      } finally {
+        setIsFetchingPreview(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      fetchLinkPreview();
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [linkUrl]);
 
   if (loading) {
     return (
@@ -1045,6 +1152,53 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           </div>
                         </div>
                       )}
+                      {block.type === 'link' && (
+                        <div className="relative group my-6 w-full">
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => handleEditBlock(block.id)}
+                              title="Edit Link"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => removeContentBlock(block.id)}
+                              title="Remove Link"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                            <div 
+                              className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, block.id)}
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                          </div>
+                          
+                          <h3 className="text-xl font-semibold mb-2">{block.linkTitle}</h3>
+                          {block.linkDescription && (
+                            <p className="text-gray-600 mb-4">{block.linkDescription}</p>
+                          )}
+                          
+                          <div className="w-full max-w-4xl mx-auto">
+                            <a
+                              href={block.linkUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              {block.linkUrl}
+                            </a>
+                          </div>
+                        </div>
+                      )}
                       {block.content && (
                         <div 
                           className="prose max-w-none"
@@ -1358,6 +1512,53 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                           title={block.youtubeTitle || 'YouTube video player'}
                                         />
                                       </div>
+                                    </div>
+                                  </div>
+                                )}
+                                {block.type === 'link' && (
+                                  <div className="relative group my-6">
+                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => handleEditBlock(block.id)}
+                                        title="Edit Link"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                        onClick={() => removeContentBlock(block.id)}
+                                        title="Remove Link"
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                      <div 
+                                        className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, block.id)}
+                                      >
+                                        <GripVertical className="h-4 w-4" />
+                                      </div>
+                                    </div>
+                                    
+                                    <h3 className="text-xl font-semibold mb-2">{block.linkTitle}</h3>
+                                    {block.linkDescription && (
+                                      <p className="text-gray-600 mb-4">{block.linkDescription}</p>
+                                    )}
+                                    
+                                    <div className="w-full max-w-4xl mx-auto">
+                                      <a
+                                        href={block.linkUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-700"
+                                      >
+                                        {block.linkUrl}
+                                      </a>
                                     </div>
                                   </div>
                                 )}
@@ -1892,6 +2093,183 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Link Dialog */}
+      <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Link URL <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="url"
+                name="url"
+                value={linkUrl}
+                onChange={handleLinkInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://www.example.com"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Example: https://www.example.com
+              </p>
+              {linkError && (
+                <p className="text-sm text-red-500 mt-1">{linkError}</p>
+              )}
+              {isFetchingPreview && (
+                <div className="mt-2 flex items-center text-sm text-gray-500">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading preview...
+                </div>
+              )}
+              {linkPreview && (
+                <div className="mt-4 border rounded-lg overflow-hidden bg-white">
+                  {linkPreview.images && linkPreview.images[0] && (
+                    <img 
+                      src={linkPreview.images[0]} 
+                      alt="Preview" 
+                      className="w-full h-40 object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <div className="p-4">
+                    {linkPreview.siteName && (
+                      <p className="text-xs text-gray-500 mb-1">{linkPreview.siteName}</p>
+                    )}
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      {linkPreview.title || 'No title available'}
+                    </h3>
+                    {linkPreview.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {linkPreview.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Link Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={linkTitle}
+                onChange={handleLinkInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter link title"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                name="description"
+                value={linkDescription}
+                onChange={handleLinkInputChange}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a description for your link (optional)"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleLinkDialogClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddLink}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Add Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {contentBlocks.map((block, index) => (
+        block.type === 'link' && (
+          <div key={block.id} className="relative group my-6 w-full">
+            <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                onClick={() => handleEditBlock(block.id)}
+                title="Edit Link"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                onClick={() => removeContentBlock(block.id)}
+                title="Remove Link"
+              >
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
+              <div 
+                className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                draggable
+                onDragStart={(e) => handleDragStart(e, block.id)}
+              >
+                <GripVertical className="h-4 w-4" />
+              </div>
+            </div>
+            
+            <a
+              href={block.linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block border rounded-lg overflow-hidden hover:shadow-md transition-shadow bg-white"
+            >
+              {block.linkImage && (
+                <div className="h-40 bg-gray-100 overflow-hidden">
+                  <img 
+                    src={block.linkImage} 
+                    alt={block.linkTitle} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.classList.remove('h-40');
+                    }}
+                  />
+                </div>
+              )}
+              <div className="p-4">
+                {block.linkSiteName && (
+                  <p className="text-xs text-gray-500 mb-1">{block.linkSiteName}</p>
+                )}
+                <h3 className="font-medium text-gray-900 mb-1">
+                  {block.linkTitle}
+                </h3>
+                {block.linkDescription && (
+                  <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                    {block.linkDescription}
+                  </p>
+                )}
+                <p className="text-sm text-blue-600 truncate">
+                  {new URL(block.linkUrl).hostname.replace('www.', '')}
+                </p>
+              </div>
+            </a>
+          </div>
+        )
+      ))}
     </>
   );
 };
