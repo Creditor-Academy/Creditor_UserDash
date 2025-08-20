@@ -411,7 +411,7 @@ export function DashboardHeader() {
                 </span>
               )}
             </button>
-            
+
             {/* Profile Dropdown */}
             <div className="ml-2">
               <ProfileDropdown />

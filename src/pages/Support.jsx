@@ -273,21 +273,24 @@ const SupportTicketsPage = () => {
             Support Tickets
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 flex-1 flex flex-col overflow-hidden">
+        <CardContent className="p-2 flex-1 flex flex-col min-h-0">
           {/* Search and Filter Section */}
-          <div className="flex flex-col lg:flex-row gap-3 mb-3 flex-shrink-0">
+          <div className="flex flex-col lg:flex-row gap-2 mb-2 flex-shrink-0">
             <div className="relative flex-1 min-w-0">
+              <div className="text-xs text-gray-500 italic mb-1">
+                💡 Click any row to view details
+              </div>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search tickets..."
-                className="pl-10 w-full h-9"
+                className="pl-10 w-full h-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="w-full lg:w-40">
+            <div className="w-full lg:w-36">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="flex items-center gap-2 w-full h-9">
+                <SelectTrigger className="flex items-center gap-2 w-full h-8">
                   <Filter className="h-4 w-4" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -304,12 +307,12 @@ const SupportTicketsPage = () => {
 
           {/* Loading State */}
           {loading ? (
-            <div className="flex justify-center items-center h-32 flex-1">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <div className="flex justify-center items-center h-20 flex-1">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
             </div>
           ) : filteredTickets.length === 0 ? (
-            <div className="text-center py-8 flex-1">
-              <Mail className="mx-auto h-8 w-8 text-gray-400" />
+            <div className="text-center py-4 flex-1">
+              <Mail className="mx-auto h-6 w-6 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-900 mt-2">No tickets found</h3>
               <p className="text-xs text-gray-500 mt-1">
                 {searchTerm || statusFilter !== 'all' 
@@ -319,31 +322,26 @@ const SupportTicketsPage = () => {
             </div>
           ) : (
             /* Responsive Table Container */
-            <div className="flex-1 overflow-auto">
-              <div className="min-w-[800px] w-full">
+            <div className="flex-1 overflow-auto min-h-0">
+              <div className="min-w-[400px] w-full max-h-full">
                 <Table>
                   <TableCaption className="text-xs">A list of recent support tickets raised by users.</TableCaption>
                   <TableHeader>
                     <TableRow className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
-                      <TableHead className="w-32 text-xs font-semibold text-gray-600">Ticket ID</TableHead>
-                      <TableHead className="w-48 text-xs font-semibold text-gray-600">User</TableHead>
-                      <TableHead className="w-[24rem] text-xs font-semibold text-gray-600">Subject</TableHead>
-                      <TableHead className="w-20 text-xs font-semibold text-gray-600">Priority</TableHead>
-                      <TableHead className="w-24 text-xs font-semibold text-gray-600">Status</TableHead>
-                      <TableHead className="w-32 text-xs font-semibold text-gray-600">Date</TableHead>
-                      <TableHead className="w-12 text-xs font-semibold text-gray-600">Actions</TableHead>
+                      <TableHead className="w-32 text-xs font-semibold text-gray-600 py-1">User</TableHead>
+                      <TableHead className="w-20 text-xs font-semibold text-gray-600 py-1">Priority</TableHead>
+                      <TableHead className="w-20 text-xs font-semibold text-gray-600 py-1">Status</TableHead>
+                      <TableHead className="w-16 text-xs font-semibold text-gray-600 py-1">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredTickets.map((ticket) => (
                       <React.Fragment key={ticket.id}>
-                        <TableRow className="hover:bg-gray-50/60 border-b align-top">
-                          <TableCell className="font-medium text-xs py-2">
-                            <div className="truncate" title={ticket.id}>
-                              #{ticket.id.slice(0, 8)}...
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2">
+                        <TableRow 
+                          className="hover:bg-blue-50/60 border-b align-top cursor-pointer transition-all duration-200 hover:shadow-sm"
+                          onClick={() => toggleTicketExpansion(ticket.id)}
+                        >
+                          <TableCell className="py-1">
                             <div className="font-medium text-xs truncate" title={ticket.userName}>
                               {ticket.userName}
                             </div>
@@ -351,128 +349,89 @@ const SupportTicketsPage = () => {
                               {ticket.userEmail}
                             </div>
                           </TableCell>
-                          <TableCell className="py-2">
-                            <div className="truncate text-xs" title={ticket.subject}>
-                              {ticket.subject}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2">
+                          <TableCell className="py-1">
                             <div className="flex items-center gap-1">
                               {getPriorityIcon(ticket.priority)}
-                              <span className="capitalize text-xs hidden sm:inline">{ticket.priority}</span>
+                              <span className="capitalize text-xs">{ticket.priority}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="py-2">{getStatusBadge(ticket.status)}</TableCell>
-                          <TableCell className="py-2">
-                            <div className="text-xs whitespace-nowrap">
-                              {formatDate(ticket.createdAt)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleTicketExpansion(ticket.id)}
-                              className="h-6 w-6 p-0"
-                            >
+                          <TableCell className="py-1">{getStatusBadge(ticket.status)}</TableCell>
+                          <TableCell className="py-1">
+                            <div className="flex items-center justify-center">
                               {expandedTicket === ticket.id ? (
-                                <ChevronUp className="h-3 w-3" />
+                                <ChevronUp className="h-3 w-3 text-blue-500 transition-transform duration-200" />
                               ) : (
-                                <ChevronDown className="h-3 w-3" />
+                                <ChevronDown className="h-3 w-3 text-gray-500 transition-transform duration-200" />
                               )}
-                            </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                         {expandedTicket === ticket.id && (
                           <TableRow>
-                            <TableCell colSpan={7} className="bg-gray-50 p-3">
-                              <div className="grid gap-4">
-                                {/* Original Message */}
-                                <div>
-                                  <h4 className="font-medium mb-1 flex items-center gap-2 text-sm">
-                                    <User className="h-3 w-3" />
-                                    Message:
-                                  </h4>
-                                  <div className="bg-white p-2 rounded-lg border">
-                                    <p className="text-gray-700 whitespace-pre-line text-xs leading-5">{ticket.message}</p>
-                                    {ticket.attachments && ticket.attachments.length > 0 && (
-                                      <div className="mt-2 pt-2 border-t">
-                                        <h5 className="text-xs font-medium text-gray-600 mb-1">Attachments:</h5>
-                                        <div className="flex flex-wrap gap-1">
-                                          {ticket.attachments.map((attachment, index) => (
-                                            <a
-                                              key={index}
-                                              href={attachment}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              className="text-blue-600 hover:text-blue-800 text-xs underline"
-                                            >
-                                              Attachment {index + 1}
-                                            </a>
+                            <TableCell colSpan={4} className="bg-blue-50/30 p-2 border-l-4 border-l-blue-200">
+                              <div className="grid gap-2">
+                                {/* Summary Row (compact - no duplicates) */}
+                                <div className="grid grid-cols-2 gap-3 text-xs">
+                                  <div>
+                                    <h4 className="font-medium text-gray-600 mb-1">Ticket</h4>
+                                    <div><span className="text-gray-500">ID:</span> <span className="font-mono">{ticket.id}</span></div>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium text-gray-600 mb-1">Subject</h4>
+                                    <div className="truncate">{ticket.subject}</div>
+                                  </div>
+                                </div>
+
+                                {/* Body Row */}
+                                <div className="grid grid-cols-3 gap-3">
+                                  {/* Left: Message + Replies */}
+                                  <div className="col-span-2 space-y-2">
+                                    <div>
+                                      <h4 className="font-medium mb-1 text-xs text-gray-600">Message</h4>
+                                      <div className="bg-white p-2 rounded border text-xs">
+                                        <p className="text-gray-700">{ticket.message}</p>
+                                      </div>
+                                    </div>
+                                    {ticket.replies && ticket.replies.length > 0 && (
+                                      <div>
+                                        <h4 className="font-medium mb-1 text-xs text-gray-600">Replies ({ticket.replies.length})</h4>
+                                        <div className="space-y-1">
+                                          {ticket.replies.map((reply, index) => (
+                                            <div key={index} className="bg-white p-1 rounded border text-xs">
+                                              <div className="flex justify-between text-gray-500 mb-1">
+                                                <span>{reply.sender?.name || 'Admin'}</span>
+                                                <span>{formatDate(reply.created_at)}</span>
+                                              </div>
+                                              <p className="text-gray-700">{reply.message}</p>
+                                            </div>
                                           ))}
                                         </div>
                                       </div>
                                     )}
                                   </div>
-                                </div>
 
-                                {/* Ticket Details + Actions */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                                  <div className="lg:col-span-2">
-                                    <h4 className="font-medium mb-1 text-sm">Details:</h4>
-                                    <div className="bg-white p-2 rounded-lg border text-xs space-y-1">
-                                      <div>
-                                        <span className="text-gray-500">Created: </span>
-                                        {formatDate(ticket.createdAt)}
+                                  {/* Right: Details + Actions */}
+                                  <div className="space-y-2">
+                                    <div>
+                                      <h4 className="font-medium mb-1 text-xs text-gray-600">Details</h4>
+                                      <div className="text-xs space-y-1">
+                                        <div><span className="text-gray-500">Created:</span> {formatDate(ticket.createdAt)}</div>
+                                        <div><span className="text-gray-500">Updated:</span> {formatDate(ticket.updatedAt)}</div>
                                       </div>
-                                      <div>
-                                        <span className="text-gray-500">Last Updated: </span>
-                                        {formatDate(ticket.updatedAt)}
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-500">Status: </span>
-                                        <span className="capitalize">{mapToBackendStatus(ticket.status)}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-gray-500">Priority: </span>
-                                        <span className="capitalize">{ticket.priority}</span>
+                                    </div>
+                                    <div className="mt-4">
+                                      <h4 className="font-medium mb-1 text-xs text-gray-600">Actions</h4>
+                                      <div className="flex flex-col gap-1">
+                                        <Button size="sm" className="h-6 text-xs px-2" onClick={() => openStatusDialog(ticket.id, ticket.status)}>
+                                          Change Status
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openReplyDialog(ticket.id)}>
+                                          Reply
+                                        </Button>
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col gap-2 justify-start">
-                                    <Button size="sm" onClick={() => openStatusDialog(ticket.id, ticket.status)}>
-                                      Change Status
-                                    </Button>
-                                    <Button size="sm" variant="outline" onClick={() => openReplyDialog(ticket.id)}>
-                                      Reply to User
-                                    </Button>
-                                  </div>
                                 </div>
-
-                                {/* Replies */}
-                                {ticket.replies && ticket.replies.length > 0 && (
-                                  <div>
-                                    <h4 className="font-medium mb-1 flex items-center gap-2 text-sm">
-                                      <MessageSquare className="h-3 w-3" />
-                                      Replies ({ticket.replies.length}):
-                                    </h4>
-                                    <div className="space-y-2">
-                                      {ticket.replies.map((reply, index) => (
-                                        <div key={index} className="bg-white p-2 rounded-lg border">
-                                          <div className="flex items-center justify-between mb-1">
-                                            <span className="text-xs font-medium text-gray-700">
-                                              {reply.sender?.name || 'Admin'}
-                                            </span>
-                                            <span className="text-xs text-gray-500">
-                                              {formatDate(reply.created_at)}
-                                            </span>
-                                          </div>
-                                          <p className="text-xs text-gray-700 whitespace-pre-line leading-5">{reply.message}</p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             </TableCell>
                           </TableRow>

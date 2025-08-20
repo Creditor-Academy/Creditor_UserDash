@@ -45,6 +45,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
       dotColor: "bg-orange-500",
       read: true
     },
+    // Payment-related sample notifications
     {
       id: "4",
       type: "payment",
@@ -86,7 +87,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
     groupActivities: false,
     paymentNotifications: true,
     paymentReminders: true,
-    paymentDueAlerts: true
+    paymentDueAlerts: true,
   });
 
   // Initialize unread count when modal opens
@@ -101,27 +102,19 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
     setNotifications(notifications.map(n => 
       n.id === id ? { ...n, read: true } : n
     ));
-    
-    // Update unread count
     const newUnreadCount = notifications.filter(n => !n.read && n.id !== id).length;
-    if (onNotificationUpdate) {
-      onNotificationUpdate(newUnreadCount);
-    }
+    if (onNotificationUpdate) onNotificationUpdate(newUnreadCount);
   };
 
   const handleMarkAllAsRead = () => {
     setNotifications(notifications.map(n => ({ ...n, read: true })));
     toast.success("All notifications marked as read");
-    
-    // Update unread count to 0
-    if (onNotificationUpdate) {
-      onNotificationUpdate(0);
-    }
+    if (onNotificationUpdate) onNotificationUpdate(0);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm p-0 bg-white rounded-xl shadow-lg">
+      <DialogContent className="max-w-md w-[92vw] sm:w-[28rem] p-0 bg-white rounded-xl shadow-lg max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
             <Bell className="h-4 w-4 text-gray-700" />
@@ -129,7 +122,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
           </DialogTitle>
         </DialogHeader>
         
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 overflow-y-auto">
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-3 h-8 bg-gray-100 rounded-lg p-1">
               <TabsTrigger 
@@ -249,11 +242,11 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                 </Button>
               )}
             </TabsContent>
-            
+
             <TabsContent value="payment" className="space-y-2 mt-3">
-              {notifications.filter(n => n.type === "payment").length > 0 ? (
+              {notifications.filter(n => n.type === 'payment').length > 0 ? (
                 notifications
-                  .filter(n => n.type === "payment")
+                  .filter(n => n.type === 'payment')
                   .map((notification) => (
                     <div
                       key={notification.id}
@@ -290,8 +283,8 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                   <p className="text-gray-500 text-xs">No payment notifications</p>
                 </div>
               )}
-              
-              {notifications.filter(n => n.type === "payment" && !n.read).length > 0 && (
+
+              {notifications.filter(n => n.type === 'payment' && !n.read).length > 0 && (
                 <Button
                   variant="outline"
                   className="w-full mt-4 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
@@ -410,59 +403,59 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                     className="scale-75"
                   />
                 </div>
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-2">
-                <h5 className="text-xs font-medium text-gray-900">Payment Notifications</h5>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="payment-notifications" className="flex flex-col">
-                    <span className="text-xs text-gray-900">Payment Notifications</span>
-                    <span className="text-xs text-gray-500">Payment confirmations and receipts</span>
-                  </Label>
-                  <Switch 
-                    id="payment-notifications" 
-                    checked={notificationSettings.paymentNotifications}
-                    onCheckedChange={(checked) => {
-                      setNotificationSettings({...notificationSettings, paymentNotifications: checked});
-                      toast.success("Payment notification settings updated");
-                    }}
-                    className="scale-75"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="payment-reminders" className="flex flex-col">
-                    <span className="text-xs text-gray-900">Payment Reminders</span>
-                    <span className="text-xs text-gray-500">Upcoming payment notifications</span>
-                  </Label>
-                  <Switch 
-                    id="payment-reminders" 
-                    checked={notificationSettings.paymentReminders}
-                    onCheckedChange={(checked) => {
-                      setNotificationSettings({...notificationSettings, paymentReminders: checked});
-                      toast.success("Payment reminder settings updated");
-                    }}
-                    className="scale-75"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="payment-due-alerts" className="flex flex-col">
-                    <span className="text-xs text-gray-900">Payment Due Alerts</span>
-                    <span className="text-xs text-gray-500">Urgent payment due notifications</span>
-                  </Label>
-                  <Switch 
-                    id="payment-due-alerts" 
-                    checked={notificationSettings.paymentDueAlerts}
-                    onCheckedChange={(checked) => {
-                      setNotificationSettings({...notificationSettings, paymentDueAlerts: checked});
-                      toast.success("Payment due alert settings updated");
-                    }}
-                    className="scale-75"
-                  />
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <h5 className="text-xs font-medium text-gray-900">Payment Notifications</h5>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="payment-notifications" className="flex flex-col">
+                      <span className="text-xs text-gray-900">Payment Notifications</span>
+                      <span className="text-xs text-gray-500">Payment confirmations and receipts</span>
+                    </Label>
+                    <Switch
+                      id="payment-notifications"
+                      checked={notificationSettings.paymentNotifications}
+                      onCheckedChange={(checked) => {
+                        setNotificationSettings({ ...notificationSettings, paymentNotifications: checked });
+                        toast.success("Payment notification settings updated");
+                      }}
+                      className="scale-75"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="payment-reminders" className="flex flex-col">
+                      <span className="text-xs text-gray-900">Payment Reminders</span>
+                      <span className="text-xs text-gray-500">Upcoming payment notifications</span>
+                    </Label>
+                    <Switch
+                      id="payment-reminders"
+                      checked={notificationSettings.paymentReminders}
+                      onCheckedChange={(checked) => {
+                        setNotificationSettings({ ...notificationSettings, paymentReminders: checked });
+                        toast.success("Payment reminder settings updated");
+                      }}
+                      className="scale-75"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="payment-due-alerts" className="flex flex-col">
+                      <span className="text-xs text-gray-900">Payment Due Alerts</span>
+                      <span className="text-xs text-gray-500">Urgent payment due notifications</span>
+                    </Label>
+                    <Switch
+                      id="payment-due-alerts"
+                      checked={notificationSettings.paymentDueAlerts}
+                      onCheckedChange={(checked) => {
+                        setNotificationSettings({ ...notificationSettings, paymentDueAlerts: checked });
+                        toast.success("Payment due alert settings updated");
+                      }}
+                      className="scale-75"
+                    />
+                  </div>
                 </div>
               </div>
             </TabsContent>
