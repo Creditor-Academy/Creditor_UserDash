@@ -669,6 +669,7 @@ const AddEvent = () => {
           headers: {
             "Content-Type": "application/json",
             "X-User-Role": currentRole, // Add role in header as well
+            ...getAuthHeader(),
           },
           body: JSON.stringify(payload),
           credentials: "include"

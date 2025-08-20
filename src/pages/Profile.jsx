@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import NotificationPreferences from "@/components/profile/NotificationPreferences";
 import ProfileSecurity from "@/components/profile/ProfileSecurity";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Bell, Shield, Camera } from "lucide-react";
 import { getUserAvatarUrl, getUserAvatarUrlSync, refreshAvatarFromBackend } from "@/lib/avatar-utils";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -24,6 +25,7 @@ function Profile() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentAvatar, setCurrentAvatar] = useState(getUserAvatarUrlSync());
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -33,7 +35,9 @@ function Profile() {
       title: "Software Developer",
       phone: "+1 (555) 123-4567",
       location: "San Francisco, CA",
-      timezone: "America/New_York" // Default to EST
+      timezone: "America/New_York", // Default to EST
+      linkedin: "",
+      facebook: ""
     }
   });
 
@@ -76,6 +80,8 @@ function Profile() {
         phone: userProfile.phone || '',
         location: userProfile.location || '',
         timezone: userTimezone,
+        linkedin: userProfile.social_handles?.linkedin || '',
+        facebook: userProfile.social_handles?.facebook || ''
       };
       
       form.reset(formData);
@@ -129,6 +135,8 @@ function Profile() {
         phone: values.phone,
         location: values.location,
         timezone: values.timezone,
+        facebook: values.facebook || '',
+        linkedin: values.linkedin || ''
       };
       
       const response = await updateUserProfile(updateData);
@@ -146,6 +154,11 @@ function Profile() {
         phone: values.phone,
         location: values.location,
         timezone: values.timezone,
+        social_handles: {
+          ...(userProfile?.social_handles || {}),
+          linkedin: values.linkedin || '',
+          facebook: values.facebook || ''
+        }
       };
       
       // Update the global user profile context
@@ -178,7 +191,7 @@ function Profile() {
       <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
         <div className="flex items-center gap-6">
           <div className="relative group">
-            <Avatar className="w-24 h-24 border-4 border-primary/20">
+            <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
               <AvatarImage src={currentAvatar} alt="Profile avatar" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
                 {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
@@ -206,7 +219,7 @@ function Profile() {
     <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
       <div className="flex items-center gap-6">
         <div className="relative group">
-          <Avatar className="w-24 h-24 border-4 border-primary/20">
+          <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
             <AvatarImage src={currentAvatar} alt="Profile avatar" />
             <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
               {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
@@ -287,6 +300,34 @@ function Profile() {
                           <FormLabel className="text-sm font-medium text-gray-700 mb-2">Email</FormLabel>
                           <FormControl>
                             <Input {...field} type="email" readOnly disabled className="bg-gray-50/50 border-gray-200 cursor-not-allowed h-11 rounded-lg" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="linkedin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">LinkedIn Profile URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="url" placeholder="https://www.linkedin.com/in/username" className="h-11 rounded-lg" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="facebook"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Facebook Profile URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="url" placeholder="https://www.facebook.com/username" className="h-11 rounded-lg" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -406,6 +447,15 @@ function Profile() {
           <ProfileSecurity />
         </TabsContent> */}
       {/* </Tabs> */}
+      <Dialog open={isAvatarPreviewOpen} onOpenChange={setIsAvatarPreviewOpen}>
+        <DialogContent className="sm:max-w-3xl p-0 bg-transparent border-none shadow-none">
+          <img
+            src={currentAvatar}
+            alt="Profile avatar preview"
+            className="max-h-[80vh] w-auto mx-auto rounded-lg shadow-2xl"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

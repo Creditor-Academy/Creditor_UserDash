@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 import DashboardLayout from "@/layouts/DashboardLayout";
 import  Dashboard  from "@/pages/Dashboard";
+import UpcomingCourses from "@/pages/UpcomingCourses";
 import  Courses  from "@/pages/Courses";
 import  ModulesList  from "@/pages/ModulesList";
 import  ModuleDetail  from "@/pages/ModuleDetail";
@@ -165,6 +166,7 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="upcoming-courses" element={<UpcomingCourses />} />
             
             {/* Course related routes */}
             <Route path="courses">

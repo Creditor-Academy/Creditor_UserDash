@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, ChevronRight, GraduationCap, Target, Clock, ChevronLeft, CheckCircle, Search, MonitorPlay, Award, Video } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardCarousel from "@/components/dashboard/DashboardCarousel";
+import UpcomingCourses from "@/pages/UpcomingCourses";
 import DashboardCalendar from "@/components/dashboard/DashboardCalendar";
 import DashboardTodo from "@/components/dashboard/DashboardTodo";
 import MonthlyProgress from "@/components/dashboard/MonthlyProgress";
@@ -606,6 +607,7 @@ export function Dashboard() {
               <LiveClasses />
             </div>
           </div>
+          <UpcomingCourses />
           {/* How It Works Section */}
           <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8 mb-8">
             <div className="text-center mb-8 sm:mb-10">
