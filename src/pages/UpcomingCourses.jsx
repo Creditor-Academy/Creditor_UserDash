@@ -32,6 +32,18 @@ const UPCOMING_COURSES = [
     course: "I Want Remedy Now",
     image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+6.png",
   },
+  {
+    id: "iwrn-credit-utilization-payment-history",
+    title: "Credit Utilization and Payment History",
+    course: "I Want Remedy Now",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+7.png",
+  },
+  {
+    id: "iwrn-credit-denials-real-world-impact",
+    title: "Credit Denials: The Real-World Impact",
+    course: "I Want Remedy Now",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+8.png",
+  },
 ];
 
 function UpcomingCourses() {
