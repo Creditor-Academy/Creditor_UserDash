@@ -121,19 +121,41 @@ const QuizModal = ({
     setError('');
     try {
       if (editingQuiz && !isAddingQuestions) {
-        // Update existing quiz
-        const quizData = {
-          module_id: moduleId,
-          ...form,
+        // Update existing quiz - send only changed fields
+        const normalizedForm = {
+          title: form.title,
+          type: form.type,
           maxAttempts: Number(form.maxAttempts),
           time_estimate: Number(form.time_estimate),
           max_score: Number(form.max_score),
           min_score: Number(form.min_score),
         };
-        const updated = await updateQuiz(editingQuiz.id, quizData);
-        setCreatedQuiz({ ...updated, id: editingQuiz.id });
-        setStep(2);
-        if (onQuizUpdated) onQuizUpdated(updated);
+
+        // Build payload with only changed fields compared to editingQuiz
+        const changedPayload = Object.entries(normalizedForm).reduce((acc, [key, value]) => {
+          const prev = editingQuiz?.[key];
+          if (String(prev) !== String(value)) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {});
+
+        // If module is being changed explicitly, include it
+        if (moduleId && editingQuiz?.module_id && String(editingQuiz.module_id) !== String(moduleId)) {
+          changedPayload.module_id = moduleId;
+        }
+
+        // If nothing changed, just notify and close (stay within step 1 behavior)
+        if (Object.keys(changedPayload).length === 0) {
+          if (onQuizUpdated) onQuizUpdated(editingQuiz);
+          onClose();
+        } else {
+          const updated = await updateQuiz(editingQuiz.id, changedPayload);
+          setCreatedQuiz({ ...editingQuiz, ...changedPayload, id: editingQuiz.id });
+          if (onQuizUpdated) onQuizUpdated(updated);
+          onClose();
+        }
+        return;
       } else {
         // Create new quiz
         const quizData = {
@@ -152,7 +174,7 @@ const QuizModal = ({
         if (onQuizCreated) onQuizCreated(created);
       }
     } catch (err) {
-      setError('Failed to create quiz. Please try again.');
+      setError(editingQuiz && !isAddingQuestions ? 'Failed to update quiz. Please try again.' : 'Failed to create quiz. Please try again.');
     } finally {
       setLoading(false);
     }

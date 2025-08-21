@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import QuizModal from '@/components/courses/QuizModal';
 import QuizScoresModal from '@/components/courses/QuizScoresModal';
 import EditQuestionModal from '@/components/courses/EditQuestionModal';
-import { fetchQuizzesByModule, fetchAllQuizzes, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
+import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
+import { getQuizQuestions } from '@/services/quizService';
+import { getAuthHeader } from '@/services/authHeader';
 import { toast } from "sonner";
 
 const COURSES_PER_PAGE = 5;
@@ -29,7 +31,7 @@ const CreateQuizPage = () => {
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedModuleForQuiz, setSelectedModuleForQuiz] = useState(null);
   const [moduleQuizzes, setModuleQuizzes] = useState({}); // { [moduleId]: [quiz, ...] }
-  const [allQuizzes, setAllQuizzes] = useState([]);
+  const [allQuizzes, setAllQuizzes] = useState([]); // kept for fallback but not used for global fetch anymore
   const [previewQuizData, setPreviewQuizData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
@@ -96,19 +98,7 @@ const CreateQuizPage = () => {
     fetchAllQuizzes();
   }, [courses, isAllowed]);
 
-  // Fetch all quizzes once
-  useEffect(() => {
-    if (!isAllowed) return;
-    const fetchQuizzes = async () => {
-      try {
-        const quizzes = await fetchAllQuizzes();
-        setAllQuizzes(Array.isArray(quizzes) ? quizzes : quizzes.data || []);
-      } catch {
-        setAllQuizzes([]);
-      }
-    };
-    fetchQuizzes();
-  }, [isAllowed]);
+  // Note: No global fetchAllQuizzes call since endpoint is not available; rely on per-module fetch
 
   // Filtered and paginated courses
   const filteredCourses = useMemo(() => {
@@ -163,8 +153,33 @@ const CreateQuizPage = () => {
     setPreviewError(null);
     setShowPreviewDialog(true);
     try {
-      const data = await getQuizById(quiz.id);
-      setPreviewQuizData(data);
+      const quizId = quiz.id || quiz.quizId;
+      try {
+        const questions = await getQuizQuestions(quizId);
+        const normalized = Array.isArray(questions) ? questions : (questions?.data || []);
+        setPreviewQuizData({
+          id: quizId,
+          title: quiz.title,
+          description: quiz.description,
+          questions: normalized,
+        });
+      } catch (innerErr) {
+        // Fallback to legacy endpoint that returns full quiz with questions
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/getQuizById`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          throw new Error('Failed to load quiz details');
+        }
+        const data = await res.json();
+        const quizData = data?.data || data;
+        setPreviewQuizData(quizData);
+      }
     } catch (err) {
       setPreviewError('Failed to load quiz details.');
       setPreviewQuizData(null);
@@ -281,7 +296,11 @@ const CreateQuizPage = () => {
               <Trophy className="w-8 h-8 text-blue-600 mr-3" />
               <div>
                 <p className="text-sm text-gray-600">Total Quizzes</p>
-                <p className="text-2xl font-bold">{allQuizzes.length}</p>
+                <p className="text-2xl font-bold">
+                  {Object.keys(moduleQuizzes).length > 0
+                    ? Object.values(moduleQuizzes).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0)
+                    : allQuizzes.length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -320,7 +339,9 @@ const CreateQuizPage = () => {
               <div>
                 <p className="text-sm text-gray-600">Quizzes with Questions</p>
                 <p className="text-2xl font-bold">
-                  {allQuizzes.filter(q => (q.questions?.length || q.question_count || 0) > 0).length}
+                  {Object.keys(moduleQuizzes).length > 0
+                    ? Object.values(moduleQuizzes).reduce((sum, list) => sum + (Array.isArray(list) ? list.filter(q => (q.questions?.length || q.question_count || 0) > 0).length : 0), 0)
+                    : allQuizzes.filter(q => (q.questions?.length || q.question_count || 0) > 0).length}
                 </p>
               </div>
             </div>
@@ -368,8 +389,8 @@ const CreateQuizPage = () => {
                       </div>
                     ) : (
                       course.modules.map((mod) => {
-                        // Get all quizzes for this module
-                        const quizzes = allQuizzes.filter(q => q.module_id === mod.id);
+                        // Strictly use module-specific API results to avoid showing quizzes from other modules
+                        const quizzes = moduleQuizzes[mod.id] || [];
                         console.log(`Module ${mod.id} quizzes:`, quizzes);
                         return (
                           <div key={mod.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 p-6">
@@ -576,7 +597,7 @@ const CreateQuizPage = () => {
                             <Edit className="w-4 h-4" />
                           </Button>
                         </div>
-                        {options.length > 0 && (
+                        {options.length > 0 ? (
                           <div className="space-y-2 ml-4">
                             {options.map(opt => (
                               <div key={opt.id || opt.text} className="flex items-center">
@@ -585,6 +606,19 @@ const CreateQuizPage = () => {
                                 {opt.isCorrect && <span className="ml-2 text-green-600 text-xs font-semibold">(Correct)</span>}
                               </div>
                             ))}
+                          </div>
+                        ) : (
+                          <div className="ml-4 text-sm text-gray-700">
+                            {(q.type === 'FILL_UPS' || q.type === 'ONE_WORD') ? (
+                              <div>
+                                <span className="font-medium">Answer{q.type === 'FILL_UPS' ? 's' : ''}:</span>{' '}
+                                <span>
+                                  {Array.isArray(q.correctAnswer)
+                                    ? q.correctAnswer.join(', ')
+                                    : (q.correctAnswer || q.correct_answers || q.answer || '—')}
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
                         )}
                       </div>

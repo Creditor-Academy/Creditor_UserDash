@@ -89,8 +89,16 @@ export async function fetchQuizzesByModule(moduleId) {
       throw new Error(errorMessage);
     }
 
-    // Return the data array directly if it exists, otherwise return an empty array
-    return Array.isArray(responseData.data) ? responseData.data : [];
+    // Normalize to consistent shape with id and module_id
+    if (Array.isArray(responseData.data)) {
+      return responseData.data.map((q) => ({
+        ...q,
+        id: q.id || q.quizId,
+        quizId: q.quizId || q.id,
+        module_id: moduleId,
+      }));
+    }
+    return [];
   } catch (error) {
     console.error('Error in fetchQuizzesByModule:', error);
     throw error;
@@ -98,7 +106,7 @@ export async function fetchQuizzesByModule(moduleId) {
 }
 
 export async function fetchAllQuizzes() {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/getQuiz`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/quizzes`, {
     method: 'GET',
     headers: getAuthHeaders(),
     credentials: 'include',
@@ -111,7 +119,7 @@ export async function fetchAllQuizzes() {
 }
 
 export async function getQuizById(quizId) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/getQuizById`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/quizzes/${quizId}`, {
     method: 'GET',
     headers: getAuthHeaders(),
     credentials: 'include',

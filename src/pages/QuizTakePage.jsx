@@ -174,19 +174,42 @@ function QuizTakePage() {
       }
       
       const formattedAnswer = {
+        // Server expects keys: questionId, selectedOptionId (array or null), answer
         questionId: String(question.id ?? questionId),
         selectedOptionId: null,
         answer: null
       };
+
+      // Heuristic: Treat as FILL_UPS if question hints blanks (underscores/meta) and no options
+      const textCandidate = question?.question || question?.questionText || question?.text || '';
+      const blanksByUnderscoreHeur = (String(textCandidate).match(/_+/g) || []).length;
+      const blanksByMetaHeur = Array.isArray(question?.correct_blanks)
+        ? question.correct_blanks.length
+        : Array.isArray(question?.correctAnswers)
+          ? question.correctAnswers.length
+          : Array.isArray(question?.correct_answers)
+            ? question.correct_answers.length
+            : (Number(question?.num_blanks) || 0);
+      const looksLikeFillUps = (!Array.isArray(question.options) || question.options.length === 0) && (blanksByUnderscoreHeur > 0 || blanksByMetaHeur > 0);
+      if (looksLikeFillUps) {
+        const toPartsHeur = (val) => Array.isArray(val)
+          ? val.map(v => String(v).trim()).filter(Boolean)
+          : [String(val).trim()].filter(Boolean);
+        formattedAnswer.answer = toPartsHeur(answer);
+        console.log(`Heuristic FILL_UPS for ${questionId}:`, formattedAnswer);
+        formattedAnswers.push(formattedAnswer);
+        return;
+      }
       
-      // Handle different question types - also check backend question_type if frontend type is missing
-      const questionType = question.type?.toLowerCase() || question.question_type?.toLowerCase();
+      // Handle different question types - PREFER backend question_type when available
+      const questionType = (question.question_type?.toLowerCase()) || (question.type?.toLowerCase());
       switch (questionType) {
         case 'mcq':
         case 'multiple_choice':
         case 'multiple choice':
         case 'multiplechoice':
         case 'scq':
+        case 'mcq_single':
         case 'single_choice':
         case 'single choice':
         case 'singlechoice':
@@ -224,9 +247,11 @@ function QuizTakePage() {
               }
             });
             formattedAnswer.selectedOptionId = selectedIds.length > 0 ? selectedIds : null;
-            formattedAnswer.answer = selectedTexts; // Always send as array for MCQ
+            // For single-choice variants send single string, for multi send array
+            const isSingle = ['scq', 'mcq_single', 'single_choice', 'single choice', 'singlechoice'].includes(questionType);
+            formattedAnswer.answer = isSingle ? (selectedTexts[0] ?? '') : selectedTexts;
           }
-          console.log(`MCQ question ${questionId} formatted:`, formattedAnswer);
+          console.log(`MCQ/SCQ question ${questionId} formatted:`, formattedAnswer);
           break;
           
         case 'truefalse':
@@ -235,13 +260,9 @@ function QuizTakePage() {
         case 'true false':
           formattedAnswer.selectedOptionId = null;
           {
-            const selectedValues = Array.isArray(answer) ? answer : [answer];
-            // Normalize to capitalized True/False to align with backend examples
-            const normalized = selectedValues.map(v => {
-              const s = String(v).toLowerCase();
-              return s === 'true' ? 'True' : s === 'false' ? 'False' : String(v);
-            });
-            formattedAnswer.answer = normalized;
+            // Backend expects a single lowercase string: "true" or "false"
+            const s = String(Array.isArray(answer) ? answer[0] : answer).toLowerCase();
+            formattedAnswer.answer = s === 'true' ? 'true' : 'false';
           }
           console.log(`True/False question ${questionId} formatted:`, formattedAnswer);
           break;
@@ -252,7 +273,7 @@ function QuizTakePage() {
         case 'long_answer':
         case 'long answer':
           formattedAnswer.selectedOptionId = null;
-          // For descriptive-like answers, backend expects a string (not array)
+          // Backend expects a string
           formattedAnswer.answer = Array.isArray(answer) ? answer[0] : String(answer);
           console.log(`Descriptive question ${questionId} formatted:`, formattedAnswer);
           break;
@@ -262,7 +283,14 @@ function QuizTakePage() {
         case 'fillintheblank':
         case 'fill_ups':
           formattedAnswer.selectedOptionId = null;
-          formattedAnswer.answer = Array.isArray(answer) ? answer : [answer]; // Always send as array for fill-ups
+          {
+            // Backend expects an ordered array of strings for fill-ups
+            const toParts = (val) => Array.isArray(val)
+              ? val.map(v => String(v).trim())
+              : String(val).split(',').map(s => s.trim());
+            const parts = toParts(answer);
+            formattedAnswer.answer = parts;
+          }
           console.log(`Fill blank question ${questionId} formatted:`, formattedAnswer);
           break;
           
@@ -273,7 +301,7 @@ function QuizTakePage() {
         case 'singleword':
         case 'one_word':
           formattedAnswer.selectedOptionId = null;
-          formattedAnswer.answer = Array.isArray(answer) ? answer[0] : String(answer);
+          formattedAnswer.answer = String(Array.isArray(answer) ? answer[0] : answer).trim();
           console.log(`One word question ${questionId} formatted:`, formattedAnswer);
           break;
           
@@ -334,8 +362,10 @@ function QuizTakePage() {
         console.log(`Warning: ${unansweredCount} questions are unanswered`);
       }
       
-      // Call the submit quiz API with formatted answers
-      const result = await submitQuiz(quizId, { answers: formattedAnswers });
+      // Call the submit quiz API with formatted answers in expected key
+      const submitPayload = { answers: formattedAnswers };
+      console.log('Submit payload (frontend JSON):', JSON.stringify(submitPayload, null, 2));
+      const result = await submitQuiz(quizId, submitPayload);
       console.log('Quiz submission result:', result);
       
       // Clear localStorage after successful submission
@@ -474,8 +504,8 @@ function QuizTakePage() {
       }
     }
 
-    // Ensure we have the correct type for rendering
-    const renderType = question.type?.toLowerCase() || question.question_type?.toLowerCase();
+    // Ensure we have the correct type for rendering (prefer backend)
+    const renderType = (question.question_type?.toLowerCase()) || (question.type?.toLowerCase());
     console.log('Rendering question with type:', renderType, 'original type:', question.type, 'backend type:', question.question_type, 'options:', question.options);
     
     switch (renderType) {
@@ -592,33 +622,107 @@ function QuizTakePage() {
           </div>
         );
         
-      case 'fill_blank':
-        return (
-          <div>
-            <input
-              type="text"
-              value={userAnswer || ''}
-              onChange={(e) => handleAnswer(question.id, e.target.value)}
-              placeholder="Fill in the blank..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-sm text-gray-500 mt-2">Please provide the missing word or phrase.</p>
-          </div>
-        );
+      case 'fill_blank': {
+        const textCandidate = question?.question || question?.questionText || question?.text || '';
+        // Detect two or more underscores as a blank
+        const blanksByUnderscore = (textCandidate.match(/_{2,}/g) || []).length;
+        // Infer from metadata arrays or numeric hint
+        const blanksByMeta = Array.isArray(question?.correct_blanks)
+          ? question.correct_blanks.length
+          : Array.isArray(question?.correctAnswers)
+            ? question.correctAnswers.length
+            : Array.isArray(question?.correct_answers)
+              ? question.correct_answers.length
+              : (Number(question?.num_blanks) || 0);
+        // Infer from comma-separated correct answers string
+        const blanksByAnswersString = typeof question?.correctAnswers === 'string'
+          ? question.correctAnswers.split(',').map(s => s.trim()).filter(Boolean).length
+          : (typeof question?.correct_answers === 'string'
+            ? question.correct_answers.split(',').map(s => s.trim()).filter(Boolean).length
+            : 0);
+        const blanksCount = Math.max(blanksByUnderscore, blanksByMeta, blanksByAnswersString, 1);
 
-      case 'fill_ups':
+        const toArray = (val) => {
+          if (Array.isArray(val)) return [...val];
+          if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+          return [];
+        };
+        const currentValues = toArray(userAnswer);
+        while (currentValues.length < blanksCount) currentValues.push('');
+
+        const updateAt = (index, value) => {
+          const next = [...currentValues];
+          next[index] = value;
+          handleAnswer(question.id, next);
+        };
+
         return (
-          <div>
-            <input
-              type="text"
-              value={userAnswer || ''}
-              onChange={(e) => handleAnswer(question.id, e.target.value)}
-              placeholder="Fill in the blank..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <p className="text-sm text-gray-500 mt-2">Please provide the missing word or phrase.</p>
+          <div className="space-y-2">
+            {Array.from({ length: blanksCount }).map((_, idx) => (
+              <input
+                key={idx}
+                type="text"
+                value={currentValues[idx] || ''}
+                onChange={(e) => updateAt(idx, e.target.value)}
+                placeholder={`Blank ${idx + 1}`}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ))}
+            <p className="text-sm text-gray-500">Answers will be submitted as an array.</p>
           </div>
         );
+      }
+
+      case 'fill_ups': {
+        const textCandidate = question?.question || question?.questionText || question?.text || '';
+        // Detect two or more underscores as a blank
+        const blanksByUnderscore = (textCandidate.match(/_{2,}/g) || []).length;
+        // Infer from metadata arrays or numeric hint
+        const blanksByMeta = Array.isArray(question?.correct_blanks)
+          ? question.correct_blanks.length
+          : Array.isArray(question?.correctAnswers)
+            ? question.correctAnswers.length
+            : Array.isArray(question?.correct_answers)
+              ? question.correct_answers.length
+              : (Number(question?.num_blanks) || 0);
+        // Infer from comma-separated correct answers string
+        const blanksByAnswersString = typeof question?.correctAnswers === 'string'
+          ? question.correctAnswers.split(',').map(s => s.trim()).filter(Boolean).length
+          : (typeof question?.correct_answers === 'string'
+            ? question.correct_answers.split(',').map(s => s.trim()).filter(Boolean).length
+            : 0);
+        const blanksCount = Math.max(blanksByUnderscore, blanksByMeta, blanksByAnswersString, 1);
+
+        const toArray = (val) => {
+          if (Array.isArray(val)) return [...val];
+          if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+          return [];
+        };
+        const currentValues = toArray(userAnswer);
+        while (currentValues.length < blanksCount) currentValues.push('');
+
+        const updateAt = (index, value) => {
+          const next = [...currentValues];
+          next[index] = value;
+          handleAnswer(question.id, next);
+        };
+
+        return (
+          <div className="space-y-2">
+            {Array.from({ length: blanksCount }).map((_, idx) => (
+              <input
+                key={idx}
+                type="text"
+                value={currentValues[idx] || ''}
+                onChange={(e) => updateAt(idx, e.target.value)}
+                placeholder={`Blank ${idx + 1}`}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            ))}
+            <p className="text-sm text-gray-500">Answers will be submitted as an array.</p>
+          </div>
+        );
+      }
 
       case 'mcq':
         // Handle MCQ questions - check if they actually have options
