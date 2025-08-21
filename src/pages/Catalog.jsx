@@ -201,7 +201,7 @@ export function CatalogPage() {
             </div>
           </div>
           
-          {(freeCourses.length + masterClasses.length + premiumCatalogs.length + classRecordings.length === 0) ? (
+          {(starterCatalogs.length + masterCatalogs.length + premiumCatalogs.length + recordingCatalogs.length === 0) ? (
             <div className="text-center py-16 bg-white rounded-xl shadow-sm">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
                 <Search className="h-6 w-6 text-gray-400" />
@@ -211,7 +211,7 @@ export function CatalogPage() {
             </div>
           ) : (
             <div className="space-y-12">
-              {freeCourses.length > 0 && (
+              {starterCatalogs.length > 0 && (
                 <div>
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
@@ -221,7 +221,7 @@ export function CatalogPage() {
                     <span className="text-sm text-gray-500 ml-7">Start your learning journey with these free resources</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {freeCourses.map((catalog) => (
+                    {starterCatalogs.map((catalog) => (
                       <CatalogCard 
                         key={catalog.id}
                         catalog={catalog}
@@ -236,7 +236,7 @@ export function CatalogPage() {
                 </div>
               )}
 
-              {masterClasses.length > 0 && (
+              {masterCatalogs.length > 0 && (
                 <div>
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
@@ -246,7 +246,7 @@ export function CatalogPage() {
                     <span className="text-sm text-gray-500 ml-7">In-depth expert-led sessions for advanced learning</span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {masterClasses.map((catalog) => (
+                    {masterCatalogs.map((catalog) => (
                       <CatalogCard 
                         key={catalog.id}
                         catalog={catalog}
@@ -266,7 +266,7 @@ export function CatalogPage() {
                 <div className="border-t border-gray-200 my-10" />
               )}
 
-              {masterCatalogs.length > 0 && (
+              {premiumCatalogs.length > 0 && (
                 <div>
                   <div className="flex items-center mb-6">
                     <Gem className="h-5 w-5 text-purple-500 mr-2" />
