@@ -124,3 +124,4 @@ The flow is automatically triggered when users click the signup button in the Ma
 - User IDs are generated using timestamps for demonstration
 - Payment processing is simulated for UI testing
 - The flow is designed to be easily replaceable with real backend services
+
