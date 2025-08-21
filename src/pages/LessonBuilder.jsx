@@ -137,8 +137,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [imageTemplateText, setImageTemplateText] = useState('');
   const [imageTemplateUrl, setImageTemplateUrl] = useState('');
   const [selectedImageTemplate, setSelectedImageTemplate] = useState(null);
-
-  const blockRefs = React.useRef({});
+  const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
 
   // Image block templates
   const imageTemplates = [
@@ -234,32 +233,32 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const textTypes = [
     {
       id: 'heading',
-      title: 'Heading',
-      description: 'Large section heading',
+      // title: 'Heading',
+      // description: 'Large section heading',
       icon: <Heading1 className="h-5 w-5" />,
       preview: <h1 className="text-2xl font-bold mb-2">Heading</h1>,
       defaultContent: '<h1>Heading</h1>'
     },
     {
       id: 'subheading',
-      title: 'Subheading',
-      description: 'Medium section heading',
+      // title: 'Subheading',
+      // description: 'Medium section heading',
       icon: <Heading2 className="h-5 w-5" />,
       preview: <h2 className="text-xl font-semibold mb-2">Subheading</h2>,
       defaultContent: '<h2>Subheading</h2>'
     },
     {
       id: 'paragraph',
-      title: 'Paragraph',
-      description: 'Regular text content',
+      // title: 'Paragraph',
+      // description: 'Regular text content',  
       icon: <Text className="h-5 w-5" />,
       preview: <p className="text-gray-700">This is a paragraph of text. You can add your content here.</p>,
       defaultContent: '<p>Start typing your text here...</p>'
     },
     {
       id: 'heading_paragraph',
-      title: 'Heading with Paragraph',
-      description: 'Heading followed by text',
+      // title: 'Heading with Paragraph',
+      // description: 'Heading followed by text',
       icon: <Type className="h-5 w-5" />,
       preview: (
         <div>
@@ -271,8 +270,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     },
     {
       id: 'subheading_paragraph',
-      title: 'Subheading with Paragraph',
-      description: 'Subheading followed by text',
+      // title: 'Subheading with Paragraph',
+      // description: 'Subheading followed by text',
       icon: <Type className="h-5 w-5" />,
       preview: (
         <div>
@@ -281,52 +280,11 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         </div>
       ),
       defaultContent: '<h2>Subheading</h2><p>This is a paragraph below the subheading.</p>'
-    },
-    {
-      id: 'table',
-      title: 'Table',
-      description: 'Simple data table',
-      icon: <Table className="h-5 w-5" />,
-      preview: (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-200">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-b">Header 1</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-b">Header 2</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="px-4 py-2 border-b">Row 1, Cell 1</td>
-                <td className="px-4 py-2 border-b">Row 1, Cell 2</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      ),
-      defaultContent: `
-        <table class="min-w-full border border-gray-200">
-          <thead>
-            <tr class="bg-gray-50">
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-b">Header 1</th>
-              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase border-b">Header 2</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="px-4 py-2 border-b">Row 1, Cell 1</td>
-              <td class="px-4 py-2 border-b">Row 1, Cell 2</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2">Row 2, Cell 1</td>
-              <td class="px-4 py-2">Row 2, Cell 2</td>
-            </tr>
-          </tbody>
-        </table>
-      `
     }
+   
   ];
+
+  const blockRefs = React.useRef({});
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
@@ -370,6 +328,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     setContentBlocks([...contentBlocks, newBlock]);
     setShowTextTypeModal(false);
     setShowTextTypeSidebar(false);
+    setSidebarCollapsed(true);
   };
 
   const removeContentBlock = (blockId) => {
@@ -395,9 +354,23 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
-      setEditorTitle(block.title);
-      setEditorHtml(block.content);
       setShowTextEditorDialog(true);
+
+      // Reset editors
+      setEditorHtml('');
+      setEditorHeading('');
+      setEditorSubheading('');
+      setEditorContent('');
+
+      if (block.textType === 'heading_paragraph') {
+        setEditorHeading(block.heading || '');
+        setEditorContent(block.content || '');
+      } else if (block.textType === 'subheading_paragraph') {
+        setEditorSubheading(block.subheading || '');
+        setEditorContent(block.content || '');
+      } else {
+        setEditorHtml(block.content || '');
+      }
     } else if (block.type === 'youtube') {
       setCurrentYoutubeBlock(block);
       setYoutubeTitle(block.youtubeTitle);
@@ -427,9 +400,17 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
   const handleEditorSave = () => {
     if (!currentBlock) return;
+
+    let newContent = editorContent;
+    if (currentBlock.textType === 'heading-paragraph') {
+      newContent = editorHeading + editorContent;
+    } else if (currentBlock.textType === 'subheading-paragraph') {
+      newContent = editorSubheading + editorContent;
+    }
+
     updateBlockContent(
       currentBlock.id,
-      editorContent,
+      newContent,
       currentBlock.textType === 'heading-paragraph' ? editorHeading : null,
       currentBlock.textType === 'subheading-paragraph' ? editorSubheading : null
     );
@@ -634,32 +615,38 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   };
 
   const handleTextEditorSave = () => {
-    if (!editorTitle.trim()) {
-      alert('Please enter a title for the text block');
-      return;
-    }
+    const blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
 
-    if (currentTextBlockId) {
-      // Update existing block
+    if (blockToUpdate) {
+      let updatedContent = editorHtml;
+      if (blockToUpdate.textType === 'heading_paragraph') {
+        updatedContent = editorHeading + editorContent;
+      } else if (blockToUpdate.textType === 'subheading_paragraph') {
+        updatedContent = editorSubheading + editorContent;
+      }
+
       setContentBlocks(blocks => 
         blocks.map(block => 
           block.id === currentTextBlockId 
             ? { 
                 ...block, 
                 title: editorTitle, 
-                content: editorHtml,
+                content: updatedContent,
+                heading: blockToUpdate.textType === 'heading_paragraph' ? editorHeading : block.heading,
+                subheading: blockToUpdate.textType === 'subheading_paragraph' ? editorSubheading : block.subheading,
                 updatedAt: new Date().toISOString()
               }
             : block
         )
       );
     } else {
-      // Add new block
+      // This part remains the same for adding new blocks
       const newBlock = {
         id: `text_${Date.now()}`,
         type: 'text',
         title: editorTitle,
         content: editorHtml,
+        textType: 'paragraph', // Or determine based on how you add new blocks
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -1191,17 +1178,10 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                     <div key={block.id} className="mb-8">
                       {block.type === 'text' && (
                         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                          {block.title && (
-                            <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                              {block.title}
-                            </h2>
-                          )}
-                          {block.content && (
-                            <div 
-                              className="prose max-w-none text-gray-700"
-                              dangerouslySetInnerHTML={{ __html: block.content }}
-                            />
-                          )}
+                          <div 
+                            className="prose max-w-none text-gray-700"
+                            dangerouslySetInnerHTML={{ __html: block.content }}
+                          />
                         </div>
                       )}
                       {block.type === 'video' && (
@@ -1510,12 +1490,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           </div>
                         </div>
                       )}
-                      {block.content && (
-                        <div 
-                          className="prose max-w-none"
-                          dangerouslySetInnerHTML={{ __html: block.content }}
-                        />
-                      )}
                     </div>
                   ))}
                 </div>
@@ -1591,20 +1565,10 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           
                           <div className="p-4">
                             {block.type === 'text' && (
-                              <>
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.title}</h3>
-                                  {block.templateType && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {block.templateType}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div 
-                                  className="prose max-w-none text-gray-700"
-                                  dangerouslySetInnerHTML={{ __html: block.content || '<p>No content</p>' }} 
-                                />
-                              </>
+                              <div 
+                                className="prose max-w-none text-gray-700"
+                                dangerouslySetInnerHTML={{ __html: block.content }}
+                              />
                             )}
                             
                             {block.type === 'image' && block.layout && (
@@ -1711,19 +1675,18 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                   /* Display Mode - smaller preview for edit mode */
                                   <div>
                                     {block.layout === 'side-by-side' && (
-                                      <div className="flex gap-4 items-start">
+                                      <div className="flex gap-3 items-start">
                                         <div className="w-1/2">
                                           <img 
                                             src={block.imageUrl} 
                                             alt="Image" 
-                                            className="w-full h-32 object-cover rounded"
+                                            className="w-full h-20 object-cover rounded"
                                           />
                                         </div>
                                         <div className="w-1/2">
-                                          <div 
-                                            className="text-sm text-gray-600 line-clamp-4 prose prose-sm max-w-none"
-                                            dangerouslySetInnerHTML={{ __html: block.text }}
-                                          />
+                                          <p className="text-sm text-gray-600 line-clamp-4">
+                                            {block.text.substring(0, 60)}...
+                                          </p>
                                         </div>
                                       </div>
                                     )}
@@ -1732,13 +1695,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                         <img 
                                           src={block.imageUrl} 
                                           alt="Image" 
-                                          className="w-full h-40 object-cover rounded"
+                                          className="w-full h-24 object-cover rounded"
                                         />
-                                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-3">
-                                          <div 
-                                            className="text-white text-sm text-center line-clamp-3 prose prose-sm max-w-none prose-invert"
-                                            dangerouslySetInnerHTML={{ __html: block.text }}
-                                          />
+                                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
+                                          <p className="text-white text-sm text-center line-clamp-3">
+                                            {block.text.substring(0, 50)}...
+                                          </p>
                                         </div>
                                       </div>
                                     )}
@@ -1747,12 +1709,11 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                         <img 
                                           src={block.imageUrl} 
                                           alt="Image" 
-                                          className="mx-auto h-32 object-cover rounded"
+                                          className="mx-auto h-20 object-cover rounded"
                                         />
-                                        <div 
-                                          className="text-sm text-gray-600 italic prose prose-sm max-w-none mx-auto"
-                                          dangerouslySetInnerHTML={{ __html: block.text }}
-                                        />
+                                        <p className="text-sm text-gray-600 italic line-clamp-2">
+                                          {block.text.substring(0, 40)}...
+                                        </p>
                                       </div>
                                     )}
                                     {block.layout === 'full-width' && (
@@ -1760,12 +1721,11 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                         <img 
                                           src={block.imageUrl} 
                                           alt="Image" 
-                                          className="w-full h-40 object-cover rounded"
+                                          className="w-full h-24 object-cover rounded"
                                         />
-                                        <div 
-                                          className="text-sm text-gray-600 line-clamp-3 prose prose-sm max-w-none"
-                                          dangerouslySetInnerHTML={{ __html: block.text }}
-                                        />
+                                        <p className="text-sm text-gray-600 line-clamp-3">
+                                          {block.text.substring(0, 60)}...
+                                        </p>
                                       </div>
                                     )}
                                   </div>
@@ -1878,52 +1838,294 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
         <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{currentTextBlockId ? 'Edit Text Block' : 'Add Text Block'}</DialogTitle>
+            <DialogTitle>
+              {currentTextBlockId ? 'Edit' : 'Add'} Text Block
+              {(() => {
+                const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
+                const textType = currentBlock?.textType;
+                if (textType) {
+                  const textTypeObj = textTypes.find(t => t.id === textType);
+                  return textTypeObj ? ` (${textTypeObj.title})` : '';
+                }
+                return '';
+              })()}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={editorTitle}
-                onChange={(e) => setEditorTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter block title"
-                required
-              />
-            </div>
-            
-            <div className="flex-1 flex flex-col h-full">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Content
-              </label>
-              <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
-                <div className="border-b">
-                  <ReactQuill
-                    theme="snow"
-                    value={editorHtml}
-                    onChange={setEditorHtml}
-                    modules={{
-                      toolbar: [
-                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['link', 'image'],
-                        ['clean']
-                      ]
-                    }}
-                    className="flex-1 flex flex-col"
-                    style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-                  />
-                </div>
-                <div className="p-4 bg-gray-50 border-t">
-                  <p className="text-xs text-gray-500">
-                    Use the toolbar above to format your text. The content will be displayed exactly as shown here.
-                  </p>
-                </div>
-              </div>
+          
+          <div className="flex-1 overflow-y-auto px-1" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+            <div className="pr-4">
+              {(() => {
+                const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
+                const textType = currentBlock?.textType;
+                
+                // Heading only
+                if (textType === 'heading') {
+                  return (
+                    <div className="flex-1 flex flex-col h-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Heading
+                      </label>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                        <ReactQuill
+                          theme="snow"
+                          value={editorHtml}
+                          onChange={setEditorHtml}
+                          modules={{
+                            toolbar: [
+                              [{ 'header': [1, 2, 3, false] }],
+                              ['bold', 'italic', 'underline'],
+                              [{ 'color': [] }, { 'background': [] }],
+                              [{ 'align': [] }],
+                              ['clean']
+                            ]
+                          }}
+                          placeholder="Enter your heading text..."
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Subheading only
+                if (textType === 'subheading') {
+                  return (
+                    <div className="flex-1 flex flex-col h-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Subheading
+                      </label>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                        <ReactQuill
+                          theme="snow"
+                          value={editorHtml}
+                          onChange={setEditorHtml}
+                          modules={{
+                            toolbar: [
+                              [{ 'header': [2, 3, 4, false] }],
+                              ['bold', 'italic', 'underline'],
+                              [{ 'color': [] }, { 'background': [] }],
+                              [{ 'align': [] }],
+                              ['clean']
+                            ]
+                          }}
+                          placeholder="Enter your subheading text..."
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Paragraph only
+                if (textType === 'paragraph') {
+                  return (
+                    <div className="flex-1 flex flex-col h-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Paragraph
+                      </label>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                        <ReactQuill
+                          theme="snow"
+                          value={editorHtml}
+                          onChange={setEditorHtml}
+                          modules={{
+                            toolbar: [
+                              ['bold', 'italic', 'underline', 'strike'],
+                              [{ 'color': [] }, { 'background': [] }],
+                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                              [{ 'align': [] }],
+                              ['link', 'image'],
+                              ['clean']
+                            ]
+                          }}
+                          placeholder="Enter your paragraph text..."
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Heading with Paragraph
+                if (textType === 'heading_paragraph') {
+                  return (
+                    <div className="flex-1 flex flex-col gap-4 h-full">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Heading
+                        </label>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '150px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorHeading}
+                            onChange={setEditorHeading}
+                            modules={{
+                              toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'align': [] }],
+                                ['clean']
+                              ]
+                            }}
+                            placeholder="Type and format your heading here"
+                            style={{ height: '80px' }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Paragraph
+                        </label>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '200px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorContent}
+                            onChange={setEditorContent}
+                            modules={{
+                              toolbar: [
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'align': [] }],
+                                ['link', 'image'],
+                                ['clean']
+                              ]
+                            }}
+                            placeholder="Type and format your paragraph text here"
+                            style={{ height: '150px' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Subheading with Paragraph
+                if (textType === 'subheading_paragraph') {
+                  return (
+                    <div className="flex-1 flex flex-col gap-4 h-full">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Subheading
+                        </label>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '150px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorSubheading}
+                            onChange={setEditorSubheading}
+                            modules={{
+                              toolbar: [
+                                [{ 'header': [2, 3, 4, false] }],
+                                ['bold', 'italic', 'underline'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'align': [] }],
+                                ['clean']
+                              ]
+                            }}
+                            placeholder="Type and format your subheading here"
+                            style={{ height: '80px' }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Paragraph
+                        </label>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '200px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorContent}
+                            onChange={setEditorContent}
+                            modules={{
+                              toolbar: [
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'color': [] }, { 'background': [] }],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                [{ 'align': [] }],
+                                ['link', 'image'],
+                                ['clean']
+                              ]
+                            }}
+                            placeholder="Type and format your paragraph text here"
+                            style={{ height: '150px' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Table
+                if (textType === 'table') {
+                  return (
+                    <div className="flex-1 flex flex-col h-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Table Content
+                      </label>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                        <ReactQuill
+                          theme="snow"
+                          value={editorHtml}
+                          onChange={setEditorHtml}
+                          modules={{
+                            toolbar: [
+                              ['bold', 'italic', 'underline'],
+                              [{ 'color': [] }, { 'background': [] }],
+                              [{ 'align': [] }],
+                              ['clean']
+                            ]
+                          }}
+                          placeholder="Edit your table content..."
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Default fallback for new blocks or unknown types
+                return (
+                  <div className="flex-1 flex flex-col gap-4 h-full">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Title <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editorTitle}
+                        onChange={(e) => setEditorTitle(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter block title"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col h-full">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Content
+                      </label>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                        <ReactQuill
+                          theme="snow"
+                          value={editorHtml}
+                          onChange={setEditorHtml}
+                          modules={{
+                            toolbar: [
+                              [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                              ['bold', 'italic', 'underline', 'strike'],
+                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                              ['link', 'image'],
+                              ['clean']
+                            ]
+                          }}
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
           
@@ -1934,7 +2136,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
             <Button 
               onClick={handleTextEditorSave}
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={!editorTitle.trim()}
             >
               {currentTextBlockId ? 'Update' : 'Add'} Block
             </Button>
@@ -1944,14 +2145,14 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
       {/* Edit Block Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Edit {currentBlock?.title}
             </DialogTitle>
           </DialogHeader>
           {currentBlock && (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto pr-2">
               {/* Heading + Paragraph */}
               {currentBlock.type === 'text' && currentBlock.textType === 'heading-paragraph' && (
                 <>
@@ -2165,13 +2366,72 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                         <img 
                           src={template.defaultContent.imageUrl} 
                           alt="Preview" 
-                          className="w-full h-20 object-cover rounded"
+                          className="w-full h-24 object-cover rounded"
                         />
                         <p className="text-xs text-gray-600 line-clamp-3">
                           {template.defaultContent.text.substring(0, 60)}...
                         </p>
                       </div>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Text Type Sidebar */}
+      {showTextTypeSidebar && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300" 
+            onClick={() => setShowTextTypeSidebar(false)}
+          />
+          
+          {/* Sidebar */}
+          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <FileTextIcon className="h-6 w-6" />
+                  Text Types
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTextTypeSidebar(false)}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  ×
+                </Button>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Choose a text type to add to your lesson
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {textTypes.map((textType) => (
+                <div
+                  key={textType.id}
+                  onClick={() => handleTextTypeSelect(textType)}
+                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
+                      {textType.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{textType.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{textType.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Mini Preview */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    {textType.preview}
                   </div>
                 </div>
               ))}
@@ -2338,7 +2598,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
       {/* YouTube Dialog */}
       <Dialog open={showYoutubeDialog} onOpenChange={handleYoutubeDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add YouTube Video</DialogTitle>
           </DialogHeader>
@@ -2422,7 +2682,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Link</DialogTitle>
           </DialogHeader>
