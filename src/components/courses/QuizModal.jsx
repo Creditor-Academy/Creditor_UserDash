@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createQuiz, bulkUploadQuestions } from '@/services/quizServices';
+import { createNotification } from '@/services/notificationService';
 
 const QUIZ_TYPES = [
   { label: 'Final', value: 'FINAL' },
@@ -67,6 +68,28 @@ const QuizModal = ({ isOpen, onClose, moduleId, onQuizCreated }) => {
       setCreatedQuiz({ ...created, id: quizId });
       setStep(2);
       if (onQuizCreated) onQuizCreated(created);
+
+      // Notify globally (backend + local fallback)
+      try {
+        await createNotification({
+          title: 'Quiz Created',
+          message: `Quiz "${form.title}" has been created`,
+          type: 'quiz',
+          audience: 'all',
+        });
+      } catch (err) {
+        console.warn('Backend quiz notification failed; using local fallback.', err);
+      }
+      window.dispatchEvent(new Event('refresh-notifications'));
+      const now = new Date();
+      window.dispatchEvent(new CustomEvent('add-local-notification', { detail: {
+        id: `local-${now.getTime()}`,
+        type: 'quiz',
+        title: 'Quiz Created',
+        message: `Quiz "${form.title}" has been created`,
+        created_at: now.toISOString(),
+        read: false,
+      }}));
     } catch (err) {
       setError('Failed to create quiz. Please try again           .');
     } finally {
@@ -166,6 +189,26 @@ const QuizModal = ({ isOpen, onClose, moduleId, onQuizCreated }) => {
       await bulkUploadQuestions(quizId, payload);
       setStep(3);
       if (onQuizCreated) onQuizCreated();
+
+      // Notify globally about questions submission
+      try {
+        await createNotification({
+          title: 'Quiz Questions Added',
+          message: `Questions added to quiz "${form.title}"`,
+          type: 'quiz',
+          audience: 'all',
+        });
+      } catch {}
+      window.dispatchEvent(new Event('refresh-notifications'));
+      const now = new Date();
+      window.dispatchEvent(new CustomEvent('add-local-notification', { detail: {
+        id: `local-${now.getTime()}`,
+        type: 'quiz',
+        title: 'Quiz Questions Added',
+        message: `Questions added to quiz "${form.title}"`,
+        created_at: now.toISOString(),
+        read: false,
+      }}));
     } catch (err) {
       setError('Failed to upload questions. Please try again.');
     } finally {
@@ -309,7 +352,7 @@ const QuizModal = ({ isOpen, onClose, moduleId, onQuizCreated }) => {
               <Input name="time_estimate" type="number" value={form.time_estimate} onChange={handleChange} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Score</label>
+              <label className="block text.sm font-medium text-gray-700 mb-1">Max Score</label>
               <Input name="max_score" type="number" value={form.max_score} onChange={handleChange} />
             </div>
             <div>

@@ -12,6 +12,7 @@ import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
 import { fetchDetailedUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchNotifications } from "@/services/notificationService";
 
 export function DashboardHeader() {
   const { isInstructorOrAdmin } = useAuth();
@@ -26,15 +27,33 @@ export function DashboardHeader() {
   const [isLoadingEnrolled, setIsLoadingEnrolled] = useState(true);
   const [showEnrollmentAlert, setShowEnrollmentAlert] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
-  const [unreadNotifications, setUnreadNotifications] = useState(2); // Default count
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState(null);
+  const [apiNotifications, setApiNotifications] = useState([]);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Local notifications persistence helpers
+  const LOCAL_NOTIFS_KEY = 'local_notifications';
+  const readLocalNotifications = () => {
+    try {
+      const raw = localStorage.getItem(LOCAL_NOTIFS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+  const writeLocalNotifications = (items) => {
+    try {
+      localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(items || []));
+    } catch {}
+  };
 
   // Fetch enrolled courses on component mount
   useEffect(() => {
@@ -51,6 +70,81 @@ export function DashboardHeader() {
     };
 
     fetchEnrolledCourses();
+  }, []);
+
+  // Centralized notifications fetcher
+  const refreshNotifications = async () => {
+    try {
+      const { data } = await fetchNotifications();
+      const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+      // Merge with local notifications currently in state by id
+      setApiNotifications(prev => {
+        const localItems = readLocalNotifications();
+        const byId = new Map();
+        [...localItems, ...items, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        const merged = Array.from(byId.values());
+        return merged;
+      });
+      const localItems = readLocalNotifications();
+      const unread = [...(Array.isArray(items) ? items : []), ...localItems].filter(n => !n.read).length;
+      setUnreadNotifications(unread);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+      // On failure, at least reflect local unread count
+      const localItems = readLocalNotifications();
+      setApiNotifications(prev => {
+        const byId = new Map();
+        [...localItems, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        return Array.from(byId.values());
+      });
+      setUnreadNotifications(localItems.filter(n => !n.read).length);
+    }
+  };
+
+  // Retry helper to handle eventual consistency from backend
+  const refreshNotificationsWithRetry = async () => {
+    await refreshNotifications();
+    setTimeout(() => {
+      refreshNotifications();
+    }, 1500);
+  };
+
+  // Initial notifications load: hydrate locals, then refresh from API
+  useEffect(() => {
+    const locals = readLocalNotifications();
+    if (locals.length) {
+      setApiNotifications(prev => [...locals, ...prev]);
+      setUnreadNotifications(locals.filter(n => !n.read).length);
+    }
+    refreshNotificationsWithRetry();
+  }, []);
+
+  // Refresh notifications when modal opens
+  useEffect(() => {
+    if (!notificationModalOpen) return;
+    refreshNotificationsWithRetry();
+  }, [notificationModalOpen]);
+
+  // Listen for global refresh events (e.g., after creating a course)
+  useEffect(() => {
+    const handler = () => refreshNotificationsWithRetry();
+    window.addEventListener('refresh-notifications', handler);
+    return () => window.removeEventListener('refresh-notifications', handler);
+  }, []);
+
+  // Listen for adding a local notification (frontend fallback)
+  useEffect(() => {
+    const handler = (e) => {
+      const incoming = e?.detail;
+      if (!incoming) return;
+      setApiNotifications(prev => [incoming, ...prev]);
+      if (!incoming.read) setUnreadNotifications(prev => prev + 1);
+      // Persist
+      const locals = readLocalNotifications();
+      writeLocalNotifications([incoming, ...locals]);
+    };
+    window.addEventListener('add-local-notification', handler);
+    return () => window.removeEventListener('add-local-notification', handler);
   }, []);
 
   // Debounced search effect
@@ -203,6 +297,17 @@ export function DashboardHeader() {
   // Handle notification updates
   const handleNotificationUpdate = (newCount) => {
     setUnreadNotifications(newCount);
+  };
+
+  // Handler passed to modal when all marked as read
+  const handleAllMarkedRead = () => {
+    // set all current notifications as read in local storage as well
+    const locals = readLocalNotifications();
+    const updatedLocals = locals.map(n => ({ ...n, read: true }));
+    writeLocalNotifications(updatedLocals);
+    // update state
+    setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadNotifications(0);
   };
 
   return (
@@ -399,6 +504,20 @@ export function DashboardHeader() {
           {/* Right - Enhanced Icons and Profile */}
           <div className="flex items-center gap-3">
             
+            {/* Notification Bell */}
+            <button
+              onClick={() => setNotificationModalOpen(true)}
+              className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              aria-label="Notifications"
+            >
+              <BellDot className="h-5 w-5" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
+            </button>
+            
             {/* Profile Dropdown */}
             <div className="ml-2">
               <ProfileDropdown />
@@ -417,6 +536,8 @@ export function DashboardHeader() {
           open={notificationModalOpen} 
           onOpenChange={setNotificationModalOpen}
           onNotificationUpdate={handleNotificationUpdate}
+          notificationsFromApi={apiNotifications}
+          onMarkedAllRead={handleAllMarkedRead}
         />
         
         {/* Inbox Modal */}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createCourse } from '../../services/courseService';
+import { createNotification } from '@/services/notificationService';
 
 const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
   const [form, setForm] = useState({
@@ -62,6 +63,31 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
       
       if (response.success) {
         onCourseCreated(response.data);
+        // Try backend broadcast so all users can see it
+        try {
+          await createNotification({
+            title: 'Course Created',
+            message: `"${form.title}" has been created successfully`,
+            type: 'course',
+            audience: 'all'
+          });
+        } catch (err) {
+          console.warn('Backend notification creation failed; continuing with local fallback.', err);
+        }
+        // Ask header to refresh notifications (in case backend created one)
+        window.dispatchEvent(new Event('refresh-notifications'));
+        // Local fallback to show immediately
+        const now = new Date();
+        const localNotification = {
+          id: `local-${now.getTime()}`,
+          type: 'course',
+          title: 'Course Created',
+          message: `"${form.title}" has been created successfully`,
+          created_at: now.toISOString(),
+          read: false,
+        };
+        window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+
         onClose();
         setForm({
           title: "",
