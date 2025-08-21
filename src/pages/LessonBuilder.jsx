@@ -12,7 +12,31 @@ import {
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { getLinkPreview } from 'link-preview-js';
+
+// Add custom CSS for slide animation
+const slideInLeftStyle = `
+  @keyframes slide-in-left {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s ease-out;
+  }
+`;
+
+// Inject the CSS
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.type = 'text/css';
+  styleSheet.innerText = slideInLeftStyle;
+  document.head.appendChild(styleSheet);
+}
 
 // Register font sizes
 const Size = Quill.import('formats/size');
@@ -100,58 +124,102 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [linkDescription, setLinkDescription] = useState('');
   const [linkError, setLinkError] = useState('');
   const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
-  const [linkPreview, setLinkPreview] = useState(null);
-  const [isFetchingPreview, setIsFetchingPreview] = useState(false);
+  const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
+  const [showImageEditDialog, setShowImageEditDialog] = useState(false);
+  const [currentImageBlock, setCurrentImageBlock] = useState(null);
+  const [imageTemplateText, setImageTemplateText] = useState('');
+  const [imageTemplateUrl, setImageTemplateUrl] = useState('');
+  const [selectedImageTemplate, setSelectedImageTemplate] = useState(null);
 
   const blockRefs = React.useRef({});
+
+  // Image block templates
+  const imageTemplates = [
+    {
+      id: 'image-text',
+      title: 'Image & text',
+      description: 'Image with text content side by side',
+      icon: <Image className="h-6 w-6" />,
+      layout: 'side-by-side',
+      defaultContent: {
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+        text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy. The pains of the past are behind us. The future has yet to unfold. But the now is full of beauty always waiting for our attention.'
+      }
+    },
+    {
+      id: 'text-on-image',
+      title: 'Text on image',
+      description: 'Text overlay on background image',
+      icon: <Image className="h-6 w-6" />,
+      layout: 'overlay',
+      defaultContent: {
+        imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+        text: 'Daylight in the forest. Light filters through the trees and the forest. Every step is filled with the sounds of nature, and the scent of pine and earth fills the air. This is where peace begins.'
+      }
+    },
+    {
+      id: 'image-centered',
+      title: 'Image centered',
+      description: 'Centered image with optional caption',
+      icon: <Image className="h-6 w-6" />,
+      layout: 'centered',
+      defaultContent: {
+        imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+        text: 'A peaceful moment captured in time'
+      }
+    },
+    {
+      id: 'image-full-width',
+      title: 'Image full width',
+      description: 'Full width image with text below',
+      icon: <Image className="h-6 w-6" />,
+      layout: 'full-width',
+      defaultContent: {
+        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+        text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy.'
+      }
+    }
+  ];
 
   const contentBlockTypes = [
     {
       id: 'text',
       title: 'Text',
-      
       icon: <FileTextIcon className="h-5 w-5" />
     },
     {
       id: 'image',
       title: 'Image',
-      
       icon: <Image className="h-5 w-5" />
     },
     {
       id: 'video',
       title: 'Video',
-      
       icon: <Video className="h-5 w-5" />
     },
     {
       id: 'audio',
       title: 'Audio',
-      
       icon: <Volume2 className="h-5 w-5" />
     },
     {
       id: 'youtube',
       title: 'YouTube',
-      
       icon: <Youtube className="h-5 w-5" />
     },
     {
       id: 'link',
       title: 'Link',
-      
       icon: <LinkIcon className="h-5 w-5" />
     },
     {
       id: 'pdf',
       title: 'PDF',
-      
       icon: <FileTextIcon className="h-5 w-5" />
     },
     {
       id: 'scorm',
       title: 'SCORM',
-      
       icon: <Box className="h-5 w-5" />
     }
   ];
@@ -162,7 +230,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
     } else if (blockType.id === 'image') {
-      setShowImageDialog(true);
+      setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'audio') {
       setShowAudioDialog(true);
     } else if (blockType.id === 'youtube') {
@@ -229,6 +297,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setLinkUrl(block.linkUrl);
       setLinkDescription(block.linkDescription || '');
       setShowLinkDialog(true);
+    } else if (block.type === 'image' && block.layout) {
+      // Handle image template editing
+      setCurrentImageBlock(block);
+      setImageTemplateText(block.text || '');
+      setImageTemplateUrl(block.imageUrl || '');
+      setShowImageEditDialog(true);
     } else {
       setCurrentBlock(block);
       setEditorContent(block.content || '');
@@ -363,18 +437,87 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     handleVideoDialogClose();
   };
 
-  const handleTextEditorOpen = () => {
-    setShowTextEditorDialog(true);
-    setEditorTitle('');
-    setEditorHtml('');
-    setCurrentTextBlockId(null);
+  const handleImageTemplateSelect = (template) => {
+    const newBlock = {
+      id: `image-${Date.now()}`,
+      type: 'image',
+      title: template.title,
+      layout: template.layout,
+      templateType: template.id,
+      imageUrl: template.defaultContent.imageUrl,
+      text: template.defaultContent.text,
+      isEditing: false,
+      timestamp: new Date().toISOString()
+    };
+    
+    setContentBlocks(prev => [...prev, newBlock]);
+    setShowImageTemplateSidebar(false);
   };
 
-  const handleTextEditorClose = () => {
-    setShowTextEditorDialog(false);
-    setEditorTitle('');
-    setEditorHtml('');
-    setCurrentTextBlockId(null);
+  const handleImageBlockEdit = (blockId, field, value) => {
+    setContentBlocks(prev => 
+      prev.map(block => 
+        block.id === blockId 
+          ? { ...block, [field]: value }
+          : block
+      )
+    );
+  };
+
+  const handleImageFileUpload = (blockId, file) => {
+    if (file) {
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload only JPG, PNG, GIF, or WebP images');
+        return;
+      }
+      
+      // Check file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      const imageUrl = URL.createObjectURL(file);
+      handleImageBlockEdit(blockId, 'imageUrl', imageUrl);
+      handleImageBlockEdit(blockId, 'imageFile', file);
+    }
+  };
+
+  const saveImageTemplateChanges = (blockId) => {
+    setContentBlocks(prev => 
+      prev.map(block => 
+        block.id === blockId 
+          ? { ...block, isEditing: false }
+          : block
+      )
+    );
+    // You can add additional save logic here (e.g., API call)
+    console.log('Image template changes saved for block:', blockId);
+  };
+
+  const toggleImageBlockEditing = (blockId) => {
+    setContentBlocks(prev => 
+      prev.map(block => 
+        block.id === blockId 
+          ? { ...block, isEditing: !block.isEditing }
+          : block
+      )
+    );
+  };
+
+  const handleTextEditorOpen = (block = null) => {
+    setShowTextEditorDialog(true);
+    if (block) {
+      setEditorTitle(block.title || '');
+      setEditorHtml(block.content || '');
+      setCurrentTextBlockId(block.id);
+    } else {
+      setEditorTitle('');
+      setEditorHtml('');
+      setCurrentTextBlockId(null);
+    }
   };
 
   const handleTextEditorSave = () => {
@@ -390,9 +533,16 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           block.id === currentTextBlockId 
             ? { 
                 ...block, 
+<<<<<<< HEAD
                 title: editorTitle, 
                 content: editorHtml,
                 updatedAt: new Date().toISOString()
+=======
+                title: editorTitle,
+                content: editorHtml,
+                type: 'text',
+                textType: 'rich-text'
+>>>>>>> 468006dbd8e8a9078f902f15ec850a8d6159885a
               }
             : block
         )
@@ -404,14 +554,27 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         type: 'text',
         title: editorTitle,
         content: editorHtml,
+<<<<<<< HEAD
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
+=======
+        textType: 'rich-text',
+        order: contentBlocks.length + 1,
+        timestamp: new Date().toISOString()
+>>>>>>> 468006dbd8e8a9078f902f15ec850a8d6159885a
       };
       setContentBlocks(prev => [...prev, newBlock]);
     }
     
     // Close the dialog and reset form
     handleTextEditorClose();
+  };
+
+  const handleTextEditorClose = () => {
+    setShowTextEditorDialog(false);
+    setEditorTitle('');
+    setEditorHtml('');
+    setCurrentTextBlockId(null);
   };
 
   const handleImageDialogClose = () => {
@@ -664,7 +827,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     setLinkDescription('');
     setLinkError('');
     setCurrentLinkBlock(null);
-    setLinkPreview(null);
   };
 
   const handleLinkInputChange = (e) => {
@@ -699,8 +861,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       linkTitle: linkTitle,
       linkUrl: linkUrl,
       linkDescription: linkDescription,
-      linkImage: linkPreview?.images?.[0],
-      linkSiteName: linkPreview?.siteName,
       timestamp: new Date().toISOString()
     };
 
@@ -793,46 +953,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
     loadLessonData();
   }, [courseId, moduleId, lessonId, navigate, location.state]);
-
-  useEffect(() => {
-    const fetchLinkPreview = async () => {
-      if (!linkUrl) {
-        setLinkPreview(null);
-        return;
-      }
-
-      try {
-        setIsFetchingPreview(true);
-        const preview = await getLinkPreview(linkUrl, {
-          timeout: 5000,
-          headers: {
-            'user-agent': 'googlebot',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        });
-        setLinkPreview(preview);
-        
-        // Auto-fill title and description if they're empty
-        if (!linkTitle && preview.title) {
-          setLinkTitle(preview.title);
-        }
-        if (!linkDescription && preview.description) {
-          setLinkDescription(preview.description);
-        }
-      } catch (error) {
-        console.error('Error fetching link preview:', error);
-        setLinkPreview(null);
-      } finally {
-        setIsFetchingPreview(false);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      fetchLinkPreview();
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [linkUrl]);
 
   if (loading) {
     return (
@@ -1012,7 +1132,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                     size="icon"
                                     onClick={() => removeContentBlock(block.id)}
                                     className="h-8 w-8 text-red-500 hover:text-red-700"
-                                    title="Remove Video"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -1045,12 +1164,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                       )}
                       {block.type === 'image' && (
                         <div className="relative group">
-                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                              onClick={() => handleEditImage(block.id)}
+                              onClick={() => handleEditBlock(block.id)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -1066,21 +1185,89 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, block.id)}
                             >
                               <GripVertical className="h-4 w-4" />
                             </Button>
                           </div>
-                          <h3 className="text-lg font-semibold mb-2">{block.imageTitle}</h3>
-                          {block.imageDescription && (
-                            <p className="text-gray-600 mb-4">{block.imageDescription}</p>
+                          
+                          {/* Render based on template layout */}
+                          {block.layout === 'side-by-side' && (
+                            <div className="flex gap-6 items-start">
+                              <div className="w-1/2">
+                                <img 
+                                  src={block.imageUrl} 
+                                  alt="Image" 
+                                  className="w-full h-auto object-cover rounded-lg"
+                                />
+                              </div>
+                              <div className="w-1/2">
+                                <div 
+                                  className="text-gray-700 leading-relaxed prose prose-lg max-w-none"
+                                  dangerouslySetInnerHTML={{ __html: block.text }}
+                                />
+                              </div>
+                            </div>
                           )}
-                          {block.imageUrl && (
-                            <div className="mt-2">
-                              <img
-                                src={block.imageUrl}
-                                alt={block.imageTitle}
-                                className="max-w-full h-auto rounded-lg"
+                          {block.layout === 'overlay' && (
+                            <div className="relative">
+                              <img 
+                                src={block.imageUrl} 
+                                alt="Image" 
+                                className="w-full h-96 object-cover rounded-lg"
                               />
+                              <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg flex items-center justify-center p-8">
+                                <div 
+                                  className="text-white text-center leading-relaxed prose prose-lg max-w-none prose-invert"
+                                  dangerouslySetInnerHTML={{ __html: block.text }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {block.layout === 'centered' && (
+                            <div className="text-center space-y-6">
+                              <img 
+                                src={block.imageUrl} 
+                                alt="Image" 
+                                className="mx-auto h-auto max-w-full object-cover rounded-lg"
+                              />
+                              <div 
+                                className="text-gray-600 italic prose prose-lg max-w-none mx-auto"
+                                dangerouslySetInnerHTML={{ __html: block.text }}
+                              />
+                            </div>
+                          )}
+                          {block.layout === 'full-width' && (
+                            <div className="space-y-6">
+                              <img 
+                                src={block.imageUrl} 
+                                alt="Image" 
+                                className="w-full h-96 object-cover rounded-lg"
+                              />
+                              <div 
+                                className="text-gray-700 leading-relaxed prose prose-lg max-w-none"
+                                dangerouslySetInnerHTML={{ __html: block.text }}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Fallback for old image blocks without layout */}
+                          {!block.layout && (
+                            <div>
+                              <h3 className="text-lg font-semibold mb-2">{block.imageTitle}</h3>
+                              {block.imageDescription && (
+                                <p className="text-gray-600 mb-4">{block.imageDescription}</p>
+                              )}
+                              {block.imageUrl && (
+                                <div className="mt-2">
+                                  <img
+                                    src={block.imageUrl}
+                                    alt={block.imageTitle}
+                                    className="max-w-full h-auto rounded-lg"
+                                  />
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1258,338 +1445,235 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                   ) : (
                     <div className="space-y-4">
                       {contentBlocks.map((block, index) => (
-                        <Card 
+                        <div 
                           key={block.id} 
-                          className="border border-gray-200"
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, block.id)}
+                          className="relative group my-6 border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
                           onDragOver={handleDragOver}
                           onDrop={(e) => handleDrop(e, block.id)}
                         >
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-2">
-                                <Badge variant="outline">
-                                  {block.title}
-                                </Badge>
-                                <span className="text-sm text-gray-500">Block {index + 1}</span>
-                              </div>
-                              {/* <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="cursor-move"
-                                  title="Drag to reorder"
-                                >
-                                  <GripVertical className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEditBlock(block.id)}
-                                  title="Edit"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeContentBlock(block.id)}
-                                  className="text-red-600 hover:text-red-700"
-                                  title="Remove"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div> */}
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            {!block.isEditing && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                                onClick={() => {
+                                  if (block.type === 'text') {
+                                    handleTextEditorOpen(block);
+                                  } else if (block.type === 'image' && block.layout) {
+                                    toggleImageBlockEditing(block.id);
+                                  } else {
+                                    handleEditBlock(block.id);
+                                  }
+                                }}
+                                title={`Edit ${block.type}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => removeContentBlock(block.id)}
+                              title={`Remove ${block.type}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                            <div 
+                              className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, block.id)}
+                            >
+                              <GripVertical className="h-4 w-4" />
                             </div>
+                          </div>
+                          
+                          <div className="p-4">
+                            {block.type === 'text' && (
+                              <>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title}</h3>
+                                  {block.templateType && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {block.templateType}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div 
+                                  className="prose max-w-none text-gray-700"
+                                  dangerouslySetInnerHTML={{ __html: block.content || '<p>No content</p>' }} 
+                                />
+                              </>
+                            )}
                             
-                            {block.type && (
-                              <div>
-                                {block.textType === 'heading-paragraph' && block.heading && (
-                                  <div className="space-y-3">
-                                    <div
-                                      className="prose"
-                                      dangerouslySetInnerHTML={{ __html: block.heading }}
-                                    />
-                                    <div
-                                      className="prose"
-                                      dangerouslySetInnerHTML={{ __html: block.content }}
-                                    />
-                                  </div>
-                                )}
-                                {block.textType === 'subheading-paragraph' && block.subheading && (
-                                  <div className="space-y-3">
-                                    <div
-                                      className="prose"
-                                      dangerouslySetInnerHTML={{ __html: block.subheading }}
-                                    />
-                                    <div
-                                      className="prose"
-                                      dangerouslySetInnerHTML={{ __html: block.content }}
-                                    />
-                                  </div>
-                                )}
-                                {block.textType === 'paragraph' && (
-                                  <div
-                                    className="prose"
-                                    dangerouslySetInnerHTML={{ __html: block.content }}
-                                  />
-                                )}
-                                {(block.type === 'statement' || block.type === 'quote') && (
-                                  <div
-                                    className="prose"
-                                    dangerouslySetInnerHTML={{ __html: block.content }}
-                                  />
-                                )}
-                                {block.type === 'list' && (
-                                  <div
-                                    className="prose"
-                                    dangerouslySetInnerHTML={{ __html: block.content }}
-                                  />
-                                )}
-                                {block.type === 'video' && (
-                                  <div className="relative group my-4 rounded-lg overflow-hidden border border-gray-200">
-                                    {/* Video Info and Actions */}
-                                    <div className="p-4 border-b border-gray-100">
-                                      <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1">
-                                          <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle}</h3>
-                                          {block.videoDescription && (
-                                            <p className="text-gray-600 mt-1 text-sm">{block.videoDescription}</p>
-                                          )}
+                            {block.type === 'image' && block.layout && (
+                              <>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {imageTemplates.find(t => t.id === block.templateType)?.title || block.templateType}
+                                  </Badge>
+                                </div>
+                                
+                                {block.isEditing ? (
+                                  /* Edit Mode */
+                                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Image
+                                      </label>
+                                      <div className="space-y-3">
+                                        {/* Image Upload */}
+                                        <div className="flex items-center gap-3">
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                              const file = e.target.files[0];
+                                              if (file) {
+                                                handleImageFileUpload(block.id, file);
+                                              }
+                                            }}
+                                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                          />
                                         </div>
                                         
-                                        {!isViewMode && (
-                                          <div className="flex items-center gap-2">
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => handleEditBlock(block.id)}
-                                              className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                                              title="Edit Video"
-                                            >
-                                              <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => removeContentBlock(block.id)}
-                                              className="h-8 w-8 text-red-500 hover:text-red-700"
-                                              title="Remove Video"
-                                            >
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                            <div 
-                                              className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
-                                              draggable
-                                              onDragStart={(e) => handleDragStart(e, block.id)}
-                                            >
-                                              <GripVertical className="h-4 w-4" />
-                                            </div>
+                                        {/* OR divider */}
+                                        <div className="flex items-center">
+                                          <div className="flex-1 border-t border-gray-300"></div>
+                                          <span className="px-3 text-sm text-gray-500">OR</span>
+                                          <div className="flex-1 border-t border-gray-300"></div>
+                                        </div>
+                                        
+                                        {/* Image URL */}
+                                        <input
+                                          type="url"
+                                          value={block.imageUrl}
+                                          onChange={(e) => handleImageBlockEdit(block.id, 'imageUrl', e.target.value)}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                          placeholder="Enter image URL"
+                                        />
+                                        
+                                        {/* Image Preview */}
+                                        {block.imageUrl && (
+                                          <div className="mt-3">
+                                            <img
+                                              src={block.imageUrl}
+                                              alt="Preview"
+                                              className="max-w-full h-32 object-cover rounded-md border"
+                                            />
                                           </div>
                                         )}
                                       </div>
                                     </div>
                                     
-                                    {/* Video Player */}
-                                    <div className="relative pt-[56.25%] bg-black">
-                                      <video 
-                                        className="absolute top-0 left-0 w-full h-full"
-                                        controls
-                                        controlsList="nodownload"
-                                        preload="metadata"
-                                        key={block.id}
+                                    <div>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Text Content
+                                      </label>
+                                      <ReactQuill
+                                        theme="snow"
+                                        value={block.text}
+                                        onChange={(value) => handleImageBlockEdit(block.id, 'text', value)}
+                                        modules={{
+                                          toolbar: [
+                                            ['bold', 'italic', 'underline'],
+                                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                            [{ 'align': [] }],
+                                            ['clean']
+                                          ]
+                                        }}
+                                        style={{ minHeight: '100px' }}
+                                      />
+                                    </div>
+                                    
+                                    {/* Save and Cancel Buttons */}
+                                    <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => toggleImageBlockEditing(block.id)}
+                                        className="px-4"
                                       >
-                                        <source src={block.videoUrl} type={block.videoFile?.type || 'video/mp4'} />
-                                        Your browser does not support the video tag.
-                                      </video>
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => saveImageTemplateChanges(block.id)}
+                                        className="px-4 bg-blue-600 hover:bg-blue-700"
+                                      >
+                                        Save Changes
+                                      </Button>
                                     </div>
                                   </div>
-                                )}
-                                {block.type === 'image' && (
-                                  <div className="relative group">
-                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => handleEditImage(block.id)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => removeContentBlock(block.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
-                                      >
-                                        <GripVertical className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">{block.imageTitle}</h3>
-                                    {block.imageDescription && (
-                                      <p className="text-gray-600 mb-4">{block.imageDescription}</p>
+                                ) : (
+                                  /* Display Mode - smaller preview for edit mode */
+                                  <div>
+                                    {block.layout === 'side-by-side' && (
+                                      <div className="flex gap-4 items-start">
+                                        <div className="w-1/2">
+                                          <img 
+                                            src={block.imageUrl} 
+                                            alt="Image" 
+                                            className="w-full h-32 object-cover rounded"
+                                          />
+                                        </div>
+                                        <div className="w-1/2">
+                                          <div 
+                                            className="text-sm text-gray-600 line-clamp-4 prose prose-sm max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: block.text }}
+                                          />
+                                        </div>
+                                      </div>
                                     )}
-                                    {block.imageUrl && (
-                                      <div className="mt-2">
-                                        <img
-                                          src={block.imageUrl}
-                                          alt={block.imageTitle}
-                                          className="max-w-full h-auto rounded-lg"
+                                    {block.layout === 'overlay' && (
+                                      <div className="relative">
+                                        <img 
+                                          src={block.imageUrl} 
+                                          alt="Image" 
+                                          className="w-full h-40 object-cover rounded"
+                                        />
+                                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-3">
+                                          <div 
+                                            className="text-white text-sm text-center line-clamp-3 prose prose-sm max-w-none prose-invert"
+                                            dangerouslySetInnerHTML={{ __html: block.text }}
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
+                                    {block.layout === 'centered' && (
+                                      <div className="text-center space-y-3">
+                                        <img 
+                                          src={block.imageUrl} 
+                                          alt="Image" 
+                                          className="mx-auto h-32 object-cover rounded"
+                                        />
+                                        <div 
+                                          className="text-sm text-gray-600 italic prose prose-sm max-w-none mx-auto"
+                                          dangerouslySetInnerHTML={{ __html: block.text }}
+                                        />
+                                      </div>
+                                    )}
+                                    {block.layout === 'full-width' && (
+                                      <div className="space-y-3">
+                                        <img 
+                                          src={block.imageUrl} 
+                                          alt="Image" 
+                                          className="w-full h-40 object-cover rounded"
+                                        />
+                                        <div 
+                                          className="text-sm text-gray-600 line-clamp-3 prose prose-sm max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.text }}
                                         />
                                       </div>
                                     )}
                                   </div>
                                 )}
-                                {block.type === 'audio' && (
-                                  <div className="relative group">
-                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => handleEditAudio(block.id)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => removeContentBlock(block.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
-                                      >
-                                        <GripVertical className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">{block.audioTitle}</h3>
-                                    {block.audioDescription && (
-                                      <p className="text-gray-600 mb-4">{block.audioDescription}</p>
-                                    )}
-                                    {block.audioUrl && (
-                                      <div className="mt-2">
-                                        <audio 
-                                          src={block.audioUrl}
-                                          controls
-                                          className="w-full rounded-lg border border-gray-200"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                {block.type === 'youtube' && (
-                                  <div className="relative group my-6">
-                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => handleEditYoutubeVideo(block)}
-                                        title="Edit Video"
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => removeContentBlock(block.id)}
-                                        title="Remove Video"
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                      </Button>
-                                      <div 
-                                        className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, block.id)}
-                                      >
-                                        <GripVertical className="h-4 w-4" />
-                                      </div>
-                                    </div>
-                                    
-                                    <h3 className="text-xl font-semibold mb-2">{block.youtubeTitle}</h3>
-                                    {block.youtubeDescription && (
-                                      <p className="text-gray-600 mb-4">{block.youtubeDescription}</p>
-                                    )}
-                                    
-                                    <div className="w-full max-w-4xl mx-auto">
-                                      <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden shadow-lg">
-                                        <iframe
-                                          src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
-                                          className="absolute top-0 left-0 w-full h-full"
-                                          frameBorder="0"
-                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                          allowFullScreen
-                                          title={block.youtubeTitle || 'YouTube video player'}
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                                {block.type === 'link' && (
-                                  <div className="relative group my-6">
-                                    <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => handleEditBlock(block.id)}
-                                        title="Edit Link"
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
-                                        onClick={() => removeContentBlock(block.id)}
-                                        title="Remove Link"
-                                      >
-                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                      </Button>
-                                      <div 
-                                        className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, block.id)}
-                                      >
-                                        <GripVertical className="h-4 w-4" />
-                                      </div>
-                                    </div>
-                                    
-                                    <h3 className="text-xl font-semibold mb-2">{block.linkTitle}</h3>
-                                    {block.linkDescription && (
-                                      <p className="text-gray-600 mb-4">{block.linkDescription}</p>
-                                    )}
-                                    
-                                    <div className="w-full max-w-4xl mx-auto">
-                                      <a
-                                        href={block.linkUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:text-blue-700"
-                                      >
-                                        {block.linkUrl}
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
+                              </>
                             )}
-                          </CardContent>
-                        </Card>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -1689,6 +1773,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       </Dialog>
 
       {/* Text Editor Dialog */}
+<<<<<<< HEAD
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
         <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
@@ -1700,6 +1785,15 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
             </p>
           </DialogHeader>
           <div className="flex-1 overflow-y-auto space-y-4 py-2">
+=======
+      <Dialog open={showTextEditorDialog} onOpenChange={setShowTextEditorDialog}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{currentTextBlockId ? 'Edit Text Block' : 'Add Text Block'}</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+>>>>>>> 468006dbd8e8a9078f902f15ec850a8d6159885a
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Title <span className="text-red-500">*</span>
@@ -1709,10 +1803,11 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 value={editorTitle}
                 onChange={(e) => setEditorTitle(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a title for this text block"
+                placeholder="Enter block title"
                 required
               />
             </div>
+<<<<<<< HEAD
 
             <div className="flex-1 flex flex-col">
               <div className="flex justify-between items-center mb-1">
@@ -1725,12 +1820,22 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               </div>
               <div className="border border-gray-300 rounded-md flex-1 flex flex-col">
                 <div className="flex-1 overflow-auto">
+=======
+            
+            <div className="flex-1 flex flex-col h-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Content
+              </label>
+              <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                <div className="border-b">
+>>>>>>> 468006dbd8e8a9078f902f15ec850a8d6159885a
                   <ReactQuill
                     theme="snow"
                     value={editorHtml}
                     onChange={setEditorHtml}
                     modules={{
                       toolbar: [
+<<<<<<< HEAD
                         [{ 'header': [1, 2, 3, 4, false] }],
                         ['bold', 'italic', 'underline', 'strike'],
                         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -1752,6 +1857,30 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               onClick={handleTextEditorClose}
               className="mr-2"
             >
+=======
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link', 'image'],
+                        ['clean']
+                      ]
+                    }}
+                    className="flex-1 flex flex-col"
+                    style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+                  />
+                </div>
+                <div className="p-4 bg-gray-50 border-t">
+                  <p className="text-xs text-gray-500">
+                    Use the toolbar above to format your text. The content will be displayed exactly as shown here.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="border-t pt-4">
+            <Button variant="outline" onClick={handleTextEditorClose}>
+>>>>>>> 468006dbd8e8a9078f902f15ec850a8d6159885a
               Cancel
             </Button>
             <Button 
@@ -1759,7 +1888,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               className="bg-blue-600 hover:bg-blue-700"
               disabled={!editorTitle.trim()}
             >
-              {currentTextBlockId ? 'Update' : 'Add'} Text Block
+              {currentTextBlockId ? 'Update' : 'Add'} Block
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1890,6 +2019,118 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Image Template Sidebar */}
+      {showImageTemplateSidebar && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300" 
+            onClick={() => setShowImageTemplateSidebar(false)}
+          />
+          
+          {/* Sidebar */}
+          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Image className="h-6 w-6" />
+                  Image Templates
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowImageTemplateSidebar(false)}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  ×
+                </Button>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Choose a template to add to your lesson
+              </p>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {imageTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  onClick={() => handleImageTemplateSelect(template)}
+                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
+                      {template.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{template.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Mini Preview */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    {template.layout === 'side-by-side' && (
+                      <div className="flex gap-3 items-start">
+                        <div className="w-1/2">
+                          <img 
+                            src={template.defaultContent.imageUrl} 
+                            alt="Preview" 
+                            className="w-full h-20 object-cover rounded"
+                          />
+                        </div>
+                        <div className="w-1/2">
+                          <p className="text-xs text-gray-600 line-clamp-4">
+                            {template.defaultContent.text.substring(0, 60)}...
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {template.layout === 'overlay' && (
+                      <div className="relative">
+                        <img 
+                          src={template.defaultContent.imageUrl} 
+                          alt="Preview" 
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
+                          <p className="text-white text-xs text-center line-clamp-3">
+                            {template.defaultContent.text.substring(0, 50)}...
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {template.layout === 'centered' && (
+                      <div className="text-center space-y-2">
+                        <img 
+                          src={template.defaultContent.imageUrl} 
+                          alt="Preview" 
+                          className="mx-auto h-20 object-cover rounded"
+                        />
+                        <p className="text-xs text-gray-600 italic line-clamp-2">
+                          {template.defaultContent.text.substring(0, 40)}...
+                        </p>
+                      </div>
+                    )}
+                    {template.layout === 'full-width' && (
+                      <div className="space-y-2">
+                        <img 
+                          src={template.defaultContent.imageUrl} 
+                          alt="Preview" 
+                          className="w-full h-20 object-cover rounded"
+                        />
+                        <p className="text-xs text-gray-600 line-clamp-3">
+                          {template.defaultContent.text.substring(0, 60)}...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image Dialog */}
       <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>
@@ -2140,6 +2381,21 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           <div className="space-y-4 py-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Link Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={linkTitle}
+                onChange={handleLinkInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter link title"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Link URL <span className="text-red-500">*</span>
               </label>
               <input
@@ -2157,57 +2413,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               {linkError && (
                 <p className="text-sm text-red-500 mt-1">{linkError}</p>
               )}
-              {isFetchingPreview && (
-                <div className="mt-2 flex items-center text-sm text-gray-500">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Loading preview...
-                </div>
-              )}
-              {linkPreview && (
-                <div className="mt-4 border rounded-lg overflow-hidden bg-white">
-                  {linkPreview.images && linkPreview.images[0] && (
-                    <img 
-                      src={linkPreview.images[0]} 
-                      alt="Preview" 
-                      className="w-full h-40 object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  )}
-                  <div className="p-4">
-                    {linkPreview.siteName && (
-                      <p className="text-xs text-gray-500 mb-1">{linkPreview.siteName}</p>
-                    )}
-                    <h3 className="font-medium text-gray-900 mb-1">
-                      {linkPreview.title || 'No title available'}
-                    </h3>
-                    {linkPreview.description && (
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {linkPreview.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Link Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={linkTitle}
-                onChange={handleLinkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter link title"
-                required
-              />
             </div>
 
             <div>
@@ -2237,6 +2442,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+<<<<<<< HEAD
       {contentBlocks.map((block, index) => (
         block.type === 'link' && (
           <div key={block.id} className="relative group my-6 w-full">
@@ -2360,6 +2566,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
           </div>
         )
       ))}
+=======
+>>>>>>> 468006dbd8e8a9078f902f15ec850a8d6159885a
     </>
   );
 };
