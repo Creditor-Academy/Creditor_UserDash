@@ -388,22 +388,29 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setContentBlocks(blocks => 
         blocks.map(block => 
           block.id === currentTextBlockId 
-            ? { ...block, title: editorTitle, content: editorHtml }
+            ? { 
+                ...block, 
+                title: editorTitle, 
+                content: editorHtml,
+                updatedAt: new Date().toISOString()
+              }
             : block
         )
       );
     } else {
       // Add new block
       const newBlock = {
-        id: `block_${Date.now()}`,
+        id: `text_${Date.now()}`,
         type: 'text',
         title: editorTitle,
         content: editorHtml,
-        order: contentBlocks.length + 1
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       };
-      setContentBlocks([...contentBlocks, newBlock]);
+      setContentBlocks(prev => [...prev, newBlock]);
     }
     
+    // Close the dialog and reset form
     handleTextEditorClose();
   };
 
@@ -674,6 +681,14 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const handleAddLink = () => {
     if (!linkTitle || !linkUrl) {
       setLinkError('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      // This will throw if URL is invalid
+      new URL(linkUrl);
+    } catch (e) {
+      setLinkError('Please enter a valid URL (e.g., https://example.com)');
       return;
     }
 
@@ -954,11 +969,20 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 <div className="max-w-4xl mx-auto">
                   {contentBlocks.map((block, index) => (
                     <div key={block.id} className="mb-8">
-                      {block.type === 'text' && block.textType === 'heading-paragraph' && block.heading && (
-                        <h1 className="text-3xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: block.heading }} />
-                      )}
-                      {block.type === 'text' && block.textType === 'subheading-paragraph' && block.subheading && (
-                        <h2 className="text-2xl font-semibold mb-3" dangerouslySetInnerHTML={{ __html: block.subheading }} />
+                      {block.type === 'text' && (
+                        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+                          {block.title && (
+                            <h2 className="text-2xl font-bold mb-4 text-gray-800">
+                              {block.title}
+                            </h2>
+                          )}
+                          {block.content && (
+                            <div 
+                              className="prose max-w-none text-gray-700"
+                              dangerouslySetInnerHTML={{ __html: block.content }}
+                            />
+                          )}
+                        </div>
                       )}
                       {block.type === 'video' && (
                         <div className="relative group my-4 rounded-lg overflow-hidden border border-gray-200">
@@ -1666,13 +1690,16 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl font-bold">
               {currentTextBlockId ? 'Edit Text Block' : 'Add Text Block'}
             </DialogTitle>
+            <p className="text-sm text-gray-500">
+              Add formatted text content to your lesson
+            </p>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto space-y-4 py-2">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Title <span className="text-red-500">*</span>
@@ -1687,33 +1714,44 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Content
-              </label>
-              <div className="border border-gray-300 rounded-md">
-                <ReactQuill
-                  theme="snow"
-                  value={editorHtml}
-                  onChange={setEditorHtml}
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      [{ 'indent': '-1'}, { 'indent': '+1' }],
-                      ['link', 'image'],
-                      ['clean']
-                    ]
-                  }}
-                  placeholder="Start typing your content here..."
-                  style={{ height: '300px' }}
-                />
+            <div className="flex-1 flex flex-col">
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Content
+                </label>
+                <div className="text-xs text-gray-500">
+                  {editorHtml.replace(/<[^>]*>/g, '').length} characters
+                </div>
+              </div>
+              <div className="border border-gray-300 rounded-md flex-1 flex flex-col">
+                <div className="flex-1 overflow-auto">
+                  <ReactQuill
+                    theme="snow"
+                    value={editorHtml}
+                    onChange={setEditorHtml}
+                    modules={{
+                      toolbar: [
+                        [{ 'header': [1, 2, 3, 4, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link'],
+                        ['clean']
+                      ]
+                    }}
+                    placeholder="Start typing your content here..."
+                    className="h-full flex-1"
+                    style={{ minHeight: '300px' }}
+                  />
+                </div>
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleTextEditorClose}>
+          <DialogFooter className="border-t pt-4">
+            <Button 
+              variant="outline" 
+              onClick={handleTextEditorClose}
+              className="mr-2"
+            >
               Cancel
             </Button>
             <Button 
@@ -2014,7 +2052,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add YouTube Video</DialogTitle>
-            <p className="text-sm text-gray-500">Add a YouTube video by pasting its URL</p>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -2263,10 +2300,63 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                   </p>
                 )}
                 <p className="text-sm text-blue-600 truncate">
-                  {new URL(block.linkUrl).hostname.replace('www.', '')}
+                  {(() => {
+                    try {
+                      return new URL(block.linkUrl).hostname.replace('www.', '');
+                    } catch (e) {
+                      return 'Invalid URL';
+                    }
+                  })()}
                 </p>
               </div>
             </a>
+          </div>
+        )
+      ))}
+      {contentBlocks.map((block, index) => (
+        block.type === 'text' && (
+          <div key={block.id} className="relative group my-4 w-full">
+            <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                onClick={() => handleEditBlock(block.id)}
+                title="Edit Text Block"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                onClick={() => removeContentBlock(block.id)}
+                title="Remove Text Block"
+              >
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
+              <div 
+                className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                draggable
+                onDragStart={(e) => handleDragStart(e, block.id)}
+              >
+                <GripVertical className="h-4 w-4" />
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+              {block.title && (
+                <h3 className="text-xl font-bold mb-4 text-gray-800">
+                  {block.title}
+                </h3>
+              )}
+              {block.content && (
+                <div 
+                  className="prose max-w-none text-gray-700"
+                  dangerouslySetInnerHTML={{ __html: block.content }}
+                />
+              )}
+            </div>
           </div>
         )
       ))}
