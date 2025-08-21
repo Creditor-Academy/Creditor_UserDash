@@ -388,6 +388,44 @@ function QuizResultsPage() {
                                   })}
                                 </div>
                               )}
+
+                              {/* Your Answer display for text/optionless questions (fill-ups, one-word, descriptive, etc.) */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                const hasOptions = Array.isArray(questionData?.options) && questionData.options.length > 0;
+                                const isTextualType = [
+                                  'fill_blank', 'fill_ups', 'fill in the blank', 'fillintheblank',
+                                  'one_word', 'oneword', 'one word',
+                                  'descriptive', 'text', 'essay', 'long_answer', 'long answer'
+                                ].includes(typeLower);
+                                const shouldShow = isTextualType || !hasOptions;
+                                if (!shouldShow) return null;
+
+                                const fromResult = Array.isArray(answer?.selected)
+                                  ? answer.selected
+                                  : (answer?.selected != null ? [answer.selected] : undefined);
+                                const fromState = Array.isArray(userAnswerData)
+                                  ? userAnswerData
+                                  : (userAnswerData != null ? [userAnswerData] : []);
+                                const values = fromResult ?? fromState;
+
+                                return (
+                                  <div className="space-y-2 mb-3">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Your Answer:</p>
+                                    {values && values.length > 0 ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {values.map((val, i) => (
+                                          <span key={i} className="px-2 py-1 rounded bg-gray-100 border border-gray-200 text-gray-800">
+                                            {String(val)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-500">No answer</span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                     
                               
                               
