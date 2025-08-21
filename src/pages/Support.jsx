@@ -193,16 +193,16 @@ const SupportTicketsPage = () => {
       case 'open':
       case 'pending':
       case 'PENDING':
-        return <Badge variant="destructive">Open</Badge>;
+        return <Badge className="bg-red-100 text-red-700 border-transparent">Open</Badge>;
       case 'in-progress':
       case 'IN_PROGRESS':
-        return <Badge variant="warning">In Progress</Badge>;
+        return <Badge className="bg-amber-100 text-amber-700 border-transparent">In Progress</Badge>;
       case 'resolved':
       case 'RESOLVED':
-        return <Badge variant="success">Resolved</Badge>;
+        return <Badge className="bg-emerald-100 text-emerald-700 border-transparent">Resolved</Badge>;
       case 'closed':
       case 'CLOSED':
-        return <Badge variant="secondary">Closed</Badge>;
+        return <Badge className="bg-gray-100 text-gray-700 border-transparent">Closed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -295,7 +295,7 @@ const SupportTicketsPage = () => {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="PENDING">Open</SelectItem>
                   <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                   <SelectItem value="RESOLVED">Resolved</SelectItem>
