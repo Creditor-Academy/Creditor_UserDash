@@ -270,37 +270,37 @@ const SupportTicketsPage = () => {
         <CardHeader className="pb-2 flex-shrink-0">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Mail className="h-5 w-5" />
-            Support Tickets
-          </CardTitle>
+                Support Tickets
+              </CardTitle>
         </CardHeader>
         <CardContent className="p-3 flex-1 flex flex-col overflow-hidden">
           {/* Search and Filter Section */}
           <div className="flex flex-col lg:flex-row gap-3 mb-3 flex-shrink-0">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search tickets..."
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search tickets..."
                 className="pl-10 w-full h-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
             <div className="w-full lg:w-40">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="flex items-center gap-2 w-full h-9">
                   <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="PENDING">Open</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="RESOLVED">Resolved</SelectItem>
-                  <SelectItem value="CLOSED">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                      <SelectItem value="PENDING">Open</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="RESOLVED">Resolved</SelectItem>
+                      <SelectItem value="CLOSED">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
           {/* Loading State */}
           {loading ? (
@@ -346,7 +346,7 @@ const SupportTicketsPage = () => {
                           <TableCell className="py-2">
                             <div className="font-medium text-xs truncate" title={ticket.userName}>
                               {ticket.userName}
-                            </div>
+                          </div>
                             <div className="text-xs text-gray-500 truncate" title={ticket.userEmail}>
                               {ticket.userEmail}
                             </div>
@@ -354,19 +354,19 @@ const SupportTicketsPage = () => {
                           <TableCell className="py-2">
                             <div className="truncate text-xs" title={ticket.subject}>
                               {ticket.subject}
-                            </div>
+                          </div>
                           </TableCell>
                           <TableCell className="py-2">
                             <div className="flex items-center gap-1">
                               {getPriorityIcon(ticket.priority)}
                               <span className="capitalize text-xs hidden sm:inline">{ticket.priority}</span>
-                            </div>
+                        </div>
                           </TableCell>
                           <TableCell className="py-2">{getStatusBadge(ticket.status)}</TableCell>
                           <TableCell className="py-2">
                             <div className="text-xs whitespace-nowrap">
                               {formatDate(ticket.createdAt)}
-                            </div>
+                      </div>
                           </TableCell>
                           <TableCell className="py-2">
                             <Button
@@ -375,7 +375,7 @@ const SupportTicketsPage = () => {
                               onClick={() => toggleTicketExpansion(ticket.id)}
                               className="h-6 w-6 p-0"
                             >
-                              {expandedTicket === ticket.id ? (
+                          {expandedTicket === ticket.id ? (
                                 <ChevronUp className="h-3 w-3" />
                               ) : (
                                 <ChevronDown className="h-3 w-3" />
@@ -410,12 +410,12 @@ const SupportTicketsPage = () => {
                                               Attachment {index + 1}
                                             </a>
                                           ))}
-                                        </div>
+                      </div>
                                       </div>
                                     )}
-                                  </div>
-                                </div>
-
+                    </div>
+                  </div>
+                  
                                 {/* Ticket Details + Actions */}
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                                   <div className="lg:col-span-2">
@@ -432,8 +432,8 @@ const SupportTicketsPage = () => {
                                       <div>
                                         <span className="text-gray-500">Status: </span>
                                         <span className="capitalize">{mapToBackendStatus(ticket.status)}</span>
-                                      </div>
-                                      <div>
+                      </div>
+                          <div>
                                         <span className="text-gray-500">Priority: </span>
                                         <span className="capitalize">{ticket.priority}</span>
                                       </div>
@@ -446,34 +446,34 @@ const SupportTicketsPage = () => {
                                     <Button size="sm" variant="outline" onClick={() => openReplyDialog(ticket.id)}>
                                       Reply to User
                                     </Button>
-                                  </div>
-                                </div>
-
+                            </div>
+                          </div>
+                          
                                 {/* Replies */}
-                                {ticket.replies && ticket.replies.length > 0 && (
-                                  <div>
+                          {ticket.replies && ticket.replies.length > 0 && (
+                            <div>
                                     <h4 className="font-medium mb-1 flex items-center gap-2 text-sm">
                                       <MessageSquare className="h-3 w-3" />
                                       Replies ({ticket.replies.length}):
-                                    </h4>
+                              </h4>
                                     <div className="space-y-2">
-                                      {ticket.replies.map((reply, index) => (
+                                {ticket.replies.map((reply, index) => (
                                         <div key={index} className="bg-white p-2 rounded-lg border">
                                           <div className="flex items-center justify-between mb-1">
                                             <span className="text-xs font-medium text-gray-700">
-                                              {reply.sender?.name || 'Admin'}
-                                            </span>
+                                          {reply.sender?.name || 'Admin'}
+                                        </span>
                                             <span className="text-xs text-gray-500">
-                                              {formatDate(reply.created_at)}
-                                            </span>
-                                          </div>
-                                          <p className="text-xs text-gray-700 whitespace-pre-line leading-5">{reply.message}</p>
-                                        </div>
-                                      ))}
+                                        {formatDate(reply.created_at)}
+                                      </span>
                                     </div>
+                                          <p className="text-xs text-gray-700 whitespace-pre-line leading-5">{reply.message}</p>
                                   </div>
-                                )}
+                                ))}
                               </div>
+                            </div>
+                          )}
+                        </div>
                             </TableCell>
                           </TableRow>
                         )}
@@ -481,12 +481,12 @@ const SupportTicketsPage = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
             </div>
-          )}
+          </div>
+        )}
         </CardContent>
       </Card>
-
+      
       {/* Reply Dialog */}
       <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
         <DialogContent>

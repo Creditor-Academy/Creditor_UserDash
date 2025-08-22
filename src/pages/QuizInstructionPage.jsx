@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, Clock, BookOpen, AlertTriangle, Loader2, CheckCircle, Award, BarChart2 } from "lucide-react";
-import { getModuleQuizById, startQuiz } from "@/services/quizService";
+import { getModuleQuizById, startQuiz, getQuizMetaById } from "@/services/quizService";
 import { toast } from "sonner";
 
 function QuizInstructionPage() {
@@ -27,13 +27,21 @@ function QuizInstructionPage() {
     const fetchQuizData = async () => {
       try {
         setIsLoading(true);
-        // Prefer quiz data passed via navigation state
-        if (location.state && location.state.quiz) {
-          setQuizData(location.state.quiz);
-        } else {
-          const data = await getModuleQuizById(moduleId, quizId);
-          setQuizData(data);
-        }
+        // Base quiz data (from state or API)
+        let base = location.state && location.state.quiz
+          ? location.state.quiz
+          : await getModuleQuizById(moduleId, quizId);
+
+        // Always fetch meta for accurate counts/scores
+        let meta = null;
+        try {
+          meta = await getQuizMetaById(quizId);
+        } catch {}
+
+        setQuizData({
+          ...(base || {}),
+          ...(meta || {}),
+        });
       } catch (err) {
         console.error('Error fetching quiz:', err);
         setError('Failed to load quiz data');
@@ -50,12 +58,14 @@ function QuizInstructionPage() {
 
   // Consolidated instructions
   const instructions = [
-    ` Time Limit: ${quizData?.timeLimit || 25} minutes`,
-    ` Questions: ${quizData?.questionCount || 'Multiple'} questions of various types`,
-    ` Passing Score: ${quizData?.passingScore || 70}% required`,
-    ` Attempts: ${quizData?.maxAttempts || 3} attempts allowed`,
+    ` Time Limit: Unlimited`,
+    ` Questions: ${quizData?.questionCount || quizData?.question_count || 'Multiple'} questions of various types`,
+    ` Passing Score: ${quizData?.passingScore || quizData?.min_score || 70}% required`,
+    ` Attempts: ${quizData?.maxAttempts ?? quizData?.maxAttempts === 0 ? quizData?.maxAttempts : (quizData?.max_attempts || 3)} attempts allowed`,
+    ` Total Score: ${quizData?.totalScore ?? quizData?.max_score ?? '-'}`,
     " Your progress will be saved automatically",
-    " No changes allowed after submission"
+    " No changes allowed after submission",
+    " Ensure stable internet connection during the quiz"
   ];
 
   const handleStartQuiz = async () => {
@@ -303,34 +313,34 @@ function QuizInstructionPage() {
                 {quizData.description || 'Test your knowledge with this comprehensive quiz'}
               </p>
               
-              {/* Quiz Details */}
+              {/* Quiz Details (Duration moved to instructions) */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
-                  <Clock className="h-5 w-5 text-indigo-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Duration</p>
-                    <p className="font-bold">{quizData.timeLimit || 25} min</p>
-                  </div>
-                </div>
                 <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                   <BookOpen className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="text-sm text-gray-600">Questions</p>
-                    <p className="font-bold">{quizData.questionCount || 'Multiple'}</p>
+                    <p className="font-bold">{quizData.questionCount ?? quizData.question_count ?? '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                   <Award className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="text-sm text-gray-600">Passing</p>
-                    <p className="font-bold">{quizData.passingScore || 70}%</p>
+                    <p className="text-sm text-gray-600">Min Score</p>
+                    <p className="font-bold">{quizData.min_score ?? 70}%</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                   <BarChart2 className="h-5 w-5 text-purple-600" />
                   <div>
                     <p className="text-sm text-gray-600">Attempts</p>
-                    <p className="font-bold">{quizData.maxAttempts || 3}</p>
+                    <p className="font-bold">{quizData.maxAttempts ?? quizData.max_attempts ?? '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
+                  <Award className="h-5 w-5 text-amber-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Total Score</p>
+                    <p className="font-bold">{quizData.totalScore ?? quizData.max_score ?? '-'}</p>
                   </div>
                 </div>
               </div>
