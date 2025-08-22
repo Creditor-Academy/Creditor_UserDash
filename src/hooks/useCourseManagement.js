@@ -7,6 +7,7 @@ import {
   deleteModule, 
   deleteCourse 
 } from '../services/courseService';
+import { createNotification } from '@/services/notificationService';
 
 export const useCourseManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -70,6 +71,32 @@ export const useCourseManagement = () => {
         ...prev,
         [courseId]: updatedModules
       }));
+
+      // If module is published, broadcast notification
+      if ((moduleData?.module_status || '').toUpperCase() === 'PUBLISHED') {
+        try {
+          await createNotification({
+            title: 'Module Published',
+            message: `A new module "${moduleData.title}" has been published`,
+            type: 'module',
+            audience: 'all'
+          });
+        } catch (err) {
+          console.warn('Module publish notification failed; continuing.', err);
+        }
+        // Trigger UI to refresh notifications and add local fallback
+        window.dispatchEvent(new Event('refresh-notifications'));
+        const now = new Date();
+        const localNotification = {
+          id: `local-${now.getTime()}`,
+          type: 'module',
+          title: 'Module Published',
+          message: `A new module "${moduleData.title}" has been published`,
+          created_at: now.toISOString(),
+          read: false,
+        };
+        window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+      }
     } catch (err) {
       console.error('Error creating module:', err);
       throw err;
@@ -86,6 +113,31 @@ export const useCourseManagement = () => {
         ...prev,
         [courseId]: updatedModules
       }));
+
+      // If module is published on update, broadcast notification
+      if ((moduleData?.module_status || '').toUpperCase() === 'PUBLISHED') {
+        try {
+          await createNotification({
+            title: 'Module Published',
+            message: `Module "${moduleData.title}" has been published`,
+            type: 'module',
+            audience: 'all'
+          });
+        } catch (err) {
+          console.warn('Module publish notification failed; continuing.', err);
+        }
+        window.dispatchEvent(new Event('refresh-notifications'));
+        const now = new Date();
+        const localNotification = {
+          id: `local-${now.getTime()}`,
+          type: 'module',
+          title: 'Module Published',
+          message: `Module "${moduleData.title}" has been published`,
+          created_at: now.toISOString(),
+          read: false,
+        };
+        window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+      }
     } catch (err) {
       console.error('Error updating module:', err);
       throw err;
