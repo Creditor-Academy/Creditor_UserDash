@@ -4,6 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchCourseById, fetchCourseModules, createModule } from "@/services/courseService";
+import { createModulePublishedNotification } from "@/services/notificationService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +61,31 @@ const InstructorCourseModulesPage = () => {
   const handleModuleSaved = async (moduleData) => {
     try {
       if (moduleDialogMode === "create") {
-        await createModule(courseId, moduleData);
+        const response = await createModule(courseId, moduleData);
+        const createdModule = response.data || response;
+        
+        // If module is published, send notification to enrolled users
+        if ((moduleData?.module_status || '').toUpperCase() === 'PUBLISHED') {
+          try {
+            await createModulePublishedNotification(courseId, createdModule.id);
+            console.log('Module published notification sent successfully');
+          } catch (err) {
+            console.warn('Module publish notification failed (route might be disabled); continuing.', err);
+            // Add local fallback notification
+            const now = new Date();
+            const localNotification = {
+              id: `local-${now.getTime()}`,
+              type: 'module',
+              title: 'Module Published',
+              message: `A new module "${moduleData.title}" has been published`,
+              created_at: now.toISOString(),
+              read: false,
+            };
+            window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+          }
+          // Trigger UI to refresh notifications
+          window.dispatchEvent(new Event('refresh-notifications'));
+        }
       }
       const updated = await fetchCourseModules(courseId);
       setModules(updated || []);

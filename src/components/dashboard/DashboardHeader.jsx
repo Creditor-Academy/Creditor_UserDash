@@ -75,18 +75,21 @@ export function DashboardHeader() {
   // Centralized notifications fetcher
   const refreshNotifications = async () => {
     try {
-      const { data } = await fetchNotifications();
-      const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+      const response = await fetchNotifications();
+      // Backend returns: { success: true, notifications: [...] }
+      const notifications = response.data?.notifications || [];
+      
       // Merge with local notifications currently in state by id
       setApiNotifications(prev => {
         const localItems = readLocalNotifications();
         const byId = new Map();
-        [...localItems, ...items, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        [...localItems, ...notifications, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
         const merged = Array.from(byId.values());
         return merged;
       });
+      
       const localItems = readLocalNotifications();
-      const unread = [...(Array.isArray(items) ? items : []), ...localItems].filter(n => !n.read).length;
+      const unread = [...notifications, ...localItems].filter(n => !n.read).length;
       setUnreadNotifications(unread);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
@@ -300,14 +303,28 @@ export function DashboardHeader() {
   };
 
   // Handler passed to modal when all marked as read
-  const handleAllMarkedRead = () => {
-    // set all current notifications as read in local storage as well
+  const handleAllMarkedRead = async () => {
+    try {
+      // Try to call backend to mark all as read (if route is enabled)
+      await markAllNotificationsRead();
+      console.log('Backend marked all notifications as read');
+    } catch (error) {
+      console.warn('Backend mark as read failed, using frontend fallback:', error);
+    }
+    
+    // Update local storage
     const locals = readLocalNotifications();
     const updatedLocals = locals.map(n => ({ ...n, read: true }));
     writeLocalNotifications(updatedLocals);
-    // update state
+    
+    // Update state
     setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadNotifications(0);
+    
+    // Refresh notifications from backend to ensure consistency
+    setTimeout(() => {
+      refreshNotifications();
+    }, 500);
   };
 
   return (

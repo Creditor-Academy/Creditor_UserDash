@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createCourse } from '../../services/courseService';
-import { createNotification } from '@/services/notificationService';
+import { createCourseNotification } from '@/services/notificationService';
 
 const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
   const [form, setForm] = useState({
@@ -63,30 +63,28 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
       
       if (response.success) {
         onCourseCreated(response.data);
-        // Try backend broadcast so all users can see it
+        
+        // Send notification to all users about new course
         try {
-          await createNotification({
+          await createCourseNotification(response.data.id);
+          console.log('Course notification sent successfully');
+        } catch (err) {
+          console.warn('Course notification failed (route might be disabled); continuing.', err);
+          // Add local fallback notification
+          const now = new Date();
+          const localNotification = {
+            id: `local-${now.getTime()}`,
+            type: 'course',
             title: 'Course Created',
             message: `"${form.title}" has been created successfully`,
-            type: 'course',
-            audience: 'all'
-          });
-        } catch (err) {
-          console.warn('Backend notification creation failed; continuing with local fallback.', err);
+            created_at: now.toISOString(),
+            read: false,
+          };
+          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
         }
-        // Ask header to refresh notifications (in case backend created one)
+        
+        // Trigger UI to refresh notifications
         window.dispatchEvent(new Event('refresh-notifications'));
-        // Local fallback to show immediately
-        const now = new Date();
-        const localNotification = {
-          id: `local-${now.getTime()}`,
-          type: 'course',
-          title: 'Course Created',
-          message: `"${form.title}" has been created successfully`,
-          created_at: now.toISOString(),
-          read: false,
-        };
-        window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
 
         onClose();
         setForm({
@@ -102,10 +100,11 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           thumbnail: ""
         });
       } else {
-        setFormError(response.message || "Failed to create course.");
+        setFormError(response.message || "Failed to create course");
       }
     } catch (err) {
-      setFormError(err.message || "Failed to create course.");
+      console.error("Course creation error:", err);
+      setFormError(err.message || "Failed to create course");
     } finally {
       setLoading(false);
     }
