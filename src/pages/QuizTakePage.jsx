@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Clock, BookOpen, CheckCircle, XCircle, Loader2, AlertTriangle, ChevronLeft } from "lucide-react";
+import { BookOpen, CheckCircle, XCircle, Loader2, AlertTriangle, ChevronLeft } from "lucide-react";
 import { submitQuiz, saveAnswer } from "@/services/quizService";
 import { toast } from "sonner";
 
@@ -22,7 +22,6 @@ function QuizTakePage() {
   
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
-  const [timeRemaining, setTimeRemaining] = useState(0);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [quizData, setQuizData] = useState(null);
@@ -80,13 +79,6 @@ function QuizTakePage() {
           allQuestions: initialQuestions
         });
         
-        // Set time limit if available
-        if (quizSession.timeLimit) {
-          setTimeRemaining(quizSession.timeLimit * 60); // Convert minutes to seconds
-        } else {
-          setTimeRemaining(25 * 60); // Default 25 minutes
-        }
-        
         setQuizStarted(true);
       } catch (error) {
         console.error('Error initializing quiz:', error);
@@ -102,29 +94,9 @@ function QuizTakePage() {
     }
   }, [quizId, navigate, initialQuestions, quizSession]);
 
-  // Timer effect
-  useEffect(() => {
-    if (!quizStarted || timeRemaining <= 0) return;
 
-    const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          // Auto-submit when time runs out
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
 
-    return () => clearInterval(timer);
-  }, [quizStarted, timeRemaining]);
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const handleAnswer = async (questionId, answer) => {
     // Update local state immediately for responsive UI
@@ -818,24 +790,7 @@ function QuizTakePage() {
           </Badge>
         </div>
         
-        {/* Timer */}
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
-          timeRemaining <= 300 // 5 minutes in seconds
-            ? "bg-red-50 border-red-300 animate-pulse"
-            : "bg-blue-50 border-blue-200"
-        }`}>
-          <Clock className={`h-4 w-4 ${
-            timeRemaining <= 300 ? "text-red-600" : "text-blue-600"
-          }`} />
-          <span className={`font-mono font-medium text-sm ${
-            timeRemaining <= 300 ? "text-red-700" : "text-blue-700"
-          }`}>
-            {formatTime(timeRemaining)}
-          </span>
-          {timeRemaining <= 300 && (
-            <span className="ml-1 text-xs font-medium text-red-600">HURRY!</span>
-          )}
-        </div>
+
       </div>
 
       {/* Quiz Header */}
