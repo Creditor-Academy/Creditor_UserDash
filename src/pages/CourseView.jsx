@@ -325,11 +325,11 @@ export function CourseView() {
                 return (
                   <div key={module.id} className="module-card h-full">
                     <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!isUnlocked) ? 'opacity-75' : ''}`}>
-                      <div className="aspect-video relative overflow-hidden">
+                      <div className="aspect-video relative overflow-hidden bg-gray-100">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain p-2"
                         />
                         {/* Lock overlay for locked modules (non-enrolled or no content) */}
                         {!isUnlocked && (
