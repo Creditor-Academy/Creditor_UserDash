@@ -4,27 +4,29 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
+import {
   File,
   Upload,
   AlertCircle,
   CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { getAuthHeader } from "@/services/authHeader";
 import axios from "axios";
 import { createTicket } from "@/services/ticketService";
+import { useAuth } from "@/contexts/AuthContext";
 
 function SupportTicket() {
+  const { hasRole } = useAuth();
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,34 +53,34 @@ function SupportTicket() {
 
   const validateStep = (currentStep) => {
     const newErrors = {};
-    
+   
     if (currentStep === 1) {
       if (!formData.category) newErrors.category = "Please select a category";
       if (!formData.priority) newErrors.priority = "Please select a priority";
       if (!formData.subject.trim()) newErrors.subject = "Please enter a subject";
       if (!formData.description.trim()) newErrors.description = "Please enter a description";
     }
-    
+   
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+   
     if (!validateStep(2)) {
       toast.error("Please fix the errors before submitting");
       return;
     }
     setIsSubmitting(true);
-    
+   
     try {
       const formDataToSend = new FormData();
       formDataToSend.append('category', formData.category);
       formDataToSend.append('priority', formData.priority.toUpperCase());
       formDataToSend.append('subject', formData.subject);
       formDataToSend.append('description', formData.description);
-      
+     
       if (files && files.length > 0) {
         for (let i = 0; i < files.length; i++) {
           formDataToSend.append('attachments', files[i]);
@@ -86,12 +88,12 @@ function SupportTicket() {
       }
 
       const response = await createTicket(formDataToSend, getAuthHeader());
-      
+     
       // Extract ticket ID from response if available
       if (response?.data?.data?.id) {
         setTicketId(response.data.data.id);
       }
-      
+     
       toast.success("Support ticket submitted successfully!");
       setFormData({
         category: "",
@@ -169,6 +171,29 @@ function SupportTicket() {
     );
   }
 
+  // Restrict access for admins
+  const isAdmin = hasRole && hasRole('admin');
+  if (isAdmin) {
+    return (
+      <div className="fixed inset-0 bg-blue-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
+          <div className="text-blue-600 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+          <p className="text-gray-600 mb-6">Only users can access this page.</p>
+          <Button asChild>
+            <Link to="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white">
+              Go to Dashboard
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-8 max-w-3xl">
       <div className="mb-6">
@@ -177,7 +202,7 @@ function SupportTicket() {
           Fill out the form below to submit a support ticket. Our team will respond as soon as possible.
         </p>
       </div>
-      
+     
       <Card className="p-6">
         <div className="flex mb-6">
           <div className="w-full flex justify-between">
@@ -198,14 +223,14 @@ function SupportTicket() {
             </div>
           </div>
         </div>
-        
+       
         <form onSubmit={handleSubmit}>
           {step === 1 && (
             <div className="space-y-4">
               <div className="space-y-2">
                 <label htmlFor="category" className="text-sm font-medium">Ticket Category *</label>
-                <Select 
-                  value={formData.category} 
+                <Select
+                  value={formData.category}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger className={errors.category ? "border-red-500" : ""}>
@@ -224,8 +249,8 @@ function SupportTicket() {
 
               <div className="space-y-2">
                 <label htmlFor="priority" className="text-sm font-medium">Priority Level *</label>
-                <Select 
-                  value={formData.priority} 
+                <Select
+                  value={formData.priority}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
                 >
                   <SelectTrigger className={errors.priority ? "border-red-500" : ""}>
@@ -239,32 +264,32 @@ function SupportTicket() {
                 </Select>
                 {errors.priority && <p className="text-sm text-red-500">{errors.priority}</p>}
               </div>
-              
+             
               <div className="space-y-2">
                 <label htmlFor="subject" className="text-sm font-medium">Subject *</label>
-                <Input 
-                  id="subject" 
-                  placeholder="Brief description of your issue" 
+                <Input
+                  id="subject"
+                  placeholder="Brief description of your issue"
                   value={formData.subject}
                   onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
                   className={errors.subject ? "border-red-500" : ""}
                 />
                 {errors.subject && <p className="text-sm text-red-500">{errors.subject}</p>}
               </div>
-              
+             
               <div className="space-y-2">
                 <label htmlFor="description" className="text-sm font-medium">Detailed Description *</label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Please provide as much detail as possible about your issue" 
-                  rows={5} 
+                <Textarea
+                  id="description"
+                  placeholder="Please provide as much detail as possible about your issue"
+                  rows={5}
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   className={errors.description ? "border-red-500" : ""}
                 />
                 {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
               </div>
-              
+             
               <div className="pt-4 flex justify-end">
                 <Button type="button" onClick={nextStep}>
                   Continue
@@ -272,7 +297,7 @@ function SupportTicket() {
               </div>
             </div>
           )}
-          
+         
           {step === 2 && (
             // This is now the review step
             <div className="space-y-4">
