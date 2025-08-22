@@ -258,7 +258,7 @@ export function DashboardHeader({ sidebarCollapsed, setSidebarCollapsed }) {
           {/* <h1 className="text-lg font-semibold">{getPageTitle()}</h1> */}
           
           {/* Search Bar */}
-          <div className="flex-1 max-w-md mx-8 relative">
+          <div className="hidden md:block flex-1 max-w-md mx-8 relative">
             <form onSubmit={handleSearchSubmit} className="relative">
               <span className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400">
                 {isSearching ? (

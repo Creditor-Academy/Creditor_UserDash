@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Sidebar from "@/components/layout/Sidebar";
@@ -14,6 +14,7 @@ export const SidebarContext = React.createContext({
 export function DashboardLayout() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Only show back button on specific pages where navigation back makes sense
   const pathsWithBackButton = [
@@ -31,6 +32,11 @@ export function DashboardLayout() {
   // Sidebar width values
   const expandedWidth = '17rem';
   const collapsedWidth = '4.5rem';
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   return (
     <SidebarContext.Provider value={{ sidebarCollapsed, setSidebarCollapsed }}>

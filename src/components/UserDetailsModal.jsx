@@ -247,6 +247,14 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                   </div>
                   <span className="text-sm font-medium break-all sm:ml-6">{user.email}</span>
                 </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Phone:</span>
+                  </div>
+                  <span className="text-sm font-medium break-all sm:ml-6">{user.phone || 'Not set'}</span>
+                </div>
                 
                 {user.location && (
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -258,15 +266,13 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                   </div>
                 )}
 
-                {user.gender && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-600">Gender:</span>
-                    </div>
-                    <span className="text-sm font-medium capitalize sm:ml-6">{user.gender}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <span className="text-sm text-gray-600">Gender:</span>
                   </div>
-                )}
+                  <span className="text-sm font-medium capitalize sm:ml-6">{user.gender || 'Not set'}</span>
+                </div>
 
                 {user.website && (
                   <div className="flex items-center gap-2">
@@ -611,19 +617,17 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
           )}
 
           {/* Additional Information */}
-          {user.bio && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Bio
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-700">{user.bio}</p>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Bio
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-700">{user.bio || 'Not set'}</p>
+            </CardContent>
+          </Card>
 
           {/* System Information */}
           <Card>
