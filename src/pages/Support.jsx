@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare, Shield, Lock } from 'lucide-react';
+import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare, Shield, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAllTickets, addReplyToTicket, updateTicketStatus } from '@/services/ticketService';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,6 +29,8 @@ const SupportTicketsPage = () => {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState(null);
   const [statusDraft, setStatusDraft] = useState('PENDING');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
 
   // Check if user has admin access
   const isAdmin = hasRole('admin');
@@ -125,6 +127,17 @@ const SupportTicketsPage = () => {
     
     return matchesSearch && matchesStatus;
   });
+
+  // Reset to first page when filters or data change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, tickets.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredTickets.length);
+  const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
 
   const toggleTicketExpansion = (ticketId) => {
     setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
@@ -340,7 +353,7 @@ const SupportTicketsPage = () => {
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="PENDING">Open</SelectItem>
                   <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                   <SelectItem value="RESOLVED">Resolved</SelectItem>
@@ -373,17 +386,18 @@ const SupportTicketsPage = () => {
                   <TableCaption className="text-xs">A list of recent support tickets raised by users.</TableCaption>
                   <TableHeader>
                     <TableRow className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
-                      <TableHead className="w-32 text-xs font-semibold text-gray-600 py-1">User</TableHead>
-                      <TableHead className="w-20 text-xs font-semibold text-gray-600 py-1">Priority</TableHead>
-                      <TableHead className="w-20 text-xs font-semibold text-gray-600 py-1">Status</TableHead>
-                      <TableHead className="w-16 text-xs font-semibold text-gray-600 py-1">Actions</TableHead>
+                      <TableHead className="w-40 text-sm font-semibold text-gray-700 py-2">User</TableHead>
+                      <TableHead className="w-[28rem] text-sm font-semibold text-gray-700 py-2">Subject</TableHead>
+                      <TableHead className="w-28 text-sm font-semibold text-gray-700 py-2">Priority</TableHead>
+                      <TableHead className="w-28 text-sm font-semibold text-gray-700 py-2">Status</TableHead>
+                      <TableHead className="w-24 text-sm font-semibold text-gray-700 py-2 text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTickets.map((ticket) => (
+                    {paginatedTickets.map((ticket) => (
                       <React.Fragment key={ticket.id}>
                         <TableRow 
-                          className="hover:bg-blue-50/60 border-b align-top cursor-pointer transition-all duration-200 hover:shadow-sm"
+                          className={`border-b align-top cursor-pointer transition-all duration-200 hover:shadow-sm ${expandedTicket === ticket.id ? 'bg-blue-50/70 border-l-4 border-l-blue-400' : 'hover:bg-blue-50/60 border-l-4 border-l-transparent'}`}
                           onClick={() => toggleTicketExpansion(ticket.id)}
                         >
                           <TableCell className="py-1">
@@ -392,6 +406,14 @@ const SupportTicketsPage = () => {
                             </div>
                             <div className="text-xs text-gray-500 truncate" title={ticket.userEmail}>
                               {ticket.userEmail}
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <div 
+                              className={`truncate max-w-[40ch] ${expandedTicket === ticket.id ? 'text-blue-700 font-semibold' : 'text-gray-800'}`}
+                              title={ticket.subject}
+                            >
+                              {ticket.subject}
                             </div>
                           </TableCell>
                           <TableCell className="py-1">
@@ -485,6 +507,38 @@ const SupportTicketsPage = () => {
                     ))}
                   </TableBody>
                 </Table>
+
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-between py-3 px-2 border-t bg-white sticky bottom-0">
+                  <div className="text-xs text-gray-600">
+                    Showing <span className="font-medium">{filteredTickets.length === 0 ? 0 : startIndex + 1}</span>–<span className="font-medium">{endIndex}</span> of <span className="font-medium">{filteredTickets.length}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={safeCurrentPage === 1}
+                      onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                      className="h-7 px-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="sr-only">Previous</span>
+                    </Button>
+                    <div className="text-xs text-gray-700 min-w-[90px] text-center">
+                      Page <span className="font-medium">{safeCurrentPage}</span> of <span className="font-medium">{totalPages}</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled={safeCurrentPage === totalPages}
+                      onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
+                      className="h-7 px-2"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                      <span className="sr-only">Next</span>
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
