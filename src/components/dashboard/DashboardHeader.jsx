@@ -431,6 +431,19 @@ export function DashboardHeader({ sidebarCollapsed, setSidebarCollapsed }) {
           {/* Right - Enhanced Icons and Profile */}
           <div className="flex items-center gap-3">
             
+            {/* Notification Bell */}
+            {/* <button
+              onClick={() => setNotificationModalOpen(true)}
+              className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            >
+              <BellDot className="h-6 w-6" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                </span>
+              )}
+            </button> */}
+            
             {/* Profile Dropdown */}
             <div className="ml-2">
               <ProfileDropdown />

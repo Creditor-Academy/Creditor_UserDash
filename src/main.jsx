@@ -4,6 +4,9 @@ import App from './App.jsx'
 import './index.css'
 import { Toaster as SonnerToaster } from 'sonner' // Aliased to avoid confusion with shadcn Toaster
 
+// Initialize API client interceptors by importing once
+import '@/services/apiClient';
+
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <App />
