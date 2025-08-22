@@ -144,6 +144,13 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [imageTemplateUrl, setImageTemplateUrl] = useState('');
   const [selectedImageTemplate, setSelectedImageTemplate] = useState(null);
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const [pdfTitle, setPdfTitle] = useState('');
+  const [pdfDescription, setPdfDescription] = useState('');
+  const [pdfFile, setPdfFile] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState('');
+  const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfUploadMethod, setPdfUploadMethod] = useState('file');
 
   // Image block templates
   const imageTemplates = [
@@ -305,6 +312,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setShowYoutubeDialog(true);
     } else if (blockType.id === 'link') {
       setShowLinkDialog(true);
+    } else if (blockType.id === 'pdf') {
+      setShowPdfDialog(true);
     } else {
       addContentBlock(blockType);
     }
@@ -427,6 +436,21 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setImageTemplateText(block.text || '');
       setImageTemplateUrl(block.imageUrl || '');
       setShowImageEditDialog(true);
+    } else if (block.type === 'pdf') {
+      setCurrentBlock(block);
+      setPdfTitle(block.pdfTitle);
+      setPdfDescription(block.pdfDescription || '');
+      setPdfUploadMethod(block.uploadMethod || 'file');
+      if (block.uploadMethod === 'url') {
+        setPdfUrl(block.originalUrl || block.pdfUrl);
+        setPdfFile(null);
+        setPdfPreview('');
+      } else {
+        setPdfFile(block.pdfFile);
+        setPdfPreview(block.pdfUrl);
+        setPdfUrl('');
+      }
+      setShowPdfDialog(true);
     } else {
       setCurrentBlock(block);
       setEditorContent(block.content || '');
@@ -1051,6 +1075,82 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     handleLinkDialogClose();
   };
 
+  const handlePdfDialogClose = () => {
+    setShowPdfDialog(false);
+    setPdfTitle('');
+    setPdfDescription('');
+    setPdfFile(null);
+    setPdfPreview('');
+    setPdfUrl('');
+    setPdfUploadMethod('file');
+    setCurrentBlock(null);
+  };
+
+  const handlePdfInputChange = (e) => {
+    const { name, value, files } = e.target;
+    if (name === 'file' && files && files[0]) {
+      setPdfFile(files[0]);
+      setPdfPreview(URL.createObjectURL(files[0]));
+    } else if (name === 'title') {
+      setPdfTitle(value);
+    } else if (name === 'description') {
+      setPdfDescription(value);
+    } else if (name === 'url') {
+      setPdfUrl(value);
+    }
+  };
+
+  const handleAddPdf = () => {
+    // Validate required fields based on upload method
+    if (!pdfTitle) {
+      alert('Please enter a PDF title');
+      return;
+    }
+    
+    if (pdfUploadMethod === 'file' && !pdfFile) {
+      alert('Please select a PDF file');
+      return;
+    }
+    
+    if (pdfUploadMethod === 'url' && !pdfUrl) {
+      alert('Please enter a PDF URL');
+      return;
+    }
+
+    // Create PDF URL based on upload method
+    let finalPdfUrl = '';
+    if (pdfUploadMethod === 'file') {
+      finalPdfUrl = URL.createObjectURL(pdfFile);
+    } else {
+      finalPdfUrl = pdfUrl;
+    }
+
+    const pdfBlock = {
+      id: currentBlock?.id || `pdf-${Date.now()}`,
+      type: 'pdf',
+      title: 'PDF',
+      pdfTitle: pdfTitle,
+      pdfDescription: pdfDescription,
+      pdfFile: pdfUploadMethod === 'file' ? pdfFile : null,
+      pdfUrl: finalPdfUrl,
+      uploadMethod: pdfUploadMethod,
+      originalUrl: pdfUploadMethod === 'url' ? pdfUrl : null,
+      timestamp: new Date().toISOString()
+    };
+
+    if (currentBlock) {
+      // Update existing block
+      setContentBlocks(prev => 
+        prev.map(block => block.id === currentBlock.id ? pdfBlock : block)
+      );
+    } else {
+      // Add new block
+      setContentBlocks(prev => [...prev, pdfBlock]);
+    }
+   
+    handlePdfDialogClose();
+  };
+
   useEffect(() => {
     const collapseSidebar = () => {
       if (setSidebarCollapsed) {
@@ -1317,7 +1417,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           </div>
                          
                           {/* Video Player */}
-                          <div className="relative pt-[56.25%] bg-black">
+                          <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
                             <video
                               className="absolute top-0 left-0 w-full h-full"
                               controls
@@ -1328,6 +1428,21 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                               <source src={block.videoUrl} type={block.videoFile?.type || 'video/mp4'} />
                               Your browser does not support the video tag.
                             </video>
+                          </div>
+                        </div>
+                      )}
+                      {block.type === 'pdf' && (
+                        <div className="my-6 w-full">
+                          <h3 className="text-xl font-semibold mb-2">{block.pdfTitle}</h3>
+                          {block.pdfDescription && (
+                            <p className="text-gray-600 mb-4">{block.pdfDescription}</p>
+                          )}
+                          <div className="w-full max-w-4xl mx-auto border rounded-lg overflow-hidden">
+                            <iframe
+                              src={block.pdfUrl}
+                              className="w-full h-[600px]"
+                              title={block.pdfTitle || 'PDF Document'}
+                            />
                           </div>
                         </div>
                       )}
@@ -1350,15 +1465,13 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200 cursor-move"
+                            <div
+                              className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
                               draggable
                               onDragStart={(e) => handleDragStart(e, block.id)}
                             >
                               <GripVertical className="h-4 w-4" />
-                            </Button>
+                            </div>
                           </div>
                          
                           {/* Render based on template layout */}
@@ -1442,7 +1555,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                         </div>
                       )}
                       {block.type === 'audio' && (
-                        <div className="relative group">
+                        <div className="relative group my-6 w-full">
                           <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <Button
                               variant="ghost"
@@ -1588,6 +1701,50 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           </div>
                         </div>
                       )}
+                      {block.type === 'pdf' && (
+                        <div className="relative group my-6 w-full">
+                          <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => handleEditBlock(block.id)}
+                              title="Edit PDF"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
+                              onClick={() => removeContentBlock(block.id)}
+                              title="Remove PDF"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                            <div
+                              className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, block.id)}
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                          </div>
+                          
+                          <h3 className="text-xl font-semibold mb-2">{block.pdfTitle}</h3>
+                          {block.pdfDescription && (
+                            <p className="text-gray-600 mb-4">{block.pdfDescription}</p>
+                          )}
+                          
+                          <div className="w-full max-w-4xl mx-auto border rounded-lg overflow-hidden">
+                            <iframe
+                              src={block.pdfUrl}
+                              className="w-full h-[600px]"
+                              title={block.pdfTitle || 'PDF Document'}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1634,6 +1791,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                     handleTextEditorOpen(block);
                                   } else if (block.type === 'image' && block.layout) {
                                     toggleImageBlockEditing(block.id);
+                                  } else if (block.type === 'pdf') {
+                                    handleEditBlock(block.id);
                                   } else {
                                     handleEditBlock(block.id);
                                   }
@@ -2799,7 +2958,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Audio</DialogTitle>
-            <p className="text-sm text-gray-500">Upload an audio file or provide an audio URL</p>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -3128,6 +3286,159 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               className="bg-blue-600 hover:bg-blue-700"
             >
               Add Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Dialog */}
+      <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{currentBlock ? 'Edit PDF' : 'Add PDF'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                PDF Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={pdfTitle}
+                onChange={handlePdfInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter PDF title"
+                required
+              />
+            </div>
+
+            {/* Upload Method Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Method <span className="text-red-500">*</span>
+              </label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="pdfUploadMethod"
+                    value="file"
+                    checked={pdfUploadMethod === 'file'}
+                    onChange={(e) => setPdfUploadMethod(e.target.value)}
+                    className="mr-2"
+                  />
+                  Upload File
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="pdfUploadMethod"
+                    value="url"
+                    checked={pdfUploadMethod === 'url'}
+                    onChange={(e) => setPdfUploadMethod(e.target.value)}
+                    className="mr-2"
+                  />
+                  PDF URL
+                </label>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            {pdfUploadMethod === 'file' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  PDF File <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                    <div className="flex text-sm text-gray-600">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                        <span>Upload a file</span>
+                        <input
+                          type="file"
+                          name="file"
+                          className="sr-only"
+                          accept="application/pdf"
+                          onChange={handlePdfInputChange}
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      PDF up to 20MB
+                    </p>
+                  </div>
+                </div>
+                {pdfPreview && pdfUploadMethod === 'file' && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <embed
+                      src={pdfPreview}
+                      type="application/pdf"
+                      width="100%"
+                      height="500"
+                      className="rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* URL Input Section */}
+            {pdfUploadMethod === 'url' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  PDF URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={pdfUrl}
+                  onChange={(e) => setPdfUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter PDF URL (e.g., https://example.com/document.pdf)"
+                  required
+                />
+                {pdfUrl && pdfUploadMethod === 'url' && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <embed
+                      src={pdfUrl}
+                      type="application/pdf"
+                      width="100%"
+                      height="500"
+                      className="rounded-lg border border-gray-200"
+                      onError={() => alert('Could not load PDF. Please check the URL and try again.')}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description (Optional)
+              </label>
+              <textarea
+                name="description"
+                value={pdfDescription}
+                onChange={handlePdfInputChange}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a description for your PDF (optional)"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handlePdfDialogClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddPdf} 
+              disabled={!pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {currentBlock ? 'Update PDF' : 'Add PDF'}
             </Button>
           </DialogFooter>
         </DialogContent>
