@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare } from 'lucide-react';
+import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare, Shield, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAllTickets, addReplyToTicket, updateTicketStatus } from '@/services/ticketService';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SupportTicketsPage = () => {
+  const { hasRole } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,6 +29,51 @@ const SupportTicketsPage = () => {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState(null);
   const [statusDraft, setStatusDraft] = useState('PENDING');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 5;
+
+  // Check if user has admin access
+  const isAdmin = hasRole('admin');
+  const isInstructor = hasRole('instructor');
+
+  // Show access restricted modal for non-admin users
+  if (!isAdmin) {
+    return (
+      <div className="w-full h-full flex flex-col">
+        <Card className="w-full h-full flex flex-col">
+          <CardHeader className="pb-2 flex-shrink-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Mail className="h-5 w-5" />
+              Support Tickets
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center max-w-md mx-auto">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                  <Lock className="h-8 w-8 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Restricted</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {isInstructor 
+                    ? "Instructors cannot view support tickets. Only administrators have access to support ticket management."
+                    : "You don't have permission to view support tickets. Only administrators can access this feature."
+                  }
+                </p>
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <Shield className="h-4 w-4" />
+                    <span className="font-medium">Required Role:</span>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800 border-transparent">Admin</Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Fetch tickets from backend
   const fetchTickets = async () => {
@@ -47,7 +94,8 @@ const SupportTicketsPage = () => {
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at,
           attachments: ticket.attachments ? JSON.parse(ticket.attachments) : [],
-          replies: ticket.replies || []
+          replies: ticket.replies || [],
+          category: ticket.category || 'General'
         }));
       
       // Sort tickets by creation date (newest first)
@@ -71,15 +119,48 @@ const SupportTicketsPage = () => {
     fetchTickets();
   }, [toast]);
 
+  // Map backend status to frontend display format
+  const mapToFrontendStatus = (backendStatus) => {
+    if (!backendStatus) return 'pending';
+    
+    const status = backendStatus.toLowerCase();
+    switch (status) {
+      case 'pending':
+        return 'PENDING';
+      case 'in_progress':
+      case 'in-progress':
+        return 'IN_PROGRESS';
+      case 'resolved':
+        return 'RESOLVED';
+      case 'closed':
+        return 'CLOSED';
+      default:
+        return 'PENDING';
+    }
+  };
+
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         ticket.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (ticket.message && ticket.message.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          ticket.userName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+    // Get the normalized status for comparison
+    const ticketStatus = mapToFrontendStatus(ticket.status);
+    const matchesStatus = statusFilter === 'all' || ticketStatus === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
+
+  // Reset to first page when filters or data change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, tickets.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTickets.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredTickets.length);
+  const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
 
   const toggleTicketExpansion = (ticketId) => {
     setExpandedTicket(expandedTicket === ticketId ? null : ticketId);
@@ -248,204 +329,242 @@ const SupportTicketsPage = () => {
     }
   };
 
-  // Map backend status to frontend display format
-  const mapToFrontendStatus = (backendStatus) => {
-    switch (backendStatus?.toUpperCase()) {
-      case 'PENDING':
-        return 'open';
-      case 'IN_PROGRESS':
-        return 'in-progress';
-      case 'RESOLVED':
-        return 'resolved';
-      case 'CLOSED':
-        return 'closed';
-      default:
-        return 'pending';
-    }
-  };
-
   return (
-    <div className="w-full h-full flex flex-col">
-      <Card className="w-full h-full flex flex-col">
-        <CardHeader className="pb-2 flex-shrink-0">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Mail className="h-5 w-5" />
-            Support Tickets
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-2 flex-1 flex flex-col min-h-0">
-          {/* Search and Filter Section */}
-          <div className="flex flex-col lg:flex-row gap-2 mb-2 flex-shrink-0">
-            <div className="relative flex-1 min-w-0">
-              <div className="text-xs text-gray-500 italic mb-1">
-                💡 Click any row to view details
+    <div className="w-full h-full flex flex-col bg-gray-50 p-4">
+      <Card className="w-full h-full flex flex-col border shadow-sm">
+        <CardHeader className="pb-4 border-b bg-white/80 backdrop-blur-sm">
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-xl text-gray-800">
+                <Mail className="h-5 w-5 text-blue-600" />
+                Support Tickets
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="Search tickets..."
+                    className="pl-10 w-full h-9 text-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="w-40">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <Filter className="h-4 w-4 mr-2 text-gray-500" />
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="PENDING">Open</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="RESOLVED">Resolved</SelectItem>
+                      <SelectItem value="CLOSED">Closed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search tickets..."
-                className="pl-10 w-full h-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
             </div>
-            <div className="w-full lg:w-36">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="flex items-center gap-2 w-full h-8">
-                  <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="PENDING">Open</SelectItem>
-                  <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                  <SelectItem value="RESOLVED">Resolved</SelectItem>
-                  <SelectItem value="CLOSED">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {filteredTickets.length > 0 && (
+              <div className="text-sm text-gray-500">
+                Showing {startIndex + 1}-{endIndex} of {filteredTickets.length} tickets
+              </div>
+            )}
           </div>
-
-          {/* Loading State */}
+        </CardHeader>
+        <CardContent className="p-0 flex-1 overflow-auto">
           {loading ? (
-            <div className="flex justify-center items-center h-20 flex-1">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : filteredTickets.length === 0 ? (
-            <div className="text-center py-4 flex-1">
-              <Mail className="mx-auto h-6 w-6 text-gray-400" />
-              <h3 className="text-sm font-medium text-gray-900 mt-2">No tickets found</h3>
-              <p className="text-xs text-gray-500 mt-1">
+            <div className="text-center py-12">
+              <Mail className="mx-auto h-10 w-10 text-gray-300 mb-3" />
+              <h3 className="text-base font-medium text-gray-700">No tickets found</h3>
+              <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
                 {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filter' 
+                  ? 'No tickets match your search criteria. Try adjusting your filters.' 
                   : 'No support tickets have been created yet'}
               </p>
             </div>
           ) : (
-            /* Responsive Table Container */
-            <div className="flex-1 overflow-auto min-h-0">
-              <div className="min-w-[400px] w-full max-h-full">
-                <Table>
-                  <TableCaption className="text-xs">A list of recent support tickets raised by users.</TableCaption>
-                  <TableHeader>
-                    <TableRow className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
-                      <TableHead className="w-32 text-xs font-semibold text-gray-600 py-1">User</TableHead>
-                      <TableHead className="w-20 text-xs font-semibold text-gray-600 py-1">Priority</TableHead>
-                      <TableHead className="w-20 text-xs font-semibold text-gray-600 py-1">Status</TableHead>
-                      <TableHead className="w-16 text-xs font-semibold text-gray-600 py-1">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredTickets.map((ticket) => (
-                      <React.Fragment key={ticket.id}>
-                        <TableRow 
-                          className="hover:bg-blue-50/60 border-b align-top cursor-pointer transition-all duration-200 hover:shadow-sm"
-                          onClick={() => toggleTicketExpansion(ticket.id)}
-                        >
-                          <TableCell className="py-1">
-                            <div className="font-medium text-xs truncate" title={ticket.userName}>
-                              {ticket.userName}
+            <div className="space-y-3 p-4">
+              {paginatedTickets.map((ticket) => (
+                <div 
+                  key={ticket.id}
+                  className={`bg-white rounded-lg border transition-all duration-200 overflow-hidden ${expandedTicket === ticket.id ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-md'}`}
+                >
+                  <div 
+                    className={`p-4 cursor-pointer ${expandedTicket === ticket.id ? 'border-b border-gray-100' : ''}`}
+                    onClick={() => toggleTicketExpansion(ticket.id)}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
+                              {ticket.userName.charAt(0).toUpperCase()}
                             </div>
-                            <div className="text-xs text-gray-500 truncate" title={ticket.userEmail}>
-                              {ticket.userEmail}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-medium text-gray-900 truncate">
+                                {ticket.userName} • {ticket.userEmail}
+                              </h3>
+                              {getStatusBadge(ticket.status)}
                             </div>
-                          </TableCell>
-                          <TableCell className="py-1">
-                            <div className="flex items-center gap-1">
-                              {getPriorityIcon(ticket.priority)}
-                              <span className="capitalize text-xs">{ticket.priority}</span>
+                            <p className="text-xs text-gray-500 truncate mt-0.5">
+                              {ticket.subject} • {formatDate(ticket.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          ticket.priority === 'high' ? 'bg-red-100 text-red-800' :
+                          ticket.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {ticket.priority}
+                        </div>
+                        <button className="text-gray-400 hover:text-gray-600 p-1">
+                          {expandedTicket === ticket.id ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {expandedTicket === ticket.id && (
+                    <div className="p-4 bg-gray-50 border-t border-gray-100">
+                      <div className="mb-4">
+                        <h3 className="text-base font-medium text-gray-900">{ticket.userName}'s Ticket</h3>
+                        <p className="text-sm text-gray-500">{ticket.subject}</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2 space-y-4">
+                          <div>
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Message</h4>
+                            <div className="bg-white p-3 rounded border text-sm text-gray-700 whitespace-pre-line">
+                              {ticket.message}
                             </div>
-                          </TableCell>
-                          <TableCell className="py-1">{getStatusBadge(ticket.status)}</TableCell>
-                          <TableCell className="py-1">
-                            <div className="flex items-center justify-center">
-                              {expandedTicket === ticket.id ? (
-                                <ChevronUp className="h-3 w-3 text-blue-500 transition-transform duration-200" />
-                              ) : (
-                                <ChevronDown className="h-3 w-3 text-gray-500 transition-transform duration-200" />
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        {expandedTicket === ticket.id && (
-                          <TableRow>
-                            <TableCell colSpan={4} className="bg-blue-50/30 p-2 border-l-4 border-l-blue-200">
-                              <div className="grid gap-2">
-                                {/* Summary Row (compact - no duplicates) */}
-                                <div className="grid grid-cols-2 gap-3 text-xs">
-                                  <div>
-                                    <h4 className="font-medium text-gray-600 mb-1">Ticket</h4>
-                                    <div><span className="text-gray-500">ID:</span> <span className="font-mono">{ticket.id}</span></div>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium text-gray-600 mb-1">Subject</h4>
-                                    <div className="truncate">{ticket.subject}</div>
-                                  </div>
-                                </div>
-
-                                {/* Body Row */}
-                                <div className="grid grid-cols-3 gap-3">
-                                  {/* Left: Message + Replies */}
-                                  <div className="col-span-2 space-y-2">
-                                    <div>
-                                      <h4 className="font-medium mb-1 text-xs text-gray-600">Message</h4>
-                                      <div className="bg-white p-2 rounded border text-xs">
-                                        <p className="text-gray-700">{ticket.message}</p>
-                                      </div>
-                                    </div>
-                                    {ticket.replies && ticket.replies.length > 0 && (
-                                      <div>
-                                        <h4 className="font-medium mb-1 text-xs text-gray-600">Replies ({ticket.replies.length})</h4>
-                                        <div className="space-y-1">
-                                          {ticket.replies.map((reply, index) => (
-                                            <div key={index} className="bg-white p-1 rounded border text-xs">
-                                              <div className="flex justify-between text-gray-500 mb-1">
-                                                <span>{reply.sender?.name || 'Admin'}</span>
-                                                <span>{formatDate(reply.created_at)}</span>
-                                              </div>
-                                              <p className="text-gray-700">{reply.message}</p>
-                                            </div>
-                                          ))}
+                          </div>
+                          
+                          {ticket.replies && ticket.replies.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                                Replies ({ticket.replies.length})
+                              </h4>
+                              <div className="space-y-3">
+                                {ticket.replies.map((reply, index) => (
+                                  <div key={index} className="bg-white p-3 rounded border">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-600">
+                                          {reply.sender?.name?.charAt(0) || 'A'}
                                         </div>
+                                        <span className="text-sm font-medium text-gray-800">
+                                          {reply.sender?.name || 'Admin'}
+                                        </span>
                                       </div>
-                                    )}
-                                  </div>
-
-                                  {/* Right: Details + Actions */}
-                                  <div className="space-y-2">
-                                    <div>
-                                      <h4 className="font-medium mb-1 text-xs text-gray-600">Details</h4>
-                                      <div className="text-xs space-y-1">
-                                        <div><span className="text-gray-500">Created:</span> {formatDate(ticket.createdAt)}</div>
-                                        <div><span className="text-gray-500">Updated:</span> {formatDate(ticket.updatedAt)}</div>
-                                      </div>
+                                      <span className="text-xs text-gray-400">
+                                        {formatDate(reply.created_at)}
+                                      </span>
                                     </div>
-                                    <div className="mt-4">
-                                      <h4 className="font-medium mb-1 text-xs text-gray-600">Actions</h4>
-                                      <div className="flex flex-col gap-1">
-                                        <Button size="sm" className="h-6 text-xs px-2" onClick={() => openStatusDialog(ticket.id, ticket.status)}>
-                                          Change Status
-                                        </Button>
-                                        <Button size="sm" variant="outline" className="h-6 text-xs px-2" onClick={() => openReplyDialog(ticket.id)}>
-                                          Reply
-                                        </Button>
-                                      </div>
-                                    </div>
+                                    <p className="text-sm text-gray-600 mt-2 ml-8">
+                                      {reply.message}
+                                    </p>
                                   </div>
-                                </div>
+                                ))}
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Details</h4>
+                            <div className="bg-white p-3 rounded border space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Category:</span>
+                                <span className="font-medium">{ticket.category}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Created:</span>
+                                <span>{formatDate(ticket.createdAt)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-500">Last Updated:</span>
+                                <span>{formatDate(ticket.updatedAt)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Actions</h4>
+                            <div className="space-y-2">
+                              <Button 
+                                variant="outline" 
+                                className="w-full justify-start"
+                                onClick={() => openReplyDialog(ticket.id)}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Reply
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="w-full justify-start"
+                                onClick={() => openStatusDialog(ticket.id, ticket.status)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Update Status
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
+        
+        {/* Pagination */}
+        {filteredTickets.length > 0 && (
+          <div className="px-4 py-3 border-t bg-gray-50 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Showing {startIndex + 1} to {endIndex} of {filteredTickets.length} results
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="ml-1">Previous</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <span className="mr-1">Next</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
-
+      
       {/* Reply Dialog */}
       <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
         <DialogContent>

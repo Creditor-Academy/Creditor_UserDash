@@ -83,14 +83,9 @@ export function Dashboard() {
         // console.log('🔍 Fetching user courses from:', `${API_BASE}/api/course/getCourses`);
         // console.log('👤 User ID:', currentUserId);
         
-        // Get user courses using the correct endpoint - backend's HttpOnly token cookie will be automatically sent
-        const userCoursesResponse = await axios.get(`${API_BASE}/api/course/getCourses`, {
-          headers: {
-    'Content-Type': 'application/json',
-    ...getAuthHeader(),
-  },
-  credentials: 'include',
-});
+        // Get user courses via interceptor-enabled client (handles validation + refresh)
+        const { api } = await import('@/services/apiClient');
+        const userCoursesResponse = await api.get('/api/course/getCourses');
         
         if (userCoursesResponse.data && userCoursesResponse.data.data) {
           const courses = userCoursesResponse.data.data;
