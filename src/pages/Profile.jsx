@@ -31,11 +31,12 @@ function Profile() {
     defaultValues: {
       fullName: "",
       email: "",
-      bio: "Learning enthusiast and software developer",
-      title: "Software Developer",
-      phone: "+1 (555) 123-4567",
+      bio: "",
+      title: "",
+      phone: "",
       location: "San Francisco, CA",
       timezone: "America/New_York", // Default to EST
+      gender: "",
       linkedin: "",
       facebook: ""
     }
@@ -80,6 +81,7 @@ function Profile() {
         phone: userProfile.phone || '',
         location: userProfile.location || '',
         timezone: userTimezone,
+        gender: userProfile.gender || '',
         linkedin: userProfile.social_handles?.linkedin || '',
         facebook: userProfile.social_handles?.facebook || ''
       };
@@ -135,6 +137,7 @@ function Profile() {
         phone: values.phone,
         location: values.location,
         timezone: values.timezone,
+        gender: values.gender,
         facebook: values.facebook || '',
         linkedin: values.linkedin || ''
       };
@@ -154,6 +157,7 @@ function Profile() {
         phone: values.phone,
         location: values.location,
         timezone: values.timezone,
+        gender: values.gender,
         social_handles: {
           ...(userProfile?.social_handles || {}),
           linkedin: values.linkedin || '',
@@ -363,6 +367,45 @@ function Profile() {
                     /> */}
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="tel" placeholder="Enter phone number" className="h-11 rounded-lg" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Gender</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
+                              <SelectTrigger className="h-11 rounded-lg border-gray-200">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   {/* <FormField
                     control={form.control}
                     name="location"
@@ -377,19 +420,19 @@ function Profile() {
                     )}
                   /> */}
 
-                  {/* <FormField
+                  <FormField
                     control={form.control}
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bio</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">About Me</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={4} />
+                          <Textarea {...field} rows={4} placeholder="Tell us about yourself..." className="rounded-lg" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
-                  /> */}
+                  />
 
                   {/* Timezone selection */}
                   <FormField
