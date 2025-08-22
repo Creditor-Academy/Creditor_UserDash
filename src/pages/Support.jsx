@@ -94,7 +94,8 @@ const SupportTicketsPage = () => {
           createdAt: ticket.created_at,
           updatedAt: ticket.updated_at,
           attachments: ticket.attachments ? JSON.parse(ticket.attachments) : [],
-          replies: ticket.replies || []
+          replies: ticket.replies || [],
+          category: ticket.category || 'General'
         }));
       
       // Sort tickets by creation date (newest first)
@@ -408,11 +409,13 @@ const SupportTicketsPage = () => {
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-medium text-gray-900 truncate">{ticket.subject}</h3>
+                              <h3 className="text-sm font-medium text-gray-900 truncate">
+                                {ticket.userName} • {ticket.userEmail}
+                              </h3>
                               {getStatusBadge(ticket.status)}
                             </div>
                             <p className="text-xs text-gray-500 truncate mt-0.5">
-                              {ticket.userName} • {ticket.userEmail} • {formatDate(ticket.createdAt)}
+                              {ticket.subject} • {formatDate(ticket.createdAt)}
                             </p>
                           </div>
                         </div>
@@ -438,6 +441,10 @@ const SupportTicketsPage = () => {
                   
                   {expandedTicket === ticket.id && (
                     <div className="p-4 bg-gray-50 border-t border-gray-100">
+                      <div className="mb-4">
+                        <h3 className="text-base font-medium text-gray-900">{ticket.userName}'s Ticket</h3>
+                        <p className="text-sm text-gray-500">{ticket.subject}</p>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-2 space-y-4">
                           <div>
@@ -483,8 +490,8 @@ const SupportTicketsPage = () => {
                             <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Details</h4>
                             <div className="bg-white p-3 rounded border space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-gray-500">Ticket ID:</span>
-                                <span className="font-medium">{ticket.id}</span>
+                                <span className="text-gray-500">Category:</span>
+                                <span className="font-medium">{ticket.category}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-500">Created:</span>
