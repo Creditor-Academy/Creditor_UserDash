@@ -556,12 +556,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       alert('Please enter a video title');
       return;
     }
-   
+    
     if (videoUploadMethod === 'file' && !videoFile) {
       alert('Please select a video file');
       return;
     }
-   
+    
     if (videoUploadMethod === 'url' && !videoUrl) {
       alert('Please enter a video URL');
       return;
@@ -590,14 +590,14 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
     if (currentBlock) {
       // Update existing block
-      setContentBlocks(prev =>
+      setContentBlocks(prev => 
         prev.map(block => block.id === currentBlock.id ? videoBlock : block)
       );
     } else {
       // Add new block
       setContentBlocks(prev => [...prev, videoBlock]);
     }
-   
+    
     handleVideoDialogClose();
   };
 
@@ -874,12 +874,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       alert('Please enter an audio title');
       return;
     }
-   
+    
     if (audioUploadMethod === 'file' && !audioFile) {
       alert('Please select an audio file');
       return;
     }
-   
+    
     if (audioUploadMethod === 'url' && !audioUrl) {
       alert('Please enter an audio URL');
       return;
@@ -908,7 +908,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
     if (currentBlock) {
       // Update existing block
-      setContentBlocks(prev =>
+      setContentBlocks(prev => 
         prev.map(block => block.id === currentBlock.id ? audioBlock : block)
       );
     } else {
@@ -1668,7 +1668,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                 dangerouslySetInnerHTML={{ __html: block.content }}
                               />
                             )}
-                           
+                            
                             {block.type === 'link' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
@@ -1677,11 +1677,11 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                     Link
                                   </Badge>
                                 </div>
-                               
+                                
                                 {block.linkDescription && (
                                   <p className="text-sm text-gray-600 mb-3">{block.linkDescription}</p>
                                 )}
-                               
+                                
                                 <div className="p-3 bg-gray-50 rounded-lg">
                                   <button
                                     onClick={() => window.open(block.linkUrl, '_blank', 'noopener,noreferrer')}
@@ -1703,7 +1703,88 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                 </div>
                               </div>
                             )}
-                           
+                            
+                            {block.type === 'video' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Video
+                                  </Badge>
+                                </div>
+                                
+                                {block.videoDescription && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.videoDescription}</p>
+                                )}
+                                
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
+                                    <video 
+                                      className="absolute top-0 left-0 w-full h-full"
+                                      controls
+                                      controlsList="nodownload"
+                                      preload="metadata"
+                                      key={block.id}
+                                    >
+                                      <source src={block.videoUrl} type={block.videoFile?.type || 'video/mp4'} />
+                                      Your browser does not support the video tag.
+                                    </video>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {block.type === 'audio' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.audioTitle}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Audio
+                                  </Badge>
+                                </div>
+                                
+                                {block.audioDescription && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.audioDescription}</p>
+                                )}
+                                
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <audio 
+                                    src={block.audioUrl}
+                                    controls
+                                    className="w-full rounded-lg border border-gray-200"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {block.type === 'youtube' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.youtubeTitle}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    YouTube
+                                  </Badge>
+                                </div>
+                                
+                                {block.youtubeDescription && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.youtubeDescription}</p>
+                                )}
+                                
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
+                                    <iframe
+                                      src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
+                                      className="absolute top-0 left-0 w-full h-full"
+                                      frameBorder="0"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                      title={block.youtubeTitle || 'YouTube video player'}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {block.type === 'image' && block.layout && (
                               <>
                                 <div className="flex items-center gap-2 mb-3">
@@ -2796,7 +2877,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 {audioPreview && audioUploadMethod === 'file' && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
+                    <audio 
                       src={audioPreview}
                       controls
                       className="w-full rounded-lg border border-gray-200"
@@ -2823,7 +2904,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 {audioUrl && audioUploadMethod === 'url' && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
+                    <audio 
                       src={audioUrl}
                       controls
                       className="w-full rounded-lg border border-gray-200"
@@ -2852,8 +2933,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
             <Button variant="outline" onClick={handleAudioDialogClose}>
               Cancel
             </Button>
-            <Button
-              onClick={handleAddAudio}
+            <Button 
+              onClick={handleAddAudio} 
               disabled={!audioTitle || (audioUploadMethod === 'file' && !audioFile) || (audioUploadMethod === 'url' && !audioUrl)}
               className="bg-blue-600 hover:bg-blue-700"
             >
