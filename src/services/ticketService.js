@@ -99,7 +99,7 @@ export const getTicketById = async (ticketId) => {
 // Update ticket status
 export const updateTicketStatus = async (ticketId, status) => {
   return axios.patch(
-    joinUrl(baseUrl, `api/support-tickets/${ticketId}/status`),
+    joinUrl(baseUrl, `api/support-tickets/status/${ticketId}`),
     { status },
     {
       headers: {
