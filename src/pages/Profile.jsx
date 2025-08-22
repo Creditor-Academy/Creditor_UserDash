@@ -411,6 +411,7 @@ function Profile() {
                               <SelectItem value="America/New_York">EST (Eastern Time US & Canada)</SelectItem>
                               <SelectItem value="Europe/London">GMT/BST (Greenwich Mean Time)</SelectItem>
                               <SelectItem value="America/Chicago">CT (Central Time)</SelectItem>
+                              <SelectItem value="Asia/Kolkata">IST (Indian Standard Time)</SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>

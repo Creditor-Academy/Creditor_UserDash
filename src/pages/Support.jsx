@@ -330,8 +330,8 @@ const SupportTicketsPage = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-gray-50 p-4">
-      <Card className="w-full h-full flex flex-col border shadow-sm">
+    <div className="w-full h-full flex flex-col bg-gray-50 p-0 mx-[-1rem] md:mx-[-1.5rem]">
+      <Card className="w-full h-full flex flex-col border shadow-sm rounded-none">
         <CardHeader className="pb-4 border-b bg-white/80 backdrop-blur-sm">
           <div className="flex flex-col space-y-2">
             <div className="flex items-center justify-between">
