@@ -104,6 +104,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [videoDescription, setVideoDescription] = useState('');
   const [videoFile, setVideoFile] = useState(null);
   const [videoPreview, setVideoPreview] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUploadMethod, setVideoUploadMethod] = useState('file'); // 'file' or 'url'
   const [isUploading, setIsUploading] = useState(false);
   const [showTextEditorDialog, setShowTextEditorDialog] = useState(false);
   const [editorTitle, setEditorTitle] = useState('');
@@ -119,6 +121,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [audioDescription, setAudioDescription] = useState('');
   const [audioFile, setAudioFile] = useState(null);
   const [audioPreview, setAudioPreview] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
+  const [audioUploadMethod, setAudioUploadMethod] = useState('file'); // 'file' or 'url'
   const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
   const [youtubeTitle, setYoutubeTitle] = useState('');
   const [youtubeDescription, setYoutubeDescription] = useState('');
@@ -129,6 +133,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkDescription, setLinkDescription] = useState('');
+  const [linkButtonText, setLinkButtonText] = useState('Visit Link');
+  const [linkButtonStyle, setLinkButtonStyle] = useState('primary');
   const [linkError, setLinkError] = useState('');
   const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
   const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
@@ -371,6 +377,36 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       } else {
         setEditorHtml(block.content || '');
       }
+    } else if (block.type === 'video') {
+      setCurrentBlock(block);
+      setVideoTitle(block.videoTitle);
+      setVideoDescription(block.videoDescription || '');
+      setVideoUploadMethod(block.uploadMethod || 'file');
+      if (block.uploadMethod === 'url') {
+        setVideoUrl(block.originalUrl || block.videoUrl);
+        setVideoFile(null);
+        setVideoPreview('');
+      } else {
+        setVideoFile(block.videoFile);
+        setVideoPreview(block.videoUrl);
+        setVideoUrl('');
+      }
+      setShowVideoDialog(true);
+    } else if (block.type === 'audio') {
+      setCurrentBlock(block);
+      setAudioTitle(block.audioTitle);
+      setAudioDescription(block.audioDescription || '');
+      setAudioUploadMethod(block.uploadMethod || 'file');
+      if (block.uploadMethod === 'url') {
+        setAudioUrl(block.originalUrl || block.audioUrl);
+        setAudioFile(null);
+        setAudioPreview('');
+      } else {
+        setAudioFile(block.audioFile);
+        setAudioPreview(block.audioUrl);
+        setAudioUrl('');
+      }
+      setShowAudioDialog(true);
     } else if (block.type === 'youtube') {
       setCurrentYoutubeBlock(block);
       setYoutubeTitle(block.youtubeTitle);
@@ -382,6 +418,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setLinkTitle(block.linkTitle);
       setLinkUrl(block.linkUrl);
       setLinkDescription(block.linkDescription || '');
+      setLinkButtonText(block.linkButtonText || 'Visit Link');
+      setLinkButtonStyle(block.linkButtonStyle || 'primary');
       setShowLinkDialog(true);
     } else if (block.type === 'image' && block.layout) {
       // Handle image template editing
@@ -491,6 +529,9 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     setVideoDescription('');
     setVideoFile(null);
     setVideoPreview('');
+    setVideoUrl('');
+    setVideoUploadMethod('file');
+    setCurrentBlock(null);
   };
 
   const handleVideoInputChange = (e) => {
@@ -503,31 +544,60 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         setVideoTitle(value);
       } else if (name === 'description') {
         setVideoDescription(value);
+      } else if (name === 'url') {
+        setVideoUrl(value);
       }
     }
   };
 
   const handleAddVideo = () => {
-    if (!videoTitle || !videoFile) {
-      alert('Please fill in all required fields');
+    // Validate required fields based on upload method
+    if (!videoTitle) {
+      alert('Please enter a video title');
+      return;
+    }
+    
+    if (videoUploadMethod === 'file' && !videoFile) {
+      alert('Please select a video file');
+      return;
+    }
+    
+    if (videoUploadMethod === 'url' && !videoUrl) {
+      alert('Please enter a video URL');
       return;
     }
 
-    // Create a URL for the video file
-    const videoUrl = URL.createObjectURL(videoFile);
+    // Create video URL based on upload method
+    let finalVideoUrl = '';
+    if (videoUploadMethod === 'file') {
+      finalVideoUrl = URL.createObjectURL(videoFile);
+    } else {
+      finalVideoUrl = videoUrl;
+    }
 
-    const newBlock = {
-      id: `video-${Date.now()}`,
+    const videoBlock = {
+      id: currentBlock?.id || `video-${Date.now()}`,
       type: 'video',
       title: 'Video',
       videoTitle: videoTitle,
       videoDescription: videoDescription,
-      videoFile: videoFile,
-      videoUrl: videoUrl, // Add the object URL for preview
+      videoFile: videoUploadMethod === 'file' ? videoFile : null,
+      videoUrl: finalVideoUrl,
+      uploadMethod: videoUploadMethod,
+      originalUrl: videoUploadMethod === 'url' ? videoUrl : null,
       timestamp: new Date().toISOString()
     };
 
-    setContentBlocks(prev => [...prev, newBlock]);
+    if (currentBlock) {
+      // Update existing block
+      setContentBlocks(prev => 
+        prev.map(block => block.id === currentBlock.id ? videoBlock : block)
+      );
+    } else {
+      // Add new block
+      setContentBlocks(prev => [...prev, videoBlock]);
+    }
+    
     handleVideoDialogClose();
   };
 
@@ -763,6 +833,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     setAudioDescription('');
     setAudioFile(null);
     setAudioPreview('');
+    setAudioUrl('');
+    setAudioUploadMethod('file');
     setCurrentBlock(null);
   };
 
@@ -791,48 +863,57 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setAudioTitle(value);
     } else if (name === 'description') {
       setAudioDescription(value);
+    } else if (name === 'url') {
+      setAudioUrl(value);
     }
   };
 
   const handleAddAudio = () => {
-    if (!audioTitle || !audioFile) {
-      alert('Please fill in all required fields');
+    // Validate required fields based on upload method
+    if (!audioTitle) {
+      alert('Please enter an audio title');
+      return;
+    }
+    
+    if (audioUploadMethod === 'file' && !audioFile) {
+      alert('Please select an audio file');
+      return;
+    }
+    
+    if (audioUploadMethod === 'url' && !audioUrl) {
+      alert('Please enter an audio URL');
       return;
     }
 
-    // Handle both File object and string URL cases
-    let audioUrl = '';
-    if (audioFile && typeof audioFile === 'object' && 'name' in audioFile) {
-      // It's a File object
-      audioUrl = URL.createObjectURL(audioFile);
-    } else if (typeof audioFile === 'string') {
-      // It's already a URL string
-      audioUrl = audioFile;
-    } else if (audioPreview) {
-      // Fallback to audioPreview if available
-      audioUrl = audioPreview;
+    // Create audio URL based on upload method
+    let finalAudioUrl = '';
+    if (audioUploadMethod === 'file') {
+      finalAudioUrl = URL.createObjectURL(audioFile);
+    } else {
+      finalAudioUrl = audioUrl;
     }
 
-    const newBlock = {
+    const audioBlock = {
       id: currentBlock?.id || `audio-${Date.now()}`,
       type: 'audio',
       title: 'Audio',
       audioTitle: audioTitle,
       audioDescription: audioDescription,
-      audioFile: audioFile,
-      audioUrl: audioUrl,
+      audioFile: audioUploadMethod === 'file' ? audioFile : null,
+      audioUrl: finalAudioUrl,
+      uploadMethod: audioUploadMethod,
+      originalUrl: audioUploadMethod === 'url' ? audioUrl : null,
       timestamp: new Date().toISOString()
     };
 
     if (currentBlock) {
       // Update existing block
       setContentBlocks(prev => 
-        prev.map(block => block.id === currentBlock.id ? newBlock : block)
+        prev.map(block => block.id === currentBlock.id ? audioBlock : block)
       );
-      setCurrentBlock(null);
     } else {
       // Add new block
-      setContentBlocks(prev => [...prev, newBlock]);
+      setContentBlocks(prev => [...prev, audioBlock]);
     }
     
     handleAudioDialogClose();
@@ -912,6 +993,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     setLinkTitle('');
     setLinkUrl('');
     setLinkDescription('');
+    setLinkButtonText('Visit Link');
+    setLinkButtonStyle('primary');
     setLinkError('');
     setCurrentLinkBlock(null);
   };
@@ -924,11 +1007,15 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       setLinkUrl(value);
     } else if (name === 'description') {
       setLinkDescription(value);
+    } else if (name === 'buttonText') {
+      setLinkButtonText(value);
+    } else if (name === 'buttonStyle') {
+      setLinkButtonStyle(value);
     }
   };
 
   const handleAddLink = () => {
-    if (!linkTitle || !linkUrl) {
+    if (!linkTitle || !linkUrl || !linkButtonText) {
       setLinkError('Please fill in all required fields');
       return;
     }
@@ -948,6 +1035,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       linkTitle: linkTitle,
       linkUrl: linkUrl,
       linkDescription: linkDescription,
+      linkButtonText: linkButtonText,
+      linkButtonStyle: linkButtonStyle,
       timestamp: new Date().toISOString()
     };
 
@@ -1479,14 +1568,23 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           )}
                           
                           <div className="w-full max-w-4xl mx-auto">
-                            <a
-                              href={block.linkUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-700"
+                            <button
+                              onClick={() => window.open(block.linkUrl, '_blank', 'noopener,noreferrer')}
+                              className={`inline-flex items-center px-6 py-3 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                                block.linkButtonStyle === 'primary' ? 'bg-blue-600 text-white hover:bg-blue-700' :
+                                block.linkButtonStyle === 'secondary' ? 'bg-gray-600 text-white hover:bg-gray-700' :
+                                block.linkButtonStyle === 'success' ? 'bg-green-600 text-white hover:bg-green-700' :
+                                block.linkButtonStyle === 'warning' ? 'bg-orange-600 text-white hover:bg-orange-700' :
+                                block.linkButtonStyle === 'danger' ? 'bg-red-600 text-white hover:bg-red-700' :
+                                block.linkButtonStyle === 'outline' ? 'border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white' :
+                                'bg-blue-600 text-white hover:bg-blue-700'
+                              }`}
                             >
-                              {block.linkUrl}
-                            </a>
+                              {block.linkButtonText || 'Visit Link'}
+                              <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -1569,6 +1667,41 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                 className="prose max-w-none text-gray-700"
                                 dangerouslySetInnerHTML={{ __html: block.content }}
                               />
+                            )}
+                            
+                            {block.type === 'link' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.linkTitle}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Link
+                                  </Badge>
+                                </div>
+                                
+                                {block.linkDescription && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.linkDescription}</p>
+                                )}
+                                
+                                <div className="p-3 bg-gray-50 rounded-lg">
+                                  <button
+                                    onClick={() => window.open(block.linkUrl, '_blank', 'noopener,noreferrer')}
+                                    className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                                      block.linkButtonStyle === 'primary' ? 'bg-blue-600 text-white hover:bg-blue-700' :
+                                      block.linkButtonStyle === 'secondary' ? 'bg-gray-600 text-white hover:bg-gray-700' :
+                                      block.linkButtonStyle === 'success' ? 'bg-green-600 text-white hover:bg-green-700' :
+                                      block.linkButtonStyle === 'warning' ? 'bg-orange-600 text-white hover:bg-orange-700' :
+                                      block.linkButtonStyle === 'danger' ? 'bg-red-600 text-white hover:bg-red-700' :
+                                      block.linkButtonStyle === 'outline' ? 'border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white' :
+                                      'bg-blue-600 text-white hover:bg-blue-700'
+                                    }`}
+                                  >
+                                    {block.linkButtonText || 'Visit Link'}
+                                    <svg className="ml-2 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </div>
                             )}
                             
                             {block.type === 'image' && block.layout && (
@@ -1749,7 +1882,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Video</DialogTitle>
-            <p className="text-sm text-gray-500">Upload a video file (MP4, WebM, or OGG, max 50MB)</p>
+            <p className="text-sm text-gray-500">Upload a video file or provide a video URL</p>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -1766,45 +1899,107 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
               />
             </div>
 
+            {/* Upload Method Selection */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Video File <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Method <span className="text-red-500">*</span>
               </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="video-upload"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        id="video-upload"
-                        name="file"
-                        type="file"
-                        accept="video/mp4,video/webm,video/ogg"
-                        className="sr-only"
-                        onChange={handleVideoInputChange}
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    MP4, WebM, or OGG up to 50MB
-                  </p>
-                </div>
-              </div>
-              {videoPreview && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                  <video
-                    src={videoPreview}
-                    controls
-                    className="w-full rounded-lg border border-gray-200"
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="uploadMethod"
+                    value="file"
+                    checked={videoUploadMethod === 'file'}
+                    onChange={(e) => setVideoUploadMethod(e.target.value)}
+                    className="mr-2"
                   />
-                </div>
-              )}
+                  Upload File
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="uploadMethod"
+                    value="url"
+                    checked={videoUploadMethod === 'url'}
+                    onChange={(e) => setVideoUploadMethod(e.target.value)}
+                    className="mr-2"
+                  />
+                  Video URL
+                </label>
+              </div>
             </div>
+
+            {/* File Upload Section */}
+            {videoUploadMethod === 'file' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Video File <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                    <div className="flex text-sm text-gray-600">
+                      <label
+                        htmlFor="video-upload"
+                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                      >
+                        <span>Upload a file</span>
+                        <input
+                          id="video-upload"
+                          name="file"
+                          type="file"
+                          accept="video/mp4,video/webm,video/ogg"
+                          className="sr-only"
+                          onChange={handleVideoInputChange}
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      MP4, WebM, or OGG up to 50MB
+                    </p>
+                  </div>
+                </div>
+                {videoPreview && videoUploadMethod === 'file' && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="w-full rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* URL Input Section */}
+            {videoUploadMethod === 'url' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Video URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter video URL (e.g., https://example.com/video.mp4)"
+                  required
+                />
+                {videoUrl && videoUploadMethod === 'url' && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <video
+                      src={videoUrl}
+                      controls
+                      className="w-full rounded-lg border border-gray-200"
+                      onError={() => console.log('Video URL may be invalid or not accessible')}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1825,7 +2020,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
             </Button>
             <Button 
               onClick={handleAddVideo}
-              disabled={!videoTitle || !videoFile}
+              disabled={!videoTitle || (videoUploadMethod === 'file' && !videoFile) || (videoUploadMethod === 'url' && !videoUrl)}
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isUploading ? 'Uploading...' : 'Add Video'}
@@ -2520,11 +2715,12 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
       {/* Audio Dialog */}
       <Dialog open={showAudioDialog} onOpenChange={handleAudioDialogClose}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Audio</DialogTitle>
+            <p className="text-sm text-gray-500">Upload an audio file or provide an audio URL</p>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Audio Title <span className="text-red-500">*</span>
@@ -2534,10 +2730,110 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 name="title"
                 value={audioTitle}
                 onChange={handleAudioInputChange}
-                className="w-full p-2 border rounded"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter audio title"
+                required
               />
             </div>
+
+            {/* Upload Method Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Upload Method <span className="text-red-500">*</span>
+              </label>
+              <div className="flex space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="audioUploadMethod"
+                    value="file"
+                    checked={audioUploadMethod === 'file'}
+                    onChange={(e) => setAudioUploadMethod(e.target.value)}
+                    className="mr-2"
+                  />
+                  Upload File
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="audioUploadMethod"
+                    value="url"
+                    checked={audioUploadMethod === 'url'}
+                    onChange={(e) => setAudioUploadMethod(e.target.value)}
+                    className="mr-2"
+                  />
+                  Audio URL
+                </label>
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            {audioUploadMethod === 'file' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Audio File <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                  <div className="space-y-1 text-center">
+                    <div className="flex text-sm text-gray-600">
+                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                        <span>Upload a file</span>
+                        <input
+                          type="file"
+                          name="file"
+                          className="sr-only"
+                          accept="audio/mpeg,audio/wav,audio/ogg"
+                          onChange={handleAudioInputChange}
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      MP3, WAV, or OGG up to 20MB
+                    </p>
+                  </div>
+                </div>
+                {audioPreview && audioUploadMethod === 'file' && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <audio 
+                      src={audioPreview}
+                      controls
+                      className="w-full rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* URL Input Section */}
+            {audioUploadMethod === 'url' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Audio URL <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="url"
+                  value={audioUrl}
+                  onChange={(e) => setAudioUrl(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter audio URL (e.g., https://example.com/audio.mp3)"
+                  required
+                />
+                {audioUrl && audioUploadMethod === 'url' && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <audio 
+                      src={audioUrl}
+                      controls
+                      className="w-full rounded-lg border border-gray-200"
+                      onError={() => console.log('Audio URL may be invalid or not accessible')}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Description (Optional)
@@ -2546,50 +2842,21 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 name="description"
                 value={audioDescription}
                 onChange={handleAudioInputChange}
-                className="w-full p-2 border rounded h-24"
-                placeholder="Enter audio description"
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter a description for your audio (optional)"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Audio File <span className="text-red-500">*</span>
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <div className="flex text-sm text-gray-600">
-                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                      <span>Upload a file</span>
-                      <input
-                        type="file"
-                        name="file"
-                        className="sr-only"
-                        accept="audio/mpeg, audio/wav, audio/ogg"
-                        onChange={handleAudioInputChange}
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    MP3, WAV, OGG up to 20MB
-                  </p>
-                </div>
-              </div>
-              {audioPreview && (
-                <div className="mt-4">
-                  <audio 
-                    src={audioPreview}
-                    controls
-                    className="w-full rounded-lg border border-gray-200"
-                  />
-                </div>
-              )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleAudioDialogClose}>
               Cancel
             </Button>
-            <Button onClick={handleAddAudio} disabled={!audioTitle || !audioFile}>
+            <Button 
+              onClick={handleAddAudio} 
+              disabled={!audioTitle || (audioUploadMethod === 'file' && !audioFile) || (audioUploadMethod === 'url' && !audioUrl)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Add Audio
             </Button>
           </DialogFooter>
@@ -2735,6 +3002,40 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter a description for your link (optional)"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Button Text <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="buttonText"
+                value={linkButtonText}
+                onChange={handleLinkInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Visit Link"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Button Style
+              </label>
+              <select
+                name="buttonStyle"
+                value={linkButtonStyle}
+                onChange={handleLinkInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="primary">Primary (Blue)</option>
+                <option value="secondary">Secondary (Gray)</option>
+                <option value="success">Success (Green)</option>
+                <option value="warning">Warning (Orange)</option>
+                <option value="danger">Danger (Red)</option>
+                <option value="outline">Outline</option>
+              </select>
             </div>
           </div>
           <DialogFooter>
