@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare } from 'lucide-react';
+import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare, Shield, Lock } from 'lucide-react';
 import { getAllTickets, addReplyToTicket, updateTicketStatus } from '@/services/ticketService';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SupportTicketsPage = () => {
+  const { hasRole } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,6 +29,49 @@ const SupportTicketsPage = () => {
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState(null);
   const [statusDraft, setStatusDraft] = useState('PENDING');
+
+  // Check if user has admin access
+  const isAdmin = hasRole('admin');
+  const isInstructor = hasRole('instructor');
+
+  // Show access restricted modal for non-admin users
+  if (!isAdmin) {
+    return (
+      <div className="w-full h-full flex flex-col">
+        <Card className="w-full h-full flex flex-col">
+          <CardHeader className="pb-2 flex-shrink-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Mail className="h-5 w-5" />
+              Support Tickets
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-2 flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center max-w-md mx-auto">
+                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                  <Lock className="h-8 w-8 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Restricted</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {isInstructor 
+                    ? "Instructors cannot view support tickets. Only administrators have access to support ticket management."
+                    : "You don't have permission to view support tickets. Only administrators can access this feature."
+                  }
+                </p>
+                <div className="bg-gray-50 p-3 rounded-lg border">
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <Shield className="h-4 w-4" />
+                    <span className="font-medium">Required Role:</span>
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800 border-transparent">Admin</Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Fetch tickets from backend
   const fetchTickets = async () => {
