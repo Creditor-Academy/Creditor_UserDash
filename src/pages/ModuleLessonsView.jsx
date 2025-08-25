@@ -61,6 +61,10 @@ const ModuleLessonsView = () => {
   const [currentLesson, setCurrentLesson] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // Lesson content state
+  const [lessonContent, setLessonContent] = useState(null);
+  const [loadingContent, setLoadingContent] = useState(false);
+
   // Fetch module and lessons data
   useEffect(() => {
     fetchModuleLessons();
@@ -192,15 +196,17 @@ const ModuleLessonsView = () => {
     try {
       setIsUpdating(true);
       
-      const response = await axios.put(
+      // Prepare the update data
+      const updateData = {};
+      if (currentLesson.title) updateData.title = currentLesson.title;
+      if (currentLesson.description) updateData.description = currentLesson.description;
+      if (currentLesson.duration !== undefined) updateData.duration = parseInt(currentLesson.duration) || 0;
+      if (currentLesson.order !== undefined) updateData.order = parseInt(currentLesson.order) || 1;
+      if (currentLesson.status) updateData.status = currentLesson.status;
+      
+      const response = await axios.patch(
         `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
-        {
-          title: currentLesson.title,
-          description: currentLesson.description,
-          duration: parseInt(currentLesson.duration) || 0,
-          order: parseInt(currentLesson.order) || 1,
-          status: currentLesson.status
-        },
+        updateData,
         {
           withCredentials: true,
           headers: {
@@ -210,9 +216,10 @@ const ModuleLessonsView = () => {
         }
       );
       
-      // Update the lesson in the state
+      // Update the lesson in the state with the response data
+      const updatedLesson = response.data.data || response.data;
       setLessons(prev => prev.map(lesson => 
-        lesson.id === currentLesson.id ? response.data.data || response.data : lesson
+        lesson.id === currentLesson.id ? { ...lesson, ...updatedLesson } : lesson
       ));
       
       setShowUpdateDialog(false);
@@ -293,7 +300,7 @@ const ModuleLessonsView = () => {
   };
 
   const handleLessonClick = (lesson) => {
-    // Navigate to the LessonBuilder with the lesson data in state
+    // Simply navigate to the builder - we'll fetch content there
     navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`, {
       state: { lessonData: lesson }
     });

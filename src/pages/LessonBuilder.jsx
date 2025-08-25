@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { getAuthHeader } from '@/services/authHeader';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
@@ -82,7 +83,7 @@ const headingToolbar = [
   ['clean']
 ];
 
-const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
+function LessonBuilder({ viewMode: initialViewMode = false }) {
   const { sidebarCollapsed, setSidebarCollapsed } = useOutletContext();
   const { courseId, moduleId, lessonId } = useParams();
   const location = useLocation();
@@ -94,6 +95,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [isViewMode, setIsViewMode] = useState(initialViewMode);
+  const [lessonContent, setLessonContent] = useState(null);
+  const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentBlock, setCurrentBlock] = useState(null);
   const [editorContent, setEditorContent] = useState('');
@@ -277,7 +280,7 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
         <div>
           <h1 className="text-2xl font-bold mb-2">Heading</h1>
           <p className="text-gray-700">This is a paragraph below the heading.</p>
-        </div>
+          </div>
       ),
       defaultContent: '<h1>Heading</h1><p>This is a paragraph below the heading.</p>'
     },
@@ -1171,13 +1174,57 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
     const loadLessonData = async () => {
       try {
         setLoading(true);
+        setFetchingContent(true);
        
         if (location.state?.lessonData) {
           const { title, contentBlocks } = location.state.lessonData;
           setLessonTitle(title);
           setContentBlocks(contentBlocks || []);
           setLessonData(location.state.lessonData);
+          
+          // Fetch lesson content
+          try {
+            const lessonId = location.state.lessonData.id;
+            console.log('Fetching lesson content for:', lessonId);
+            
+            // Get the token
+            const token = localStorage.getItem('token');
+            if (!token) {
+              throw new Error('No authentication token found');
+            }
+
+            // Make the API call
+            const contentResponse = await fetch(
+              `https://sharebackend-sdkp.onrender.com/api/lessoncontent/${lessonId}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
+
+            if (!contentResponse.ok) {
+              throw new Error(`HTTP error! status: ${contentResponse.status}`);
+            }
+            
+            const contentData = await contentResponse.json();
+            console.log('Content response:', contentData);
+            
+            if (contentData) {
+              console.log('Setting lesson content:', contentData);
+              setLessonContent(contentData);
+            } else {
+              console.log('No content found for this lesson');
+            }
+          } catch (contentError) {
+            console.error('Error fetching lesson content:', contentError);
+            console.error('Error details:', contentError.response?.data || contentError.message);
+          }
+          
           setLoading(false);
+          setFetchingContent(false);
           return;
         }
 
@@ -1360,20 +1407,21 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
 
             {/* Main Content Canvas */}
             <div className="py-4">
-              {isViewMode ? (
-                // View Mode Content
-                <div className="max-w-4xl mx-auto">
-                  {contentBlocks.map((block, index) => (
-                    <div key={block.id} className="mb-8">
-                      {block.type === 'text' && (
-                        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-                          <div
-                            className="prose max-w-none text-gray-700"
-                            dangerouslySetInnerHTML={{ __html: block.content }}
-                          />
-                        </div>
-                      )}
-                      {block.type === 'video' && (
+              
+                
+                <div className="max-w-4xl mx-auto bg-gray-50 p-6 rounded-lg">
+                  <div className="max-h-[80vh] overflow-y-auto pr-4 space-y-8">
+                    {contentBlocks.map((block, index) => (
+                      <div key={block.id} className="relative">
+                        {block.type === 'text' && (
+                          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div
+                              className="prose max-w-none text-gray-700"
+                              dangerouslySetInnerHTML={{ __html: block.content }}
+                            />
+                          </div>
+                        )}
+                        {block.type === 'video' && (
                         <div className="relative group my-4 rounded-lg overflow-hidden border border-gray-200">
                           {/* Video Info and Actions */}
                           <div className="p-4 border-b border-gray-100">
@@ -1733,26 +1781,46 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                     </div>
                   ))}
                 </div>
-              ) : (
-                // Edit Mode Content
+              
                 <div className="space-y-4">
                   {contentBlocks.length === 0 ? (
                     <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
                       <div className="text-center">
                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 max-w-2xl">
                           <h2 className="text-xl font-bold text-gray-900 mb-2">
-                            Start Building Your Lesson
+                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "Lesson Content" : "Start Building Your Lesson"}
                           </h2>
-                          <p className="text-gray-600 mb-6">
-                            Choose content blocks from the sidebar to create engaging learning content.
-                          </p>
-                          <Button
-                            onClick={() => setShowTextTypeModal(true)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Text Block
-                          </Button>
+                          {fetchingContent ? (
+                            <div className="flex items-center justify-center p-8">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                          ) : lessonContent?.data?.content ? (
+                            <div className="mt-4 space-y-6 max-h-[70vh] overflow-y-auto p-4 border rounded-lg bg-white">
+                              <div className="space-y-8">
+                                {lessonContent.data.content.map((block) => (
+                                  <div key={block.block_id} className="relative p-4 bg-gray-50 rounded-lg shadow-sm">
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                                    {block.script && (
+                                      <script dangerouslySetInnerHTML={{ __html: block.script }} />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-gray-600 mb-6">
+                                Choose content blocks from the sidebar to create engaging learning content.
+                              </p>
+                              <Button
+                                onClick={() => setShowTextTypeModal(true)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Text Block
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2121,7 +2189,8 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            
             </div>
           </div>
         </div>
@@ -3455,6 +3524,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
       </Dialog>
     </>
   );
-};
+}
 
 export default LessonBuilder;
