@@ -489,29 +489,6 @@ function QuizResultsPage() {
         </Card>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between">
-        
-        
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            onClick={() => navigate(`/dashboard/courses/${moduleId}/modules/${moduleId}/assessments`)}
-          >
-            <BookOpen className="mr-2 h-4 w-4" />
-            View All Assessments
-          </Button>
-          
-          <Button 
-            onClick={() => navigate(`/dashboard/quiz/take/${quizId}?module=${moduleId}&category=${category}`)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Trophy className="mr-2 h-4 w-4" />
-            Retake Quiz
-          </Button>
-        </div>
-      </div>
-
 
       
     </div>

@@ -18,13 +18,14 @@ import {
   AlertCircle,
   Search
 } from 'lucide-react';
-import { fetchQuizAdminAnalytics, fetchQuizAdminScores } from '@/services/quizServices';
+import { fetchQuizAdminAnalytics, fetchQuizAdminScores, fetchQuizAdminQuestions, deleteQuestion } from '@/services/quizServices';
 import { fetchCourseUsers } from '@/services/courseService';
+import QuizQuestionEditModal from './QuizQuestionEditModal';
 
 const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
   const [scores, setScores] = useState([]);
   const [adminScores, setAdminScores] = useState([]);
-  const [attempts, setAttempts] = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [adminAnalytics, setAdminAnalytics] = useState(null);
   const [courseUsers, setCourseUsers] = useState([]);
@@ -32,6 +33,9 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('scores');
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [deletingQuestionId, setDeletingQuestionId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => {
     if (isOpen && quiz?.id) {
@@ -44,10 +48,11 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
     setError(null);
     try {
       // Fetch only admin endpoints (non-admin endpoints 404 on this backend)
-      const [adminScoresData, adminAnalyticsData, usersData] = await Promise.allSettled([
+      const [adminScoresData, adminAnalyticsData, usersData, questionsData] = await Promise.allSettled([
         fetchQuizAdminScores(quiz.id),
         fetchQuizAdminAnalytics(quiz.id),
-        fetchCourseUsers(courseId)
+        fetchCourseUsers(courseId),
+        fetchQuizAdminQuestions(quiz.id)
       ]);
 
       // Handle admin scores data
@@ -69,6 +74,14 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
         setCourseUsers(usersData.value || []);
       } else {
         setCourseUsers([]);
+      }
+
+      // Handle questions data
+      if (questionsData.status === 'fulfilled') {
+        const q = Array.isArray(questionsData.value) ? questionsData.value : (questionsData.value?.data || []);
+        setQuestions(q);
+      } else {
+        setQuestions([]);
       }
 
     } catch (err) {
@@ -153,15 +166,15 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
     );
   });
 
-  // Filter attempts based on search query
-  const filteredAttempts = attempts.filter(attempt => {
+  // Filter questions based on search query
+  const filteredQuestions = (questions || []).filter(q => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
-    const user = courseUsers.find(u => u.id === attempt.user_id);
+    const optionMatch = (q.question_options || []).some(opt => opt.text?.toLowerCase().includes(query));
     return (
-      user?.name?.toLowerCase().includes(query) ||
-      user?.email?.toLowerCase().includes(query) ||
-      attempt.user_id?.toString().includes(query)
+      q.question?.toLowerCase().includes(query) ||
+      q.correct_answer?.toLowerCase?.().includes(query) ||
+      optionMatch
     );
   });
 
@@ -174,7 +187,7 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
         <div className="flex items-center justify-between p-6 border-b">
           <div>
             <h2 className="text-xl font-semibold">{quiz?.title} - Scores & Analytics</h2>
-            <p className="text-sm text-gray-600">Quiz performance and user attempts</p>
+            <p className="text-sm text-gray-600">Quiz performance and details</p>
           </div>
           <Button onClick={onClose} variant="outline" size="sm">
             <X className="w-4 h-4" />
@@ -206,15 +219,15 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
             Analytics
           </button>
           <button
-            onClick={() => setActiveTab('attempts')}
+            onClick={() => setActiveTab('questions')}
             className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === 'attempts' 
+              activeTab === 'questions' 
                 ? 'border-blue-500 text-blue-600' 
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
-            <Clock className="w-4 h-4 inline mr-2" />
-            Attempts
+            <Eye className="w-4 h-4 inline mr-2" />
+            Questions
           </button>
         </div>
 
@@ -621,68 +634,86 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
                 </div>
               )}
 
-              {activeTab === 'attempts' && (
+              {activeTab === 'questions' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">User Attempts</h3>
+                    <h3 className="text-lg font-semibold">Questions</h3>
                     <div className="relative w-64">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
                         type="text"
-                        placeholder="Search users..."
+                        placeholder="Search questions..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-10"
                       />
                     </div>
                   </div>
-                  {filteredAttempts.length === 0 ? (
+                  {filteredQuestions.length === 0 ? (
                     <div className="text-center py-8">
-                      <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <Eye className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">
-                        {searchQuery.trim() ? 'No users found matching your search' : 'No attempts recorded yet'}
+                        {searchQuery.trim() ? 'No questions match your search' : 'No questions available'}
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {filteredAttempts.map((attempt, index) => {
-                        const user = courseUsers.find(u => u.id === attempt.user_id);
-                        
+                      {filteredQuestions.map((q) => {
+                        const options = Array.isArray(q.question_options) ? q.question_options : [];
+                        const correctAnswers = (q.correct_answer || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
                         return (
-                          <Card key={attempt.id || index}>
+                          <Card key={q.id}>
                             <CardContent className="p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                                    <span className="text-sm font-medium">
-                                      {user?.name?.charAt(0) || 'U'}
-                                    </span>
+                              <div className="flex items-start justify-between">
+                                <div className="pr-4">
+                                  <p className="font-medium">{q.question}</p>
+                                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                                    <Badge variant="secondary">{q.question_type}</Badge>
+                                    {q.question_score != null && (
+                                      <Badge variant="outline">Score: {q.question_score}</Badge>
+                                    )}
+                                  </div>
+                                  {options.length > 0 && (
+                                    <div className="mt-3 space-y-1">
+                                      {options.map((opt) => {
+                                        const isCorrect = opt.isCorrect === true || correctAnswers.includes(String(opt.text || '').toLowerCase());
+                                        return (
+                                          <div key={opt.id} className="flex items-center justify-between border rounded p-2">
+                                            <span className="text-sm">{opt.text}</span>
+                                            {isCorrect ? (
+                                              <CheckCircle className="w-4 h-4 text-green-600" />
+                                            ) : (
+                                              <X className="w-4 h-4 text-red-600" />
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  {options.length === 0 && q.correct_answer && (
+                                    <div className="mt-3 text-sm">
+                                      <span className="text-gray-600">Answer: </span>
+                                      <Badge className="bg-green-50 text-green-700">{q.correct_answer}</Badge>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right text-xs text-gray-500 space-y-2">
+                                  {q.created_at && (
+                                    <div>Created: {formatDate(q.created_at)}</div>
+                                  )}
+                                  <div>
+                                    <Button size="sm" variant="outline" onClick={() => setEditingQuestion(q)}>Edit</Button>
                                   </div>
                                   <div>
-                                    <p className="font-medium">{user?.name || `User ${attempt.user_id}`}</p>
-                                    <p className="text-sm text-gray-500">Attempt #{attempt.attempt_number || 1}</p>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => setConfirmDelete(q)}
+                                      disabled={deletingQuestionId === q.id}
+                                    >
+                                      {deletingQuestionId === q.id ? 'Deleting…' : 'Delete'}
+                                    </Button>
                                   </div>
-                                </div>
-                                
-                                <div className="text-right">
-                                  <div className="flex items-center space-x-2">
-                                    <Badge variant={attempt.status === 'completed' ? 'default' : 'secondary'}>
-                                      {attempt.status || 'in_progress'}
-                                    </Badge>
-                                    {(() => {
-                                      const hasPct = attempt.percentage !== undefined && attempt.percentage !== null;
-                                      const pct = hasPct ? Number(attempt.percentage) : Number(attempt.score ?? 0);
-                                      const pctDisplay = hasPct ? `${Number(attempt.percentage).toFixed(0)}%` : `${Number(attempt.score ?? 0)}%`;
-                                      return (
-                                        <Badge className={getGradeColor(pct)}>
-                                          {pctDisplay}
-                                        </Badge>
-                                      );
-                                    })()}
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {formatDate(attempt.started_at || attempt.created_at)}
-                                  </p>
                                 </div>
                               </div>
                             </CardContent>
@@ -691,6 +722,56 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
                       })}
                     </div>
                   )}
+                </div>
+              )}
+              <QuizQuestionEditModal
+                isOpen={!!editingQuestion}
+                onClose={() => setEditingQuestion(null)}
+                quizId={quiz?.id}
+                question={editingQuestion}
+                onSaved={fetchData}
+              />
+
+              {/* Confirm Delete Modal */}
+              {confirmDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                  <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+                    <div className="p-4 border-b">
+                      <h4 className="text-base font-semibold">Delete question?</h4>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <p className="text-sm text-gray-700">This action cannot be undone.</p>
+                      <p className="text-sm text-gray-500">Question: "{confirmDelete.question}"</p>
+                    </div>
+                    <div className="p-4 border-t flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfirmDelete(null)}
+                        disabled={deletingQuestionId === confirmDelete.id}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={async () => {
+                          if (!quiz?.id || !confirmDelete?.id) return;
+                          try {
+                            setDeletingQuestionId(confirmDelete.id);
+                            await deleteQuestion(quiz.id, confirmDelete.id);
+                            setConfirmDelete(null);
+                            await fetchData();
+                          } catch (e) {
+                            console.error('Failed to delete question', e);
+                          } finally {
+                            setDeletingQuestionId(null);
+                          }
+                        }}
+                        disabled={deletingQuestionId === confirmDelete.id}
+                      >
+                        {deletingQuestionId === confirmDelete.id ? 'Deleting…' : 'Delete'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </>
