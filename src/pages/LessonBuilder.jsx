@@ -1431,21 +1431,6 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                           </div>
                         </div>
                       )}
-                      {block.type === 'pdf' && (
-                        <div className="my-6 w-full">
-                          <h3 className="text-xl font-semibold mb-2">{block.pdfTitle}</h3>
-                          {block.pdfDescription && (
-                            <p className="text-gray-600 mb-4">{block.pdfDescription}</p>
-                          )}
-                          <div className="w-full max-w-4xl mx-auto border rounded-lg overflow-hidden">
-                            <iframe
-                              src={block.pdfUrl}
-                              className="w-full h-[600px]"
-                              title={block.pdfTitle || 'PDF Document'}
-                            />
-                          </div>
-                        </div>
-                      )}
                       {block.type === 'image' && (
                         <div className="relative group">
                           <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -1938,6 +1923,31 @@ const LessonBuilder = ({ viewMode: initialViewMode = false }) => {
                                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                       allowFullScreen
                                       title={block.youtubeTitle || 'YouTube video player'}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {block.type === 'pdf' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.pdfTitle}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    PDF
+                                  </Badge>
+                                </div>
+                                
+                                {block.pdfDescription && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.pdfDescription}</p>
+                                )}
+                                
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <div className="w-full border rounded-lg overflow-hidden">
+                                    <iframe
+                                      src={block.pdfUrl}
+                                      className="w-full h-[400px]"
+                                      title={block.pdfTitle || 'PDF Document'}
                                     />
                                   </div>
                                 </div>
