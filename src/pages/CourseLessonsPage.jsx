@@ -9,8 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Search, Clock, ChevronLeft, Play, Eye, Upload, Trash2, FileText, Plus, List, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { createModulePublishedNotification } from "@/services/notificationService";
-import { useAuth } from "@/contexts/AuthContext";
 
 const COURSES_PER_PAGE = 6;
 
@@ -25,8 +23,8 @@ const CourseLessonsPage = () => {
   const [moduleDialogMode, setModuleDialogMode] = useState("create");
   const [editModuleData, setEditModuleData] = useState(null);
   const navigate = useNavigate();
-  const { isInstructorOrAdmin } = useAuth();
-  const isAllowed = isInstructorOrAdmin();
+
+  const isAllowed = allowedScormUserIds.includes(currentUserId);
 
   useEffect(() => {
     if (!isAllowed) return;
@@ -128,31 +126,7 @@ const CourseLessonsPage = () => {
         // Optionally implement updateModule logic here
         // await updateModule(selectedCourseForModule, editModuleData.id, moduleData);
       } else {
-        const response = await createModule(selectedCourseForModule, moduleData);
-        const createdModule = response.data || response;
-        
-        // If module is published, send notification to enrolled users
-        if ((moduleData?.module_status || '').toUpperCase() === 'PUBLISHED') {
-          try {
-            await createModulePublishedNotification(selectedCourseForModule, createdModule.id);
-            console.log('Module published notification sent successfully');
-          } catch (err) {
-            console.warn('Module publish notification failed (route might be disabled); continuing.', err);
-            // Add local fallback notification
-            const now = new Date();
-            const localNotification = {
-              id: `local-${now.getTime()}`,
-              type: 'module',
-              title: 'Module Published',
-              message: `A new module "${moduleData.title}" has been published`,
-              created_at: now.toISOString(),
-              read: false,
-            };
-            window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
-          }
-          // Trigger UI to refresh notifications
-          window.dispatchEvent(new Event('refresh-notifications'));
-        }
+        await createModule(selectedCourseForModule, moduleData);
       }
       // Refresh modules after creation
       const updatedModules = await fetchCourseModules(selectedCourseForModule);

@@ -65,25 +65,29 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
         onCourseCreated(response.data);
         
         // Send notification to all users about new course
+        const courseId = response.data.id;
         try {
-          await createCourseNotification(response.data.id);
-          console.log('Course notification sent successfully');
+          console.log('Sending course notification for course ID:', courseId);
+          const notificationResponse = await createCourseNotification(courseId);
+          console.log('Course notification sent successfully:', notificationResponse);
         } catch (err) {
           console.warn('Course notification failed (route might be disabled); continuing.', err);
           // Add local fallback notification
           const now = new Date();
           const localNotification = {
-            id: `local-${now.getTime()}`,
+            id: `local-course-${courseId}-${now.getTime()}`,
             type: 'course',
             title: 'Course Created',
             message: `"${form.title}" has been created successfully`,
             created_at: now.toISOString(),
             read: false,
+            courseId: courseId,
           };
           window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
         }
         
         // Trigger UI to refresh notifications
+        console.log('Dispatching refresh-notifications event');
         window.dispatchEvent(new Event('refresh-notifications'));
 
         onClose();

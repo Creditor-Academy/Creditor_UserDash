@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
-import { fetchAllCourses, fetchCourseModules, createModule } from "@/services/courseService";
-import { createModulePublishedNotification } from "@/services/notificationService";
+import { fetchAllCourses, fetchCourseModules } from "@/services/courseService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import ScormService from '@/services/scormService';
 import { Button } from "@/components/ui/button";
@@ -87,30 +86,6 @@ const ScormPage = () => {
   const handleModuleCreated = async (newModule) => {
     if (selectedCourseForModule) {
       try {
-        // If module is published, send notification to enrolled users
-        if ((newModule?.module_status || '').toUpperCase() === 'PUBLISHED') {
-          try {
-            await createModulePublishedNotification(selectedCourseForModule, newModule.id);
-            console.log('Module published notification sent successfully');
-          } catch (err) {
-            console.warn('Module publish notification failed (route might be disabled); continuing.', err);
-            // Add local fallback notification
-            const now = new Date();
-            const localNotification = {
-              id: `local-${now.getTime()}`,
-              type: 'module',
-              title: 'Module Published',
-              message: `A new module "${newModule.title}" has been published`,
-              created_at: now.toISOString(),
-              read: false,
-            };
-            window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
-          }
-          // Trigger UI to refresh notifications
-          window.dispatchEvent(new Event('refresh-notifications'));
-        }
-        
-        // Refresh modules for the course
         const updatedModules = await fetchCourseModules(selectedCourseForModule);
         setCourses(prev => prev.map(course =>
           course.id === selectedCourseForModule
@@ -118,7 +93,7 @@ const ScormPage = () => {
             : course
         ));
       } catch (err) {
-        console.error('Error handling module creation:', err);
+        console.error('Error refreshing modules:', err);
       }
     }
   };

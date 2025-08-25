@@ -3,16 +3,33 @@ export const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-b
 import axios from "axios";
 import { getAuthHeader } from "@/services/authHeader";
 
+/*
+BACKEND ROUTES THAT NEED TO BE ENABLED:
+In your router file, uncomment these routes for full notification functionality:
+
+router.put("/mark-as-read", verifyToken, markAsRead);
+router.post("/course", verifyToken, createCourseAddedNotification);
+router.post("/module-published", verifyToken, createModulePublishedNotificationInternal);
+router.post("/quiz", verifyToken, createQuizAddedNotification);
+router.post("/payment", verifyToken, createPaymentNotification);
+router.post("/system", verifyToken, createSystemNotification);
+
+Currently only GET /api/notifications is enabled.
+*/
+
 // Fetch notifications for current user
 export async function fetchNotifications() {
 	const url = `${API_BASE}/api/notifications`;
-	return axios.get(url, {
+	console.log('Fetching notifications from:', url);
+	const response = await axios.get(url, {
 		headers: {
 			"Content-Type": "application/json",
 			...getAuthHeader(),
 		},
 		withCredentials: true,
 	});
+	console.log('Fetch notifications response:', response.data);
+	return response;
 }
 
 // Mark all notifications as read for current user
@@ -39,10 +56,25 @@ export async function createPaymentNotification() {
 	});
 }
 
-// Create system notification for current user
-export async function createSystemNotification(title, message) {
-	const url = `${API_BASE}/api/notifications/system`;
-	return axios.post(url, { title, message }, {
+// Create course notification for ALL users (admin function)
+export async function createCourseNotification(courseId) {
+	const url = `${API_BASE}/api/notifications/course`;
+	console.log('Creating course notification for courseId:', courseId);
+	const response = await axios.post(url, { courseId }, {
+		headers: {
+			"Content-Type": "application/json",
+			...getAuthHeader(),
+		},
+		withCredentials: true,
+	});
+	console.log('Course notification API response:', response.data);
+	return response;
+}
+
+// Create module published notification for enrolled users only (admin function)
+export async function createModulePublishedNotification(courseId, moduleId) {
+	const url = `${API_BASE}/api/notifications/module-published`;
+	return axios.post(url, { courseId, moduleId }, {
 		headers: {
 			"Content-Type": "application/json",
 			...getAuthHeader(),
@@ -51,7 +83,7 @@ export async function createSystemNotification(title, message) {
 	});
 }
 
-// Create quiz notification for current user
+// Create quiz notification
 export async function createQuizNotification(quizId) {
 	const url = `${API_BASE}/api/notifications/quiz`;
 	return axios.post(url, { quizId }, {
@@ -63,22 +95,10 @@ export async function createQuizNotification(quizId) {
 	});
 }
 
-// Create course notification for ALL users (admin function)
-export async function createCourseNotification(courseId) {
-	const url = `${API_BASE}/api/notifications/course`;
-	return axios.post(url, { courseId }, {
-		headers: {
-			"Content-Type": "application/json",
-			...getAuthHeader(),
-		},
-		withCredentials: true,
-	});
-}
-
-// Create module published notification for enrolled users only (admin function)
-export async function createModulePublishedNotification(courseId, moduleId) {
-	const url = `${API_BASE}/api/notifications/module-published`;
-	return axios.post(url, { courseId, moduleId }, {
+// Create system notification for current user
+export async function createSystemNotification(title, message) {
+	const url = `${API_BASE}/api/notifications/system`;
+	return axios.post(url, { title, message }, {
 		headers: {
 			"Content-Type": "application/json",
 			...getAuthHeader(),
