@@ -12,7 +12,7 @@ import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
 import { fetchDetailedUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchNotifications } from "@/services/notificationService";
+import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
 
 export function DashboardHeader() {
   const { isInstructorOrAdmin } = useAuth();
@@ -40,6 +40,7 @@ export function DashboardHeader() {
 
   // Local notifications persistence helpers
   const LOCAL_NOTIFS_KEY = 'local_notifications';
+  const READ_ALL_AT_KEY = 'notifications_read_all_at';
   const readLocalNotifications = () => {
     try {
       const raw = localStorage.getItem(LOCAL_NOTIFS_KEY);
@@ -52,6 +53,18 @@ export function DashboardHeader() {
   const writeLocalNotifications = (items) => {
     try {
       localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(items || []));
+    } catch {}
+  };
+  const readReadAllAt = () => {
+    try {
+      return localStorage.getItem(READ_ALL_AT_KEY) || null;
+    } catch {
+      return null;
+    }
+  };
+  const writeReadAllAt = (isoString) => {
+    try {
+      localStorage.setItem(READ_ALL_AT_KEY, isoString || "");
     } catch {}
   };
 
@@ -77,7 +90,18 @@ export function DashboardHeader() {
     try {
       const response = await fetchNotifications();
       // Backend returns: { success: true, notifications: [...] }
-      const notifications = response.data?.notifications || [];
+      const notificationsRaw = response.data?.notifications || [];
+      const readAllAt = readReadAllAt();
+      const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
+      // Apply client-side read cutoff so items before readAllAt are treated as read
+      const notifications = notificationsRaw.map(n => {
+        if (!readAllAtTime) return n;
+        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
+        if (createdTime && createdTime <= readAllAtTime) {
+          return { ...n, read: true };
+        }
+        return n;
+      });
       
       // Merge with local notifications currently in state by id
       setApiNotifications(prev => {
@@ -88,7 +112,14 @@ export function DashboardHeader() {
         return merged;
       });
       
-      const localItems = readLocalNotifications();
+      const localItems = readLocalNotifications().map(n => {
+        if (!readAllAtTime) return n;
+        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
+        if (createdTime && createdTime <= readAllAtTime) {
+          return { ...n, read: true };
+        }
+        return n;
+      });
       const unread = [...notifications, ...localItems].filter(n => !n.read).length;
       setUnreadNotifications(unread);
     } catch (err) {
@@ -115,9 +146,17 @@ export function DashboardHeader() {
   // Initial notifications load: hydrate locals, then refresh from API
   useEffect(() => {
     const locals = readLocalNotifications();
+    const readAllAt = readReadAllAt();
+    const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
     if (locals.length) {
-      setApiNotifications(prev => [...locals, ...prev]);
-      setUnreadNotifications(locals.filter(n => !n.read).length);
+      const normalizedLocals = readAllAtTime
+        ? locals.map(n => {
+            const t = n.created_at ? new Date(n.created_at).getTime() : null;
+            return (t && t <= readAllAtTime) ? { ...n, read: true } : n;
+          })
+        : locals;
+      setApiNotifications(prev => [...normalizedLocals, ...prev]);
+      setUnreadNotifications(normalizedLocals.filter(n => !n.read).length);
     }
     refreshNotificationsWithRetry();
   }, []);
@@ -312,7 +351,9 @@ export function DashboardHeader() {
       console.warn('Backend mark as read failed, using frontend fallback:', error);
     }
     
-    // Update local storage
+    // Persist read-all cutoff and update local storage
+    const nowIso = new Date().toISOString();
+    writeReadAllAt(nowIso);
     const locals = readLocalNotifications();
     const updatedLocals = locals.map(n => ({ ...n, read: true }));
     writeLocalNotifications(updatedLocals);
