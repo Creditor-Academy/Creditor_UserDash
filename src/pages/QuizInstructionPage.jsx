@@ -22,6 +22,7 @@ function QuizInstructionPage() {
   const [isStarting, setIsStarting] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [error, setError] = useState("");
+  const [showEmptyQuizModal, setShowEmptyQuizModal] = useState(false);
 
   useEffect(() => {
     const fetchQuizData = async () => {
@@ -223,7 +224,7 @@ function QuizInstructionPage() {
         })));
       }
 
-      // 4. Final check - if we still have no questions, show error
+      // 4. Final check - if we still have no questions, show modal and stop
       if (questions.length === 0) {
         console.error('No questions found in any source:', {
           startResponse,
@@ -231,7 +232,7 @@ function QuizInstructionPage() {
           moduleId,
           quizId
         });
-        toast.error('Unable to load quiz questions. Please contact support or try again later.');
+        setShowEmptyQuizModal(true);
         return;
       }
       
@@ -287,6 +288,35 @@ function QuizInstructionPage() {
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
+      {/* Empty Quiz Modal */}
+      {showEmptyQuizModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowEmptyQuizModal(false); navigate(-1); }} />
+          <div className="relative z-10 w-full max-w-md mx-auto">
+            <Card className="overflow-hidden border border-gray-200 shadow-xl">
+              <CardHeader className="bg-indigo-50 border-b border-indigo-100">
+                <CardTitle className="text-indigo-700 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-indigo-600" />
+                  No Questions Available
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <p className="text-gray-700">
+                  This quiz contains no questions at the moment. Please go back and attempt another assessment.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={() => setShowEmptyQuizModal(false)}>
+                    Stay
+                  </Button>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => navigate(-1)}>
+                    Go Back
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Button variant="outline" onClick={() => navigate(-1)} className="border-gray-300">
