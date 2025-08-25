@@ -197,6 +197,20 @@ export async function fetchQuizAdminScores(quizId) {
   return data.data || data;
 }
 
+// Fetch all questions (with options/answers) for a quiz (admin endpoint)
+export async function fetchQuizAdminQuestions(quizId) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch quiz admin questions');
+  }
+  const data = await response.json();
+  return data.data || data;
+}
+
 export async function deleteQuiz(quizId) {
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}`, {
     method: 'DELETE',
@@ -247,5 +261,19 @@ export async function updateQuestion(quizId, questionId, questionData) {
     throw new Error(errorData.message || `Failed to update question (${response.status})`);
   }
   
+  return await response.json();
+}
+
+// Delete a question by ID (admin)
+export async function deleteQuestion(quizId, questionId) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions/${questionId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+    throw new Error(errorData.message || `Failed to delete question (${response.status})`);
+  }
   return await response.json();
 }
