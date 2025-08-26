@@ -24,22 +24,22 @@ export function GroupLayout() {
     { 
       label: "News", 
       icon: MessageSquare, 
-      path: `/groups/${groupId}/news` 
+      path: `/dashboard/groups/${groupId}/news` 
     },
     { 
       label: "Chat", 
       icon: MessageCircle, 
-      path: `/groups/${groupId}/chat` 
+      path: `/dashboard/groups/${groupId}/chat` 
     },
     { 
       label: "Calendar", 
       icon: CalendarDays, 
-      path: `/groups/${groupId}/calendar` 
+      path: `/dashboard/groups/${groupId}/calendar` 
     },
     { 
       label: "Announcements", 
       icon: Bell, 
-      path: `/groups/${groupId}/announcements` 
+      path: `/dashboard/groups/${groupId}/announcements` 
     }
   ];
   

@@ -33,7 +33,7 @@ export function Groups() {
             </CardContent>
             <CardFooter className="border-t bg-muted/20 py-3 flex justify-end">
               <Button variant="outline" asChild className="mr-2">
-                <Link to={`/groups/${group.id}/news`}>View Group</Link>
+                <Link to={`/dashboard/groups/${group.id}/news`}>View Group</Link>
               </Button>
             </CardFooter>
           </Card>
