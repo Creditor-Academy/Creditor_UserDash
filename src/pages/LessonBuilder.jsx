@@ -1745,25 +1745,25 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
             {/* Main Content Canvas */}
             <div className="py-4">
-                <div className="space-y-4">
+                <div>
                   {contentBlocks.length === 0 ? (
-                    <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 max-w-2xl">
+                    <div>
+                      <div >
+                        <div>
                           <h2 className="text-xl font-bold text-gray-900 mb-2">
-                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "Lesson Content" : "Start Building Your Lesson"}
+                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "" : "Start Building Your Lesson"}
                           </h2>
                           {fetchingContent ? (
-                            <div className="flex items-center justify-center p-8">
+                            <div >
                               <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
                           ) : lessonContent?.data?.content ? (
-                            <div className="mt-4 space-y-6 max-h-[70vh] overflow-y-auto p-4 border rounded-lg bg-white">
-                              <div className="space-y-8">
+                            <div >
+                              <div >
                                 {lessonContent.data.content.map((block, index) => (
                                   <div 
                                     key={block.block_id} 
-                                    className="relative w-full bg-white rounded-lg border border-gray-100 shadow-sm mb-4 group"
+                                    className="relative w-full  mb-4 group"
                                     draggable="true"
                                     data-block-id={block.block_id}
                                     onDragStart={(e) => handleDragStart(e, block.block_id)}
