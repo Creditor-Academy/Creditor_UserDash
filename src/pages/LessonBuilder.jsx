@@ -15,8 +15,10 @@ import {
   Text,
   List,
   ListOrdered,
-  Table
+  Table,
+  Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -533,16 +535,247 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     alert('Preview functionality coming soon!');
   };
 
-  const handleUpdate = () => {
-    const lessonDataToUpdate = {
-      ...lessonData,
-      title: lessonTitle,
-      contentBlocks,
-      status: 'PUBLISHED',
-      lastModified: new Date().toISOString()
-    };
-   
-    console.log('Updating lesson:', lessonDataToUpdate);
+  // Convert blocks to HTML/CSS format
+  const convertBlocksToHtml = (blocks) => {
+    return blocks.map(block => {
+      let html = '';
+      let css = '';
+      let js = '';
+
+      switch (block.type) {
+        case 'text':
+          if (block.textType === 'heading') {
+            html = `<div class="lesson-block heading-block">
+              <h1>${block.content}</h1>
+            </div>`;
+            css = `.heading-block h1 {
+              font-size: 2rem;
+              font-weight: bold;
+              margin-bottom: 1rem;
+              color: #1a1a1a;
+            }`;
+          } else if (block.textType === 'subheading') {
+            html = `<div class="lesson-block subheading-block">
+              <h2>${block.content}</h2>
+            </div>`;
+            css = `.subheading-block h2 {
+              font-size: 1.5rem;
+              font-weight: 600;
+              margin-bottom: 0.875rem;
+              color: #2a2a2a;
+            }`;
+          } else {
+            html = `<div class="lesson-block paragraph-block">
+              <p>${block.content}</p>
+            </div>`;
+            css = `.paragraph-block p {
+              font-size: 1rem;
+              line-height: 1.6;
+              margin-bottom: 1rem;
+              color: #333;
+            }`;
+          }
+          break;
+
+        case 'image':
+          html = `<div class="lesson-block image-block ${block.layout || 'centered'}">
+            <img src="${block.imageUrl}" alt="${block.imageTitle || ''}" />
+            ${block.imageDescription ? `<p class="image-caption">${block.imageDescription}</p>` : ''}
+          </div>`;
+          css = `.image-block {
+            margin: 1.5rem 0;
+          }
+          .image-block img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+          }
+          .image-block.centered {
+            text-align: center;
+          }
+          .image-caption {
+            font-size: 0.875rem;
+            color: #666;
+            margin-top: 0.5rem;
+            text-align: center;
+          }`;
+          break;
+
+        // Add other cases for different block types here
+      }
+
+      return { html, css, js };
+    });
+  };
+
+  const handleUpdate = async () => {
+    if (!lessonId) {
+      toast.error('No lesson ID found. Please save the lesson first.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      if (!contentBlocks || contentBlocks.length === 0) {
+        toast.error('Please add some content before updating');
+        return;
+      }
+
+      // Convert content blocks to the required format
+      const content = contentBlocks.map((block, index) => {
+        const blockId = `block_${index + 1}`;
+        let htmlContent = '';
+        let details = {};
+        let script = '';
+
+        switch (block.type) {
+          case 'text':
+            // Handle different text types
+            if (block.textType === 'heading') {
+              htmlContent = `
+                <div style='margin: 20px 0;'>
+                  <h1 style='font-size: 32px; font-weight: bold; color: #1a1a1a; margin-bottom: 16px;'>
+                    ${block.content || ''}
+                  </h1>
+                </div>`;
+            } else if (block.textType === 'subheading') {
+              htmlContent = `
+                <div style='margin: 16px 0;'>
+                  <h2 style='font-size: 24px; font-weight: 600; color: #2a2a2a; margin-bottom: 12px;'>
+                    ${block.content || ''}
+                  </h2>
+                </div>`;
+            } else {
+              htmlContent = `
+                <div style='margin: 12px 0;'>
+                  <p style='font-size: 16px; line-height: 1.6; color: #333;'>
+                    ${block.content || ''}
+                  </p>
+                </div>`;
+            }
+            break;
+
+          case 'image':
+            details = {
+              image_url: block.imageUrl,
+              caption: block.imageDescription || ''
+            };
+            htmlContent = `
+              <div style='margin: 20px 0; text-align: center;'>
+                <img src='${block.imageUrl}' alt='${block.imageTitle || ''}' 
+                     style='max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'/>
+                ${block.imageDescription ? 
+                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.imageDescription}</p>` 
+                  : ''}
+              </div>`;
+            break;
+
+          case 'video':
+            details = {
+              video_url: block.videoUrl,
+              caption: block.videoTitle || ''
+            };
+            htmlContent = `
+              <div style='margin: 20px 0; text-align: center;'>
+                <video controls style='max-width: 100%; border-radius: 8px;'>
+                  <source src='${block.videoUrl}' type='video/mp4'>
+                  Your browser does not support the video tag.
+                </video>
+                ${block.videoTitle ? 
+                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.videoTitle}</p>` 
+                  : ''}
+              </div>`;
+            break;
+
+          // Add other cases as needed for different block types
+        }
+
+        return {
+          type: block.type,
+          script: script,
+          block_id: blockId,
+          html_css: htmlContent,
+          ...(Object.keys(details).length > 0 && { details })
+        };
+      });
+
+      // Convert blocks to HTML/CSS/JS format
+      const convertedBlocks = convertBlocksToHtml(contentBlocks);
+
+      // Combine all blocks
+      const combinedContent = {
+        html: convertedBlocks.map(block => block.html).join('\\n'),
+        css: convertedBlocks.map(block => block.css).join('\\n'),
+        js: convertedBlocks.map(block => block.js).filter(js => js).join('\\n')
+      };
+
+      // Format content blocks into a simpler structure
+      const formattedContent = contentBlocks.map(block => {
+        let htmlContent = '';
+        let styles = '';
+
+        if (block.type === 'text') {
+          switch (block.textType) {
+            case 'heading':
+              htmlContent = `<h1 class="lesson-heading">${block.content}</h1>`;
+              styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
+              break;
+            case 'subheading':
+              htmlContent = `<h2 class="lesson-subheading">${block.content}</h2>`;
+              styles = '.lesson-subheading { font-size: 20px; font-weight: 600; margin-bottom: 12px; }';
+              break;
+            default:
+              htmlContent = `<p class="lesson-paragraph">${block.content}</p>`;
+              styles = '.lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
+          }
+        } else if (block.type === 'image') {
+          htmlContent = `
+            <div class="lesson-image ${block.layout || 'centered'}">
+              <img src="${block.imageUrl}" alt="${block.imageTitle || ''}" />
+              ${block.imageDescription ? `<p class="image-caption">${block.imageDescription}</p>` : ''}
+            </div>`;
+        }
+
+        return {
+          html_css: htmlContent,
+          css: styles,
+          script: '' // Empty string if no JavaScript is needed
+        };
+      });
+
+      // Update the lesson content
+      const lessonDataToUpdate = {
+        lesson_id: lessonId,
+        content: content,
+        html_css: formattedContent.map(content => content.html_css).join('\\n'),
+        css: formattedContent.map(content => content.css).join('\\n'),
+        script: '' // Add script if needed in the future
+      };
+
+      const response = await axios.put(
+        `https://sharebackend-sdkp.onrender.com/api/lessoncontent/update/${lessonId}`,
+        lessonDataToUpdate,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        toast.success('Lesson updated successfully!');
+      } else {
+        throw new Error(response.data?.errorMessage || 'Failed to update lesson content');
+      }
+      
+    } catch (error) {
+      console.error('Error updating lesson:', error);
+      toast.error(error.response?.data?.errorMessage || 'Failed to update lesson. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
     alert('Lesson updated successfully!');
   };
 
@@ -1396,8 +1629,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <Button variant="outline" size="sm" onClick={handleSave}>
                         Save as Draft
                       </Button>
-                      <Button size="sm" onClick={handleUpdate}>
-                        Update
+                      <Button 
+                        size="sm" 
+                        onClick={handleUpdate}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Updating...
+                          </>
+                        ) : (
+                          'Update'
+                        )}
                       </Button>
                     </>
                   )}
