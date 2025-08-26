@@ -499,24 +499,99 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleDragStart = (e, blockId) => {
     setDraggedBlockId(blockId);
     e.dataTransfer.effectAllowed = 'move';
+    
+    // Add a class to the dragged element for visual feedback
+    const element = e.target;
+    element.classList.add('dragging');
+    
+    // Set custom ghost image
+    const ghost = element.cloneNode(true);
+    ghost.style.opacity = '0.5';
+    ghost.style.position = 'absolute';
+    ghost.style.left = '-9999px';
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, 0, 0);
+    
+    // Clean up ghost element after drag starts
+    setTimeout(() => {
+      document.body.removeChild(ghost);
+    }, 0);
+  };
+  
+  // Add dragend handler to clean up styles
+  const handleDragEnd = () => {
+    // Reset all block transforms
+    document.querySelectorAll('[data-block-id]').forEach(block => {
+      block.style.transform = '';
+      block.classList.remove('dragging');
+    });
+    setDraggedBlockId(null);
   };
 
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    // Find the dragged element and potential drop target
+    const draggedElement = document.querySelector(`[data-block-id="${draggedBlockId}"]`);
+    if (!draggedElement) return;
+
+    const dropTarget = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-block-id]');
+    if (!dropTarget || dropTarget === draggedElement) return;
+
+    // Get all blocks
+    const blocks = Array.from(document.querySelectorAll('[data-block-id]'));
+    const draggedIndex = blocks.indexOf(draggedElement);
+    const dropIndex = blocks.indexOf(dropTarget);
+
+    // Reset all transformations first
+    blocks.forEach(block => {
+      if (block !== draggedElement) {
+        block.style.transform = '';
+      }
+    });
+
+    // Apply transform to drop target
+    const moveUp = draggedIndex > dropIndex;
+    dropTarget.style.transform = `translateY(${moveUp ? '40px' : '-40px'})`;
+    dropTarget.style.transition = 'transform 0.2s ease';
   };
 
   const handleDrop = (e, targetBlockId) => {
     e.preventDefault();
     if (draggedBlockId === null || draggedBlockId === targetBlockId) return;
-    const sourceIndex = contentBlocks.findIndex(b => b.id === draggedBlockId);
-    const targetIndex = contentBlocks.findIndex(b => b.id === targetBlockId);
+
+    // Update lesson content order
+    const content = lessonContent.data.content;
+    const sourceIndex = content.findIndex(b => b.block_id === draggedBlockId);
+    const targetIndex = content.findIndex(b => b.block_id === targetBlockId);
+    
     if (sourceIndex === -1 || targetIndex === -1) return;
-    const updated = [...contentBlocks];
-    const [moved] = updated.splice(sourceIndex, 1);
-    updated.splice(targetIndex, 0, moved);
-    setContentBlocks(updated.map((b, i) => ({ ...b, order: i + 1 })));
+    
+    const updatedContent = [...content];
+    const [moved] = updatedContent.splice(sourceIndex, 1);
+    updatedContent.splice(targetIndex, 0, moved);
+    
+    // Update the state with new order
+    setLessonContent({
+      ...lessonContent,
+      data: {
+        ...lessonContent.data,
+        content: updatedContent.map((block, index) => ({
+          ...block,
+          order: index + 1
+        }))
+      }
+    });
+
+    // Reset drag state
     setDraggedBlockId(null);
+    
+    // Reset any visual transformations
+    document.querySelectorAll('[data-block-id]').forEach(block => {
+      block.style.transform = '';
+      block.style.transition = '';
+    });
   };
 
   const handleSave = async () => {
@@ -527,13 +602,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       lastModified: new Date().toISOString()
     };
 
-    const apiUrl = `https://creditor-backend-testing-branch.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`;
+    // Determine if this is a new lesson or an update
+    const baseUrl = 'https://creditor-backend-testing-branch.onrender.com/api/course';
+    const apiUrl = lessonId 
+      ? `${baseUrl}/${courseId}/modules/${moduleId}/lesson/${lessonId}`
+      : `${baseUrl}/${courseId}/modules/${moduleId}/lesson/create-lesson`;
 
     try {
-      const response = await axios.post(apiUrl, lessonDataToSave);
-      alert('Lesson saved as draft successfully!');
+      const response = lessonId
+        ? await axios.put(apiUrl, lessonDataToSave)
+        : await axios.post(apiUrl, lessonDataToSave);
+      
+      toast.success('Lesson saved successfully!');
     } catch (error) {
-      alert('Error saving lesson!');
+      toast.error('Error saving lesson!');
       console.error(error);
     }
   };
@@ -625,10 +707,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     try {
       setIsUploading(true);
 
-      if (!contentBlocks || contentBlocks.length === 0) {
+      // Allow empty content blocks for deletion operations
+      /*if (!contentBlocks || contentBlocks.length === 0) {
         toast.error('Please add some content before updating');
         return;
-      }
+      }*/
 
       // Convert content blocks to the required format
       const content = contentBlocks.map((block, index) => {
@@ -642,24 +725,27 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             // Handle different text types
             if (block.textType === 'heading') {
               htmlContent = `
-                <div style='margin: 20px 0;'>
-                  <h1 style='font-size: 32px; font-weight: bold; color: #1a1a1a; margin-bottom: 16px;'>
-                    ${block.content || ''}
-                  </h1>
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <article class="prose prose-gray max-w-none pl-4">
+                    <h1 class="text-2xl font-bold text-gray-800">${block.content || ''}</h1>
+                  </article>
                 </div>`;
             } else if (block.textType === 'subheading') {
               htmlContent = `
-                <div style='margin: 16px 0;'>
-                  <h2 style='font-size: 24px; font-weight: 600; color: #2a2a2a; margin-bottom: 12px;'>
-                    ${block.content || ''}
-                  </h2>
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <article class="prose prose-gray max-w-none pl-4">
+                    <h2 class="text-xl font-semibold text-gray-800">${block.content || ''}</h2>
+                  </article>
                 </div>`;
             } else {
               htmlContent = `
-                <div style='margin: 12px 0;'>
-                  <p style='font-size: 16px; line-height: 1.6; color: #333;'>
-                    ${block.content || ''}
-                  </p>
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <article class="prose prose-gray max-w-none pl-4">
+                    <p class="text-gray-600 leading-relaxed">${block.content || ''}</p>
+                  </article>
                 </div>`;
             }
             break;
@@ -1587,7 +1673,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
         {/* Main Content */}
         <div
-          className={`flex-1 transition-all duration-300 ${
+          className={`flex-1 transition-all duration-300 relative ${
             isViewMode
               ? 'ml-0'
               : sidebarCollapsed
@@ -1595,10 +1681,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 : 'ml-[calc(17rem+16rem)]'
           }`}
         >
-          <div className="w-full max-w-4xl mx-auto px-4 py-4">
+          <div className="w-full h-full bg-[#fafafa]">
             {/* Lesson Builder Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-0 z-10">
-              <div className="flex items-center justify-between">
+            <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
+              <div className="max-w-[800px] mx-auto flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <Button
                     variant="ghost"
@@ -1659,7 +1745,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
             {/* Main Content Canvas */}
             <div className="py-4">
-              
                 <div className="space-y-4">
                   {contentBlocks.length === 0 ? (
                     <div className="h-[calc(100vh-12rem)] flex items-center justify-center">
@@ -1675,12 +1760,97 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           ) : lessonContent?.data?.content ? (
                             <div className="mt-4 space-y-6 max-h-[70vh] overflow-y-auto p-4 border rounded-lg bg-white">
                               <div className="space-y-8">
-                                {lessonContent.data.content.map((block) => (
-                                  <div key={block.block_id} className="relative p-4 bg-gray-50 rounded-lg shadow-sm">
-                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
-                                    {block.script && (
-                                      <script dangerouslySetInnerHTML={{ __html: block.script }} />
+                                {lessonContent.data.content.map((block, index) => (
+                                  <div 
+                                    key={block.block_id} 
+                                    className="relative w-full bg-white rounded-lg border border-gray-100 shadow-sm mb-4 group"
+                                    draggable="true"
+                                    data-block-id={block.block_id}
+                                    onDragStart={(e) => handleDragStart(e, block.block_id)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, block.block_id)}
+                                    onDragEnd={handleDragEnd}
+                                  >
+                                    {/* Edit/Delete Controls */}
+                                    {!isViewMode && (
+                                      <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                        <button
+                                          onClick={() => {
+                                            const blockType = block.type || 'text';
+                                            switch(blockType) {
+                                              case 'text':
+                                                setCurrentTextBlockId(block.block_id);
+                                                setEditorHtml(block.html_css);
+                                                setShowTextEditorDialog(true);
+                                                break;
+                                              case 'image':
+                                                setCurrentImageBlock({
+                                                  id: block.block_id,
+                                                  imageUrl: block.details?.image_url,
+                                                  imageTitle: block.details?.caption
+                                                });
+                                                setShowImageDialog(true);
+                                                break;
+                                              case 'video':
+                                                setCurrentBlock({
+                                                  id: block.block_id,
+                                                  videoUrl: block.details?.video_url,
+                                                  videoTitle: block.details?.caption
+                                                });
+                                                setShowVideoDialog(true);
+                                                break;
+                                              case 'youtube':
+                                                setCurrentYoutubeBlock({
+                                                  id: block.block_id,
+                                                  youtubeUrl: block.details?.url,
+                                                  youtubeTitle: block.details?.caption
+                                                });
+                                                setShowYoutubeDialog(true);
+                                                break;
+                                              default:
+                                                handleEditBlock(block.block_id);
+                                            }
+                                          }}
+                                          className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm"
+                                          title="Edit"
+                                        >
+                                          <Pencil className="h-4 w-4 text-blue-600" />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            const updatedContent = lessonContent.data.content.filter(
+                                              b => b.block_id !== block.block_id
+                                            );
+                                            setLessonContent({
+                                              ...lessonContent,
+                                              data: {
+                                                ...lessonContent.data,
+                                                content: updatedContent
+                                              }
+                                            });
+                                            setContentBlocks(prevBlocks => 
+                                              prevBlocks.filter(b => b.id !== block.block_id)
+                                            );
+                                          }}
+                                          className="p-2 bg-white hover:bg-red-50 rounded-full shadow-sm"
+                                          title="Delete"
+                                        >
+                                          <Trash2 className="h-4 w-4 text-red-500" />
+                                        </button>
+                                        <div 
+                                          className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm cursor-move"
+                                          title="Drag to reorder"
+                                        >
+                                          <GripVertical className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                      </div>
                                     )}
+                                    <div className="p-6">
+                                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                                      {block.script && (
+                                        <script dangerouslySetInnerHTML={{ __html: block.script }} />
+                                      )}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -1751,12 +1921,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             </div>
                           </div>
                          
-                          <div className="p-4">
+                          <div className="p-6">
                             {block.type === 'text' && (
-                              <div
-                                className="prose max-w-none text-gray-700"
-                                dangerouslySetInnerHTML={{ __html: block.content }}
-                              />
+                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                {/* Gradient Strip */}
+                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+
+                                {/* Text Content */}
+                                <article className="prose prose-gray max-w-none pl-4">
+                                  <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                                </article>
+                              </div>
                             )}
                             
                             {block.type === 'link' && (
@@ -2068,7 +2243,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                   )}
                 </div>
               </div>
-            
             </div>
           </div>
         </div>
