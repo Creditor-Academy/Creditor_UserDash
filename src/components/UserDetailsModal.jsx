@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { fetchUserCoursesByUserId } from "@/services/userService";
 
-const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) => {
+const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isInstructorOrAdmin = false }) => {
   const [courses, setCourses] = React.useState([]);
   const [loadingCourses, setLoadingCourses] = React.useState(false);
   const [coursesError, setCoursesError] = React.useState(null);
@@ -223,11 +223,19 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg font-medium text-gray-700">
-                    {user.first_name?.[0]}{user.last_name?.[0]}
-                  </span>
-                </div>
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User avatar'}
+                    className="h-16 w-16 rounded-full object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg font-medium text-gray-700">
+                      {user.first_name?.[0]}{user.last_name?.[0]}
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-gray-900 break-words">
                     {user.first_name} {user.last_name}
@@ -248,13 +256,15 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
                   <span className="text-sm font-medium break-all sm:ml-6">{user.email}</span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                    <span className="text-sm text-gray-600">Phone:</span>
+                {isInstructorOrAdmin && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600">Phone:</span>
+                    </div>
+                    <span className="text-sm font-medium break-all sm:ml-6">{user.phone || 'Not set'}</span>
                   </div>
-                  <span className="text-sm font-medium break-all sm:ml-6">{user.phone || 'Not set'}</span>
-                </div>
+                )}
                 
                 {user.location && (
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -340,60 +350,62 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
             </CardContent>
           </Card>
 
-          {/* Account Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Account Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Joined:</span>
-                  <span className="text-sm font-medium">
-                    {formatDate(user.created_at)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Last Active:</span>
-                  <span className="text-sm font-medium">
-                    {lastActiveLabel}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-600">Status:</span>
-                  <Badge variant="default">
-                    Active
-                  </Badge>
-                </div>
-
-                {user.last_login && (
+          {/* Account Information - Only for instructors/admins */}
+          {isInstructorOrAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Account Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Last Login:</span>
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Joined:</span>
                     <span className="text-sm font-medium">
-                      {formatDate(user.last_login)}
+                      {formatDate(user.created_at)}
                     </span>
                   </div>
-                )}
 
-                {user.timezone && (
                   <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Timezone:</span>
-                    <span className="text-sm font-medium">{user.timezone}</span>
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Last Active:</span>
+                    <span className="text-sm font-medium">
+                      {lastActiveLabel}
+                    </span>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Status:</span>
+                    <Badge variant="default">
+                      Active
+                    </Badge>
+                  </div>
+
+                  {user.last_login && (
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Last Login:</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(user.last_login)}
+                      </span>
+                    </div>
+                  )}
+
+                  {user.timezone && (
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Timezone:</span>
+                      <span className="text-sm font-medium">{user.timezone}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Available Courses */}
           {loadingCourses ? (
@@ -453,8 +465,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
               </CardContent>
             </Card>
           )}
-          {/* Payment Status Section */}
-          {(Array.isArray(user?.payments) && user.payments.length > 0) || (Array.isArray(user?.subscriptions) && user.subscriptions.length > 0) ? (
+          {/* Payment Status Section - Only for instructors/admins */}
+          {isInstructorOrAdmin && ((Array.isArray(user?.payments) && user.payments.length > 0) || (Array.isArray(user?.subscriptions) && user.subscriptions.length > 0)) ? (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -551,8 +563,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
               </CardContent>
             </Card>
           ) : null}
-          {/* Activity Information */}
-          {user.activity_log && user.activity_log.length > 0 && (
+          {/* Activity Information - Only for instructors/admins */}
+          {isInstructorOrAdmin && user.activity_log && user.activity_log.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -585,8 +597,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
             </Card>
           )}
 
-          {/* Course Enrollments */}
-          {user.course_enrollments && user.course_enrollments.length > 0 && (
+          {/* Course Enrollments - Only for instructors/admins */}
+          {isInstructorOrAdmin && user.course_enrollments && user.course_enrollments.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -629,43 +641,45 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error }) =
             </CardContent>
           </Card>
 
-          {/* System Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                System Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">User ID:</span>
-                  <span className="ml-2 font-mono text-xs">{user.id}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Updated:</span>
-                  <span className="ml-2">{formatDate(user.updated_at)}</span>
-                </div>
-                {user.email_verified && (
+          {/* System Information - Only for instructors/admins */}
+          {isInstructorOrAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  System Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Email Verified:</span>
-                    <Badge variant="outline" className="ml-2">
-                      {user.email_verified ? 'Yes' : 'No'}
-                    </Badge>
+                    <span className="text-gray-600">User ID:</span>
+                    <span className="ml-2 font-mono text-xs">{user.id}</span>
                   </div>
-                )}
-                {user.two_factor_enabled && (
                   <div>
-                    <span className="text-gray-600">2FA Enabled:</span>
-                    <Badge variant="outline" className="ml-2">
-                      {user.two_factor_enabled ? 'Yes' : 'No'}
-                    </Badge>
+                    <span className="text-gray-600">Updated:</span>
+                    <span className="ml-2">{formatDate(user.updated_at)}</span>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {user.email_verified && (
+                    <div>
+                      <span className="text-gray-600">Email Verified:</span>
+                      <Badge variant="outline" className="ml-2">
+                        {user.email_verified ? 'Yes' : 'No'}
+                      </Badge>
+                    </div>
+                  )}
+                  {user.two_factor_enabled && (
+                    <div>
+                      <span className="text-gray-600">2FA Enabled:</span>
+                      <Badge variant="outline" className="ml-2">
+                        {user.two_factor_enabled ? 'Yes' : 'No'}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>
