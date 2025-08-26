@@ -31,6 +31,10 @@ const Resources = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterOrganization, setFilterOrganization] = useState("all");
+  const [pendingOrg, setPendingOrg] = useState("all");
+  const [pendingCat, setPendingCat] = useState("all");
+
+  
 
   const [selectedResources, setSelectedResources] = useState([]);
   const [showOrganizationModal, setShowOrganizationModal] = useState(false);
@@ -63,6 +67,19 @@ const Resources = () => {
     { id: "4", name: "Reference Material", color: "bg-purple-100 text-purple-800" },
     { id: "5", name: "Template", color: "bg-orange-100 text-orange-800" }
   ]);
+
+  // Initialize defaults for pending selectors to first available items
+  React.useEffect(() => {
+    if (organizations?.length && (pendingOrg === "all" || !pendingOrg)) {
+      setPendingOrg(organizations[0].id);
+    }
+  }, [organizations]);
+
+  React.useEffect(() => {
+    if (categories?.length && (pendingCat === "all" || !pendingCat)) {
+      setPendingCat(categories[0].id);
+    }
+  }, [categories]);
 
   const fileInputRef = useRef(null);
 
@@ -558,7 +575,7 @@ const Resources = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
-            Upload Resources
+            Upload Assets
           </CardTitle>
                      <CardDescription>
              Upload images and videos with titles, descriptions, and organization settings. Resources assigned to "Global Resources" will be visible to all users. Supported formats: JPG, PNG, GIF, MP4, MOV, AVI (Max 100MB)
@@ -569,7 +586,7 @@ const Resources = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Title *</label>
               <Input
-                placeholder="Enter resource title"
+                placeholder="Enter asset title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               />
@@ -677,7 +694,7 @@ const Resources = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium">Description</label>
             <Textarea
-              placeholder="Enter resource description"
+              placeholder="Enter asset description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
@@ -733,7 +750,7 @@ const Resources = () => {
             disabled={uploading || selectedFiles.length === 0 || !formData.title.trim() || !formData.category || !formData.organization}
             className="w-full"
           >
-            {uploading ? "Uploading..." : "Upload Resources"}
+            {uploading ? "Uploading..." : "Upload Assets"}
           </Button>
         </CardContent>
       </Card>
@@ -743,19 +760,81 @@ const Resources = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            Uploaded Resources ({filteredResources.length} of {resources.length})
+            Uploaded Assets ({filteredResources.length} of {resources.length})
           </CardTitle>
           <CardDescription>
-            Manage and organize your uploaded resources
+            Manage and organize your uploaded assets
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Select Organization/Category and apply */}
+          <div className="mb-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Organization</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={pendingOrg}
+                  onChange={(e) => setPendingOrg(e.target.value)}
+                >
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Select Category</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={pendingCat}
+                  onChange={(e) => setPendingCat(e.target.value)}
+                  disabled={organizations.find(o => o.id === pendingOrg)?.type === "global"}
+                >
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    const selectedOrg = organizations.find(o => o.id === pendingOrg);
+                    // If Global organization, show all organizations' assets (ignore category)
+                    if (selectedOrg?.type === "global") {
+                      setFilterOrganization("all");
+                      setFilterCategory("all");
+                      return;
+                    }
+                    // If category is General, show all categories within selected organization
+                    const selectedCat = categories.find(c => c.id === pendingCat);
+                    if (selectedCat && selectedCat.name.toLowerCase() === "general") {
+                      setFilterOrganization(pendingOrg);
+                      setFilterCategory("all");
+                      return;
+                    }
+                    // Otherwise, filter by both
+                    setFilterOrganization(pendingOrg);
+                    setFilterCategory(pendingCat);
+                  }}
+                >
+                  Show Assets
+                </Button>
+              </div>
+            </div>
+          </div>
+
           {/* Search and Filter */}
           {resources.length > 0 && (
             <div className="mb-6 space-y-4">
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Search Resources</label>
+                  <label className="text-sm font-medium">Search Assets</label>
                   <Input
                     placeholder="Search by title, description, or filename..."
                     value={searchTerm}
