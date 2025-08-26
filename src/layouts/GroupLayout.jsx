@@ -31,7 +31,7 @@ export function GroupLayout() {
       icon: MessageCircle, 
       path: `/dashboard/groups/${groupId}/chat` 
     },
-    { 
+    {
       label: "Calendar", 
       icon: CalendarDays, 
       path: `/dashboard/groups/${groupId}/calendar` 
