@@ -5,10 +5,19 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  
   server: {
     host: "::",
     port: 3000,
+  },
+  preview: {
+    host: "0.0.0.0",   // Allow external access
+    port: 3000,
+    allowedHosts: [
+      "www.lmsathena.com",
+      "lmsathena.com",
+      "api.lmsathena.com",
+      "54.198.69.32"
+    ]
   },
   base: '/',
   plugins: [
@@ -26,8 +35,7 @@ export default defineConfig(({ mode }) => ({
   },
 }));
 
-// https://sharebackend-sdkp.onrender.com
-// https://creditor-backend-1-iijy.onrender.com
-// https://creditor-backend-9upi.onrender.com
-// https://sharebackend-sdkp.onrender.com
-
+// # VITE_API_BASE_URL= https://sharebackend-sdkp.onrender.com
+// # VITE_API_BASE_URL= https://creditor-backend-1-iijy.onrender.com
+// # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
+// # VITE_API_BASE_URL= http://localhost:9000
