@@ -107,6 +107,30 @@ export async function createSystemNotification(title, message) {
 	});
 }
 
+// Create ticket-reply notification for a specific user
+export async function createTicketReplyNotification(ticketId, userId) {
+  // Primary expected route
+  const urlPrimary = `${API_BASE}/api/notifications/ticket-reply`;
+  const payload = { ticketId, userId };
+  const options = {
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeader(),
+    },
+    withCredentials: true,
+  };
+  try {
+    return await axios.post(urlPrimary, payload, options);
+  } catch (error) {
+    // Optional fallback route name if backend uses different naming
+    if (error?.response?.status === 404) {
+      const urlAlt = `${API_BASE}/api/notifications/ticket`;
+      return axios.post(urlAlt, payload, options);
+    }
+    throw error;
+  }
+}
+
 // Generic notification creation (fallback)
 export async function createNotification(notification) {
 	const url = `${API_BASE}/api/notifications/create`;

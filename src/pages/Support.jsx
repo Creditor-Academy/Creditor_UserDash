@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Search, Filter, Mail, AlertCircle, CheckCircle, Clock, ChevronDown, ChevronUp, Send, User, MessageSquare, Shield, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAllTickets, addReplyToTicket, updateTicketStatus } from '@/services/ticketService';
+import { createTicketReplyNotification } from '@/services/notificationService';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -183,6 +184,16 @@ const SupportTicketsPage = () => {
       await addReplyToTicket(ticketId, {
         message: replyText.trim()
       });
+
+      // Fire notification to the ticket owner via backend API only
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (ticket?.userId) {
+        try {
+          await createTicketReplyNotification(ticketId, ticket.userId);
+        } catch (notifyError) {
+          console.warn('Ticket reply notification API failed:', notifyError);
+        }
+      }
 
       // Refresh tickets to get the updated data
       const response = await getAllTickets();

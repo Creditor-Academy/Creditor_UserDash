@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
-  const { isInstructorOrAdmin } = useAuth();
+  const { isInstructorOrAdmin, hasRole } = useAuth();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -90,7 +90,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     try {
       const response = await fetchNotifications();
       // Backend returns: { success: true, notifications: [...] }
-      const notificationsRaw = response.data?.notifications || [];
+      let notificationsRaw = response.data?.notifications || [];
+      // Do not show ticket-reply notifications to admins
+      if (hasRole && hasRole('admin')) {
+        notificationsRaw = notificationsRaw.filter(n =>
+          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+        );
+      }
       const readAllAt = readReadAllAt();
       const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
       // Apply client-side read cutoff so items before readAllAt are treated as read
@@ -112,7 +118,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         return merged;
       });
       
-      const localItems = readLocalNotifications().map(n => {
+      let localItems = readLocalNotifications().map(n => {
         if (!readAllAtTime) return n;
         const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
         if (createdTime && createdTime <= readAllAtTime) {
@@ -120,6 +126,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
         }
         return n;
       });
+      if (hasRole && hasRole('admin')) {
+        localItems = localItems.filter(n =>
+          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+        );
+      }
       const unread = [...notifications, ...localItems].filter(n => !n.read).length;
       setUnreadNotifications(unread);
     } catch (err) {

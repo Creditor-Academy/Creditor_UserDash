@@ -90,7 +90,6 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         <div className="px-4 pb-4 overflow-y-auto">
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-4 mb-3 h-8 bg-gray-100 rounded-lg p-1">
-            <TabsList className="grid w-full grid-cols-4 mb-3 h-8 bg-gray-100 rounded-lg p-1">
               <TabsTrigger 
                 value="all" 
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
@@ -102,12 +101,6 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
               >
                 Unread
-              </TabsTrigger>
-              <TabsTrigger 
-                value="payment" 
-                className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
-              >
-                Payment
               </TabsTrigger>
               <TabsTrigger 
                 value="payment" 
