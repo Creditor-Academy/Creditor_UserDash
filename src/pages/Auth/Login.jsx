@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle } from "lucide-react";
 import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
-import logoCreditor from "@/assets/logo_creditor.png";
+// Removed logo import as logo display is no longer used
 import { useAuth } from "@/contexts/AuthContext";
 
 // ForgotPassword Component
@@ -231,9 +231,9 @@ export function Login() {
   };
 
   const features = [
-    { icon: <BookOpen className="h-5 w-5" />, text: "Expert-Led Courses" },
-    { icon: <Users className="h-5 w-5" />, text: "Professional Network" },
-    { icon: <Award className="h-5 w-5" />, text: "Industry Recognition" }
+    { icon: <BookOpen className="h-5 w-5" />, text: "Personalized, role-based learning paths" },
+    { icon: <Users className="h-5 w-5" />, text: "Real-time progress tracking and insights" },
+    { icon: <Award className="h-5 w-5" />, text: "Verified credentials and achievements" }
   ];
 
   return (
@@ -264,31 +264,23 @@ export function Login() {
       <div className="relative w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center p-4 lg:p-8">
         {/* Left Side - Branding */}
         <div className="hidden lg:flex flex-col items-start justify-center h-full text-slate-800 p-8">
-          {/* Logo and Brand */}
+          {/* Brand */}
           <div className={`transform transition-all duration-1000 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-blue-200/50">
-                <img src={logoCreditor} alt="Creditor Academy" className="w-10 h-10" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-700 bg-clip-text text-transparent">
-                  Creditor Academy
-                </h1>
-                <p className="text-slate-600 text-lg">Premier Private Education Platform</p>
-              </div>
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-700 bg-clip-text text-transparent">
+                LMS ATHENA
+              </h1>
+              <p className="text-slate-600 text-lg">Premier Private Education Platform</p>
             </div>
           </div>
 
           {/* Hero Content */}
           <div className={`transform transition-all duration-1000 delay-300 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
             <h2 className="text-4xl font-bold mb-6 leading-tight text-slate-800">
-              Master the Art of
-              <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Private Excellence
-              </span>
+              Unlock the Future of Learning with Athena
             </h2>
             <p className="text-lg text-slate-600 leading-relaxed mb-8">
-              Join thousands of professionals who have transformed their careers through our comprehensive, expert-led courses.
+              Experience a next-gen platform built to empower your growth through personalized, role-based education.
             </p>
           </div>
 
@@ -309,13 +301,10 @@ export function Login() {
         <div className="flex items-center justify-center p-4 lg:p-8">
           <Card className={`w-full max-w-md bg-white/95 backdrop-blur-sm border border-blue-100/50 shadow-2xl transform transition-all duration-1000 ${animateCard ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-95'}`}>
             <CardHeader className="space-y-4 text-center pb-6">
-              {/* Mobile Logo */}
+              {/* Mobile Brand (logo removed) */}
               <div className="flex items-center justify-center gap-3 lg:hidden mb-2">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border border-blue-200/50">
-                  <img src={logoCreditor} alt="Creditor Academy" className="w-6 h-6" />
-                </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Creditor Academy</h2>
+                  <h2 className="text-lg font-bold text-slate-800">LMS ATHENA</h2>
                   <p className="text-xs text-slate-600">Private Education Platform</p>
                 </div>
               </div>
