@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User } from "lucide-react";
+import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User, Menu } from "lucide-react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
@@ -14,7 +14,7 @@ import { fetchDetailedUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
 
-export function DashboardHeader() {
+export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const { isInstructorOrAdmin } = useAuth();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
@@ -371,25 +371,34 @@ export function DashboardHeader() {
   return (
     <>
       <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95">
-        <div className="container h-16 flex items-center justify-between px-6">
-          {/* Logo/Brand */}
-          <button
-            className="flex items-center focus:outline-none"
-            onClick={() => {
-              if (window.location.pathname === '/dashboard') {
-                window.location.reload();
-              } else {
-                window.location.href = '/dashboard';
-              }
-            }}
-          >
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              LMS Athena 
-            </h1>
-          </button>
+        <div className="h-16 flex items-center justify-between px-4 sm:px-6">
+          {/* Left: Mobile menu + Logo */}
+          <div className="flex items-center gap-3">
+            <button
+              className="lg:hidden p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+              aria-label="Open menu"
+              onClick={() => onMobileMenuClick && onMobileMenuClick()}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <button
+              className="flex items-center focus:outline-none"
+              onClick={() => {
+                if (window.location.pathname === '/dashboard') {
+                  window.location.reload();
+                } else {
+                  window.location.href = '/dashboard';
+                }
+              }}
+            >
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                LMS Athena 
+              </h1>
+            </button>
+          </div>
           
           {/* Search Bar */}
-          <div className="flex-1 max-w-md mx-8 relative">
+          <div className="hidden md:block flex-1 max-w-md mx-8 relative">
             <form onSubmit={handleSearchSubmit} className="relative">
               <span className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400">
                 {isSearching ? (
