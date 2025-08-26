@@ -1,0 +1,9 @@
+# Handle client-side routing for SPA
+/*    /index.html   200
+
+# Handle specific file types
+/*.js    /index.html   200
+/*.css    /index.html   200
+/*.png    /index.html   200
+/*.jpg    /index.html   200
+/*.svg    /index.html   200
