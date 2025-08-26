@@ -10,7 +10,7 @@ import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
 import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
-import { fetchDetailedUserProfile, fetchUserCoursesByUserId } from "@/services/userService";
+import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
@@ -32,6 +32,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState(null);
+  const [viewerTimezone, setViewerTimezone] = useState(null);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -51,6 +52,21 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     };
 
     fetchEnrolledCourses();
+  }, []);
+
+  // Fetch current viewer profile to get timezone for consistent date formatting
+  useEffect(() => {
+    const loadViewerProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        if (profile && (profile.timezone || profile.timeZone)) {
+          setViewerTimezone(profile.timezone || profile.timeZone);
+        }
+      } catch (e) {
+        // Non-fatal
+      }
+    };
+    loadViewerProfile();
   }, []);
 
   // Debounced search effect
@@ -177,29 +193,42 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     try {
       if (isInstructorOrAdmin()) {
         // For instructors/admins, fetch detailed profile
-        const userData = await fetchDetailedUserProfile(userId);
+        let userData = await fetchDetailedUserProfile(userId);
+
+        // Fallback: if no activity_log/last_login present, try pulling from admin user list
+        if (!userData?.activity_log || userData.activity_log.length === 0) {
+          try {
+            const allUsers = await fetchAllUsersAdmin();
+            const match = (allUsers || []).find(u => u.id === userId);
+            if (match?.activity_log && match.activity_log.length > 0) {
+              userData = { ...userData, activity_log: match.activity_log };
+            }
+          } catch (e) {
+            // Non-fatal: keep userData as-is
+          }
+        }
+
         setSelectedUser(userData);
       } else {
-        // For regular users, use search results data and enhance it
-        const users = searchResults.results?.users || [];
-        const userData = users.find(user => user.id === userId);
-        
-        if (userData) {
-          // Try to fetch additional data that regular users can access
+        // For regular users, fetch public-safe profile, then merge courses
+        try {
+          const publicProfile = await fetchPublicUserProfile(userId);
           try {
             const coursesData = await fetchUserCoursesByUserId(userId);
-            const enhancedUserData = {
-              ...userData,
-              courses: coursesData || []
-            };
-            setSelectedUser(enhancedUserData);
+            setSelectedUser({ ...publicProfile, courses: coursesData || [] });
           } catch (coursesError) {
             console.warn('Could not fetch courses for user:', coursesError);
-            // Still show the user data even if courses fail
-            setSelectedUser(userData);
+            setSelectedUser(publicProfile);
           }
-        } else {
-          setUserDetailsError('User data not found');
+        } catch (publicErr) {
+          console.warn('Could not fetch public user profile, fallback to search result user:', publicErr);
+          const users = searchResults.results?.users || [];
+          const fallback = users.find(user => user.id === userId);
+          if (fallback) {
+            setSelectedUser(fallback);
+          } else {
+            setUserDetailsError('User data not found');
+          }
         }
       }
     } catch (error) {
@@ -480,6 +509,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           isLoading={userDetailsLoading}
           error={userDetailsError}
           isInstructorOrAdmin={isInstructorOrAdmin()}
+          viewerTimezone={viewerTimezone}
         />
       </header>
 
