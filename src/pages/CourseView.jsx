@@ -3,7 +3,6 @@ import { useParams, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText, Lock, ShieldCheck, CreditCard, Wallet, Banknote, ArrowRight, CheckCircle2 } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
 import { fetchUserCoursesByUserId } from "@/services/userService";
@@ -354,20 +353,18 @@ export function CourseView() {
                 const isNextUnlockable = nextUnlockableModuleId === String(module.id);
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!isUnlocked) ? 'opacity-75' : ''}`}>
+                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!isUnlocked || !hasContent) ? 'opacity-75' : ''}`}>
                       <div className="aspect-video relative overflow-hidden bg-gray-100">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
-                          className="w-full h-full object-contain p-2"
+                          className="w-full h-full object-cover"
                         />
-                        {/* Lock overlay for locked modules (non-enrolled or no content) */}
-                        {!isUnlocked && (
+                        {/* Overlay for locked or upcoming modules */}
+                        {(!isUnlocked || !hasContent) && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="bg-white/95 rounded-full p-4 shadow-xl">
-                              <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
+                              <Clock className="w-8 h-8 text-gray-700" />
                             </div>
                           </div>
                         )}
@@ -411,9 +408,10 @@ export function CourseView() {
                               </Link>
                             </>
                           ) : (!hasContent ? (
-                            <div className="w-full flex flex-col gap-2 items-center">
-                              <Badge variant="secondary" className="w-full justify-center">Upcoming module</Badge>
-                            </div>
+                            <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
+                              <Clock size={16} className="mr-2" />
+                              <span className="font-medium">Upcoming Module</span>
+                            </Button>
                           ) : (
                             <div className="w-full flex flex-col gap-2">
                               <Button 
