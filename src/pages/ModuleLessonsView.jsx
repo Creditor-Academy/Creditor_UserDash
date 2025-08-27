@@ -47,7 +47,6 @@ const ModuleLessonsView = () => {
   const [newLesson, setNewLesson] = useState({
     title: "",
     description: "",
-    duration: 0,
     order: 1,
     status: "DRAFT",
   });
@@ -109,7 +108,13 @@ const ModuleLessonsView = () => {
           : [lessonsResponse.data.lessons];
       }
       
-      setLessons(lessonsData);
+      // Normalize lesson data to ensure consistent field names
+      const normalizedLessons = lessonsData.map(lesson => ({
+        ...lesson,
+        status: lesson.status || lesson.lesson_status || 'DRAFT'
+      }));
+      
+      setLessons(normalizedLessons);
       
       // Set the next order number for new lessons
       const maxOrder = lessonsData.length > 0 
@@ -133,7 +138,6 @@ const ModuleLessonsView = () => {
       const lessonData = {
         title: newLesson.title,
         description: newLesson.description,
-        duration: parseInt(newLesson.duration) || 0,
         order: parseInt(newLesson.order) || 1,
         status: newLesson.status,
       };
@@ -158,7 +162,6 @@ const ModuleLessonsView = () => {
       setNewLesson({
         title: "",
         description: "",
-        duration: 0,
         order: newLesson.order + 1, // Increment order for next lesson
         status: "DRAFT",
       });
@@ -200,9 +203,8 @@ const ModuleLessonsView = () => {
       const updateData = {};
       if (currentLesson.title) updateData.title = currentLesson.title;
       if (currentLesson.description) updateData.description = currentLesson.description;
-      if (currentLesson.duration !== undefined) updateData.duration = parseInt(currentLesson.duration) || 0;
       if (currentLesson.order !== undefined) updateData.order = parseInt(currentLesson.order) || 1;
-      if (currentLesson.status) updateData.status = currentLesson.status;
+      if (currentLesson.status !== undefined) updateData.lesson_status = currentLesson.status;
       
       const response = await axios.patch(
         `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
@@ -216,10 +218,9 @@ const ModuleLessonsView = () => {
         }
       );
       
-      // Update the lesson in the state with the response data
-      const updatedLesson = response.data.data || response.data;
+      // Update the lesson in the state with the current lesson data (user's changes)
       setLessons(prev => prev.map(lesson => 
-        lesson.id === currentLesson.id ? { ...lesson, ...updatedLesson } : lesson
+        lesson.id === currentLesson.id ? { ...lesson, ...currentLesson } : lesson
       ));
       
       setShowUpdateDialog(false);
@@ -254,7 +255,6 @@ const ModuleLessonsView = () => {
   const handleOpenUpdateDialog = (lesson) => {
     setCurrentLesson({
       ...lesson,
-      duration: lesson.duration || 0,
       order: lesson.order || 1,
       status: lesson.status || 'DRAFT'
     });
@@ -291,13 +291,6 @@ const ModuleLessonsView = () => {
       return title.includes(query) || description.includes(query);
     });
   }, [lessons, searchQuery]);
-
-  const formatDuration = (minutes) => {
-    if (!minutes) return "N/A";
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
 
   const handleLessonClick = (lesson) => {
     // Simply navigate to the builder - we'll fetch content there
@@ -429,12 +422,6 @@ const ModuleLessonsView = () => {
                     {lesson.status || 'DRAFT'}
                   </Badge>
                 </div>
-                {lesson.duration && (
-                  <div className="flex items-center text-sm text-gray-500 mt-1">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {formatDuration(lesson.duration)}
-                  </div>
-                )}
               </CardHeader>
               <CardContent className="pb-4">
                 <p className="text-sm text-gray-600 line-clamp-3 mb-4">
@@ -555,19 +542,6 @@ const ModuleLessonsView = () => {
             </div>
             
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration (minutes) *</Label>
-                <Input
-                  id="duration"
-                  name="duration"
-                  type="number"
-                  min="1"
-                  value={newLesson.duration}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 30"
-                  required
-                />
-              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="order">Order *</Label>
@@ -664,20 +638,6 @@ const ModuleLessonsView = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration (minutes) *</Label>
-                <Input
-                  id="duration"
-                  name="duration"
-                  type="number"
-                  min="1"
-                  value={currentLesson?.duration}
-                  onChange={(e) => setCurrentLesson(prev => ({ ...prev, duration: e.target.value }))}
-                  placeholder="e.g. 30"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="order">Order *</Label>
                 <Input
                   id="order"
@@ -690,22 +650,22 @@ const ModuleLessonsView = () => {
                   required
                 />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select 
-                value={currentLesson?.status} 
-                onValueChange={(value) => setCurrentLesson(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="DRAFT">Draft</SelectItem>
-                  <SelectItem value="PUBLISHED">Published</SelectItem>
-                </SelectContent>
-              </Select>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={currentLesson?.status} 
+                  onValueChange={(value) => setCurrentLesson(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="PUBLISHED">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           
