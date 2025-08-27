@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ChevronLeft, Clock, BookOpen, AlertTriangle, Loader2, CheckCircle, Award, BarChart2 } from "lucide-react";
-import { getModuleQuizById, startQuiz } from "@/services/quizService";
+import { getModuleQuizById, startQuiz, getQuizMetaById } from "@/services/quizService";
 import { toast } from "sonner";
 
 function QuizInstructionPage() {
@@ -22,18 +22,27 @@ function QuizInstructionPage() {
   const [isStarting, setIsStarting] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [error, setError] = useState("");
+  const [showEmptyQuizModal, setShowEmptyQuizModal] = useState(false);
 
   useEffect(() => {
     const fetchQuizData = async () => {
       try {
         setIsLoading(true);
-        // Prefer quiz data passed via navigation state
-        if (location.state && location.state.quiz) {
-          setQuizData(location.state.quiz);
-        } else {
-          const data = await getModuleQuizById(moduleId, quizId);
-          setQuizData(data);
-        }
+        // Base quiz data (from state or API)
+        let base = location.state && location.state.quiz
+          ? location.state.quiz
+          : await getModuleQuizById(moduleId, quizId);
+
+        // Always fetch meta for accurate counts/scores
+        let meta = null;
+        try {
+          meta = await getQuizMetaById(quizId);
+        } catch {}
+
+        setQuizData({
+          ...(base || {}),
+          ...(meta || {}),
+        });
       } catch (err) {
         console.error('Error fetching quiz:', err);
         setError('Failed to load quiz data');
@@ -50,12 +59,14 @@ function QuizInstructionPage() {
 
   // Consolidated instructions
   const instructions = [
-    ` Time Limit: ${quizData?.timeLimit || 25} minutes`,
-    ` Questions: ${quizData?.questionCount || 'Multiple'} questions of various types`,
-    ` Passing Score: ${quizData?.passingScore || 70}% required`,
-    ` Attempts: ${quizData?.maxAttempts || 3} attempts allowed`,
+    ` Time Limit: Unlimited`,
+    ` Questions: ${quizData?.questionCount || quizData?.question_count || 'Multiple'} questions of various types`,
+    ` Passing Score: ${quizData?.passingScore || quizData?.min_score || 70}% required`,
+    ` Attempts: ${quizData?.maxAttempts ?? quizData?.maxAttempts === 0 ? quizData?.maxAttempts : (quizData?.max_attempts || 3)} attempts allowed`,
+    ` Total Score: ${quizData?.totalScore ?? quizData?.max_score ?? '-'}`,
     " Your progress will be saved automatically",
-    " No changes allowed after submission"
+    " No changes allowed after submission",
+    " Ensure stable internet connection during the quiz"
   ];
 
   const handleStartQuiz = async () => {
@@ -85,12 +96,15 @@ function QuizInstructionPage() {
       if (startResponse.questions && Array.isArray(startResponse.questions)) {
         questions = startResponse.questions;
         console.log('Questions found in start response');
+        console.log('Sample question structure:', questions[0]);
       } else if (startResponse.quiz && startResponse.quiz.questions) {
         questions = startResponse.quiz.questions;
         console.log('Questions found in start response.quiz');
+        console.log('Sample question structure:', questions[0]);
       } else if (startResponse.data && startResponse.data.questions) {
         questions = startResponse.data.questions;
         console.log('Questions found in start response.data');
+        console.log('Sample question structure:', questions[0]);
       }
       
       // 2. If no questions in start response, try to get from existing quiz data
@@ -113,7 +127,104 @@ function QuizInstructionPage() {
         }
       }
       
-      // 4. Final check - if we still have no questions, show error
+      // Normalize question objects to ensure consistent fields (id, type, options)
+      const normalizeQuestion = (q, index) => {
+        const normalizedId =
+          q?.id || q?._id || q?.question_id || q?.questionId || `${index + 1}`;
+        
+        // Get the question type from the backend field 'question_type' or fallback to 'type'
+        const rawType = q?.question_type || q?.type || q?.questionType || q?.kind || "";
+        
+        // Map backend question types to frontend types
+        let normalizedType = "";
+        if (rawType) {
+          switch (rawType.toUpperCase()) {
+            case 'MCQ':
+              normalizedType = 'mcq';
+              break;
+            case 'SCQ':
+              normalizedType = 'scq';
+              break;
+            case 'TRUE_FALSE':
+              normalizedType = 'truefalse';
+              break;
+            case 'FILL_UPS':
+              normalizedType = 'fill_blank';
+              break;
+            case 'ONE_WORD':
+              normalizedType = 'one_word';
+              break;
+            default:
+              normalizedType = rawType.toLowerCase();
+          }
+        }
+        
+        // If no type found, infer from structure
+        if (!normalizedType) {
+          if (Array.isArray(q?.options) && q.options.length > 0) {
+            normalizedType = "mcq";
+          } else if (q?.options === null || q?.options === undefined) {
+            // Backend sends null options for non-MCQ questions
+            // Use the backend question_type if available, don't default to descriptive
+            if (rawType) {
+              switch (rawType.toUpperCase()) {
+                case 'ONE_WORD':
+                  normalizedType = 'one_word';
+                  break;
+                case 'FILL_UPS':
+                  normalizedType = 'fill_blank';
+                  break;
+                case 'TRUE_FALSE':
+                  normalizedType = 'truefalse';
+                  break;
+                case 'SCQ':
+                  normalizedType = 'scq';
+                  break;
+                default:
+                  normalizedType = rawType.toLowerCase();
+              }
+            } else {
+              normalizedType = "descriptive";
+            }
+          } else {
+            normalizedType = "descriptive";
+          }
+        }
+        
+        // Prefer a unified options array if present under different keys
+        const unifiedOptions =
+          q?.options || q?.choices || q?.answerOptions || null;
+
+        const normalizedQuestion = {
+          ...q,
+          id: normalizedId,
+          type: normalizedType,
+          options: unifiedOptions ?? q?.options,
+        };
+        
+        console.log('Normalized question:', {
+          originalType: q?.question_type || q?.type,
+          normalizedType: normalizedType,
+          options: normalizedQuestion.options,
+          id: normalizedQuestion.id
+        });
+        
+        return normalizedQuestion;
+      };
+
+      if (questions.length > 0) {
+        questions = questions.map((q, idx) => normalizeQuestion(q, idx));
+        console.log("Normalized questions:", questions);
+        console.log("Question types found:", questions.map(q => ({ 
+          id: q.id, 
+          type: q.type, 
+          backendType: q.question_type,
+          options: q.options,
+          hasOptions: Array.isArray(q.options) && q.options.length > 0
+        })));
+      }
+
+      // 4. Final check - if we still have no questions, show modal and stop
       if (questions.length === 0) {
         console.error('No questions found in any source:', {
           startResponse,
@@ -121,7 +232,7 @@ function QuizInstructionPage() {
           moduleId,
           quizId
         });
-        toast.error('Unable to load quiz questions. Please contact support or try again later.');
+        setShowEmptyQuizModal(true);
         return;
       }
       
@@ -177,6 +288,35 @@ function QuizInstructionPage() {
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
+      {/* Empty Quiz Modal */}
+      {showEmptyQuizModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowEmptyQuizModal(false); navigate(-1); }} />
+          <div className="relative z-10 w-full max-w-md mx-auto">
+            <Card className="overflow-hidden border border-gray-200 shadow-xl">
+              <CardHeader className="bg-indigo-50 border-b border-indigo-100">
+                <CardTitle className="text-indigo-700 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-indigo-600" />
+                  No Questions Available
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <p className="text-gray-700">
+                  This quiz contains no questions at the moment. Please go back and attempt another assessment.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={() => setShowEmptyQuizModal(false)}>
+                    Stay
+                  </Button>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => navigate(-1)}>
+                    Go Back
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <Button variant="outline" onClick={() => navigate(-1)} className="border-gray-300">
@@ -203,34 +343,34 @@ function QuizInstructionPage() {
                 {quizData.description || 'Test your knowledge with this comprehensive quiz'}
               </p>
               
-              {/* Quiz Details */}
+              {/* Quiz Details (Duration moved to instructions) */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
-                  <Clock className="h-5 w-5 text-indigo-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Duration</p>
-                    <p className="font-bold">{quizData.timeLimit || 25} min</p>
-                  </div>
-                </div>
                 <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                   <BookOpen className="h-5 w-5 text-blue-600" />
                   <div>
                     <p className="text-sm text-gray-600">Questions</p>
-                    <p className="font-bold">{quizData.questionCount || 'Multiple'}</p>
+                    <p className="font-bold">{quizData.questionCount ?? quizData.question_count ?? '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                   <Award className="h-5 w-5 text-green-600" />
                   <div>
-                    <p className="text-sm text-gray-600">Passing</p>
-                    <p className="font-bold">{quizData.passingScore || 70}%</p>
+                    <p className="text-sm text-gray-600">Min Score</p>
+                    <p className="font-bold">{quizData.min_score ?? 70}%</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                   <BarChart2 className="h-5 w-5 text-purple-600" />
                   <div>
                     <p className="text-sm text-gray-600">Attempts</p>
-                    <p className="font-bold">{quizData.maxAttempts || 3}</p>
+                    <p className="font-bold">{quizData.maxAttempts ?? quizData.max_attempts ?? '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
+                  <Award className="h-5 w-5 text-amber-600" />
+                  <div>
+                    <p className="text-sm text-gray-600">Total Score</p>
+                    <p className="font-bold">{quizData.totalScore ?? quizData.max_score ?? '-'}</p>
                   </div>
                 </div>
               </div>

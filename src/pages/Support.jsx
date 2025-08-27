@@ -565,6 +565,7 @@ const SupportTicketsPage = () => {
         )}
       </Card>
       
+      
       {/* Reply Dialog */}
       <Dialog open={isReplyDialogOpen} onOpenChange={setIsReplyDialogOpen}>
         <DialogContent>
