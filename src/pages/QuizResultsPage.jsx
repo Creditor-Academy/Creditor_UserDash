@@ -164,7 +164,7 @@ function QuizResultsPage() {
     <div className="container py-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-3)}>
           <BookOpen size={16} />
           Back to Quiz
         </Button>
@@ -197,13 +197,7 @@ function QuizResultsPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
-                    <Clock className="h-6 w-6 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Duration</p>
-                      <p className="text-lg font-semibold text-gray-900">{quizData?.quiz?.time_limit || quizData?.timeLimit || 25} minutes</p>
-                    </div>
-                  </div>
+                  
                   
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
                     <CheckCircle className="h-6 w-6 text-purple-600" />
