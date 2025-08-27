@@ -1874,7 +1874,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             <div >
                               <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
-                          ) : lessonContent?.data?.content ? (
+                          ) : lessonContent?.data?.content && lessonContent.data.content.length > 0 ? (
                             <div >
                               <div >
                                 {lessonContent.data.content.map((block, index) => (
@@ -1973,17 +1973,51 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               </div>
                             </div>
                           ) : (
-                            <div>
-                              <p className="text-gray-600 mb-6">
-                                Choose content blocks from the sidebar to create engaging learning content.
-                              </p>
-                              <Button
-                                onClick={() => setShowTextTypeSidebar(true)}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Text Block
-                              </Button>
+                            <div className="max-w-2xl mx-auto text-center py-12">
+                              <div className="mb-8">
+                                <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                                  No Content Available
+                                </h3>
+                                <p className="text-gray-500 mb-6">
+                                  This lesson doesn't have any content yet. Start building your lesson by adding content blocks from the Content Library.
+                                </p>
+                              </div>
+                              
+                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                                <h4 className="text-sm font-medium text-blue-800 mb-2">
+                                  💡 Getting Started
+                                </h4>
+                                <p className="text-sm text-blue-700 mb-4">
+                                  Use the <strong>Content Library</strong> on the left to add text, images, videos, and other interactive elements to your lesson.
+                                </p>
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                  <Button
+                                    onClick={() => setShowTextTypeSidebar(true)}
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Text
+                                  </Button>
+                                  <Button
+                                    onClick={() => setShowImageTemplateSidebar(true)}
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Image
+                                  </Button>
+                                  <Button
+                                    onClick={() => setShowVideoDialog(true)}
+                                    size="sm"
+                                    variant="outline"
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Video
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
