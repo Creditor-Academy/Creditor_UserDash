@@ -326,35 +326,43 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   ];
 
+  // Modify the text types array to include specific styles
   const textTypes = [
     {
       id: 'heading',
-      // title: 'Heading',
-      // description: 'Large section heading',
       icon: <Heading1 className="h-5 w-5" />,
       preview: <h1 className="text-2xl font-bold mb-2">Heading</h1>,
-      defaultContent: '<h1>Heading</h1>'
+      defaultContent: '<h1 class="text-2xl font-bold text-gray-800">Heading</h1>',
+      style: {
+        fontSize: '24px',
+        fontWeight: 'bold',
+        color: '#1F2937'
+      }
     },
     {
       id: 'subheading',
-      // title: 'Subheading',
-      // description: 'Medium section heading',
       icon: <Heading2 className="h-5 w-5" />,
       preview: <h2 className="text-xl font-semibold mb-2">Subheading</h2>,
-      defaultContent: '<h2>Subheading</h2>'
+      defaultContent: '<h2 class="text-xl font-semibold text-gray-800">Subheading</h2>',
+      style: {
+        fontSize: '20px',
+        fontWeight: '600',
+        color: '#374151'
+      }
     },
     {
       id: 'paragraph',
-      // title: 'Paragraph',
-      // description: 'Regular text content',  
       icon: <Text className="h-5 w-5" />,
-      preview: <p className="text-gray-700">This is a paragraph of text. You can add your content here.</p>,
-      defaultContent: '<p>Start typing your text here...</p>'
+      preview: <p className="text-gray-700">This is a paragraph of text.</p>,
+      defaultContent: '<p class="text-base text-gray-700">Start typing your text here...</p>',
+      style: {
+        fontSize: '16px',
+        lineHeight: '1.6',
+        color: '#4B5563'
+      }
     },
     {
       id: 'heading_paragraph',
-      // title: 'Heading with Paragraph',
-      // description: 'Heading followed by text',
       icon: <Type className="h-5 w-5" />,
       preview: (
         <div>
@@ -366,8 +374,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     },
     {
       id: 'subheading_paragraph',
-      // title: 'Subheading with Paragraph',
-      // description: 'Subheading followed by text',
       icon: <Type className="h-5 w-5" />,
       preview: (
         <div>
@@ -750,75 +756,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       let css = '';
       let js = '';
 
-      switch (block.type) {
-        case 'text':
-          if (block.textType === 'heading') {
-            html = `<div class="lesson-block heading-block">
-              <h1>${block.content}</h1>
-            </div>`;
-            css = `.heading-block h1 {
-              font-size: 2rem;
-              font-weight: bold;
-              margin-bottom: 1rem;
-              color: #1a1a1a;
-            }`;
-          } else if (block.textType === 'subheading') {
-            html = `<div class="lesson-block subheading-block">
-              <h2>${block.content}</h2>
-            </div>`;
-            css = `.subheading-block h2 {
-              font-size: 1.5rem;
-              font-weight: 600;
-              margin-bottom: 0.875rem;
-              color: #2a2a2a;
-            }`;
-          } else if (block.textType === 'table') {
-            html = `<div class="lesson-block table-block">
-              ${block.content}
-            </div>`;
-            css = `.table-block table {
-              width: 100%;
-              border-collapse: collapse;
-            }`;
-          } else {
-            html = `<div class="lesson-block paragraph-block">
-              <p>${block.content}</p>
-            </div>`;
-            css = `.paragraph-block p {
-              font-size: 1rem;
-              line-height: 1.6;
-              margin-bottom: 1rem;
-              color: #333;
-            }`;
-          }
-          break;
+      if (block.type === 'text') {
+        const textType = textTypes.find(t => t.id === block.textType);
+        const style = block.style || textType?.style || {};
+        const styleString = Object.entries(style)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('; ');
 
-        case 'image':
-          html = `<div class="lesson-block image-block ${block.layout || 'centered'}">
-            <img src="${block.imageUrl}" alt="${block.imageTitle || ''}" />
-            ${block.imageDescription ? `<p class="image-caption">${block.imageDescription}</p>` : ''}
-          </div>`;
-          css = `.image-block {
-            margin: 1.5rem 0;
-          }
-          .image-block img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-          }
-          .image-block.centered {
-            text-align: center;
-          }
-          .image-caption {
-            font-size: 0.875rem;
-            color: #666;
-            margin-top: 0.5rem;
-            text-align: center;
-          }`;
-          break;
-
-        // Add other cases for different block types here
+        html = `<div class="lesson-block text-block" style="${styleString}">${block.content}</div>`;
       }
+      // ...existing code for other block types...
 
       return { html, css, js };
     });
@@ -1168,11 +1115,43 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     const blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
 
     if (blockToUpdate) {
-      let updatedContent = editorHtml;
+      let updatedContent = '';
+      const textType = textTypes.find(t => t.id === blockToUpdate.textType);
+
       if (blockToUpdate.textType === 'heading_paragraph') {
-        updatedContent = editorHeading + editorContent;
+        updatedContent = `
+          <div class="content-block">
+            <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
+              ${editorHeading}
+            </h1>
+            <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+              ${editorContent}
+            </div>
+          </div>
+        `;
       } else if (blockToUpdate.textType === 'subheading_paragraph') {
-        updatedContent = editorSubheading + editorContent;
+        updatedContent = `
+          <div class="content-block">
+            <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
+              ${editorSubheading}
+            </h2>
+            <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+              ${editorContent}
+            </div>
+          </div>
+        `;
+      } else {
+        // For single content blocks (heading, subheading, paragraph)
+        const style = textType?.style || {};
+        const styleString = Object.entries(style)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('; ');
+
+        updatedContent = `
+          <div class="content-block" style="${styleString}">
+            ${editorHtml}
+          </div>
+        `;
       }
 
       setContentBlocks(blocks =>
@@ -1180,23 +1159,28 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           block.id === currentTextBlockId
             ? {
                 ...block,
-                title: editorTitle,
                 content: updatedContent,
                 heading: blockToUpdate.textType === 'heading_paragraph' ? editorHeading : block.heading,
                 subheading: blockToUpdate.textType === 'subheading_paragraph' ? editorSubheading : block.subheading,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                style: textType?.style || {}
               }
             : block
         )
       );
     } else {
-      // This part remains the same for adding new blocks
+      // For new blocks
       const newBlock = {
         id: `text_${Date.now()}`,
         type: 'text',
         title: editorTitle,
-        content: editorHtml,
-        textType: 'paragraph', // Or determine based on how you add new blocks
+        content: `
+          <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+            ${editorHtml}
+          </div>
+        `,
+        textType: 'paragraph',
+        style: textTypes.find(t => t.id === 'paragraph')?.style || {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -2678,7 +2662,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Heading
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '150px' }}>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '120px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorHeading}
@@ -2701,7 +2685,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Paragraph
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '200px' }}>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '230px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorContent}
@@ -2717,7 +2701,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               ]
                             }}
                             placeholder="Type and format your paragraph text here"
-                            style={{ height: '150px' }}
+                            style={{ height: '180px' }}
                           />
                         </div>
                       </div>
@@ -2733,7 +2717,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Subheading
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '150px' }}>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '120px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorSubheading}
@@ -2756,7 +2740,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Paragraph
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '200px' }}>
+                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '230px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorContent}
@@ -2772,7 +2756,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               ]
                             }}
                             placeholder="Type and format your paragraph text here"
-                            style={{ height: '150px' }}
+                            style={{ height: '180px' }}
                           />
                         </div>
                       </div>
@@ -2838,8 +2822,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             toolbar: [
                               [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
                               ['bold', 'italic', 'underline', 'strike'],
-                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                              ['link', 'image'],
+                              [{ 'color': [] }, { 'background': [] }],
+                              [{ 'align': [] }],
                               ['clean']
                             ]
                           }}
@@ -3284,7 +3268,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="max-w-full h-auto max-h-64 rounded-lg"
+                    className="max-w-full h-auto max-h-64 rounded-lg border"
                   />
                 </div>
               )}
