@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText, Lock, ShieldCheck, CreditCard, Wallet, Banknote, ArrowRight, CheckCircle2 } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
+import { fetchUserCoursesByUserId } from "@/services/userService";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,8 @@ import { Label } from "@/components/ui/label";
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
-  const hasAccess = location.state?.isAccessible ?? true;
+  // Fallback hint from navigation; real enrollment will be checked via API
+  const navIsAccessible = location.state?.isAccessible;
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -34,6 +36,8 @@ export function CourseView() {
     email: ""
   });
   const [paymentErrors, setPaymentErrors] = useState({});
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [checkedEnrollment, setCheckedEnrollment] = useState(false);
 
   // Visual metadata for payment methods
   const paymentMethods = [
@@ -71,6 +75,27 @@ export function CourseView() {
     };
     if (courseId) fetchData();
   }, [courseId]);
+
+  // Determine enrollment robustly; fall back to nav state if API not available
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      try {
+        const uid = localStorage.getItem('userId');
+        if (!uid) {
+          setIsEnrolled(Boolean(navIsAccessible));
+          return;
+        }
+        const userCourses = await fetchUserCoursesByUserId(uid);
+        const enrolled = Array.isArray(userCourses) && userCourses.some(c => String(c.id) === String(courseId));
+        setIsEnrolled(enrolled);
+      } catch {
+        setIsEnrolled(Boolean(navIsAccessible));
+      } finally {
+        setCheckedEnrollment(true);
+      }
+    };
+    if (courseId) checkEnrollment();
+  }, [courseId, navIsAccessible]);
 
   // Load unlocked modules from localStorage after modules are loaded
   useEffect(() => {
@@ -120,7 +145,11 @@ export function CourseView() {
 
   const getModulePrice = (module, index) => {
     // Prefer explicit price if present; else derive a stable demo price
-    if (module && module.price) return Number(module.price);
+    // Treat 0 or empty as "no explicit price" so we fall back to demo pricing
+    const explicitPrice = Number(module?.price);
+    if (!Number.isNaN(explicitPrice) && explicitPrice > 0) {
+      return explicitPrice;
+    }
     const base = 9.99;
     const delta = (index % 3) * 5; // 0, 5, 10
     return base + delta;
@@ -318,7 +347,8 @@ export function CourseView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredModules.map((module) => {
-                const isUnlocked = hasAccess || unlockedModules.includes(String(module.id));
+                const hasContent = Boolean(module.resource_url);
+                const isUnlocked = isEnrolled || unlockedModules.includes(String(module.id));
                 const sortedIndex = sortedModules.findIndex(m => String(m.id) === String(module.id));
                 const price = getModulePrice(module, sortedIndex);
                 const isNextUnlockable = nextUnlockableModuleId === String(module.id);
@@ -365,7 +395,7 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          {isUnlocked && module.resource_url ? (
+                          {isUnlocked && hasContent ? (
                             <>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
                                 <Button className="w-full">
@@ -380,6 +410,10 @@ export function CourseView() {
                                 </Button> */}
                               </Link>
                             </>
+                          ) : (!hasContent ? (
+                            <div className="w-full flex flex-col gap-2 items-center">
+                              <Badge variant="secondary" className="w-full justify-center">Upcoming module</Badge>
+                            </div>
                           ) : (
                             <div className="w-full flex flex-col gap-2">
                               <Button 
@@ -393,11 +427,8 @@ export function CourseView() {
                               {!isNextUnlockable && (
                                 <span className="text-xs text-muted-foreground text-center">Unlock previous first</span>
                               )}
-                              {!module.resource_url && (
-                                <span className="text-[10px] text-muted-foreground text-center">Content coming soon — unlocking is for demo only</span>
-                              )}
                             </div>
-                          )}
+                          ))}
                         </CardFooter>
                       </div>
                     </Card>
