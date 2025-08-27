@@ -143,6 +143,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [linkError, setLinkError] = useState('');
   const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
   const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
+  const [showTableTemplateSidebar, setShowTableTemplateSidebar] = useState(false);
   const [showImageEditDialog, setShowImageEditDialog] = useState(false);
   const [currentImageBlock, setCurrentImageBlock] = useState(null);
   const [imageTemplateText, setImageTemplateText] = useState('');
@@ -205,6 +206,78 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   ];
 
+  // Table/Columns templates
+  const tableTemplates = [
+    {
+      id: 'two_columns',
+      title: 'Two Columns',
+      description: 'Responsive two-column layout for side-by-side content',
+      icon: <Table className="h-6 w-6" />,
+      defaultContent: `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="p-4 rounded-lg border bg-white shadow-sm">
+            <h3 class="text-lg font-semibold mb-2">Left Column</h3>
+            <p class="text-gray-600">Add your content here. You can include text, lists, or images.</p>
+          </div>
+          <div class="p-4 rounded-lg border bg-white shadow-sm">
+            <h3 class="text-lg font-semibold mb-2">Right Column</h3>
+            <p class="text-gray-600">Add your content here. You can include text, lists, or images.</p>
+          </div>
+        </div>`
+    },
+    {
+      id: 'three_columns',
+      title: 'Three Columns',
+      description: 'Balanced three-column layout for features or highlights',
+      icon: <Table className="h-6 w-6" />,
+      defaultContent: `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="p-4 rounded-lg border bg-white shadow-sm">
+            <h3 class="text-base font-semibold mb-2">Column One</h3>
+            <p class="text-gray-600">Add your content here.</p>
+          </div>
+          <div class="p-4 rounded-lg border bg-white shadow-sm">
+            <h3 class="text-base font-semibold mb-2">Column Two</h3>
+            <p class="text-gray-600">Add your content here.</p>
+          </div>
+          <div class="p-4 rounded-lg border bg-white shadow-sm">
+            <h3 class="text-base font-semibold mb-2">Column Three</h3>
+            <p class="text-gray-600">Add your content here.</p>
+          </div>
+        </div>`
+    },
+    {
+      id: 'simple_table',
+      title: 'Simple Table',
+      description: 'Clean table with header and rows',
+      icon: <Table className="h-6 w-6" />,
+      defaultContent: `
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 1</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 2</th>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 3</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+              <tr>
+                <td class="px-4 py-2 text-gray-700">Row 1, Col 1</td>
+                <td class="px-4 py-2 text-gray-700">Row 1, Col 2</td>
+                <td class="px-4 py-2 text-gray-700">Row 1, Col 3</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-gray-700">Row 2, Col 1</td>
+                <td class="px-4 py-2 text-gray-700">Row 2, Col 2</td>
+                <td class="px-4 py-2 text-gray-700">Row 2, Col 3</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>`
+    }
+  ];
+
   const contentBlockTypes = [
     {
       id: 'text',
@@ -240,6 +313,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       id: 'pdf',
       title: 'PDF',
       icon: <FileTextIcon className="h-5 w-5" />
+    },
+    {
+      id: 'tables',
+      title: 'Tables',
+      icon: <Table className="h-5 w-5" />
     },
     {
       id: 'scorm',
@@ -311,6 +389,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setShowVideoDialog(true);
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
+    } else if (blockType.id === 'tables') {
+      setShowTableTemplateSidebar(true);
     } else if (blockType.id === 'audio') {
       setShowAudioDialog(true);
     } else if (blockType.id === 'youtube') {
@@ -342,12 +422,37 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       return;
     }
 
+    // For combined templates, split heading/subheading from paragraph so preview styles apply
+    let heading = null;
+    let subheading = null;
+    let contentHtml = textType.defaultContent || '';
+
+    if (textType.id === 'heading_paragraph' || textType.id === 'subheading_paragraph') {
+      try {
+        const temp = document.createElement('div');
+        temp.innerHTML = contentHtml;
+        const h1 = temp.querySelector('h1');
+        const h2 = temp.querySelector('h2');
+        const p = temp.querySelector('p');
+        if (textType.id === 'heading_paragraph') {
+          heading = h1 ? h1.innerHTML : '';
+        } else if (textType.id === 'subheading_paragraph') {
+          subheading = h2 ? h2.innerHTML : '';
+        }
+        contentHtml = p ? p.innerHTML : '';
+      } catch (e) {
+        // ignore parsing errors and keep contentHtml as-is
+      }
+    }
+
     const newBlock = {
       id: `block_${Date.now()}`,
       type: 'text',
       title: textType.title || 'Text Block',
       textType: textType.id,
-      content: textType.defaultContent || '',
+      content: contentHtml,
+      ...(heading !== null && { heading }),
+      ...(subheading !== null && { subheading }),
       order: contentBlocks.length + 1
     };
 
@@ -357,6 +462,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     // Close the sidebar
     setShowTextTypeSidebar(false);
     setSidebarCollapsed(true);
+  };
+
+  const handleTableTemplateSelect = (template) => {
+    const newBlock = {
+      id: `block_${Date.now()}`,
+      type: 'text',
+      title: template.title,
+      textType: 'table',
+      content: template.defaultContent,
+      order: contentBlocks.length + 1
+    };
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    setShowTableTemplateSidebar(false);
   };
 
   const removeContentBlock = (blockId) => {
@@ -654,6 +772,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               margin-bottom: 0.875rem;
               color: #2a2a2a;
             }`;
+          } else if (block.textType === 'table') {
+            html = `<div class="lesson-block table-block">
+              ${block.content}
+            </div>`;
+            css = `.table-block table {
+              width: 100%;
+              border-collapse: collapse;
+            }`;
           } else {
             html = `<div class="lesson-block paragraph-block">
               <p>${block.content}</p>
@@ -816,7 +942,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
               break;
             case 'subheading':
-              htmlContent = `<h2 class="lesson-subheading">${block.content}</h2>`;
+              htmlContent = `<h4 class="lesson-subheading">${block.content}</h4>`;
               styles = '.lesson-subheading { font-size: 20px; font-weight: 600; margin-bottom: 12px; }';
               break;
             default:
@@ -1615,6 +1741,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     );
   }
 
+  const getPlainText = (html) => {
+    const temp = typeof document !== 'undefined' ? document.createElement('div') : null;
+    if (!temp) return html || '';
+    temp.innerHTML = html || '';
+    return temp.textContent || temp.innerText || '';
+  };
+
   return (
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
@@ -1924,13 +2057,36 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           <div className="p-6">
                             {block.type === 'text' && (
                               <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                {/* Gradient Strip */}
                                 <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-
-                                {/* Text Content */}
-                                <article className="prose prose-gray max-w-none pl-4">
-                                  <div dangerouslySetInnerHTML={{ __html: block.content }} />
-                                </article>
+                                <div className="pl-4">
+                                  {block.textType === 'heading' && (
+                                    <h1 className="text-3xl font-bold text-gray-800">{getPlainText(block.content)}</h1>
+                                  )}
+                                  {block.textType === 'subheading' && (
+                                    <h2 className="text-xl font-semibold text-gray-800">{getPlainText(block.content)}</h2>
+                                  )}
+                                  {block.textType === 'paragraph' && (
+                                    <p className="text-base text-gray-700 leading-relaxed">{getPlainText(block.content)}</p>
+                                  )}
+                                  {block.textType === 'heading_paragraph' && (
+                                    <div className="space-y-2">
+                                      <h1 className="text-3xl font-bold text-gray-800">{getPlainText(block.heading || '')}</h1>
+                                      <p className="text-base text-gray-700 leading-relaxed">{getPlainText(block.content)}</p>
+                                    </div>
+                                  )}
+                                  {block.textType === 'subheading_paragraph' && (
+                                    <div className="space-y-2">
+                                      <h2 className="text-xl font-semibold text-gray-800">{getPlainText(block.subheading || '')}</h2>
+                                      <p className="text-base text-gray-700 leading-relaxed">{getPlainText(block.content)}</p>
+                                    </div>
+                                  )}
+                                  {block.textType === 'table' && (
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                  )}
+                                  {!block.textType && (
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                  )}
+                                </div>
                               </div>
                             )}
                             
@@ -2941,6 +3097,65 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         </p>
                       </div>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Table Template Sidebar */}
+      {showTableTemplateSidebar && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300"
+            onClick={() => setShowTableTemplateSidebar(false)}
+          />
+         
+          {/* Sidebar */}
+          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                  <Table className="h-6 w-6" />
+                  Table Templates
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTableTemplateSidebar(false)}
+                  className="h-8 w-8 p-0 hover:bg-gray-100"
+                >
+                  ×
+                </Button>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Choose a table/column template to add to your lesson
+              </p>
+            </div>
+           
+            <div className="p-6 space-y-4">
+              {tableTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  onClick={() => handleTableTemplateSelect(template)}
+                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
+                      {template.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{template.title}</h3>
+                      <p className="text-sm text-gray-600 mt-1">{template.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Mini Preview */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: template.defaultContent }} />
                   </div>
                 </div>
               ))}
