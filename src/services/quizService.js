@@ -4,10 +4,13 @@ import { getAuthHeader } from './authHeader';
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth headers
-const getAuthHeaders = () => ({
-  'Content-Type': 'application/json',
-  ...getAuthHeader(),
-});
+const getAuthHeaders = () => {
+  // Backend handles authentication via cookies
+  return {
+    'Content-Type': 'application/json',
+    ...getAuthHeader(),
+  };
+};
 
 // Get current user ID from localStorage or context
 const getCurrentUserId = () => {
@@ -53,7 +56,7 @@ export async function submitQuiz(quizId, answers = {}) {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
-      body: JSON.stringify({ answers })
+      body: JSON.stringify(answers)
     });
 
     if (!response.ok) {
@@ -62,7 +65,7 @@ export async function submitQuiz(quizId, answers = {}) {
     }
 
     const data = await response.json();
-    return data.data || data;
+    return data;
   } catch (error) {
     console.error('Error submitting quiz:', error);
     throw error;
@@ -124,6 +127,33 @@ export async function getQuizById(quizId) {
     return data.data || data;
   } catch (error) {
     console.error('Error fetching quiz:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get quiz meta/overview by quizId (custom endpoint)
+ * Example path: api/quiz/quiz-2/getQuizById
+ * @param {string} quizId - e.g., "quiz-2"
+ * @returns {Promise<Object>} Quiz overview data (maxAttempts, questionCount, totalScore, min_score, etc.)
+ */
+export async function getQuizMetaById(quizId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/quiz/${quizId}/getQuizById`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch quiz meta: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error fetching quiz meta by id:', error);
     throw error;
   }
 }
@@ -281,6 +311,75 @@ export async function getModuleQuizById(moduleId, quizId) {
     return data.data || data;
   } catch (error) {
     console.error('Error fetching module quiz:', error);
+    throw error;
+  }
+}
+
+// Check remaining attempts for a specific quiz
+export const getQuizRemainingAttempts = async (quizId) => {
+  try {
+    // The API expects the quiz ID in the format "quiz-{id}" or just the ID
+    const url = `${API_BASE}/api/quiz/user/quizzes/${quizId}/remaining-attempts`;
+    console.log('Calling remaining attempts API:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Remaining attempts API response:', data);
+    
+    // Extract the data from the response structure
+    if (data.success && data.data) {
+      const result = {
+        quizId: data.data.quizId,
+        maxAttempts: data.data.maxAttempts,
+        attempted: Number(data.data.attempted) > 0, // Keep boolean flag for convenience
+        attemptedCount: Number(data.data.attempted ?? 0), // New: exact attempts used
+        remainingAttempts: data.data.remainingAttempts
+      };
+      console.log('Processed result:', result);
+      return result;
+    }
+    
+    console.log('Returning raw data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching quiz remaining attempts:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the user's latest attempt for a quiz (including score)
+ * @param {string} quizId - The quiz ID (e.g., "quiz-2" or raw ID)
+ * @returns {Promise<Object>} Latest attempt details
+ */
+export async function getUserLatestQuizAttempt(quizId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/quiz/user/quiz/${quizId}/latest-attempt`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch latest attempt: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error fetching user latest quiz attempt:', error);
     throw error;
   }
 }
