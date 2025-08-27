@@ -164,7 +164,7 @@ function QuizResultsPage() {
     <div className="container py-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-3)}>
           <BookOpen size={16} />
           Back to Quiz
         </Button>
