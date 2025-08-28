@@ -1208,46 +1208,121 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleTextEditorSave = () => {
-    const blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
+    // First try to find block in contentBlocks (for new lessons)
+    let blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
+    
+    // If not found, try to find in lessonContent (for fetched lessons)
+    if (!blockToUpdate && lessonContent?.data?.content) {
+      blockToUpdate = lessonContent.data.content.find(b => b.block_id === currentTextBlockId);
+    }
 
     if (blockToUpdate) {
       let updatedContent = '';
-      const textType = textTypes.find(t => t.id === blockToUpdate.textType);
-
-      if (blockToUpdate.textType === 'heading_paragraph') {
-        updatedContent = `
-          <div class="content-block">
-            <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
-              ${editorHeading}
-            </h1>
-            <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              ${editorContent}
-            </div>
-          </div>
-        `;
-      } else if (blockToUpdate.textType === 'subheading_paragraph') {
-        updatedContent = `
-          <div class="content-block">
-            <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
-              ${editorSubheading}
-            </h2>
-            <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              ${editorContent}
-            </div>
-          </div>
-        `;
+      
+      // For fetched lessons, preserve original HTML structure and only update content
+      if (blockToUpdate.html_css && lessonContent?.data?.content) {
+        // Use original HTML structure and replace only the text content
+        updatedContent = blockToUpdate.html_css;
+        
+        // Replace the text content while preserving HTML structure
+        if (blockToUpdate.textType === 'heading_paragraph') {
+          // Update heading and paragraph content within existing structure
+          updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
+            return match.replace(p1, editorHeading);
+          });
+          updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
+            return match.replace(p1, editorContent);
+          });
+        } else if (blockToUpdate.textType === 'subheading_paragraph') {
+          // Update subheading and paragraph content within existing structure
+          updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
+            return match.replace(p1, editorSubheading);
+          });
+          updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
+            return match.replace(p1, editorContent);
+          });
+        } else {
+          // For single content blocks, replace the inner text content while preserving HTML tags
+          // Strip HTML tags from editorHtml to get plain text
+          const plainText = editorHtml.replace(/<[^>]*>/g, '').trim();
+          
+          if (updatedContent.includes('<h1')) {
+            updatedContent = updatedContent.replace(/<h1([^>]*)>(.*?)<\/h1>/i, (match, attributes, content) => {
+              return `<h1${attributes}>${plainText}</h1>`;
+            });
+          } else if (updatedContent.includes('<h2')) {
+            updatedContent = updatedContent.replace(/<h2([^>]*)>(.*?)<\/h2>/i, (match, attributes, content) => {
+              return `<h2${attributes}>${plainText}</h2>`;
+            });
+          } else if (updatedContent.includes('<h3')) {
+            updatedContent = updatedContent.replace(/<h3([^>]*)>(.*?)<\/h3>/i, (match, attributes, content) => {
+              return `<h3${attributes}>${plainText}</h3>`;
+            });
+          } else if (updatedContent.includes('<h4')) {
+            updatedContent = updatedContent.replace(/<h4([^>]*)>(.*?)<\/h4>/i, (match, attributes, content) => {
+              return `<h4${attributes}>${plainText}</h4>`;
+            });
+          } else if (updatedContent.includes('<h5')) {
+            updatedContent = updatedContent.replace(/<h5([^>]*)>(.*?)<\/h5>/i, (match, attributes, content) => {
+              return `<h5${attributes}>${plainText}</h5>`;
+            });
+          } else if (updatedContent.includes('<h6')) {
+            updatedContent = updatedContent.replace(/<h6([^>]*)>(.*?)<\/h6>/i, (match, attributes, content) => {
+              return `<h6${attributes}>${plainText}</h6>`;
+            });
+          } else if (updatedContent.includes('<p')) {
+            updatedContent = updatedContent.replace(/<p([^>]*)>(.*?)<\/p>/i, (match, attributes, content) => {
+              return `<p${attributes}>${plainText}</p>`;
+            });
+          } else {
+            // Fallback: replace text content within the first text node
+            updatedContent = updatedContent.replace(/>([^<]+)</i, (match, textContent) => {
+              if (textContent.trim() && !textContent.includes('<')) {
+                return `>${plainText}<`;
+              }
+              return match;
+            });
+          }
+        }
       } else {
-        // For single content blocks (heading, subheading, paragraph)
-        const style = textType?.style || {};
-        const styleString = Object.entries(style)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join('; ');
+        // For new blocks, generate HTML structure
+        const textType = textTypes.find(t => t.id === blockToUpdate.textType);
+        
+        if (blockToUpdate.textType === 'heading_paragraph') {
+          updatedContent = `
+            <div class="content-block">
+              <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
+                ${editorHeading}
+              </h1>
+              <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+                ${editorContent}
+              </div>
+            </div>
+          `;
+        } else if (blockToUpdate.textType === 'subheading_paragraph') {
+          updatedContent = `
+            <div class="content-block">
+              <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
+                ${editorSubheading}
+              </h2>
+              <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+                ${editorContent}
+              </div>
+            </div>
+          `;
+        } else {
+          // For single content blocks (heading, subheading, paragraph)
+          const style = textType?.style || {};
+          const styleString = Object.entries(style)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join('; ');
 
-        updatedContent = `
-          <div class="content-block" style="${styleString}">
-            ${editorHtml}
-          </div>
-        `;
+          updatedContent = `
+            <div class="content-block" style="${styleString}">
+              ${editorHtml}
+            </div>
+          `;
+        }
       }
 
       setContentBlocks(blocks =>
@@ -1264,6 +1339,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             : block
         )
       );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              block.block_id === currentTextBlockId ? {
+                ...block,
+                content: updatedContent,
+                html_css: updatedContent,
+                heading: blockToUpdate.textType === 'heading_paragraph' ? editorHeading : block.heading,
+                subheading: blockToUpdate.textType === 'subheading_paragraph' ? editorSubheading : block.subheading,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
     } else {
       // For new blocks
       const newBlock = {
