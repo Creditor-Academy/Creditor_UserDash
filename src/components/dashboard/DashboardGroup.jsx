@@ -1,10 +1,10 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowRight, Users2, MessageSquare, Calendar } from "lucide-react";
+import { Users, ArrowRight, Users2, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 
-// Lightweight preview dataset. Replace with API data if available
+// Lightweight preview dataset
 const previewGroups = [
   { 
     id: 1, 
@@ -13,7 +13,8 @@ const previewGroups = [
     description: "Learn modern web development techniques and frameworks", 
     active: true,
     lastActivity: "2 hours ago",
-    type: "common"
+    type: "common",
+    color: "blue"
   },
   { 
     id: 2, 
@@ -22,7 +23,8 @@ const previewGroups = [
     description: "Explore data analysis, visualization and machine learning", 
     active: true,
     lastActivity: "5 hours ago",
-    type: "common"
+    type: "common",
+    color: "green"
   },
   { 
     id: 3, 
@@ -32,7 +34,8 @@ const previewGroups = [
     active: true,
     lastActivity: "1 day ago",
     type: "course",
-    courseName: "Design Basics"
+    courseName: "Design Basics",
+    color: "purple"
   },
   { 
     id: 4, 
@@ -42,116 +45,145 @@ const previewGroups = [
     active: true,
     lastActivity: "Yesterday",
     type: "course",
-    courseName: "React Native"
+    courseName: "React Native",
+    color: "orange"
   },
 ];
 
 export default function DashboardGroup() {
+  // Color mapping for different group types
+  const colorMap = {
+    blue: {
+      bg: "bg-blue-500",
+      lightBg: "bg-blue-50",
+      text: "text-blue-700",
+      border: "border-blue-200",
+      hover: "hover:bg-blue-100"
+    },
+    green: {
+      bg: "bg-green-500",
+      lightBg: "bg-green-50",
+      text: "text-green-700",
+      border: "border-green-200",
+      hover: "hover:bg-green-100"
+    },
+    purple: {
+      bg: "bg-purple-500",
+      lightBg: "bg-purple-50",
+      text: "text-purple-700",
+      border: "border-purple-200",
+      hover: "hover:bg-purple-100"
+    },
+    orange: {
+      bg: "bg-orange-500",
+      lightBg: "bg-orange-50",
+      text: "text-orange-700",
+      border: "border-orange-200",
+      hover: "hover:bg-orange-100"
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Users2 className="h-5 w-5 text-blue-600" />
+      {/* Header with gradient background */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
+              <Users2 className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800">Learning Communities</h3>
+              <p className="text-sm text-gray-600 mt-1">Connect with peers and share knowledge</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-semibold text-gray-800">Learning Communities</h3>
-            <p className="text-sm text-gray-500 mt-1">Connect with peers and share knowledge</p>
-          </div>
+          <Button 
+            asChild 
+            className="gap-1 bg-blue-600 text-white hover:bg-blue-700 hidden sm:flex shadow-sm"
+          >
+            <Link to="/dashboard/groups">
+              View all <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
+      </div>
+
+      {/* Colorful Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {previewGroups.map((group) => {
+          const colors = colorMap[group.color];
+          
+          return (
+            <Card 
+              key={group.id} 
+              className={`relative overflow-hidden border ${colors.border} hover:shadow-md transition-all duration-300 group h-full`}
+            >
+              {/* Colorful header strip */}
+              <div className={`absolute top-0 left-0 right-0 h-2 ${colors.bg}`}></div>
+              
+              <CardContent className="p-5 h-full flex flex-col pt-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${colors.lightBg} ${colors.text}`}>
+                      {group.type === 'course' ? (
+                        <BookOpen className="h-4 w-4" />
+                      ) : (
+                        <Users className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className={`text-base font-semibold text-gray-800 group-hover:${colors.text} transition-colors line-clamp-1`}>
+                        {group.name}
+                      </h4>
+                      {group.type === 'course' && group.courseName && (
+                        <p className="text-xs text-purple-600 font-medium mt-1">
+                          {group.courseName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-shrink-0">
+                    <div className={`inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs ${colors.text} border ${colors.border} shadow-sm`}>
+                      <Users className="h-3 w-3" />
+                      {group.members}
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                  {group.description}
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    <span>Active • {group.lastActivity}</span>
+                  </div>
+                  
+                  <Button 
+                    size="sm"
+                    className={`text-xs h-8 px-3 ${colors.text} ${colors.hover} border ${colors.border} bg-white shadow-sm hover:shadow-md transition-shadow`}
+                  >
+                    Join
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      {/* Mobile view all button */}
+      <div className="mt-6 flex sm:hidden">
         <Button 
           asChild 
-          variant="ghost" 
-          className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          className="gap-1 bg-blue-600 text-white hover:bg-blue-700 w-full shadow-sm"
         >
           <Link to="/dashboard/groups">
-            Explore all <ArrowRight className="h-4 w-4" />
+            View all communities <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
       </div>
-
-      {/* Common groups */}
-      {previewGroups.filter(g => g.type !== 'course').length > 0 && (
-        <div className="mb-6">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Common Groups</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {previewGroups.filter(g => g.type !== 'course').map((group) => (
-              <Card 
-                key={group.id} 
-                className="overflow-hidden border border-gray-200 hover:shadow-md transition-shadow duration-300 group"
-              >
-                <div className="h-2 w-full bg-gradient-to-r from-blue-500 to-blue-600" />
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                    {group.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {group.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <div className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                      <Users className="h-3 w-3" /> {group.members} members
-                    </div>
-                    <div className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                      Active
-                    </div>
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                    Last activity: {group.lastActivity}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Course groups */}
-      {previewGroups.filter(g => g.type === 'course').length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Course Groups</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {previewGroups.filter(g => g.type === 'course').map((group) => (
-              <Card 
-                key={group.id} 
-                className="relative overflow-hidden border border-gray-200 hover:shadow-md transition-shadow duration-300 group"
-              >
-                <div className="h-2 w-full bg-gradient-to-r from-blue-500 to-blue-600" />
-                {group.courseName && (
-                  <span className="absolute top-2 right-2 inline-flex items-center rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-100">
-                    {group.courseName}
-                  </span>
-                )}
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                    {group.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {group.description}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <div className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                      <Users className="h-3 w-3" /> {group.members} members
-                    </div>
-                    <div className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                      Active
-                    </div>
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                    Last activity: {group.lastActivity}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
