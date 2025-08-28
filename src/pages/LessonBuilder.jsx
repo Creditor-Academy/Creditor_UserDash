@@ -2092,7 +2092,67 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             {/* Main Content Canvas */}
             <div className="py-4">
                 <div>
-                  {contentBlocks.length === 0 ? (
+                  {isViewMode ? (
+                    <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow">
+                      <h1 className="text-3xl font-bold mb-6">{lessonTitle}</h1>
+                      <div className="prose max-w-none">
+                        {contentBlocks.map((block) => (
+                          <div key={block.id} className="mb-6 last:mb-0">
+                            {block.type === 'text' && (
+                              <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                            )}
+                            {block.type === 'image' && block.imageUrl && (
+                              <div className="my-4">
+                                <img 
+                                  src={block.imageUrl} 
+                                  alt={block.imageTitle || 'Image'} 
+                                  className="max-w-full h-auto rounded-lg"
+                                />
+                                {block.imageDescription && (
+                                  <p className="text-sm text-gray-600 mt-2 italic">{block.imageDescription}</p>
+                                )}
+                              </div>
+                            )}
+                            {block.type === 'video' && block.videoUrl && (
+                              <div className="my-4">
+                                <video 
+                                  src={block.videoUrl} 
+                                  controls 
+                                  className="w-full rounded-lg"
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                                {block.videoTitle && (
+                                  <p className="text-sm font-medium mt-2">{block.videoTitle}</p>
+                                )}
+                                {block.videoDescription && (
+                                  <p className="text-sm text-gray-600">{block.videoDescription}</p>
+                                )}
+                              </div>
+                            )}
+                            {block.type === 'youtube' && block.youtubeId && (
+                              <div className="my-4">
+                                <div className="aspect-w-16 aspect-h-9">
+                                  <iframe
+                                    src={`https://www.youtube.com/embed/${block.youtubeId}`}
+                                    title={block.youtubeTitle || 'YouTube video'}
+                                    allowFullScreen
+                                    className="w-full h-96 rounded-lg"
+                                  />
+                                </div>
+                                {block.youtubeTitle && (
+                                  <p className="text-sm font-medium mt-2">{block.youtubeTitle}</p>
+                                )}
+                                {block.youtubeDescription && (
+                                  <p className="text-sm text-gray-600">{block.youtubeDescription}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : contentBlocks.length === 0 ? (
                     <div>
                       <div >
                         <div>
@@ -2441,11 +2501,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-6 max-w-3xl mx-auto">
                       {contentBlocks.map((block, index) => (
                         <div
                           key={block.id}
-                          className="relative group my-6 border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
+                          className="relative group bg-white rounded-lg"
                           onDragOver={handleDragOver}
                           onDrop={(e) => handleDrop(e, block.id)}
                         >
