@@ -116,6 +116,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [editorTitle, setEditorTitle] = useState('');
   const [editorHtml, setEditorHtml] = useState('');
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
+  const [currentTextType, setCurrentTextType] = useState(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
   const [imageTitle, setImageTitle] = useState('');
   const [imageDescription, setImageDescription] = useState('');
@@ -1242,43 +1243,72 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             return match.replace(p1, editorContent);
           });
         } else {
-          // For single content blocks, replace the inner text content while preserving HTML tags
-          // Strip HTML tags from editorHtml to get plain text
-          const plainText = editorHtml.replace(/<[^>]*>/g, '').trim();
+          // For single content blocks, preserve both original HTML structure AND rich text formatting
+          // Extract plain text from rich text content for cases where we need to maintain original styling
+          const richTextContent = editorHtml.trim();
+          const plainTextContent = editorHtml.replace(/<[^>]*>/g, '').trim();
           
+          // Check if the original content has specific heading/paragraph structure that should be preserved
           if (updatedContent.includes('<h1')) {
+            // For headings, we want to preserve the heading tag but allow rich text formatting inside
             updatedContent = updatedContent.replace(/<h1([^>]*)>(.*?)<\/h1>/i, (match, attributes, content) => {
-              return `<h1${attributes}>${plainText}</h1>`;
+              // If rich text content has formatting tags, use it; otherwise use plain text to preserve heading styling
+              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                return `<h1${attributes}>${richTextContent}</h1>`;
+              } else {
+                return `<h1${attributes}>${plainTextContent}</h1>`;
+              }
             });
           } else if (updatedContent.includes('<h2')) {
             updatedContent = updatedContent.replace(/<h2([^>]*)>(.*?)<\/h2>/i, (match, attributes, content) => {
-              return `<h2${attributes}>${plainText}</h2>`;
+              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                return `<h2${attributes}>${richTextContent}</h2>`;
+              } else {
+                return `<h2${attributes}>${plainTextContent}</h2>`;
+              }
             });
           } else if (updatedContent.includes('<h3')) {
             updatedContent = updatedContent.replace(/<h3([^>]*)>(.*?)<\/h3>/i, (match, attributes, content) => {
-              return `<h3${attributes}>${plainText}</h3>`;
+              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                return `<h3${attributes}>${richTextContent}</h3>`;
+              } else {
+                return `<h3${attributes}>${plainTextContent}</h3>`;
+              }
             });
           } else if (updatedContent.includes('<h4')) {
             updatedContent = updatedContent.replace(/<h4([^>]*)>(.*?)<\/h4>/i, (match, attributes, content) => {
-              return `<h4${attributes}>${plainText}</h4>`;
+              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                return `<h4${attributes}>${richTextContent}</h4>`;
+              } else {
+                return `<h4${attributes}>${plainTextContent}</h4>`;
+              }
             });
           } else if (updatedContent.includes('<h5')) {
             updatedContent = updatedContent.replace(/<h5([^>]*)>(.*?)<\/h5>/i, (match, attributes, content) => {
-              return `<h5${attributes}>${plainText}</h5>`;
+              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                return `<h5${attributes}>${richTextContent}</h5>`;
+              } else {
+                return `<h5${attributes}>${plainTextContent}</h5>`;
+              }
             });
           } else if (updatedContent.includes('<h6')) {
             updatedContent = updatedContent.replace(/<h6([^>]*)>(.*?)<\/h6>/i, (match, attributes, content) => {
-              return `<h6${attributes}>${plainText}</h6>`;
+              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                return `<h6${attributes}>${richTextContent}</h6>`;
+              } else {
+                return `<h6${attributes}>${plainTextContent}</h6>`;
+              }
             });
           } else if (updatedContent.includes('<p')) {
+            // For paragraphs, always use rich text content as paragraphs are more flexible
             updatedContent = updatedContent.replace(/<p([^>]*)>(.*?)<\/p>/i, (match, attributes, content) => {
-              return `<p${attributes}>${plainText}</p>`;
+              return `<p${attributes}>${richTextContent}</p>`;
             });
           } else {
             // Fallback: replace text content within the first text node
             updatedContent = updatedContent.replace(/>([^<]+)</i, (match, textContent) => {
               if (textContent.trim() && !textContent.includes('<')) {
-                return `>${plainText}<`;
+                return `>${richTextContent}<`;
               }
               return match;
             });
@@ -1387,6 +1417,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setEditorTitle('');
     setEditorHtml('');
     setCurrentTextBlockId(null);
+    setCurrentTextType(null);
   };
 
   const handleImageDialogClose = () => {
@@ -2087,8 +2118,62 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             const blockType = block.type || 'text';
                                             switch(blockType) {
                                               case 'text':
+                                                // Detect textType from HTML content structure
+                                                let detectedTextType = 'paragraph'; // default
+                                                const htmlContent = block.html_css || '';
+                                                
+                                                // Check for heading + paragraph combination
+                                                if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+                                                  detectedTextType = 'heading_paragraph';
+                                                } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
+                                                  detectedTextType = 'subheading_paragraph';
+                                                } else if (htmlContent.includes('<h1')) {
+                                                  detectedTextType = 'heading';
+                                                } else if (htmlContent.includes('<h2')) {
+                                                  detectedTextType = 'subheading';
+                                                } else if (htmlContent.includes('<table') || htmlContent.includes('grid')) {
+                                                  detectedTextType = 'table';
+                                                }
+                                                
+                                                // Set the appropriate editor state based on detected type
                                                 setCurrentTextBlockId(block.block_id);
-                                                setEditorHtml(block.html_css);
+                                                
+                                                // Reset all editor states first
+                                                setEditorHtml('');
+                                                setEditorHeading('');
+                                                setEditorSubheading('');
+                                                setEditorContent('');
+                                                
+                                                // Set content based on detected type
+                                                if (detectedTextType === 'heading_paragraph') {
+                                                  // Extract heading and paragraph content
+                                                  const tempDiv = document.createElement('div');
+                                                  tempDiv.innerHTML = htmlContent;
+                                                  const h1 = tempDiv.querySelector('h1');
+                                                  const p = tempDiv.querySelector('p');
+                                                  setEditorHeading(h1 ? h1.innerHTML : '');
+                                                  setEditorContent(p ? p.innerHTML : '');
+                                                } else if (detectedTextType === 'subheading_paragraph') {
+                                                  // Extract subheading and paragraph content
+                                                  const tempDiv = document.createElement('div');
+                                                  tempDiv.innerHTML = htmlContent;
+                                                  const h2 = tempDiv.querySelector('h2');
+                                                  const p = tempDiv.querySelector('p');
+                                                  setEditorSubheading(h2 ? h2.innerHTML : '');
+                                                  setEditorContent(p ? p.innerHTML : '');
+                                                } else {
+                                                  // For single content blocks, extract the inner content
+                                                  const tempDiv = document.createElement('div');
+                                                  tempDiv.innerHTML = htmlContent;
+                                                  const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
+                                                  setEditorHtml(contentElement.innerHTML || htmlContent);
+                                                }
+                                                
+                                                // Store the detected textType for the save function
+                                                const blockWithTextType = { ...block, textType: detectedTextType };
+                                                setCurrentBlock(blockWithTextType);
+                                                setCurrentTextType(detectedTextType);
+                                                
                                                 setShowTextEditorDialog(true);
                                                 break;
                                               case 'image':
@@ -2775,7 +2860,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               {currentTextBlockId ? 'Edit' : 'Add'} Text Block
               {(() => {
                 const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
-                const textType = currentBlock?.textType;
+                const textType = currentTextType || currentBlock?.textType;
                 if (textType) {
                   const textTypeObj = textTypes.find(t => t.id === textType);
                   return textTypeObj ? ` (${textTypeObj.title})` : '';
@@ -2789,7 +2874,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <div className="pr-4">
               {(() => {
                 const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
-                const textType = currentBlock?.textType;
+                const textType = currentTextType || currentBlock?.textType;
                
                 // Heading only
                 if (textType === 'heading') {
