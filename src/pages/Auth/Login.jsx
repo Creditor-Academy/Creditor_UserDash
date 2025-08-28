@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle } from "lucide-react";
+import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle, UserPlus, Phone } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
 import logoCreditor from "@/assets/logo_creditor.png";
@@ -125,6 +126,315 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
   );
 }
 
+// SignUp Component with OTP flow
+function SignUp({ onBack }) {
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("");
+  const [acceptTnC, setAcceptTnC] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+
+  // OTP inputs helpers
+  const OTP_LENGTH = 6;
+  const otpRefs = useRef([]);
+
+  const focusInput = (index) => {
+    const el = otpRefs.current[index];
+    if (el) el.focus();
+  };
+
+  const handleOtpChange = (index, value) => {
+    const digit = value.replace(/\D/g, "").slice(0, 1);
+    if (digit === "" && otp[index] === undefined) return;
+    const chars = Array.from(otp.padEnd(OTP_LENGTH, " "));
+    chars[index] = digit || "";
+    const nextOtp = chars.join("").replace(/\s/g, "");
+    setOtp(nextOtp);
+    if (digit && index < OTP_LENGTH - 1) focusInput(index + 1);
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace") {
+      if (otp[index]) {
+        const chars = Array.from(otp);
+        chars[index] = "";
+        setOtp(chars.join(""));
+      } else if (index > 0) {
+        focusInput(index - 1);
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      focusInput(index - 1);
+    } else if (e.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+      e.preventDefault();
+      focusInput(index + 1);
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, OTP_LENGTH);
+    if (!text) return;
+    setOtp(text);
+    const lastIndex = Math.min(text.length, OTP_LENGTH) - 1;
+    focusInput(Math.max(lastIndex, 0));
+  };
+
+  useEffect(() => {
+    if (!otpOpen || resendIn <= 0) return;
+    const t = setInterval(() => setResendIn((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [otpOpen, resendIn]);
+
+  const requestOtp = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/registerUser`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, phone })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to send OTP");
+      toast.success(data?.message || `OTP sent to ${email}`);
+      setOtpOpen(true);
+      setResendIn(20);
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    if (!phone.trim()) {
+      toast.error("Please enter your phone number");
+      return;
+    }
+    if (!gender) {
+      toast.error("Please select your gender");
+      return;
+    }
+    if (!acceptTnC) {
+      toast.error("Please accept the Terms & Conditions");
+      return;
+    }
+    await requestOtp();
+  };
+
+  const handleVerify = async () => {
+    if (!otp.trim()) {
+      toast.error("Enter the OTP sent to your email");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          phone,
+          gender,
+          otp,
+          password: "",
+          auth_provider: "local",
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "OTP verification failed");
+      toast.success(data?.message || "Registered successfully. Check your email for your password.");
+      setOtpOpen(false);
+      onBack?.();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendIn > 0) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/resend-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to resend OTP");
+      toast.success(data?.message || "OTP resent");
+      setResendIn(20);
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-xl font-semibold text-slate-800 mb-2">Create your account</h3>
+        <p className="text-slate-600">Join Creditor Academy in a minute</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="su-fn" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-blue-500" />
+              First Name
+            </Label>
+            <Input id="su-fn" type="text" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} disabled={isLoading} required className="h-11 px-4 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="su-ln" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-blue-500" />
+              Last Name
+            </Label>
+            <Input id="su-ln" type="text" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} disabled={isLoading} required className="h-11 px-4 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300" />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="su-email" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <Mail className="h-4 w-4 text-blue-500" />
+            Email Address
+          </Label>
+          <Input id="su-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={isLoading} required className="h-11 px-4 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="su-phone" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <Phone className="h-4 w-4 text-blue-500" />
+              Phone
+            </Label>
+            <Input id="su-phone" type="tel" placeholder="+1 555 000 1111" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={isLoading} required className="h-11 px-4 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="su-gender" className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              Gender
+            </Label>
+            <select id="su-gender" value={gender} onChange={(e) => setGender(e.target.value)} disabled={isLoading} required className="h-11 px-4 w-full rounded-md border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 bg-white">
+              <option value="" disabled>Choose...</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <label className="flex items-start gap-3 text-sm text-slate-600">
+          <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={acceptTnC} onChange={(e) => setAcceptTnC(e.target.checked)} disabled={isLoading} />
+          <span>
+            I agree to the <span className="font-medium text-slate-800">Terms & Conditions</span> and
+            <span className="font-medium text-slate-800"> Privacy Policy</span>.
+          </span>
+        </label>
+
+        <Button type="submit" className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl" disabled={isLoading}>
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              Sending OTP...
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              Create Account
+              <ArrowRight className="h-4 w-4" />
+            </div>
+          )}
+        </Button>
+      </form>
+
+      <div className="text-center">
+        <Button onClick={onBack} variant="ghost" className="text-slate-600 hover:text-slate-800">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Sign In
+        </Button>
+      </div>
+
+      {/* OTP Modal */}
+      <Dialog open={otpOpen} onOpenChange={setOtpOpen}>
+        <DialogContent
+          className="sm:max-w-[480px] rounded-xl"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Email Verification</DialogTitle>
+            <DialogDescription>
+              Enter the 6-digit OTP sent to
+              <span className="ml-1 font-medium text-slate-800">{email}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div>
+              <Label className="text-sm font-medium text-slate-700">One-Time Password</Label>
+              <div
+                className="mt-2 grid grid-cols-6 gap-2"
+                onPaste={handleOtpPaste}
+              >
+                {Array.from({ length: OTP_LENGTH }).map((_, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => (otpRefs.current[i] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={otp[i] || ""}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    className="h-12 rounded-md border-2 border-slate-200 text-center text-lg font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    autoFocus={i === 0}
+                  />
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">OTP expires in 5 minutes.</p>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendIn > 0}
+                className={`font-medium underline-offset-2 ${resendIn > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-700 underline'}`}
+              >
+                {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend OTP'}
+              </button>
+              <span className="text-slate-500">Didn’t get it? Check spam folder.</span>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-3">
+            <Button variant="outline" onClick={() => setOtpOpen(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handleVerify} disabled={isLoading || otp.length !== 6} className="w-full sm:w-auto">
+              {isLoading ? 'Verifying...' : 'Verify'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export function Login() {
   const { setAuth } = useAuth();
   const [email, setEmail] = useState("");
@@ -134,6 +444,7 @@ export function Login() {
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
   const [animateCard, setAnimateCard] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -329,7 +640,9 @@ export function Login() {
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {showForgotPassword ? (
+              {showSignUp ? (
+                <SignUp onBack={() => setShowSignUp(false)} />
+              ) : showForgotPassword ? (
                 <ForgotPassword 
                   onBack={() => setShowForgotPassword(false)}
                   email={email}
@@ -427,6 +740,17 @@ export function Login() {
                       </div>
                     )}
                   </Button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUp(true)}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
+                      disabled={isLoading}
+                    >
+                      New here? Create an account
+                    </button>
+                  </div>
                 </form>
               )}
             </CardContent>
