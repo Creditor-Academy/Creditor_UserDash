@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import {
   FileText, 
   Trash2, 
   Download,
+  Copy,
   Eye,
   Calendar,
   FileImage,
@@ -20,13 +21,17 @@ import {
   Building,
   Globe,
   Users,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { organizationService, categoryService, assetService } from "@/services/assetsService";
 
 const Resources = () => {
   const [resources, setResources] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [assetsLoading, setAssetsLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -44,6 +49,8 @@ const Resources = () => {
   const [deleteType, setDeleteType] = useState(null);
   const [editingOrganization, setEditingOrganization] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [editingAsset, setEditingAsset] = useState(null);
+  const [showEditAssetModal, setShowEditAssetModal] = useState(false);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -52,34 +59,69 @@ const Resources = () => {
     organization: ""
   });
 
-  // Sample data - in real app, this would come from backend
-  const [organizations, setOrganizations] = useState([
-    { id: "1", name: "Global Resources", type: "global" },
-    { id: "2", name: "Acme Corporation", type: "organization" },
-    { id: "3", name: "Tech Solutions Inc", type: "organization" },
-    { id: "4", name: "Education Foundation", type: "organization" }
-  ]);
+  // Organizations and categories from backend
+  const [organizations, setOrganizations] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [categories, setCategories] = useState([
-    { id: "1", name: "General", color: "bg-gray-100 text-gray-800" },
-    { id: "2", name: "Course Material", color: "bg-blue-100 text-blue-800" },
-    { id: "3", name: "Lesson Resource", color: "bg-green-100 text-green-800" },
-    { id: "4", name: "Reference Material", color: "bg-purple-100 text-purple-800" },
-    { id: "5", name: "Template", color: "bg-orange-100 text-orange-800" }
-  ]);
+  // Fetch organizations and categories from backend
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [orgsResponse, catsResponse] = await Promise.all([
+        organizationService.getOrganizations(),
+        categoryService.getCategories()
+      ]);
+
+      // Transform backend data to match frontend structure
+      const transformedOrgs = orgsResponse.data?.map(org => ({
+        id: org.id || org._id,
+        name: org.name,
+        description: org.description,
+        type: org.name === "Global" ? "global" : "organization"
+      })) || [];
+
+      const transformedCats = catsResponse.data?.map(cat => ({
+        id: cat.id || cat._id,
+        name: cat.name,
+        color: getCategoryColor(cat.name)
+      })) || [];
+
+      setOrganizations(transformedOrgs);
+      setCategories(transformedCats);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError(error.message || 'Failed to fetch data');
+      toast({
+        title: "Error",
+        description: "Failed to fetch organizations and categories",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Initialize defaults for pending selectors to first available items
-  React.useEffect(() => {
+  useEffect(() => {
     if (organizations?.length && (pendingOrg === "all" || !pendingOrg)) {
       setPendingOrg(organizations[0].id);
     }
   }, [organizations]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (categories?.length && (pendingCat === "all" || !pendingCat)) {
       setPendingCat(categories[0].id);
     }
   }, [categories]);
+
+
 
   const fileInputRef = useRef(null);
 
@@ -148,26 +190,37 @@ const Resources = () => {
     setUploading(true);
     
     try {
-      // Simulate file upload - in real implementation, you'd upload to your backend
-      const newResources = selectedFiles.map((file, index) => {
-        const resource = {
-          id: Date.now() + index,
+      // Upload each selected file to backend (backend expects single file per request)
+      const uploaded = [];
+      for (const file of selectedFiles) {
+        const response = await assetService.createAsset({
           title: formData.title,
-          description: formData.description,
-          category: formData.category,
-                     organization: formData.organization,
-           visibility: organizations.find(org => org.id === formData.organization)?.type === "global" ? "global" : "organization",
-          fileName: file.name,
-          fileType: file.type.startsWith('image/') ? 'image' : 'video',
-          fileSize: (file.size / (1024 * 1024)).toFixed(2), // Convert to MB
-          uploadDate: new Date().toISOString(),
-          url: URL.createObjectURL(file), // In real app, this would be the uploaded file URL
-          thumbnail: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-        };
-        return resource;
-      });
+          description: formData.description || "",
+          category_id: formData.category,
+          organization_id: formData.organization,
+          file
+        });
 
-      setResources(prev => [...newResources, ...prev]);
+        const created = response?.data || response; // support either shape
+
+        const resource = {
+          id: created?.id || created?._id || Date.now(),
+          title: created?.title || formData.title,
+          description: created?.description ?? formData.description ?? "",
+          category: created?.category_id || formData.category,
+          organization: created?.organization_id || formData.organization,
+          visibility: organizations.find(org => org.id === (created?.organization_id || formData.organization))?.type === "global" ? "global" : "organization",
+          fileName: created?.fileName || created?.filename || file.name,
+          fileType: (created?.mimetype || file.type || "").startsWith('image/') ? 'image' : 'video',
+          fileSize: ((created?.filesize ?? file.size) / (1024 * 1024)).toFixed(2),
+          uploadDate: created?.createdAt || new Date().toISOString(),
+          url: created?.assetUrl || created?.asset_url || created?.url || created?.Location || created?.fileUrl || URL.createObjectURL(file),
+          thumbnail: ((created?.mimetype || file.type || "").startsWith('image/')) ? (created?.assetUrl || created?.asset_url || created?.url || created?.Location || created?.fileUrl || URL.createObjectURL(file)) : null
+        };
+        uploaded.push(resource);
+      }
+
+      setResources(prev => [...uploaded, ...prev]);
       
       // Reset form
              setFormData({
@@ -183,7 +236,7 @@ const Resources = () => {
 
       toast({
         title: "Upload successful",
-        description: `${newResources.length} resource(s) uploaded successfully.`,
+        description: `${uploaded.length} resource(s) uploaded successfully.`,
       });
     } catch (error) {
       toast({
@@ -196,13 +249,93 @@ const Resources = () => {
     }
   };
 
-  const handleDelete = (resourceId) => {
+  const handleDelete = async (resourceId) => {
+    try {
+      await assetService.deleteAsset(resourceId);
     setResources(prev => prev.filter(resource => resource.id !== resourceId));
     setSelectedResources(prev => prev.filter(id => id !== resourceId));
     toast({
-      title: "Resource deleted",
-      description: "The resource has been removed successfully.",
-    });
+        title: "Asset deleted",
+        description: "The asset has been removed successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      toast({
+        title: "Delete failed",
+        description: "Could not delete asset on server. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleOpenEditAsset = (asset) => {
+    setEditingAsset({ id: asset.id, title: asset.title, description: asset.description || "" });
+    setShowEditAssetModal(true);
+  };
+
+  const handleSaveEditAsset = async (data) => {
+    if (!editingAsset?.id) return;
+    try {
+      const res = await assetService.editAsset(editingAsset.id, { title: data.title, description: data.description || "" });
+      const updated = res?.data || res;
+      setResources(prev => prev.map(r => r.id === editingAsset.id ? { ...r, title: updated?.title ?? data.title, description: updated?.description ?? data.description } : r));
+      toast({ title: "Asset updated", description: "Changes saved successfully." });
+      setShowEditAssetModal(false);
+      setEditingAsset(null);
+    } catch (error) {
+      console.error('Error updating asset:', error);
+      toast({ title: "Update failed", description: "Could not update asset on server.", variant: "destructive" });
+    }
+  };
+
+  // Global search function that searches across all assets in the database
+  const handleGlobalSearch = async () => {
+    if (!searchTerm.trim()) {
+      toast({
+        title: "Search term required",
+        description: "Please enter a search term to search for assets.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      
+      // Call backend API to search across all assets
+      const response = await assetService.searchAssets(searchTerm);
+      const searchResults = response?.data || [];
+      
+      // Normalize the search results
+      const normalized = searchResults.map((item, idx) => ({
+        id: item?.id || item?._id || idx,
+        title: item?.title || "Untitled",
+        description: item?.description || "",
+        category: item?.category_id || "",
+        organization: item?.organization_id || "",
+        visibility: "global", // Search results are global
+        fileName: item?.fileName || item?.filename || item?.name || "asset",
+        fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
+        fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
+        uploadDate: item?.createdAt || new Date().toISOString(),
+        url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
+      }));
+
+      setResources(normalized);
+      toast({ 
+        title: "Search completed", 
+        description: `Found ${normalized.length} asset(s) matching "${searchTerm}"` 
+      });
+    } catch (error) {
+      console.error('Error searching assets:', error);
+      toast({
+        title: "Search failed",
+        description: "Failed to search assets. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSearchLoading(false);
+    }
   };
 
   const handleBulkDelete = () => {
@@ -217,10 +350,10 @@ const Resources = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedResources.length === filteredResources.length) {
+    if (selectedResources.length === resources.length) {
       setSelectedResources([]);
     } else {
-      setSelectedResources(filteredResources.map(resource => resource.id));
+      setSelectedResources(resources.map(resource => resource.id));
     }
   };
 
@@ -233,34 +366,68 @@ const Resources = () => {
   };
 
   // Organization Management
-  const handleCreateOrganization = (orgData) => {
-    const newOrg = {
-      id: Date.now().toString(),
+  const handleCreateOrganization = async (orgData) => {
+    try {
+      const response = await organizationService.createOrganization({
       name: orgData.name,
+        description: orgData.description || ""
+      });
+
+      const newOrg = {
+        id: response.data.id || response.data._id,
+        name: response.data.name,
+        description: response.data.description,
       type: "organization"
     };
+
     setOrganizations(prev => [...prev, newOrg]);
     setShowOrganizationModal(false);
     toast({
-      title: "Organization created",
-      description: `${orgData.name} has been created successfully.`,
-    });
+        title: "Success",
+        description: `Organization "${orgData.name}" has been created successfully.`,
+      });
+    } catch (error) {
+      console.error('Error creating organization:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create organization. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEditOrganization = (orgData) => {
+  const handleEditOrganization = async (orgData) => {
+    try {
+      const response = await organizationService.editOrganization(editingOrganization.id, {
+        name: orgData.name,
+        description: orgData.description || ""
+      });
+
     setOrganizations(prev => 
       prev.map(org => 
         org.id === editingOrganization.id 
-          ? { ...org, name: orgData.name }
+            ? { 
+                ...org, 
+                name: response.data.name, 
+                description: response.data.description 
+              }
           : org
       )
     );
     setShowOrganizationModal(false);
     setEditingOrganization(null);
     toast({
-      title: "Organization updated",
-      description: `${orgData.name} has been updated successfully.`,
-    });
+        title: "Success",
+        description: `Organization "${orgData.name}" has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating organization:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update organization. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteOrganization = (orgId) => {
@@ -295,8 +462,11 @@ const Resources = () => {
     setShowDeleteConfirmModal(true);
   };
 
-  const confirmDeleteOrganization = () => {
+  const confirmDeleteOrganization = async () => {
     if (!deleteItem || deleteType !== "organization") return;
+    
+    try {
+      await organizationService.deleteOrganization(deleteItem.id);
     
     setOrganizations(prev => prev.filter(org => org.id !== deleteItem.id));
     
@@ -306,44 +476,78 @@ const Resources = () => {
     }
     
     toast({
-      title: "Organization deleted",
-      description: `${deleteItem.name} has been deleted successfully.`,
+        title: "Success",
+        description: `Organization "${deleteItem.name}" has been deleted successfully.`,
     });
     
     setShowDeleteConfirmModal(false);
     setDeleteItem(null);
     setDeleteType(null);
+    } catch (error) {
+      console.error('Error deleting organization:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete organization. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Category Management
-  const handleCreateCategory = (categoryData) => {
+  const handleCreateCategory = async (categoryData) => {
+    try {
+      const response = await categoryService.createCategory({
+        name: categoryData.name
+      });
+
     const newCategory = {
-      id: Date.now().toString(),
-      name: categoryData.name,
-      color: getCategoryColor(categoryData.name)
+        id: response.data.id || response.data._id,
+        name: response.data.name,
+        color: getCategoryColor(response.data.name)
     };
     setCategories(prev => [...prev, newCategory]);
     setShowCategoryModal(false);
     toast({
-      title: "Category created",
-      description: `${categoryData.name} has been created successfully.`,
-    });
+        title: "Success",
+        description: `Category "${categoryData.name}" has been created successfully.`,
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create category. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleEditCategory = (categoryData) => {
+  const handleEditCategory = async (categoryData) => {
+    try {
+      const response = await categoryService.editCategory(editingCategory.id, {
+        name: categoryData.name
+      });
+
     setCategories(prev => 
       prev.map(cat => 
         cat.id === editingCategory.id 
-          ? { ...cat, name: categoryData.name, color: getCategoryColor(categoryData.name) }
+            ? { ...cat, name: response.data.name, color: getCategoryColor(response.data.name) }
           : cat
       )
     );
     setShowCategoryModal(false);
     setEditingCategory(null);
     toast({
-      title: "Category updated",
-      description: `${categoryData.name} has been updated successfully.`,
-    });
+        title: "Success",
+        description: `Category "${categoryData.name}" has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update category. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteCategory = (categoryId) => {
@@ -378,8 +582,11 @@ const Resources = () => {
     setShowDeleteConfirmModal(true);
   };
 
-  const confirmDeleteCategory = () => {
+  const confirmDeleteCategory = async () => {
     if (!deleteItem || deleteType !== "category") return;
+    
+    try {
+      await categoryService.deleteCategory(deleteItem.id);
     
     setCategories(prev => prev.filter(cat => cat.id !== deleteItem.id));
     
@@ -389,13 +596,21 @@ const Resources = () => {
     }
     
     toast({
-      title: "Category deleted",
-      description: `${deleteItem.name} has been deleted successfully.`,
+        title: "Success",
+        description: `Category "${deleteItem.name}" has been deleted successfully.`,
     });
     
     setShowDeleteConfirmModal(false);
     setDeleteItem(null);
     setDeleteType(null);
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete category. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getFileIcon = (fileType) => {
@@ -432,35 +647,85 @@ const Resources = () => {
     return visibility === "global" ? <Globe className="w-4 h-4" /> : <Users className="w-4 h-4" />;
   };
 
-  // Filter resources based on search term, category, and organization
-  const filteredResources = resources.filter(resource => {
-    const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.fileName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = filterCategory === "all" || resource.category === filterCategory;
-    const matchesOrganization = filterOrganization === "all" || resource.organization === filterOrganization;
-    return matchesSearch && matchesCategory && matchesOrganization;
-  });
+  // Since we're now doing server-side search, we don't need client-side filtering
+  // The resources state will contain the search results directly
+  const filteredResources = resources;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 bg-slate-50 min-h-screen p-6">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl p-8 text-center shadow-2xl border border-indigo-200">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-6"></div>
+            <p className="text-gray-700 font-medium">Loading organizations and categories...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl p-6 mb-8 shadow-lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-red-800">Failed to load data</h3>
+              <p className="text-red-700 mt-1">{error}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              className="ml-auto text-red-600 hover:text-red-700 hover:bg-red-100 border-red-300"
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Management Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="w-5 h-5" />
+      <Card className="border-0 shadow-xl bg-white overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+          <CardTitle className="flex items-center gap-3 text-white">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <Building className="w-6 h-6" />
+            </div>
             Manage Organizations & Categories
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-indigo-100">
             Create and edit organizations and categories for better resource organization
           </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                disabled={loading}
+                className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-500"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Organizations Management */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">Organizations</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <Building className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">Organizations</h3>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -468,23 +733,41 @@ const Resources = () => {
                     setEditingOrganization(null);
                     setShowOrganizationModal(true);
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                  disabled={loading}
                 >
                   <Plus className="w-4 h-4" />
                   Add Organization
                 </Button>
               </div>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {organizations.map(org => (
-                  <div key={org.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4 text-gray-600" />
-                      <span className="text-sm font-medium">{org.name}</span>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                {loading ? (
+                  <div className="flex items-center justify-center p-6">
+                    <div className="text-sm text-gray-500">Loading organizations...</div>
+                  </div>
+                ) : organizations.length === 0 ? (
+                  <div className="flex items-center justify-center p-6">
+                    <div className="text-sm text-gray-500">No organizations found</div>
+                  </div>
+                ) : (
+                  organizations.map(org => (
+                  <div key={org.id} className="p-4 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow">
+                        <Building className="w-4 h-4 text-white" />
+                      </div>
+                          <span className="text-base font-semibold text-gray-900 truncate" title={org.name}>{org.name}</span>
                       {org.type === "global" && (
-                        <Badge className="bg-green-100 text-green-800 text-xs">Global</Badge>
+                        <Badge className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1">Global</Badge>
                       )}
                     </div>
-                                         <div className="flex gap-1">
+                        <p className="text-sm text-gray-600 line-clamp-2 ml-11" title={org.description || "No description"}>
+                          {org.description || "No description added"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
                        <Button
                          variant="ghost"
                          size="sm"
@@ -492,7 +775,7 @@ const Resources = () => {
                            setEditingOrganization(org);
                            setShowOrganizationModal(true);
                          }}
-                         className="text-gray-600 hover:text-gray-800"
+                         className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-10 h-10 rounded-full"
                          title="Edit Organization"
                        >
                          <Edit className="w-4 h-4" />
@@ -502,7 +785,7 @@ const Resources = () => {
                            variant="ghost"
                            size="sm"
                            onClick={() => handleDeleteOrganization(org.id)}
-                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                           className="text-red-600 hover:text-red-700 hover:bg-red-50 w-10 h-10 rounded-full"
                            title="Delete Organization"
                          >
                            <Trash2 className="w-4 h-4" />
@@ -510,14 +793,23 @@ const Resources = () => {
                        )}
                      </div>
                   </div>
-                ))}
+                  </div>
+                  ))
+                )}
               </div>
             </div>
 
             {/* Categories Management */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">Categories</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow-sm">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-800">Categories</h3>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -525,19 +817,38 @@ const Resources = () => {
                     setEditingCategory(null);
                     setShowCategoryModal(true);
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+                  disabled={loading}
                 >
                   <Plus className="w-4 h-4" />
                   Add Category
                 </Button>
               </div>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {categories.map(category => (
-                  <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Badge className={category.color}>{category.name}</Badge>
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                {loading ? (
+                  <div className="flex items-center justify-center p-6">
+                    <div className="text-sm text-gray-500">Loading categories...</div>
                     </div>
-                                         <div className="flex gap-1">
+                ) : categories.length === 0 ? (
+                  <div className="flex items-center justify-center p-6">
+                    <div className="text-sm text-gray-500">No categories found</div>
+                  </div>
+                ) : (
+                  categories.map(category => (
+                    <div
+                      key={category.id}
+                      className="p-4 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:ring-2 hover:ring-indigo-200"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${category.color}`}>{category.name}</span>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
                        <Button
                          variant="ghost"
                          size="sm"
@@ -545,7 +856,7 @@ const Resources = () => {
                            setEditingCategory(category);
                            setShowCategoryModal(true);
                          }}
-                         className="text-gray-600 hover:text-gray-800"
+                            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-10 h-10 rounded-full"
                          title="Edit Category"
                        >
                          <Edit className="w-4 h-4" />
@@ -555,7 +866,7 @@ const Resources = () => {
                            variant="ghost"
                            size="sm"
                            onClick={() => handleDeleteCategory(category.id)}
-                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 w-10 h-10 rounded-full"
                            title="Delete Category"
                          >
                            <Trash2 className="w-4 h-4" />
@@ -563,7 +874,9 @@ const Resources = () => {
                        )}
                      </div>
                   </div>
-                ))}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -571,35 +884,47 @@ const Resources = () => {
       </Card>
 
       {/* Upload Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
+      <Card className="border-0 shadow-xl bg-white overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white">
+          <CardTitle className="flex items-center gap-3 text-white">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <Upload className="w-6 h-6" />
+            </div>
             Upload Assets
           </CardTitle>
-                     <CardDescription>
+          <CardDescription className="text-indigo-100">
              Upload images and videos with titles, descriptions, and organization settings. Resources assigned to "Global Resources" will be visible to all users. Supported formats: JPG, PNG, GIF, MP4, MOV, AVI (Max 100MB)
            </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Title *</label>
+        <CardContent className="space-y-6 p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                Title *
+              </label>
               <Input
                 placeholder="Enter asset title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-lg"
               />
             </div>
-                          <div className="space-y-2">
-                <label className="text-sm font-medium">Category *</label>
+                          <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                  Category *
+                </label>
                 <div className="flex gap-2">
                   <select
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                    disabled={loading}
                   >
-                    <option value="">Select Category</option>
+                    <option value="">
+                      {loading ? "Loading..." : "Select Category"}
+                    </option>
                     {categories.map(category => (
                       <option key={category.id} value={category.id}>
                         {category.name}
@@ -613,8 +938,9 @@ const Resources = () => {
                       setEditingCategory(null);
                       setShowCategoryModal(true);
                     }}
-                    className="px-3"
+                    className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
                     title="Add New Category"
+                    disabled={loading}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -630,9 +956,9 @@ const Resources = () => {
                         }
                       }
                     }}
-                    className="px-3"
+                    className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
                     title="Edit Selected Category"
-                    disabled={!formData.category}
+                    disabled={!formData.category || loading}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -640,16 +966,22 @@ const Resources = () => {
               </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                <label className="text-sm font-medium">Organization *</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                  Organization *
+                </label>
                 <div className="flex gap-2">
                   <select
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
                     value={formData.organization}
                     onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
+                    disabled={loading}
                   >
-                    <option value="">Select Organization</option>
+                    <option value="">
+                      {loading ? "Loading..." : "Select Organization"}
+                    </option>
                     {organizations.map(org => (
                       <option key={org.id} value={org.id}>
                         {org.name}
@@ -663,8 +995,9 @@ const Resources = () => {
                       setEditingOrganization(null);
                       setShowOrganizationModal(true);
                     }}
-                    className="px-3"
+                    className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
                     title="Add New Organization"
+                    disabled={loading}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -680,9 +1013,9 @@ const Resources = () => {
                         }
                       }
                     }}
-                    className="px-3"
+                    className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
                     title="Edit Selected Organization"
-                    disabled={!formData.organization}
+                    disabled={!formData.organization || loading}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -691,20 +1024,27 @@ const Resources = () => {
             
           </div>
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Description</label>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+              Description
+            </label>
             <Textarea
               placeholder="Enter asset description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
+              className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-md"
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Select Files *</label>
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+              Select Files *
+            </label>
             <div 
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+              className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-indigo-400 hover:bg-indigo-50/50 transition-all duration-300 bg-gradient-to-br from-gray-50 to-white focus-within:ring-2 focus-within:ring-indigo-200"
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -720,12 +1060,12 @@ const Resources = () => {
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="mb-2"
+                className="mb-4 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg px-6 py-3 rounded-xl transition-transform duration-200 hover:-translate-y-0.5"
               >
-                <Upload className="w-4 h-4 mr-2" />
+                <Upload className="w-5 h-5 mr-2" />
                 Choose Files
               </Button>
-              <p className="text-sm text-gray-600">
+              <p className="text-base text-gray-600 font-medium">
                 Drag and drop files here, or click to browse
               </p>
               {selectedFiles.length > 0 && (
@@ -747,307 +1087,251 @@ const Resources = () => {
 
           <Button 
             onClick={handleUpload} 
-            disabled={uploading || selectedFiles.length === 0 || !formData.title.trim() || !formData.category || !formData.organization}
-            className="w-full"
+            disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.category || !formData.organization}
+            className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
           >
-            {uploading ? "Uploading..." : "Upload Assets"}
+            {uploading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                Uploading...
+              </div>
+            ) : (
+              "Upload Assets"
+            )}
           </Button>
         </CardContent>
       </Card>
 
       {/* Resources List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Uploaded Assets ({filteredResources.length} of {resources.length})
+      <Card className="border-0 shadow-xl bg-white overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white">
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-3 text-white">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                <FileText className="w-6 h-6" />
+              </div>
+              Uploaded Assets ({filteredResources.length})
           </CardTitle>
-          <CardDescription>
+            {/* Global Search Bar */}
+            <div className="flex items-center gap-3">
+              <div className="w-72 relative">
+                <Input
+                  placeholder="Search all assets globally..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleGlobalSearch();
+                    }
+                  }}
+                  className="text-sm pr-10 bg-white/90 border-white/30 focus:bg-white focus:border-white rounded-xl"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setResources([]);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    title="Clear search"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGlobalSearch}
+                disabled={searchLoading || !searchTerm.trim()}
+                className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-500"
+              >
+                {searchLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                Search
+              </Button>
+            </div>
+          </div>
+          <CardDescription className="text-indigo-100">
             Manage and organize your uploaded assets
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-8">
           {/* Select Organization/Category and apply */}
-          <div className="mb-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Select Organization</label>
+          <div className="mb-8 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                  Select Organization
+                </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   value={pendingOrg}
                   onChange={(e) => setPendingOrg(e.target.value)}
+                  disabled={loading}
                 >
-                  {organizations.map(org => (
+                  {loading ? (
+                    <option value="">Loading organizations...</option>
+                  ) : (
+                    organizations.map(org => (
                     <option key={org.id} value={org.id}>
                       {org.name}
                     </option>
-                  ))}
+                    ))
+                  )}
                 </select>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Select Category</label>
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                  Select Category
+                </label>
                 <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                   value={pendingCat}
                   onChange={(e) => setPendingCat(e.target.value)}
-                  disabled={organizations.find(o => o.id === pendingOrg)?.type === "global"}
+                  disabled={loading || organizations.find(o => o.id === pendingOrg)?.type === "global"}
                 >
-                  {categories.map(category => (
+                  {loading ? (
+                    <option value="">Loading categories...</option>
+                  ) : (
+                    categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
-                  ))}
+                    ))
+                  )}
                 </select>
               </div>
               <div className="flex items-end">
                 <Button
-                  className="w-full"
-                  onClick={() => {
+                  className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg py-3 rounded-xl font-semibold transition-transform duration-200 hover:-translate-y-0.5"
+                  onClick={async () => {
+                    try {
+                      setAssetsLoading(true);
                     const selectedOrg = organizations.find(o => o.id === pendingOrg);
-                    // If Global organization, show all organizations' assets (ignore category)
-                    if (selectedOrg?.type === "global") {
-                      setFilterOrganization("all");
-                      setFilterCategory("all");
-                      return;
-                    }
-                    // If category is General, show all categories within selected organization
-                    const selectedCat = categories.find(c => c.id === pendingCat);
-                    if (selectedCat && selectedCat.name.toLowerCase() === "general") {
+                      const payload = {
+                        organization_id: pendingOrg,
+                        category_id: pendingCat
+                      };
+                      // Backend treats Global org specially; still send organization_id
+                      const res = await assetService.getAssets(payload);
+                      const list = res?.data || [];
+                      const normalized = list.map((item, idx) => ({
+                        id: item?.id || item?._id || idx,
+                        title: item?.title || "Untitled",
+                        description: item?.description || "",
+                        category: item?.category_id || pendingCat,
+                        organization: item?.organization_id || pendingOrg,
+                        visibility: selectedOrg?.type === "global" ? "global" : "organization",
+                        fileName: item?.fileName || item?.filename || item?.name || "asset",
+                        fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
+                        fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
+                        uploadDate: item?.createdAt || new Date().toISOString(),
+                        url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
+                      }));
+                      setResources(normalized);
                       setFilterOrganization(pendingOrg);
-                      setFilterCategory("all");
-                      return;
+                      setFilterCategory(selectedOrg?.type === "global" ? "all" : pendingCat);
+                      toast({ title: "Assets loaded", description: `${normalized.length} asset(s) fetched.` });
+                    } catch (e) {
+                      toast({ title: "Failed to load assets", description: "Check organization/category selection and try again.", variant: "destructive" });
+                    } finally {
+                      setAssetsLoading(false);
                     }
-                    // Otherwise, filter by both
-                    setFilterOrganization(pendingOrg);
-                    setFilterCategory(pendingCat);
                   }}
+                  disabled={loading || assetsLoading}
                 >
-                  Show Assets
+                  {assetsLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Loading...
+                    </div>
+                  ) : (
+                    "Show Assets"
+                  )}
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Search and Filter */}
-          {resources.length > 0 && (
-            <div className="mb-6 space-y-4">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Search Assets</label>
-                  <Input
-                    placeholder="Search by title, description, or filename..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
+          {/* Filters removed per request */}
+ 
+          {filteredResources.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FileText className="w-10 h-10 text-slate-400" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Filter by Category</label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                  >
-                    <option value="all">All Categories</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Filter by Organization</label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filterOrganization}
-                    onChange={(e) => setFilterOrganization(e.target.value)}
-                  >
-                    <option value="all">All Organizations</option>
-                    {organizations.map(org => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-              </div>
-              
-                             {/* Reset Filters */}
-               {(searchTerm || filterCategory !== "all" || filterOrganization !== "all") && (
-                 <div className="flex justify-end">
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => {
-                       setSearchTerm("");
-                       setFilterCategory("all");
-                       setFilterOrganization("all");
-                     }}
-                     className="text-gray-600 hover:text-gray-800"
-                   >
-                     Clear Filters
-                   </Button>
-                 </div>
-               )}
-              
-              {/* Bulk Actions */}
-              {filteredResources.length > 0 && (
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={selectedResources.length === filteredResources.length && filteredResources.length > 0}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300"
-                      />
-                      Select All ({selectedResources.length} of {filteredResources.length})
-                    </label>
-                  </div>
-                  {selectedResources.length > 0 && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleBulkDelete}
-                      className="flex items-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete Selected ({selectedResources.length})
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {resources.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No resources uploaded yet.</p>
-              <p className="text-sm">Upload your first resource using the form above.</p>
-            </div>
-          ) : filteredResources.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No resources match your search criteria.</p>
-              <p className="text-sm">Try adjusting your search or filter settings.</p>
+              <p className="text-lg font-semibold mb-2">No assets found.</p>
+              <p className="text-sm">Try changing organization/category or search text.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredResources.map((resource) => {
-                const category = categories.find(cat => cat.id === resource.category);
                 const organization = organizations.find(org => org.id === resource.organization);
-                
+                const category = categories.find(cat => cat.id === resource.category);
                 return (
-                  <Card key={resource.id} className="overflow-hidden">
-                    <div className="relative">
-                      {/* Selection Checkbox */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <input
-                          type="checkbox"
-                          checked={selectedResources.includes(resource.id)}
-                          onChange={() => handleResourceSelect(resource.id)}
-                          className="w-5 h-5 rounded border-gray-300 bg-white shadow-sm"
-                        />
-                      </div>
-                      
-                      {resource.fileType === 'image' ? (
-                        <img
-                          src={resource.thumbnail}
-                          alt={resource.title}
-                          className="w-full h-48 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-gray-100 flex items-center justify-center">
-                          <Video className="w-16 h-16 text-gray-400" />
-                        </div>
-                      )}
-                      
-                      {/* Category Badge */}
-                      <div className="absolute top-2 right-2">
-                        <Badge className={category?.color || "bg-gray-100 text-gray-800"}>
-                          {category?.name || "Unknown"}
-                        </Badge>
-                      </div>
-                      
-                      {/* Visibility Badge */}
-                      <div className="absolute bottom-2 right-2">
-                        <Badge className={resource.visibility === "global" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                          {getVisibilityIcon(resource.visibility)}
-                          <span className="ml-1">{resource.visibility === "global" ? "Global" : "Org"}</span>
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-gray-900 line-clamp-2">
-                          {resource.title}
-                        </h3>
-                      </div>
-                      
-                      {resource.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                          {resource.description}
-                        </p>
-                      )}
-                      
-                      {/* Organization Info */}
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                        <Building className="w-3 h-3" />
-                        <span>{organization?.name || "Unknown Organization"}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                  <div key={resource.id} className="flex flex-col rounded-3xl p-6 shadow-xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 ring-1 ring-slate-100 hover:ring-indigo-200 transform hover:-translate-y-2">
+                    <div className="flex-1 space-y-2">
+                      <div className="text-base md:text-lg font-semibold text-gray-900" title={resource.title}>{resource.title || 'Untitled asset'}</div>
+                      <div className="flex items-start gap-2 text-xs text-gray-700 min-w-0">
                         {getFileIcon(resource.fileType)}
-                        <span>{resource.fileName}</span>
-                        <span>•</span>
-                        <span>{resource.fileSize} MB</span>
+                        <a href={resource.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-words whitespace-pre-wrap w-full" title={resource.url}>
+                          {resource.url}
+                        </a>
                       </div>
-                      
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(resource.uploadDate)}</span>
+                      {resource.description ? (
+                        <p className="text-xs text-gray-600 line-clamp-2">{resource.description}</p>
+                      ) : null}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {category ? (
+                          <span className={`px-2 py-0.5 rounded-full text-[11px] ${category.color}`}>{category.name}</span>
+                        ) : null}
+                        <div className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-blue-100 text-blue-800" title={organization?.name || 'Unknown Org'}>
+                          <Building className="w-3 h-3 mr-1" />
+                          {organization?.name || 'Unknown Org'}
+                        </div>
+                        {resource.fileSize ? (
+                          <span className="px-2 py-0.5 rounded-full text-[11px] bg-purple-100 text-purple-800">{resource.fileSize} MB</span>
+                        ) : null}
                       </div>
-                      
-                      <div className="flex gap-2">
+                      </div>
+                    <div className="flex items-center justify-end gap-3 pt-6">
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => window.open(resource.url, '_blank')}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
+                        size="icon"
+                        className="hover:bg-indigo-50 w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg transition-transform duration-200 hover:-translate-y-0.5"
+                        onClick={() => { navigator.clipboard.writeText(resource.url); toast({ title: 'Copied', description: 'Link copied to clipboard' }); }}
+                        title="Copy link"
+                      >
+                        <Copy className="w-5 h-5" />
                         </Button>
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = resource.url;
-                            link.download = resource.fileName;
-                            link.click();
-                          }}
-                        >
-                          <Download className="w-4 h-4 mr-1" />
-                          Download
+                        size="icon"
+                        className="hover:bg-slate-50 w-12 h-12 rounded-full bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-lg transition-transform duration-200 hover:-translate-y-0.5"
+                        onClick={() => handleOpenEditAsset(resource)}
+                        title="Edit"
+                      >
+                        <Edit className="w-5 h-5" />
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
+                        variant="destructive"
+                        size="icon"
+                        className="w-12 h-12 rounded-full bg-red-600 text-white border-0 hover:bg-red-700 shadow-lg"
                           onClick={() => handleDelete(resource.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-5 h-5" />
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
+                  </div>
                 );
               })}
             </div>
@@ -1092,6 +1376,15 @@ const Resources = () => {
           }}
         />
       )}
+
+      {/* Edit Asset Modal */}
+      {showEditAssetModal && (
+        <EditAssetModal
+          asset={editingAsset}
+          onSave={handleSaveEditAsset}
+          onClose={() => { setShowEditAssetModal(false); setEditingAsset(null); }}
+        />
+      )}
     </div>
   );
 };
@@ -1099,7 +1392,8 @@ const Resources = () => {
 // Organization Modal Component
 const OrganizationModal = ({ organization, onSave, onClose }) => {
   const [formData, setFormData] = useState({
-    name: organization?.name || ""
+    name: organization?.name || "",
+    description: organization?.description || ""
   });
 
   const handleSubmit = (e) => {
@@ -1117,13 +1411,24 @@ const OrganizationModal = ({ organization, onSave, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Organization Name
+              Organization Name *
             </label>
             <Input
               value={formData.name}
-              onChange={(e) => setFormData({ name: e.target.value })}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter organization name"
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Enter organization description (optional)"
+              rows={3}
             />
           </div>
           <div className="flex gap-2 justify-end">
@@ -1239,6 +1544,49 @@ const DeleteConfirmModal = ({ item, type, onConfirm, onClose }) => {
             Delete
           </Button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Edit Asset Modal Component
+const EditAssetModal = ({ asset, onSave, onClose }) => {
+  const [local, setLocal] = useState({ title: asset?.title || "", description: asset?.description || "" });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!local.title.trim()) return;
+    onSave(local);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 className="text-lg font-semibold mb-4">Edit Asset</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <Input
+              value={local.title}
+              onChange={(e) => setLocal(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Enter asset title"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <Textarea
+              value={local.description}
+              onChange={(e) => setLocal(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Enter description (optional)"
+              rows={3}
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit">Save</Button>
+          </div>
+        </form>
       </div>
     </div>
   );
