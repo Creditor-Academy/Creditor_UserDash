@@ -30,11 +30,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import axios from "axios";
-
+import { getUserTickets } from "@/services/ticketService";
 import { useAuth } from "@/contexts/AuthContext";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-testing-branch.onrender.com";
+
 
 const statusColor = (status) => {
   switch (status?.toUpperCase()) {
@@ -65,7 +64,7 @@ const priorityColor = (priority) => {
 };
 
 export default function MyTickets() {
-  const { isInstructorOrAdmin } = useAuth();
+  const { isInstructorOrAdmin, hasRole } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,8 +74,8 @@ export default function MyTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
 
-  // Check if user is instructor or admin
-  const isInstructor = isInstructorOrAdmin();
+  // Check if user is admin (admins should not access this page)
+  const isAdmin = hasRole('admin');
 
   // Fetch tickets from backend
   const fetchTickets = async () => {
@@ -84,21 +83,45 @@ export default function MyTickets() {
       setLoading(true);
       setError(null);
       
-      // Backend's HttpOnly token cookie will be automatically sent with the request
-      const response = await axios.get(`${API_BASE}/api/support-tickets/user/me`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
+      // Use the ticketService function which handles authentication properly
+      console.log('Fetching user tickets...');
+      const response = await getUserTickets();
+      
+      console.log('API Response:', response.data);
 
       if (response.data && response.data.success) {
-        setTickets(response.data.data || []);
+        const incoming = response.data.data || [];
+        const normalized = incoming.map((t) => ({
+          ...t,
+          createdAt:
+            t.createdAt ||
+            t.created_at ||
+            t.created_on ||
+            t.createdDate ||
+            t.created ||
+            t.created_time ||
+            t.createdTime || null,
+          updatedAt:
+            t.updatedAt ||
+            t.updated_at ||
+            t.updated_on ||
+            t.updatedDate ||
+            t.updated ||
+            t.updated_time ||
+            t.updatedTime || null,
+        }));
+        setTickets(normalized);
       } else {
         throw new Error(response.data?.message || 'Failed to fetch tickets');
       }
     } catch (err) {
       console.error('Error fetching tickets:', err);
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data
+      });
       setError(err.response?.data?.message || err.message || 'Failed to load tickets');
       
       // Silently handle errors on this page; no toast banners
@@ -116,9 +139,9 @@ export default function MyTickets() {
 
   // Sort tickets by creation date (newest first) before filtering
   const sortedTickets = [...tickets].sort((a, b) => {
-    const dateA = new Date(a.createdAt || 0);
-    const dateB = new Date(b.createdAt || 0);
-    return dateB - dateA; // Descending order (newest first)
+    const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime; // Newest first
   });
 
   const filteredTickets = sortedTickets.filter((ticket) => {
@@ -166,7 +189,7 @@ export default function MyTickets() {
     }
   };
 
-  if (isInstructor) {
+  if (isAdmin) {
     return (
       <div className="fixed inset-0 bg-blue-900/50 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
@@ -176,7 +199,7 @@ export default function MyTickets() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-          <p className="text-gray-600 mb-6">Only users can access this page.</p>
+          <p className="text-gray-600 mb-6">Admins cannot access this page. Please use the Support Tickets admin view.</p>
           <Button asChild>
             <Link to="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white">
               Go to Dashboard

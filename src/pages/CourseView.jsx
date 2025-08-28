@@ -365,6 +365,7 @@ export function CourseView() {
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="bg-white/95 rounded-full p-4 shadow-xl">
                               <Clock className="w-8 h-8 text-gray-700" />
+                              <Clock className="w-8 h-8 text-gray-700" />
                             </div>
                           </div>
                         )}
@@ -401,10 +402,10 @@ export function CourseView() {
                                 </Button>
                               </Link>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                                {/* <Button variant="outline" className="w-full">
+                               <Button variant="outline" className="w-full">
                                   <FileText size={16} className="mr-2" />
                                   Start Assessment
-                                </Button> */}
+                                </Button> 
                               </Link>
                             </>
                           ) : (!hasContent ? (

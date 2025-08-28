@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User } from "lucide-react";
+import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User, Menu } from "lucide-react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
@@ -12,9 +12,10 @@ import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
 import { fetchDetailedUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
 
-export function DashboardHeader() {
-  const { isInstructorOrAdmin } = useAuth();
+export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
+  const { isInstructorOrAdmin, hasRole } = useAuth();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -26,15 +27,46 @@ export function DashboardHeader() {
   const [isLoadingEnrolled, setIsLoadingEnrolled] = useState(true);
   const [showEnrollmentAlert, setShowEnrollmentAlert] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
-  const [unreadNotifications, setUnreadNotifications] = useState(2); // Default count
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState(null);
+  const [apiNotifications, setApiNotifications] = useState([]);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Local notifications persistence helpers
+  const LOCAL_NOTIFS_KEY = 'local_notifications';
+  const READ_ALL_AT_KEY = 'notifications_read_all_at';
+  const readLocalNotifications = () => {
+    try {
+      const raw = localStorage.getItem(LOCAL_NOTIFS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+  const writeLocalNotifications = (items) => {
+    try {
+      localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(items || []));
+    } catch {}
+  };
+  const readReadAllAt = () => {
+    try {
+      return localStorage.getItem(READ_ALL_AT_KEY) || null;
+    } catch {
+      return null;
+    }
+  };
+  const writeReadAllAt = (isoString) => {
+    try {
+      localStorage.setItem(READ_ALL_AT_KEY, isoString || "");
+    } catch {}
+  };
 
   // Fetch enrolled courses on component mount
   useEffect(() => {
@@ -51,6 +83,121 @@ export function DashboardHeader() {
     };
 
     fetchEnrolledCourses();
+  }, []);
+
+  // Centralized notifications fetcher
+  const refreshNotifications = async () => {
+    try {
+      const response = await fetchNotifications();
+      // Backend returns: { success: true, notifications: [...] }
+      let notificationsRaw = response.data?.notifications || [];
+      // Do not show ticket-reply notifications to admins
+      if (hasRole && hasRole('admin')) {
+        notificationsRaw = notificationsRaw.filter(n =>
+          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+        );
+      }
+      const readAllAt = readReadAllAt();
+      const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
+      // Apply client-side read cutoff so items before readAllAt are treated as read
+      const notifications = notificationsRaw.map(n => {
+        if (!readAllAtTime) return n;
+        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
+        if (createdTime && createdTime <= readAllAtTime) {
+          return { ...n, read: true };
+        }
+        return n;
+      });
+      
+      // Merge with local notifications currently in state by id
+      setApiNotifications(prev => {
+        const localItems = readLocalNotifications();
+        const byId = new Map();
+        [...localItems, ...notifications, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        const merged = Array.from(byId.values());
+        return merged;
+      });
+      
+      let localItems = readLocalNotifications().map(n => {
+        if (!readAllAtTime) return n;
+        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
+        if (createdTime && createdTime <= readAllAtTime) {
+          return { ...n, read: true };
+        }
+        return n;
+      });
+      if (hasRole && hasRole('admin')) {
+        localItems = localItems.filter(n =>
+          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
+        );
+      }
+      const unread = [...notifications, ...localItems].filter(n => !n.read).length;
+      setUnreadNotifications(unread);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+      // On failure, at least reflect local unread count
+      const localItems = readLocalNotifications();
+      setApiNotifications(prev => {
+        const byId = new Map();
+        [...localItems, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
+        return Array.from(byId.values());
+      });
+      setUnreadNotifications(localItems.filter(n => !n.read).length);
+    }
+  };
+
+  // Retry helper to handle eventual consistency from backend
+  const refreshNotificationsWithRetry = async () => {
+    await refreshNotifications();
+    setTimeout(() => {
+      refreshNotifications();
+    }, 1500);
+  };
+
+  // Initial notifications load: hydrate locals, then refresh from API
+  useEffect(() => {
+    const locals = readLocalNotifications();
+    const readAllAt = readReadAllAt();
+    const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
+    if (locals.length) {
+      const normalizedLocals = readAllAtTime
+        ? locals.map(n => {
+            const t = n.created_at ? new Date(n.created_at).getTime() : null;
+            return (t && t <= readAllAtTime) ? { ...n, read: true } : n;
+          })
+        : locals;
+      setApiNotifications(prev => [...normalizedLocals, ...prev]);
+      setUnreadNotifications(normalizedLocals.filter(n => !n.read).length);
+    }
+    refreshNotificationsWithRetry();
+  }, []);
+
+  // Refresh notifications when modal opens
+  useEffect(() => {
+    if (!notificationModalOpen) return;
+    refreshNotificationsWithRetry();
+  }, [notificationModalOpen]);
+
+  // Listen for global refresh events (e.g., after creating a course)
+  useEffect(() => {
+    const handler = () => refreshNotificationsWithRetry();
+    window.addEventListener('refresh-notifications', handler);
+    return () => window.removeEventListener('refresh-notifications', handler);
+  }, []);
+
+  // Listen for adding a local notification (frontend fallback)
+  useEffect(() => {
+    const handler = (e) => {
+      const incoming = e?.detail;
+      if (!incoming) return;
+      setApiNotifications(prev => [incoming, ...prev]);
+      if (!incoming.read) setUnreadNotifications(prev => prev + 1);
+      // Persist
+      const locals = readLocalNotifications();
+      writeLocalNotifications([incoming, ...locals]);
+    };
+    window.addEventListener('add-local-notification', handler);
+    return () => window.removeEventListener('add-local-notification', handler);
   }, []);
 
   // Debounced search effect
@@ -205,28 +352,64 @@ export function DashboardHeader() {
     setUnreadNotifications(newCount);
   };
 
+  // Handler passed to modal when all marked as read
+  const handleAllMarkedRead = async () => {
+    try {
+      // Try to call backend to mark all as read (if route is enabled)
+      await markAllNotificationsRead();
+      console.log('Backend marked all notifications as read');
+    } catch (error) {
+      console.warn('Backend mark as read failed, using frontend fallback:', error);
+    }
+    
+    // Persist read-all cutoff and update local storage
+    const nowIso = new Date().toISOString();
+    writeReadAllAt(nowIso);
+    const locals = readLocalNotifications();
+    const updatedLocals = locals.map(n => ({ ...n, read: true }));
+    writeLocalNotifications(updatedLocals);
+    
+    // Update state
+    setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadNotifications(0);
+    
+    // Refresh notifications from backend to ensure consistency
+    setTimeout(() => {
+      refreshNotifications();
+    }, 500);
+  };
+
   return (
     <>
       <header className="sticky top-0 z-30 w-full bg-white border-b border-gray-200 shadow-sm backdrop-blur-md bg-white/95">
-        <div className="container h-16 flex items-center justify-between px-6">
-          {/* Logo/Brand */}
-          <button
-            className="flex items-center focus:outline-none"
-            onClick={() => {
-              if (window.location.pathname === '/dashboard') {
-                window.location.reload();
-              } else {
-                window.location.href = '/dashboard';
-              }
-            }}
-          >
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              LMS Athena 
-            </h1>
-          </button>
+        <div className="h-16 flex items-center justify-between px-4 sm:px-6">
+          {/* Left: Mobile menu + Logo */}
+          <div className="flex items-center gap-3">
+            <button
+              className="lg:hidden p-2 rounded-lg border border-gray-200 hover:bg-gray-50"
+              aria-label="Open menu"
+              onClick={() => onMobileMenuClick && onMobileMenuClick()}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <button
+              className="flex items-center focus:outline-none"
+              onClick={() => {
+                if (window.location.pathname === '/dashboard') {
+                  window.location.reload();
+                } else {
+                  window.location.href = '/dashboard';
+                }
+              }}
+            >
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                LMS Athena 
+              </h1>
+            </button>
+          </div>
           
           {/* Search Bar */}
-          <div className="flex-1 max-w-md mx-8 relative">
+          <div className="hidden md:block flex-1 max-w-md mx-8 relative">
             <form onSubmit={handleSearchSubmit} className="relative">
               <span className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400">
                 {isSearching ? (
@@ -403,15 +586,16 @@ export function DashboardHeader() {
             <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              aria-label="Notifications"
             >
-              <BellDot className="h-6 w-6" />
+              <BellDot className="h-5 w-5" />
               {unreadNotifications > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
                 </span>
               )}
             </button>
-
+            
             {/* Profile Dropdown */}
             <div className="ml-2">
               <ProfileDropdown />
@@ -430,6 +614,8 @@ export function DashboardHeader() {
           open={notificationModalOpen} 
           onOpenChange={setNotificationModalOpen}
           onNotificationUpdate={handleNotificationUpdate}
+          notificationsFromApi={apiNotifications}
+          onMarkedAllRead={handleAllMarkedRead}
         />
         
         {/* Inbox Modal */}

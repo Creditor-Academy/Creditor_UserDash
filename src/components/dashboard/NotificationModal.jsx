@@ -12,71 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { markAllNotificationsRead } from "@/services/notificationService";
 
-export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) {
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      type: "info",
-      title: "New course available",
-      description: "Advanced Risk Assessment is now open for enrollment",
-      time: "5 minutes ago",
-      color: "bg-blue-100",
-      dotColor: "bg-blue-500",
-      read: false
-    },
-    {
-      id: "2",
-      type: "success",
-      title: "Assignment graded",
-      description: "Your Module 4 assignment received a score of 95%",
-      time: "1 hour ago",
-      color: "bg-green-100",
-      dotColor: "bg-green-500",
-      read: false
-    },
-    {
-      id: "3",
-      type: "warning",
-      title: "Reminder",
-      description: "Live session starts in 30 minutes",
-      time: "30 minutes ago",
-      color: "bg-orange-100",
-      dotColor: "bg-orange-500",
-      read: true
-    },
-    // Payment-related sample notifications
-    {
-      id: "4",
-      type: "payment",
-      title: "Payment Due",
-      description: "Your monthly subscription payment of $29.99 is due in 3 days",
-      time: "2 hours ago",
-      color: "bg-red-100",
-      dotColor: "bg-red-500",
-      read: false
-    },
-    {
-      id: "5",
-      type: "payment",
-      title: "Payment Reminder",
-      description: "Course enrollment fee of $99.99 will be charged on March 15th",
-      time: "1 day ago",
-      color: "bg-yellow-100",
-      dotColor: "bg-yellow-500",
-      read: false
-    },
-    {
-      id: "6",
-      type: "payment",
-      title: "Payment Successful",
-      description: "Your payment of $49.99 for Premium Plan has been processed",
-      time: "3 days ago",
-      color: "bg-emerald-100",
-      dotColor: "bg-emerald-500",
-      read: true
-    }
-  ]);
+export function NotificationModal({ open, onOpenChange, onNotificationUpdate, notificationsFromApi = [], onMarkedAllRead }) {
+  const [notifications, setNotifications] = useState([]);
 
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
@@ -89,6 +28,25 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
     paymentReminders: true,
     paymentDueAlerts: true,
   });
+
+  // Load API notifications when provided
+  useEffect(() => {
+    if (Array.isArray(notificationsFromApi)) {
+      const mapped = notificationsFromApi.map((n) => ({
+        id: String(n.id ?? n._id ?? Math.random()),
+        type: (n.type || 'info').toString().toLowerCase(),
+        title: n.title || 'Notification',
+        description: n.message || n.description || '',
+        time: new Date(n.created_at || n.createdAt || Date.now()).toLocaleString(),
+        color: n.read ? 'bg-gray-50' : 'bg-blue-50',
+        dotColor: n.read ? 'bg-gray-300' : 'bg-blue-500',
+        read: !!n.read,
+      }));
+      setNotifications(mapped);
+    } else {
+      setNotifications([]);
+    }
+  }, [notificationsFromApi]);
 
   // Initialize unread count when modal opens
   useEffect(() => {
@@ -106,8 +64,15 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
     if (onNotificationUpdate) onNotificationUpdate(newUnreadCount);
   };
 
-  const handleMarkAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllNotificationsRead();
+    } catch (e) {
+      // If backend route isn't available, proceed with frontend-only update
+      console.warn('Mark-all API failed or unavailable; applying frontend fallback.');
+    }
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    if (onMarkedAllRead) onMarkedAllRead();
     toast.success("All notifications marked as read");
     if (onNotificationUpdate) onNotificationUpdate(0);
   };
@@ -152,7 +117,11 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
             </TabsList>
             
             <TabsContent value="all" className="space-y-2 mt-3">
-              {notifications.map((notification) => (
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500 text-xs">No notifications yet</p>
+                </div>
+              ) : notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
@@ -252,7 +221,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                       key={notification.id}
                       className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
                     >
-                      <div className="flex items-start gap-2">
+                      <div className="flex items.start gap-2">
                         <div className={`w-2 h-2 rounded-full ${notification.dotColor} mt-1.5 flex-shrink-0`} />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-gray-900 text-xs">
@@ -372,7 +341,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate }) 
                   />
                 </div>
                 
-                <div className="flex items-center justify-between">
+                <div className="flex items.center justify-between">
                   <Label htmlFor="system-announcements" className="flex flex-col">
                     <span className="text-xs text-gray-900">System Announcements</span>
                     <span className="text-xs text-gray-500">Platform updates and maintenance notices</span>
