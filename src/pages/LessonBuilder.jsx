@@ -488,20 +488,48 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const updateBlockContent = (blockId, content, heading = null, subheading = null) => {
+    // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
       blocks.map(block =>
         block.id === blockId ? {
           ...block,
           content,
-          ...(heading !== null && { heading }),
-          ...(subheading !== null && { subheading })
+          heading,
+          subheading,
+          updatedAt: new Date().toISOString()
         } : block
       )
     );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            block.block_id === blockId ? {
+              ...block,
+              content,
+              heading,
+              subheading,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
   };
 
   const handleEditBlock = (blockId) => {
-    const block = contentBlocks.find(b => b.id === blockId);
+    // First try to find block in contentBlocks (for new lessons)
+    let block = contentBlocks.find(b => b.id === blockId);
+    
+    // If not found, try to find in lessonContent (for fetched lessons)
+    if (!block && lessonContent?.data?.content) {
+      block = lessonContent.data.content.find(b => b.block_id === blockId);
+    }
+    
     if (!block) return;
    
     if (block.type === 'text') {
@@ -780,36 +808,80 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     try {
       setIsUploading(true);
 
+      // Use contentBlocks if it has data (newly added content), otherwise use lessonContent (fetched content)
+      // This ensures newly added content takes priority over fetched content
+      const blocksToUpdate = contentBlocks.length > 0 ? contentBlocks : (lessonContent?.data?.content || []);
+
       // Allow empty content blocks for deletion operations
-      /*if (!contentBlocks || contentBlocks.length === 0) {
+      /*if (!blocksToUpdate || blocksToUpdate.length === 0) {
         toast.error('Please add some content before updating');
         return;
       }*/
 
       // Convert content blocks to the required format
-      const content = contentBlocks.map((block, index) => {
-        const blockId = `block_${index + 1}`;
+      const content = blocksToUpdate.map((block, index) => {
+        const blockId = block.block_id || `block_${index + 1}`;
+        
+        // If block already has html_css (fetched content), preserve it to avoid wrapping in new containers
+        if (block.html_css && block.html_css.trim() !== '') {
+          return {
+            type: block.type,
+            script: block.script || '',
+            block_id: blockId,
+            html_css: block.html_css,
+            ...(block.details && { details: block.details })
+          };
+        }
+
+        // Only generate new HTML for newly created blocks without existing html_css
         let htmlContent = '';
         let details = {};
         let script = '';
 
-        switch (block.type) {
+        // Extract content from different possible sources
+        const blockContent = block.content || '';
+        const blockType = block.type;
+        const textType = block.textType;
+
+        switch (blockType) {
           case 'text':
             // Handle different text types
-            if (block.textType === 'heading') {
+            if (textType === 'heading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
                   <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
                   <article class="prose prose-gray max-w-none pl-4">
-                    <h1 class="text-2xl font-bold text-gray-800">${block.content || ''}</h1>
+                    <h1 class="text-2xl font-bold text-gray-800">${blockContent}</h1>
                   </article>
                 </div>`;
-            } else if (block.textType === 'subheading') {
+            } else if (textType === 'subheading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
                   <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
                   <article class="prose prose-gray max-w-none pl-4">
-                    <h2 class="text-xl font-semibold text-gray-800">${block.content || ''}</h2>
+                    <h2 class="text-xl font-semibold text-gray-800">${blockContent}</h2>
+                  </article>
+                </div>`;
+            } else if (textType === 'heading_paragraph') {
+              const heading = block.heading || '';
+              const content = block.content || '';
+              htmlContent = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <article class="prose prose-gray max-w-none pl-4">
+                    <h1 class="text-2xl font-bold text-gray-800">${heading}</h1>
+                    <p class="text-gray-600 leading-relaxed">${content}</p>
+                  </article>
+                </div>`;
+            } else if (textType === 'subheading_paragraph') {
+              const subheading = block.subheading || '';
+              const content = block.content || '';
+              htmlContent = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <article class="prose prose-gray max-w-none pl-4">
+                    <h2 class="text-xl font-semibold text-gray-800">${subheading}</h2>
+                    <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
                 </div>`;
             } else {
@@ -817,7 +889,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
                   <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
                   <article class="prose prose-gray max-w-none pl-4">
-                    <p class="text-gray-600 leading-relaxed">${block.content || ''}</p>
+                    <p class="text-gray-600 leading-relaxed">${blockContent}</p>
                   </article>
                 </div>`;
             }
@@ -868,7 +940,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       });
 
       // Convert blocks to HTML/CSS/JS format
-      const convertedBlocks = convertBlocksToHtml(contentBlocks);
+      const convertedBlocks = convertBlocksToHtml(blocksToUpdate);
 
       // Combine all blocks
       const combinedContent = {
@@ -878,25 +950,42 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       };
 
       // Format content blocks into a simpler structure
-      const formattedContent = contentBlocks.map(block => {
+      const formattedContent = blocksToUpdate.map(block => {
         let htmlContent = '';
         let styles = '';
 
-        if (block.type === 'text') {
-          switch (block.textType) {
+        // Extract content from different possible sources
+        const blockContent = block.content || block.html_css || '';
+        const blockType = block.type;
+        const textType = block.textType;
+
+        if (blockType === 'text') {
+          switch (textType) {
             case 'heading':
-              htmlContent = `<h1 class="lesson-heading">${block.content}</h1>`;
+              htmlContent = `<h1 class="lesson-heading">${blockContent}</h1>`;
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
               break;
             case 'subheading':
-              htmlContent = `<h4 class="lesson-subheading">${block.content}</h4>`;
+              htmlContent = `<h4 class="lesson-subheading">${blockContent}</h4>`;
               styles = '.lesson-subheading { font-size: 20px; font-weight: 600; margin-bottom: 12px; }';
               break;
+            case 'heading_paragraph':
+              const heading = block.heading || '';
+              const content = block.content || '';
+              htmlContent = `<h1 class="lesson-heading">${heading}</h1><p class="lesson-paragraph">${content}</p>`;
+              styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; } .lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
+              break;
+            case 'subheading_paragraph':
+              const subheading = block.subheading || '';
+              const paragraphContent = block.content || '';
+              htmlContent = `<h4 class="lesson-subheading">${subheading}</h4><p class="lesson-paragraph">${paragraphContent}</p>`;
+              styles = '.lesson-subheading { font-size: 20px; font-weight: 600; margin-bottom: 12px; } .lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
+              break;
             default:
-              htmlContent = `<p class="lesson-paragraph">${block.content}</p>`;
+              htmlContent = `<p class="lesson-paragraph">${blockContent}</p>`;
               styles = '.lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
           }
-        } else if (block.type === 'image') {
+        } else if (blockType === 'image') {
           htmlContent = `
             <div class="lesson-image ${block.layout || 'centered'}">
               <img src="${block.imageUrl}" alt="${block.imageTitle || ''}" />
@@ -911,6 +1000,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         };
       });
 
+      // Debug: Log the data being sent
+      console.log('Blocks to update:', blocksToUpdate);
+      console.log('Processed content:', content);
+      console.log('Formatted content:', formattedContent);
+
       // Update the lesson content
       const lessonDataToUpdate = {
         lesson_id: lessonId,
@@ -919,6 +1013,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         css: formattedContent.map(content => content.css).join('\\n'),
         script: '' // Add script if needed in the future
       };
+
+      console.log('Payload being sent to backend:', lessonDataToUpdate);
 
       const response = await axios.put(
         `https://sharebackend-sdkp.onrender.com/api/lessoncontent/update/${lessonId}`,
@@ -2828,42 +2924,27 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                
                 // Default fallback for new blocks or unknown types
                 return (
-                  <div className="flex-1 flex flex-col gap-4 h-full">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Title <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={editorTitle}
-                        onChange={(e) => setEditorTitle(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter block title"
-                        required
+                  <div className="flex-1 flex flex-col h-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Heading
+                    </label>
+                    <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <ReactQuill
+                        theme="snow"
+                        value={editorHtml}
+                        onChange={setEditorHtml}
+                        modules={{
+                          toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline'],
+                            [{ 'color': [] }, { 'background': [] }],
+                            [{ 'align': [] }],
+                            ['clean']
+                          ]
+                        }}
+                        placeholder="Enter your heading text..."
+                        className="flex-1"
                       />
-                    </div>
-                   
-                    <div className="flex-1 flex flex-col h-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Content
-                      </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
-                        <ReactQuill
-                          theme="snow"
-                          value={editorHtml}
-                          onChange={setEditorHtml}
-                          modules={{
-                            toolbar: [
-                              [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                              ['bold', 'italic', 'underline', 'strike'],
-                              [{ 'color': [] }, { 'background': [] }],
-                              [{ 'align': [] }],
-                              ['clean']
-                            ]
-                          }}
-                          className="flex-1"
-                        />
-                      </div>
                     </div>
                   </div>
                 );
