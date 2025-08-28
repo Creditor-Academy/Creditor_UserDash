@@ -202,6 +202,15 @@ function SignUp({ onBack }) {
         body: JSON.stringify({ email, phone })
       });
       const data = await res.json();
+      
+      // Check if OTP was already sent (this is a success case, not an error)
+      if (data?.message?.includes("OTP already sent") || data?.message?.includes("already sent")) {
+        toast.success(data?.message || `OTP already sent to ${email}`);
+        setOtpOpen(true);
+        setResendIn(20);
+        return;
+      }
+      
       if (!res.ok) throw new Error(data?.message || "Failed to send OTP");
       toast.success(data?.message || `OTP sent to ${email}`);
       setOtpOpen(true);
@@ -282,6 +291,14 @@ function SignUp({ onBack }) {
         body: JSON.stringify({ email })
       });
       const data = await res.json();
+      
+      // Check if the response indicates OTP was already sent (this is actually a success case)
+      if (data?.message?.includes("OTP already sent") || data?.message?.includes("already sent")) {
+        toast.success(data?.message || "OTP already sent, please check your email");
+        setResendIn(20);
+        return;
+      }
+      
       if (!res.ok) throw new Error(data?.message || "Failed to resend OTP");
       toast.success(data?.message || "OTP resent");
       setResendIn(20);
@@ -374,7 +391,14 @@ function SignUp({ onBack }) {
       </div>
 
       {/* OTP Modal */}
-      <Dialog open={otpOpen} onOpenChange={setOtpOpen}>
+      <Dialog open={otpOpen} onOpenChange={(open) => {
+        setOtpOpen(open);
+        if (!open) {
+          // Reset OTP state when modal is closed
+          setOtp("");
+          setResendIn(0);
+        }
+      }}>
         <DialogContent
           className="sm:max-w-[480px] rounded-xl"
           onInteractOutside={(e) => e.preventDefault()}
@@ -424,7 +448,11 @@ function SignUp({ onBack }) {
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-3">
-            <Button variant="outline" onClick={() => setOtpOpen(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button variant="outline" onClick={() => {
+              setOtpOpen(false);
+              setOtp("");
+              setResendIn(0);
+            }} className="w-full sm:w-auto">Cancel</Button>
             <Button onClick={handleVerify} disabled={isLoading || otp.length !== 6} className="w-full sm:w-auto">
               {isLoading ? 'Verifying...' : 'Verify'}
             </Button>
