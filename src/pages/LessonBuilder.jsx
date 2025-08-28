@@ -1220,13 +1220,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     if (blockToUpdate) {
       let updatedContent = '';
       
+      // Use currentTextType (detected type) or fallback to blockToUpdate.textType
+      const effectiveTextType = currentTextType || blockToUpdate.textType;
+      
       // For fetched lessons, preserve original HTML structure and only update content
       if (blockToUpdate.html_css && lessonContent?.data?.content) {
         // Use original HTML structure and replace only the text content
         updatedContent = blockToUpdate.html_css;
         
         // Replace the text content while preserving HTML structure
-        if (blockToUpdate.textType === 'heading_paragraph') {
+        
+        if (effectiveTextType === 'heading_paragraph') {
           // Update heading and paragraph content within existing structure
           updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
             return match.replace(p1, editorHeading);
@@ -1234,7 +1238,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
             return match.replace(p1, editorContent);
           });
-        } else if (blockToUpdate.textType === 'subheading_paragraph') {
+        } else if (effectiveTextType === 'subheading_paragraph') {
           // Update subheading and paragraph content within existing structure
           updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
             return match.replace(p1, editorSubheading);
@@ -1318,7 +1322,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         // For new blocks, generate HTML structure
         const textType = textTypes.find(t => t.id === blockToUpdate.textType);
         
-        if (blockToUpdate.textType === 'heading_paragraph') {
+        
+        if (effectiveTextType === 'heading_paragraph') {
           updatedContent = `
             <div class="content-block">
               <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
@@ -1329,7 +1334,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </div>
             </div>
           `;
-        } else if (blockToUpdate.textType === 'subheading_paragraph') {
+        } else if (effectiveTextType === 'subheading_paragraph') {
           updatedContent = `
             <div class="content-block">
               <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
@@ -1361,10 +1366,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             ? {
                 ...block,
                 content: updatedContent,
-                heading: blockToUpdate.textType === 'heading_paragraph' ? editorHeading : block.heading,
-                subheading: blockToUpdate.textType === 'subheading_paragraph' ? editorSubheading : block.subheading,
+                heading: effectiveTextType === 'heading_paragraph' ? editorHeading : block.heading,
+                subheading: effectiveTextType === 'subheading_paragraph' ? editorSubheading : block.subheading,
                 updatedAt: new Date().toISOString(),
-                style: textType?.style || {}
+                style: textType?.style || {},
+                textType: effectiveTextType || block.textType
               }
             : block
         )
@@ -1381,8 +1387,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 ...block,
                 content: updatedContent,
                 html_css: updatedContent,
-                heading: blockToUpdate.textType === 'heading_paragraph' ? editorHeading : block.heading,
-                subheading: blockToUpdate.textType === 'subheading_paragraph' ? editorSubheading : block.subheading,
+                heading: effectiveTextType === 'heading_paragraph' ? editorHeading : block.heading,
+                subheading: effectiveTextType === 'subheading_paragraph' ? editorSubheading : block.subheading,
+                textType: effectiveTextType || block.textType,
                 updatedAt: new Date().toISOString()
               } : block
             )
@@ -2149,18 +2156,152 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   // Extract heading and paragraph content
                                                   const tempDiv = document.createElement('div');
                                                   tempDiv.innerHTML = htmlContent;
-                                                  const h1 = tempDiv.querySelector('h1');
-                                                  const p = tempDiv.querySelector('p');
-                                                  setEditorHeading(h1 ? h1.innerHTML : '');
-                                                  setEditorContent(p ? p.innerHTML : '');
+                                                  
+                                                  // Try multiple selectors for heading
+                                                  const h1 = tempDiv.querySelector('h1') || tempDiv.querySelector('[class*="heading"]') || tempDiv.querySelector('h2, h3, h4, h5, h6');
+                                                  // Try multiple selectors for paragraph - look for p tags or div with paragraph content
+                                                  const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
+                                                  
+                                                  // Extract text content, preserving rich text formatting
+                                                  let headingContent = '';
+                                                  let paragraphContent = '';
+                                                  
+                                                  if (h1) {
+                                                    headingContent = h1.innerHTML || '';
+                                                  }
+                                                  
+                                                  if (p) {
+                                                    paragraphContent = p.innerHTML || '';
+                                                  }
+                                                  
+                                                  // If we couldn't find structured content, try to parse manually while preserving HTML
+                                                  if (!headingContent && !paragraphContent) {
+                                                    const fullHTML = tempDiv.innerHTML || '';
+                                                    
+                                                    // Try to find heading and paragraph content in the HTML
+                                                    // Look for heading patterns first
+                                                    const headingMatch = fullHTML.match(/<(h[1-6])[^>]*>(.*?)<\/h[1-6]>/i);
+                                                    if (headingMatch) {
+                                                      headingContent = headingMatch[2] || '';
+                                                      // Remove the heading from HTML and get remaining content
+                                                      const remainingHTML = fullHTML.replace(headingMatch[0], '').trim();
+                                                      if (remainingHTML) {
+                                                        // Clean up remaining content - remove wrapper divs but keep inner formatting
+                                                        const cleanedContent = remainingHTML
+                                                          .replace(/^<div[^>]*>/, '')
+                                                          .replace(/<\/div>$/, '')
+                                                          .trim();
+                                                        paragraphContent = cleanedContent || remainingHTML;
+                                                      }
+                                                    } else {
+                                                      // Look for strong/bold text as potential heading
+                                                      const boldMatch = fullHTML.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/i);
+                                                      if (boldMatch) {
+                                                        headingContent = boldMatch[2] || '';
+                                                        // Get content after the bold text
+                                                        const afterBold = fullHTML.substring(fullHTML.indexOf(boldMatch[0]) + boldMatch[0].length).trim();
+                                                        if (afterBold) {
+                                                          paragraphContent = afterBold;
+                                                        }
+                                                      } else {
+                                                        // Last resort: try to split by line breaks or common patterns
+                                                        const textContent = tempDiv.textContent || '';
+                                                        const htmlContent = tempDiv.innerHTML || '';
+                                                        
+                                                        // If there's formatted content, try to detect heading vs paragraph
+                                                        if (htmlContent.includes('<') && textContent) {
+                                                          // Split by common separators and take first part as heading
+                                                          const parts = textContent.split(/[\n\r]+/).filter(part => part.trim());
+                                                          if (parts.length >= 2) {
+                                                            headingContent = parts[0].trim();
+                                                            paragraphContent = parts.slice(1).join(' ').trim();
+                                                          } else {
+                                                            headingContent = htmlContent;
+                                                          }
+                                                        } else {
+                                                          headingContent = htmlContent || textContent;
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                  
+                                                  setEditorHeading(headingContent);
+                                                  setEditorContent(paragraphContent);
                                                 } else if (detectedTextType === 'subheading_paragraph') {
                                                   // Extract subheading and paragraph content
                                                   const tempDiv = document.createElement('div');
                                                   tempDiv.innerHTML = htmlContent;
-                                                  const h2 = tempDiv.querySelector('h2');
-                                                  const p = tempDiv.querySelector('p');
-                                                  setEditorSubheading(h2 ? h2.innerHTML : '');
-                                                  setEditorContent(p ? p.innerHTML : '');
+                                                  
+                                                  // Try multiple selectors for subheading
+                                                  const h2 = tempDiv.querySelector('h2') || tempDiv.querySelector('[class*="subheading"]') || tempDiv.querySelector('h3, h4, h5, h6, h1');
+                                                  // Try multiple selectors for paragraph
+                                                  const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
+                                                  
+                                                  // Extract text content, preserving rich text formatting
+                                                  let subheadingContent = '';
+                                                  let paragraphContent = '';
+                                                  
+                                                  if (h2) {
+                                                    subheadingContent = h2.innerHTML || '';
+                                                  }
+                                                  
+                                                  if (p) {
+                                                    paragraphContent = p.innerHTML || '';
+                                                  }
+                                                  
+                                                  // If we couldn't find structured content, try to parse manually while preserving HTML
+                                                  if (!subheadingContent && !paragraphContent) {
+                                                    const fullHTML = tempDiv.innerHTML || '';
+                                                    
+                                                    // Try to find subheading and paragraph content in the HTML
+                                                    // Look for subheading patterns first
+                                                    const subheadingMatch = fullHTML.match(/<(h[2-6])[^>]*>(.*?)<\/h[2-6]>/i);
+                                                    if (subheadingMatch) {
+                                                      subheadingContent = subheadingMatch[2] || '';
+                                                      // Remove the subheading from HTML and get remaining content
+                                                      const remainingHTML = fullHTML.replace(subheadingMatch[0], '').trim();
+                                                      if (remainingHTML) {
+                                                        // Clean up remaining content - remove wrapper divs but keep inner formatting
+                                                        const cleanedContent = remainingHTML
+                                                          .replace(/^<div[^>]*>/, '')
+                                                          .replace(/<\/div>$/, '')
+                                                          .trim();
+                                                        paragraphContent = cleanedContent || remainingHTML;
+                                                      }
+                                                    } else {
+                                                      // Look for strong/bold text as potential subheading
+                                                      const boldMatch = fullHTML.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/i);
+                                                      if (boldMatch) {
+                                                        subheadingContent = boldMatch[2] || '';
+                                                        // Get content after the bold text
+                                                        const afterBold = fullHTML.substring(fullHTML.indexOf(boldMatch[0]) + boldMatch[0].length).trim();
+                                                        if (afterBold) {
+                                                          paragraphContent = afterBold;
+                                                        }
+                                                      } else {
+                                                        // Last resort: try to split by line breaks or common patterns
+                                                        const textContent = tempDiv.textContent || '';
+                                                        const htmlContent = tempDiv.innerHTML || '';
+                                                        
+                                                        // If there's formatted content, try to detect subheading vs paragraph
+                                                        if (htmlContent.includes('<') && textContent) {
+                                                          // Split by common separators and take first part as subheading
+                                                          const parts = textContent.split(/[\n\r]+/).filter(part => part.trim());
+                                                          if (parts.length >= 2) {
+                                                            subheadingContent = parts[0].trim();
+                                                            paragraphContent = parts.slice(1).join(' ').trim();
+                                                          } else {
+                                                            subheadingContent = htmlContent;
+                                                          }
+                                                        } else {
+                                                          subheadingContent = htmlContent || textContent;
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                  
+                                                  setEditorSubheading(subheadingContent);
+                                                  setEditorContent(paragraphContent);
                                                 } else {
                                                   // For single content blocks, extract the inner content
                                                   const tempDiv = document.createElement('div');
