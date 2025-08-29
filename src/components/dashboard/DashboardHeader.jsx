@@ -10,7 +10,7 @@ import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
 import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
-import { fetchDetailedUserProfile } from "@/services/userService";
+import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
@@ -32,6 +32,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState(null);
+  const [viewerTimezone, setViewerTimezone] = useState(null);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
@@ -51,6 +52,21 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     };
 
     fetchEnrolledCourses();
+  }, []);
+
+  // Fetch current viewer profile to get timezone for consistent date formatting
+  useEffect(() => {
+    const loadViewerProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        if (profile && (profile.timezone || profile.timeZone)) {
+          setViewerTimezone(profile.timezone || profile.timeZone);
+        }
+      } catch (e) {
+        // Non-fatal
+      }
+    };
+    loadViewerProfile();
   }, []);
 
   // Debounced search effect
@@ -168,23 +184,58 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   };
 
   const handleUserClick = async (userId) => {
-    // Only instructors/admins can access user profiles
-    if (isInstructorOrAdmin()) {
-      setShowDropdown(false);
-      setSearchQuery("");
-      setUserDetailsError(null);
-      setUserDetailsLoading(true);
-      setShowUserDetailsModal(true);
-      
-      try {
-        const userData = await fetchDetailedUserProfile(userId);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setUserDetailsError(null);
+    setUserDetailsLoading(true);
+    setShowUserDetailsModal(true);
+    
+    try {
+      if (isInstructorOrAdmin()) {
+        // For instructors/admins, fetch detailed profile
+        let userData = await fetchDetailedUserProfile(userId);
+
+        // Fallback: if no activity_log/last_login present, try pulling from admin user list
+        if (!userData?.activity_log || userData.activity_log.length === 0) {
+          try {
+            const allUsers = await fetchAllUsersAdmin();
+            const match = (allUsers || []).find(u => u.id === userId);
+            if (match?.activity_log && match.activity_log.length > 0) {
+              userData = { ...userData, activity_log: match.activity_log };
+            }
+          } catch (e) {
+            // Non-fatal: keep userData as-is
+          }
+        }
+
         setSelectedUser(userData);
-      } catch (error) {
-        console.error('Failed to fetch user details:', error);
-        setUserDetailsError(error?.message || 'Failed to fetch user details');
-      } finally {
-        setUserDetailsLoading(false);
+      } else {
+        // For regular users, fetch public-safe profile, then merge courses
+        try {
+          const publicProfile = await fetchPublicUserProfile(userId);
+          try {
+            const coursesData = await fetchUserCoursesByUserId(userId);
+            setSelectedUser({ ...publicProfile, courses: coursesData || [] });
+          } catch (coursesError) {
+            console.warn('Could not fetch courses for user:', coursesError);
+            setSelectedUser(publicProfile);
+          }
+        } catch (publicErr) {
+          console.warn('Could not fetch public user profile, fallback to search result user:', publicErr);
+          const users = searchResults.results?.users || [];
+          const fallback = users.find(user => user.id === userId);
+          if (fallback) {
+            setSelectedUser(fallback);
+          } else {
+            setUserDetailsError('User data not found');
+          }
+        }
       }
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      setUserDetailsError(error?.message || 'Failed to fetch user details');
+    } finally {
+      setUserDetailsLoading(false);
     }
   };
 
@@ -267,7 +318,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-700">
                       Found {searchResults.results?.courses?.length || 0} course{(searchResults.results?.courses?.length || 0) !== 1 ? 's' : ''}
-                      {isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
+                      {searchResults.results?.users?.length > 0 && (
                         <span> and {searchResults.results.users.length} user{(searchResults.results.users.length !== 1) ? 's' : ''}</span>
                       )}
                     </div>
@@ -319,8 +370,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-                {/* Users Section - Only show for instructors/admins */}
-                {isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
+                {/* Users Section - Show for all users */}
+                {searchResults.results?.users?.length > 0 && (
                   <div className="p-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -344,7 +395,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               isSelected ? 'bg-blue-50' : ''
                             }`}
                           >
-                            <User className="h-4 w-4 text-green-600" />
+                            {user.image ? (
+                              <img
+                                src={user.image}
+                                alt={`${user.first_name} ${user.last_name}`}
+                                className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <User className="h-4 w-4 text-green-600" />
+                            )}
                             <div className="flex-1">
                               <div className="font-medium text-gray-900">
                                 {user.first_name} {user.last_name}
@@ -363,15 +422,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-                {/* Show message for non-instructors when users exist in search results */}
-                {!isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
-                  <div className="p-4 border-t border-gray-100">
-                    <div className="text-sm text-gray-500 text-center">
-                      <Users className="h-4 w-4 mx-auto mb-2 text-gray-400" />
-                      <p>User search results are available for instructors and administrators only.</p>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* No Results Message */}
                 {(!searchResults.results?.courses?.length && !searchResults.results?.users?.length) && (
@@ -457,6 +508,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           user={selectedUser}
           isLoading={userDetailsLoading}
           error={userDetailsError}
+          isInstructorOrAdmin={isInstructorOrAdmin()}
+          viewerTimezone={viewerTimezone}
         />
       </header>
 
