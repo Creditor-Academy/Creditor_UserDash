@@ -62,10 +62,10 @@ export const categoryService = {
     }
   },
 
-  // Get all categories
-  getCategories: async () => {
+  // Get categories for a specific organization
+  getCategories: async (organizationId) => {
     try {
-      const response = await api.get(`${API_BASE}/api/assets/getCategories`);
+      const response = await api.get(`${API_BASE}/api/assets/organizations/${organizationId}/getCategories`);
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -103,16 +103,26 @@ export const assetService = {
     try {
       const formData = new FormData();
       formData.append('title', assetData.title);
-      formData.append('description', assetData.description);
+      formData.append('description', assetData.description || '');
       formData.append('category_id', assetData.category_id);
-      formData.append('organization_id', assetData.organization_id);
+      // Note: organization_id is not sent to backend as per controller requirements
       
       if (assetData.file) {
-        // The backend expects the field name 'assetfile' (multer.single('assetfile'))
+        // The backend middleware expects the field name to be 'assetfile'
         formData.append('assetfile', assetData.file, assetData.file.name);
       }
 
-      // Do not set Content-Type manually; let the browser set proper multipart boundary
+      // Debug: Log what we're sending
+      console.log('Sending asset data:', {
+        title: assetData.title,
+        description: assetData.description || '',
+        category_id: assetData.category_id,
+        fileName: assetData.file?.name,
+        fileSize: assetData.file?.size,
+        fileType: assetData.file?.type,
+        fieldName: 'assetfile' // The field name expected by backend middleware
+      });
+
       const response = await api.post(`${API_BASE}/api/assets/create-asset`, formData);
       return response.data;
     } catch (error) {
@@ -162,9 +172,14 @@ export const assetService = {
   },
 
   // Search assets globally across all organizations and categories
+  // Note: This endpoint doesn't exist in the new backend, so we'll use getAssets with Global organization
   searchAssets: async (searchTerm) => {
     try {
-      const response = await api.post(`${API_BASE}/api/assets/search-assets`, { searchTerm });
+      // Since there's no dedicated search endpoint, we'll get global assets and filter client-side
+      const response = await api.post(`${API_BASE}/api/assets/getAssets`, {
+        organization_id: "Global",
+        category_id: "All"
+      });
       return response.data;
     } catch (error) {
       console.error('Error searching assets:', error);

@@ -62,6 +62,7 @@ const Resources = () => {
   // Organizations and categories from backend
   const [organizations, setOrganizations] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [organizationCategories, setOrganizationCategories] = useState({}); // New: categories organized by organization
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -70,11 +71,10 @@ const Resources = () => {
     try {
       setLoading(true);
       setError(null);
-      const [orgsResponse, catsResponse] = await Promise.all([
-        organizationService.getOrganizations(),
-        categoryService.getCategories()
-      ]);
-
+      
+      // First fetch organizations
+      const orgsResponse = await organizationService.getOrganizations();
+      
       // Transform backend data to match frontend structure
       const transformedOrgs = orgsResponse.data?.map(org => ({
         id: org.id || org._id,
@@ -83,14 +83,40 @@ const Resources = () => {
         type: org.name === "Global" ? "global" : "organization"
       })) || [];
 
-      const transformedCats = catsResponse.data?.map(cat => ({
-        id: cat.id || cat._id,
-        name: cat.name,
-        color: getCategoryColor(cat.name)
-      })) || [];
-
       setOrganizations(transformedOrgs);
-      setCategories(transformedCats);
+
+      // Fetch categories for all organizations
+      const categoriesByOrg = {};
+      for (const org of transformedOrgs) {
+        try {
+          const catsResponse = await categoryService.getCategories(org.id);
+          const transformedCats = catsResponse.data?.map(cat => ({
+            id: cat.id || cat._id,
+            name: cat.name,
+            color: getCategoryColor(cat.name),
+            organization_id: org.id
+          })) || [];
+          categoriesByOrg[org.id] = transformedCats;
+        } catch (error) {
+          console.error(`Error fetching categories for organization ${org.id}:`, error);
+          categoriesByOrg[org.id] = [];
+        }
+      }
+      
+      setOrganizationCategories(categoriesByOrg);
+      
+      // Set initial categories (for Global organization or first organization)
+      const globalOrg = transformedOrgs.find(org => org.type === "global");
+      const initialOrg = globalOrg || transformedOrgs[0];
+      if (initialOrg) {
+        if (globalOrg) {
+          // For Global, show all categories from all organizations
+          const allCategories = Object.values(categoriesByOrg).flat();
+          setCategories(allCategories);
+        } else {
+          setCategories(categoriesByOrg[initialOrg.id] || []);
+        }
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       setError(error.message || 'Failed to fetch data');
@@ -104,20 +130,49 @@ const Resources = () => {
     }
   };
 
+  // Function to fetch categories for a specific organization
+  const fetchCategoriesForOrganization = async (organizationId) => {
+    try {
+      const catsResponse = await categoryService.getCategories(organizationId);
+      const transformedCats = catsResponse.data?.map(cat => ({
+        id: cat.id || cat._id,
+        name: cat.name,
+        color: getCategoryColor(cat.name),
+        organization_id: organizationId
+      })) || [];
+      
+      // Update both the general categories and the organization-specific categories
+      setCategories(transformedCats);
+      setOrganizationCategories(prev => ({
+        ...prev,
+        [organizationId]: transformedCats
+      }));
+    } catch (error) {
+      console.error('Error fetching categories for organization:', error);
+      setCategories([]);
+      setOrganizationCategories(prev => ({
+        ...prev,
+        [organizationId]: []
+      }));
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Initialize defaults for pending selectors to first available items
+  // Initialize defaults for pending selectors
   useEffect(() => {
     if (organizations?.length && (pendingOrg === "all" || !pendingOrg)) {
-      setPendingOrg(organizations[0].id);
+      // Set to "Global" if available, otherwise first organization
+      const globalOrg = organizations.find(org => org.type === "global");
+      setPendingOrg(globalOrg ? "Global" : organizations[0].id);
     }
   }, [organizations]);
 
   useEffect(() => {
     if (categories?.length && (pendingCat === "all" || !pendingCat)) {
-      setPendingCat(categories[0].id);
+      setPendingCat("All");
     }
   }, [categories]);
 
@@ -178,10 +233,10 @@ const Resources = () => {
   };
 
   const handleUpload = async () => {
-    if (!formData.title.trim() || selectedFiles.length === 0 || !formData.category || !formData.organization) {
+    if (!formData.title.trim() || selectedFiles.length === 0 || !formData.category) {
       toast({
         title: "Missing information",
-        description: "Please provide title, category, organization, and select at least one file.",
+        description: "Please provide title, category, and select at least one file.",
         variant: "destructive",
       });
       return;
@@ -197,7 +252,6 @@ const Resources = () => {
           title: formData.title,
           description: formData.description || "",
           category_id: formData.category,
-          organization_id: formData.organization,
           file
         });
 
@@ -208,8 +262,8 @@ const Resources = () => {
           title: created?.title || formData.title,
           description: created?.description ?? formData.description ?? "",
           category: created?.category_id || formData.category,
-          organization: created?.organization_id || formData.organization,
-          visibility: organizations.find(org => org.id === (created?.organization_id || formData.organization))?.type === "global" ? "global" : "organization",
+          organization: created?.organization_id || "Global", // Default to Global since backend doesn't require org_id
+          visibility: "global", // Default to global since backend doesn't require org_id
           fileName: created?.fileName || created?.filename || file.name,
           fileType: (created?.mimetype || file.type || "").startsWith('image/') ? 'image' : 'video',
           fileSize: ((created?.filesize ?? file.size) / (1024 * 1024)).toFixed(2),
@@ -223,12 +277,12 @@ const Resources = () => {
       setResources(prev => [...uploaded, ...prev]);
       
       // Reset form
-             setFormData({
-         title: "",
-         description: "",
-         category: "",
-         organization: ""
-       });
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        organization: ""
+      });
       setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -496,16 +550,47 @@ const Resources = () => {
   // Category Management
   const handleCreateCategory = async (categoryData) => {
     try {
+      // Validate input
+      if (!categoryData || !categoryData.name || !categoryData.name.trim()) {
+        toast({
+          title: "Error",
+          description: "Please provide a valid category name",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use the organization from the upload form if available, otherwise use pendingOrg
+      const organizationId = formData.organization || pendingOrg;
+      
+      if (!organizationId) {
+        toast({
+          title: "Error",
+          description: "Please select an organization first",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const response = await categoryService.createCategory({
-        name: categoryData.name
+        name: categoryData.name.trim(),
+        organization_id: organizationId
       });
 
     const newCategory = {
         id: response.data.id || response.data._id,
-        name: response.data.name,
-        color: getCategoryColor(response.data.name)
+        name: response.data.name || categoryData.name, // Fallback to the input name if response doesn't have it
+        color: getCategoryColor(response.data.name || categoryData.name),
+        organization_id: organizationId
     };
+    
+    // Update categories for the specific organization
     setCategories(prev => [...prev, newCategory]);
+    setOrganizationCategories(prev => ({
+      ...prev,
+      [organizationId]: [...(prev[organizationId] || []), newCategory]
+    }));
+    
     setShowCategoryModal(false);
     toast({
         title: "Success",
@@ -527,13 +612,29 @@ const Resources = () => {
         name: categoryData.name
       });
 
+    const updatedCategory = {
+      ...editingCategory,
+      name: response.data.name || categoryData.name,
+      color: getCategoryColor(response.data.name || categoryData.name)
+    };
+    
     setCategories(prev => 
       prev.map(cat => 
-        cat.id === editingCategory.id 
-            ? { ...cat, name: response.data.name, color: getCategoryColor(response.data.name) }
-          : cat
+        cat.id === editingCategory.id ? updatedCategory : cat
       )
     );
+    
+    // Update organization-specific categories
+    setOrganizationCategories(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(orgId => {
+        updated[orgId] = updated[orgId].map(cat => 
+          cat.id === editingCategory.id ? updatedCategory : cat
+        );
+      });
+      return updated;
+    });
+    
     setShowCategoryModal(false);
     setEditingCategory(null);
     toast({
@@ -590,6 +691,15 @@ const Resources = () => {
     
     setCategories(prev => prev.filter(cat => cat.id !== deleteItem.id));
     
+    // Update organization-specific categories
+    setOrganizationCategories(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(orgId => {
+        updated[orgId] = updated[orgId].filter(cat => cat.id !== deleteItem.id);
+      });
+      return updated;
+    });
+    
     // Clear form if the deleted category was selected
     if (formData.category === deleteItem.id) {
       setFormData(prev => ({ ...prev, category: "" }));
@@ -626,6 +736,11 @@ const Resources = () => {
   };
 
   const getCategoryColor = (categoryName) => {
+    // Handle undefined or null categoryName
+    if (!categoryName || typeof categoryName !== 'string') {
+      return "bg-gray-100 text-gray-800"; // Default color
+    }
+    
     const colors = {
       general: "bg-gray-100 text-gray-800",
       course: "bg-blue-100 text-blue-800",
@@ -716,7 +831,7 @@ const Resources = () => {
           </div>
         </CardHeader>
         <CardContent className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8">
             {/* Organizations Management */}
             <div className="space-y-6">
               <div className="flex items-center justify-between">
@@ -724,7 +839,7 @@ const Resources = () => {
                   <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow-sm">
                     <Building className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-800">Organizations</h3>
+                  <h3 className="text-xl font-bold text-gray-800">Organizations & Categories</h3>
                 </div>
                 <Button
                   variant="outline"
@@ -740,7 +855,7 @@ const Resources = () => {
                   Add Organization
                 </Button>
               </div>
-              <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {loading ? (
                   <div className="flex items-center justify-center p-6">
                     <div className="text-sm text-gray-500">Loading organizations...</div>
@@ -750,135 +865,133 @@ const Resources = () => {
                     <div className="text-sm text-gray-500">No organizations found</div>
                   </div>
                 ) : (
-                  organizations.map(org => (
-                  <div key={org.id} className="p-4 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow">
-                        <Building className="w-4 h-4 text-white" />
+                  organizations.map(org => {
+                    const orgCategories = organizationCategories[org.id] || [];
+                    return (
+                      <div key={org.id} className="p-4 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow">
+                                <Building className="w-4 h-4 text-white" />
+                              </div>
+                              <span className="text-base font-semibold text-gray-900 truncate" title={org.name}>{org.name}</span>
+                              {org.type === "global" && (
+                                <Badge className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1">Global</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 line-clamp-2 ml-11" title={org.description || "No description"}>
+                              {org.description || "No description added"}
+                            </p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingOrganization(org);
+                                setShowOrganizationModal(true);
+                              }}
+                              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-10 h-10 rounded-full"
+                              title="Edit Organization"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            {org.type !== "global" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteOrganization(org.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-10 h-10 rounded-full"
+                                title="Delete Organization"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Categories for this organization */}
+                        <div className="ml-11 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                              </svg>
+                              Categories ({orgCategories.length})
+                            </h4>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCategory(null);
+                                setShowCategoryModal(true);
+                              }}
+                              className="flex items-center gap-1 bg-indigo-500 text-white border-0 hover:bg-indigo-600 shadow-sm hover:shadow-md px-3 py-1 text-xs"
+                              disabled={loading}
+                            >
+                              <Plus className="w-3 h-3" />
+                              Add Category
+                            </Button>
+                          </div>
+                          
+                          {orgCategories.length === 0 ? (
+                            <div className="text-xs text-gray-500 italic">No categories yet</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {orgCategories.map(category => (
+                                <div
+                                  key={category.id}
+                                  className="p-2 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-sky-500 rounded flex items-center justify-center">
+                                        <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
+                                      </div>
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${category.color} truncate`}>{category.name}</span>
+                                    </div>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingCategory(category);
+                                          setShowCategoryModal(true);
+                                        }}
+                                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-6 h-6 rounded p-0"
+                                        title="Edit Category"
+                                      >
+                                        <Edit className="w-3 h-3" />
+                                      </Button>
+                                      {category.name.toLowerCase() !== "general" && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteCategory(category.id)}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-6 h-6 rounded p-0"
+                                          title="Delete Category"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                          <span className="text-base font-semibold text-gray-900 truncate" title={org.name}>{org.name}</span>
-                      {org.type === "global" && (
-                        <Badge className="bg-indigo-100 text-indigo-700 text-xs font-medium px-2 py-1">Global</Badge>
-                      )}
-                    </div>
-                        <p className="text-sm text-gray-600 line-clamp-2 ml-11" title={org.description || "No description"}>
-                          {org.description || "No description added"}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => {
-                           setEditingOrganization(org);
-                           setShowOrganizationModal(true);
-                         }}
-                         className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-10 h-10 rounded-full"
-                         title="Edit Organization"
-                       >
-                         <Edit className="w-4 h-4" />
-                       </Button>
-                       {org.type !== "global" && (
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => handleDeleteOrganization(org.id)}
-                           className="text-red-600 hover:text-red-700 hover:bg-red-50 w-10 h-10 rounded-full"
-                           title="Delete Organization"
-                         >
-                           <Trash2 className="w-4 h-4" />
-                         </Button>
-                       )}
-                     </div>
-                  </div>
-                  </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
 
-            {/* Categories Management */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow-sm">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-800">Categories</h3>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingCategory(null);
-                    setShowCategoryModal(true);
-                  }}
-                  className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
-                  disabled={loading}
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Category
-                </Button>
-              </div>
-              <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-                {loading ? (
-                  <div className="flex items-center justify-center p-6">
-                    <div className="text-sm text-gray-500">Loading categories...</div>
-                    </div>
-                ) : categories.length === 0 ? (
-                  <div className="flex items-center justify-center p-6">
-                    <div className="text-sm text-gray-500">No categories found</div>
-                  </div>
-                ) : (
-                  categories.map(category => (
-                    <div
-                      key={category.id}
-                      className="p-4 rounded-2xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 hover:ring-2 hover:ring-indigo-200"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                          </div>
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${category.color}`}>{category.name}</span>
-                        </div>
-                        <div className="flex gap-2 flex-shrink-0">
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => {
-                           setEditingCategory(category);
-                           setShowCategoryModal(true);
-                         }}
-                            className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-10 h-10 rounded-full"
-                         title="Edit Category"
-                       >
-                         <Edit className="w-4 h-4" />
-                       </Button>
-                       {category.name.toLowerCase() !== "general" && (
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => handleDeleteCategory(category.id)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 w-10 h-10 rounded-full"
-                           title="Delete Category"
-                         >
-                           <Trash2 className="w-4 h-4" />
-                         </Button>
-                       )}
-                     </div>
-                  </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            
           </div>
         </CardContent>
       </Card>
@@ -910,119 +1023,136 @@ const Resources = () => {
                 className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-lg"
               />
             </div>
-                          <div className="space-y-3">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  Category *
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
-                    value={formData.category}
-                    onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                    disabled={loading}
-                  >
-                    <option value="">
-                      {loading ? "Loading..." : "Select Category"}
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                Organization *
+              </label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
+                  value={formData.organization}
+                  onChange={(e) => {
+                    const newOrgId = e.target.value;
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      organization: newOrgId,
+                      category: "" // Reset category when organization changes
+                    }));
+                    
+                    // Update categories for the selected organization
+                    if (newOrgId && newOrgId !== "") {
+                      const orgCategories = organizationCategories[newOrgId] || [];
+                      setCategories(orgCategories);
+                    } else {
+                      setCategories([]);
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  <option value="">
+                    {loading ? "Loading..." : "Select Organization"}
+                  </option>
+                  {organizations.map(org => (
+                    <option key={org.id} value={org.id}>
+                      {org.name}
                     </option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingCategory(null);
-                      setShowCategoryModal(true);
-                    }}
-                    className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
-                    title="Add New Category"
-                    disabled={loading}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (formData.category) {
-                        const category = categories.find(cat => cat.id === formData.category);
-                        if (category) {
-                          setEditingCategory(category);
-                          setShowCategoryModal(true);
-                        }
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingOrganization(null);
+                    setShowOrganizationModal(true);
+                  }}
+                  className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
+                  title="Add New Organization"
+                  disabled={loading}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (formData.organization) {
+                      const organization = organizations.find(org => org.id === formData.organization);
+                      if (organization) {
+                        setEditingOrganization(organization);
+                        setShowOrganizationModal(true);
                       }
-                    }}
-                    className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
-                    title="Edit Selected Category"
-                    disabled={!formData.category || loading}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </div>
+                    }
+                  }}
+                  className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
+                  title="Edit Selected Organization"
+                  disabled={!formData.organization || loading}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
               </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div className="space-y-3">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                  Organization *
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
-                    value={formData.organization}
-                    onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
-                    disabled={loading}
-                  >
-                    <option value="">
-                      {loading ? "Loading..." : "Select Organization"}
+          {/* Category dropdown - only show when organization is selected */}
+          {formData.organization && (
+            <div className="space-y-3">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                Category *
+              </label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
+                  value={formData.category}
+                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  disabled={loading}
+                >
+                  <option value="">
+                    {loading ? "Loading..." : "Select Category"}
+                  </option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
-                    {organizations.map(org => (
-                      <option key={org.id} value={org.id}>
-                        {org.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingOrganization(null);
-                      setShowOrganizationModal(true);
-                    }}
-                    className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
-                    title="Add New Organization"
-                    disabled={loading}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (formData.organization) {
-                        const organization = organizations.find(org => org.id === formData.organization);
-                        if (organization) {
-                          setEditingOrganization(organization);
-                          setShowOrganizationModal(true);
-                        }
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setShowCategoryModal(true);
+                  }}
+                  className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
+                  title="Add New Category"
+                  disabled={loading}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (formData.category) {
+                      const category = categories.find(cat => cat.id === formData.category);
+                      if (category) {
+                        setEditingCategory(category);
+                        setShowCategoryModal(true);
                       }
-                    }}
-                    className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
-                    title="Edit Selected Organization"
-                    disabled={!formData.organization || loading}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </div>
+                    }
+                  }}
+                  className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
+                  title="Edit Selected Category"
+                  disabled={!formData.category || loading}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
               </div>
-            
-          </div>
+            </div>
+          )}
+
+
           
           <div className="space-y-3">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -1085,11 +1215,11 @@ const Resources = () => {
             </div>
           </div>
 
-          <Button 
-            onClick={handleUpload} 
-            disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.category || !formData.organization}
-            className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
-          >
+                      <Button 
+              onClick={handleUpload} 
+              disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.organization || !formData.category}
+              className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
+            >
             {uploading ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
@@ -1173,18 +1303,34 @@ const Resources = () => {
                 <select
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   value={pendingOrg}
-                  onChange={(e) => setPendingOrg(e.target.value)}
+                  onChange={async (e) => {
+                    const newOrgValue = e.target.value;
+                    setPendingOrg(newOrgValue);
+                    setPendingCat("All"); // Reset category selection to "All"
+                    
+                    // Update categories for the selected organization
+                    if (newOrgValue && newOrgValue !== "Global") {
+                      const orgCategories = organizationCategories[newOrgValue] || [];
+                      setCategories(orgCategories);
+                    } else if (newOrgValue === "Global") {
+                      // For Global, show all categories from all organizations
+                      const allCategories = Object.values(organizationCategories).flat();
+                      setCategories(allCategories);
+                    } else {
+                      setCategories([]);
+                    }
+                  }}
                   disabled={loading}
                 >
-                  {loading ? (
-                    <option value="">Loading organizations...</option>
-                  ) : (
-                    organizations.map(org => (
+                  <option value="">
+                    {loading ? "Loading organizations..." : "Select Organization"}
+                  </option>
+                  <option value="Global">Global</option>
+                  {organizations.map(org => (
                     <option key={org.id} value={org.id}>
                       {org.name}
                     </option>
-                    ))
-                  )}
+                  ))}
                 </select>
               </div>
               <div className="space-y-3">
@@ -1196,17 +1342,17 @@ const Resources = () => {
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                   value={pendingCat}
                   onChange={(e) => setPendingCat(e.target.value)}
-                  disabled={loading || organizations.find(o => o.id === pendingOrg)?.type === "global"}
+                  disabled={loading}
                 >
-                  {loading ? (
-                    <option value="">Loading categories...</option>
-                  ) : (
-                    categories.map(category => (
+                  <option value="">
+                    {loading ? "Loading categories..." : "Select Category"}
+                  </option>
+                  <option value="All">All</option>
+                  {categories.map(category => (
                     <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
-                    ))
-                  )}
+                  ))}
                 </select>
               </div>
               <div className="flex items-end">
@@ -1215,12 +1361,13 @@ const Resources = () => {
                   onClick={async () => {
                     try {
                       setAssetsLoading(true);
-                    const selectedOrg = organizations.find(o => o.id === pendingOrg);
+                      
+                      // Prepare payload based on selections
                       const payload = {
-                        organization_id: pendingOrg,
-                        category_id: pendingCat
+                        organization_id: pendingOrg === "Global" ? "Global" : pendingOrg,
+                        category_id: pendingCat === "All" ? "All" : pendingCat
                       };
-                      // Backend treats Global org specially; still send organization_id
+                      
                       const res = await assetService.getAssets(payload);
                       const list = res?.data || [];
                       const normalized = list.map((item, idx) => ({
@@ -1229,7 +1376,7 @@ const Resources = () => {
                         description: item?.description || "",
                         category: item?.category_id || pendingCat,
                         organization: item?.organization_id || pendingOrg,
-                        visibility: selectedOrg?.type === "global" ? "global" : "organization",
+                        visibility: pendingOrg === "Global" ? "global" : "organization",
                         fileName: item?.fileName || item?.filename || item?.name || "asset",
                         fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
                         fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
@@ -1238,7 +1385,7 @@ const Resources = () => {
                       }));
                       setResources(normalized);
                       setFilterOrganization(pendingOrg);
-                      setFilterCategory(selectedOrg?.type === "global" ? "all" : pendingCat);
+                      setFilterCategory(pendingCat);
                       toast({ title: "Assets loaded", description: `${normalized.length} asset(s) fetched.` });
                     } catch (e) {
                       toast({ title: "Failed to load assets", description: "Check organization/category selection and try again.", variant: "destructive" });
