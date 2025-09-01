@@ -98,36 +98,16 @@ export function Courses() {
       try {
         const data = await fetchUserCourses();
         
-        // Fetch modules for each course and add modulesCount and totalDuration
-        const coursesWithModules = await Promise.all(
-          data.map(async (course) => {
-            try {
-              const modules = await fetchCourseModules(course.id);
-              // Sum durations using 'estimated_duration' (in minutes)
-              const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-              // Convert to seconds for formatTime
-              const totalDurationSecs = totalDurationMins * 60;
-              const courseWithModules = { 
-                ...course, 
-                modulesCount: modules.length, 
-                totalDurationSecs,
-                // Ensure image field is set from thumbnail
-                image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-              return courseWithModules;
-            } catch {
-              const courseWithDefaults = { 
-                ...course, 
-                modulesCount: 0, 
-                totalDurationSecs: 0,
-                image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-              return courseWithDefaults;
-            }
-          })
-        );
-        setCourses(coursesWithModules);
-        setFilteredCourses(coursesWithModules);
+        // Only fetch basic course data, no modules initially
+        const coursesWithDefaults = data.map(course => ({
+          ...course,
+          modulesCount: course.modulesCount || 0, // Use existing count if available
+          totalDurationSecs: course.totalDurationSecs || 0, // Use existing duration if available
+          image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+        }));
+        
+        setCourses(coursesWithDefaults);
+        setFilteredCourses(coursesWithDefaults);
       } catch (err) {
         setError("Failed to fetch courses");
       } finally {
@@ -159,6 +139,44 @@ export function Courses() {
           [courseId]: []
         }));
       }
+    }
+  };
+
+  // Function to fetch and update course details when needed
+  const fetchCourseDetails = async (courseId) => {
+    try {
+      const modules = await fetchCourseModules(courseId);
+      const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
+      const totalDurationSecs = totalDurationMins * 60;
+      
+      // Update the specific course with module data
+      setCourses(prevCourses => 
+        prevCourses.map(course => 
+          course.id === courseId 
+            ? { 
+                ...course, 
+                modulesCount: modules.length, 
+                totalDurationSecs,
+                modulesLoaded: true 
+              }
+            : course
+        )
+      );
+      
+      setFilteredCourses(prevCourses => 
+        prevCourses.map(course => 
+          course.id === courseId 
+            ? { 
+                ...course, 
+                modulesCount: modules.length, 
+                totalDurationSecs,
+                modulesLoaded: true 
+              }
+            : course
+        )
+      );
+    } catch (err) {
+      console.error(`Failed to fetch modules for course ${courseId}:`, err);
     }
   };
 
@@ -346,7 +364,16 @@ export function Courses() {
                     
                     <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
                       <div className="flex gap-2 w-full">
-                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+                        <Link 
+                          to={`/dashboard/courses/${course.id}/modules`} 
+                          className="flex-1"
+                          onClick={() => {
+                            // Fetch course details when user clicks to navigate
+                            if (!course.modulesLoaded) {
+                              fetchCourseDetails(course.id);
+                            }
+                          }}
+                        >
                           <Button variant="default" className="w-full">
                             Continue Learning
                           </Button>
