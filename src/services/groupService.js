@@ -154,3 +154,72 @@ export async function getGroupPosts(groupId) {
     throw error;
   }
 }
+
+/**
+ * Add a member to a group
+ * - If userId is provided: attempts to add that user (admin-only per backend)
+ * - If userId is omitted: current user joins the group
+ * @param {string} groupId
+ * @param {string=} userId
+ */
+export async function addGroupMember(groupId, userId = null) {
+  try {
+    if (!groupId) throw new Error('groupId is required');
+    console.log("📤 groupService: Adding member to group:", groupId, "User ID:", userId);
+    
+    const payload = userId ? { userId } : {};
+    console.log("📤 groupService: Making request to:", `/groups/${groupId}/addMember`);
+    console.log("📤 groupService: Request payload:", payload);
+    console.log("📤 groupService: API base URL:", import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000');
+    
+    // Test the API endpoint first
+    try {
+      const testResponse = await api.get(`/groups/${groupId}`, {
+        withCredentials: true,
+      });
+      console.log("✅ groupService: Group exists:", testResponse.data);
+    } catch (testError) {
+      console.warn("⚠️ groupService: Group test failed:", testError.response?.status, testError.response?.data);
+    }
+    
+    const response = await api.post(`/groups/${groupId}/addMember`, payload, {
+      withCredentials: true,
+    });
+    
+    console.log("✅ groupService: Member added successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ groupService: Error adding member:", error);
+    console.error("❌ groupService: Error details:", {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers
+      }
+    });
+    throw error;
+  }
+}
+
+/**
+ * Get all members of a group
+ * @param {string} groupId
+ */
+export async function getGroupMembers(groupId) {
+  try {
+    if (!groupId) throw new Error('groupId is required');
+    console.log("📥 groupService: Fetching members for group:", groupId);
+    const response = await api.get(`/groups/${groupId}/members`, {
+      withCredentials: true,
+    });
+    console.log("✅ groupService: Group members fetched:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ groupService: Error fetching group members:", error);
+    throw error;
+  }
+}

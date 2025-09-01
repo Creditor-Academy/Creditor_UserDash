@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Users, Search, Filter, Users2, Calendar, MessageSquare, ArrowRight, BookOpen } from "lucide-react";
 import { getGroups } from "@/services/groupService";
 import { toast } from "sonner";
+import { useUser } from "@/contexts/UserContext";
+import { isInstructorOrAdmin } from "@/services/userService";
 
 // Initial empty state for groups
 const initialGroups = [];
 
 export function Groups() {
+  const { userProfile } = useUser();
   const [groups, setGroups] = useState(initialGroups);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,6 +21,9 @@ export function Groups() {
   const [filterBy, setFilterBy] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const groupsPerPage = 6; // Show 6 groups per page (2 rows of 3 in grid)
+
+  // Check if current user is admin or instructor
+  const isAdminOrInstructor = isInstructorOrAdmin();
 
   // Fetch groups from API
   const fetchGroups = async () => {
@@ -133,6 +139,8 @@ export function Groups() {
               Connect with peers, share knowledge, and collaborate on learning journeys.
             </p>
           </div>
+          
+
           
           {/* Search and filter section */}
           <div className="flex flex-col md:flex-row gap-4 mt-4">

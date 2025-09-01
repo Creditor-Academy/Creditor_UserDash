@@ -35,6 +35,7 @@ import ModuleLessonsView from "@/pages/ModuleLessonsView";
 import ModuleAssessmentsView from "@/pages/ModuleAssessmentsView";
 import CourseEnrollment from "@/pages/CourseEnrollment";
 import GroupLayout from "@/layouts/GroupLayout";
+import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
 import GroupCalendarPage from "@/pages/group/CalendarPage";
 import AnnouncementPage from "@/pages/group/AnnouncementPage";
@@ -230,6 +231,7 @@ function App() {
               <Route index element={<Groups />} />
               <Route path=":groupId/*" element={<GroupLayout />}>
                 <Route path="news" element={<NewsPage />} />
+                <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
                 <Route path="calendar" element={<GroupCalendarPage />} />
                 <Route path="announcements" element={<AnnouncementPage />} />

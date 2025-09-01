@@ -170,12 +170,12 @@ const Resources = () => {
       setResources(prev => [...newResources, ...prev]);
       
       // Reset form
-             setFormData({
-         title: "",
-         description: "",
-         category: "",
-         organization: ""
-       });
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        organization: ""
+      });
       setSelectedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -234,7 +234,7 @@ const Resources = () => {
 
   // Organization Management
   const handleCreateOrganization = (orgData) => {
-    const newOrg = {
+      const newOrg = {
       id: Date.now().toString(),
       name: orgData.name,
       type: "organization"
@@ -480,92 +480,92 @@ const Resources = () => {
                     <div className="flex items-center gap-2">
                       <Building className="w-4 h-4 text-gray-600" />
                       <span className="text-sm font-medium">{org.name}</span>
-                      {org.type === "global" && (
+                              {org.type === "global" && (
                         <Badge className="bg-green-100 text-green-800 text-xs">Global</Badge>
-                      )}
-                    </div>
+                              )}
+                            </div>
                                          <div className="flex gap-1">
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => {
-                           setEditingOrganization(org);
-                           setShowOrganizationModal(true);
-                         }}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingOrganization(org);
+                                setShowOrganizationModal(true);
+                              }}
                          className="text-gray-600 hover:text-gray-800"
-                         title="Edit Organization"
-                       >
-                         <Edit className="w-4 h-4" />
-                       </Button>
-                       {org.type !== "global" && (
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => handleDeleteOrganization(org.id)}
+                              title="Edit Organization"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            {org.type !== "global" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteOrganization(org.id)}
                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                           title="Delete Organization"
-                         >
-                           <Trash2 className="w-4 h-4" />
-                         </Button>
-                       )}
+                                title="Delete Organization"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
                      </div>
                   </div>
                 ))}
-              </div>
-            </div>
-
+                          </div>
+                        </div>
+                        
             {/* Categories Management */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-800">Categories</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingCategory(null);
-                    setShowCategoryModal(true);
-                  }}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCategory(null);
+                                setShowCategoryModal(true);
+                              }}
                   className="flex items-center gap-2"
-                >
+                            >
                   <Plus className="w-4 h-4" />
-                  Add Category
-                </Button>
-              </div>
+                              Add Category
+                            </Button>
+                          </div>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {categories.map(category => (
                   <div key={category.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Badge className={category.color}>{category.name}</Badge>
-                    </div>
+                                      </div>
                                          <div className="flex gap-1">
-                       <Button
-                         variant="ghost"
-                         size="sm"
-                         onClick={() => {
-                           setEditingCategory(category);
-                           setShowCategoryModal(true);
-                         }}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          setEditingCategory(category);
+                                          setShowCategoryModal(true);
+                                        }}
                          className="text-gray-600 hover:text-gray-800"
-                         title="Edit Category"
-                       >
+                                        title="Edit Category"
+                                      >
                          <Edit className="w-4 h-4" />
-                       </Button>
-                       {category.name.toLowerCase() !== "general" && (
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => handleDeleteCategory(category.id)}
+                                      </Button>
+                                      {category.name.toLowerCase() !== "general" && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteCategory(category.id)}
                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                           title="Delete Category"
-                         >
+                                          title="Delete Category"
+                                        >
                            <Trash2 className="w-4 h-4" />
-                         </Button>
-                       )}
-                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+                                        </Button>
+                                      )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                        </div>
           </div>
         </CardContent>
       </Card>
@@ -593,8 +593,8 @@ const Resources = () => {
             </div>
                           <div className="space-y-2">
                 <label className="text-sm font-medium">Category *</label>
-                <div className="flex gap-2">
-                  <select
+              <div className="flex gap-2">
+                <select
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.category}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
@@ -603,25 +603,25 @@ const Resources = () => {
                     {categories.map(category => (
                       <option key={category.id} value={category.id}>
                         {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
                       setEditingCategory(null);
                       setShowCategoryModal(true);
-                    }}
+                  }}
                     className="px-3"
                     title="Add New Category"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
                       if (formData.category) {
                         const category = categories.find(cat => cat.id === formData.category);
                         if (category) {
@@ -633,18 +633,18 @@ const Resources = () => {
                     className="px-3"
                     title="Edit Selected Category"
                     disabled={!formData.category}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </div>
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
               </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                 <label className="text-sm font-medium">Organization *</label>
-                <div className="flex gap-2">
-                  <select
+              <div className="flex gap-2">
+                <select
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={formData.organization}
                     onChange={(e) => setFormData(prev => ({ ...prev, organization: e.target.value }))}
@@ -653,25 +653,25 @@ const Resources = () => {
                     {organizations.map(org => (
                       <option key={org.id} value={org.id}>
                         {org.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
                       setEditingOrganization(null);
                       setShowOrganizationModal(true);
-                    }}
+                  }}
                     className="px-3"
                     title="Add New Organization"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
                       if (formData.organization) {
                         const organization = organizations.find(org => org.id === formData.organization);
                         if (organization) {
@@ -683,11 +683,11 @@ const Resources = () => {
                     className="px-3"
                     title="Edit Selected Organization"
                     disabled={!formData.organization}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </div>
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
               </div>
+            </div>
             
           </div>
           
@@ -745,8 +745,8 @@ const Resources = () => {
             </div>
           </div>
 
-          <Button 
-            onClick={handleUpload} 
+                      <Button 
+              onClick={handleUpload} 
             disabled={uploading || selectedFiles.length === 0 || !formData.title.trim() || !formData.category || !formData.organization}
             className="w-full"
           >

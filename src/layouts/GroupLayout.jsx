@@ -1,7 +1,7 @@
 import React from "react";
 import { Outlet, useLocation, useParams, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { MessageSquare, CalendarDays, Bell, MessageCircle } from "lucide-react";
+import { MessageSquare, CalendarDays, Bell, MessageCircle, Users } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function GroupLayout() {
@@ -25,6 +25,11 @@ export function GroupLayout() {
       label: "News", 
       icon: MessageSquare, 
       path: `/dashboard/groups/${groupId}/news` 
+    },
+    {
+      label: "Members",
+      icon: Users,
+      path: `/dashboard/groups/${groupId}/members`
     },
     { 
       label: "Chat", 
@@ -54,7 +59,7 @@ export function GroupLayout() {
       <div className="container py-4">
         {/* Sub navigation tabs */}
         <Tabs defaultValue="news" className="mb-6">
-          <TabsList className="w-full grid grid-cols-4 gap-2">
+          <TabsList className="w-full grid grid-cols-5 gap-2">
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.path}

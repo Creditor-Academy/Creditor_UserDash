@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye } from "lucide-react";
+import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye, UserPlus } from "lucide-react";
 import GroupInfo from "./GroupInfo";
-import { createGroup, getGroups, createGroupPost } from "@/services/groupService";
+import { createGroup, getGroups, createGroupPost, addGroupMember } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
+import { isInstructorOrAdmin, fetchAllUsers } from "@/services/userService";
 
 const AddGroups = () => {
   const { userProfile } = useUser();
@@ -16,6 +17,16 @@ const AddGroups = () => {
   const [groupsError, setGroupsError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const groupsPerPage = 5;
+
+  // Add Member state variables
+  const [allUsers, setAllUsers] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [inviteUserId, setInviteUserId] = useState("");
+  const [inviteGroupId, setInviteGroupId] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+
+  // Check if current user is admin or instructor
+  const isAdminOrInstructor = isInstructorOrAdmin();
 
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
@@ -51,6 +62,20 @@ const AddGroups = () => {
     "Python Programming",
     "JavaScript Mastery"
   ];
+
+  // Fetch all users for dropdown
+  const fetchUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const users = await fetchAllUsers();
+      setAllUsers(users);
+    } catch (error) {
+      console.error("❌ AddGroups: Error fetching users:", error);
+      toast.error("Failed to load users for member selection");
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   // Fetch groups from API
   const fetchGroups = async () => {
@@ -97,7 +122,20 @@ const AddGroups = () => {
   // Fetch groups on component mount
   React.useEffect(() => {
     fetchGroups();
+    fetchUsers(); // Fetch users on mount
   }, []);
+
+  // Helper function to get user display name
+  const getUserDisplayName = (user) => {
+    if (user.first_name && user.last_name) {
+      return `${user.first_name} ${user.last_name}`;
+    } else if (user.name) {
+      return user.name;
+    } else if (user.email) {
+      return user.email;
+    }
+    return `User ${user.id}`;
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -228,6 +266,123 @@ const AddGroups = () => {
     }
   };
 
+  // Handle adding member to a group
+  const handleAddMember = async (groupId) => {
+    if (!groupId || !inviteUserId) {
+      toast.error("Please select both a group and a user.");
+      return;
+    }
+
+    // Validate user permissions - allow group creators OR admins/instructors
+    const selectedGroup = groups.find(g => g.id === groupId);
+    if (!selectedGroup) {
+      toast.error("Selected group not found.");
+      return;
+    }
+
+    // Check if current user is the group creator OR admin/instructor
+    const isGroupCreator = selectedGroup.createdBy === userProfile?.id;
+    const hasAdminAccess = isAdminOrInstructor;
+    
+    if (!isGroupCreator && !hasAdminAccess) {
+      toast.error("You don't have permission to add members to this group.");
+      return;
+    }
+
+    // Validate user profile is loaded
+    if (!userProfile?.id) {
+      toast.error("User profile not loaded. Please refresh the page and try again.");
+      return;
+    }
+
+    // Validate that the selected user is not already in the group
+    if (selectedGroup.members) {
+      const isAlreadyMember = selectedGroup.members.some(member => member.id === inviteUserId);
+      if (isAlreadyMember) {
+        toast.error("This user is already a member of the selected group.");
+        return;
+      }
+    }
+
+    try {
+      setAddingMember(true);
+      console.log("📤 AddGroups: Adding member to group:", groupId, "User ID:", inviteUserId);
+      
+      // Add more detailed logging
+      console.log("📤 AddGroups: Request payload:", { groupId, userId: inviteUserId });
+      console.log("📤 AddGroups: User permissions:", { isAdminOrInstructor });
+      console.log("📤 AddGroups: User profile:", { 
+        userId: userProfile?.id, 
+        userRoles: userProfile?.user_roles,
+        firstName: userProfile?.first_name,
+        lastName: userProfile?.last_name
+      });
+      console.log("📤 AddGroups: Selected group:", selectedGroup);
+      
+      // Show confirmation for admins adding to groups they don't own
+      if (!isGroupCreator && hasAdminAccess) {
+        const confirmed = window.confirm(
+          `You are adding a member to "${selectedGroup.name}" which you don't own. Are you sure you want to proceed?`
+        );
+        if (!confirmed) {
+          setAddingMember(false);
+          return;
+        }
+      }
+      
+      const result = await addGroupMember(groupId, inviteUserId);
+      console.log("✅ AddGroups: API response:", result);
+      
+      // Get the group name for the success message
+      const groupName = selectedGroup?.name || "the group";
+      const userName = allUsers.find(u => u.id === inviteUserId)?.first_name || 
+                      allUsers.find(u => u.id === inviteUserId)?.name || 
+                      inviteUserId;
+      
+      toast.success(`Successfully added ${userName} to ${groupName}!`);
+      setInviteUserId("");
+      setInviteGroupId("");
+      // Refresh groups to update member counts
+      await fetchGroups();
+    } catch (error) {
+      console.error("❌ AddGroups: Error adding member:", error);
+      console.error("❌ AddGroups: Error details:", {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        config: error.config
+      });
+      
+             // Provide more specific error messages
+       if (error.response?.status === 401) {
+         toast.error("Session expired. Please refresh the page and try again.");
+       } else if (error.response?.status === 403) {
+         // Check the backend error message
+         const backendMessage = error.response?.data?.message;
+         if (backendMessage) {
+           toast.error(backendMessage);
+         } else {
+           toast.error("You don't have permission to add members to this group. Only group creators can add members.");
+         }
+       } else if (error.response?.status === 404) {
+        toast.error("Group not found. Please refresh and try again.");
+      } else if (error.response?.status === 409) {
+        toast.error("User is already a member of this group.");
+      } else if (error.response?.status >= 500) {
+        toast.error("Server error. Please try again later.");
+      } else {
+        const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           error.message || 
+                           "Failed to add member. Please try again.";
+        toast.error(errorMessage);
+      }
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -244,6 +399,94 @@ const AddGroups = () => {
           Create Group
         </Button>
       </div>
+
+      {/* Add Member section - visible to admins/instructors */}
+      {isAdminOrInstructor && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Add Member to Group
+          </h3>
+          <p className="text-sm text-blue-600 mb-3">
+            Admins and instructors can add members to any group. Group creators can add members to their own groups.
+          </p>
+          {isAdminOrInstructor && (
+            <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded mb-3">
+              <strong>Your Permissions:</strong> You can add members to any group in the system.
+              {groups.some(g => g.createdBy === userProfile?.id) && (
+                <span className="ml-2">You also own {groups.filter(g => g.createdBy === userProfile?.id).length} group(s).</span>
+              )}
+            </div>
+          )}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-blue-700 mb-1">Select Group</label>
+              <select
+                value={inviteGroupId}
+                onChange={(e) => setInviteGroupId(e.target.value)}
+                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Choose a group...</option>
+                {groups.length === 0 ? (
+                  <option value="" disabled>No groups available</option>
+                ) : (
+                  groups.map((group) => {
+                    const isOwnedByUser = group.createdBy === userProfile?.id;
+                    return (
+                      <option key={group.id} value={group.id}>
+                        {group.name} ({group.memberCount || 0} members)
+                        {isOwnedByUser ? ' - Your Group' : ' - Other Group'}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
+            </div>
+                          <div className="flex-1">
+                <label className="block text-sm font-medium text-blue-700 mb-1">User Name</label>
+                <select
+                  value={inviteUserId}
+                  onChange={(e) => setInviteUserId(e.target.value)}
+                  className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={isLoadingUsers}
+                >
+                  <option value="">Choose a user...</option>
+                  {isLoadingUsers ? (
+                    <option value="">Loading users...</option>
+                  ) : allUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {getUserDisplayName(user)}
+                    </option>
+                  ))}
+                </select>
+                {inviteUserId && (
+                  <div className="text-xs text-gray-600 mt-1">
+                    {(() => {
+                      const selectedUser = allUsers.find(u => u.id === inviteUserId);
+                      const userGroups = groups.filter(g => 
+                        g.members?.some(m => m.id === inviteUserId)
+                      );
+                      return (
+                        <span>
+                          {selectedUser ? getUserDisplayName(selectedUser) : 'User'} is currently in {userGroups.length} group(s)
+                        </span>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            <div className="flex items-end">
+              <Button 
+                onClick={() => handleAddMember(inviteGroupId)}
+                disabled={addingMember || !inviteUserId || !inviteGroupId || isLoadingUsers}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {addingMember ? "Adding..." : "Add Member"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {showModal && (
@@ -464,20 +707,22 @@ const AddGroups = () => {
                           <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                             {group.description}
                           </p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {group.memberCount} members
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3" />
-                              Public
-                            </span>
-                            <span>Created: {group.createdAt}</span>
-                            {group.createdBy && (
-                              <span className="text-blue-600">ID: {group.createdBy.slice(0, 8)}...</span>
-                            )}
-                          </div>
+                                                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                             <span className="flex items-center gap-1">
+                               <Users className="h-3 w-3" />
+                               {group.memberCount} members
+                             </span>
+                             <span className="flex items-center gap-1">
+                               <MessageSquare className="h-3 w-3" />
+                               Public
+                             </span>
+                             <span>Created: {group.createdAt}</span>
+                             {group.createdBy === userProfile?.id ? (
+                               <span className="text-green-600 font-medium">Your Group</span>
+                             ) : (
+                               <span className="text-blue-600">ID: {group.createdBy.slice(0, 8)}...</span>
+                             )}
+                           </div>
                         </div>
                       </div>
                       
@@ -512,14 +757,42 @@ const AddGroups = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(group.id)}
-                          className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                                                 {isAdminOrInstructor && (
+                           <>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => {
+                                 setInviteGroupId(group.id);
+                                 setInviteUserId("");
+                               }}
+                               className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                               title="Add Member"
+                             >
+                               <UserPlus className="h-4 w-4" />
+                             </Button>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => {
+                                 // TODO: Implement view members modal
+                                 toast.info(`Viewing members of ${group.name} (${group.memberCount} members)`);
+                               }}
+                               className="h-8 w-8 p-0 text-green-500 hover:text-green-600 hover:bg-green-50"
+                               title="View Members"
+                             >
+                               <Users className="h-4 w-4" />
+                             </Button>
+                           </>
+                         )}
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => handleDelete(group.id)}
+                           className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
                       </div>
                     </div>
                   </CardContent>

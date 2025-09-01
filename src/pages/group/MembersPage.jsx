@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Mail, Shield } from "lucide-react";
+import { Search, Mail, Shield, UserPlus } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,8 +14,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { professionalAvatars } from "@/lib/avatar-utils";
+import { useParams } from "react-router-dom";
+import { addGroupMember, getGroupMembers } from "@/services/groupService";
+import { toast } from "@/hooks/use-toast";
+import { useUser } from "@/contexts/UserContext";
+import { isInstructorOrAdmin } from "@/services/userService";
 
-// Sample members data with professional avatars
+// Sample members data with professional avatars (fallback before API load)
 const initialMembers = [
   {
     id: 1,
@@ -65,8 +70,119 @@ const initialMembers = [
 ];
 
 export function MembersPage() {
-  const [members] = useState(initialMembers);
+  const { groupId } = useParams();
+  const { userProfile } = useUser();
+  const [members, setMembers] = useState(initialMembers);
   const [searchQuery, setSearchQuery] = useState("");
+  const [inviteUserId, setInviteUserId] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+
+  // Check if current user is admin or instructor
+  const isAdminOrInstructor = isInstructorOrAdmin();
+  const currentUserId = userProfile?.id;
+
+  useEffect(() => {
+    async function loadMembers() {
+      if (!groupId) return;
+      try {
+        setLoading(true);
+        console.log("📥 MembersPage: Fetching members for group:", groupId);
+        const response = await getGroupMembers(groupId);
+        console.log("✅ MembersPage: Members response:", response);
+        
+        // Handle different response structures
+        const membersData = response?.data || response || [];
+        const mapped = membersData.map((member) => ({
+          id: member.user?.id || member.user_id || member.id,
+          name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
+          email: member.user?.email || member.email || '—',
+          avatar: member.user?.image || professionalAvatars.male[0].url,
+          joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
+          isAdmin: !!member.is_admin,
+          role: member.is_admin ? 'Admin' : 'Member',
+        }));
+        setMembers(mapped);
+      } catch (error) {
+        console.error("❌ MembersPage: Error loading members:", error);
+        toast({ 
+          title: "Failed to load members", 
+          description: error?.response?.data?.message || error.message, 
+          variant: "destructive" 
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMembers();
+  }, [groupId]);
+
+  const handleSelfJoin = async () => {
+    if (!groupId) return;
+    try {
+      setAddingMember(true);
+      console.log("📤 MembersPage: Self-joining group:", groupId);
+      await addGroupMember(groupId); // no userId => self join
+      toast({ title: "Joined group", description: "You have been added to the group." });
+      
+      // Refresh members list
+      const response = await getGroupMembers(groupId);
+      const membersData = response?.data || response || [];
+      const mapped = membersData.map((member) => ({
+        id: member.user?.id || member.user_id || member.id,
+        name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
+        email: member.user?.email || member.email || '—',
+        avatar: member.user?.image || professionalAvatars.male[0].url,
+        joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
+        isAdmin: !!member.is_admin,
+        role: member.is_admin ? 'Admin' : 'Member',
+      }));
+      setMembers(mapped);
+    } catch (error) {
+      console.error("❌ MembersPage: Error joining group:", error);
+      toast({ 
+        title: "Join failed", 
+        description: error?.response?.data?.message || error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!groupId || !inviteUserId.trim()) return;
+    try {
+      setAddingMember(true);
+      console.log("📤 MembersPage: Adding member to group:", groupId, "User ID:", inviteUserId.trim());
+      await addGroupMember(groupId, inviteUserId.trim());
+      toast({ title: "Member added", description: `User ${inviteUserId.trim()} added to group.` });
+      setInviteUserId("");
+      
+      // Refresh members list
+      const response = await getGroupMembers(groupId);
+      const membersData = response?.data || response || [];
+      const mapped = membersData.map((member) => ({
+        id: member.user?.id || member.user_id || member.id,
+        name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
+        email: member.user?.email || member.email || '—',
+        avatar: member.user?.image || professionalAvatars.male[0].url,
+        joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
+        isAdmin: !!member.is_admin,
+        role: member.is_admin ? 'Admin' : 'Member',
+      }));
+      setMembers(mapped);
+    } catch (error) {
+      console.error("❌ MembersPage: Error adding member:", error);
+      toast({ 
+        title: "Add member failed", 
+        description: error?.response?.data?.message || error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setAddingMember(false);
+    }
+  };
   
   // Filter members based on search query
   const filteredMembers = members.filter(member => 
@@ -77,14 +193,32 @@ export function MembersPage() {
   // Count admins
   const adminCount = members.filter(member => member.isAdmin).length;
 
+  // Check if current user is already a member
+  const isCurrentUserMember = members.some(member => member.id === currentUserId);
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Group Members</CardTitle>
-          <CardDescription>
-            {members.length} members · {adminCount} admins
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Group Members</CardTitle>
+              <CardDescription>
+                {members.length} members · {adminCount} admins
+              </CardDescription>
+            </div>
+            {/* Join Group button - only show if user is not already a member */}
+            {!isCurrentUserMember && (
+              <Button 
+                onClick={handleSelfJoin} 
+                disabled={loading || addingMember} 
+                className="bg-primary text-white"
+              >
+                <UserPlus className="h-4 w-4 mr-2" /> 
+                {addingMember ? "Joining..." : "Join Group"}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex w-full items-center space-x-2 pb-4">
@@ -107,7 +241,13 @@ export function MembersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredMembers.length > 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                    Loading members...
+                  </TableCell>
+                </TableRow>
+              ) : filteredMembers.length > 0 ? (
                 filteredMembers.map((member) => (
                   <TableRow key={member.id}>
                     <TableCell>
@@ -145,7 +285,7 @@ export function MembersPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                    No members found matching your search
+                    {searchQuery ? "No members found matching your search" : "No members found"}
                   </TableCell>
                 </TableRow>
               )}
