@@ -414,13 +414,27 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const addContentBlock = (blockType, textType = null) => {
     const newBlock = {
       id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
       type: blockType.id,
       title: blockType.title,
       textType: textType,
       content: '',
-      order: contentBlocks.length + 1
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
-    setContentBlocks([...contentBlocks, newBlock]);
+    
+    // If we have existing lesson content, add to that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    } else {
+      // For new lessons, add to contentBlocks
+      setContentBlocks([...contentBlocks, newBlock]);
+    }
   };
 
   const handleTextTypeSelect = (textType) => {
@@ -452,19 +466,52 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
     }
 
+    // Generate proper HTML content with exact same container structure as existing blocks
+    let innerContent = '';
+    if (textType.id === 'heading_paragraph') {
+      innerContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">${heading || 'Heading'}</h1><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the heading.'}</p>`;
+    } else if (textType.id === 'subheading_paragraph') {
+      innerContent = `<h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">${subheading || 'Subheading'}</h2><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the subheading.'}</p>`;
+    } else {
+      innerContent = textType.defaultContent || contentHtml;
+    }
+
+    // Generate HTML content with proper card styling to match existing blocks
+    const htmlContent = `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          ${innerContent}
+        </div>
+      </div>
+    `;
+
     const newBlock = {
       id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
       type: 'text',
       title: textType.title || 'Text Block',
       textType: textType.id,
       content: contentHtml,
+      html_css: htmlContent,
       ...(heading !== null && { heading }),
       ...(subheading !== null && { subheading }),
-      order: contentBlocks.length + 1
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
-    // Use a callback to ensure we're working with the latest state
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // If we have existing lesson content, add to that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    } else {
+      // For new lessons, add to contentBlocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
     
     // Close the sidebar
     setShowTextTypeSidebar(false);
@@ -472,15 +519,40 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleTableTemplateSelect = (template) => {
+    // Generate HTML content with proper card styling to match existing blocks
+    const htmlContent = `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          ${template.defaultContent}
+        </div>
+      </div>
+    `;
+    
     const newBlock = {
       id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
       type: 'text',
       title: template.title,
       textType: 'table',
       content: template.defaultContent,
-      order: contentBlocks.length + 1
+      html_css: htmlContent,
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    
+    // If we have existing lesson content, add to that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    } else {
+      // For new lessons, add to contentBlocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
     setShowTableTemplateSidebar(false);
   };
 
@@ -756,7 +828,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     };
 
     // Determine if this is a new lesson or an update
-    const baseUrl = 'https://creditor-backend-testing-branch.onrender.com/api/course';
+    const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/course`;
     const apiUrl = lessonId 
       ? `${baseUrl}/${courseId}/modules/${moduleId}/lesson/${lessonId}`
       : `${baseUrl}/${courseId}/modules/${moduleId}/lesson/create-lesson`;
@@ -1018,7 +1090,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       console.log('Payload being sent to backend:', lessonDataToUpdate);
 
       const response = await axios.put(
-        `https://sharebackend-sdkp.onrender.com/api/lessoncontent/update/${lessonId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
         lessonDataToUpdate,
         {
           headers: {
@@ -1099,8 +1171,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       finalVideoUrl = videoUrl;
     }
 
+    // Generate HTML content for display
+    const htmlContent = `
+      <video controls style="width: 100%; max-width: 600px; height: auto; border-radius: 8px;">
+        <source src="${finalVideoUrl}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      ${videoTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${videoTitle}</p>` : ''}
+      ${videoDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${videoDescription}</p>` : ''}
+    `;
+
     const videoBlock = {
       id: currentBlock?.id || `video-${Date.now()}`,
+      block_id: currentBlock?.id || `video-${Date.now()}`,
       type: 'video',
       title: 'Video',
       videoTitle: videoTitle,
@@ -1109,7 +1192,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       videoUrl: finalVideoUrl,
       uploadMethod: videoUploadMethod,
       originalUrl: videoUploadMethod === 'url' ? videoUrl : null,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      html_css: htmlContent,
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
     if (currentBlock) {
@@ -1119,7 +1204,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       );
     } else {
       // Add new block
-      setContentBlocks(prev => [...prev, videoBlock]);
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, videoBlock]
+          }
+        }));
+      } else {
+        setContentBlocks(prev => [...prev, videoBlock]);
+      }
     }
     
     handleVideoDialogClose();
@@ -1128,6 +1223,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleImageTemplateSelect = (template) => {
     const newBlock = {
       id: `image-${Date.now()}`,
+      block_id: `image-${Date.now()}`,
       type: 'image',
       title: template.title,
       layout: template.layout,
@@ -1135,10 +1231,22 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       imageUrl: template.defaultContent.imageUrl,
       text: template.defaultContent.text,
       isEditing: false,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
    
-    setContentBlocks(prev => [...prev, newBlock]);
+    // If we have existing lesson content, add to that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    } else {
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
     setShowImageTemplateSidebar(false);
   };
 
@@ -1400,6 +1508,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       // For new blocks
       const newBlock = {
         id: `text_${Date.now()}`,
+        block_id: `text_${Date.now()}`,
         type: 'text',
         title: editorTitle,
         content: `
@@ -1410,9 +1519,21 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         textType: 'paragraph',
         style: textTypes.find(t => t.id === 'paragraph')?.style || {},
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
       };
-      setContentBlocks(prev => [...prev, newBlock]);
+      // If we have existing lesson content, add to that structure
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, newBlock]
+          }
+        }));
+      } else {
+        setContentBlocks(prev => [...prev, newBlock]);
+      }
     }
    
     // Close the dialog and reset form
@@ -1485,13 +1606,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     const newBlock = {
       id: currentBlock?.id || `image-${Date.now()}`,
+      block_id: currentBlock?.id || `image-${Date.now()}`,
       type: 'image',
       title: 'Image',
       imageTitle: imageTitle,
       imageDescription: imageDescription,
       imageFile: imageFile,
       imageUrl: imageUrl,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
     if (currentBlock) {
@@ -1502,7 +1625,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setCurrentBlock(null);
     } else {
       // Add new block
-      setContentBlocks(prev => [...prev, newBlock]);
+      // If we have existing lesson content, add to that structure
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, newBlock]
+          }
+        }));
+      } else {
+        setContentBlocks(prev => [...prev, newBlock]);
+      }
     }
    
     handleImageDialogClose();
@@ -1586,8 +1720,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       finalAudioUrl = audioUrl;
     }
 
+    // Generate HTML content for display
+    const htmlContent = `
+      <audio controls style="width: 100%; max-width: 400px;">
+        <source src="${finalAudioUrl}" type="audio/mpeg">
+        Your browser does not support the audio element.
+      </audio>
+      ${audioTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${audioTitle}</p>` : ''}
+      ${audioDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${audioDescription}</p>` : ''}
+    `;
+
     const audioBlock = {
       id: currentBlock?.id || `audio-${Date.now()}`,
+      block_id: currentBlock?.id || `audio-${Date.now()}`,
       type: 'audio',
       title: 'Audio',
       audioTitle: audioTitle,
@@ -1596,7 +1741,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       audioUrl: finalAudioUrl,
       uploadMethod: audioUploadMethod,
       originalUrl: audioUploadMethod === 'url' ? audioUrl : null,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      html_css: htmlContent,
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
     if (currentBlock) {
@@ -1606,7 +1753,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       );
     } else {
       // Add new block
-      setContentBlocks(prev => [...prev, audioBlock]);
+      // If we have existing lesson content, add to that structure
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, audioBlock]
+          }
+        }));
+      } else {
+        setContentBlocks(prev => [...prev, audioBlock]);
+      }
     }
    
     handleAudioDialogClose();
@@ -1636,15 +1794,32 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       return;
     }
 
+    // Generate HTML content for display
+    const htmlContent = `
+      <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 8px;">
+        <iframe 
+          src="https://www.youtube.com/embed/${videoId}" 
+          title="${youtubeTitle || 'YouTube video'}" 
+          allowfullscreen
+          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
+        ></iframe>
+      </div>
+      ${youtubeTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${youtubeTitle}</p>` : ''}
+      ${youtubeDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${youtubeDescription}</p>` : ''}
+    `;
+
     const newBlock = {
       id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
+      block_id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
       type: 'youtube',
       title: 'YouTube Video',
       youtubeTitle: youtubeTitle,
       youtubeDescription: youtubeDescription,
       youtubeUrl: youtubeUrl,
       youtubeId: videoId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      html_css: htmlContent,
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
     if (currentYoutubeBlock) {
@@ -1652,7 +1827,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         prev.map(block => block.id === currentYoutubeBlock.id ? newBlock : block)
       );
     } else {
-      setContentBlocks(prev => [...prev, newBlock]);
+      // Add new block
+      // If we have existing lesson content, add to that structure
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, newBlock]
+          }
+        }));
+      } else {
+        setContentBlocks(prev => [...prev, newBlock]);
+      }
     }
    
     handleYoutubeDialogClose();
@@ -1721,8 +1908,27 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       return;
     }
 
+    // Generate HTML content for display
+    const buttonStyles = {
+      primary: 'background-color: #3B82F6; color: white; border: none;',
+      secondary: 'background-color: #6B7280; color: white; border: none;',
+      outline: 'background-color: transparent; color: #3B82F6; border: 2px solid #3B82F6;'
+    };
+
+    const htmlContent = `
+      <div style="padding: 16px; border: 1px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB;">
+        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">${linkTitle}</h3>
+        ${linkDescription ? `<p style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">${linkDescription}</p>` : ''}
+        <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" 
+           style="display: inline-block; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; ${buttonStyles[linkButtonStyle] || buttonStyles.primary}">
+          ${linkButtonText}
+        </a>
+      </div>
+    `;
+
     const newBlock = {
       id: currentLinkBlock?.id || `link-${Date.now()}`,
+      block_id: currentLinkBlock?.id || `link-${Date.now()}`,
       type: 'link',
       title: 'Link',
       linkTitle: linkTitle,
@@ -1730,7 +1936,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       linkDescription: linkDescription,
       linkButtonText: linkButtonText,
       linkButtonStyle: linkButtonStyle,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      html_css: htmlContent,
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
     if (currentLinkBlock) {
@@ -1738,7 +1946,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         prev.map(block => block.id === currentLinkBlock.id ? newBlock : block)
       );
     } else {
-      setContentBlocks(prev => [...prev, newBlock]);
+      // Add new block
+      // If we have existing lesson content, add to that structure
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, newBlock]
+          }
+        }));
+      } else {
+        setContentBlocks(prev => [...prev, newBlock]);
+      }
     }
    
     handleLinkDialogClose();
@@ -1861,7 +2081,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
             // Make the API call
             const contentResponse = await fetch(
-              `https://sharebackend-sdkp.onrender.com/api/lessoncontent/${lessonId}`,
+              `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/${lessonId}`,
               {
                 method: 'GET',
                 headers: {
@@ -1901,7 +2121,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           }
 
           const response = await fetch(
-            `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
+            `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
             {
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2157,7 +2377,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <div >
                         <div>
                           <h2 className="text-xl font-bold text-gray-900 mb-2">
-                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "" : "Start Building Your Lesson"}
+                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "" : ""}
                           </h2>
                           {fetchingContent ? (
                             <div >

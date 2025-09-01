@@ -36,6 +36,6 @@ export default defineConfig(({ mode }) => ({
 }));
 
 // # VITE_API_BASE_URL= https://sharebackend-sdkp.onrender.com
-// # VITE_API_BASE_URL= https://creditor-backend-1-iijy.onrender.com
+// # VITE_API_BASE_URL= 
 // # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
 // # VITE_API_BASE_URL= http://localhost:9000

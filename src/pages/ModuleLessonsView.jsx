@@ -143,7 +143,7 @@ const ModuleLessonsView = () => {
       };
       
       const response = await axios.post(
-        `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`,
         lessonData,
         {
           headers: {
@@ -207,7 +207,7 @@ const ModuleLessonsView = () => {
       if (currentLesson.status !== undefined) updateData.lesson_status = currentLesson.status;
       
       const response = await axios.patch(
-        `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
         updateData,
         {
           withCredentials: true,
@@ -311,7 +311,7 @@ const ModuleLessonsView = () => {
       
       // Use the exact same endpoint format as in Postman
       await axios.delete(
-        `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${moduleId}/lesson/${lessonToDelete.id}/delete`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonToDelete.id}/delete`,
         {
           withCredentials: true,
           headers: {
