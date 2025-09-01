@@ -6,7 +6,7 @@ import { getAuthHeader } from '@/services/authHeader';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
+  ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical, X,
   Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
   HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon,
   Type,
@@ -97,6 +97,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [isViewMode, setIsViewMode] = useState(initialViewMode);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -846,8 +847,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handlePreview = () => {
-    console.log('Previewing lesson:', { lessonTitle, contentBlocks });
-    alert('Preview functionality coming soon!');
+    setIsPreviewMode(true);
+  };
+
+  const handleExitPreview = () => {
+    setIsPreviewMode(false);
   };
 
   // Convert blocks to HTML/CSS format
@@ -2184,8 +2188,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   return (
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
-        {/* Content Blocks Sidebar - Only show in edit mode */}
-        {!isViewMode && (
+        {/* Content Blocks Sidebar - Only show in edit mode and not in preview */}
+        {!isViewMode && !isPreviewMode && (
           <div
             className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
             style={{
@@ -2240,7 +2244,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         {/* Main Content */}
         <div
           className={`flex-1 transition-all duration-300 relative ${
-            isViewMode
+            isPreviewMode
+              ? 'ml-0'
+              : isViewMode
               ? 'ml-0'
               : sidebarCollapsed
                 ? 'ml-[calc(4.5rem+16rem)]'
@@ -2252,39 +2258,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
               <div className="max-w-[800px] mx-auto flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(-1)}
-                    className="flex items-center space-x-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span>Back</span>
-                  </Button>
+                  {!isPreviewMode && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(-1)}
+                      className="flex items-center space-x-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      <span>Back</span>
+                    </Button>
+                  )}
                   <h1 className="text-lg font-bold">{lessonData?.title || lessonTitle || 'Untitled Lesson'}</h1>
                 </div>
                
                 <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleViewMode}
-                    className="flex items-center gap-1"
-                  >
-                    {isViewMode ? (
-                      <>
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-1" />
-                        Preview
-                      </>
-                    )}
-                  </Button>
-                 
-                  {!isViewMode && (
+                  {isPreviewMode && (
+                    <Button variant="outline" size="sm" onClick={handleExitPreview}>
+                      <X className="h-4 w-4 mr-1" />
+                      Exit Preview
+                    </Button>
+                  )}
+                  
+                  {!isPreviewMode && (
                     <>
                       <Button variant="outline" size="sm" onClick={handleSave}>
                         Save as Draft
@@ -2303,6 +2299,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           'Update'
                         )}
                       </Button>
+                      <Button variant="outline" size="sm" onClick={handlePreview}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
+                      </Button>
                     </>
                   )}
                 </div>
@@ -2312,7 +2312,36 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             {/* Main Content Canvas */}
             <div className="py-4">
                 <div>
-                  {isViewMode ? (
+                  {isPreviewMode ? (
+                    <div className="min-h-screen bg-white">
+                      <div className="max-w-5xl mx-auto px-8 py-12">
+                        <h1 className="text-4xl font-bold mb-12 text-center text-gray-900">{lessonTitle}</h1>
+                        <div className="space-y-8">
+                          {/* Show content from lessonContent if available, otherwise from contentBlocks */}
+                          {(lessonContent?.data?.content && lessonContent.data.content.length > 0 ? lessonContent.data.content : contentBlocks).map((block, index) => (
+                            <div key={block.block_id || block.id} className="w-full">
+                              <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                              {block.script && (
+                                <script dangerouslySetInnerHTML={{ __html: block.script }} />
+                              )}
+                            </div>
+                          ))}
+                          {/* If no content available */}
+                          {(!lessonContent?.data?.content || lessonContent.data.content.length === 0) && contentBlocks.length === 0 && (
+                            <div className="text-center py-20">
+                              <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                              <h3 className="text-2xl font-semibold text-gray-700 mb-4">
+                                No Content Available
+                              </h3>
+                              <p className="text-lg text-gray-500">
+                                This lesson doesn't have any content to preview yet.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : isViewMode ? (
                     <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow">
                       <h1 className="text-3xl font-bold mb-6">{lessonTitle}</h1>
                       <div className="prose max-w-none">
