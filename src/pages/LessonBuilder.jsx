@@ -6,7 +6,7 @@ import { getAuthHeader } from '@/services/authHeader';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
-  ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical, X,
+  ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
   Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
   HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon,
   Type,
@@ -97,7 +97,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [isViewMode, setIsViewMode] = useState(initialViewMode);
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -422,7 +421,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       content: '',
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
-    
+   
     // If we have existing lesson content, add to that structure
     if (lessonContent?.data?.content) {
       setLessonContent(prevLessonContent => ({
@@ -513,7 +512,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       // For new lessons, add to contentBlocks
       setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
     }
-    
+   
     // Close the sidebar
     setShowTextTypeSidebar(false);
     setSidebarCollapsed(true);
@@ -529,7 +528,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </div>
       </div>
     `;
-    
+   
     const newBlock = {
       id: `block_${Date.now()}`,
       block_id: `block_${Date.now()}`,
@@ -540,7 +539,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       html_css: htmlContent,
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
-    
+   
     // If we have existing lesson content, add to that structure
     if (lessonContent?.data?.content) {
       setLessonContent(prevLessonContent => ({
@@ -598,12 +597,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleEditBlock = (blockId) => {
     // First try to find block in contentBlocks (for new lessons)
     let block = contentBlocks.find(b => b.id === blockId);
-    
+   
     // If not found, try to find in lessonContent (for fetched lessons)
     if (!block && lessonContent?.data?.content) {
       block = lessonContent.data.content.find(b => b.block_id === blockId);
     }
-    
+   
     if (!block) return;
    
     if (block.type === 'text') {
@@ -725,11 +724,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleDragStart = (e, blockId) => {
     setDraggedBlockId(blockId);
     e.dataTransfer.effectAllowed = 'move';
-    
+   
     // Add a class to the dragged element for visual feedback
     const element = e.target;
     element.classList.add('dragging');
-    
+   
     // Set custom ghost image
     const ghost = element.cloneNode(true);
     ghost.style.opacity = '0.5';
@@ -737,13 +736,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     ghost.style.left = '-9999px';
     document.body.appendChild(ghost);
     e.dataTransfer.setDragImage(ghost, 0, 0);
-    
+   
     // Clean up ghost element after drag starts
     setTimeout(() => {
       document.body.removeChild(ghost);
     }, 0);
   };
-  
+ 
   // Add dragend handler to clean up styles
   const handleDragEnd = () => {
     // Reset all block transforms
@@ -757,7 +756,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    
+   
     // Find the dragged element and potential drop target
     const draggedElement = document.querySelector(`[data-block-id="${draggedBlockId}"]`);
     if (!draggedElement) return;
@@ -791,13 +790,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     const content = lessonContent.data.content;
     const sourceIndex = content.findIndex(b => b.block_id === draggedBlockId);
     const targetIndex = content.findIndex(b => b.block_id === targetBlockId);
-    
+   
     if (sourceIndex === -1 || targetIndex === -1) return;
-    
+   
     const updatedContent = [...content];
     const [moved] = updatedContent.splice(sourceIndex, 1);
     updatedContent.splice(targetIndex, 0, moved);
-    
+   
     // Update the state with new order
     setLessonContent({
       ...lessonContent,
@@ -812,7 +811,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     // Reset drag state
     setDraggedBlockId(null);
-    
+   
     // Reset any visual transformations
     document.querySelectorAll('[data-block-id]').forEach(block => {
       block.style.transform = '';
@@ -830,7 +829,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     // Determine if this is a new lesson or an update
     const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/course`;
-    const apiUrl = lessonId 
+    const apiUrl = lessonId
       ? `${baseUrl}/${courseId}/modules/${moduleId}/lesson/${lessonId}`
       : `${baseUrl}/${courseId}/modules/${moduleId}/lesson/create-lesson`;
 
@@ -838,7 +837,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       const response = lessonId
         ? await axios.put(apiUrl, lessonDataToSave)
         : await axios.post(apiUrl, lessonDataToSave);
-      
+     
       toast.success('Lesson saved successfully!');
     } catch (error) {
       toast.error('Error saving lesson!');
@@ -847,11 +846,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handlePreview = () => {
-    setIsPreviewMode(true);
-  };
-
-  const handleExitPreview = () => {
-    setIsPreviewMode(false);
+    console.log('Previewing lesson:', { lessonTitle, contentBlocks });
+    alert('Preview functionality coming soon!');
   };
 
   // Convert blocks to HTML/CSS format
@@ -898,7 +894,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       // Convert content blocks to the required format
       const content = blocksToUpdate.map((block, index) => {
         const blockId = block.block_id || `block_${index + 1}`;
-        
+       
         // If block already has html_css (fetched content), preserve it to avoid wrapping in new containers
         if (block.html_css && block.html_css.trim() !== '') {
           return {
@@ -979,10 +975,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             };
             htmlContent = `
               <div style='margin: 20px 0; text-align: center;'>
-                <img src='${block.imageUrl}' alt='${block.imageTitle || ''}' 
+                <img src='${block.imageUrl}' alt='${block.imageTitle || ''}'
                      style='max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'/>
-                ${block.imageDescription ? 
-                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.imageDescription}</p>` 
+                ${block.imageDescription ?
+                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.imageDescription}</p>`
                   : ''}
               </div>`;
             break;
@@ -998,8 +994,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                   <source src='${block.videoUrl}' type='video/mp4'>
                   Your browser does not support the video tag.
                 </video>
-                ${block.videoTitle ? 
-                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.videoTitle}</p>` 
+                ${block.videoTitle ?
+                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.videoTitle}</p>`
                   : ''}
               </div>`;
             break;
@@ -1109,7 +1105,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       } else {
         throw new Error(response.data?.errorMessage || 'Failed to update lesson content');
       }
-      
+     
     } catch (error) {
       console.error('Error updating lesson:', error);
       toast.error(error.response?.data?.errorMessage || 'Failed to update lesson. Please try again.');
@@ -1156,12 +1152,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       alert('Please enter a video title');
       return;
     }
-    
+   
     if (videoUploadMethod === 'file' && !videoFile) {
       alert('Please select a video file');
       return;
     }
-    
+   
     if (videoUploadMethod === 'url' && !videoUrl) {
       alert('Please enter a video URL');
       return;
@@ -1203,7 +1199,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     if (currentBlock) {
       // Update existing block
-      setContentBlocks(prev => 
+      setContentBlocks(prev =>
         prev.map(block => block.id === currentBlock.id ? videoBlock : block)
       );
     } else {
@@ -1220,7 +1216,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         setContentBlocks(prev => [...prev, videoBlock]);
       }
     }
-    
+   
     handleVideoDialogClose();
   };
 
@@ -1228,7 +1224,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     const imageUrl = template.defaultContent?.imageUrl || '';
     const imageTitle = template.defaultContent?.text || template.title;
     const imageDescription = template.defaultContent?.description || '';
-    
+   
     const newBlock = {
       id: `image-${Date.now()}`,
       block_id: `image-${Date.now()}`,
@@ -1249,9 +1245,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       },
       html_css: `
         <div class="image-block" style="${template.layout ? `display: flex; flex-direction: ${template.layout.includes('left') ? 'row' : 'column'}; gap: 1rem;` : ''}">
-          <img 
-            src="${imageUrl}" 
-            alt="${imageTitle}" 
+          <img
+            src="${imageUrl}"
+            alt="${imageTitle}"
             style="max-width: 100%; height: auto; border-radius: 0.5rem; ${template.layout?.includes('full') ? 'width: 100%;' : ''}"
           />
           ${imageDescription ? `
@@ -1345,7 +1341,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleTextEditorSave = () => {
     // First try to find block in contentBlocks (for new lessons)
     let blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
-    
+   
     // If not found, try to find in lessonContent (for fetched lessons)
     if (!blockToUpdate && lessonContent?.data?.content) {
       blockToUpdate = lessonContent.data.content.find(b => b.block_id === currentTextBlockId);
@@ -1353,17 +1349,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     if (blockToUpdate) {
       let updatedContent = '';
-      
+     
       // Use currentTextType (detected type) or fallback to blockToUpdate.textType
       const effectiveTextType = currentTextType || blockToUpdate.textType;
-      
+     
       // For fetched lessons, preserve original HTML structure and only update content
       if (blockToUpdate.html_css && lessonContent?.data?.content) {
         // Use original HTML structure and replace only the text content
         updatedContent = blockToUpdate.html_css;
-        
+       
         // Replace the text content while preserving HTML structure
-        
+       
         if (effectiveTextType === 'heading_paragraph') {
           // Update heading and paragraph content within existing structure
           updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
@@ -1385,7 +1381,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           // Extract plain text from rich text content for cases where we need to maintain original styling
           const richTextContent = editorHtml.trim();
           const plainTextContent = editorHtml.replace(/<[^>]*>/g, '').trim();
-          
+         
           // Check if the original content has specific heading/paragraph structure that should be preserved
           if (updatedContent.includes('<h1')) {
             // For headings, we want to preserve the heading tag but allow rich text formatting inside
@@ -1455,8 +1451,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       } else {
         // For new blocks, generate HTML structure
         const textType = textTypes.find(t => t.id === blockToUpdate.textType);
-        
-        
+       
+       
         if (effectiveTextType === 'heading_paragraph') {
           updatedContent = `
             <div class="content-block">
@@ -1642,9 +1638,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       },
       html_css: `
         <div class="image-block">
-          <img 
-            src="${imageUrl}" 
-            alt="${imageTitle || 'Image'}" 
+          <img
+            src="${imageUrl}"
+            alt="${imageTitle || 'Image'}"
             style="max-width: 100%; height: auto; border-radius: 0.5rem;"
           />
           ${imageDescription ? `
@@ -1744,12 +1740,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       alert('Please enter an audio title');
       return;
     }
-    
+   
     if (audioUploadMethod === 'file' && !audioFile) {
       alert('Please select an audio file');
       return;
     }
-    
+   
     if (audioUploadMethod === 'url' && !audioUrl) {
       alert('Please enter an audio URL');
       return;
@@ -1791,7 +1787,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     if (currentBlock) {
       // Update existing block
-      setContentBlocks(prev => 
+      setContentBlocks(prev =>
         prev.map(block => block.id === currentBlock.id ? audioBlock : block)
       );
     } else {
@@ -1840,9 +1836,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     // Generate HTML content for display
     const htmlContent = `
       <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 8px;">
-        <iframe 
-          src="https://www.youtube.com/embed/${videoId}" 
-          title="${youtubeTitle || 'YouTube video'}" 
+        <iframe
+          src="https://www.youtube.com/embed/${videoId}"
+          title="${youtubeTitle || 'YouTube video'}"
           allowfullscreen
           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
         ></iframe>
@@ -1962,7 +1958,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       <div style="padding: 16px; border: 1px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB;">
         <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">${linkTitle}</h3>
         ${linkDescription ? `<p style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">${linkDescription}</p>` : ''}
-        <a href="${linkUrl}" target="_blank" rel="noopener noreferrer" 
+        <a href="${linkUrl}" target="_blank" rel="noopener noreferrer"
            style="display: inline-block; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; ${buttonStyles[linkButtonStyle] || buttonStyles.primary}">
           ${linkButtonText}
         </a>
@@ -2038,12 +2034,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       alert('Please enter a PDF title');
       return;
     }
-    
+   
     if (pdfUploadMethod === 'file' && !pdfFile) {
       alert('Please select a PDF file');
       return;
     }
-    
+   
     if (pdfUploadMethod === 'url' && !pdfUrl) {
       alert('Please enter a PDF URL');
       return;
@@ -2072,7 +2068,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     if (currentBlock) {
       // Update existing block
-      setContentBlocks(prev => 
+      setContentBlocks(prev =>
         prev.map(block => block.id === currentBlock.id ? pdfBlock : block)
       );
     } else {
@@ -2110,12 +2106,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           setLessonTitle(title);
           setContentBlocks(contentBlocks || []);
           setLessonData(location.state.lessonData);
-          
+         
           // Fetch lesson content
           try {
             const lessonId = location.state.lessonData.id;
             console.log('Fetching lesson content for:', lessonId);
-            
+           
             // Get the token
             const token = localStorage.getItem('token');
             if (!token) {
@@ -2137,10 +2133,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             if (!contentResponse.ok) {
               throw new Error(`HTTP error! status: ${contentResponse.status}`);
             }
-            
+           
             const contentData = await contentResponse.json();
             console.log('Content response:', contentData);
-            
+           
             if (contentData) {
               console.log('Setting lesson content:', contentData);
               setLessonContent(contentData);
@@ -2151,7 +2147,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             console.error('Error fetching lesson content:', contentError);
             console.error('Error details:', contentError.response?.data || contentError.message);
           }
-          
+         
           setLoading(false);
           setFetchingContent(false);
           return;
@@ -2227,8 +2223,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   return (
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
-        {/* Content Blocks Sidebar - Only show in edit mode and not in preview */}
-        {!isViewMode && !isPreviewMode && (
+        {/* Content Blocks Sidebar - Only show in edit mode */}
+        {!isViewMode && (
           <div
             className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
             style={{
@@ -2283,9 +2279,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         {/* Main Content */}
         <div
           className={`flex-1 transition-all duration-300 relative ${
-            isPreviewMode
-              ? 'ml-0'
-              : isViewMode
+            isViewMode
               ? 'ml-0'
               : sidebarCollapsed
                 ? 'ml-[calc(4.5rem+16rem)]'
@@ -2297,7 +2291,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
               <div className="max-w-[800px] mx-auto flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  {!isPreviewMode && (
+                  {!isViewMode && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -2312,20 +2306,32 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 </div>
                
                 <div className="flex items-center space-x-2">
-                  {isPreviewMode && (
-                    <Button variant="outline" size="sm" onClick={handleExitPreview}>
-                      <X className="h-4 w-4 mr-1" />
-                      Exit Preview
-                    </Button>
-                  )}
-                  
-                  {!isPreviewMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleViewMode}
+                    className="flex items-center gap-1"
+                  >
+                    {isViewMode ? (
+                      <>
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
+                      </>
+                    )}
+                  </Button>
+                 
+                  {!isViewMode && (
                     <>
                       <Button variant="outline" size="sm" onClick={handleSave}>
                         Save as Draft
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         onClick={handleUpdate}
                         disabled={isUploading}
                       >
@@ -2337,10 +2343,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         ) : (
                           'Update'
                         )}
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handlePreview}>
-                        <Eye className="h-4 w-4 mr-1" />
-                        Preview
                       </Button>
                     </>
                   )}
@@ -2371,20 +2373,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             {(() => {
                               // Combine both contentBlocks and lessonContent blocks
                               const allBlocks = [];
-                              
+                             
                               // Add blocks from lessonContent (existing lesson)
                               if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
                                 allBlocks.push(...lessonContent.data.content);
                               }
-                              
+                             
                               // Add blocks from contentBlocks (new blocks)
                               if (contentBlocks && contentBlocks.length > 0) {
                                 allBlocks.push(...contentBlocks);
                               }
-                              
+                             
                               // Sort by order if available
                               allBlocks.sort((a, b) => (a.order || 0) - (b.order || 0));
-                              
+                             
                               if (allBlocks.length === 0) {
                                 return (
                                   <div className="text-center py-16">
@@ -2398,31 +2400,31 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   </div>
                                 );
                               }
-                              
+                             
                               return (
                                 <div className="prose prose-xl max-w-none space-y-8">
                                   {allBlocks.map((block, index) => {
                                     const blockId = block.id || block.block_id;
-                                    
+                                   
                                     return (
                                       <div key={blockId} className="relative">
                                         {/* Text Content */}
                                         {block.type === 'text' && (
                                           <div className="mb-8">
                                             {block.html_css ? (
-                                              <div 
+                                              <div
                                                 className="prose prose-xl max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.html_css }}
                                               />
                                             ) : (
-                                              <div 
+                                              <div
                                                 className="prose prose-xl max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.content }}
                                               />
                                             )}
                                           </div>
                                         )}
-                                        
+                                       
                                         {/* Image Content */}
                                         {block.type === 'image' && (
                                           <div className="mb-8">
@@ -2431,7 +2433,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 {block.layout === 'side-by-side' ? (
                                                   <div className="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
                                                     <div>
-                                                      <img 
+                                                      <img
                                                         src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                         alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
                                                         className="w-full h-auto rounded-lg shadow-lg"
@@ -2445,7 +2447,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   </div>
                                                 ) : block.layout === 'overlay' ? (
                                                   <div className="relative rounded-xl overflow-hidden">
-                                                    <img 
+                                                    <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                       alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
                                                       className="w-full h-96 object-cover"
@@ -2460,7 +2462,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   </div>
                                                 ) : (
                                                   <div className="text-center">
-                                                    <img 
+                                                    <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                       alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
                                                       className="max-w-full h-auto rounded-xl shadow-lg mx-auto"
@@ -2476,14 +2478,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             )}
                                           </div>
                                         )}
-                                        
+                                       
                                         {/* Video Content */}
                                         {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
                                           <div className="mb-8">
                                             <div className="bg-gray-900 rounded-xl p-6">
-                                              <video 
+                                              <video
                                                 src={block.videoUrl || block.details?.video_url}
-                                                controls 
+                                                controls
                                                 className="w-full h-96 rounded-lg"
                                               >
                                                 Your browser does not support the video tag.
@@ -2501,7 +2503,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             </div>
                                           </div>
                                         )}
-                                        
+                                       
                                         {/* YouTube Content */}
                                         {block.type === 'youtube' && (block.youtubeId || block.youtubeUrl || block.details?.url) && (
                                           <div className="mb-8">
@@ -2525,14 +2527,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             </div>
                                           </div>
                                         )}
-                                        
+                                       
                                         {/* Audio Content */}
                                         {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
                                           <div className="mb-8">
                                             <div className="bg-green-50 rounded-xl p-6 border border-green-100">
-                                              <audio 
+                                              <audio
                                                 src={block.audioUrl || block.details?.audio_url}
-                                                controls 
+                                                controls
                                                 className="w-full mb-4"
                                               >
                                                 Your browser does not support the audio tag.
@@ -2550,7 +2552,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             </div>
                                           </div>
                                         )}
-                                        
+                                       
                                         {/* Link Content */}
                                         {block.type === 'link' && (block.linkUrl || block.details?.url) && (
                                           <div className="mb-8">
@@ -2565,12 +2567,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   {block.linkDescription || block.details?.description}
                                                 </p>
                                               )}
-                                              <a 
+                                              <a
                                                 href={block.linkUrl || block.details?.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className={`inline-flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
-                                                  block.linkButtonStyle === 'secondary' 
+                                                  block.linkButtonStyle === 'secondary'
                                                     ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-lg'
                                                     : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
                                                 }`}
@@ -2581,7 +2583,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             </div>
                                           </div>
                                         )}
-                                        
+                                       
                                         {/* PDF Content */}
                                         {block.type === 'pdf' && (block.pdfUrl || block.details?.pdf_url) && (
                                           <div className="mb-8">
@@ -2596,7 +2598,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   {block.pdfDescription || block.details?.description}
                                                 </p>
                                               )}
-                                              <a 
+                                              <a
                                                 href={block.pdfUrl || block.details?.pdf_url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -2615,7 +2617,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               );
                             })()}
                           </div>
-                          
+                         
                           {/* Course Footer */}
                           <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-6 text-center border-t">
                             <div className="flex items-center justify-center space-x-3">
@@ -2640,8 +2642,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             <div >
                               <div >
                                 {lessonContent.data.content.map((block, index) => (
-                                  <div 
-                                    key={block.block_id} 
+                                  <div
+                                    key={block.block_id}
                                     className="relative w-full  mb-4 group"
                                     draggable="true"
                                     data-block-id={block.block_id}
@@ -2661,7 +2663,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 // Detect textType from HTML content structure
                                                 let detectedTextType = 'paragraph'; // default
                                                 const htmlContent = block.html_css || '';
-                                                
+                                               
                                                 // Check for heading + paragraph combination
                                                 if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
                                                   detectedTextType = 'heading_paragraph';
@@ -2674,43 +2676,43 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 } else if (htmlContent.includes('<table') || htmlContent.includes('grid')) {
                                                   detectedTextType = 'table';
                                                 }
-                                                
+                                               
                                                 // Set the appropriate editor state based on detected type
                                                 setCurrentTextBlockId(block.block_id);
-                                                
+                                               
                                                 // Reset all editor states first
                                                 setEditorHtml('');
                                                 setEditorHeading('');
                                                 setEditorSubheading('');
                                                 setEditorContent('');
-                                                
+                                               
                                                 // Set content based on detected type
                                                 if (detectedTextType === 'heading_paragraph') {
                                                   // Extract heading and paragraph content
                                                   const tempDiv = document.createElement('div');
                                                   tempDiv.innerHTML = htmlContent;
-                                                  
+                                                 
                                                   // Try multiple selectors for heading
                                                   const h1 = tempDiv.querySelector('h1') || tempDiv.querySelector('[class*="heading"]') || tempDiv.querySelector('h2, h3, h4, h5, h6');
                                                   // Try multiple selectors for paragraph - look for p tags or div with paragraph content
                                                   const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
-                                                  
+                                                 
                                                   // Extract text content, preserving rich text formatting
                                                   let headingContent = '';
                                                   let paragraphContent = '';
-                                                  
+                                                 
                                                   if (h1) {
                                                     headingContent = h1.innerHTML || '';
                                                   }
-                                                  
+                                                 
                                                   if (p) {
                                                     paragraphContent = p.innerHTML || '';
                                                   }
-                                                  
+                                                 
                                                   // If we couldn't find structured content, try to parse manually while preserving HTML
                                                   if (!headingContent && !paragraphContent) {
                                                     const fullHTML = tempDiv.innerHTML || '';
-                                                    
+                                                   
                                                     // Try to find heading and paragraph content in the HTML
                                                     // Look for heading patterns first
                                                     const headingMatch = fullHTML.match(/<(h[1-6])[^>]*>(.*?)<\/h[1-6]>/i);
@@ -2740,7 +2742,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                         // Last resort: try to split by line breaks or common patterns
                                                         const textContent = tempDiv.textContent || '';
                                                         const htmlContent = tempDiv.innerHTML || '';
-                                                        
+                                                       
                                                         // If there's formatted content, try to detect heading vs paragraph
                                                         if (htmlContent.includes('<') && textContent) {
                                                           // Split by common separators and take first part as heading
@@ -2757,35 +2759,35 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       }
                                                     }
                                                   }
-                                                  
+                                                 
                                                   setEditorHeading(headingContent);
                                                   setEditorContent(paragraphContent);
                                                 } else if (detectedTextType === 'subheading_paragraph') {
                                                   // Extract subheading and paragraph content
                                                   const tempDiv = document.createElement('div');
                                                   tempDiv.innerHTML = htmlContent;
-                                                  
+                                                 
                                                   // Try multiple selectors for subheading
                                                   const h2 = tempDiv.querySelector('h2') || tempDiv.querySelector('[class*="subheading"]') || tempDiv.querySelector('h3, h4, h5, h6, h1');
                                                   // Try multiple selectors for paragraph
                                                   const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
-                                                  
+                                                 
                                                   // Extract text content, preserving rich text formatting
                                                   let subheadingContent = '';
                                                   let paragraphContent = '';
-                                                  
+                                                 
                                                   if (h2) {
                                                     subheadingContent = h2.innerHTML || '';
                                                   }
-                                                  
+                                                 
                                                   if (p) {
                                                     paragraphContent = p.innerHTML || '';
                                                   }
-                                                  
+                                                 
                                                   // If we couldn't find structured content, try to parse manually while preserving HTML
                                                   if (!subheadingContent && !paragraphContent) {
                                                     const fullHTML = tempDiv.innerHTML || '';
-                                                    
+                                                   
                                                     // Try to find subheading and paragraph content in the HTML
                                                     // Look for subheading patterns first
                                                     const subheadingMatch = fullHTML.match(/<(h[2-6])[^>]*>(.*?)<\/h[2-6]>/i);
@@ -2815,7 +2817,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                         // Last resort: try to split by line breaks or common patterns
                                                         const textContent = tempDiv.textContent || '';
                                                         const htmlContent = tempDiv.innerHTML || '';
-                                                        
+                                                       
                                                         // If there's formatted content, try to detect subheading vs paragraph
                                                         if (htmlContent.includes('<') && textContent) {
                                                           // Split by common separators and take first part as subheading
@@ -2832,7 +2834,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       }
                                                     }
                                                   }
-                                                  
+                                                 
                                                   setEditorSubheading(subheadingContent);
                                                   setEditorContent(paragraphContent);
                                                 } else {
@@ -2842,12 +2844,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
                                                   setEditorHtml(contentElement.innerHTML || htmlContent);
                                                 }
-                                                
+                                               
                                                 // Store the detected textType for the save function
                                                 const blockWithTextType = { ...block, textType: detectedTextType };
                                                 setCurrentBlock(blockWithTextType);
                                                 setCurrentTextType(detectedTextType);
-                                                
+                                               
                                                 setShowTextEditorDialog(true);
                                                 break;
                                               case 'image':
@@ -2895,7 +2897,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 content: updatedContent
                                               }
                                             });
-                                            setContentBlocks(prevBlocks => 
+                                            setContentBlocks(prevBlocks =>
                                               prevBlocks.filter(b => b.id !== block.block_id)
                                             );
                                           }}
@@ -2904,7 +2906,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         >
                                           <Trash2 className="h-4 w-4 text-red-500" />
                                         </button>
-                                        <div 
+                                        <div
                                           className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm cursor-move"
                                           title="Drag to reorder"
                                         >
@@ -2933,7 +2935,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   This lesson doesn't have any content yet. Start building your lesson by adding content blocks from the Content Library.
                                 </p>
                               </div>
-                              
+                             
                               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                                 <h4 className="text-sm font-medium text-blue-800 mb-2">
                                   💡 Getting Started
@@ -3057,7 +3059,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                 </div>
                               </div>
                             )}
-                            
+                           
                             {block.type === 'link' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
@@ -3066,11 +3068,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     Link
                                   </Badge>
                                 </div>
-                                
+                               
                                 {block.linkDescription && (
                                   <p className="text-sm text-gray-600 mb-3">{block.linkDescription}</p>
                                 )}
-                                
+                               
                                 <div className="p-3 bg-gray-50 rounded-lg">
                                   <button
                                     onClick={() => window.open(block.linkUrl, '_blank', 'noopener,noreferrer')}
@@ -3092,7 +3094,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                 </div>
                               </div>
                             )}
-                            
+                           
                             {block.type === 'video' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
@@ -3101,14 +3103,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     Video
                                   </Badge>
                                 </div>
-                                
+                               
                                 {block.videoDescription && (
                                   <p className="text-sm text-gray-600 mb-3">{block.videoDescription}</p>
                                 )}
-                                
+                               
                                 <div className="bg-gray-50 rounded-lg p-3">
                                   <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <video 
+                                    <video
                                       className="absolute top-0 left-0 w-full h-full"
                                       controls
                                       controlsList="nodownload"
@@ -3131,13 +3133,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     Audio
                                   </Badge>
                                 </div>
-                                
+                               
                                 {block.audioDescription && (
                                   <p className="text-sm text-gray-600 mb-3">{block.audioDescription}</p>
                                 )}
-                                
+                               
                                 <div className="bg-gray-50 rounded-lg p-3">
-                                  <audio 
+                                  <audio
                                     src={block.audioUrl}
                                     controls
                                     className="w-full rounded-lg border border-gray-200"
@@ -3154,11 +3156,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     YouTube
                                   </Badge>
                                 </div>
-                                
+                               
                                 {block.youtubeDescription && (
                                   <p className="text-sm text-gray-600 mb-3">{block.youtubeDescription}</p>
                                 )}
-                                
+                               
                                 <div className="bg-gray-50 rounded-lg p-3">
                                   <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
                                     <iframe
@@ -3182,11 +3184,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     PDF
                                   </Badge>
                                 </div>
-                                
+                               
                                 {block.pdfDescription && (
                                   <p className="text-sm text-gray-600 mb-3">{block.pdfDescription}</p>
                                 )}
-                                
+                               
                                 <div className="bg-gray-50 rounded-lg p-3">
                                   <div className="w-full border rounded-lg overflow-hidden">
                                     <iframe
@@ -3250,9 +3252,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         {/* Image Preview */}
                                         {(block.imageUrl || block.defaultContent?.imageUrl) && (
                                           <div className="mt-3">
-                                            <img 
-                                            src={block.imageUrl || block.defaultContent?.imageUrl} 
-                                            alt="Preview" 
+                                            <img
+                                            src={block.imageUrl || block.defaultContent?.imageUrl}
+                                            alt="Preview"
                                             className="mt-2 max-h-48 w-auto rounded-md border border-gray-300"
                                           />
                                           </div>
@@ -4105,7 +4107,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <p className="text-sm text-gray-600 mt-1">{template.description}</p>
                     </div>
                   </div>
-                  
+                 
                   {/* Mini Preview */}
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: template.defaultContent }} />
@@ -4336,7 +4338,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 {audioPreview && audioUploadMethod === 'file' && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio 
+                    <audio
                       src={audioPreview}
                       controls
                       className="w-full rounded-lg border border-gray-200"
@@ -4363,7 +4365,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 {audioUrl && audioUploadMethod === 'url' && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio 
+                    <audio
                       src={audioUrl}
                       controls
                       className="w-full rounded-lg border border-gray-200"
@@ -4392,8 +4394,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <Button variant="outline" onClick={handleAudioDialogClose}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddAudio} 
+            <Button
+              onClick={handleAddAudio}
               disabled={!audioTitle || (audioUploadMethod === 'file' && !audioFile) || (audioUploadMethod === 'url' && !audioUrl)}
               className="bg-blue-600 hover:bg-blue-700"
             >
@@ -4734,8 +4736,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <Button variant="outline" onClick={handlePdfDialogClose}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleAddPdf} 
+            <Button
+              onClick={handleAddPdf}
               disabled={!pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
               className="bg-blue-600 hover:bg-blue-700"
             >
