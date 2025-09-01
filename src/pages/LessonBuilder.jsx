@@ -1225,6 +1225,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleImageTemplateSelect = (template) => {
+    const imageUrl = template.defaultContent?.imageUrl || '';
+    const imageTitle = template.defaultContent?.text || template.title;
+    const imageDescription = template.defaultContent?.description || '';
+    
     const newBlock = {
       id: `image-${Date.now()}`,
       block_id: `image-${Date.now()}`,
@@ -1232,11 +1236,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       title: template.title,
       layout: template.layout,
       templateType: template.id,
-      imageUrl: template.defaultContent.imageUrl,
-      text: template.defaultContent.text,
+      imageUrl: imageUrl,
+      imageTitle: imageTitle,
+      imageDescription: imageDescription,
       isEditing: false,
       timestamp: new Date().toISOString(),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1,
+      details: {
+        image_url: imageUrl,
+        caption: imageDescription,
+        alt_text: imageTitle
+      },
+      html_css: `
+        <div class="image-block" style="${template.layout ? `display: flex; flex-direction: ${template.layout.includes('left') ? 'row' : 'column'}; gap: 1rem;` : ''}">
+          <img 
+            src="${imageUrl}" 
+            alt="${imageTitle}" 
+            style="max-width: 100%; height: auto; border-radius: 0.5rem; ${template.layout?.includes('full') ? 'width: 100%;' : ''}"
+          />
+          ${imageDescription ? `
+            <p class="mt-2 text-sm text-gray-600">${imageDescription}</p>
+          ` : ''}
+        </div>
+      `
     };
    
     // If we have existing lesson content, add to that structure
@@ -1590,7 +1612,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleAddImage = () => {
-    if (!imageTitle || !imageFile) {
+    if (!imageTitle || (!imageFile && !imagePreview)) {
       alert('Please fill in all required fields');
       return;
     }
@@ -1612,7 +1634,24 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       id: currentBlock?.id || `image-${Date.now()}`,
       block_id: currentBlock?.id || `image-${Date.now()}`,
       type: 'image',
-      title: 'Image',
+      title: imageTitle,
+      details: {
+        image_url: imageUrl,
+        caption: imageDescription || '',
+        alt_text: imageTitle
+      },
+      html_css: `
+        <div class="image-block">
+          <img 
+            src="${imageUrl}" 
+            alt="${imageTitle || 'Image'}" 
+            style="max-width: 100%; height: auto; border-radius: 0.5rem;"
+          />
+          ${imageDescription ? `
+            <p class="mt-2 text-sm text-gray-600">${imageDescription}</p>
+          ` : ''}
+        </div>
+      `,
       imageTitle: imageTitle,
       imageDescription: imageDescription,
       imageFile: imageFile,
@@ -2312,95 +2351,280 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             {/* Main Content Canvas */}
             <div className="py-4">
                 <div>
-                  {isPreviewMode ? (
-                    <div className="min-h-screen bg-white">
-                      <div className="max-w-5xl mx-auto px-8 py-12">
-                        <h1 className="text-4xl font-bold mb-12 text-center text-gray-900">{lessonTitle}</h1>
-                        <div className="space-y-8">
-                          {/* Show content from lessonContent if available, otherwise from contentBlocks */}
-                          {(lessonContent?.data?.content && lessonContent.data.content.length > 0 ? lessonContent.data.content : contentBlocks).map((block, index) => (
-                            <div key={block.block_id || block.id} className="w-full">
-                              <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
-                              {block.script && (
-                                <script dangerouslySetInnerHTML={{ __html: block.script }} />
-                              )}
+                  {isViewMode ? (
+                        <div className="min-h-screen bg-white overflow-hidden relative">
+                          {/* Course Header with Gradient */}
+                          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-8 text-white relative overflow-hidden">
+                            <div className="absolute inset-0 bg-black opacity-10"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
+                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
+                            <div className="relative z-10 text-center">
+                              <h1 className="text-4xl font-bold mb-3">
+                                {lessonData?.title || lessonTitle || 'Untitled Lesson'}
+                              </h1>
+                              <div className="w-32 h-1 bg-white bg-opacity-30 mx-auto rounded-full"></div>
                             </div>
-                          ))}
-                          {/* If no content available */}
-                          {(!lessonContent?.data?.content || lessonContent.data.content.length === 0) && contentBlocks.length === 0 && (
-                            <div className="text-center py-20">
-                              <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
-                              <h3 className="text-2xl font-semibold text-gray-700 mb-4">
-                                No Content Available
-                              </h3>
-                              <p className="text-lg text-gray-500">
-                                This lesson doesn't have any content to preview yet.
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ) : isViewMode ? (
-                    <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow">
-                      <h1 className="text-3xl font-bold mb-6">{lessonTitle}</h1>
-                      <div className="prose max-w-none">
-                        {contentBlocks.map((block) => (
-                          <div key={block.id} className="mb-6 last:mb-0">
-                            {block.type === 'text' && (
-                              <div dangerouslySetInnerHTML={{ __html: block.content }} />
-                            )}
-                            {block.type === 'image' && block.imageUrl && (
-                              <div className="my-4">
-                                <img 
-                                  src={block.imageUrl} 
-                                  alt={block.imageTitle || 'Image'} 
-                                  className="max-w-full h-auto rounded-lg"
-                                />
-                                {block.imageDescription && (
-                                  <p className="text-sm text-gray-600 mt-2 italic">{block.imageDescription}</p>
-                                )}
-                              </div>
-                            )}
-                            {block.type === 'video' && block.videoUrl && (
-                              <div className="my-4">
-                                <video 
-                                  src={block.videoUrl} 
-                                  controls 
-                                  className="w-full rounded-lg"
-                                >
-                                  Your browser does not support the video tag.
-                                </video>
-                                {block.videoTitle && (
-                                  <p className="text-sm font-medium mt-2">{block.videoTitle}</p>
-                                )}
-                                {block.videoDescription && (
-                                  <p className="text-sm text-gray-600">{block.videoDescription}</p>
-                                )}
-                              </div>
-                            )}
-                            {block.type === 'youtube' && block.youtubeId && (
-                              <div className="my-4">
-                                <div className="aspect-w-16 aspect-h-9">
-                                  <iframe
-                                    src={`https://www.youtube.com/embed/${block.youtubeId}`}
-                                    title={block.youtubeTitle || 'YouTube video'}
-                                    allowFullScreen
-                                    className="w-full h-96 rounded-lg"
-                                  />
-                                </div>
-                                {block.youtubeTitle && (
-                                  <p className="text-sm font-medium mt-2">{block.youtubeTitle}</p>
-                                )}
-                                {block.youtubeDescription && (
-                                  <p className="text-sm text-gray-600">{block.youtubeDescription}</p>
-                                )}
-                              </div>
-                            )}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+
+                          {/* Course Content - All in one flowing container */}
+                          <div className="p-8 bg-gradient-to-b from-gray-50 to-white">
+                            {(() => {
+                              // Combine both contentBlocks and lessonContent blocks
+                              const allBlocks = [];
+                              
+                              // Add blocks from lessonContent (existing lesson)
+                              if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+                                allBlocks.push(...lessonContent.data.content);
+                              }
+                              
+                              // Add blocks from contentBlocks (new blocks)
+                              if (contentBlocks && contentBlocks.length > 0) {
+                                allBlocks.push(...contentBlocks);
+                              }
+                              
+                              // Sort by order if available
+                              allBlocks.sort((a, b) => (a.order || 0) - (b.order || 0));
+                              
+                              if (allBlocks.length === 0) {
+                                return (
+                                  <div className="text-center py-16">
+                                    <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+                                    <h3 className="text-2xl font-semibold text-gray-700 mb-3">
+                                      No Content Available
+                                    </h3>
+                                    <p className="text-gray-500 text-lg">
+                                      This lesson doesn't have any content yet. Switch to edit mode to start adding content.
+                                    </p>
+                                  </div>
+                                );
+                              }
+                              
+                              return (
+                                <div className="prose prose-xl max-w-none space-y-8">
+                                  {allBlocks.map((block, index) => {
+                                    const blockId = block.id || block.block_id;
+                                    
+                                    return (
+                                      <div key={blockId} className="relative">
+                                        {/* Text Content */}
+                                        {block.type === 'text' && (
+                                          <div className="mb-8">
+                                            {block.html_css ? (
+                                              <div 
+                                                className="prose prose-xl max-w-none text-gray-800 leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                              />
+                                            ) : (
+                                              <div 
+                                                className="prose prose-xl max-w-none text-gray-800 leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: block.content }}
+                                              />
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Image Content */}
+                                        {block.type === 'image' && (
+                                          <div className="mb-8">
+                                            {(block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url) && (
+                                              <div>
+                                                {block.layout === 'side-by-side' ? (
+                                                  <div className="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+                                                    <div>
+                                                      <img 
+                                                        src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
+                                                        alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
+                                                        className="w-full h-auto rounded-lg shadow-lg"
+                                                      />
+                                                    </div>
+                                                    <div>
+                                                      <p className="text-gray-700 text-lg leading-relaxed">
+                                                        {block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption}
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                ) : block.layout === 'overlay' ? (
+                                                  <div className="relative rounded-xl overflow-hidden">
+                                                    <img 
+                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
+                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
+                                                      className="w-full h-96 object-cover"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end">
+                                                      <div className="text-white p-8 w-full">
+                                                        <p className="text-xl font-medium leading-relaxed">
+                                                          {block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption}
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                ) : (
+                                                  <div className="text-center">
+                                                    <img 
+                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
+                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
+                                                      className="max-w-full h-auto rounded-xl shadow-lg mx-auto"
+                                                    />
+                                                    {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
+                                                      <p className="text-gray-600 mt-4 italic text-lg">
+                                                        {block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Video Content */}
+                                        {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
+                                          <div className="mb-8">
+                                            <div className="bg-gray-900 rounded-xl p-6">
+                                              <video 
+                                                src={block.videoUrl || block.details?.video_url}
+                                                controls 
+                                                className="w-full h-96 rounded-lg"
+                                              >
+                                                Your browser does not support the video tag.
+                                              </video>
+                                              {(block.videoTitle || block.details?.caption) && (
+                                                <h3 className="text-xl font-semibold text-white mt-4 mb-2">
+                                                  {block.videoTitle || block.details?.caption}
+                                                </h3>
+                                              )}
+                                              {(block.videoDescription || block.details?.description) && (
+                                                <p className="text-gray-300 text-lg">
+                                                  {block.videoDescription || block.details?.description}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {/* YouTube Content */}
+                                        {block.type === 'youtube' && (block.youtubeId || block.youtubeUrl || block.details?.url) && (
+                                          <div className="mb-8">
+                                            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
+                                              <iframe
+                                                src={`https://www.youtube.com/embed/${block.youtubeId || (block.youtubeUrl || block.details?.url)?.split('v=')[1]?.split('&')[0]}`}
+                                                title={block.youtubeTitle || block.details?.caption || 'YouTube video'}
+                                                allowFullScreen
+                                                className="w-full h-96 rounded-lg"
+                                              />
+                                              {(block.youtubeTitle || block.details?.caption) && (
+                                                <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
+                                                  {block.youtubeTitle || block.details?.caption}
+                                                </h3>
+                                              )}
+                                              {(block.youtubeDescription || block.details?.description) && (
+                                                <p className="text-gray-700 text-lg">
+                                                  {block.youtubeDescription || block.details?.description}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Audio Content */}
+                                        {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
+                                          <div className="mb-8">
+                                            <div className="bg-green-50 rounded-xl p-6 border border-green-100">
+                                              <audio 
+                                                src={block.audioUrl || block.details?.audio_url}
+                                                controls 
+                                                className="w-full mb-4"
+                                              >
+                                                Your browser does not support the audio tag.
+                                              </audio>
+                                              {(block.audioTitle || block.details?.caption) && (
+                                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                                                  {block.audioTitle || block.details?.caption}
+                                                </h3>
+                                              )}
+                                              {(block.audioDescription || block.details?.description) && (
+                                                <p className="text-gray-700 text-lg">
+                                                  {block.audioDescription || block.details?.description}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {/* Link Content */}
+                                        {block.type === 'link' && (block.linkUrl || block.details?.url) && (
+                                          <div className="mb-8">
+                                            <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-100">
+                                              {(block.linkTitle || block.details?.caption) && (
+                                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                                                  {block.linkTitle || block.details?.caption}
+                                                </h3>
+                                              )}
+                                              {(block.linkDescription || block.details?.description) && (
+                                                <p className="text-gray-700 mb-6 text-lg">
+                                                  {block.linkDescription || block.details?.description}
+                                                </p>
+                                              )}
+                                              <a 
+                                                href={block.linkUrl || block.details?.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={`inline-flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
+                                                  block.linkButtonStyle === 'secondary' 
+                                                    ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-lg'
+                                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
+                                                }`}
+                                              >
+                                                <Link2 className="h-5 w-5 mr-3" />
+                                                {block.linkButtonText || 'Visit Link'}
+                                              </a>
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {/* PDF Content */}
+                                        {block.type === 'pdf' && (block.pdfUrl || block.details?.pdf_url) && (
+                                          <div className="mb-8">
+                                            <div className="bg-orange-50 rounded-xl p-6 text-center border border-orange-100">
+                                              {(block.pdfTitle || block.details?.caption) && (
+                                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                                                  {block.pdfTitle || block.details?.caption}
+                                                </h3>
+                                              )}
+                                              {(block.pdfDescription || block.details?.description) && (
+                                                <p className="text-gray-700 mb-6 text-lg">
+                                                  {block.pdfDescription || block.details?.description}
+                                                </p>
+                                              )}
+                                              <a 
+                                                href={block.pdfUrl || block.details?.pdf_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center px-8 py-4 bg-orange-600 text-white rounded-xl font-semibold text-lg hover:bg-orange-700 transition-all transform hover:scale-105 shadow-lg"
+                                              >
+                                                <FileTextIcon className="h-5 w-5 mr-3" />
+                                                View PDF
+                                              </a>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          
+                          {/* Course Footer */}
+                          <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-6 text-center border-t">
+                            <div className="flex items-center justify-center space-x-3">
+                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                              <span className="text-gray-600 font-medium">Lesson Complete</span>
+                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            </div>
+                          </div>
+                        </div>
                   ) : contentBlocks.length === 0 ? (
                     <div>
                       <div >
@@ -2975,7 +3199,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               </div>
                             )}
 
-                            {block.type === 'image' && block.layout && (
+                            {block.type === 'image' && (block.imageUrl || block.defaultContent?.imageUrl) && (
                               <>
                                 <div className="flex items-center gap-2 mb-3">
                                   <h3 className="text-lg font-semibold text-gray-900">{block.title}</h3>
@@ -3024,13 +3248,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         />
                                        
                                         {/* Image Preview */}
-                                        {block.imageUrl && (
+                                        {(block.imageUrl || block.defaultContent?.imageUrl) && (
                                           <div className="mt-3">
-                                            <img
-                                              src={block.imageUrl}
-                                              alt="Preview"
-                                              className="max-w-full h-32 object-cover rounded-md border"
-                                            />
+                                            <img 
+                                            src={block.imageUrl || block.defaultContent?.imageUrl} 
+                                            alt="Preview" 
+                                            className="mt-2 max-h-48 w-auto rounded-md border border-gray-300"
+                                          />
                                           </div>
                                         )}
                                       </div>
