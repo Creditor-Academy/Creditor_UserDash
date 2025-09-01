@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, ChevronRight, GraduationCap, Target, Clock, ChevronLeft, CheckCircle, Search, MonitorPlay, Award, Video } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardCarousel from "@/components/dashboard/DashboardCarousel";
+import DashboardGroup from "@/components/dashboard/DashboardGroup";
 import UpcomingCourses from "@/pages/UpcomingCourses";
 import AthenaUpcomingEvent from "@/pages/AthenaUpcomingEvent";
 import DashboardCalendar from "@/components/dashboard/DashboardCalendar";
@@ -602,6 +603,7 @@ export function Dashboard() {
             </div>
             <DashboardCarousel />
           </div>
+         
           <div className="mb-8">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -612,6 +614,10 @@ export function Dashboard() {
             </div>
           </div>
           <UpcomingCourses />
+           {/* Groups Preview Section */}
+           <div className="mb-8">
+            <DashboardGroup />
+          </div>
           {/* How It Works Section */}
           <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8 mb-8">
             <div className="text-center mb-8 sm:mb-10">
