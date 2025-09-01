@@ -79,6 +79,15 @@ const Resources = () => {
     }));
   };
 
+  // Refresh data after operations to ensure consistency
+  const refreshDataAfterOperation = async () => {
+    try {
+      await fetchData();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
+
   // Fetch organizations and categories from backend
   const fetchData = async () => {
     try {
@@ -472,20 +481,36 @@ const Resources = () => {
   const handleCreateOrganization = async (orgData) => {
     try {
       const response = await organizationService.createOrganization({
-      name: orgData.name,
+        name: orgData.name,
         description: orgData.description || ""
       });
 
       const newOrg = {
         id: response.data.id || response.data._id,
-        name: response.data.name,
-        description: response.data.description,
-      type: "organization"
-    };
+        name: response.data.name || orgData.name,
+        description: response.data.description || orgData.description || "",
+        type: "organization",
+        // Ensure all backend fields are included
+        createdAt: response.data.createdAt || new Date().toISOString(),
+        updatedAt: response.data.updatedAt || new Date().toISOString()
+      };
 
-    setOrganizations(prev => [...prev, newOrg]);
-    setShowOrganizationModal(false);
-    toast({
+      // Update organizations list
+      setOrganizations(prev => [...prev, newOrg]);
+      
+      // Initialize empty categories array for the new organization
+      setOrganizationCategories(prev => ({
+        ...prev,
+        [newOrg.id]: []
+      }));
+      
+      // Update categories if we're currently showing Global or if this is the first org
+      if (pendingOrg === "Global" || organizations.length === 0) {
+        setCategories(prev => [...prev]);
+      }
+      
+      setShowOrganizationModal(false);
+      toast({
         title: "Success",
         description: `Organization "${orgData.name}" has been created successfully.`,
       });
@@ -517,6 +542,22 @@ const Resources = () => {
           : org
       )
     );
+    
+    // Update organization categories if the name changed (in case it affects category display)
+    if (editingOrganization.name !== response.data.name) {
+      setOrganizationCategories(prev => {
+        const updated = { ...prev };
+        if (updated[editingOrganization.id]) {
+          // Update category colors if organization name affects them
+          updated[editingOrganization.id] = updated[editingOrganization.id].map(cat => ({
+            ...cat,
+            color: getCategoryColor(cat.name)
+          }));
+        }
+        return updated;
+      });
+    }
+    
     setShowOrganizationModal(false);
     setEditingOrganization(null);
     toast({
@@ -537,17 +578,7 @@ const Resources = () => {
     const org = organizations.find(o => o.id === orgId);
     if (!org) return;
 
-    // Check if organization has resources
-    const hasResources = resources.some(resource => resource.organization === orgId);
     
-    if (hasResources) {
-      toast({
-        title: "Cannot delete organization",
-        description: "This organization has resources associated with it. Please remove or reassign the resources first.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     // Check if it's a global organization
     if (org.type === "global") {
@@ -573,9 +604,23 @@ const Resources = () => {
     
     setOrganizations(prev => prev.filter(org => org.id !== deleteItem.id));
     
+    // Remove organization categories from state
+    setOrganizationCategories(prev => {
+      const updated = { ...prev };
+      delete updated[deleteItem.id];
+      return updated;
+    });
+    
     // Clear form if the deleted organization was selected
     if (formData.organization === deleteItem.id) {
       setFormData(prev => ({ ...prev, organization: "" }));
+    }
+    
+    // Update pending organization if it was deleted
+    if (pendingOrg === deleteItem.id) {
+      setPendingOrg("all");
+      setPendingCat("all");
+      setCategories([]);
     }
     
     toast({
@@ -630,17 +675,24 @@ const Resources = () => {
 
     const newCategory = {
         id: response.data.id || response.data._id,
-        name: response.data.name || categoryData.name, // Fallback to the input name if response doesn't have it
-        color: getCategoryColor(response.data.name || categoryData.name),
-        organization_id: organizationId
+        name: response.data.name || categoryData.name.trim(),
+        color: getCategoryColor(response.data.name || categoryData.name.trim()),
+        organization_id: organizationId,
+        // Ensure all backend fields are included
+        createdAt: response.data.createdAt || new Date().toISOString(),
+        updatedAt: response.data.updatedAt || new Date().toISOString()
     };
     
     // Update categories for the specific organization
-    setCategories(prev => [...prev, newCategory]);
     setOrganizationCategories(prev => ({
       ...prev,
       [organizationId]: [...(prev[organizationId] || []), newCategory]
     }));
+    
+    // Update the main categories list if we're currently viewing this organization's categories
+    if (pendingOrg === organizationId || pendingOrg === "Global") {
+      setCategories(prev => [...prev, newCategory]);
+    }
     
     setShowCategoryModal(false);
     setCategoryOrganizationId(null);
@@ -650,9 +702,24 @@ const Resources = () => {
       });
     } catch (error) {
       console.error('Error creating category:', error);
+      console.error('Organization ID:', organizationId);
+      console.error('Category data:', categoryData);
+      
+      let errorMessage = "Failed to create category. Please try again.";
+      
+      if (error.response?.status === 500) {
+        errorMessage = "Server error occurred. The organization might not exist in the database.";
+        console.error('Server response:', error.response.data);
+        // Refresh data to sync with backend
+        setTimeout(() => refreshDataAfterOperation(), 1000);
+      } else if (error.response?.status === 404) {
+        errorMessage = "Organization not found. Please refresh the page.";
+        setTimeout(() => refreshDataAfterOperation(), 1000);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create category. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -660,23 +727,28 @@ const Resources = () => {
 
   const handleEditCategory = async (categoryData) => {
     try {
+      // Ensure we have a valid category to edit
+      if (!editingCategory || !editingCategory.id) {
+        toast({
+          title: "Error",
+          description: "No category selected for editing.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const response = await categoryService.editCategory(editingCategory.id, {
-        name: categoryData.name
+        name: categoryData.name.trim()
       });
 
-    const updatedCategory = {
-      ...editingCategory,
-      name: response.data.name || categoryData.name,
-      color: getCategoryColor(response.data.name || categoryData.name)
-    };
+      const updatedCategory = {
+        ...editingCategory,
+        name: response.data.name || categoryData.name.trim(),
+        color: getCategoryColor(response.data.name || categoryData.name.trim()),
+        updatedAt: response.data.updatedAt || new Date().toISOString()
+      };
     
-    setCategories(prev => 
-      prev.map(cat => 
-        cat.id === editingCategory.id ? updatedCategory : cat
-      )
-    );
-    
-    // Update organization-specific categories
+    // Update organization-specific categories first
     setOrganizationCategories(prev => {
       const updated = { ...prev };
       Object.keys(updated).forEach(orgId => {
@@ -687,6 +759,13 @@ const Resources = () => {
       return updated;
     });
     
+    // Update the main categories list if we're currently viewing categories
+    setCategories(prev => 
+      prev.map(cat => 
+        cat.id === editingCategory.id ? updatedCategory : cat
+      )
+    );
+    
     setShowCategoryModal(false);
     setEditingCategory(null);
     toast({
@@ -695,9 +774,23 @@ const Resources = () => {
       });
     } catch (error) {
       console.error('Error updating category:', error);
+      console.error('Category being edited:', editingCategory);
+      console.error('Category data:', categoryData);
+      
+      let errorMessage = "Failed to update category. Please try again.";
+      
+      if (error.response?.status === 500) {
+        errorMessage = "Server error occurred. The category might not exist in the database.";
+        console.error('Server response:', error.response.data);
+      } else if (error.response?.status === 404) {
+        errorMessage = "Category not found. It might have been deleted.";
+        // Refresh data to sync with backend
+        setTimeout(() => refreshDataAfterOperation(), 1000);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to update category. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -717,17 +810,7 @@ const Resources = () => {
     }
     if (!category) return;
 
-    // Check if category has resources
-    const hasResources = resources.some(resource => resource.category === categoryId);
     
-    if (hasResources) {
-      toast({
-        title: "Cannot delete category",
-        description: "This category has resources associated with it. Please remove or reassign the resources first.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     // Check if it's a default category (General)
     if (category.name.toLowerCase() === "general") {
@@ -751,9 +834,7 @@ const Resources = () => {
     try {
       await categoryService.deleteCategory(deleteItem.id);
     
-    setCategories(prev => prev.filter(cat => cat.id !== deleteItem.id));
-    
-    // Update organization-specific categories
+    // Update organization-specific categories first
     setOrganizationCategories(prev => {
       const updated = { ...prev };
       Object.keys(updated).forEach(orgId => {
@@ -762,9 +843,17 @@ const Resources = () => {
       return updated;
     });
     
+    // Update the main categories list
+    setCategories(prev => prev.filter(cat => cat.id !== deleteItem.id));
+    
     // Clear form if the deleted category was selected
     if (formData.category === deleteItem.id) {
       setFormData(prev => ({ ...prev, category: "" }));
+    }
+    
+    // Update pending category if it was deleted
+    if (pendingCat === deleteItem.id) {
+      setPendingCat("all");
     }
     
     toast({
