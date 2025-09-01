@@ -172,13 +172,10 @@ export const assetService = {
   },
 
   // Search assets globally across all organizations and categories
-  // Note: This endpoint doesn't exist in the new backend, so we'll use getAssets with Global organization
   searchAssets: async (searchTerm) => {
     try {
-      // Since there's no dedicated search endpoint, we'll get global assets and filter client-side
-      const response = await api.post(`${API_BASE}/api/assets/getAssets`, {
-        organization_id: "Global",
-        category_id: "All"
+      const response = await api.post(`${API_BASE}/api/assets/search`, {
+        query: searchTerm
       });
       return response.data;
     } catch (error) {

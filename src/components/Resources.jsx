@@ -22,7 +22,10 @@ import {
   Globe,
   Users,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Search
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { organizationService, categoryService, assetService } from "@/services/assetsService";
@@ -51,6 +54,8 @@ const Resources = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingAsset, setEditingAsset] = useState(null);
   const [showEditAssetModal, setShowEditAssetModal] = useState(false);
+  const [categoryOrganizationId, setCategoryOrganizationId] = useState(null);
+  const [collapsedOrganizations, setCollapsedOrganizations] = useState({});
   
   const [formData, setFormData] = useState({
     title: "",
@@ -65,6 +70,14 @@ const Resources = () => {
   const [organizationCategories, setOrganizationCategories] = useState({}); // New: categories organized by organization
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Toggle organization collapse state
+  const toggleOrganizationCollapse = (orgId) => {
+    setCollapsedOrganizations(prev => ({
+      ...prev,
+      [orgId]: !prev[orgId]
+    }));
+  };
 
   // Fetch organizations and categories from backend
   const fetchData = async () => {
@@ -245,13 +258,32 @@ const Resources = () => {
     setUploading(true);
     
     try {
+      // Resolve category id robustly. In some cases UI may hold the name instead of id.
+      const resolvedCategoryId = (() => {
+        // If it exactly matches a known id, use it
+        const byId = categories.find(cat => cat.id === formData.category);
+        if (byId) return byId.id;
+        // Otherwise try to match by name (case-insensitive)
+        const byName = categories.find(cat => String(cat.name).toLowerCase() === String(formData.category).toLowerCase());
+        return byName ? byName.id : formData.category; // fallback to whatever is present
+      })();
+
+      if (!resolvedCategoryId) {
+        toast({
+          title: "Invalid category",
+          description: "Please select a valid category before uploading.",
+          variant: "destructive",
+        });
+        setUploading(false);
+        return;
+      }
       // Upload each selected file to backend (backend expects single file per request)
       const uploaded = [];
       for (const file of selectedFiles) {
         const response = await assetService.createAsset({
           title: formData.title,
           description: formData.description || "",
-          category_id: formData.category,
+          category_id: resolvedCategoryId,
           file
         });
 
@@ -353,6 +385,15 @@ const Resources = () => {
       return;
     }
 
+    if (searchTerm.trim().length < 2) {
+      toast({
+        title: "Search term too short",
+        description: "Please enter at least 2 characters to search for assets.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setSearchLoading(true);
       
@@ -376,10 +417,18 @@ const Resources = () => {
       }));
 
       setResources(normalized);
-      toast({ 
-        title: "Search completed", 
-        description: `Found ${normalized.length} asset(s) matching "${searchTerm}"` 
-      });
+      if (normalized.length === 0) {
+        toast({ 
+          title: "No results found", 
+          description: `No assets found matching "${searchTerm}". Try a different search term.`,
+          variant: "default"
+        });
+      } else {
+        toast({ 
+          title: "Search completed", 
+          description: `Found ${normalized.length} asset(s) matching "${searchTerm}"` 
+        });
+      }
     } catch (error) {
       console.error('Error searching assets:', error);
       toast({
@@ -560,8 +609,10 @@ const Resources = () => {
         return;
       }
 
-      // Use the organization from the upload form if available, otherwise use pendingOrg
-      const organizationId = formData.organization || pendingOrg;
+      // Use the organization ID from the category creation context
+      const organizationId = categoryOrganizationId;
+      
+      console.log('Creating category for organization:', organizationId);
       
       if (!organizationId) {
         toast({
@@ -592,6 +643,7 @@ const Resources = () => {
     }));
     
     setShowCategoryModal(false);
+    setCategoryOrganizationId(null);
     toast({
         title: "Success",
         description: `Category "${categoryData.name}" has been created successfully.`,
@@ -652,7 +704,17 @@ const Resources = () => {
   };
 
   const handleDeleteCategory = (categoryId) => {
-    const category = categories.find(cat => cat.id === categoryId);
+    // Find category across all organizations if not in the currently selected categories
+    let category = categories.find(cat => cat.id === categoryId);
+    if (!category) {
+      for (const orgId of Object.keys(organizationCategories)) {
+        const found = (organizationCategories[orgId] || []).find(cat => cat.id === categoryId);
+        if (found) {
+          category = found;
+          break;
+        }
+      }
+    }
     if (!category) return;
 
     // Check if category has resources
@@ -872,6 +934,17 @@ const Resources = () => {
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-3 mb-2">
+                              <button
+                                onClick={() => toggleOrganizationCollapse(org.id)}
+                                className="p-1 hover:bg-gray-100 rounded transition-colors duration-200"
+                                title={collapsedOrganizations[org.id] ? "Expand categories" : "Collapse categories"}
+                              >
+                                {collapsedOrganizations[org.id] ? (
+                                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                                )}
+                              </button>
                               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-sky-500 rounded-lg flex items-center justify-center shadow">
                                 <Building className="w-4 h-4 text-white" />
                               </div>
@@ -912,78 +985,83 @@ const Resources = () => {
                         </div>
                         
                         {/* Categories for this organization */}
-                        <div className="ml-11 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                              </svg>
-                              Categories ({orgCategories.length})
-                            </h4>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingCategory(null);
-                                setShowCategoryModal(true);
-                              }}
-                              className="flex items-center gap-1 bg-indigo-500 text-white border-0 hover:bg-indigo-600 shadow-sm hover:shadow-md px-3 py-1 text-xs"
-                              disabled={loading}
-                            >
-                              <Plus className="w-3 h-3" />
-                              Add Category
-                            </Button>
-                          </div>
-                          
-                          {orgCategories.length === 0 ? (
-                            <div className="text-xs text-gray-500 italic">No categories yet</div>
-                          ) : (
-                            <div className="space-y-2">
-                              {orgCategories.map(category => (
-                                <div
-                                  key={category.id}
-                                  className="p-2 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
-                                >
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                                      <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-sky-500 rounded flex items-center justify-center">
-                                        <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                        </svg>
+                        {!collapsedOrganizations[org.id] && (
+                          <div className="ml-11 space-y-2 transition-all duration-300">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                Categories ({orgCategories.length})
+                              </h4>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  console.log('Opening category modal for organization:', org.id, org.name);
+                                  setEditingCategory(null);
+                                  setCategoryOrganizationId(org.id);
+                                  setShowCategoryModal(true);
+                                }}
+                                className="flex items-center gap-1 bg-indigo-500 text-white border-0 hover:bg-indigo-600 shadow-sm hover:shadow-md px-3 py-1 text-xs"
+                                disabled={loading}
+                              >
+                                <Plus className="w-3 h-3" />
+                                Add Category
+                              </Button>
+                            </div>
+                            
+                            {orgCategories.length === 0 ? (
+                              <div className="text-xs text-gray-500 italic">No categories yet</div>
+                            ) : (
+                              <div className="space-y-2">
+                                {orgCategories.map(category => (
+                                  <div
+                                    key={category.id}
+                                    className="p-2 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-sky-500 rounded flex items-center justify-center">
+                                          <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                          </svg>
+                                        </div>
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${category.color} truncate`}>{category.name}</span>
                                       </div>
-                                      <span className={`px-2 py-1 rounded text-xs font-medium ${category.color} truncate`}>{category.name}</span>
-                                    </div>
-                                    <div className="flex gap-1 flex-shrink-0">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                          setEditingCategory(category);
-                                          setShowCategoryModal(true);
-                                        }}
-                                        className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-6 h-6 rounded p-0"
-                                        title="Edit Category"
-                                      >
-                                        <Edit className="w-3 h-3" />
-                                      </Button>
-                                      {category.name.toLowerCase() !== "general" && (
+                                      <div className="flex gap-1 flex-shrink-0">
                                         <Button
+                                          type="button"
                                           variant="ghost"
                                           size="sm"
-                                          onClick={() => handleDeleteCategory(category.id)}
-                                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-6 h-6 rounded p-0"
-                                          title="Delete Category"
+                                          onMouseDown={(e) => e.stopPropagation()}
+                                          onClick={(e) => { e.stopPropagation(); setEditingCategory(category); setShowCategoryModal(true); }}
+                                          className="relative z-10 pointer-events-auto text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-8 h-8 rounded p-0"
+                                          title="Edit Category"
                                         >
-                                          <Trash2 className="w-3 h-3" />
+                                          <Edit className="w-4 h-4" />
                                         </Button>
-                                      )}
+                                        {category.name.toLowerCase() !== "general" && (
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteCategory(category.id); }}
+                                            className="relative z-10 pointer-events-auto text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 rounded p-0"
+                                            title="Delete Category"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -1122,6 +1200,7 @@ const Resources = () => {
                   size="sm"
                   onClick={() => {
                     setEditingCategory(null);
+                    setCategoryOrganizationId(formData.organization || pendingOrg);
                     setShowCategoryModal(true);
                   }}
                   className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
@@ -1254,34 +1333,71 @@ const Resources = () => {
                       handleGlobalSearch();
                     }
                   }}
-                  className="text-sm pr-10 bg-white/90 border-white/30 focus:bg-white focus:border-white rounded-xl"
+                  className="text-sm pr-10 bg-white border-white/30 focus:bg-white focus:border-white rounded-xl text-gray-800 placeholder:text-gray-500"
                 />
                 {searchTerm && (
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setSearchTerm("");
-                      setResources([]);
+                      // Restore original assets view if organization and category are selected
+                      if (pendingOrg && pendingCat) {
+                        try {
+                          setAssetsLoading(true);
+                          const payload = {
+                            organization_id: pendingOrg === "Global" ? "Global" : pendingOrg,
+                            category_id: pendingCat === "All" ? "All" : pendingCat
+                          };
+                          const res = await assetService.getAssets(payload);
+                          const list = res?.data || [];
+                          const normalized = list.map((item, idx) => ({
+                            id: item?.id || item?._id || idx,
+                            title: item?.title || "Untitled",
+                            description: item?.description || "",
+                            category: item?.category_id || pendingCat,
+                            organization: item?.organization_id || pendingOrg,
+                            visibility: pendingOrg === "Global" ? "global" : "organization",
+                            fileName: item?.fileName || item?.filename || item?.name || "asset",
+                            fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
+                            fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
+                            uploadDate: item?.createdAt || new Date().toISOString(),
+                            url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
+                          }));
+                          setResources(normalized);
+                        } catch (error) {
+                          console.error('Error restoring assets:', error);
+                          setResources([]);
+                        } finally {
+                          setAssetsLoading(false);
+                        }
+                      } else {
+                        setResources([]);
+                      }
                     }}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     title="Clear search"
+                    disabled={assetsLoading}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                    {assetsLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
                   </button>
                 )}
               </div>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={handleGlobalSearch}
-                disabled={searchLoading || !searchTerm.trim()}
-                className="flex items-center gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-500"
+                disabled={searchLoading || !searchTerm.trim() || searchTerm.trim().length < 2}
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 px-6 py-2 rounded-xl font-medium"
               >
                 {searchLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                 ) : (
-                  <Eye className="w-4 h-4" />
+                  <Search className="w-4 h-4" />
                 )}
                 Search
               </Button>
@@ -1506,6 +1622,7 @@ const Resources = () => {
           onClose={() => {
             setShowCategoryModal(false);
             setEditingCategory(null);
+            setCategoryOrganizationId(null);
           }}
         />
       )}
