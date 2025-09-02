@@ -1,225 +1,138 @@
 import api from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
 
-/**
- * Create a new group
- * @param {Object} groupData - Group data
- * @param {string} groupData.name - Group name
- * @param {string} groupData.description - Group description
- * @param {string} groupData.created_by - User ID who created the group
- * @returns {Promise<Object>} Response with created group data
- */
-export async function createGroup(groupData) {
+// Get group by ID
+export const getGroupById = async (groupId) => {
   try {
-    console.log("📤 groupService: Creating group:", groupData);
-    
-    const response = await api.post('/groups', groupData, {
-      withCredentials: true,
-    });
-    
-    console.log("✅ groupService: Group created successfully:", response.data);
+    const response = await api.get(`${API_BASE}/groups/${groupId}`);
     return response.data;
   } catch (error) {
-    console.error("❌ groupService: Error creating group:", error);
+    console.error('Error fetching group:', error);
     throw error;
   }
-}
+};
 
-/**
- * Get all groups
- * @returns {Promise<Object>} Response with groups data
- */
-export async function getGroups() {
+// Get group members
+export const getGroupMembers = async (groupId) => {
   try {
-    console.log("📤 groupService: Fetching groups");
-    
-    const response = await api.get('/groups', {
-      withCredentials: true,
-    });
-    
-    console.log("✅ groupService: Groups fetched successfully:", response.data);
+    const response = await api.get(`${API_BASE}/groups/${groupId}/members`);
     return response.data;
   } catch (error) {
-    console.error("❌ groupService: Error fetching groups:", error);
+    console.error('Error fetching group members:', error);
     throw error;
   }
-}
+};
 
-/**
- * Get a specific group by ID
- * @param {string} groupId - Group ID
- * @returns {Promise<Object>} Response with group data
- */
-export async function getGroupById(groupId) {
+// Add member to group
+export const addGroupMember = async (groupId, userId = null) => {
   try {
-    console.log("📤 groupService: Fetching group by ID:", groupId);
-    
-    const response = await api.get(`/groups/${groupId}`, {
-      withCredentials: true,
-    });
-    
-    console.log("✅ groupService: Group fetched successfully:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("❌ groupService: Error fetching group:", error);
-    throw error;
-  }
-}
-
-/**
- * Update a group
- * @param {string} groupId - Group ID
- * @param {Object} groupData - Updated group data
- * @returns {Promise<Object>} Response with updated group data
- */
-export async function updateGroup(groupId, groupData) {
-  try {
-    console.log("📤 groupService: Updating group:", groupId, groupData);
-    
-    const response = await api.put(`/groups/${groupId}`, groupData, {
-      withCredentials: true,
-    });
-    
-    console.log("✅ groupService: Group updated successfully:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("❌ groupService: Error updating group:", error);
-    throw error;
-  }
-}
-
-/**
- * Delete a group
- * @param {string} groupId - Group ID
- * @returns {Promise<Object>} Response with deletion status
- */
-export async function deleteGroup(groupId) {
-  try {
-    console.log("📤 groupService: Deleting group:", groupId);
-    
-    const response = await api.delete(`/groups/${groupId}`, {
-      withCredentials: true,
-    });
-    
-    console.log("✅ groupService: Group deleted successfully:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("❌ groupService: Error deleting group:", error);
-    throw error;
-  }
-}
-
-/**
- * Create a post inside a group
- * @param {Object} postData - Post payload
- * @param {string} postData.group_id - Target group ID
- * @param {"POST"|"ANNOUNCEMENT"} postData.type - Type of post
- * @param {string|null} postData.title - Optional title
- * @param {string} postData.content - Body content
- * @param {string|null} postData.media_url - Optional media URL
- * @param {boolean} postData.is_pinned - Whether the post is pinned
- * @returns {Promise<Object>} API response
- */
-export async function createGroupPost(postData) {
-  try {
-    console.log("📤 groupService: Creating group post:", postData);
-    const response = await api.post('/groups/createPost', postData, {
-      withCredentials: true,
-    });
-    console.log("✅ groupService: Group post created:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("❌ groupService: Error creating group post:", error);
-    throw error;
-  }
-}
-
-/**
- * Get all posts for a specific group
- * @param {string} groupId - Group ID
- * @returns {Promise<Object>} API response with posts list
- */
-export async function getGroupPosts(groupId) {
-  try {
-    if (!groupId) throw new Error('groupId is required');
-    console.log("📥 groupService: Fetching posts for group:", groupId);
-    const response = await api.get(`/groups/${groupId}/posts`, {
-      withCredentials: true,
-    });
-    console.log("✅ groupService: Posts fetched:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("❌ groupService: Error fetching group posts:", error);
-    throw error;
-  }
-}
-
-/**
- * Add a member to a group
- * - If userId is provided: attempts to add that user (admin-only per backend)
- * - If userId is omitted: current user joins the group
- * @param {string} groupId
- * @param {string=} userId
- */
-export async function addGroupMember(groupId, userId = null) {
-  try {
-    if (!groupId) throw new Error('groupId is required');
-    console.log("📤 groupService: Adding member to group:", groupId, "User ID:", userId);
-    
     const payload = userId ? { userId } : {};
-    console.log("📤 groupService: Making request to:", `/groups/${groupId}/addMember`);
-    console.log("📤 groupService: Request payload:", payload);
-    console.log("📤 groupService: API base URL:", import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000');
-    
-    // Test the API endpoint first
-    try {
-      const testResponse = await api.get(`/groups/${groupId}`, {
-        withCredentials: true,
-      });
-      console.log("✅ groupService: Group exists:", testResponse.data);
-    } catch (testError) {
-      console.warn("⚠️ groupService: Group test failed:", testError.response?.status, testError.response?.data);
-    }
-    
-    const response = await api.post(`/groups/${groupId}/addMember`, payload, {
-      withCredentials: true,
-    });
-    
-    console.log("✅ groupService: Member added successfully:", response.data);
+    const response = await api.post(`${API_BASE}/groups/${groupId}/addMember`, payload);
     return response.data;
   } catch (error) {
-    console.error("❌ groupService: Error adding member:", error);
-    console.error("❌ groupService: Error details:", {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        headers: error.config?.headers
-      }
-    });
+    console.error('Error adding group member:', error);
     throw error;
   }
-}
+};
 
-/**
- * Get all members of a group
- * @param {string} groupId
- */
-export async function getGroupMembers(groupId) {
+// Get all groups
+export const getAllGroups = async () => {
   try {
-    if (!groupId) throw new Error('groupId is required');
-    console.log("📥 groupService: Fetching members for group:", groupId);
-    const response = await api.get(`/groups/${groupId}/members`, {
-      withCredentials: true,
-    });
-    console.log("✅ groupService: Group members fetched:", response.data);
+    const response = await api.get(`${API_BASE}/groups`);
     return response.data;
   } catch (error) {
-    console.error("❌ groupService: Error fetching group members:", error);
+    console.error('Error fetching groups:', error);
     throw error;
   }
-}
+};
+
+// Create new group
+export const createGroup = async (groupData) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups`, groupData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating group:', error);
+    throw error;
+  }
+};
+
+// Get group messages
+export const getGroupMessages = async (groupId, page = 1, limit = 50) => {
+  try {
+    const response = await api.get(`${API_BASE}/groups/${groupId}/messages`, {
+      params: { page, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching group messages:', error);
+    throw error;
+  }
+};
+
+// Send group message
+export const sendGroupMessage = async (groupId, messageData) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups/${groupId}/messages`, messageData);
+    return response.data;
+  } catch (error) {
+    console.error('Error sending group message:', error);
+    throw error;
+  }
+};
+
+// Delete group message
+export const deleteGroupMessage = async (groupId, messageId) => {
+  try {
+    const response = await api.delete(`${API_BASE}/groups/${groupId}/messages/${messageId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting group message:', error);
+    throw error;
+  }
+};
+
+// Get group posts
+export const getGroupPosts = async (groupId) => {
+  try {
+    const response = await api.get(`${API_BASE}/groups/${groupId}/posts`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching group posts:', error);
+    throw error;
+  }
+};
+
+// Create group post
+export const createGroupPost = async (postData) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups/createPost`, postData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating group post:', error);
+    throw error;
+  }
+};
+
+// Add comment to post
+export const addComment = async (postId, commentData) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups/posts/${postId}/comments`, commentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    throw error;
+  }
+};
+
+// Add like to post
+export const addLike = async (postId) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups/posts/${postId}/likes`);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding like:', error);
+    throw error;
+  }
+};
