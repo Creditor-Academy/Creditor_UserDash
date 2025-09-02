@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye, UserPlus } from "lucide-react";
+import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye, UserPlus, Upload, File, Image, Video, FileText } from "lucide-react";
 import GroupInfo from "./GroupInfo";
-import { createGroup, getGroups, createGroupPost, addGroupMember } from "@/services/groupService";
+import { createGroup, getGroups, createGroupPost, addGroupMember, getGroupMembers } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import { isInstructorOrAdmin, fetchAllUsers } from "@/services/userService";
@@ -24,6 +24,16 @@ const AddGroups = () => {
   const [inviteUserId, setInviteUserId] = useState("");
   const [inviteGroupId, setInviteGroupId] = useState("");
   const [addingMember, setAddingMember] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [selectedGroupForAddMember, setSelectedGroupForAddMember] = useState(null);
+  const [showViewMembersModal, setShowViewMembersModal] = useState(false);
+  const [selectedGroupForViewMembers, setSelectedGroupForViewMembers] = useState(null);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [membersError, setMembersError] = useState(null);
+  const [hoveredButton, setHoveredButton] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Check if current user is admin or instructor
   const isAdminOrInstructor = isInstructorOrAdmin();
@@ -119,6 +129,28 @@ const AddGroups = () => {
     }
   };
 
+  // Fetch group members
+  const fetchGroupMembers = async (groupId) => {
+    try {
+      setIsLoadingMembers(true);
+      setMembersError(null);
+      
+      const response = await getGroupMembers(groupId);
+      
+      if (response.success && response.data) {
+        setGroupMembers(response.data);
+      } else {
+        throw new Error(response.message || "Failed to fetch group members");
+      }
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+      setMembersError(error.message);
+      toast.error("Failed to fetch group members");
+    } finally {
+      setIsLoadingMembers(false);
+    }
+  };
+
   // Fetch groups on component mount
   React.useEffect(() => {
     fetchGroups();
@@ -135,6 +167,90 @@ const AddGroups = () => {
       return user.email;
     }
     return `User ${user.id}`;
+  };
+
+  // File upload helper functions
+  const getFileIcon = (fileType) => {
+    if (fileType.startsWith('image/')) return <Image className="h-4 w-4" />;
+    if (fileType.startsWith('video/')) return <Video className="h-4 w-4" />;
+    if (fileType.includes('pdf') || fileType.includes('document') || fileType.includes('text')) return <FileText className="h-4 w-4" />;
+    return <File className="h-4 w-4" />;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/ogg',
+      'application/pdf', 'text/plain', 'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('File type not supported. Please upload images, videos, or documents.');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      // Create a local URL for preview only
+      const fileUrl = URL.createObjectURL(file);
+      setUploadedFile({
+        file,
+        url: fileUrl,
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
+      // Don't set media_url here - we'll send the file directly to backend
+      toast.success('File selected successfully!');
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast.error('Failed to process file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileDrop = (e) => {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = e.target.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  };
+
+  const removeUploadedFile = () => {
+    if (uploadedFile?.url) {
+      URL.revokeObjectURL(uploadedFile.url);
+    }
+    setUploadedFile(null);
+    // Don't need to clear media_url since we're not using it for file uploads
   };
 
   const handleInputChange = (e) => {
@@ -342,6 +458,9 @@ const AddGroups = () => {
       toast.success(`Successfully added ${userName} to ${groupName}!`);
       setInviteUserId("");
       setInviteGroupId("");
+      // Close modal and reset state
+      setShowAddMemberModal(false);
+      setSelectedGroupForAddMember(null);
       // Refresh groups to update member counts
       await fetchGroups();
     } catch (error) {
@@ -400,93 +519,7 @@ const AddGroups = () => {
         </Button>
       </div>
 
-      {/* Add Member section - visible to admins/instructors */}
-      {isAdminOrInstructor && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-            <UserPlus className="h-5 w-5" />
-            Add Member to Group
-          </h3>
-          <p className="text-sm text-blue-600 mb-3">
-            Admins and instructors can add members to any group. Group creators can add members to their own groups.
-          </p>
-          {isAdminOrInstructor && (
-            <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded mb-3">
-              <strong>Your Permissions:</strong> You can add members to any group in the system.
-              {groups.some(g => g.createdBy === userProfile?.id) && (
-                <span className="ml-2">You also own {groups.filter(g => g.createdBy === userProfile?.id).length} group(s).</span>
-              )}
-            </div>
-          )}
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-blue-700 mb-1">Select Group</label>
-              <select
-                value={inviteGroupId}
-                onChange={(e) => setInviteGroupId(e.target.value)}
-                className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Choose a group...</option>
-                {groups.length === 0 ? (
-                  <option value="" disabled>No groups available</option>
-                ) : (
-                  groups.map((group) => {
-                    const isOwnedByUser = group.createdBy === userProfile?.id;
-                    return (
-                      <option key={group.id} value={group.id}>
-                        {group.name} ({group.memberCount || 0} members)
-                        {isOwnedByUser ? ' - Your Group' : ' - Other Group'}
-                      </option>
-                    );
-                  })
-                )}
-              </select>
-            </div>
-                          <div className="flex-1">
-                <label className="block text-sm font-medium text-blue-700 mb-1">User Name</label>
-                <select
-                  value={inviteUserId}
-                  onChange={(e) => setInviteUserId(e.target.value)}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={isLoadingUsers}
-                >
-                  <option value="">Choose a user...</option>
-                  {isLoadingUsers ? (
-                    <option value="">Loading users...</option>
-                  ) : allUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {getUserDisplayName(user)}
-                    </option>
-                  ))}
-                </select>
-                {inviteUserId && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    {(() => {
-                      const selectedUser = allUsers.find(u => u.id === inviteUserId);
-                      const userGroups = groups.filter(g => 
-                        g.members?.some(m => m.id === inviteUserId)
-                      );
-                      return (
-                        <span>
-                          {selectedUser ? getUserDisplayName(selectedUser) : 'User'} is currently in {userGroups.length} group(s)
-                        </span>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            <div className="flex items-end">
-              <Button 
-                onClick={() => handleAddMember(inviteGroupId)}
-                disabled={addingMember || !inviteUserId || !inviteGroupId || isLoadingUsers}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {addingMember ? "Adding..." : "Add Member"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Create/Edit Modal */}
       {showModal && (
@@ -728,34 +761,61 @@ const AddGroups = () => {
                       
                       <div className="flex gap-1 ml-2 flex-shrink-0">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             setSelectedGroupForView(group);
                             setShowGroupInfo(true);
                           }}
-                          className="h-8 px-2 text-gray-600 border-gray-200 hover:bg-gray-50"
+                          onMouseEnter={() => setHoveredButton(`${group.id}-view`)}
+                          onMouseLeave={() => setHoveredButton(null)}
+                          className={`h-8 p-0 text-gray-500 hover:text-gray-600 hover:bg-gray-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
+                            hoveredButton === `${group.id}-view` ? 'w-auto px-2' : 'w-8'
+                          }`}
                         >
-                          <Eye className="h-4 w-4 mr-1" /> View
+                          <Eye className={`h-4 w-4 transition-all duration-200 ${
+                            hoveredButton === `${group.id}-view` ? 'mr-1' : 'mr-0'
+                          }`} />
+                          <span className={`transition-all duration-200 whitespace-nowrap ${
+                            hoveredButton === `${group.id}-view` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                          }`}>View</span>
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => {
                             setSelectedGroupId(group.id);
                             setShowCreateMenu(true);
                           }}
-                          className="h-8 px-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          onMouseEnter={() => setHoveredButton(`${group.id}-create`)}
+                          onMouseLeave={() => setHoveredButton(null)}
+                          className={`h-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
+                            hoveredButton === `${group.id}-create` ? 'w-auto px-2' : 'w-8'
+                          }`}
                         >
-                          Create
+                          <MessageSquare className={`h-4 w-4 transition-all duration-200 ${
+                            hoveredButton === `${group.id}-create` ? 'mr-1' : 'mr-0'
+                          }`} />
+                          <span className={`transition-all duration-200 whitespace-nowrap ${
+                            hoveredButton === `${group.id}-create` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                          }`}>Create</span>
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(group)}
-                          className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                          onMouseEnter={() => setHoveredButton(`${group.id}-edit`)}
+                          onMouseLeave={() => setHoveredButton(null)}
+                          className={`h-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
+                            hoveredButton === `${group.id}-edit` ? 'w-auto px-2' : 'w-8'
+                          }`}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className={`h-4 w-4 transition-all duration-200 ${
+                            hoveredButton === `${group.id}-edit` ? 'mr-1' : 'mr-0'
+                          }`} />
+                          <span className={`transition-all duration-200 whitespace-nowrap ${
+                            hoveredButton === `${group.id}-edit` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                          }`}>Edit</span>
                         </Button>
                                                  {isAdminOrInstructor && (
                            <>
@@ -763,25 +823,42 @@ const AddGroups = () => {
                                variant="ghost"
                                size="sm"
                                onClick={() => {
-                                 setInviteGroupId(group.id);
-                                 setInviteUserId("");
+                                 setSelectedGroupForAddMember(group);
+                                 setShowAddMemberModal(true);
                                }}
-                               className="h-8 w-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                               title="Add Member"
+                               onMouseEnter={() => setHoveredButton(`${group.id}-add-member`)}
+                               onMouseLeave={() => setHoveredButton(null)}
+                               className={`h-8 p-0 text-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
+                                 hoveredButton === `${group.id}-add-member` ? 'w-auto px-2' : 'w-8'
+                               }`}
                              >
-                               <UserPlus className="h-4 w-4" />
+                               <UserPlus className={`h-4 w-4 transition-all duration-200 ${
+                                 hoveredButton === `${group.id}-add-member` ? 'mr-1' : 'mr-0'
+                               }`} />
+                               <span className={`transition-all duration-200 whitespace-nowrap ${
+                                 hoveredButton === `${group.id}-add-member` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                               }`}>Add Member</span>
                              </Button>
                              <Button
                                variant="ghost"
                                size="sm"
                                onClick={() => {
-                                 // TODO: Implement view members modal
-                                 toast.info(`Viewing members of ${group.name} (${group.memberCount} members)`);
+                                 setSelectedGroupForViewMembers(group);
+                                 setShowViewMembersModal(true);
+                                 fetchGroupMembers(group.id);
                                }}
-                               className="h-8 w-8 p-0 text-green-500 hover:text-green-600 hover:bg-green-50"
-                               title="View Members"
+                               onMouseEnter={() => setHoveredButton(`${group.id}-view-members`)}
+                               onMouseLeave={() => setHoveredButton(null)}
+                               className={`h-8 p-0 text-green-500 hover:text-green-600 hover:bg-green-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
+                                 hoveredButton === `${group.id}-view-members` ? 'w-auto px-2' : 'w-8'
+                               }`}
                              >
-                               <Users className="h-4 w-4" />
+                               <Users className={`h-4 w-4 transition-all duration-200 ${
+                                 hoveredButton === `${group.id}-view-members` ? 'mr-1' : 'mr-0'
+                               }`} />
+                               <span className={`transition-all duration-200 whitespace-nowrap ${
+                                 hoveredButton === `${group.id}-view-members` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                               }`}>View Members</span>
                              </Button>
                            </>
                          )}
@@ -789,9 +866,18 @@ const AddGroups = () => {
                            variant="ghost"
                            size="sm"
                            onClick={() => handleDelete(group.id)}
-                           className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                           onMouseEnter={() => setHoveredButton(`${group.id}-delete`)}
+                           onMouseLeave={() => setHoveredButton(null)}
+                           className={`h-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
+                             hoveredButton === `${group.id}-delete` ? 'w-auto px-2' : 'w-8'
+                           }`}
                          >
-                           <Trash2 className="h-4 w-4" />
+                           <Trash2 className={`h-4 w-4 transition-all duration-200 ${
+                             hoveredButton === `${group.id}-delete` ? 'mr-1' : 'mr-0'
+                           }`} />
+                           <span className={`transition-all duration-200 whitespace-nowrap ${
+                             hoveredButton === `${group.id}-delete` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
+                           }`}>Delete</span>
                          </Button>
                       </div>
                     </div>
@@ -910,7 +996,12 @@ const AddGroups = () => {
             <div className="flex items-center justify-between p-5 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-800">Create Post</h3>
               <button
-                onClick={() => { setShowPostModal(false); setSelectedGroupId(null); setPostForm({ type: "POST", title: "", content: "", media_url: "", is_pinned: false }); }}
+                onClick={() => { 
+                  setShowPostModal(false); 
+                  setSelectedGroupId(null); 
+                  setPostForm({ type: "POST", title: "", content: "", media_url: "", is_pinned: false });
+                  removeUploadedFile();
+                }}
                 className="p-1 hover:bg-gray-100 rounded-lg"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -923,24 +1014,38 @@ const AddGroups = () => {
                   if (!selectedGroupId) { toast.error("No group selected"); return; }
                   setPostSubmitting(true);
                   try {
-                    const payload = {
-                      group_id: selectedGroupId,
-                      type: postForm.type || "POST",
-                      title: postForm.title ? postForm.title : null,
-                      content: postForm.content,
-                      media_url: postForm.media_url ? postForm.media_url : null,
-                      // Send camelCase too for backend compatibility
-                      mediaUrl: postForm.media_url ? postForm.media_url : null,
-                      // Some backends expect "media"
-                      media: postForm.media_url ? postForm.media_url : null,
-                      is_pinned: !!postForm.is_pinned,
-                    };
+                    let payload;
+                    
+                    if (uploadedFile) {
+                      // If there's a file, send as FormData
+                      const formData = new FormData();
+                      formData.append('group_id', selectedGroupId);
+                      formData.append('type', postForm.type || "POST");
+                      if (postForm.title) formData.append('title', postForm.title);
+                      formData.append('content', postForm.content);
+                      formData.append('media', uploadedFile.file);
+                      formData.append('is_pinned', postForm.is_pinned);
+                      
+                      payload = formData;
+                    } else {
+                      // If no file, send as JSON with optional media_url
+                      payload = {
+                        group_id: selectedGroupId,
+                        type: postForm.type || "POST",
+                        title: postForm.title ? postForm.title : null,
+                        content: postForm.content,
+                        media_url: postForm.media_url ? postForm.media_url : null,
+                        is_pinned: !!postForm.is_pinned,
+                      };
+                    }
+                    
                     const res = await createGroupPost(payload);
                     if (res?.success) {
                       toast.success("Post created successfully");
                       setShowPostModal(false);
                       setSelectedGroupId(null);
                       setPostForm({ type: "POST", title: "", content: "", media_url: "", is_pinned: false });
+                      removeUploadedFile();
                     } else {
                       throw new Error(res?.message || "Failed to create post");
                     }
@@ -983,14 +1088,88 @@ const AddGroups = () => {
                     className="border-gray-300 focus:border-blue-500"
                   />
                 </div>
+                {/* File Upload Section */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Media URL (optional)</label>
-                  <Input
-                    value={postForm.media_url}
-                    onChange={(e) => setPostForm({ ...postForm, media_url: e.target.value })}
-                    placeholder="https://..."
-                    className="border-gray-300 focus:border-blue-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Attach File (optional)</label>
+                  
+                  {!uploadedFile ? (
+                    <div
+                      onDrop={handleFileDrop}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDragEnter={(e) => e.preventDefault()}
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                      onClick={() => document.getElementById('file-upload').click()}
+                    >
+                      <input
+                        id="file-upload"
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                        className="hidden"
+                        disabled={isUploading}
+                      />
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-1">
+                        {isUploading ? 'Uploading...' : 'Click to upload or drag and drop'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Images, videos, PDFs, documents (max 10MB)
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="text-blue-600">
+                            {getFileIcon(uploadedFile.type)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800 truncate max-w-[200px]">
+                              {uploadedFile.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(uploadedFile.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {uploadedFile.type.startsWith('image/') && (
+                            <img
+                              src={uploadedFile.url}
+                              alt="Preview"
+                              className="w-12 h-12 object-cover rounded border"
+                            />
+                          )}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={removeUploadedFile}
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Alternative: Manual URL input */}
+                  <div className="mt-3">
+                    <details className="group">
+                      <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                        Or enter URL manually
+                      </summary>
+                      <div className="mt-2">
+                        <Input
+                          value={postForm.media_url}
+                          onChange={(e) => setPostForm({ ...postForm, media_url: e.target.value })}
+                          placeholder="https://..."
+                          className="border-gray-300 focus:border-blue-500 text-sm"
+                        />
+                      </div>
+                    </details>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -1010,6 +1189,277 @@ const AddGroups = () => {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Member Modal */}
+      {showAddMemberModal && selectedGroupForAddMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <UserPlus className="h-5 w-5 text-blue-600" />
+                  Add Member to "{selectedGroupForAddMember.name}"
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Current members: {selectedGroupForAddMember.memberCount || 0}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAddMemberModal(false);
+                  setSelectedGroupForAddMember(null);
+                  setInviteUserId("");
+                }}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5">
+              {/* Permission Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div className="text-sm text-blue-800">
+                  <strong>Your Permissions:</strong> {isAdminOrInstructor ? 
+                    "You can add members to any group in the system." : 
+                    "You can add members to groups you created."
+                  }
+                </div>
+              </div>
+
+              {/* User Selection */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select User to Add
+                  </label>
+                  <select
+                    value={inviteUserId}
+                    onChange={(e) => setInviteUserId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={isLoadingUsers}
+                  >
+                    <option value="">Choose a user...</option>
+                    {isLoadingUsers ? (
+                      <option value="">Loading users...</option>
+                    ) : allUsers.map((user) => {
+                      // Check if user is already a member
+                      const isAlreadyMember = selectedGroupForAddMember.members?.some(member => member.id === user.id);
+                      return (
+                        <option 
+                          key={user.id} 
+                          value={user.id}
+                          disabled={isAlreadyMember}
+                        >
+                          {getUserDisplayName(user)}
+                          {isAlreadyMember ? ' (Already a member)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* User Info */}
+                {inviteUserId && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div className="text-sm text-gray-700">
+                      {(() => {
+                        const selectedUser = allUsers.find(u => u.id === inviteUserId);
+                        const userGroups = groups.filter(g => 
+                          g.members?.some(m => m.id === inviteUserId)
+                        );
+                        return (
+                          <div>
+                            <div className="font-medium mb-1">
+                              {selectedUser ? getUserDisplayName(selectedUser) : 'User'}
+                            </div>
+                            <div className="text-gray-600">
+                              Currently in {userGroups.length} group(s)
+                              {userGroups.length > 0 && (
+                                <div className="mt-1">
+                                  Groups: {userGroups.map(g => g.name).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={() => handleAddMember(selectedGroupForAddMember.id)}
+                    disabled={addingMember || !inviteUserId || isLoadingUsers}
+                    className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                  >
+                    {addingMember ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Adding Member...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Add Member
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAddMemberModal(false);
+                      setSelectedGroupForAddMember(null);
+                      setInviteUserId("");
+                    }}
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                    disabled={addingMember}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Members Modal */}
+      {showViewMembersModal && selectedGroupForViewMembers && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-green-600" />
+                  Members of "{selectedGroupForViewMembers.name}"
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Total members: {groupMembers.length}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowViewMembersModal(false);
+                  setSelectedGroupForViewMembers(null);
+                  setGroupMembers([]);
+                  setMembersError(null);
+                }}
+                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5">
+              {isLoadingMembers ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-3"></div>
+                  <p className="text-gray-600 text-sm">Loading members...</p>
+                </div>
+              ) : membersError ? (
+                <div className="text-center py-8">
+                  <div className="text-red-500 mb-3">
+                    <svg className="h-8 w-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <p className="text-red-600 text-sm mb-3">Error loading members: {membersError}</p>
+                  <Button 
+                    onClick={() => fetchGroupMembers(selectedGroupForViewMembers.id)} 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : groupMembers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">No members found in this group.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {groupMembers.map((member, index) => {
+                    // Extract user data from the nested structure
+                    const user = member.user || member;
+                    const memberId = member.id || index;
+                    
+                    return (
+                      <div key={memberId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-medium text-sm">
+                              {user.first_name ? user.first_name.charAt(0).toUpperCase() : 
+                               user.name ? user.name.charAt(0).toUpperCase() : 
+                               user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-800">
+                              {getUserDisplayName(user)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {user.email || 'No email provided'}
+                            </div>
+                            {user.user_roles && user.user_roles.length > 0 && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                Roles: {user.user_roles.join(', ')}
+                              </div>
+                            )}
+                            {member.role && (
+                              <div className="text-xs text-purple-600 mt-1">
+                                Group Role: {member.role}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500">
+                            Joined: {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 
+                                   user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                          </div>
+                          {user.id === userProfile?.id && (
+                            <div className="text-xs text-green-600 font-medium mt-1">
+                              You
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Refresh Button */}
+              {!isLoadingMembers && !membersError && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={() => fetchGroupMembers(selectedGroupForViewMembers.id)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Refresh Members
+                    </div>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
