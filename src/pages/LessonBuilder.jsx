@@ -23,7 +23,7 @@ import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-// Add custom CSS for slide animation
+// Add custom CSS for slide animation and Quill dropdown z-index fix
 const slideInLeftStyle = `
   @keyframes slide-in-left {
     0% {
@@ -38,6 +38,94 @@ const slideInLeftStyle = `
   .animate-slide-in-left {
     animation: slide-in-left 0.3s ease-out;
   }
+  
+  /* Dropdown positioning and z-index fixes */
+  .ql-picker-options {
+    position: absolute !important;
+    z-index: 999999 !important;
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    min-width: 150px !important;
+    background: white !important;
+    border: 1px solid #ccc !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    top: 100% !important;
+    left: 0 !important;
+  }
+  
+  /* Ensure picker container has relative positioning */
+  .ql-picker {
+    position: relative !important;
+  }
+  
+  /* Dialog overlay z-index fix */
+  [data-radix-dialog-overlay] {
+    z-index: 50 !important;
+  }
+  
+  [data-radix-dialog-content] {
+    z-index: 51 !important;
+  }
+  
+  /* Ensure dialog content doesn't clip dropdowns */
+  .ql-container {
+    overflow: visible !important;
+  }
+  
+  /* Fix dialog overflow issues */
+  [data-radix-popper-content-wrapper] {
+    overflow: visible !important;
+  }
+  
+  /* Ensure ReactQuill toolbar dropdowns work properly */
+  .ql-toolbar {
+    overflow: visible !important;
+  }
+  
+  .ql-picker-label {
+    cursor: pointer !important;
+  }
+  
+  /* Font family display names - hide default text and show custom labels */
+  .ql-font .ql-picker-item {
+    font-size: 0 !important;
+  }
+  .ql-font .ql-picker-item::before {
+    font-size: 14px !important;
+    display: block !important;
+  }
+  .ql-font .ql-picker-item[data-value="arial"]::before { content: 'Arial'; font-family: 'Arial'; }
+  .ql-font .ql-picker-item[data-value="comic-sans-ms"]::before { content: 'Comic Sans MS'; font-family: 'Comic Sans MS'; }
+  .ql-font .ql-picker-item[data-value="courier-new"]::before { content: 'Courier New'; font-family: 'Courier New'; }
+  .ql-font .ql-picker-item[data-value="georgia"]::before { content: 'Georgia'; font-family: 'Georgia'; }
+  .ql-font .ql-picker-item[data-value="helvetica"]::before { content: 'Helvetica'; font-family: 'Helvetica'; }
+  .ql-font .ql-picker-item[data-value="lucida"]::before { content: 'Lucida'; font-family: 'Lucida'; }
+  .ql-font .ql-picker-item[data-value="times-new-roman"]::before { content: 'Times New Roman'; font-family: 'Times New Roman'; }
+  .ql-font .ql-picker-item[data-value="trebuchet-ms"]::before { content: 'Trebuchet MS'; font-family: 'Trebuchet MS'; }
+  .ql-font .ql-picker-item[data-value="verdana"]::before { content: 'Verdana'; font-family: 'Verdana'; }
+  
+  /* Font size display names - hide default text and show custom labels */
+  .ql-size .ql-picker-item {
+    font-size: 0 !important;
+  }
+  .ql-size .ql-picker-item::before {
+    font-size: 14px !important;
+    display: block !important;
+  }
+  .ql-size .ql-picker-item[data-value="8px"]::before { content: '8px'; }
+  .ql-size .ql-picker-item[data-value="10px"]::before { content: '10px'; }
+  .ql-size .ql-picker-item[data-value="12px"]::before { content: '12px'; }
+  .ql-size .ql-picker-item[data-value="14px"]::before { content: '14px'; }
+  .ql-size .ql-picker-item[data-value="16px"]::before { content: '16px'; }
+  .ql-size .ql-picker-item[data-value="18px"]::before { content: '18px'; }
+  .ql-size .ql-picker-item[data-value="20px"]::before { content: '20px'; }
+  .ql-size .ql-picker-item[data-value="24px"]::before { content: '24px'; }
+  .ql-size .ql-picker-item[data-value="28px"]::before { content: '28px'; }
+  .ql-size .ql-picker-item[data-value="32px"]::before { content: '32px'; }
+  .ql-size .ql-picker-item[data-value="36px"]::before { content: '36px'; }
+  .ql-size .ql-picker-item[data-value="48px"]::before { content: '48px'; }
+  .ql-size .ql-picker-item[data-value="60px"]::before { content: '60px'; }
+  .ql-size .ql-picker-item[data-value="72px"]::before { content: '72px'; }
 `;
 
 // Inject the CSS
@@ -48,25 +136,24 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
-// Register font sizes
-const Size = Quill.import('formats/size');
-Size.whitelist = ['small', 'normal', 'large', 'huge'];
-Quill.register(Size, true);
+// Create font and size arrays
+const fontOptions = ['arial', 'comic-sans-ms', 'courier-new', 'georgia', 'helvetica', 'lucida', 'times-new-roman', 'trebuchet-ms', 'verdana'];
+const sizeOptions = ['8px', '10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '48px', '60px', '72px'];
 
-// Register font families
+// Custom font format
 const Font = Quill.import('formats/font');
-Font.whitelist = ['arial', 'times-new-roman', 'courier-new', 'roboto', 'serif', 'sans-serif'];
+Font.whitelist = fontOptions;
 Quill.register(Font, true);
 
-// Font size whitelist for px values
-const PxSize = Quill.import('formats/size');
-PxSize.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
-Quill.register(PxSize, true);
+// Custom size format
+const Size = Quill.import('formats/size');
+Size.whitelist = sizeOptions;
+Quill.register(Size, true);
 
 // Universal toolbar for paragraph/content (no header, px size)
 const paragraphToolbar = [
-  [{ 'font': Font.whitelist }],
-  [{ 'size': PxSize.whitelist }],
+  [{ 'font': fontOptions }],
+  [{ 'size': sizeOptions }],
   ['bold', 'italic', 'underline', 'strike'],
   [{ 'color': [] }, { 'background': [] }],
   [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -77,8 +164,8 @@ const paragraphToolbar = [
 
 // Simplified toolbar for heading/subheading
 const headingToolbar = [
-  [{ 'font': Font.whitelist }],
-  [{ 'size': PxSize.whitelist }],
+  [{ 'font': fontOptions }],
+  [{ 'size': sizeOptions }],
   ['bold', 'italic', 'underline'],
   [{ 'color': [] }, { 'background': [] }],
   [{ 'align': [] }],
@@ -1222,8 +1309,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
   const handleImageTemplateSelect = (template) => {
     const imageUrl = template.defaultContent?.imageUrl || '';
-    const imageTitle = template.defaultContent?.text || template.title;
-    const imageDescription = template.defaultContent?.description || '';
+    const imageTitle = template.title;
+    const imageText = template.defaultContent?.text || '';
    
     const newBlock = {
       id: `image-${Date.now()}`,
@@ -1234,14 +1321,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       templateType: template.id,
       imageUrl: imageUrl,
       imageTitle: imageTitle,
-      imageDescription: imageDescription,
+      imageDescription: '',
+      text: imageText,
       isEditing: false,
       timestamp: new Date().toISOString(),
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1,
       details: {
         image_url: imageUrl,
-        caption: imageDescription,
-        alt_text: imageTitle
+        caption: imageText,
+        alt_text: imageTitle,
+        layout: template.layout,
+        template: template.id
       },
       html_css: `
         <div class="image-block" style="${template.layout ? `display: flex; flex-direction: ${template.layout.includes('left') ? 'row' : 'column'}; gap: 1rem;` : ''}">
@@ -1250,25 +1340,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             alt="${imageTitle}"
             style="max-width: 100%; height: auto; border-radius: 0.5rem; ${template.layout?.includes('full') ? 'width: 100%;' : ''}"
           />
-          ${imageDescription ? `
-            <p class="mt-2 text-sm text-gray-600">${imageDescription}</p>
+          ${imageText ? `
+            <span class="mt-2 text-sm text-gray-600">${getPlainText(imageText)}</span>
           ` : ''}
         </div>
       `
     };
    
-    // If we have existing lesson content, add to that structure
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
-      }));
-    } else {
-      setContentBlocks(prev => [...prev, newBlock]);
-    }
+    // Always add to local edit list so it appears immediately in edit mode
+    setContentBlocks(prev => [...prev, newBlock]);
     setShowImageTemplateSidebar(false);
   };
 
@@ -1576,6 +1656,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setImageDescription('');
     setImageFile(null);
     setImagePreview('');
+    setImageTemplateText('');
     setCurrentBlock(null);
   };
 
@@ -1626,30 +1707,77 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       imageUrl = imagePreview;
     }
 
-    const newBlock = {
-      id: currentBlock?.id || `image-${Date.now()}`,
-      block_id: currentBlock?.id || `image-${Date.now()}`,
-      type: 'image',
-      title: imageTitle,
-      details: {
-        image_url: imageUrl,
-        caption: imageDescription || '',
-        alt_text: imageTitle
-      },
-      html_css: `
+    const layout = currentBlock?.layout || null;
+    const templateType = currentBlock?.templateType || null;
+    const textContent = getPlainText(imageTemplateText || '').trim();
+
+    // Build HTML based on layout when applicable
+    let htmlContent = '';
+    if (layout === 'side-by-side') {
+      htmlContent = `
+        <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+          <div>
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
+          </div>
+          <div>
+            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } else if (layout === 'overlay') {
+      htmlContent = `
+        <div class="relative rounded-xl overflow-hidden">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+        </div>
+      `;
+    } else if (layout === 'centered') {
+      htmlContent = `
+        <div class="text-center">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+        </div>
+      `;
+    } else if (layout === 'full-width') {
+      htmlContent = `
+        <div class="space-y-3">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-auto rounded" />
+          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+        </div>
+      `;
+    } else {
+      htmlContent = `
         <div class="image-block">
           <img
             src="${imageUrl}"
             alt="${imageTitle || 'Image'}"
             style="max-width: 100%; height: auto; border-radius: 0.5rem;"
           />
-          ${imageDescription ? `
-            <p class="mt-2 text-sm text-gray-600">${imageDescription}</p>
+          ${textContent ? `
+            <span class="mt-2 text-sm text-gray-600">${textContent}</span>
           ` : ''}
         </div>
-      `,
+      `;
+    }
+
+    const newBlock = {
+      id: currentBlock?.id || `image-${Date.now()}`,
+      block_id: currentBlock?.id || `image-${Date.now()}`,
+      type: 'image',
+      title: imageTitle,
+      layout: layout || undefined,
+      templateType: templateType || undefined,
+      details: {
+        image_url: imageUrl,
+        caption: textContent || '',
+        alt_text: imageTitle,
+        layout: layout || undefined,
+        template: templateType || undefined
+      },
+      html_css: htmlContent,
       imageTitle: imageTitle,
-      imageDescription: imageDescription,
+      imageDescription: textContent,
+      text: textContent,
       imageFile: imageFile,
       imageUrl: imageUrl,
       timestamp: new Date().toISOString(),
@@ -1657,25 +1785,32 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     };
 
     if (currentBlock) {
-      // Update existing block
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentBlock.id ? newBlock : block)
-      );
-      setCurrentBlock(null);
-    } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
+      // Update existing block locally (edit mode), but ensure we strip tags from text first
+      setContentBlocks(prev => prev.map(block => block.id === currentBlock.id ? { ...newBlock, text: getPlainText(newBlock.text || ''), imageDescription: getPlainText(newBlock.imageDescription || '') } : block));
+      // If lessonContent exists, also sync the fetched content block
       if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
+        setLessonContent(prev => ({
+          ...prev,
           data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
+            ...prev.data,
+            content: prev.data.content.map(b => b.block_id === currentBlock.id ? {
+              ...b,
+              html_css: htmlContent,
+              details: { ...(b.details || {}), image_url: imageUrl, caption: textContent, alt_text: imageTitle, layout: layout || b.details?.layout, template: templateType || b.details?.template },
+              imageUrl: imageUrl,
+              imageTitle: imageTitle,
+              imageDescription: getPlainText(textContent || ''),
+              text: getPlainText(textContent || ''),
+              layout: layout || b.layout,
+              templateType: templateType || b.templateType
+            } : b)
           }
         }));
-      } else {
-        setContentBlocks(prev => [...prev, newBlock]);
       }
+      setCurrentBlock(null);
+    } else {
+      // Add new block to local edit list immediately
+      setContentBlocks(prev => [...prev, newBlock]);
     }
    
     handleImageDialogClose();
@@ -1689,6 +1824,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setImageDescription(block.imageDescription || '');
       setImageFile(block.imageFile);
       setImagePreview(block.imageUrl);
+      setImageTemplateText(block.text || block.details?.caption || '');
       setShowImageDialog(true);
     }
   };
@@ -2441,7 +2577,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                     </div>
                                                     <div>
                                                       <p className="text-gray-700 text-lg leading-relaxed">
-                                                        {block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption}
+                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
                                                       </p>
                                                     </div>
                                                   </div>
@@ -2455,25 +2591,38 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end">
                                                       <div className="text-white p-8 w-full">
                                                         <p className="text-xl font-medium leading-relaxed">
-                                                          {block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption}
+                                                          {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
                                                         </p>
                                                       </div>
                                                     </div>
                                                   </div>
-                                                ) : (
+                                                ) : block.layout === 'centered' ? (
                                                   <div className="text-center">
                                                     <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                       alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="max-w-full h-auto rounded-xl shadow-lg mx-auto"
+                                                      className="mx-auto w-full max-w-[720px] h-auto rounded-xl shadow-lg"
                                                     />
                                                     {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
-                                                      <p className="text-gray-600 mt-4 italic text-lg">
-                                                        {block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption}
+                                                      <p className="text-gray-600 mt-3 italic text-base">
+                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
                                                       </p>
                                                     )}
                                                   </div>
-                                                )}
+                                                ) : block.layout === 'full-width' ? (
+                                                  <div className="w-full">
+                                                    <img
+                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
+                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
+                                                      className="w-full max-h-[28rem] object-cover rounded-xl shadow-lg"
+                                                    />
+                                                    {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
+                                                      <p className="text-gray-700 mt-4 text-lg">
+                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
+                                                      </p>
+                                                    )}
+                                                  </div>
+                                                ) : null}
                                               </div>
                                             )}
                                           </div>
@@ -2853,11 +3002,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 setShowTextEditorDialog(true);
                                                 break;
                                               case 'image':
-                                                setCurrentImageBlock({
+                                                // Open image dialog in edit mode with existing data populated
+                                                setCurrentBlock({
                                                   id: block.block_id,
-                                                  imageUrl: block.details?.image_url,
-                                                  imageTitle: block.details?.caption
+                                                  layout: block.layout || block.details?.layout,
+                                                  templateType: block.templateType || block.details?.template
                                                 });
+                                                setImageTitle(block.details?.alt_text || block.imageTitle || '');
+                                                setImageDescription(block.details?.caption || block.imageDescription || '');
+                                                setImageFile(null);
+                                                setImagePreview(block.details?.image_url || '');
+                                                setImageTemplateText(block.text || block.details?.caption || '');
                                                 setShowImageDialog(true);
                                                 break;
                                               case 'video':
@@ -3315,7 +3470,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         </div>
                                         <div className="w-1/2">
                                           <p className="text-sm text-gray-600 line-clamp-4">
-                                            {block.text.substring(0, 60)}...
+                                            {getPlainText(block.text || '').substring(0, 60)}...
                                           </p>
                                         </div>
                                       </div>
@@ -3329,7 +3484,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         />
                                         <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
                                           <p className="text-white text-sm text-center line-clamp-3">
-                                            {block.text.substring(0, 50)}...
+                                            {getPlainText(block.text || '').substring(0, 50)}...
                                           </p>
                                         </div>
                                       </div>
@@ -3342,7 +3497,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           className="mx-auto h-20 object-cover rounded"
                                         />
                                         <p className="text-sm text-gray-600 italic line-clamp-2">
-                                          {block.text.substring(0, 40)}...
+                                          {getPlainText(block.text || '').substring(0, 40)}...
                                         </p>
                                       </div>
                                     )}
@@ -3354,7 +3509,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           className="w-full h-24 object-cover rounded"
                                         />
                                         <p className="text-sm text-gray-600 line-clamp-3">
-                                          {block.text.substring(0, 60)}...
+                                          {getPlainText(block.text || '').substring(0, 60)}...
                                         </p>
                                       </div>
                                     )}
@@ -3530,7 +3685,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col" style={{ overflow: 'visible' }}>
           <DialogHeader>
             <DialogTitle>
               {currentTextBlockId ? 'Edit' : 'Add'} Text Block
@@ -3546,7 +3701,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             </DialogTitle>
           </DialogHeader>
          
-          <div className="flex-1 overflow-y-auto px-1" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+          <div className="flex-1 overflow-visible px-1" style={{ maxHeight: 'calc(90vh - 140px)', overflow: 'visible' }}>
             <div className="pr-4">
               {(() => {
                 const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
@@ -3559,14 +3714,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Heading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md bg-white" style={{ overflow: 'visible' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
                           modules={{
                             toolbar: [
-                              [{ 'header': [1, 2, 3, false] }],
+                              [{ 'font': fontOptions }],
+                              [{ 'size': sizeOptions }],
                               ['bold', 'italic', 'underline'],
                               [{ 'color': [] }, { 'background': [] }],
                               [{ 'align': [] }],
@@ -3575,6 +3731,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           }}
                           placeholder="Enter your heading text..."
                           className="flex-1"
+                          style={{ overflow: 'visible' }}
                         />
                       </div>
                     </div>
@@ -3588,14 +3745,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Subheading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md bg-white" style={{ overflow: 'visible' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
                           modules={{
                             toolbar: [
-                              [{ 'header': [2, 3, 4, false] }],
+                              [{ 'font': fontOptions }],
+                              [{ 'size': sizeOptions }],
                               ['bold', 'italic', 'underline'],
                               [{ 'color': [] }, { 'background': [] }],
                               [{ 'align': [] }],
@@ -3617,13 +3775,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Paragraph
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md bg-white" style={{ overflow: 'visible' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
                           modules={{
                             toolbar: [
+                              [{ 'font': fontOptions }],
+                              [{ 'size': sizeOptions }],
                               ['bold', 'italic', 'underline', 'strike'],
                               [{ 'color': [] }, { 'background': [] }],
                               [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -3648,14 +3808,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Heading
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '120px' }}>
+                        <div className="border rounded-md bg-white" style={{ height: '120px', overflow: 'visible' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorHeading}
                             onChange={setEditorHeading}
                             modules={{
                               toolbar: [
-                                [{ 'header': [1, 2, 3, false] }],
+                                [{ 'font': Font.whitelist }],
+                                [{ 'size': Size.whitelist }],
                                 ['bold', 'italic', 'underline'],
                                 [{ 'color': [] }, { 'background': [] }],
                                 [{ 'align': [] }],
@@ -3671,13 +3832,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Paragraph
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '230px' }}>
+                        <div className="border rounded-md bg-white" style={{ height: '230px', overflow: 'visible' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
                             modules={{
                               toolbar: [
+                                [{ 'font': Font.whitelist }],
+                                [{ 'size': Size.whitelist }],
                                 ['bold', 'italic', 'underline', 'strike'],
                                 [{ 'color': [] }, { 'background': [] }],
                                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -3703,14 +3866,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Subheading
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '120px' }}>
+                        <div className="border rounded-md bg-white" style={{ height: '120px', overflow: 'visible' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorSubheading}
                             onChange={setEditorSubheading}
                             modules={{
                               toolbar: [
-                                [{ 'header': [2, 3, 4, false] }],
+                                [{ 'font': Font.whitelist }],
+                                [{ 'size': Size.whitelist }],
                                 ['bold', 'italic', 'underline'],
                                 [{ 'color': [] }, { 'background': [] }],
                                 [{ 'align': [] }],
@@ -3726,13 +3890,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Paragraph
                         </label>
-                        <div className="border rounded-md overflow-hidden bg-white" style={{ height: '230px' }}>
+                        <div className="border rounded-md bg-white" style={{ height: '230px', overflow: 'visible' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
                             modules={{
                               toolbar: [
+                                [{ 'font': Font.whitelist }],
+                                [{ 'size': Size.whitelist }],
                                 ['bold', 'italic', 'underline', 'strike'],
                                 [{ 'color': [] }, { 'background': [] }],
                                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -3757,13 +3923,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Table Content
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md bg-white" style={{ overflow: 'visible' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
                           modules={{
                             toolbar: [
+                              [{ 'font': fontOptions }],
+                              [{ 'size': sizeOptions }],
                               ['bold', 'italic', 'underline'],
                               [{ 'color': [] }, { 'background': [] }],
                               [{ 'align': [] }],
@@ -4198,16 +4366,24 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 placeholder="Enter image title"
               />
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Text on/with Image
               </label>
-              <textarea
-                name="description"
-                value={imageDescription}
-                onChange={handleImageInputChange}
-                className="w-full p-2 border rounded h-24"
-                placeholder="Enter image description"
+              <ReactQuill
+                theme="snow"
+                value={imageTemplateText}
+                onChange={setImageTemplateText}
+                modules={{
+                  toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ align: [] }],
+                    ['clean']
+                  ]
+                }}
+                style={{ minHeight: '120px' }}
+                placeholder="Enter text to show with or on the image"
               />
             </div>
             <div>
@@ -4249,7 +4425,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <Button variant="outline" onClick={handleImageDialogClose}>
               Cancel
             </Button>
-            <Button onClick={handleAddImage} disabled={!imageTitle || !imageFile}>
+            <Button onClick={handleAddImage} disabled={!imageTitle || (!imageFile && !imagePreview)}>
               Add Image
             </Button>
           </DialogFooter>
@@ -4489,6 +4665,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </DialogContent>
       </Dialog>
 
+      
+
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -4593,6 +4771,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
+
+      
 
       {/* PDF Dialog */}
       <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>
@@ -4746,6 +4928,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+
     </>
   );
 }
