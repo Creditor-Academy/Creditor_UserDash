@@ -41,6 +41,7 @@ const Resources = () => {
   const [filterOrganization, setFilterOrganization] = useState("all");
   const [pendingOrg, setPendingOrg] = useState("all");
   const [pendingCat, setPendingCat] = useState("all");
+  const [pendingFileType, setPendingFileType] = useState("all");
 
   
 
@@ -61,7 +62,8 @@ const Resources = () => {
     title: "",
     description: "",
     category: "",
-    organization: ""
+    organization: "",
+    file_type: ""
   });
 
   // Organizations and categories from backend
@@ -208,15 +210,19 @@ const Resources = () => {
   };
 
   const handleFiles = (files) => {
+    // Backend middleware expects: field name 'assetfile', max size 1GB
     const validFiles = files.filter(file => {
       const isValidImage = file.type.startsWith('image/');
       const isValidVideo = file.type.startsWith('video/');
-      const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB limit
+      const isValidAudio = file.type.startsWith('audio/');
+      const isValidText = file.type.startsWith('text/') || file.type === 'application/json' || file.type === 'application/xml';
+      const isValidPdf = file.type === 'application/pdf';
+      const isValidSize = file.size <= 1024 * 1024 * 1024; // 1GB limit (matching backend middleware)
       
-      if (!isValidImage && !isValidVideo) {
+      if (!isValidImage && !isValidVideo && !isValidAudio && !isValidText && !isValidPdf) {
         toast({
           title: "Invalid file type",
-          description: "Please select only image or video files.",
+          description: "Please select only image, video, audio, text, or PDF files.",
           variant: "destructive",
         });
         return false;
@@ -225,7 +231,7 @@ const Resources = () => {
       if (!isValidSize) {
         toast({
           title: "File too large",
-          description: "File size must be less than 100MB.",
+          description: "File size must be less than 1GB.",
           variant: "destructive",
         });
         return false;
@@ -255,10 +261,10 @@ const Resources = () => {
   };
 
   const handleUpload = async () => {
-    if (!formData.title.trim() || selectedFiles.length === 0 || !formData.category) {
+    if (!formData.title.trim() || selectedFiles.length === 0 || !formData.category || !formData.file_type) {
       toast({
         title: "Missing information",
-        description: "Please provide title, category, and select at least one file.",
+        description: "Please provide title, category, file type, and select at least one file.",
         variant: "destructive",
       });
       return;
@@ -287,16 +293,34 @@ const Resources = () => {
         return;
       }
       // Upload each selected file to backend (backend expects single file per request)
+      // Backend middleware: field name 'assetfile', max size 1GB, FormData handling
       const uploaded = [];
       for (const file of selectedFiles) {
         const response = await assetService.createAsset({
           title: formData.title,
           description: formData.description || "",
           category_id: resolvedCategoryId,
+          file_type: formData.file_type,
           file
         });
 
         const created = response?.data || response; // support either shape
+
+        // Determine file type from backend file_type field or fallback to mime type
+        const getFileTypeFromBackend = (backendFileType, mimeType) => {
+          // If backend provides file_type, use it
+          if (backendFileType) {
+            return backendFileType.toLowerCase();
+          }
+          
+          // Fallback to mime type detection
+          if (mimeType.startsWith('image/')) return 'image';
+          if (mimeType.startsWith('video/')) return 'video';
+          if (mimeType.startsWith('audio/')) return 'audio';
+          if (mimeType === 'application/pdf') return 'pdf';
+          if (mimeType.startsWith('text/') || mimeType === 'application/json' || mimeType === 'application/xml') return 'text';
+          return 'text'; // default
+        };
 
         const resource = {
           id: created?.id || created?._id || Date.now(),
@@ -306,7 +330,7 @@ const Resources = () => {
           organization: created?.organization_id || "Global", // Default to Global since backend doesn't require org_id
           visibility: "global", // Default to global since backend doesn't require org_id
           fileName: created?.fileName || created?.filename || file.name,
-          fileType: (created?.mimetype || file.type || "").startsWith('image/') ? 'image' : 'video',
+          fileType: getFileTypeFromBackend(created?.file_type, created?.mimetype || file.type || ""),
           fileSize: ((created?.filesize ?? file.size) / (1024 * 1024)).toFixed(2),
           uploadDate: created?.createdAt || new Date().toISOString(),
           url: created?.assetUrl || created?.asset_url || created?.url || created?.Location || created?.fileUrl || URL.createObjectURL(file),
@@ -322,7 +346,8 @@ const Resources = () => {
         title: "",
         description: "",
         category: "",
-        organization: ""
+        organization: "",
+        file_type: ""
       });
       setSelectedFiles([]);
       if (fileInputRef.current) {
@@ -411,7 +436,24 @@ const Resources = () => {
       const searchResults = response?.data || [];
       
       // Normalize the search results
-      const normalized = searchResults.map((item, idx) => ({
+      const normalized = searchResults.map((item, idx) => {
+        // Determine file type from backend file_type field or fallback to mime type
+        const getFileTypeFromBackend = (backendFileType, mimeType) => {
+          // If backend provides file_type, use it
+          if (backendFileType) {
+            return backendFileType.toLowerCase();
+          }
+          
+          // Fallback to mime type detection
+          if (mimeType.startsWith('image/')) return 'image';
+          if (mimeType.startsWith('video/')) return 'video';
+          if (mimeType.startsWith('audio/')) return 'audio';
+          if (mimeType === 'application/pdf') return 'pdf';
+          if (mimeType.startsWith('text/') || mimeType === 'application/json' || mimeType === 'application/xml') return 'text';
+          return 'text'; // default
+        };
+
+        return {
         id: item?.id || item?._id || idx,
         title: item?.title || "Untitled",
         description: item?.description || "",
@@ -419,11 +461,12 @@ const Resources = () => {
         organization: item?.organization_id || "",
         visibility: "global", // Search results are global
         fileName: item?.fileName || item?.filename || item?.name || "asset",
-        fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
+          fileType: getFileTypeFromBackend(item?.file_type, item?.mimetype || item?.type || ""),
         fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
         uploadDate: item?.createdAt || new Date().toISOString(),
         url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
-      }));
+        };
+      });
 
       setResources(normalized);
       if (normalized.length === 0) {
@@ -433,10 +476,10 @@ const Resources = () => {
           variant: "default"
         });
       } else {
-        toast({ 
-          title: "Search completed", 
-          description: `Found ${normalized.length} asset(s) matching "${searchTerm}"` 
-        });
+      toast({ 
+        title: "Search completed", 
+        description: `Found ${normalized.length} asset(s) matching "${searchTerm}"` 
+      });
       }
     } catch (error) {
       console.error('Error searching assets:', error);
@@ -481,7 +524,7 @@ const Resources = () => {
   const handleCreateOrganization = async (orgData) => {
     try {
       const response = await organizationService.createOrganization({
-        name: orgData.name,
+      name: orgData.name,
         description: orgData.description || ""
       });
 
@@ -496,7 +539,7 @@ const Resources = () => {
       };
 
       // Update organizations list
-      setOrganizations(prev => [...prev, newOrg]);
+    setOrganizations(prev => [...prev, newOrg]);
       
       // Initialize empty categories array for the new organization
       setOrganizationCategories(prev => ({
@@ -509,8 +552,8 @@ const Resources = () => {
         setCategories(prev => [...prev]);
       }
       
-      setShowOrganizationModal(false);
-      toast({
+    setShowOrganizationModal(false);
+    toast({
         title: "Success",
         description: `Organization "${orgData.name}" has been created successfully.`,
       });
@@ -657,7 +700,7 @@ const Resources = () => {
       // Use the organization ID from the category creation context
       const organizationId = categoryOrganizationId;
       
-      console.log('Creating category for organization:', organizationId);
+
       
       if (!organizationId) {
         toast({
@@ -741,8 +784,8 @@ const Resources = () => {
         name: categoryData.name.trim()
       });
 
-      const updatedCategory = {
-        ...editingCategory,
+    const updatedCategory = {
+      ...editingCategory,
         name: response.data.name || categoryData.name.trim(),
         color: getCategoryColor(response.data.name || categoryData.name.trim()),
         updatedAt: response.data.updatedAt || new Date().toISOString()
@@ -875,7 +918,20 @@ const Resources = () => {
   };
 
   const getFileIcon = (fileType) => {
-    return fileType === 'image' ? <FileImage className="w-5 h-5" /> : <FileVideo className="w-5 h-5" />;
+    switch (fileType) {
+      case 'image':
+        return <FileImage className="w-5 h-5" />;
+      case 'video':
+        return <FileVideo className="w-5 h-5" />;
+      case 'audio':
+        return <FileText className="w-5 h-5" />;
+      case 'text':
+        return <FileText className="w-5 h-5" />;
+      case 'pdf':
+        return <FileText className="w-5 h-5" />;
+      default:
+        return <FileText className="w-5 h-5" />;
+    }
   };
 
   const formatDate = (dateString) => {
@@ -913,9 +969,40 @@ const Resources = () => {
     return visibility === "global" ? <Globe className="w-4 h-4" /> : <Users className="w-4 h-4" />;
   };
 
+  // Filter resources based on file type
+  const getFilteredResources = (resourcesToFilter) => {
+    let filtered = resourcesToFilter;
+    
+    // Apply file type filter
+    if (pendingFileType !== "all") {
+      filtered = filtered.filter(resource => {
+        const resourceFileType = resource.fileType?.toLowerCase();
+        const selectedFileType = pendingFileType.toLowerCase();
+        
+        // Map backend file types to frontend file types
+        switch (selectedFileType) {
+          case 'image':
+            return resourceFileType === 'image';
+          case 'video':
+            return resourceFileType === 'video';
+          case 'audio':
+            return resourceFileType === 'audio';
+          case 'text_file':
+            return resourceFileType === 'text';
+          case 'pdf':
+            return resourceFileType === 'pdf';
+          default:
+            return true;
+        }
+      });
+    }
+    
+    return filtered;
+  };
+
   // Since we're now doing server-side search, we don't need client-side filtering
   // The resources state will contain the search results directly
-  const filteredResources = resources;
+  const filteredResources = getFilteredResources(resources);
 
   return (
     <div className="space-y-8 bg-slate-50 min-h-screen p-6">
@@ -1076,80 +1163,80 @@ const Resources = () => {
                         {/* Categories for this organization */}
                         {!collapsedOrganizations[org.id] && (
                           <div className="ml-11 space-y-2 transition-all duration-300">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
-                                Categories ({orgCategories.length})
-                              </h4>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  console.log('Opening category modal for organization:', org.id, org.name);
-                                  setEditingCategory(null);
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                              </svg>
+                              Categories ({orgCategories.length})
+                            </h4>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+
+                                setEditingCategory(null);
                                   setCategoryOrganizationId(org.id);
-                                  setShowCategoryModal(true);
-                                }}
-                                className="flex items-center gap-1 bg-indigo-500 text-white border-0 hover:bg-indigo-600 shadow-sm hover:shadow-md px-3 py-1 text-xs"
-                                disabled={loading}
-                              >
-                                <Plus className="w-3 h-3" />
-                                Add Category
-                              </Button>
-                            </div>
-                            
-                            {orgCategories.length === 0 ? (
-                              <div className="text-xs text-gray-500 italic">No categories yet</div>
-                            ) : (
-                              <div className="space-y-2">
-                                {orgCategories.map(category => (
-                                  <div
-                                    key={category.id}
-                                    className="p-2 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
-                                  >
-                                    <div className="flex items-center justify-between gap-2">
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-sky-500 rounded flex items-center justify-center">
-                                          <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                          </svg>
-                                        </div>
-                                        <span className={`px-2 py-1 rounded text-xs font-medium ${category.color} truncate`}>{category.name}</span>
+                                setShowCategoryModal(true);
+                              }}
+                              className="flex items-center gap-1 bg-indigo-500 text-white border-0 hover:bg-indigo-600 shadow-sm hover:shadow-md px-3 py-1 text-xs"
+                              disabled={loading}
+                            >
+                              <Plus className="w-3 h-3" />
+                              Add Category
+                            </Button>
+                          </div>
+                          
+                          {orgCategories.length === 0 ? (
+                            <div className="text-xs text-gray-500 italic">No categories yet</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {orgCategories.map(category => (
+                                <div
+                                  key={category.id}
+                                  className="p-2 rounded-lg border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-sky-500 rounded flex items-center justify-center">
+                                        <svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
                                       </div>
-                                      <div className="flex gap-1 flex-shrink-0">
-                                        <Button
+                                      <span className={`px-2 py-1 rounded text-xs font-medium ${category.color} truncate`}>{category.name}</span>
+                                    </div>
+                                    <div className="flex gap-1 flex-shrink-0">
+                                      <Button
                                           type="button"
-                                          variant="ghost"
-                                          size="sm"
+                                        variant="ghost"
+                                        size="sm"
                                           onMouseDown={(e) => e.stopPropagation()}
                                           onClick={(e) => { e.stopPropagation(); setEditingCategory(category); setShowCategoryModal(true); }}
                                           className="relative z-10 pointer-events-auto text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-8 h-8 rounded p-0"
-                                          title="Edit Category"
-                                        >
+                                        title="Edit Category"
+                                      >
                                           <Edit className="w-4 h-4" />
-                                        </Button>
-                                        {category.name.toLowerCase() !== "general" && (
-                                          <Button
+                                      </Button>
+                                      {category.name.toLowerCase() !== "general" && (
+                                        <Button
                                             type="button"
-                                            variant="ghost"
-                                            size="sm"
+                                          variant="ghost"
+                                          size="sm"
                                             onMouseDown={(e) => e.stopPropagation()}
                                             onClick={(e) => { e.stopPropagation(); handleDeleteCategory(category.id); }}
                                             className="relative z-10 pointer-events-auto text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 rounded p-0"
-                                            title="Delete Category"
-                                          >
+                                          title="Delete Category"
+                                        >
                                             <Trash2 className="w-4 h-4" />
-                                          </Button>
-                                        )}
-                                      </div>
+                                        </Button>
+                                      )}
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         )}
                       </div>
                     );
@@ -1173,7 +1260,12 @@ const Resources = () => {
             Upload Assets
           </CardTitle>
           <CardDescription className="text-indigo-100">
-             Upload images and videos with titles, descriptions, and organization settings. Resources assigned to "Global Resources" will be visible to all users. Supported formats: JPG, PNG, GIF, MP4, MOV, AVI (Max 100MB)
+             Upload images, videos, audio files, text files, and PDFs with titles, descriptions, and organization settings. Resources assigned to "Global Resources" will be visible to all users. Supported formats: Images (JPG, PNG, GIF), Videos (MP4, MOV, AVI), Audio (MP3, WAV), Text files (TXT, JSON, XML), PDFs (Max 1GB)
+             {filteredResources.length > 0 && (
+               <span className="block mt-2 text-indigo-200">
+                 📊 {filteredResources.length} asset(s) loaded - Use sorting options below to organize them
+               </span>
+             )}
            </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-8">
@@ -1336,6 +1428,29 @@ const Resources = () => {
             />
           </div>
 
+          {/* File Type Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+              File Type *
+            </label>
+            <select
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
+              value={formData.file_type}
+              onChange={(e) => setFormData(prev => ({ ...prev, file_type: e.target.value }))}
+              disabled={loading}
+            >
+              <option value="">
+                {loading ? "Loading..." : "Select File Type"}
+              </option>
+              <option value="IMAGE">IMAGE</option>
+              <option value="VIDEO">VIDEO</option>
+              <option value="AUDIO">AUDIO</option>
+              <option value="TEXT_FILE">TEXT_FILE</option>
+              <option value="PDF">PDF</option>
+            </select>
+          </div>
+
           <div className="space-y-3">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
@@ -1351,7 +1466,7 @@ const Resources = () => {
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*,video/*"
+                accept="image/*,video/*,audio/*,.txt,.json,.xml,.pdf"
                 onChange={handleFileSelect}
                 className="hidden"
               />
@@ -1366,15 +1481,28 @@ const Resources = () => {
               <p className="text-base text-gray-600 font-medium">
                 Drag and drop files here, or click to browse
               </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Supported formats: Images, Videos, Audio, Text files, PDFs (Max 1GB)
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                💡 Large files up to 1GB are supported for high-quality content
+              </p>
               {selectedFiles.length > 0 && (
                 <div className="mt-4">
                   <p className="text-sm font-medium text-gray-700 mb-2">Selected Files:</p>
                   <div className="space-y-1">
                     {selectedFiles.map((file, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                        {file.type.startsWith('image/') ? <Image className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+                        {file.type.startsWith('image/') ? <Image className="w-4 h-4" /> : 
+                         file.type.startsWith('video/') ? <Video className="w-4 h-4" /> :
+                         file.type.startsWith('audio/') ? <FileText className="w-4 h-4" /> :
+                         file.type === 'application/pdf' ? <FileText className="w-4 h-4" /> :
+                         <FileText className="w-4 h-4" />}
                         <span>{file.name}</span>
-                        <span className="text-gray-500">({(file.size / (1024 * 1024)).toFixed(2)} MB)</span>
+                        <span className={`${file.size > 500 * 1024 * 1024 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
+                          ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                          {file.size > 500 * 1024 * 1024 && <span className="text-xs ml-1">⚠️ Large file</span>}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1385,13 +1513,15 @@ const Resources = () => {
 
                       <Button 
               onClick={handleUpload} 
-              disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.organization || !formData.category}
+              disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.organization || !formData.category || !formData.file_type}
               className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
             >
             {uploading ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                Uploading...
+                Uploading... {selectedFiles.length > 0 && selectedFiles[0].size > 100 * 1024 * 1024 && (
+                  <span className="text-xs">(Large file - may take a moment)</span>
+                )}
               </div>
             ) : (
               "Upload Assets"
@@ -1428,7 +1558,7 @@ const Resources = () => {
                   <button
                     onClick={async () => {
                       setSearchTerm("");
-                      // Restore original assets view if organization and category are selected
+                                            // Restore original assets view if organization and category are selected
                       if (pendingOrg && pendingCat) {
                         try {
                           setAssetsLoading(true);
@@ -1438,23 +1568,43 @@ const Resources = () => {
                           };
                           const res = await assetService.getAssets(payload);
                           const list = res?.data || [];
-                          const normalized = list.map((item, idx) => ({
-                            id: item?.id || item?._id || idx,
-                            title: item?.title || "Untitled",
-                            description: item?.description || "",
-                            category: item?.category_id || pendingCat,
-                            organization: item?.organization_id || pendingOrg,
-                            visibility: pendingOrg === "Global" ? "global" : "organization",
-                            fileName: item?.fileName || item?.filename || item?.name || "asset",
-                            fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
-                            fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
-                            uploadDate: item?.createdAt || new Date().toISOString(),
-                            url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
-                          }));
+                          const normalized = list.map((item, idx) => {
+                            // Determine file type from backend file_type field or fallback to mime type
+                            const getFileTypeFromBackend = (backendFileType, mimeType) => {
+                              // If backend provides file_type, use it
+                              if (backendFileType) {
+                                return backendFileType.toLowerCase();
+                              }
+                              
+                              // Fallback to mime type detection
+                              if (mimeType.startsWith('image/')) return 'image';
+                              if (mimeType.startsWith('video/')) return 'video';
+                              if (mimeType.startsWith('audio/')) return 'audio';
+                              if (mimeType === 'application/pdf') return 'pdf';
+                              if (mimeType.startsWith('text/') || mimeType === 'application/json' || mimeType === 'application/xml') return 'text';
+                              return 'text'; // default
+                            };
+
+                            return {
+                              id: item?.id || item?._id || idx,
+                              title: item?.title || "Untitled",
+                              description: item?.description || "",
+                              category: item?.category_id || pendingCat,
+                              organization: item?.organization_id || pendingOrg,
+                              visibility: pendingOrg === "Global" ? "global" : "organization",
+                              fileName: item?.fileName || item?.filename || item?.name || "asset",
+                              fileType: getFileTypeFromBackend(item?.file_type, item?.mimetype || item?.type || ""),
+                              fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
+                              uploadDate: item?.createdAt || new Date().toISOString(),
+                              url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
+                            };
+                          });
                           setResources(normalized);
+                          // Reset file type filter when assets are restored
+                          setPendingFileType("all");
                         } catch (error) {
                           console.error('Error restoring assets:', error);
-                          setResources([]);
+                      setResources([]);
                         } finally {
                           setAssetsLoading(false);
                         }
@@ -1469,9 +1619,9 @@ const Resources = () => {
                     {assetsLoading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
                     ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                     )}
                   </button>
                 )}
@@ -1512,6 +1662,7 @@ const Resources = () => {
                     const newOrgValue = e.target.value;
                     setPendingOrg(newOrgValue);
                     setPendingCat("All"); // Reset category selection to "All"
+                    setPendingFileType("all"); // Reset file type selection
                     
                     // Update categories for the selected organization
                     if (newOrgValue && newOrgValue !== "Global") {
@@ -1575,7 +1726,37 @@ const Resources = () => {
                       
                       const res = await assetService.getAssets(payload);
                       const list = res?.data || [];
-                      const normalized = list.map((item, idx) => ({
+                      
+
+                      
+                      const normalized = list.map((item, idx) => {
+                        // Determine file type from backend file_type field or fallback to mime type
+                        const getFileTypeFromBackend = (backendFileType, mimeType) => {
+                          // If backend provides file_type, use it
+                          if (backendFileType) {
+                            return backendFileType.toLowerCase();
+                          }
+                          
+                          // Fallback to mime type detection
+                          if (mimeType.startsWith('image/')) {
+                            return 'image';
+                          }
+                          if (mimeType.startsWith('video/')) {
+                            return 'video';
+                          }
+                          if (mimeType.startsWith('audio/')) {
+                            return 'audio';
+                          }
+                          if (mimeType === 'application/pdf') {
+                            return 'pdf';
+                          }
+                          if (mimeType.startsWith('text/') || mimeType === 'application/json' || mimeType === 'application/xml') {
+                            return 'text';
+                          }
+                          return 'text'; // default
+                        };
+
+                        return {
                         id: item?.id || item?._id || idx,
                         title: item?.title || "Untitled",
                         description: item?.description || "",
@@ -1583,14 +1764,17 @@ const Resources = () => {
                         organization: item?.organization_id || pendingOrg,
                         visibility: pendingOrg === "Global" ? "global" : "organization",
                         fileName: item?.fileName || item?.filename || item?.name || "asset",
-                        fileType: (item?.mimetype || item?.type || "").startsWith('image/') ? 'image' : 'video',
+                          fileType: getFileTypeFromBackend(item?.file_type, item?.mimetype || item?.type || ""),
                         fileSize: ((item?.filesize ?? 0) / (1024 * 1024)).toFixed(2),
                         uploadDate: item?.createdAt || new Date().toISOString(),
                         url: item?.assetUrl || item?.asset_url || item?.url || item?.Location || item?.fileUrl || ""
-                      }));
+                        };
+                      });
                       setResources(normalized);
                       setFilterOrganization(pendingOrg);
                       setFilterCategory(pendingCat);
+                      // Reset file type filter when new assets are loaded
+                      setPendingFileType("all");
                       toast({ title: "Assets loaded", description: `${normalized.length} asset(s) fetched.` });
                     } catch (e) {
                       toast({ title: "Failed to load assets", description: "Check organization/category selection and try again.", variant: "destructive" });
@@ -1613,15 +1797,121 @@ const Resources = () => {
             </div>
           </div>
 
-          {/* Filters removed per request */}
+          {/* File Type Filter - Only show when assets are loaded */}
+          {filteredResources.length > 0 && (
+            <div className="space-y-4 mb-6">
+              {/* File Type Filter Controls */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-blue-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    File Type:
+                  </span>
+                  <select
+                    className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm bg-white shadow-sm"
+                    value={pendingFileType}
+                    onChange={(e) => setPendingFileType(e.target.value)}
+                  >
+                    <option value="all">All File Types</option>
+                    <option value="IMAGE">Images</option>
+                    <option value="VIDEO">Videos</option>
+                    <option value="AUDIO">Audio Files</option>
+                    <option value="TEXT_FILE">Text Files</option>
+                    <option value="PDF">PDFs</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200">
+                    {filteredResources.length} asset(s) found
+                  </div>
+                  <div className="flex gap-2">
+                    {pendingFileType !== "all" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPendingFileType("all")}
+                        className="text-xs px-2 py-1 h-7 bg-white hover:bg-slate-50 border-slate-200 text-slate-600"
+                      >
+                        Reset Filter
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* File Type Filter Summary */}
+              {pendingFileType !== "all" && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="space-y-2">
+                    {/* File Type Filter Summary */}
+                    <div className="flex items-center gap-2 text-sm text-blue-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span className="font-medium">
+                        Showing only {pendingFileType === 'IMAGE' ? 'Images' : 
+                                     pendingFileType === 'VIDEO' ? 'Videos' : 
+                                     pendingFileType === 'AUDIO' ? 'Audio Files' : 
+                                     pendingFileType === 'TEXT_FILE' ? 'Text Files' : 
+                                     pendingFileType === 'PDF' ? 'PDFs' : pendingFileType} files
+                      </span>
+                    </div>
+                    
+                    {/* Available File Types Info */}
+                    {resources.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>
+                          Available file types: {(() => {
+                            const fileTypes = [...new Set(resources.map(r => r.fileType).filter(Boolean))];
+                            return fileTypes.length > 0 ? fileTypes.join(', ') : 'None detected';
+                          })()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
  
           {filteredResources.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <FileText className="w-10 h-10 text-slate-400" />
                 </div>
-              <p className="text-lg font-semibold mb-2">No assets found.</p>
-              <p className="text-sm">Try changing organization/category or search text.</p>
+              <p className="text-lg font-semibold mb-2">
+                {pendingFileType !== "all" 
+                  ? `No ${pendingFileType === 'IMAGE' ? 'images' : 
+                     pendingFileType === 'VIDEO' ? 'videos' : 
+                     pendingFileType === 'AUDIO' ? 'audio files' : 
+                     pendingFileType === 'TEXT_FILE' ? 'text files' : 
+                     pendingFileType === 'PDF' ? 'PDFs' : pendingFileType.toLowerCase()} found.`
+                  : "No assets found."
+                }
+              </p>
+              <p className="text-sm">
+                {pendingFileType !== "all" 
+                  ? `Try changing the file type filter or organization/category selection.`
+                  : "Try changing organization/category or search text."
+                }
+              </p>
+              {pendingFileType !== "all" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPendingFileType("all")}
+                  className="mt-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  Show All File Types
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -1630,6 +1920,14 @@ const Resources = () => {
                 const category = categories.find(cat => cat.id === resource.category);
                 return (
                   <div key={resource.id} className="flex flex-col rounded-3xl p-6 shadow-xl border border-slate-100 bg-white hover:bg-slate-50 transition-all duration-300 ring-1 ring-slate-100 hover:ring-indigo-200 transform hover:-translate-y-2">
+                    {/* File Type Filter Indicator */}
+                    {pendingFileType !== "all" && (
+                      <div className="flex justify-end mb-2">
+                        <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                          Filtered: {resource.fileType.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex-1 space-y-2">
                       <div className="text-base md:text-lg font-semibold text-gray-900" title={resource.title}>{resource.title || 'Untitled asset'}</div>
                       <div className="flex items-start gap-2 text-xs text-gray-700 min-w-0">
@@ -1652,6 +1950,16 @@ const Resources = () => {
                         {resource.fileSize ? (
                           <span className="px-2 py-0.5 rounded-full text-[11px] bg-purple-100 text-purple-800">{resource.fileSize} MB</span>
                         ) : null}
+                        {/* File Type Badge */}
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                          resource.fileType === 'image' ? 'bg-green-100 text-green-800' :
+                          resource.fileType === 'video' ? 'bg-red-100 text-red-800' :
+                          resource.fileType === 'audio' ? 'bg-yellow-100 text-yellow-800' :
+                          resource.fileType === 'pdf' ? 'bg-orange-100 text-orange-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {resource.fileType.toUpperCase()}
+                        </span>
                       </div>
                       </div>
                     <div className="flex items-center justify-end gap-3 pt-6">

@@ -105,6 +105,12 @@ export const assetService = {
       formData.append('title', assetData.title);
       formData.append('description', assetData.description || '');
       formData.append('category_id', assetData.category_id);
+      
+      // Add file_type if provided
+      if (assetData.file_type) {
+        formData.append('file_type', assetData.file_type);
+      }
+      
       // Note: organization_id is not sent to backend as per controller requirements
       
       if (assetData.file) {
@@ -117,6 +123,7 @@ export const assetService = {
         title: assetData.title,
         description: assetData.description || '',
         category_id: assetData.category_id,
+        file_type: assetData.file_type,
         fileName: assetData.file?.name,
         fileSize: assetData.file?.size,
         fileType: assetData.file?.type,
