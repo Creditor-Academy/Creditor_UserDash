@@ -10,7 +10,8 @@ import  Courses  from "@/pages/Courses";
 import  ModulesList  from "@/pages/ModulesList";
 import  ModuleDetail  from "@/pages/ModuleDetail";
 import  LessonDetail  from "@/pages/LessonDetail";
-import  LessonView  from "@/pages/LessonView";
+import LessonView from "@/pages/LessonView";
+import LessonContentView from "@/pages/LessonContentView";
 import  QuizView  from "@/pages/QuizView";
 import QuizTypePage from "@/pages/QuizTypePage";
 import QuizInstructionPage from "@/pages/QuizInstructionPage";
@@ -188,6 +189,8 @@ function App() {
                 } />
                 <Route path="modules" element={<ModulesList />} />
                 <Route path="modules/:moduleId/view" element={<ModuleView />} />
+                <Route path="modules/:moduleId/lessons" element={<LessonView />} />
+                <Route path="modules/:moduleId/lesson/:lessonId/content" element={<LessonContentView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />
@@ -333,6 +336,7 @@ function CourseTimerProviderWrapper() {
     <CourseTimerProvider courseId={courseId}>
       <SubRoutes>
         <SubRoute index element={<CourseView />} />
+        <SubRoute path="modules/:moduleId/lessons" element={<LessonView />} />
         <SubRoute path="module/:moduleId/lessons" element={<ModuleLessonsView />} />
         <SubRoute path="module/:moduleId/assessments" element={<ModuleAssessmentsView />} />
         <SubRoute path="module/:moduleId/lesson/:lessonId" element={<LessonView />} />

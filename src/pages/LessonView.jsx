@@ -1,374 +1,344 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Play, Pause, Volume2, VolumeX, Maximize2, ChevronLeft, ChevronRight, Bookmark, BookOpen } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useEffect, useMemo, useContext } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import { getAuthHeader } from "@/services/authHeader";
+import { SidebarContext } from "@/layouts/DashboardLayout";
 
 const LessonView = () => {
-  const { moduleId, lessonId } = useParams();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState([80]);
-  const [progress, setProgress] = useState(30); // Example progress
-  const videoRef = useRef(null);
+  const { courseId, moduleId } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Mock data - replace with actual API call
-  const lessonData = {
-    "1": {
-      "1": {
-        id: "1",
-        moduleId: "1",
-        title: "What is Business Trust?",
-        description: "Learn the basic definition and key concepts of business trust structures.",
-        type: "video",
-        duration: "15:30",
-        completed: true,
-        locked: false,
-        thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000",
-        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-        content: `
-          <h2>Understanding Business Trust</h2>
-          <p>A business trust is a legal entity created to hold and manage business assets. Unlike corporations or partnerships, business trusts offer unique advantages in terms of flexibility and tax treatment.</p>
-          
-          <h3>Key Characteristics</h3>
-          <ul>
-            <li>Separation of ownership and management</li>
-            <li>Flexible governance structure</li>
-            <li>Pass-through taxation benefits</li>
-            <li>Limited liability protection</li>
-          </ul>
-          
-          <h3>Common Use Cases</h3>
-          <p>Business trusts are commonly used in real estate investment, asset management, and succession planning. They provide a robust framework for managing complex business relationships while maintaining operational flexibility.</p>
-        `,
-        transcript: [
-          { time: '00:00', text: 'Welcome to the introduction of business trust.' },
-          { time: '01:30', text: 'In this lesson, we will cover the basics of business trust.' },
-          { time: '03:45', text: 'Understanding the legal structure is crucial for any business owner.' },
-          // Add more transcript entries as needed
-        ]
-      },
-      "2": {
-        id: "2",
-        moduleId: "1", 
-        title: "Types of Business Trusts",
-        description: "Explore different types of business trusts and their specific use cases.",
-        type: "text",
-        duration: "8 min read",
-        completed: false,
-        locked: false,
-        thumbnail: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=1000",
-        videoUrl: "",
-        content: `
-          <h2>Types of Business Trusts</h2>
-          <p>There are several types of business trusts, each designed for specific purposes and circumstances. Understanding these variations is crucial for selecting the right structure for your business needs.</p>
-          
-          <h3>1. Statutory Business Trusts</h3>
-          <p>These are trusts created under specific state statutes that govern their formation and operation. They offer standardized structures with well-defined legal frameworks.</p>
-          
-          <h3>2. Common  Law Business Trusts</h3>
-          <p>Also known as Massachusetts Trusts, these are created under common law principles without specific statutory authorization. They offer greater flexibility but may face more legal uncertainty.</p>
-          
-          <h3>3. Real Estate Investment Trusts (REITs)</h3>
-          <p>Specialized business trusts that focus on real estate investments. REITs must meet specific requirements to qualify for favorable tax treatment.</p>
-          
-          <h3>4. Asset Protection Trusts</h3>
-          <p>Designed primarily to protect assets from creditors while maintaining some level of beneficial interest for the settlor.</p>
-          
-          <h3>Choosing the Right Type</h3>
-          <p>The choice of business trust type depends on factors such as the nature of assets, tax objectives, liability concerns, and regulatory requirements in your jurisdiction.</p>
-        `,
-        transcript: []
-      }
-    },
-    "2": {
-      "1": {
-        id: "1",
-        moduleId: "2",
-        title: "Introduction to Context API",
-        description: "Learn about the React Context API and its use cases",
-        type: "text",
-        duration: "8 min read",
-        completed: true,
-        locked: false,
-        thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1000",
-        videoUrl: "",
-        content: `
-          <h2>Introduction to React Context API</h2>
-          <p>The React Context API provides a way to pass data through the component tree without having to pass props down manually at every level. This is particularly useful for data that can be considered "global" for a tree of React components.</p>
-          
-          <h3>When to Use Context</h3>
-          <ul>
-            <li>Theme data (dark mode, light mode)</li>
-            <li>User authentication state</li>
-            <li>Language/locale settings</li>
-            <li>Application-wide settings</li>
-          </ul>
-          
-          <h3>Benefits of Context API</h3>
-          <p>Context helps avoid prop drilling - the process of passing data through many components that don't actually need the data themselves. It creates a more maintainable and cleaner component structure.</p>
-          
-          <h3>When NOT to Use Context</h3>
-          <p>Context is not a replacement for all prop passing. It should be used sparingly because it makes components less reusable. If you only want to avoid passing some props through many levels, component composition is often a simpler solution than context.</p>
-        `,
-        transcript: []
-      },
-      "2": {
-        id: "2",
-        moduleId: "2",
-        title: "Creating a Context",
-        description: "Learn how to create a context and provide it to your component tree.",
-        type: "video",
-        duration: "18:45",
-        completed: true,
-        locked: false,
-        thumbnail: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000",
-        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-        content: `
-          <h2>Creating a Context in React</h2>
-          <p>React's Context API provides a way to share values like themes, user data, or any other application state between components without having to explicitly pass props through every level of the component tree.</p>
-          
-          <h3>Step 1: Create a Context</h3>
-          <p>The first step is to create a context using the <code>createContext</code> function.</p>
-          
-          <pre><code>
-import React, { createContext } from 'react';
-
-const ThemeContext = createContext('light');
-export default ThemeContext;
-          </code></pre>
-          
-          <h3>Step 2: Create a Provider Component</h3>
-          <p>Next, create a provider component that uses the Context.Provider to pass the value down the component tree.</p>
-          
-          <pre><code>
-import React, { useState } from 'react';
-import ThemeContext from './ThemeContext';
-
-const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light');
+  const { setSidebarCollapsed } = useContext(SidebarContext);
   
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-  };
+  console.log('LessonView rendered with params:', { courseId, moduleId });
   
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
-          </code></pre>
-        `,
-        transcript: [
-          { time: '00:00', text: 'Welcome to the introduction of React Context API.' },
-          { time: '01:30', text: 'In this lesson, we will cover the basics of React Context API.' },
-          { time: '03:45', text: 'Understanding the Context API is crucial for any React developer.' },
-          // Add more transcript entries as needed
-        ]
+  const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [moduleDetails, setModuleDetails] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch module and lessons data
+  useEffect(() => {
+    console.log('LessonView component mounted with courseId:', courseId, 'moduleId:', moduleId);
+    if (courseId && moduleId) {
+      fetchModuleLessons();
+    }
+  }, [courseId, moduleId]);
+
+  const fetchModuleLessons = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching lessons for courseId:', courseId, 'moduleId:', moduleId);
+      
+      // Fetch both module details and lessons
+      const [moduleResponse, lessonsResponse] = await Promise.all([
+        axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/view`,
+          {
+            headers: getAuthHeader(),
+            withCredentials: true,
+          }
+        ),
+        axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
+          {
+            headers: getAuthHeader(),
+            withCredentials: true,
+          }
+        )
+      ]);
+
+      console.log('Module response:', moduleResponse.data);
+      console.log('Lessons response:', lessonsResponse.data);
+
+      // Handle module details response
+      const moduleData = moduleResponse.data.data || moduleResponse.data;
+      setModuleDetails({
+        title: moduleData.title || moduleData.module_title || 'Module',
+        description: moduleData.description || moduleData.module_description || '',
+        totalModules: moduleData.total_modules || 0,
+        duration: moduleData.duration || moduleData.total_duration || 0
+      });
+      
+      // Handle lessons response
+      let lessonsData = [];
+      if (Array.isArray(lessonsResponse.data)) {
+        lessonsData = lessonsResponse.data;
+      } else if (lessonsResponse.data?.data) {
+        lessonsData = Array.isArray(lessonsResponse.data.data) 
+          ? lessonsResponse.data.data 
+          : [lessonsResponse.data.data];
+      } else if (lessonsResponse.data?.lessons) {
+        lessonsData = Array.isArray(lessonsResponse.data.lessons)
+          ? lessonsResponse.data.lessons
+          : [lessonsResponse.data.lessons];
       }
+      
+      // Normalize lesson data to ensure consistent field names
+      const normalizedLessons = lessonsData.map(lesson => ({
+        id: lesson.id || lesson.lesson_id,
+        title: lesson.title || lesson.lesson_title || 'Untitled Lesson',
+        description: lesson.description || lesson.lesson_description || 'No description available.',
+        order: lesson.order || lesson.lesson_order || 0,
+        status: lesson.status || lesson.lesson_status || 'DRAFT',
+        duration: lesson.duration || lesson.lesson_duration || '0 min',
+        thumbnail: lesson.thumbnail || lesson.lesson_thumbnail || null,
+        updatedAt: lesson.updatedAt || lesson.updated_at || lesson.createdAt || lesson.created_at,
+        type: lesson.type || lesson.lesson_type || 'text'
+      }));
+      
+      // Sort lessons by order
+      normalizedLessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      setLessons(normalizedLessons);
+      
+    } catch (err) {
+      console.error("Error fetching module lessons:", err);
+      setError("Failed to load module lessons. Please try again later.");
+      toast({
+        title: "Error",
+        description: "Failed to load lessons. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const lesson = lessonData[moduleId]?.[lessonId] || lessonData["2"]["2"];
-
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
+  const filteredLessons = useMemo(() => {
+    if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
+      return [];
     }
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleMuteToggle = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleSeek = (value) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = value[0];
-    }
-  };
-
-  const handleVolumeChange = (value) => {
-    setVolume(value);
-    if (videoRef.current) {
-      videoRef.current.volume = value[0] / 100;
-    }
-  };
-
-  const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-  };
-
-  const handleBookmark = () => {
-    toast({
-      title: 'Bookmark added',
-      description: 'This lesson has been bookmarked.',
+    
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return lessons;
+    
+    return lessons.filter(lesson => {
+      if (!lesson) return false;
+      const title = (lesson.title || '').toLowerCase();
+      const description = (lesson.description || '').toLowerCase();
+      return title.includes(query) || description.includes(query);
     });
+  }, [lessons, searchQuery]);
+
+  const handleViewLesson = (lesson) => {
+    // Close the sidebar before navigating
+    if (setSidebarCollapsed) {
+      setSidebarCollapsed(true);
+    }
+    // Navigate to individual lesson content view
+    navigate(`/dashboard/courses/${courseId}/modules/${moduleId}/lesson/${lesson.id}/content`);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PUBLISHED':
+        return 'default';
+      case 'DRAFT':
+        return 'secondary';
+      case 'COMPLETED':
+        return 'success';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status?.toUpperCase()) {
+      case 'PUBLISHED':
+        return <Play className="h-4 w-4" />;
+      case 'COMPLETED':
+        return <Clock className="h-4 w-4" />;
+      default:
+        return <FileText className="h-4 w-4" />;
+    }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link to={`/courses/module/${moduleId}/lessons`} className="flex items-center text-gray-600 hover:text-gray-900">
-              <ChevronLeft className="h-5 w-5 mr-1" />
-              <span>Back to Lessons</span>
-            </Link>
-            <h1 className="text-xl font-semibold text-gray-900">Module {moduleId}</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" onClick={handleBookmark}>
-              <Bookmark className="h-4 w-4 mr-2" />
-              Bookmark
-            </Button>
-            <Button variant="outline" size="sm">
-              <BookOpen className="h-4 w-4 mr-2" />
-              View Notes
-            </Button>
-          </div>
-        </div>
-        <div className="mt-2">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{formatTime(currentTime)} / {lesson.duration}</span>
-            <span>{progress}% Complete</span>
-          </div>
-        </div>
-      </header>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header with Back Button */}
+      <div className="mb-6 flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back to courses
+        </Button>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{lesson.title}</h2>
-          <p className="text-gray-600 mb-6">{lesson.description}</p>
+      {/* Module Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {moduleDetails?.title || 'Module Lessons'}
+        </h1>
+        {moduleDetails?.description && (
+          <p className="text-gray-600 text-lg mb-4">{moduleDetails.description}</p>
+        )}
+        
+        {/* Module Stats */}
+        <div className="flex flex-wrap gap-4 mb-6">
+          <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
+            <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+              {lessons.length}
+            </div>
+            <div>
+              <div className="text-sm font-medium text-green-700">Total Lessons</div>
+              <div className="text-xs text-green-600">{lessons.length}</div>
+            </div>
+          </div>
           
-          {/* Video Player */}
-          {lesson.type === "video" && lesson.videoUrl && (
-            <div className="bg-black rounded-lg overflow-hidden mb-8 shadow-lg">
-              <div className="relative pt-[56.25%]"> {/* 16:9 Aspect Ratio */}
-                <video
-                  ref={videoRef}
-                  className="absolute inset-0 w-full h-full"
-                  onTimeUpdate={handleTimeUpdate}
-                  onLoadedMetadata={(e) => setDuration(e.target.duration)}
-                  onEnded={() => setIsPlaying(false)}
-                  src={lesson.videoUrl}
-                />
-                
-                {/* Video Controls */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                  <div className="flex items-center space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-white hover:bg-white/20"
-                      onClick={handlePlayPause}
-                    >
-                      {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-                    </Button>
-                    
-                    <div className="flex-1 flex items-center space-x-2">
-                      <span className="text-xs text-white">{formatTime(currentTime)}</span>
-                      <Slider
-                        value={[currentTime]}
-                        max={duration || 100}
-                        step={0.1}
-                        onValueChange={handleSeek}
-                        className="flex-1"
-                      />
-                      <span className="text-xs text-white">{formatTime(duration)}</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white hover:bg-white/20"
-                        onClick={handleMuteToggle}
-                      >
-                        {isMuted || volume[0] === 0 ? (
-                          <VolumeX className="h-5 w-5" />
-                        ) : (
-                          <Volume2 className="h-5 w-5" />
-                        )}
-                      </Button>
-                      <Slider
-                        value={volume}
-                        max={100}
-                        step={1}
-                        onValueChange={handleVolumeChange}
-                        className="w-24"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white hover:bg-white/20"
-                      >
-                        <Maximize2 className="h-5 w-5" />
-                      </Button>
+          <div className="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">
+            <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-semibold text-sm">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-purple-700">Duration</div>
+              <div className="text-xs text-purple-600">{moduleDetails?.duration || '0'} hr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Total Count */}
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2 text-gray-600">
+          <Clock className="h-5 w-5" />
+          <span>Total Lessons: {filteredLessons.length}</span>
+        </div>
+        
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search lessons..."
+            className="pl-10 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[200px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading lessons...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center p-6 bg-red-50 rounded-lg">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Lessons</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <Button variant="outline" onClick={fetchModuleLessons}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+          </Button>
+        </div>
+      ) : filteredLessons.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredLessons.map((lesson, index) => (
+            <Card key={lesson.id || `lesson-${index}`} className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+              {/* Lesson Thumbnail */}
+              <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
+                {lesson.thumbnail ? (
+                  <img 
+                    src={lesson.thumbnail} 
+                    alt={lesson.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-white text-center">
+                      <div className="text-4xl font-bold mb-2">LESSON {lesson.order}</div>
+                      <div className="text-sm opacity-80">{lesson.type?.toUpperCase() || 'LESSON'}</div>
                     </div>
                   </div>
+                )}
+                
+                {/* Status Badge */}
+                <div className="absolute top-3 right-3">
+                  <Badge variant={getStatusColor(lesson.status)} className="flex items-center gap-1">
+                    {getStatusIcon(lesson.status)}
+                    {lesson.status || 'DRAFT'}
+                  </Badge>
                 </div>
               </div>
+
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg line-clamp-2">
+                  {lesson.title}
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent className="pb-4">
+                <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                  {lesson.description}
+                </p>
+                
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                  <span className="flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    Order: {lesson.order}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {lesson.duration}
+                  </span>
+                </div>
+                
+                {lesson.updatedAt && (
+                  <div className="text-xs text-gray-400">
+                    Updated: {new Date(lesson.updatedAt).toLocaleDateString()}
+                  </div>
+                )}
+              </CardContent>
+              
+              <CardFooter className="pt-0">
+                <Button 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => handleViewLesson(lesson)}
+                >
+                  <Play className="h-4 w-4" /> Start Lesson
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-dashed border-blue-200">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="h-10 w-10 text-white" />
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            {searchQuery ? 'No matching lessons found' : 'Lessons Coming Soon!'}
+          </h3>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            {searchQuery 
+              ? 'Try a different search term to find the lessons you\'re looking for.' 
+              : 'We\'re working hard to bring you amazing lessons. Check back soon for exciting new content!'}
+          </p>
+          {searchQuery ? (
+            <Button variant="outline" onClick={() => setSearchQuery('')} className="bg-white hover:bg-gray-50">
+              Clear Search
+            </Button>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+              <span>Stay tuned for updates</span>
             </div>
           )}
-          
-          {/* Transcript Section */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Transcript</h3>
-              <div className="space-y-4">
-                {lesson.transcript.map((item, index) => (
-                  <div key={index} className="flex">
-                    <span className="text-sm font-medium text-gray-500 w-16 flex-shrink-0">
-                      {item.time}
-                    </span>
-                    <p className="text-sm text-gray-700">{item.text}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            <Button variant="outline" asChild>
-              <Link to={`/courses/module/${moduleId}/lesson/${parseInt(lessonId) - 1}`}>
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous Lesson
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link to={`/courses/module/${moduleId}/lesson/${parseInt(lessonId) + 1}`}>
-                Next Lesson
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Link>
-            </Button>
-          </div>
         </div>
-      </main>
+      )}
     </div>
   );
 };
