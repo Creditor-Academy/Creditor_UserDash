@@ -112,21 +112,36 @@ export async function deleteGroup(groupId) {
 
 /**
  * Create a post inside a group
- * @param {Object} postData - Post payload
+ * @param {Object|FormData} postData - Post payload (Object for JSON, FormData for file upload)
  * @param {string} postData.group_id - Target group ID
  * @param {"POST"|"ANNOUNCEMENT"} postData.type - Type of post
  * @param {string|null} postData.title - Optional title
  * @param {string} postData.content - Body content
- * @param {string|null} postData.media_url - Optional media URL
+ * @param {string|null} postData.media_url - Optional media URL (for JSON payload)
+ * @param {File} postData.media - File object (for FormData payload)
  * @param {boolean} postData.is_pinned - Whether the post is pinned
  * @returns {Promise<Object>} API response
  */
 export async function createGroupPost(postData) {
   try {
     console.log("📤 groupService: Creating group post:", postData);
-    const response = await api.post('/groups/createPost', postData, {
+    
+    // Determine if we're sending FormData (file upload) or JSON
+    const isFormData = postData instanceof FormData;
+    
+    const config = {
       withCredentials: true,
-    });
+    };
+    
+    // If it's FormData, let axios handle the Content-Type header automatically
+    // If it's JSON, set the Content-Type to application/json
+    if (!isFormData) {
+      config.headers = {
+        'Content-Type': 'application/json',
+      };
+    }
+    
+    const response = await api.post('/groups/createPost', postData, config);
     console.log("✅ groupService: Group post created:", response.data);
     return response.data;
   } catch (error) {
