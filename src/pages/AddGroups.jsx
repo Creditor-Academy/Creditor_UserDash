@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye, UserPlus, Upload, File, Image, Video, FileText } from "lucide-react";
 import GroupInfo from "./GroupInfo";
-import { createGroup, getGroups, createGroupPost, addGroupMember, getGroupMembers } from "@/services/groupService";
+import { createGroup, getGroups, createGroupPost, addGroupMember, getGroupMembers, createCourseGroup } from "@/services/groupService";
+import { fetchAllCourses } from "@/services/courseService";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
 import { isInstructorOrAdmin, fetchAllUsers } from "@/services/userService";
@@ -59,19 +60,31 @@ const AddGroups = () => {
     name: "",
     description: "",
     type: "common",
-    courseName: "",
+    courseId: "",
     isPrivate: false
   });
 
-  // Sample courses for dropdown
-  const availableCourses = [
-    "Web Development Fundamentals",
-    "Data Science Basics",
-    "UI/UX Design Principles",
-    "Mobile App Development",
-    "Python Programming",
-    "JavaScript Mastery"
-  ];
+  // Courses state for course-related groups
+  const [courses, setCourses] = useState([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
+  const [coursesError, setCoursesError] = useState(null);
+
+  // Lazy-load courses when needed
+  const loadCourses = async () => {
+    try {
+      setIsLoadingCourses(true);
+      setCoursesError(null);
+      const result = await fetchAllCourses();
+      const normalized = Array.isArray(result) ? result : [];
+      setCourses(normalized);
+    } catch (err) {
+      console.error("❌ AddGroups: Error fetching courses", err);
+      setCoursesError(err.message || "Failed to load courses");
+      toast.error("Failed to load courses");
+    } finally {
+      setIsLoadingCourses(false);
+    }
+  };
 
   // Fetch all users for dropdown
   const fetchUsers = async () => {
@@ -101,9 +114,9 @@ const AddGroups = () => {
             id: group.id,
             name: group.name,
             description: group.description,
-            type: "common", // Default to common since API doesn't have this field
-            courseName: "", // API doesn't have course name
-            isPrivate: false, // Default to false since API doesn't have this field
+            type: group.group_type === 'COURSE' ? 'course' : 'common',
+            courseId: group.course_id || "",
+            isPrivate: false,
             createdAt: new Date(group.createdAt).toISOString().split('T')[0],
             memberCount: group.members ? group.members.length : 0,
             createdBy: group.created_by,
@@ -156,6 +169,13 @@ const AddGroups = () => {
     fetchGroups();
     fetchUsers(); // Fetch users on mount
   }, []);
+
+  // When switching to course type, load courses lazily
+  React.useEffect(() => {
+    if (showModal && formData.type === 'course' && courses.length === 0 && !isLoadingCourses) {
+      loadCourses();
+    }
+  }, [showModal, formData.type]);
 
   // Helper function to get user display name
   const getUserDisplayName = (user) => {
@@ -283,13 +303,25 @@ const AddGroups = () => {
         toast.success("Group updated successfully!");
       } else {
         // Create new group via API
-        const groupData = {
-          name: formData.name,
-          description: formData.description,
-          created_by: userProfile.id
-        };
-        
-        const response = await createGroup(groupData);
+        let response;
+        if (formData.type === 'course') {
+          if (!formData.courseId) {
+            throw new Error('Please select a course');
+          }
+          const payload = {
+            name: formData.name,
+            description: formData.description,
+            course_id: formData.courseId,
+          };
+          response = await createCourseGroup(payload);
+        } else {
+          const groupData = {
+            name: formData.name,
+            description: formData.description,
+            created_by: userProfile.id
+          };
+          response = await createGroup(groupData);
+        }
         
         if (response.success && response.data) {
           // Add the new group to the local state
@@ -298,7 +330,7 @@ const AddGroups = () => {
             name: response.data.name,
             description: response.data.description,
             type: formData.type,
-            courseName: formData.courseName || "",
+            courseId: response.data.course_id || formData.courseId || "",
             isPrivate: formData.isPrivate,
             createdAt: new Date(response.data.createdAt).toISOString().split('T')[0],
             memberCount: 0
@@ -317,7 +349,7 @@ const AddGroups = () => {
         name: "",
         description: "",
         type: "common",
-        courseName: "",
+        courseId: "",
         isPrivate: false
       });
       setShowModal(false);
@@ -335,7 +367,7 @@ const AddGroups = () => {
       name: group.name,
       description: group.description,
       type: group.type,
-      courseName: group.courseName || "",
+      courseId: group.courseId || "",
       isPrivate: group.isPrivate
     });
     setShowModal(true);
@@ -610,19 +642,22 @@ const AddGroups = () => {
                       Select Course *
                     </label>
                     <select
-                      name="courseName"
-                      value={formData.courseName}
+                      name="courseId"
+                      value={formData.courseId}
                       onChange={handleInputChange}
                       required
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     >
-                      <option value="">Choose a course</option>
-                      {availableCourses.map((course) => (
-                        <option key={course} value={course}>
-                          {course}
+                      <option value="">{isLoadingCourses ? 'Loading courses...' : 'Choose a course'}</option>
+                      {!isLoadingCourses && courses.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.name || course.title || course.course_name || course.id}
                         </option>
                       ))}
                     </select>
+                    {coursesError && (
+                      <div className="text-xs text-red-600 mt-1">{coursesError}</div>
+                    )}
                   </div>
                 )}
 

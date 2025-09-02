@@ -13,6 +13,7 @@ import {
   Pin
 } from "lucide-react";
 import { getGroupPosts } from "@/services/groupService";
+import { fetchAllUsers, isInstructorOrAdmin } from "@/services/userService";
 import { toast } from "sonner";
 
 const formatDate = (iso) => {
@@ -39,6 +40,9 @@ export default function GroupInfo({ group, onClose }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const adminView = isInstructorOrAdmin();
 
   useEffect(() => {
     const fetch = async () => {
@@ -64,6 +68,30 @@ export default function GroupInfo({ group, onClose }) {
     };
     fetch();
   }, [group?.id]);
+
+  // Load all users (for resolving comment author names)
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const users = await fetchAllUsers();
+        setAllUsers(Array.isArray(users) ? users : []);
+      } catch (e) {
+        // Non-blocking; comments will still render with fallback
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  const userIdToUser = React.useMemo(() => {
+    const map = new Map();
+    allUsers.forEach((u) => {
+      if (u?.id) map.set(u.id, u);
+    });
+    return map;
+  }, [allUsers]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -222,18 +250,53 @@ export default function GroupInfo({ group, onClose }) {
                         
                         {mediaUrl && (
                           <div className="px-4 pb-3">
-                            <div className="rounded-lg overflow-hidden border border-gray-200">
-                              <a href={mediaUrl} target="_blank" rel="noreferrer" className="block">
-                                <img
-                                  src={mediaUrl}
-                                  alt={post.title || "attachment"}
-                                  loading="lazy"
-                                  className="w-full h-48 object-cover hover:opacity-95 transition-opacity"
-                                />
-                              </a>
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center w-full overflow-hidden">
+                              {(() => {
+                                const url = String(mediaUrl);
+                                const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url);
+                                const isVideo = /\.(mp4|webm|ogg|mov|m4v)$/i.test(url);
+                                const isPdf = /\.(pdf)$/i.test(url);
+                                if (isImage) {
+                                  return (
+                                    <a href={url} target="_blank" rel="noreferrer" className="block">
+                                      <img
+                                        src={url}
+                                        alt={post.title || "attachment"}
+                                        loading="lazy"
+                                        className="max-w-full max-h-[70vh] w-auto h-auto object-contain block mx-auto hover:opacity-95 transition-opacity"
+                                      />
+                                    </a>
+                                  );
+                                }
+                                if (isVideo) {
+                                  return (
+                                    <video
+                                      src={url}
+                                      controls
+                                      className="w-full max-h-96"
+                                    />
+                                  );
+                                }
+                                if (isPdf) {
+                                  return (
+                                    <iframe
+                                      src={url}
+                                      title={post.title || "PDF attachment"}
+                                      className="w-full h-96 bg-white"
+                                    />
+                                  );
+                                }
+                                return (
+                                  <iframe
+                                    src={url}
+                                    title={post.title || "attachment"}
+                                    className="w-full h-96 bg-white"
+                                  />
+                                );
+                              })()}
                             </div>
                             <div className="mt-1 text-xs text-gray-500 inline-flex items-center gap-1">
-                              <ImageIcon className="h-3.5 w-3.5" /> Click image to view full size
+                              <ImageIcon className="h-3.5 w-3.5" /> Inline preview
                             </div>
                           </div>
                         )}
@@ -243,11 +306,11 @@ export default function GroupInfo({ group, onClose }) {
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
                               <Heart className="h-4 w-4" />
-                              <span>{post.likes_count || 0}</span>
+                              <span>{(post.likes_count != null ? post.likes_count : (Array.isArray(post.likes) ? post.likes.length : 0))}</span>
                             </button>
                             <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
                               <MessageCircle className="h-4 w-4" />
-                              <span>{post.comments_count || 0}</span>
+                              <span>{(post.comments_count != null ? post.comments_count : (Array.isArray(post.comments) ? post.comments.length : 0))}</span>
                             </button>
                           </div>
                           
@@ -255,6 +318,73 @@ export default function GroupInfo({ group, onClose }) {
                             {post.edited && "Edited • "}{formatDate(post.createdAt)}
                           </div>
                         </div>
+
+                        {/* Admin-only: who liked */}
+                        {adminView && Array.isArray(post.likes) && post.likes.length > 0 && (
+                          <div className="px-4 py-3 border-t border-gray-100">
+                            <details className="group">
+                              <summary className="text-sm font-medium text-gray-900 cursor-pointer select-none">View likes ({post.likes.length})</summary>
+                              <div className="mt-2 space-y-2">
+                                {post.likes.map((like) => {
+                                  const liker = userIdToUser.get(like.user_id) || {};
+                                  const name = [liker.first_name, liker.last_name].filter(Boolean).join(' ') || liker.name || liker.email || `User ${like.user_id?.slice(0,6) || ''}`;
+                                  const email = liker.email;
+                                  const letter = (liker.first_name?.[0] || liker.name?.[0] || liker.email?.[0] || 'U').toUpperCase();
+                                  return (
+                                    <div key={like.id} className="flex items-center gap-3">
+                                      <div className="w-7 h-7 bg-pink-100 text-pink-700 rounded-full flex items-center justify-center text-[11px] font-medium">
+                                        {letter}
+                                      </div>
+                                      <div className="flex items-center gap-2 text-sm text-gray-800">
+                                        <span className="font-medium">{name}</span>
+                                        {email && <span className="text-xs text-gray-500">• {email}</span>}
+                                      </div>
+                                      <div className="ml-auto text-[11px] text-gray-400">{formatDate(like.createdAt)}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </details>
+                          </div>
+                        )}
+
+                        {/* Comments */}
+                        {Array.isArray(post.comments) && post.comments.length > 0 && (
+                          <div className="px-4 py-3 border-t border-gray-100">
+                            <h6 className="text-sm font-medium text-gray-900">Comments</h6>
+                            <div className="mt-2 space-y-3">
+                              {post.comments.map((comment) => {
+                                const fromDirectory = userIdToUser.get(comment.user_id);
+                                const commenter = comment.user || fromDirectory || {};
+                                const displayName = [commenter.first_name, commenter.last_name].filter(Boolean).join(' ') || commenter.name || commenter.email || `User ${comment.user_id?.slice(0, 6) || ''}`;
+                                const avatarLetter = (commenter.first_name?.[0] || commenter.name?.[0] || commenter.email?.[0] || 'U').toUpperCase();
+                                return (
+                                  <div key={comment.id} className="flex items-start gap-3">
+                                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-medium text-gray-700">
+                                      {avatarLetter}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between">
+                                        <div className="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
+                                          <span>{displayName}</span>
+                                          {adminView && commenter.email && (
+                                            <span className="text-xs text-gray-500">• {commenter.email}</span>
+                                          )}
+                                        </div>
+                                        <div className="text-xs text-gray-400 ml-3 flex-shrink-0">
+                                          {formatDate(comment.createdAt)}
+                                        </div>
+                                      </div>
+                                      <div className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                                        {comment.content}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );

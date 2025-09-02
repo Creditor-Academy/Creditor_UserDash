@@ -24,6 +24,45 @@ export const getGroupMembers = async (groupId) => {
   }
 };
 
+/**
+ * Create a new course-related group
+ * @param {Object} payload
+ * @param {string} payload.name
+ * @param {string} payload.description
+ * @param {string} payload.course_id
+ */
+export async function createCourseGroup(payload) {
+  try {
+    console.log("📤 groupService: Creating course group:", payload);
+    const response = await api.post('/groups/course', payload, {
+      withCredentials: true,
+    });
+    console.log("✅ groupService: Course group created successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ groupService: Error creating course group:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get all groups
+ * @returns {Promise<Object>} Response with groups data
+ */
+export async function getGroups() {
+  try {
+    console.log("📤 groupService: Fetching groups");
+    
+    const response = await api.get(`${API_BASE}/groups`);
+    
+    console.log("✅ groupService: Groups fetched successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching group members:', error);
+    throw error;
+  }
+};
+
 // Add member to group
 export const addGroupMember = async (groupId, userId = null) => {
   try {
@@ -36,21 +75,7 @@ export const addGroupMember = async (groupId, userId = null) => {
   }
 };
 
-// Get all groups
-export const getAllGroups = async () => {
-  try {
-    const response = await api.get(`${API_BASE}/groups`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching groups:', error);
-    throw error;
-  }
-};
-
-// Alias for backwards compatibility
-export const getGroups = async () => {
-  return getAllGroups();
-};
+// (Removed duplicate getGroups definitions)
 
 // Create new group
 export const createGroup = async (groupData) => {
