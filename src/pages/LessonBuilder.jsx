@@ -23,7 +23,7 @@ import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-// Add custom CSS for slide animation
+// Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
   @keyframes slide-in-left {
     0% {
@@ -38,6 +38,148 @@ const slideInLeftStyle = `
   .animate-slide-in-left {
     animation: slide-in-left 0.3s ease-out;
   }
+  
+  /* Font family CSS for Quill editor */
+  .ql-font-arial {
+    font-family: Arial, sans-serif;
+  }
+  .ql-font-helvetica {
+    font-family: Helvetica, sans-serif;
+  }
+  .ql-font-times {
+    font-family: Times, serif;
+  }
+  .ql-font-courier {
+    font-family: Courier, monospace;
+  }
+  .ql-font-verdana {
+    font-family: Verdana, sans-serif;
+  }
+  .ql-font-georgia {
+    font-family: Georgia, serif;
+  }
+  .ql-font-impact {
+    font-family: Impact, sans-serif;
+  }
+  .ql-font-roboto {
+    font-family: Roboto, sans-serif;
+  }
+  
+  /* Fix font picker to show actual font names */
+  .ql-picker.ql-font .ql-picker-item[data-value=""]::before {
+    content: "Sans Serif" !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="arial"]::before {
+    content: "Arial" !important;
+    font-family: Arial, sans-serif !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="helvetica"]::before {
+    content: "Helvetica" !important;
+    font-family: Helvetica, sans-serif !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="times"]::before {
+    content: "Times New Roman" !important;
+    font-family: Times, serif !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="courier"]::before {
+    content: "Courier New" !important;
+    font-family: Courier, monospace !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="verdana"]::before {
+    content: "Verdana" !important;
+    font-family: Verdana, sans-serif !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="georgia"]::before {
+    content: "Georgia" !important;
+    font-family: Georgia, serif !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="impact"]::before {
+    content: "Impact" !important;
+    font-family: Impact, sans-serif !important;
+  }
+  .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
+    content: "Roboto" !important;
+    font-family: Roboto, sans-serif !important;
+  }
+  
+  /* Hide original text and show only ::before content */
+  .ql-picker.ql-font .ql-picker-item {
+    font-size: 0 !important;
+    position: relative !important;
+    height: 32px !important;
+  }
+  
+  .ql-picker.ql-font .ql-picker-item::before {
+    font-size: 14px !important;
+    position: absolute !important;
+    left: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Fix size picker to show actual size names */
+  .ql-picker.ql-size .ql-picker-item[data-value="small"]::before {
+    content: "Small" !important;
+  }
+  .ql-picker.ql-size .ql-picker-item[data-value=""]::before {
+    content: "Normal" !important;
+  }
+  .ql-picker.ql-size .ql-picker-item[data-value="large"]::before {
+    content: "Large" !important;
+  }
+  .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before {
+    content: "Huge" !important;
+  }
+  
+  .ql-picker.ql-size .ql-picker-item {
+    font-size: 0 !important;
+    position: relative !important;
+    height: 32px !important;
+  }
+  
+  .ql-picker.ql-size .ql-picker-item::before {
+    font-size: 14px !important;
+    position: absolute !important;
+    left: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Ensure dropdown positioning works properly */
+  .ql-picker-options {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    z-index: 10000 !important;
+    background: white !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    min-width: 120px !important;
+  }
+  
+  .ql-picker-item {
+    padding: 8px 12px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+  }
+  
+  .ql-picker-item:hover {
+    background-color: #f5f5f5 !important;
+  }
+  
+  /* Font size CSS for Quill editor */
+  .ql-size-small {
+    font-size: 0.75em;
+  }
+  .ql-size-large {
+    font-size: 1.5em;
+  }
+  .ql-size-huge {
+    font-size: 2.5em;
+  }
 `;
 
 // Inject the CSS
@@ -48,25 +190,22 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
-// Register font sizes
+
+// Register font families with proper display names
+const Font = Quill.import('formats/font');
+Font.whitelist = ['arial', 'helvetica', 'times', 'courier', 'verdana', 'georgia', 'impact', 'roboto'];
+Quill.register(Font, true);
+
+
+// Register font sizes - simplified to 4 options
 const Size = Quill.import('formats/size');
 Size.whitelist = ['small', 'normal', 'large', 'huge'];
 Quill.register(Size, true);
 
-// Register font families
-const Font = Quill.import('formats/font');
-Font.whitelist = ['arial', 'times-new-roman', 'courier-new', 'roboto', 'serif', 'sans-serif'];
-Quill.register(Font, true);
-
-// Font size whitelist for px values
-const PxSize = Quill.import('formats/size');
-PxSize.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '32px', '48px'];
-Quill.register(PxSize, true);
-
-// Universal toolbar for paragraph/content (no header, px size)
+// Universal toolbar for paragraph/content
 const paragraphToolbar = [
   [{ 'font': Font.whitelist }],
-  [{ 'size': PxSize.whitelist }],
+  [{ 'size': Size.whitelist }],
   ['bold', 'italic', 'underline', 'strike'],
   [{ 'color': [] }, { 'background': [] }],
   [{ 'list': 'ordered'}, { 'list': 'bullet' }],
@@ -78,12 +217,41 @@ const paragraphToolbar = [
 // Simplified toolbar for heading/subheading
 const headingToolbar = [
   [{ 'font': Font.whitelist }],
-  [{ 'size': PxSize.whitelist }],
+  [{ 'size': Size.whitelist }],
   ['bold', 'italic', 'underline'],
   [{ 'color': [] }, { 'background': [] }],
   [{ 'align': [] }],
   ['clean']
 ];
+
+// Comprehensive toolbar modules for all text types
+const getToolbarModules = (type = 'full') => {
+  const baseToolbar = [
+    [{ 'font': Font.whitelist }],
+    [{ 'size': Size.whitelist }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'align': [] }]
+  ];
+  
+  if (type === 'full') {
+    return {
+      toolbar: [
+        ...baseToolbar,
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        ['link', 'image'],
+        ['clean']
+      ]
+    };
+  }
+  
+  return {
+    toolbar: [
+      ...baseToolbar,
+      ['clean']
+    ]
+  };
+};
 
 function LessonBuilder({ viewMode: initialViewMode = false }) {
   const { sidebarCollapsed, setSidebarCollapsed } = useOutletContext();
@@ -607,6 +775,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
    
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
+      setCurrentTextType(block.textType);
       setShowTextEditorDialog(true);
 
       // Reset editors
@@ -614,111 +783,42 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorHeading('');
       setEditorSubheading('');
       setEditorContent('');
-
-      if (block.textType === 'heading_paragraph') {
-        setEditorHeading(block.heading || '');
-        setEditorContent(block.content || '');
-      } else if (block.textType === 'subheading_paragraph') {
-        setEditorSubheading(block.subheading || '');
-        setEditorContent(block.content || '');
+     
+      // Set content based on block type
+      if (block.textType === 'heading-paragraph') {
+        const parts = block.content ? block.content.split('|||') : ['', ''];
+        setEditorHeading(parts[0] || '');
+        setEditorContent(parts[1] || '');
+      } else if (block.textType === 'subheading-paragraph') {
+        const parts = block.content ? block.content.split('|||') : ['', ''];
+        setEditorSubheading(parts[0] || '');
+        setEditorContent(parts[1] || '');
       } else {
+        setEditorContent(block.content || '');
         setEditorHtml(block.content || '');
       }
-    } else if (block.type === 'video') {
-      setCurrentBlock(block);
-      setVideoTitle(block.videoTitle);
-      setVideoDescription(block.videoDescription || '');
-      setVideoUploadMethod(block.uploadMethod || 'file');
-      if (block.uploadMethod === 'url') {
-        setVideoUrl(block.originalUrl || block.videoUrl);
-        setVideoFile(null);
-        setVideoPreview('');
-      } else {
-        setVideoFile(block.videoFile);
-        setVideoPreview(block.videoUrl);
-        setVideoUrl('');
-      }
-      setShowVideoDialog(true);
-    } else if (block.type === 'audio') {
-      setCurrentBlock(block);
-      setAudioTitle(block.audioTitle);
-      setAudioDescription(block.audioDescription || '');
-      setAudioUploadMethod(block.uploadMethod || 'file');
-      if (block.uploadMethod === 'url') {
-        setAudioUrl(block.originalUrl || block.audioUrl);
-        setAudioFile(null);
-        setAudioPreview('');
-      } else {
-        setAudioFile(block.audioFile);
-        setAudioPreview(block.audioUrl);
-        setAudioUrl('');
-      }
-      setShowAudioDialog(true);
-    } else if (block.type === 'youtube') {
-      setCurrentYoutubeBlock(block);
-      setYoutubeTitle(block.youtubeTitle);
-      setYoutubeDescription(block.youtubeDescription || '');
-      setYoutubeUrl(block.youtubeUrl);
-      setShowYoutubeDialog(true);
-    } else if (block.type === 'link') {
-      setCurrentLinkBlock(block);
-      setLinkTitle(block.linkTitle);
-      setLinkUrl(block.linkUrl);
-      setLinkDescription(block.linkDescription || '');
-      setLinkButtonText(block.linkButtonText || 'Visit Link');
-      setLinkButtonStyle(block.linkButtonStyle || 'primary');
-      setShowLinkDialog(true);
-    } else if (block.type === 'image' && block.layout) {
-      // Handle image template editing
-      setCurrentImageBlock(block);
-      setImageTemplateText(block.text || '');
-      setImageTemplateUrl(block.imageUrl || '');
-      setShowImageEditDialog(true);
-    } else if (block.type === 'pdf') {
-      setCurrentBlock(block);
-      setPdfTitle(block.pdfTitle);
-      setPdfDescription(block.pdfDescription || '');
-      setPdfUploadMethod(block.uploadMethod || 'file');
-      if (block.uploadMethod === 'url') {
-        setPdfUrl(block.originalUrl || block.pdfUrl);
-        setPdfFile(null);
-        setPdfPreview('');
-      } else {
-        setPdfFile(block.pdfFile);
-        setPdfPreview(block.pdfUrl);
-        setPdfUrl('');
-      }
-      setShowPdfDialog(true);
     } else {
       setCurrentBlock(block);
-      setEditorContent(block.content || '');
-      setEditorHeading(block.heading || '');
-      setEditorSubheading(block.subheading || '');
       setEditModalOpen(true);
+     
+      // Reset editors
+      setEditorHeading('');
+      setEditorSubheading('');
+      setEditorContent('');
+     
+      // Set content based on block type
+      if (block.textType === 'heading-paragraph') {
+        const parts = block.content ? block.content.split('|||') : ['', ''];
+        setEditorHeading(parts[0] || '');
+        setEditorContent(parts[1] || '');
+      } else if (block.textType === 'subheading-paragraph') {
+        const parts = block.content ? block.content.split('|||') : ['', ''];
+        setEditorSubheading(parts[0] || '');
+        setEditorContent(parts[1] || '');
+      } else {
+        setEditorContent(block.content || '');
+      }
     }
-  };
-
-  const handleEditorSave = () => {
-    if (!currentBlock) return;
-
-    let newContent = editorContent;
-    if (currentBlock.textType === 'heading-paragraph') {
-      newContent = editorHeading + editorContent;
-    } else if (currentBlock.textType === 'subheading-paragraph') {
-      newContent = editorSubheading + editorContent;
-    }
-
-    updateBlockContent(
-      currentBlock.id,
-      newContent,
-      currentBlock.textType === 'heading-paragraph' ? editorHeading : null,
-      currentBlock.textType === 'subheading-paragraph' ? editorSubheading : null
-    );
-    setEditModalOpen(false);
-    setCurrentBlock(null);
-    setEditorContent('');
-    setEditorHeading('');
-    setEditorSubheading('');
   };
 
   const handleDragStart = (e, blockId) => {
@@ -1061,8 +1161,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         } else if (blockType === 'image') {
           htmlContent = `
             <div class="lesson-image ${block.layout || 'centered'}">
-              <img src="${block.imageUrl}" alt="${block.imageTitle || ''}" />
-              ${block.imageDescription ? `<p class="image-caption">${block.imageDescription}</p>` : ''}
+              <img
+                src="${block.imageUrl}"
+                alt="${block.imageTitle || ''}"
+                style="max-width: 100%; height: auto; border-radius: 0.5rem; ${block.layout?.includes('full') ? 'width: 100%;' : ''}"
+              />
+              ${block.imageDescription ? `
+                <p class="image-caption">${block.imageDescription}</p>
+              ` : ''}
             </div>`;
         }
 
@@ -1568,6 +1674,63 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setEditorHtml('');
     setCurrentTextBlockId(null);
     setCurrentTextType(null);
+  };
+
+  const handleEditorSave = () => {
+    if (!currentBlock) return;
+
+    let updatedContent = '';
+    const effectiveTextType = currentBlock.textType;
+
+    // Generate updated content based on text type
+    if (effectiveTextType === 'heading-paragraph') {
+      updatedContent = `${editorHeading}|||${editorContent}`;
+    } else if (effectiveTextType === 'subheading-paragraph') {
+      updatedContent = `${editorSubheading}|||${editorContent}`;
+    } else {
+      updatedContent = editorContent;
+    }
+
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === currentBlock.id
+          ? {
+              ...block,
+              content: updatedContent,
+              heading: effectiveTextType === 'heading-paragraph' ? editorHeading : block.heading,
+              subheading: effectiveTextType === 'subheading-paragraph' ? editorSubheading : block.subheading,
+              updatedAt: new Date().toISOString()
+            }
+          : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            block.block_id === currentBlock.id ? {
+              ...block,
+              content: updatedContent,
+              heading: effectiveTextType === 'heading-paragraph' ? editorHeading : block.heading,
+              subheading: effectiveTextType === 'subheading-paragraph' ? editorSubheading : block.subheading,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+
+    // Close the modal and reset
+    setEditModalOpen(false);
+    setCurrentBlock(null);
+    setEditorHeading('');
+    setEditorSubheading('');
+    setEditorContent('');
   };
 
   const handleImageDialogClose = () => {
@@ -2094,6 +2257,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
     };
   }, [setSidebarCollapsed]);
+
 
   useEffect(() => {
     const loadLessonData = async () => {
@@ -2654,7 +2818,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   >
                                     {/* Edit/Delete Controls */}
                                     {!isViewMode && (
-                                      <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                      <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                         <button
                                           onClick={() => {
                                             const blockType = block.type || 'text';
@@ -2849,6 +3013,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 const blockWithTextType = { ...block, textType: detectedTextType };
                                                 setCurrentBlock(blockWithTextType);
                                                 setCurrentTextType(detectedTextType);
+                                                setCurrentTextBlockId(block.block_id);
                                                
                                                 setShowTextEditorDialog(true);
                                                 break;
@@ -3270,14 +3435,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         theme="snow"
                                         value={block.text}
                                         onChange={(value) => handleImageBlockEdit(block.id, 'text', value)}
-                                        modules={{
-                                          toolbar: [
-                                            ['bold', 'italic', 'underline'],
-                                            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                            [{ 'align': [] }],
-                                            ['clean']
-                                          ]
-                                        }}
+                                        modules={getToolbarModules('full')}
                                         style={{ minHeight: '100px' }}
                                       />
                                     </div>
@@ -3559,22 +3717,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Heading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '350px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={{
-                            toolbar: [
-                              [{ 'header': [1, 2, 3, false] }],
-                              ['bold', 'italic', 'underline'],
-                              [{ 'color': [] }, { 'background': [] }],
-                              [{ 'align': [] }],
-                              ['clean']
-                            ]
-                          }}
+                          modules={getToolbarModules('heading')}
                           placeholder="Enter your heading text..."
-                          className="flex-1"
+                          style={{ height: '300px' }}
                         />
                       </div>
                     </div>
@@ -3588,22 +3738,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Subheading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '35px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={{
-                            toolbar: [
-                              [{ 'header': [2, 3, 4, false] }],
-                              ['bold', 'italic', 'underline'],
-                              [{ 'color': [] }, { 'background': [] }],
-                              [{ 'align': [] }],
-                              ['clean']
-                            ]
-                          }}
+                          modules={getToolbarModules('heading')}
                           placeholder="Enter your subheading text..."
-                          className="flex-1"
+                          style={{ height: '300px' }}
                         />
                       </div>
                     </div>
@@ -3617,23 +3759,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Paragraph
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '350px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={{
-                            toolbar: [
-                              ['bold', 'italic', 'underline', 'strike'],
-                              [{ 'color': [] }, { 'background': [] }],
-                              [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                              [{ 'align': [] }],
-                              ['link', 'image'],
-                              ['clean']
-                            ]
-                          }}
+                          modules={getToolbarModules('full')}
                           placeholder="Enter your paragraph text..."
-                          className="flex-1"
+                          style={{ height: '300px' }}
                         />
                       </div>
                     </div>
@@ -3653,15 +3786,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             theme="snow"
                             value={editorHeading}
                             onChange={setEditorHeading}
-                            modules={{
-                              toolbar: [
-                                [{ 'header': [1, 2, 3, false] }],
-                                ['bold', 'italic', 'underline'],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'align': [] }],
-                                ['clean']
-                              ]
-                            }}
+                            modules={getToolbarModules('heading')}
                             placeholder="Type and format your heading here"
                             style={{ height: '80px' }}
                           />
@@ -3676,16 +3801,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={{
-                              toolbar: [
-                                ['bold', 'italic', 'underline', 'strike'],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ 'align': [] }],
-                                ['link', 'image'],
-                                ['clean']
-                              ]
-                            }}
+                            modules={getToolbarModules('full')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                           />
@@ -3708,15 +3824,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             theme="snow"
                             value={editorSubheading}
                             onChange={setEditorSubheading}
-                            modules={{
-                              toolbar: [
-                                [{ 'header': [2, 3, 4, false] }],
-                                ['bold', 'italic', 'underline'],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'align': [] }],
-                                ['clean']
-                              ]
-                            }}
+                            modules={getToolbarModules('heading')}
                             placeholder="Type and format your subheading here"
                             style={{ height: '80px' }}
                           />
@@ -3731,16 +3839,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={{
-                              toolbar: [
-                                ['bold', 'italic', 'underline', 'strike'],
-                                [{ 'color': [] }, { 'background': [] }],
-                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                                [{ 'align': [] }],
-                                ['link', 'image'],
-                                ['clean']
-                              ]
-                            }}
+                            modules={getToolbarModules('full')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                           />
@@ -3762,14 +3861,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={{
-                            toolbar: [
-                              ['bold', 'italic', 'underline'],
-                              [{ 'color': [] }, { 'background': [] }],
-                              [{ 'align': [] }],
-                              ['clean']
-                            ]
-                          }}
+                          modules={getToolbarModules('full')}
                           placeholder="Edit your table content..."
                           className="flex-1"
                         />
@@ -3789,15 +3881,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                         theme="snow"
                         value={editorHtml}
                         onChange={setEditorHtml}
-                        modules={{
-                          toolbar: [
-                            [{ 'header': [1, 2, 3, false] }],
-                            ['bold', 'italic', 'underline'],
-                            [{ 'color': [] }, { 'background': [] }],
-                            [{ 'align': [] }],
-                            ['clean']
-                          ]
-                        }}
+                        modules={getToolbarModules('heading')}
                         placeholder="Enter your heading text..."
                         className="flex-1"
                       />
@@ -3841,7 +3925,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorHeading}
                       onChange={setEditorHeading}
                       theme="snow"
-                      modules={{ toolbar: headingToolbar }}
+                      modules={getToolbarModules('heading')}
                       placeholder="Type and format your heading here"
                       style={{ height: '80px' }}
                     />
@@ -3852,7 +3936,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={{ toolbar: paragraphToolbar }}
+                      modules={getToolbarModules('full')}
                       placeholder="Type and format your content here"
                       style={{ height: '180px' }}
                     />
@@ -3869,7 +3953,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorSubheading}
                       onChange={setEditorSubheading}
                       theme="snow"
-                      modules={{ toolbar: headingToolbar }}
+                      modules={getToolbarModules('heading')}
                       placeholder="Type and format your subheading here"
                       style={{ height: '80px' }}
                     />
@@ -3880,7 +3964,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={{ toolbar: paragraphToolbar }}
+                      modules={getToolbarModules('full')}
                       placeholder="Type and format your content here"
                       style={{ height: '180px' }}
                     />
@@ -3897,7 +3981,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={{ toolbar: paragraphToolbar }}
+                      modules={getToolbarModules('full')}
                       placeholder="Type and format your content here"
                       style={{ height: '300px' }}
                     />
@@ -3914,7 +3998,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={{ toolbar: paragraphToolbar }}
+                      modules={getToolbarModules('full')}
                       placeholder={`Type and format your ${currentBlock.type} here`}
                       style={{ height: '300px' }}
                     />
@@ -3931,7 +4015,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={{ toolbar: paragraphToolbar }}
+                      modules={getToolbarModules('full')}
                       placeholder="Type and format your list here"
                       style={{ height: '300px' }}
                     />
