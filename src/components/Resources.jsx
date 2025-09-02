@@ -181,6 +181,15 @@ const Resources = () => {
     }
   };
 
+  // Helper to find organizationId for a given category id from local state
+  const getOrganizationIdForCategory = (categoryId) => {
+    for (const orgId of Object.keys(organizationCategories)) {
+      const found = (organizationCategories[orgId] || []).some(c => c.id === categoryId);
+      if (found) return orgId;
+    }
+    return null;
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -726,16 +735,8 @@ const Resources = () => {
         updatedAt: response.data.updatedAt || new Date().toISOString()
     };
     
-    // Update categories for the specific organization
-    setOrganizationCategories(prev => ({
-      ...prev,
-      [organizationId]: [...(prev[organizationId] || []), newCategory]
-    }));
-    
-    // Update the main categories list if we're currently viewing this organization's categories
-    if (pendingOrg === organizationId || pendingOrg === "Global") {
-      setCategories(prev => [...prev, newCategory]);
-    }
+    // Re-fetch categories from backend to ensure consistency
+    await fetchCategoriesForOrganization(organizationId);
     
     setShowCategoryModal(false);
     setCategoryOrganizationId(null);
@@ -791,23 +792,11 @@ const Resources = () => {
         updatedAt: response.data.updatedAt || new Date().toISOString()
       };
     
-    // Update organization-specific categories first
-    setOrganizationCategories(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(orgId => {
-        updated[orgId] = updated[orgId].map(cat => 
-          cat.id === editingCategory.id ? updatedCategory : cat
-        );
-      });
-      return updated;
-    });
-    
-    // Update the main categories list if we're currently viewing categories
-    setCategories(prev => 
-      prev.map(cat => 
-        cat.id === editingCategory.id ? updatedCategory : cat
-      )
-    );
+    // Persist by re-fetching from backend for the category's organization
+    const orgIdForEdited = getOrganizationIdForCategory(editingCategory.id) || categoryOrganizationId || formData.organization || pendingOrg;
+    if (orgIdForEdited && orgIdForEdited !== "Global") {
+      await fetchCategoriesForOrganization(orgIdForEdited);
+    }
     
     setShowCategoryModal(false);
     setEditingCategory(null);
@@ -876,18 +865,12 @@ const Resources = () => {
     
     try {
       await categoryService.deleteCategory(deleteItem.id);
-    
-    // Update organization-specific categories first
-    setOrganizationCategories(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(orgId => {
-        updated[orgId] = updated[orgId].filter(cat => cat.id !== deleteItem.id);
-      });
-      return updated;
-    });
-    
-    // Update the main categories list
-    setCategories(prev => prev.filter(cat => cat.id !== deleteItem.id));
+
+    // Re-fetch categories for the affected organization to keep UI in sync
+    const orgIdForDeleted = getOrganizationIdForCategory(deleteItem.id) || categoryOrganizationId || formData.organization || pendingOrg;
+    if (orgIdForDeleted && orgIdForDeleted !== "Global") {
+      await fetchCategoriesForOrganization(orgIdForDeleted);
+    }
     
     // Clear form if the deleted category was selected
     if (formData.category === deleteItem.id) {
@@ -1669,9 +1652,8 @@ const Resources = () => {
                       const orgCategories = organizationCategories[newOrgValue] || [];
                       setCategories(orgCategories);
                     } else if (newOrgValue === "Global") {
-                      // For Global, show all categories from all organizations
-                      const allCategories = Object.values(organizationCategories).flat();
-                      setCategories(allCategories);
+                      // For Global, do not allow selecting a specific category
+                      setCategories([]);
                     } else {
                       setCategories([]);
                     }
@@ -1689,6 +1671,7 @@ const Resources = () => {
                   ))}
                 </select>
               </div>
+              {pendingOrg !== "Global" && (
               <div className="space-y-3">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
@@ -1711,6 +1694,7 @@ const Resources = () => {
                   ))}
                 </select>
               </div>
+              )}
               <div className="flex items-end">
                 <Button
                   className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg py-3 rounded-xl font-semibold transition-transform duration-200 hover:-translate-y-0.5"
@@ -1797,9 +1781,8 @@ const Resources = () => {
             </div>
           </div>
 
-          {/* File Type Filter - Only show when assets are loaded */}
-          {filteredResources.length > 0 && (
-            <div className="space-y-4 mb-6">
+          {/* File Type Filter - Always visible to allow resetting even when empty */}
+          <div className="space-y-4 mb-6">
               {/* File Type Filter Controls */}
               <div className="flex items-center justify-between bg-gradient-to-r from-slate-50 to-blue-50 p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div className="flex items-center gap-3">
@@ -1879,7 +1862,6 @@ const Resources = () => {
                 </div>
               )}
             </div>
-          )}
  
           {filteredResources.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
