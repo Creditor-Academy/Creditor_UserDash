@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,103 +6,114 @@ import { MessageSquare, Heart, Bell, Send, ThumbsUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { professionalAvatars } from "@/lib/avatar-utils";
-
-// Sample data for posts with professional avatars
-const initialPosts = [
-  {
-    id: 1,
-    author: {
-      name: "Sarah Adams",
-      avatar: professionalAvatars.female[0].url,
-      isAdmin: true
-    },
-    content: "Welcome to our new Web Development group! We'll be sharing resources, tips, and organizing study sessions here.",
-    timestamp: "2 hours ago",
-    likes: 15,
-    isAnnouncement: true,
-    comments: [
-      {
-        id: 1,
-        author: {
-          name: "Mike Johnson",
-          avatar: professionalAvatars.male[1].url
-        },
-        content: "Looking forward to learning with everyone!",
-        timestamp: "1 hour ago"
-      }
-    ]
-  },
-  {
-    id: 2,
-    author: {
-      name: "Alex Johnson",
-      avatar: professionalAvatars.male[0].url,
-      isAdmin: false
-    },
-    content: "Has anyone tried the new React hooks course? Would love to hear your thoughts before I enroll.",
-    timestamp: "Yesterday",
-    likes: 8,
-    isAnnouncement: false,
-    comments: []
-  }
-];
+import { useParams } from "react-router-dom";
+import { getGroupPosts, addComment, addLike } from "@/services/groupService";
 
 export function NewsPage() {
-  const [posts, setPosts] = useState(initialPosts);
+  const { groupId } = useParams();
+  const [posts, setPosts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [newCommentContents, setNewCommentContents] = useState({});
   const [showCommentFields, setShowCommentFields] = useState({});
   const [likeBurst, setLikeBurst] = useState({});
   const [highlightComment, setHighlightComment] = useState({});
-  const isAdmin = true; // In a real app, this would come from auth context
-  
-  const handleCommentSubmit = (postId) => {
-    if (!newCommentContents[postId] || !newCommentContents[postId].trim()) return;
-    
-    let createdCommentId = Date.now();
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [
-            ...post.comments,
-            {
-              id: createdCommentId,
-              author: {
-                name: "Alex Johnson",
-                avatar: ""
-              },
-              content: newCommentContents[postId],
-              timestamp: "Just now"
-            }
-          ]
-        };
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPosts = async () => {
+      try {
+        setIsLoading(true);
+        const res = await getGroupPosts(groupId);
+        const list = Array.isArray(res?.data) ? res.data : res;
+        const normalized = (list || []).map((p, idx) => {
+          const author = p.user || p.author || {};
+          const first = author.first_name || author.firstName || "";
+          const last = author.last_name || author.lastName || "";
+          const name = (first || last) ? `${first} ${last}`.trim() : author.name || "Member";
+          return {
+            id: p.id || p.post_id || idx,
+            author: {
+              name,
+              avatar: author.image || author.avatar || "",
+              isAdmin: author.role === "ADMIN" || false,
+            },
+            title: p.title || "",
+            content: p.content || "",
+            timestamp: p.createdAt ? new Date(p.createdAt).toLocaleString() : (p.created_at ? new Date(p.created_at).toLocaleString() : ""),
+            likes: Array.isArray(p.likes) ? p.likes.length : (p.likes_count || 0),
+            isAnnouncement: (p.type || "POST") === "ANNOUNCEMENT",
+            comments: Array.isArray(p.comments) ? p.comments.map((c, i) => ({
+              id: c.id || i,
+              author: { name: `${(c.user?.first_name||"")} ${(c.user?.last_name||"")}`.trim() || "User", avatar: c.user?.image || "" },
+              content: c.content || "",
+              timestamp: c.createdAt ? new Date(c.createdAt).toLocaleString() : ""
+            })) : [],
+            mediaUrl: p.media_url || "",
+            pinned: Boolean(p.is_pinned),
+          };
+        });
+        if (isMounted) {
+          setPosts(normalized);
+        }
+      } catch (e) {
+        if (isMounted) setError("Failed to load posts");
+        console.error("NewsPage: error fetching posts", e);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-      return post;
-    }));
-    
-    setNewCommentContents({...newCommentContents, [postId]: ""});
-    setShowCommentFields({...showCommentFields, [postId]: false});
-    setHighlightComment((prev) => ({ ...prev, [createdCommentId]: true }));
-    setTimeout(() => {
-      setHighlightComment((prev) => ({ ...prev, [createdCommentId]: false }));
-    }, 1200);
+    };
+    if (groupId) fetchPosts();
+    return () => { isMounted = false; };
+  }, [groupId]);
+  
+  const handleCommentSubmit = async (postId) => {
+    if (!newCommentContents[postId] || !newCommentContents[postId].trim()) return;
+    try {
+      await addComment(postId, { content: newCommentContents[postId] });
+      const createdCommentId = Date.now();
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: [
+              ...post.comments,
+              {
+                id: createdCommentId,
+                author: {
+                  name: "You",
+                  avatar: ""
+                },
+                content: newCommentContents[postId],
+                timestamp: "Just now"
+              }
+            ]
+          };
+        }
+        return post;
+      }));
+      setNewCommentContents({ ...newCommentContents, [postId]: "" });
+      setShowCommentFields({ ...showCommentFields, [postId]: false });
+      setHighlightComment((prev) => ({ ...prev, [createdCommentId]: true }));
+      setTimeout(() => {
+        setHighlightComment((prev) => ({ ...prev, [createdCommentId]: false }));
+      }, 1200);
+    } catch (e) {
+      console.error("NewsPage: error adding comment", e);
+    }
   };
   
-  const handleLike = (postId) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          likes: post.likes + 1
-        };
-      }
-      return post;
-    }));
-    setLikeBurst((prev) => ({ ...prev, [postId]: true }));
-    setTimeout(() => {
-      setLikeBurst((prev) => ({ ...prev, [postId]: false }));
-    }, 250);
+  const handleLike = async (postId) => {
+    try {
+      await addLike(postId);
+      setPosts(posts.map(post => post.id === postId ? { ...post, likes: (post.likes || 0) + 1 } : post));
+      setLikeBurst((prev) => ({ ...prev, [postId]: true }));
+      setTimeout(() => {
+        setLikeBurst((prev) => ({ ...prev, [postId]: false }));
+      }, 250);
+    } catch (e) {
+      console.error("NewsPage: error liking post", e);
+    }
   };
   
   const toggleCommentField = (postId) => {
@@ -110,14 +121,17 @@ export function NewsPage() {
       ...showCommentFields,
       [postId]: !showCommentFields[postId]
     });
-    
     if (!newCommentContents[postId]) {
-      setNewCommentContents({
-        ...newCommentContents,
-        [postId]: ""
-      });
+      setNewCommentContents({ ...newCommentContents, [postId]: "" });
     }
   };
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Loading posts...</div>;
+  }
+  if (error) {
+    return <div className="text-sm text-red-600">{error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -157,7 +171,26 @@ export function NewsPage() {
             </CardHeader>
             
             <CardContent>
+              {post.title && (
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">{post.title}</h3>
+              )}
               <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">{post.content}</p>
+              {post.mediaUrl && (
+                <div className="rounded-xl border border-gray-200 bg-white mt-3 overflow-hidden shadow-sm">
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 border-b border-gray-200">
+                    <span className="text-xs font-medium text-gray-600">Attachment</span>
+                  </div>
+                  <div className="p-3">
+                    {/* Render image when media url present - per backend response */}
+                    <img
+                      src={post.mediaUrl}
+                      alt="post attachment"
+                      className="w-full max-h-[420px] object-contain rounded-lg bg-gray-50"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              )}
             </CardContent>
             
             <CardFooter className="flex flex-col items-stretch">
@@ -208,7 +241,7 @@ export function NewsPage() {
               {showCommentFields[post.id] && (
                 <div className="flex gap-2 mt-3 w-full">
                   <Avatar className="h-6 w-6">
-                    <AvatarFallback>A</AvatarFallback>
+                    <AvatarFallback>Y</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 flex gap-2">
                     <Textarea

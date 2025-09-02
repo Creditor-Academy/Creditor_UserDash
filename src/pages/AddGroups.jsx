@@ -740,22 +740,22 @@ const AddGroups = () => {
                           <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                             {group.description}
                           </p>
-                                                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                             <span className="flex items-center gap-1">
-                               <Users className="h-3 w-3" />
-                               {group.memberCount} members
-                             </span>
-                             <span className="flex items-center gap-1">
-                               <MessageSquare className="h-3 w-3" />
-                               Public
-                             </span>
-                             <span>Created: {group.createdAt}</span>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {group.memberCount} members
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" />
+                              Public
+                            </span>
+                            <span>Created: {group.createdAt}</span>
                              {group.createdBy === userProfile?.id ? (
                                <span className="text-green-600 font-medium">Your Group</span>
                              ) : (
-                               <span className="text-blue-600">ID: {group.createdBy.slice(0, 8)}...</span>
-                             )}
-                           </div>
+                              <span className="text-blue-600">ID: {group.createdBy.slice(0, 8)}...</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       
@@ -862,10 +862,10 @@ const AddGroups = () => {
                              </Button>
                            </>
                          )}
-                         <Button
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => handleDelete(group.id)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(group.id)}
                            onMouseEnter={() => setHoveredButton(`${group.id}-delete`)}
                            onMouseLeave={() => setHoveredButton(null)}
                            className={`h-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-200 ease-in-out overflow-hidden cursor-default ${
@@ -878,7 +878,7 @@ const AddGroups = () => {
                            <span className={`transition-all duration-200 whitespace-nowrap ${
                              hoveredButton === `${group.id}-delete` ? 'opacity-100 w-auto' : 'opacity-0 w-0'
                            }`}>Delete</span>
-                         </Button>
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -1030,13 +1030,13 @@ const AddGroups = () => {
                     } else {
                       // If no file, send as JSON with optional media_url
                       payload = {
-                        group_id: selectedGroupId,
-                        type: postForm.type || "POST",
-                        title: postForm.title ? postForm.title : null,
-                        content: postForm.content,
-                        media_url: postForm.media_url ? postForm.media_url : null,
-                        is_pinned: !!postForm.is_pinned,
-                      };
+                      group_id: selectedGroupId,
+                      type: postForm.type || "POST",
+                      title: postForm.title ? postForm.title : null,
+                      content: postForm.content,
+                      media_url: postForm.media_url ? postForm.media_url : null,
+                      is_pinned: !!postForm.is_pinned,
+                    };
                     }
                     
                     const res = await createGroupPost(payload);
@@ -1161,12 +1161,12 @@ const AddGroups = () => {
                         Or enter URL manually
                       </summary>
                       <div className="mt-2">
-                        <Input
-                          value={postForm.media_url}
-                          onChange={(e) => setPostForm({ ...postForm, media_url: e.target.value })}
-                          placeholder="https://..."
+                  <Input
+                    value={postForm.media_url}
+                    onChange={(e) => setPostForm({ ...postForm, media_url: e.target.value })}
+                    placeholder="https://..."
                           className="border-gray-300 focus:border-blue-500 text-sm"
-                        />
+                  />
                       </div>
                     </details>
                   </div>

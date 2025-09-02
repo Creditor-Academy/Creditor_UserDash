@@ -47,6 +47,11 @@ export const getAllGroups = async () => {
   }
 };
 
+// Alias for backwards compatibility
+export const getGroups = async () => {
+  return getAllGroups();
+};
+
 // Create new group
 export const createGroup = async (groupData) => {
   try {
@@ -102,7 +107,7 @@ export async function createGroupPost(postData) {
       };
     }
     
-    const response = await api.post('/groups/createPost', postData, config);
+    const response = await api.post(`${API_BASE}/groups/createPost`, postData, config);
     console.log("✅ groupService: Group post created:", response.data);
     return response.data;
   } catch (error) {
@@ -129,17 +134,6 @@ export const getGroupPosts = async (groupId) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching group posts:', error);
-    throw error;
-  }
-};
-
-// Create group post
-export const createGroupPost = async (postData) => {
-  try {
-    const response = await api.post(`${API_BASE}/groups/createPost`, postData);
-    return response.data;
-  } catch (error) {
-    console.error('Error creating group post:', error);
     throw error;
   }
 };
