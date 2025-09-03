@@ -3,6 +3,7 @@ import { useParams, useNavigate, useOutletContext, useLocation } from 'react-rou
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
+import { uploadImage } from '@/services/imageUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
@@ -181,6 +182,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [lessonTitle, setLessonTitle] = useState('Untitled Lesson');
   const [lessonData, setLessonData] = useState(location.state?.lessonData || null);
   const [loading, setLoading] = useState(true);
+  const [imageUploading, setImageUploading] = useState({});
+  const [mainImageUploading, setMainImageUploading] = useState(false);
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [isViewMode, setIsViewMode] = useState(initialViewMode);
@@ -245,6 +248,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [pdfPreview, setPdfPreview] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfUploadMethod, setPdfUploadMethod] = useState('file');
+  const [mainPdfUploading, setMainPdfUploading] = useState(false);
 
   // Image block templates
   const imageTemplates = [
@@ -952,8 +956,71 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           .join('; ');
 
         html = `<div class="lesson-block text-block" style="${styleString}">${block.content}</div>`;
+      } else if (block.type === 'image') {
+        // Prefer saved html_css if available (preserves exact sizing/styles)
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: reconstruct based on layout from block or details
+          const imageUrl = block.imageUrl || block.details?.image_url || '';
+          const layout = block.layout || block.details?.layout || 'centered';
+          const caption = (block.text || block.imageDescription || block.details?.caption || '').toString();
+          const title = block.imageTitle || block.details?.alt_text || 'Image';
+          if (layout === 'side-by-side') {
+            html = `
+              <div class="lesson-image side-by-side">
+                <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+                  <div>
+                    <img src="${imageUrl}" alt="${title}" class="w-full h-auto rounded-lg shadow-lg" />
+                  </div>
+                  <div>
+                    ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
+                  </div>
+                </div>
+              </div>`;
+          } else if (layout === 'overlay') {
+            html = `
+              <div class="lesson-image overlay">
+                <div class="relative rounded-xl overflow-hidden">
+                  <img src="${imageUrl}" alt="${title}" class="w-full h-96 object-cover" />
+                  ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${caption}</span></div></div>` : ''}
+                </div>
+              </div>`;
+          } else if (layout === 'full-width') {
+            html = `
+              <div class="lesson-image full-width">
+                <div class="space-y-3">
+                  <img src="${imageUrl}" alt="${title}" class="w-full h-auto rounded" />
+                  ${caption ? `<p class="text-sm text-gray-600">${caption}</p>` : ''}
+                </div>
+              </div>`;
+          } else {
+            html = `
+              <div class="lesson-image centered">
+                <div class="text-center">
+                  <img src="${imageUrl}" alt="${title}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                  ${caption ? `<span class="text-gray-600 mt-4 italic text-lg">${caption}</span>` : ''}
+                </div>
+              </div>`;
+          }
+        }
+      } else if (block.type === 'pdf') {
+        // Prefer saved html_css to keep consistent embedding
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          const url = block.pdfUrl || block.details?.pdf_url || '';
+          const title = block.pdfTitle || block.details?.caption || 'PDF Document';
+          const description = block.pdfDescription || block.details?.description || '';
+          html = `
+            <div class="lesson-pdf">
+              ${title ? `<h3 class="pdf-title">${title}</h3>` : ''}
+              ${description ? `<p class="pdf-description">${description}</p>` : ''}
+              <iframe src="${url}" class="pdf-iframe" style="width: 100%; height: 600px; border: none; border-radius: 12px;"></iframe>
+            </div>
+          `;
+        }
       }
-      // ...existing code for other block types...
 
       return { html, css, js };
     });
@@ -1056,18 +1123,52 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             break;
 
           case 'image':
-            details = {
-              image_url: block.imageUrl,
-              caption: block.imageDescription || ''
-            };
-            htmlContent = `
-              <div style='margin: 20px 0; text-align: center;'>
-                <img src='${block.imageUrl}' alt='${block.imageTitle || ''}'
-                     style='max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'/>
-                ${block.imageDescription ?
-                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.imageDescription}</p>`
-                  : ''}
-              </div>`;
+            // Preserve layout-specific HTML so sizes/styles remain consistent after reload
+            {
+              const layout = block.layout || 'centered';
+              const textContent = (block.text || block.imageDescription || '').toString();
+              details = {
+                image_url: block.imageUrl,
+                caption: textContent,
+                alt_text: block.imageTitle || '',
+                layout: layout,
+                template: block.templateType || block.template || undefined,
+              };
+
+              if (layout === 'side-by-side') {
+                htmlContent = `
+                  <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+                    <div>
+                      <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
+                    </div>
+                    <div>
+                      ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+                    </div>
+                  </div>
+                `;
+              } else if (layout === 'overlay') {
+                htmlContent = `
+                  <div class="relative rounded-xl overflow-hidden">
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+                    ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+                  </div>
+                `;
+              } else if (layout === 'full-width') {
+                htmlContent = `
+                  <div class="space-y-3">
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded" />
+                    ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+                  </div>
+                `;
+              } else { // centered or default
+                htmlContent = `
+                  <div class="text-center">
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                    ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+                  </div>
+                `;
+              }
+            }
             break;
 
           case 'video':
@@ -1146,11 +1247,45 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               styles = '.lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
           }
         } else if (blockType === 'image') {
-          htmlContent = `
-            <div class="lesson-image ${block.layout || 'centered'}">
-              <img src="${block.imageUrl}" alt="${block.imageTitle || ''}" />
-              ${block.imageDescription ? `<p class="image-caption">${block.imageDescription}</p>` : ''}
-            </div>`;
+          const layout = block.layout || 'centered';
+          const textContent = (block.text || block.imageDescription || '').toString();
+          if (layout === 'side-by-side') {
+            htmlContent = `
+              <div class="lesson-image side-by-side">
+                <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+                  <div>
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
+                  </div>
+                  <div>
+                    ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+                  </div>
+                </div>
+              </div>`;
+          } else if (layout === 'overlay') {
+            htmlContent = `
+              <div class="lesson-image overlay">
+                <div class="relative rounded-xl overflow-hidden">
+                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+                  ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+                </div>
+              </div>`;
+          } else if (layout === 'full-width') {
+            htmlContent = `
+              <div class="lesson-image full-width">
+                <div class="space-y-3">
+                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded" />
+                  ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+                </div>
+              </div>`;
+          } else {
+            htmlContent = `
+              <div class="lesson-image centered">
+                <div class="text-center">
+                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                  ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+                </div>
+              </div>`;
+          }
         }
 
         return {
@@ -1362,36 +1497,63 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     );
   };
 
-  const handleImageFileUpload = (blockId, file) => {
-    if (file) {
-      // Check file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        alert('Please upload only JPG, PNG, GIF, or WebP images');
-        return;
+  const handleImageFileUpload = async (blockId, file) => {
+    if (!file) return;
+
+    // Set loading state for this specific block
+    setImageUploading(prev => ({ ...prev, [blockId]: true }));
+
+    try {
+      // Upload image to API
+      const uploadResult = await uploadImage(file, {
+        folder: 'lesson-images', // Optional: organize images in a specific folder
+        public: true // Make images publicly accessible
+      });
+
+      if (uploadResult.success && uploadResult.imageUrl) {
+        // Update the block with the uploaded image URL
+        handleImageBlockEdit(blockId, 'imageUrl', uploadResult.imageUrl);
+        handleImageBlockEdit(blockId, 'imageFile', file);
+        handleImageBlockEdit(blockId, 'uploadedImageData', uploadResult);
+        
+        toast.success('Image uploaded successfully!');
+      } else {
+        throw new Error('Upload failed - no image URL returned');
       }
-     
-      // Check file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Image size should be less than 5MB');
-        return;
-      }
-     
-      const imageUrl = URL.createObjectURL(file);
-      handleImageBlockEdit(blockId, 'imageUrl', imageUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error(error.message || 'Failed to upload image. Please try again.');
+      
+      // Fallback to local URL for immediate preview (optional)
+      const localImageUrl = URL.createObjectURL(file);
+      handleImageBlockEdit(blockId, 'imageUrl', localImageUrl);
       handleImageBlockEdit(blockId, 'imageFile', file);
+    } finally {
+      // Clear loading state
+      setImageUploading(prev => ({ ...prev, [blockId]: false }));
     }
   };
 
   const saveImageTemplateChanges = (blockId) => {
     setContentBlocks(prev =>
-      prev.map(block =>
-        block.id === blockId
-          ? { ...block, isEditing: false }
-          : block
-      )
+      prev.map(block => {
+        if (block.id !== blockId) return block;
+        if (block.type === 'image') {
+          const captionPlainText = getPlainText(block.text || '');
+          const updatedDetails = {
+            ...(block.details || {}),
+            image_url: block.imageUrl || block.details?.image_url || '',
+            caption: (captionPlainText || block.details?.caption || ''),
+            alt_text: block.imageTitle || block.details?.alt_text || '',
+            layout: block.layout || block.details?.layout,
+            template: block.templateType || block.details?.template,
+          };
+          // Clear html_css so the save/update pipeline regenerates with the latest URL
+          return { ...block, isEditing: false, html_css: '', imageDescription: captionPlainText, details: updatedDetails };
+        }
+        return { ...block, isEditing: false };
+      })
     );
-    // You can add additional save logic here (e.g., API call)
     console.log('Image template changes saved for block:', blockId);
   };
 
@@ -1688,17 +1850,42 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
-  const handleAddImage = () => {
+  const handleAddImage = async () => {
     if (!imageTitle || (!imageFile && !imagePreview)) {
       alert('Please fill in all required fields');
       return;
     }
 
+    // Set loading state
+    setMainImageUploading(true);
+
+    try {
     // Handle both File object and string URL cases
     let imageUrl = '';
+      let uploadedImageData = null;
+      
     if (imageFile && typeof imageFile === 'object' && 'name' in imageFile) {
-      // It's a File object
+        // It's a File object - upload to API
+        try {
+          const uploadResult = await uploadImage(imageFile, {
+            folder: 'lesson-images',
+            public: true
+          });
+          
+          if (uploadResult.success && uploadResult.imageUrl) {
+            imageUrl = uploadResult.imageUrl;
+            uploadedImageData = uploadResult;
+            toast.success('Image uploaded successfully!');
+          } else {
+            throw new Error('Upload failed - no image URL returned');
+          }
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          toast.error(error.message || 'Failed to upload image. Please try again.');
+          
+          // Fallback to local URL for immediate preview
       imageUrl = URL.createObjectURL(imageFile);
+        }
     } else if (typeof imageFile === 'string') {
       // It's already a URL string
       imageUrl = imageFile;
@@ -1780,6 +1967,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       text: textContent,
       imageFile: imageFile,
       imageUrl: imageUrl,
+      uploadedImageData: uploadedImageData,
       timestamp: new Date().toISOString(),
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
@@ -1814,6 +2002,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
    
     handleImageDialogClose();
+    } finally {
+      // Clear loading state
+      setMainImageUploading(false);
+    }
   };
 
   const handleEditImage = (blockId) => {
@@ -2164,7 +2356,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
-  const handleAddPdf = () => {
+  const handleAddPdf = async () => {
     // Validate required fields based on upload method
     if (!pdfTitle) {
       alert('Please enter a PDF title');
@@ -2181,10 +2373,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       return;
     }
 
+    setMainPdfUploading(true);
+
     // Create PDF URL based on upload method
     let finalPdfUrl = '';
+    let uploadedPdfData = null;
     if (pdfUploadMethod === 'file') {
-      finalPdfUrl = URL.createObjectURL(pdfFile);
+      try {
+        const result = await uploadImage(pdfFile, { fieldName: 'resource', folder: 'lesson-resources', public: true, type: 'pdf' });
+        if (result?.success && result?.imageUrl) {
+          finalPdfUrl = result.imageUrl;
+          uploadedPdfData = result;
+          toast.success('PDF uploaded successfully!');
+        } else {
+          throw new Error('Upload failed - no URL returned');
+        }
+      } catch (err) {
+        console.error('PDF upload error:', err);
+        toast.error(err.message || 'Failed to upload PDF. Using local preview.');
+        finalPdfUrl = URL.createObjectURL(pdfFile);
+      }
     } else {
       finalPdfUrl = pdfUrl;
     }
@@ -2199,7 +2407,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       pdfUrl: finalPdfUrl,
       uploadMethod: pdfUploadMethod,
       originalUrl: pdfUploadMethod === 'url' ? pdfUrl : null,
-      timestamp: new Date().toISOString()
+      uploadedPdfData,
+      timestamp: new Date().toISOString(),
+      details: {
+        pdf_url: finalPdfUrl,
+        caption: pdfTitle,
+        description: pdfDescription,
+      },
+      html_css: `
+        <div class="lesson-pdf">
+          ${pdfTitle ? `<h3 class="pdf-title">${pdfTitle}</h3>` : ''}
+          ${pdfDescription ? `<p class="pdf-description">${pdfDescription}</p>` : ''}
+          <iframe src="${finalPdfUrl}" class="pdf-iframe" style="width: 100%; height: 600px; border: none; border-radius: 12px;"></iframe>
+        </div>
+      `
     };
 
     if (currentBlock) {
@@ -2213,6 +2434,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
    
     handlePdfDialogClose();
+    setMainPdfUploading(false);
   };
 
   useEffect(() => {
@@ -2564,9 +2786,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         {/* Image Content */}
                                         {block.type === 'image' && (
                                           <div className="mb-8">
-                                            {(block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url) && (
+                                            {(block.html_css || block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url) && (
                                               <div>
-                                                {block.layout === 'side-by-side' ? (
+                                                {block.html_css && block.html_css.trim() ? (
+                                                  <div
+                                                    className="prose max-w-none"
+                                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                                  />
+                                                ) : ((block.layout || block.details?.layout) === 'side-by-side' ? (
                                                   <div className="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
                                                     <div>
                                                       <img
@@ -2581,7 +2808,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       </p>
                                                     </div>
                                                   </div>
-                                                ) : block.layout === 'overlay' ? (
+                                                ) : ((block.layout || block.details?.layout) === 'overlay') ? (
                                                   <div className="relative rounded-xl overflow-hidden">
                                                     <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
@@ -2596,7 +2823,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       </div>
                                                     </div>
                                                   </div>
-                                                ) : block.layout === 'centered' ? (
+                                                ) : ((block.layout || block.details?.layout) === 'centered') ? (
                                                   <div className="text-center">
                                                     <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
@@ -2609,7 +2836,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       </p>
                                                     )}
                                                   </div>
-                                                ) : block.layout === 'full-width' ? (
+                                                ) : ((block.layout || block.details?.layout) === 'full-width') ? (
                                                   <div className="w-full">
                                                     <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
@@ -2622,7 +2849,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       </p>
                                                     )}
                                                   </div>
-                                                ) : null}
+                                                ) : null)}
                                               </div>
                                             )}
                                           </div>
@@ -2736,26 +2963,24 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         {/* PDF Content */}
                                         {block.type === 'pdf' && (block.pdfUrl || block.details?.pdf_url) && (
                                           <div className="mb-8">
-                                            <div className="bg-orange-50 rounded-xl p-6 text-center border border-orange-100">
+                                            <div className="bg-orange-50 rounded-xl p-6 border border-orange-100">
                                               {(block.pdfTitle || block.details?.caption) && (
                                                 <h3 className="text-xl font-semibold text-gray-900 mb-3">
                                                   {block.pdfTitle || block.details?.caption}
                                                 </h3>
                                               )}
                                               {(block.pdfDescription || block.details?.description) && (
-                                                <p className="text-gray-700 mb-6 text-lg">
+                                                <p className="text-gray-700 mb-4 text-lg">
                                                   {block.pdfDescription || block.details?.description}
                                                 </p>
                                               )}
-                                              <a
-                                                href={block.pdfUrl || block.details?.pdf_url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center px-8 py-4 bg-orange-600 text-white rounded-xl font-semibold text-lg hover:bg-orange-700 transition-all transform hover:scale-105 shadow-lg"
-                                              >
-                                                <FileTextIcon className="h-5 w-5 mr-3" />
-                                                View PDF
-                                              </a>
+                                              <div className="w-full rounded-xl overflow-hidden border border-orange-200 bg-white">
+                                                <iframe
+                                                  src={block.pdfUrl || block.details?.pdf_url}
+                                                  className="w-full h-[600px]"
+                                                  title={block.pdfTitle || 'PDF Document'}
+                                                />
+                                              </div>
                                             </div>
                                           </div>
                                         )}
@@ -3347,7 +3572,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                 <div className="bg-gray-50 rounded-lg p-3">
                                   <div className="w-full border rounded-lg overflow-hidden">
                                     <iframe
-                                      src={block.pdfUrl}
+                                      src={block.pdfUrl || block.details?.pdf_url}
                                       className="w-full h-[400px]"
                                       title={block.pdfTitle || 'PDF Document'}
                                     />
@@ -3378,14 +3603,21 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           <input
                                             type="file"
                                             accept="image/*"
+                                            disabled={imageUploading[block.id]}
                                             onChange={(e) => {
                                               const file = e.target.files[0];
                                               if (file) {
                                                 handleImageFileUpload(block.id, file);
                                               }
                                             }}
-                                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                           />
+                                          {imageUploading[block.id] && (
+                                            <div className="flex items-center gap-2 text-sm text-blue-600">
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                              <span>Uploading...</span>
+                                            </div>
+                                          )}
                                         </div>
                                        
                                         {/* OR divider */}
@@ -3450,9 +3682,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                       <Button
                                         size="sm"
                                         onClick={() => saveImageTemplateChanges(block.id)}
-                                        className="px-4 bg-blue-600 hover:bg-blue-700"
+                                        disabled={imageUploading[block.id]}
+                                        className="px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                       >
-                                        Save Changes
+                                        {imageUploading[block.id] ? (
+                                          <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Uploading...
+                                          </>
+                                        ) : (
+                                          'Save Changes'
+                                        )}
                                       </Button>
                                     </div>
                                   </div>
@@ -4425,8 +4665,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <Button variant="outline" onClick={handleImageDialogClose}>
               Cancel
             </Button>
-            <Button onClick={handleAddImage} disabled={!imageTitle || (!imageFile && !imagePreview)}>
-              Add Image
+            <Button 
+              onClick={handleAddImage} 
+              disabled={!imageTitle || (!imageFile && !imagePreview) || mainImageUploading}
+            >
+              {mainImageUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Uploading...
+                </>
+              ) : (
+                'Add Image'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
