@@ -28,6 +28,7 @@ function QuizTakePage() {
   const [questions, setQuestions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
+  const [sequenceOrderMap, setSequenceOrderMap] = useState({}); // { [questionId]: [{id, text, orderIndex}] }
 
   const totalQuestions = questions.length;
   const progress = totalQuestions > 0 ? ((currentQuestion + 1) / totalQuestions) * 100 : 0;
@@ -69,6 +70,39 @@ function QuizTakePage() {
         // Set quiz data and questions from navigation state
         setQuizData(quizSession);
         setQuestions(initialQuestions);
+
+        // Initialize sequence order map with shuffled options for SEQUENCE questions
+        try {
+          const seqMap = {};
+          const shuffle = (arr) => {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i -= 1) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+          };
+          (initialQuestions || []).forEach((q) => {
+            const backendType = (q.question_type || q.type || '').toString().toUpperCase();
+            if (backendType === 'SEQUENCE' && Array.isArray(q.options) && q.options.length > 0) {
+              const shuffled = shuffle(q.options);
+              seqMap[q.id] = shuffled.map((opt, idx) => ({
+                id: opt.id ?? opt._id ?? String(idx),
+                text: opt.text ?? String(opt),
+                orderIndex: typeof opt.orderIndex === 'number' ? opt.orderIndex : idx,
+              }));
+            }
+          });
+          if (Object.keys(seqMap).length > 0) {
+            setSequenceOrderMap(seqMap);
+            // initialize answers with shuffled visible order (as array of texts)
+            const initialSeqAnswers = {};
+            Object.entries(seqMap).forEach(([qid, arr]) => {
+              initialSeqAnswers[qid] = arr.map(o => o.text);
+            });
+            setAnswers((prev) => ({ ...initialSeqAnswers, ...prev }));
+          }
+        } catch {}
         
         // Debug logging to see what data we received
         console.log('Quiz initialized with:', {
@@ -193,6 +227,17 @@ function QuizTakePage() {
       // Handle different question types - PREFER backend question_type when available
       const questionType = (question.question_type?.toLowerCase()) || (question.type?.toLowerCase());
       switch (questionType) {
+        case 'sequence': {
+          // Use current drag-and-drop order from sequenceOrderMap if available
+          const currentOrder = sequenceOrderMap[questionId]
+            || (Array.isArray(question.options) ? question.options.map((opt, idx) => ({ id: opt.id ?? opt._id ?? String(idx), text: opt.text ?? String(opt) })) : []);
+          const payloadOrder = (currentOrder || []).map((opt, idx) => ({ optionId: String(opt.id), order: idx }));
+          formattedAnswer.selectedOptionId = payloadOrder;
+          // Optional: include human-readable answer as array of texts (backend ignores or accepts)
+          formattedAnswer.answer = currentOrder.map(o => o.text);
+          console.log(`Sequence question ${questionId} formatted:`, formattedAnswer);
+          break;
+        }
         case 'mcq_multiple':
         case 'multiple_choice':
         case 'multiple choice':
@@ -612,6 +657,63 @@ function QuizTakePage() {
     // - Text/Descriptive: Text input, single answer
     // - Fill in blanks: Multiple text inputs, array of answers
     switch (renderType) {
+      case 'sequence': {
+        // Drag-and-drop ordering UI for SEQUENCE questions
+        const qid = question.id;
+        const currentOrder = sequenceOrderMap[qid] || (Array.isArray(question.options) ? question.options.map((opt, idx) => ({ id: opt.id ?? String(idx), text: opt.text ?? String(opt), orderIndex: typeof opt.orderIndex === 'number' ? opt.orderIndex : idx })) : []);
+
+        const setOrder = (next) => {
+          setSequenceOrderMap((prev) => ({ ...prev, [qid]: next }));
+          // Persist user's current visible order as the answer (array of texts)
+          handleAnswer(qid, next.map(o => o.text));
+        };
+
+        const onDragStart = (e, index) => {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', String(index));
+        };
+
+        const onDragOver = (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        };
+
+        const onDrop = (e, dropIndex) => {
+          e.preventDefault();
+          const dragIndex = Number(e.dataTransfer.getData('text/plain'));
+          if (Number.isNaN(dragIndex)) return;
+          if (dragIndex === dropIndex) return;
+          const next = [...currentOrder];
+          const [moved] = next.splice(dragIndex, 1);
+          next.splice(dropIndex, 0, moved);
+          setOrder(next);
+        };
+
+        return (
+          <div className="space-y-2">
+            <p className="text-sm text-gray-600">Drag and drop to arrange in the correct order.</p>
+            <div className="space-y-2">
+              {currentOrder.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-white shadow-sm cursor-move select-none"
+                  draggable
+                  onDragStart={(e) => onDragStart(e, idx)}
+                  onDragOver={onDragOver}
+                  onDrop={(e) => onDrop(e, idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold bg-gray-100 text-gray-700 rounded">{idx + 1}</span>
+                    <span className="text-gray-800">{item.text}</span>
+                  </div>
+                  <span className="text-xs text-gray-400">drag</span>
+                </div>
+              ))}
+            </div>
+            <div className="text-xs text-gray-500">Your current order will be submitted.</div>
+          </div>
+        );
+      }
       case 'mcq_single':
       case 'scq':
       case 'single_choice':
