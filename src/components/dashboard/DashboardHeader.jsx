@@ -10,12 +10,11 @@ import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
 import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
-import { fetchDetailedUserProfile } from "@/services/userService";
+import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
-  const { isInstructorOrAdmin, hasRole } = useAuth();
+  const { isInstructorOrAdmin } = useAuth();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
@@ -27,46 +26,16 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const [isLoadingEnrolled, setIsLoadingEnrolled] = useState(true);
   const [showEnrollmentAlert, setShowEnrollmentAlert] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(null);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [unreadNotifications, setUnreadNotifications] = useState(2); // Default count
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState(null);
-  const [apiNotifications, setApiNotifications] = useState([]);
+  const [viewerTimezone, setViewerTimezone] = useState(null);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
-
-  // Local notifications persistence helpers
-  const LOCAL_NOTIFS_KEY = 'local_notifications';
-  const READ_ALL_AT_KEY = 'notifications_read_all_at';
-  const readLocalNotifications = () => {
-    try {
-      const raw = localStorage.getItem(LOCAL_NOTIFS_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  };
-  const writeLocalNotifications = (items) => {
-    try {
-      localStorage.setItem(LOCAL_NOTIFS_KEY, JSON.stringify(items || []));
-    } catch {}
-  };
-  const readReadAllAt = () => {
-    try {
-      return localStorage.getItem(READ_ALL_AT_KEY) || null;
-    } catch {
-      return null;
-    }
-  };
-  const writeReadAllAt = (isoString) => {
-    try {
-      localStorage.setItem(READ_ALL_AT_KEY, isoString || "");
-    } catch {}
-  };
 
   // Fetch enrolled courses on component mount
   useEffect(() => {
@@ -85,119 +54,19 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     fetchEnrolledCourses();
   }, []);
 
-  // Centralized notifications fetcher
-  const refreshNotifications = async () => {
-    try {
-      const response = await fetchNotifications();
-      // Backend returns: { success: true, notifications: [...] }
-      let notificationsRaw = response.data?.notifications || [];
-      // Do not show ticket-reply notifications to admins
-      if (hasRole && hasRole('admin')) {
-        notificationsRaw = notificationsRaw.filter(n =>
-          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
-        );
-      }
-      const readAllAt = readReadAllAt();
-      const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
-      // Apply client-side read cutoff so items before readAllAt are treated as read
-      const notifications = notificationsRaw.map(n => {
-        if (!readAllAtTime) return n;
-        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
-        if (createdTime && createdTime <= readAllAtTime) {
-          return { ...n, read: true };
+  // Fetch current viewer profile to get timezone for consistent date formatting
+  useEffect(() => {
+    const loadViewerProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        if (profile && (profile.timezone || profile.timeZone)) {
+          setViewerTimezone(profile.timezone || profile.timeZone);
         }
-        return n;
-      });
-      
-      // Merge with local notifications currently in state by id
-      setApiNotifications(prev => {
-        const localItems = readLocalNotifications();
-        const byId = new Map();
-        [...localItems, ...notifications, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
-        const merged = Array.from(byId.values());
-        return merged;
-      });
-      
-      let localItems = readLocalNotifications().map(n => {
-        if (!readAllAtTime) return n;
-        const createdTime = n.created_at ? new Date(n.created_at).getTime() : null;
-        if (createdTime && createdTime <= readAllAtTime) {
-          return { ...n, read: true };
-        }
-        return n;
-      });
-      if (hasRole && hasRole('admin')) {
-        localItems = localItems.filter(n =>
-          (n.type || n.related_type)?.toString().toUpperCase() !== 'TICKET'
-        );
+      } catch (e) {
+        // Non-fatal
       }
-      const unread = [...notifications, ...localItems].filter(n => !n.read).length;
-      setUnreadNotifications(unread);
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-      // On failure, at least reflect local unread count
-      const localItems = readLocalNotifications();
-      setApiNotifications(prev => {
-        const byId = new Map();
-        [...localItems, ...prev].forEach(n => byId.set(String(n.id ?? n._id), n));
-        return Array.from(byId.values());
-      });
-      setUnreadNotifications(localItems.filter(n => !n.read).length);
-    }
-  };
-
-  // Retry helper to handle eventual consistency from backend
-  const refreshNotificationsWithRetry = async () => {
-    await refreshNotifications();
-    setTimeout(() => {
-      refreshNotifications();
-    }, 1500);
-  };
-
-  // Initial notifications load: hydrate locals, then refresh from API
-  useEffect(() => {
-    const locals = readLocalNotifications();
-    const readAllAt = readReadAllAt();
-    const readAllAtTime = readAllAt ? new Date(readAllAt).getTime() : null;
-    if (locals.length) {
-      const normalizedLocals = readAllAtTime
-        ? locals.map(n => {
-            const t = n.created_at ? new Date(n.created_at).getTime() : null;
-            return (t && t <= readAllAtTime) ? { ...n, read: true } : n;
-          })
-        : locals;
-      setApiNotifications(prev => [...normalizedLocals, ...prev]);
-      setUnreadNotifications(normalizedLocals.filter(n => !n.read).length);
-    }
-    refreshNotificationsWithRetry();
-  }, []);
-
-  // Refresh notifications when modal opens
-  useEffect(() => {
-    if (!notificationModalOpen) return;
-    refreshNotificationsWithRetry();
-  }, [notificationModalOpen]);
-
-  // Listen for global refresh events (e.g., after creating a course)
-  useEffect(() => {
-    const handler = () => refreshNotificationsWithRetry();
-    window.addEventListener('refresh-notifications', handler);
-    return () => window.removeEventListener('refresh-notifications', handler);
-  }, []);
-
-  // Listen for adding a local notification (frontend fallback)
-  useEffect(() => {
-    const handler = (e) => {
-      const incoming = e?.detail;
-      if (!incoming) return;
-      setApiNotifications(prev => [incoming, ...prev]);
-      if (!incoming.read) setUnreadNotifications(prev => prev + 1);
-      // Persist
-      const locals = readLocalNotifications();
-      writeLocalNotifications([incoming, ...locals]);
     };
-    window.addEventListener('add-local-notification', handler);
-    return () => window.removeEventListener('add-local-notification', handler);
+    loadViewerProfile();
   }, []);
 
   // Debounced search effect
@@ -315,23 +184,58 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   };
 
   const handleUserClick = async (userId) => {
-    // Only instructors/admins can access user profiles
-    if (isInstructorOrAdmin()) {
-      setShowDropdown(false);
-      setSearchQuery("");
-      setUserDetailsError(null);
-      setUserDetailsLoading(true);
-      setShowUserDetailsModal(true);
-      
-      try {
-        const userData = await fetchDetailedUserProfile(userId);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setUserDetailsError(null);
+    setUserDetailsLoading(true);
+    setShowUserDetailsModal(true);
+    
+    try {
+      if (isInstructorOrAdmin()) {
+        // For instructors/admins, fetch detailed profile
+        let userData = await fetchDetailedUserProfile(userId);
+
+        // Fallback: if no activity_log/last_login present, try pulling from admin user list
+        if (!userData?.activity_log || userData.activity_log.length === 0) {
+          try {
+            const allUsers = await fetchAllUsersAdmin();
+            const match = (allUsers || []).find(u => u.id === userId);
+            if (match?.activity_log && match.activity_log.length > 0) {
+              userData = { ...userData, activity_log: match.activity_log };
+            }
+          } catch (e) {
+            // Non-fatal: keep userData as-is
+          }
+        }
+
         setSelectedUser(userData);
-      } catch (error) {
-        console.error('Failed to fetch user details:', error);
-        setUserDetailsError(error?.message || 'Failed to fetch user details');
-      } finally {
-        setUserDetailsLoading(false);
+      } else {
+        // For regular users, fetch public-safe profile, then merge courses
+        try {
+          const publicProfile = await fetchPublicUserProfile(userId);
+          try {
+            const coursesData = await fetchUserCoursesByUserId(userId);
+            setSelectedUser({ ...publicProfile, courses: coursesData || [] });
+          } catch (coursesError) {
+            console.warn('Could not fetch courses for user:', coursesError);
+            setSelectedUser(publicProfile);
+          }
+        } catch (publicErr) {
+          console.warn('Could not fetch public user profile, fallback to search result user:', publicErr);
+          const users = searchResults.results?.users || [];
+          const fallback = users.find(user => user.id === userId);
+          if (fallback) {
+            setSelectedUser(fallback);
+          } else {
+            setUserDetailsError('User data not found');
+          }
+        }
       }
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      setUserDetailsError(error?.message || 'Failed to fetch user details');
+    } finally {
+      setUserDetailsLoading(false);
     }
   };
 
@@ -350,33 +254,6 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   // Handle notification updates
   const handleNotificationUpdate = (newCount) => {
     setUnreadNotifications(newCount);
-  };
-
-  // Handler passed to modal when all marked as read
-  const handleAllMarkedRead = async () => {
-    try {
-      // Try to call backend to mark all as read (if route is enabled)
-      await markAllNotificationsRead();
-      console.log('Backend marked all notifications as read');
-    } catch (error) {
-      console.warn('Backend mark as read failed, using frontend fallback:', error);
-    }
-    
-    // Persist read-all cutoff and update local storage
-    const nowIso = new Date().toISOString();
-    writeReadAllAt(nowIso);
-    const locals = readLocalNotifications();
-    const updatedLocals = locals.map(n => ({ ...n, read: true }));
-    writeLocalNotifications(updatedLocals);
-    
-    // Update state
-    setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setUnreadNotifications(0);
-    
-    // Refresh notifications from backend to ensure consistency
-    setTimeout(() => {
-      refreshNotifications();
-    }, 500);
   };
 
   return (
@@ -441,7 +318,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-700">
                       Found {searchResults.results?.courses?.length || 0} course{(searchResults.results?.courses?.length || 0) !== 1 ? 's' : ''}
-                      {isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
+                      {searchResults.results?.users?.length > 0 && (
                         <span> and {searchResults.results.users.length} user{(searchResults.results.users.length !== 1) ? 's' : ''}</span>
                       )}
                     </div>
@@ -493,8 +370,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-                {/* Users Section - Only show for instructors/admins */}
-                {isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
+                {/* Users Section - Show for all users */}
+                {searchResults.results?.users?.length > 0 && (
                   <div className="p-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -518,7 +395,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               isSelected ? 'bg-blue-50' : ''
                             }`}
                           >
-                            <User className="h-4 w-4 text-green-600" />
+                            {user.image ? (
+                              <img
+                                src={user.image}
+                                alt={`${user.first_name} ${user.last_name}`}
+                                className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <User className="h-4 w-4 text-green-600" />
+                            )}
                             <div className="flex-1">
                               <div className="font-medium text-gray-900">
                                 {user.first_name} {user.last_name}
@@ -537,15 +422,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-                {/* Show message for non-instructors when users exist in search results */}
-                {!isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
-                  <div className="p-4 border-t border-gray-100">
-                    <div className="text-sm text-gray-500 text-center">
-                      <Users className="h-4 w-4 mx-auto mb-2 text-gray-400" />
-                      <p>User search results are available for instructors and administrators only.</p>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* No Results Message */}
                 {(!searchResults.results?.courses?.length && !searchResults.results?.users?.length) && (
@@ -583,18 +460,17 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           <div className="flex items-center gap-3">
             
             {/* Notification Bell */}
-            <button
+            {/* <button
               onClick={() => setNotificationModalOpen(true)}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              aria-label="Notifications"
             >
-              <BellDot className="h-5 w-5" />
+              <BellDot className="h-6 w-6" />
               {unreadNotifications > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                  {unreadNotifications > 9 ? '9+' : unreadNotifications}
                 </span>
               )}
-            </button>
+            </button> */}
             
             {/* Profile Dropdown */}
             <div className="ml-2">
@@ -614,8 +490,6 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           open={notificationModalOpen} 
           onOpenChange={setNotificationModalOpen}
           onNotificationUpdate={handleNotificationUpdate}
-          notificationsFromApi={apiNotifications}
-          onMarkedAllRead={handleAllMarkedRead}
         />
         
         {/* Inbox Modal */}
@@ -634,6 +508,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           user={selectedUser}
           isLoading={userDetailsLoading}
           error={userDetailsError}
+          isInstructorOrAdmin={isInstructorOrAdmin()}
+          viewerTimezone={viewerTimezone}
         />
       </header>
 
