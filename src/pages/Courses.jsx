@@ -97,37 +97,27 @@ export function Courses() {
       setLoading(true);
       try {
         const data = await fetchUserCourses();
+        // console.log('Raw API data:', data);
         
-        // Fetch modules for each course and add modulesCount and totalDuration
-        const coursesWithModules = await Promise.all(
-          data.map(async (course) => {
-            try {
-              const modules = await fetchCourseModules(course.id);
-              // Sum durations using 'estimated_duration' (in minutes)
-              const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-              // Convert to seconds for formatTime
-              const totalDurationSecs = totalDurationMins * 60;
-              const courseWithModules = { 
-                ...course, 
-                modulesCount: modules.length, 
-                totalDurationSecs,
-                // Ensure image field is set from thumbnail
-                image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-              return courseWithModules;
-            } catch {
-              const courseWithDefaults = { 
-                ...course, 
-                modulesCount: 0, 
-                totalDurationSecs: 0,
-                image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-              return courseWithDefaults;
-            }
-          })
-        );
-        setCourses(coursesWithModules);
-        setFilteredCourses(coursesWithModules);
+        // Use module count directly from API response
+        const coursesWithDefaults = data.map((course, index) => {
+          if (index === 0) {
+            // console.log('Full course object structure:', course);
+            // console.log('Available keys:', Object.keys(course));
+          }
+          // console.log('Processing course:', course.title, '_count object:', course._count);
+          return {
+            ...course,
+            modulesCount: course._count?.modules || 0, // Use _count.modules from API response
+            totalDurationSecs: course.totalDurationSecs || 0, // Use existing duration if available
+            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+          };
+        });
+        
+        // console.log('Processed courses with module counts:', coursesWithDefaults.map(c => ({ title: c.title, modulesCount: c.modulesCount })));
+        
+        setCourses(coursesWithDefaults);
+        setFilteredCourses(coursesWithDefaults);
       } catch (err) {
         setError("Failed to fetch courses");
       } finally {
@@ -161,6 +151,7 @@ export function Courses() {
       }
     }
   };
+
 
   useEffect(() => {
     let results = courses;
@@ -346,7 +337,10 @@ export function Courses() {
                     
                     <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
                       <div className="flex gap-2 w-full">
-                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+                        <Link 
+                          to={`/dashboard/courses/${course.id}/modules`} 
+                          className="flex-1"
+                        >
                           <Button variant="default" className="w-full">
                             Continue Learning
                           </Button>
