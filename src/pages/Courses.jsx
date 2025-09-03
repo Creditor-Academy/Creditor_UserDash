@@ -97,14 +97,24 @@ export function Courses() {
       setLoading(true);
       try {
         const data = await fetchUserCourses();
+        // console.log('Raw API data:', data);
         
-        // Only fetch basic course data, no modules initially
-        const coursesWithDefaults = data.map(course => ({
-          ...course,
-          modulesCount: course.modulesCount || 0, // Use existing count if available
-          totalDurationSecs: course.totalDurationSecs || 0, // Use existing duration if available
-          image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-        }));
+        // Use module count directly from API response
+        const coursesWithDefaults = data.map((course, index) => {
+          if (index === 0) {
+            // console.log('Full course object structure:', course);
+            // console.log('Available keys:', Object.keys(course));
+          }
+          // console.log('Processing course:', course.title, '_count object:', course._count);
+          return {
+            ...course,
+            modulesCount: course._count?.modules || 0, // Use _count.modules from API response
+            totalDurationSecs: course.totalDurationSecs || 0, // Use existing duration if available
+            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+          };
+        });
+        
+        // console.log('Processed courses with module counts:', coursesWithDefaults.map(c => ({ title: c.title, modulesCount: c.modulesCount })));
         
         setCourses(coursesWithDefaults);
         setFilteredCourses(coursesWithDefaults);
@@ -142,43 +152,6 @@ export function Courses() {
     }
   };
 
-  // Function to fetch and update course details when needed
-  const fetchCourseDetails = async (courseId) => {
-    try {
-      const modules = await fetchCourseModules(courseId);
-      const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-      const totalDurationSecs = totalDurationMins * 60;
-      
-      // Update the specific course with module data
-      setCourses(prevCourses => 
-        prevCourses.map(course => 
-          course.id === courseId 
-            ? { 
-                ...course, 
-                modulesCount: modules.length, 
-                totalDurationSecs,
-                modulesLoaded: true 
-              }
-            : course
-        )
-      );
-      
-      setFilteredCourses(prevCourses => 
-        prevCourses.map(course => 
-          course.id === courseId 
-            ? { 
-                ...course, 
-                modulesCount: modules.length, 
-                totalDurationSecs,
-                modulesLoaded: true 
-              }
-            : course
-        )
-      );
-    } catch (err) {
-      console.error(`Failed to fetch modules for course ${courseId}:`, err);
-    }
-  };
 
   useEffect(() => {
     let results = courses;
@@ -367,12 +340,6 @@ export function Courses() {
                         <Link 
                           to={`/dashboard/courses/${course.id}/modules`} 
                           className="flex-1"
-                          onClick={() => {
-                            // Fetch course details when user clicks to navigate
-                            if (!course.modulesLoaded) {
-                              fetchCourseDetails(course.id);
-                            }
-                          }}
                         >
                           <Button variant="default" className="w-full">
                             Continue Learning
