@@ -10,7 +10,7 @@ import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
 import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { getGroupById, getGroupMembers } from "@/services/groupService";
+import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage } from "@/services/groupService";
 
 const initialMessages = [
   {
@@ -79,7 +79,7 @@ const initialMessages = [
 ];
 
 export function ChatPage() {
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
@@ -96,7 +96,28 @@ export function ChatPage() {
     fetchGroupInfo();
     // Preload members to show accurate count in header without opening the modal
     fetchGroupMembers({ openModal: false, silent: true });
+    // load messages
+    loadMessages();
   }, [groupId]);
+
+  const loadMessages = async () => {
+    try {
+      const res = await getGroupMessages(groupId, 1, 100);
+      const list = res?.data?.messages || res?.messages || [];
+      const normalized = list.map(m => ({
+        id: m.id,
+        senderId: m.sender_id || m.senderId,
+        senderName: m.sender?.first_name || m.sender?.name || 'Member',
+        senderAvatar: m.sender?.image || '',
+        content: m.content,
+        timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+        type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (m.mime_type ? 'file' : 'text'),
+      }));
+      setMessages(normalized);
+    } catch (e) {
+      console.warn('Failed to load messages', e);
+    }
+  };
 
   const fetchGroupInfo = async () => {
     try {
@@ -186,24 +207,38 @@ export function ChatPage() {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
-    const message = {
-      id: Date.now(),
+    const optimistic = {
+      id: `tmp-${Date.now()}`,
       senderId: currentUserId,
       senderName: "You",
       senderAvatar: "",
       content: newMessage,
-      timestamp: new Date().toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       type: 'text'
     };
-
-    setMessages([...messages, message]);
+    setMessages(prev => [...prev, optimistic]);
+    const toSend = newMessage;
     setNewMessage("");
+    try {
+      const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
+      const m = res?.data || res;
+      if (m?.id) {
+        setMessages(prev => prev.map(x => x.id === optimistic.id ? {
+          id: m.id,
+          senderId: m.sender_id,
+          senderName: m.sender?.first_name || 'You',
+          senderAvatar: m.sender?.image || '',
+          content: m.content,
+          timestamp: new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          type: 'text'
+        } : x));
+      }
+    } catch (e) {
+      // rollback
+      setMessages(prev => prev.filter(x => x.id !== optimistic.id));
+    }
   };
 
   const handleSendVoiceMessage = (audioBlob, duration) => {
@@ -230,8 +265,16 @@ export function ChatPage() {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
   };
 
-  const handleDeleteMessage = (messageId) => {
+  const handleDeleteMessage = async (messageId) => {
+    // optimistic remove
+    const snapshot = messages;
     setMessages(prev => prev.filter(m => m.id !== messageId));
+    try {
+      await deleteGroupMessage(groupId, messageId);
+    } catch (e) {
+      // restore on failure
+      setMessages(snapshot);
+    }
   };
 
   const handleFileSelect = (event) => {

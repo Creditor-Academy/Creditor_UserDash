@@ -103,6 +103,17 @@ export const getGroupMessages = async (groupId, page = 1, limit = 50) => {
   }
 }
 
+// Send a group message (text/url)
+export const sendGroupMessage = async (groupId, { content, type = 'TEXT' }) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups/${groupId}/messages`, { content, type });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending group message:', error);
+    throw error;
+  }
+};
+
 /**
  * Create a post inside a group
  * @param {Object|FormData} postData - Post payload (Object for JSON, FormData for file upload)
