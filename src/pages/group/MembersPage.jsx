@@ -207,17 +207,6 @@ export function MembersPage() {
                 {members.length} members · {adminCount} admins
               </CardDescription>
             </div>
-            {/* Join Group button - only show if user is not already a member */}
-            {!isCurrentUserMember && (
-              <Button 
-                onClick={handleSelfJoin} 
-                disabled={loading || addingMember} 
-                className="bg-primary text-white"
-              >
-                <UserPlus className="h-4 w-4 mr-2" /> 
-                {addingMember ? "Joining..." : "Join Group"}
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>

@@ -2,8 +2,8 @@ import React, { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Filter, Users2, Calendar, MessageSquare, ArrowRight, BookOpen } from "lucide-react";
-import { getGroups } from "@/services/groupService";
+import { Users, Search, Filter, Users2, Calendar, MessageSquare, ArrowRight, BookOpen, UserPlus, Check } from "lucide-react";
+import { getGroups, addGroupMember } from "@/services/groupService";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
@@ -20,6 +20,8 @@ export function Groups() {
   const [sortBy, setSortBy] = useState("name");
   const [filterBy, setFilterBy] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [joiningGroup, setJoiningGroup] = useState(null);
+  const [activeView, setActiveView] = useState("common"); // "common" or "course"
   const groupsPerPage = 6; // Show 6 groups per page (2 rows of 3 in grid)
 
   // Check if current user is admin or instructor
@@ -43,11 +45,15 @@ export function Groups() {
           active: true, // Default to active since API doesn't have this field
           featured: false, // Default to false since API doesn't have this field
           lastActivity: "Recently", // Default since API doesn't have this field
-          type: "common", // Default to common since API doesn't have this field
-          courseName: "", // API doesn't have course name
+          type: group.course_id ? "course" : "common", // Determine type based on course_id
+          courseName: group.course_name || "", // API doesn't have course name
+          courseId: group.course_id || null,
           createdAt: group.createdAt,
           createdBy: group.created_by,
-          membersList: group.members || []
+          membersList: group.members || [],
+          isMember: group.members ? group.members.some(member => 
+            member.user_id === userProfile?.id || member.id === userProfile?.id
+          ) : false
         }));
         
                  // Sort groups by creation date (latest first)
@@ -66,6 +72,28 @@ export function Groups() {
       toast.error("Failed to fetch groups");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Handle joining a group
+  const handleJoinGroup = async (groupId) => {
+    if (!groupId) return;
+    
+    try {
+      setJoiningGroup(groupId);
+      console.log("📤 Groups: Joining group:", groupId);
+      
+      await addGroupMember(groupId); // No userId means self-join
+      
+      toast.success("Successfully joined the group!");
+      
+      // Refresh groups to update member status
+      await fetchGroups();
+    } catch (error) {
+      console.error("❌ Groups: Error joining group:", error);
+      toast.error(error?.response?.data?.message || error.message || "Failed to join group");
+    } finally {
+      setJoiningGroup(null);
     }
   };
 
@@ -106,11 +134,20 @@ export function Groups() {
          return sorted;
    }, [query, sortBy, filterBy, groups]);
 
+  // Filter groups based on active view
+  const viewGroups = useMemo(() => {
+    if (activeView === "common") {
+      return filteredGroups.filter(g => g.type !== "course");
+    } else {
+      return filteredGroups.filter(g => g.type === "course");
+    }
+  }, [filteredGroups, activeView]);
+
    // Pagination logic
-   const totalPages = Math.ceil(filteredGroups.length / groupsPerPage);
+  const totalPages = Math.ceil(viewGroups.length / groupsPerPage);
    const startIndex = (currentPage - 1) * groupsPerPage;
    const endIndex = startIndex + groupsPerPage;
-   const currentGroups = filteredGroups.slice(startIndex, endIndex);
+  const currentGroups = viewGroups.slice(startIndex, endIndex);
 
    const goToPage = (page) => {
      setCurrentPage(page);
@@ -128,6 +165,12 @@ export function Groups() {
      }
    };
 
+  // Reset to first page when switching views
+  const handleViewChange = (view) => {
+    setActiveView(view);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="container py-6 md:py-8 max-w-6xl">
       {/* Page header */}
@@ -140,7 +183,41 @@ export function Groups() {
             </p>
           </div>
           
-
+          {/* View Toggle */}
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-fit">
+            <Button
+              variant={activeView === "common" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => handleViewChange("common")}
+              className={`flex items-center gap-2 px-4 py-2 ${
+                activeView === "common" 
+                  ? "bg-white text-blue-600 shadow-sm" 
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              Common Groups
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-1">
+                {filteredGroups.filter(g => g.type !== "course").length}
+              </span>
+            </Button>
+            <Button
+              variant={activeView === "course" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => handleViewChange("course")}
+              className={`flex items-center gap-2 px-4 py-2 ${
+                activeView === "course" 
+                  ? "bg-white text-purple-600 shadow-sm" 
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <BookOpen className="h-4 w-4" />
+              Course Groups
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-1">
+                {filteredGroups.filter(g => g.type === "course").length}
+              </span>
+            </Button>
+          </div>
           
           {/* Search and filter section */}
           <div className="flex flex-col md:flex-row gap-4 mt-4">
@@ -183,8 +260,6 @@ export function Groups() {
                   className="bg-transparent text-sm focus:outline-none text-gray-700"
                 >
                   <option value="all">All Groups</option>
-                  <option value="common">Common Groups</option>
-                  <option value="course">Course Groups</option>
                   <option value="featured">Featured</option>
                   <option value="popular">Popular</option>
                 </select>
@@ -233,10 +308,10 @@ export function Groups() {
       )}
 
       {/* Results count */}
-      {!isLoading && !error && filteredGroups.length > 0 && (
+      {!isLoading && !error && viewGroups.length > 0 && (
         <div className="mb-6 flex items-center justify-between">
           <p className="text-sm text-gray-500">
-            {filteredGroups.length} group{filteredGroups.length !== 1 ? 's' : ''} found
+            {viewGroups.length} {activeView === "common" ? "common" : "course"} group{viewGroups.length !== 1 ? 's' : ''} found
           </p>
         </div>
       )}
@@ -244,12 +319,21 @@ export function Groups() {
       {/* Groups grid */}
       {!isLoading && !error && (
         <>
-          {filteredGroups.length === 0 ? (
+          {viewGroups.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-gray-300 rounded-xl bg-gray-50">
+              {activeView === "common" ? (
               <Users2 className="h-12 w-12 text-gray-400 mb-4" />
-              <div className="text-lg font-medium text-gray-700">No groups found</div>
+              ) : (
+                <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
+              )}
+              <div className="text-lg font-medium text-gray-700">
+                No {activeView === "common" ? "common" : "course"} groups found
+              </div>
               <p className="text-gray-500 mt-1 text-sm max-w-md">
-                Try adjusting your search or filters to find relevant communities.
+                {activeView === "common" 
+                  ? "Try adjusting your search or filters to find relevant communities."
+                  : "No course-specific groups available at the moment."
+                }
               </p>
               <Button 
                 variant="outline" 
@@ -264,97 +348,29 @@ export function Groups() {
               </Button>
             </div>
           ) : (
-        <div className="space-y-8">
-                     {/* Common groups */}
-           {currentGroups.filter((g) => g.type !== "course").length > 0 && (
-             <div>
-               <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                 <Users className="h-5 w-5 text-blue-600" />
-                 Common Groups
-                 <span className="text-sm font-normal text-gray-500 ml-2">
-                   ({filteredGroups.filter((g) => g.type !== "course").length})
-                 </span>
-               </h2>
                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                 {currentGroups.filter((g) => g.type !== "course").map((group) => (
+              {currentGroups.map((group) => (
                   <Card 
                     key={group.id} 
-                    className="overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 group"
-                  >
-                    <div className="h-2 w-full bg-blue-500" />
-                    
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
-                        {group.name}
-                      </CardTitle>
-                      <CardDescription className="mt-1 line-clamp-2 text-gray-600">
-                        {group.description}
-                      </CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="pb-3 pt-0">
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                          <Users className="h-3 w-3" /> {group.members} members
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-                          Active
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center text-xs text-gray-500">
-                        <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                        Last activity: {group.lastActivity}
-                      </div>
-                    </CardContent>
-                    
-                    <CardFooter className="border-t border-gray-100 bg-gray-50/50 py-3 flex justify-end">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        asChild
-                        className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Link to={`/dashboard/groups/${group.id}/news`}>
-                          View group <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-                     {/* Course-specific groups */}
-           {currentGroups.filter((g) => g.type === "course").length > 0 && (
-             <div>
-               <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                 <BookOpen className="h-5 w-5 text-blue-600" />
-                 Course Groups
-                 <span className="text-sm font-normal text-gray-500 ml-2">
-                   ({filteredGroups.filter((g) => g.type === "course").length})
-               </span>
-               </h2>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                 {currentGroups.filter((g) => g.type === "course").map((group) => (
-                  <Card 
-                    key={group.id} 
-                    className="relative overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 group"
-                  >
-                    <div className="h-2 w-full bg-blue-500" />
-                    
-                    {/* Course tag */}
-                    {group.courseName && (
+                  className={`relative overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 group ${
+                    activeView === "course" ? "pr-10" : ""
+                  }`}
+                >
+                  <div className={`h-2 w-full ${activeView === "common" ? "bg-blue-500" : "bg-purple-500"}`} />
+                  
+                  {/* Course tag for course groups */}
+                  {activeView === "course" && group.courseName && (
                       <div className="absolute top-3 right-3">
-                        <span className="inline-flex items-center rounded-md bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+                      <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
                           {group.courseName}
                         </span>
                       </div>
                     )}
 
-                    <CardHeader className="pb-3 pr-10">
-                      <CardTitle className="text-lg font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">
+                  <CardHeader className="pb-3">
+                    <CardTitle className={`text-lg font-semibold text-gray-800 group-hover:${
+                      activeView === "common" ? "text-blue-600" : "text-purple-600"
+                    } transition-colors`}>
                         {group.name}
                       </CardTitle>
                       <CardDescription className="mt-1 line-clamp-2 text-gray-600">
@@ -364,7 +380,11 @@ export function Groups() {
                     
                     <CardContent className="pb-3 pt-0">
                       <div className="flex flex-wrap gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        activeView === "common" 
+                          ? "bg-blue-50 text-blue-700" 
+                          : "bg-purple-50 text-purple-700"
+                      }`}>
                           <Users className="h-3 w-3" /> {group.members} members
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
@@ -378,23 +398,52 @@ export function Groups() {
                       </div>
                     </CardContent>
                     
-                    <CardFooter className="border-t border-gray-100 bg-gray-50/50 py-3 flex justify-end">
+                  <CardFooter className="border-t border-gray-100 bg-gray-50/50 py-3 flex justify-between">
+                    {group.isMember ? (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          disabled
+                          className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        >
+                          <Check className="h-4 w-4" />
+                          Joined
+                        </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         asChild
-                        className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className={`gap-1 hover:bg-gray-100 ${
+                            activeView === "common" 
+                              ? "text-blue-600 hover:text-blue-700" 
+                              : "text-purple-600 hover:text-purple-700"
+                          }`}
                       >
                         <Link to={`/dashboard/groups/${group.id}/news`}>
-                          View group <ArrowRight className="h-4 w-4" />
+                            View Group <ArrowRight className="h-4 w-4" />
                         </Link>
                       </Button>
+                      </>
+                    ) : (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleJoinGroup(group.id)}
+                        disabled={joiningGroup === group.id}
+                        className={`gap-1 ${
+                          activeView === "common" 
+                            ? "text-blue-600 hover:text-blue-700 hover:bg-blue-50" 
+                            : "text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                        }`}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        {joiningGroup === group.id ? "Joining..." : "Join Group"}
+                      </Button>
+                    )}
                     </CardFooter>
                   </Card>
                 ))}
-              </div>
-            </div>
-          )}
                  </div>
            )}
 
@@ -456,7 +505,7 @@ export function Groups() {
            {/* Page Info */}
            {totalPages > 1 && (
              <div className="text-center text-sm text-gray-500 mt-4">
-               Showing {startIndex + 1}-{Math.min(endIndex, filteredGroups.length)} of {filteredGroups.length} groups
+              Showing {startIndex + 1}-{Math.min(endIndex, viewGroups.length)} of {viewGroups.length} groups
              </div>
            )}
          </>

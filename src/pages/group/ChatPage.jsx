@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
 import { professionalAvatars } from "@/lib/avatar-utils";
-import { ChatHeader } from "@/components/group/ChatHeader";
+
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
 import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
@@ -225,6 +225,15 @@ export function ChatPage() {
     setShowVoiceRecorder(false);
   };
 
+  // Edit/Delete message handlers
+  const handleEditMessage = (messageId, newContent) => {
+    setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    setMessages(prev => prev.filter(m => m.id !== messageId));
+  };
+
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -254,6 +263,18 @@ export function ChatPage() {
 
   const getMemberCount = () => {
     return groupMembers.length || 0;
+  };
+
+  const isCurrentUserAdmin = () => {
+    // If groupMembers have role info, check current user or groupInfo.created_by
+    try {
+      const me = groupMembers.find(m => (m.user?.id ?? m.id) === currentUserId);
+      if (me && me.role === 'ADMIN') return true;
+      if (groupInfo?.created_by && groupInfo.created_by === currentUserId) return true;
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   // Filter members based on search term
@@ -344,10 +365,7 @@ export function ChatPage() {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <Card className="shadow-lg border-0 bg-white h-[700px] flex flex-col">
-        <ChatHeader 
-          groupName={getGroupName()} 
-          members={[]} 
-        />
+
         
         <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
           {/* Single Group Information Card - NO DUPLICATES */}
@@ -388,7 +406,10 @@ export function ChatPage() {
 
           <ChatMessagesList 
             messages={messages} 
-            currentUserId={currentUserId} 
+            currentUserId={currentUserId}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            isAdmin={isCurrentUserAdmin()}
           />
 
           <ChatInput

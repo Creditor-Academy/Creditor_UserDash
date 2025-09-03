@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VoiceMessage } from "@/components/messages/VoiceMessage";
-import { Download } from "lucide-react";
+import { Download, Pencil, Trash2, Check, X } from "lucide-react";
 
-export function ChatMessage({ message, currentUserId }) {
+export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, isAdmin = false }) {
   const isUser = message.senderId === currentUserId;
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(message.content || "");
 
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
@@ -15,7 +17,7 @@ export function ChatMessage({ message, currentUserId }) {
         </AvatarFallback>
       </Avatar>
       
-      <div className={`flex flex-col min-w-0 max-w-[65%] ${
+      <div className={`group relative flex flex-col min-w-0 max-w-[65%] ${
         isUser ? "items-end" : "items-start"
       }`}>
         <div className="flex items-center gap-2 mb-1">
@@ -26,7 +28,32 @@ export function ChatMessage({ message, currentUserId }) {
             {message.timestamp}
           </span>
         </div>
-        
+        {/* Hover actions for owner (edit/delete) and admin (delete) */}
+        {(isUser || isAdmin) && (
+          <div className={`absolute ${isUser ? "left-0" : "right-0"} -top-2 opacity-0 group-hover:opacity-100 transition-opacity`}> 
+            <div className="flex items-center gap-1 bg-white/90 border border-gray-200 rounded-full px-2 py-1 shadow-sm">
+              {isUser && !isEditing && (
+                <button
+                  className="p-1 hover:text-indigo-600"
+                  onClick={() => setIsEditing(true)}
+                  title="Edit message"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {(isUser || isAdmin) && (
+                <button
+                  className="p-1 hover:text-red-600"
+                  onClick={() => onDeleteMessage?.(message.id)}
+                  title="Delete message"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {message.type === 'voice' && message.audioBlob && message.duration ? (
           <VoiceMessage 
             audioBlob={message.audioBlob}
@@ -61,7 +88,32 @@ export function ChatMessage({ message, currentUserId }) {
                 : "bg-gray-100 text-gray-800 border border-gray-200"
             }`}
           >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+            {isEditing ? (
+              <div className={`flex items-center gap-2 ${isUser ? 'text-white' : 'text-gray-800'}`}>
+                <textarea
+                  className={`text-sm leading-relaxed w-full bg-transparent outline-none resize-none ${isUser ? 'placeholder-purple-100' : ''}`}
+                  rows={2}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                />
+                <button
+                  className="p-1 rounded hover:bg-white/20"
+                  onClick={() => { onEditMessage?.(message.id, draft); setIsEditing(false); }}
+                  title="Save"
+                >
+                  <Check className="h-4 w-4" />
+                </button>
+                <button
+                  className="p-1 rounded hover:bg-white/20"
+                  onClick={() => { setDraft(message.content || ""); setIsEditing(false); }}
+                  title="Cancel"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+            )}
           </div>
         )}
       </div>

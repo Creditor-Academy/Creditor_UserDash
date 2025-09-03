@@ -37,7 +37,7 @@ import CourseEnrollment from "@/pages/CourseEnrollment";
 import GroupLayout from "@/layouts/GroupLayout";
 import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
-import GroupCalendarPage from "@/pages/group/CalendarPage";
+
 import AnnouncementPage from "@/pages/group/AnnouncementPage";
 import ChatPage from "@/pages/group/ChatPage";
 import  SpeechifyReaderView  from "@/pages/SpeechifyReaderView";
@@ -233,7 +233,6 @@ function App() {
                 <Route path="news" element={<NewsPage />} />
                 <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
-                <Route path="calendar" element={<GroupCalendarPage />} />
                 <Route path="announcements" element={<AnnouncementPage />} />
                 <Route path="*" element={<NewsPage />} />
               </Route>

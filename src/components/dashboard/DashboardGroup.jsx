@@ -246,9 +246,12 @@ export default function DashboardGroup() {
                     
                     <Button 
                       size="sm"
+                      asChild
                       className={`text-xs h-8 px-3 ${colors.text} ${colors.hover} border ${colors.border} bg-white shadow-sm hover:shadow-md transition-shadow`}
                     >
-                      Join
+                      <Link to="/dashboard/groups">
+                        View Groups
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>

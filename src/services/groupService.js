@@ -176,6 +176,28 @@ export const addComment = async (postId, commentData) => {
   }
 };
 
+// Edit comment
+export const editComment = async (postId, commentId, commentData) => {
+  try {
+    const response = await api.put(`${API_BASE}/groups/posts/${postId}/comments/${commentId}`, commentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error editing comment:', error);
+    throw error;
+  }
+};
+
+// Delete comment
+export const deleteComment = async (postId, commentId) => {
+  try {
+    const response = await api.delete(`${API_BASE}/groups/posts/${postId}/comments/${commentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    throw error;
+  }
+};
+
 // Add like to post
 export const addLike = async (postId) => {
   try {
