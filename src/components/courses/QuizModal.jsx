@@ -692,14 +692,6 @@ const QuizModal = ({
               <Input name="maxAttempts" type="number" value={form.maxAttempts} onChange={handleChange} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time Estimate (min)</label>
-              <Input name="time_estimate" type="number" value={form.time_estimate} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text.sm font-medium text-gray-700 mb-1">Max Score</label>
-              <Input name="max_score" type="number" value={form.max_score} onChange={handleChange} />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Min Score</label>
               <Input name="min_score" type="number" value={form.min_score} onChange={handleChange} />
             </div>
