@@ -250,7 +250,7 @@ export default function GroupInfo({ group, onClose }) {
                         
                         {mediaUrl && (
                           <div className="px-4 pb-3">
-                            <div className="rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center w-full overflow-hidden">
+                            <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
                               {(() => {
                                 const url = String(mediaUrl);
                                 const isImage = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url);
@@ -258,40 +258,29 @@ export default function GroupInfo({ group, onClose }) {
                                 const isPdf = /\.(pdf)$/i.test(url);
                                 if (isImage) {
                                   return (
-                                    <a href={url} target="_blank" rel="noreferrer" className="block">
+                                    <a href={url} target="_blank" rel="noreferrer" className="block w-full">
                                       <img
                                         src={url}
                                         alt={post.title || "attachment"}
                                         loading="lazy"
-                                        className="max-w-full max-h-[70vh] w-auto h-auto object-contain block mx-auto hover:opacity-95 transition-opacity"
+                                        className="w-full max-h-96 object-contain hover:opacity-95 transition-opacity"
                                       />
                                     </a>
                                   );
                                 }
                                 if (isVideo) {
                                   return (
-                                    <video
-                                      src={url}
-                                      controls
-                                      className="w-full max-h-96"
-                                    />
+                                    <video src={url} controls className="w-full max-h-96" />
                                   );
                                 }
                                 if (isPdf) {
                                   return (
-                                    <iframe
-                                      src={url}
-                                      title={post.title || "PDF attachment"}
-                                      className="w-full h-96 bg-white"
-                                    />
+                                    <iframe src={url} title={post.title || "PDF attachment"} className="w-full h-96 bg-white" />
                                   );
                                 }
+                                // Fallback as inline iframe for other types
                                 return (
-                                  <iframe
-                                    src={url}
-                                    title={post.title || "attachment"}
-                                    className="w-full h-96 bg-white"
-                                  />
+                                  <iframe src={url} title={post.title || "attachment"} className="w-full h-96 bg-white" />
                                 );
                               })()}
                             </div>

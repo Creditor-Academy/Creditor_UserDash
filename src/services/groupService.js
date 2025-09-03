@@ -24,6 +24,8 @@ export const getGroupMembers = async (groupId) => {
   }
 };
 
+// (duplicate createCourseGroup removed)
+
 /**
  * Create a new course-related group
  * @param {Object} payload

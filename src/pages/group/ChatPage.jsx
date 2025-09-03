@@ -1,25 +1,3 @@
-/**
- * ChatPage Component
- * 
- * This component displays the chat interface for a specific group.
- * 
- * Features implemented:
- * 1. Dynamic group name display (fetched from backend)
- * 2. "View members" functionality that calls groups/:groupId/members API
- * 3. Members modal popup (matching 2nd image design)
- * 4. Proper error handling for API calls
- * 5. Loading states and fallback behavior
- * 6. NO DUPLICATE GROUP INFORMATION CARDS
- * 7. NO DUMMY DATA - Only backend data
- * 
- * API Endpoints used:
- * - GET /groups/:groupId - Fetch group information
- * - GET /groups/:groupId/members - Fetch group members
- * 
- * @author Assistant
- * @version 2.1.0
- */
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +8,7 @@ import { professionalAvatars } from "@/lib/avatar-utils";
 import { ChatHeader } from "@/components/group/ChatHeader";
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
-import { Users, X, Loader2, Search } from "lucide-react";
+import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getGroupById, getGroupMembers } from "@/services/groupService";
 
@@ -295,13 +273,13 @@ export function ChatPage() {
   // Get role badge color and text
   const getRoleBadge = (member) => {
     if (member.role === "ADMIN") {
-      return { color: "bg-red-100 text-red-800 border-red-200", text: "Admin" };
+      return { color: "bg-red-100 text-red-800 border-red-200", text: "Admin", icon: <Shield className="w-3 h-3" /> };
     } else if (member.role === "INSTRUCTOR") {
-      return { color: "bg-blue-100 text-blue-800 border-blue-200", text: "Instructor" };
+      return { color: "bg-blue-100 text-blue-800 border-blue-200", text: "Instructor", icon: <GraduationCap className="w-3 h-3" /> };
     } else if (member.role === "LEARNER") {
-      return { color: "bg-green-100 text-green-800 border-green-200", text: "Learner" };
+      return { color: "bg-green-100 text-green-800 border-green-200", text: "Learner", icon: <User className="w-3 h-3" /> };
     } else {
-      return { color: "bg-gray-100 text-gray-800 border-gray-200", text: member.role || "Member" };
+      return { color: "bg-gray-100 text-gray-800 border-gray-200", text: member.role || "Member", icon: <User className="w-3 h-3" /> };
     }
   };
 
@@ -310,11 +288,19 @@ export function ChatPage() {
     if (!dateString) return "Recently joined";
     try {
       const date = new Date(dateString);
-      return `Joined ${date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric' 
-      })}`;
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 7) {
+        return `Joined ${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+      } else {
+        return `Joined ${date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}`;
+      }
     } catch {
       return "Recently joined";
     }
@@ -347,6 +333,14 @@ export function ChatPage() {
     return initials;
   };
 
+  // Calculate role statistics
+  const roleStats = {
+    admin: groupMembers.filter(m => m.role === "ADMIN").length,
+    instructor: groupMembers.filter(m => m.role === "INSTRUCTOR").length,
+    learner: groupMembers.filter(m => m.role === "LEARNER").length,
+    other: groupMembers.filter(m => !["ADMIN", "INSTRUCTOR", "LEARNER"].includes(m.role)).length
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <Card className="shadow-lg border-0 bg-white h-[700px] flex flex-col">
@@ -371,7 +365,7 @@ export function ChatPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={fetchGroupMembers}
+                    onClick={() => fetchGroupMembers()}
                     disabled={loadingMembers}
                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 h-auto flex items-center gap-1"
                   >
@@ -379,7 +373,7 @@ export function ChatPage() {
                     {loadingMembers ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <span className="text-sm">View ({getMemberCount()})</span>
+                      <span className="text-sm">View members</span>
                     )}
                   </Button>
                 </div>
@@ -409,175 +403,131 @@ export function ChatPage() {
         </CardContent>
       </Card>
 
-      {/* Members Modal - Matches 2nd image design */}
+      {/* Enhanced Members Modal */}
       {showMembers && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="bg-gradient-to-br from-white via-blue-50 to-purple-50 rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex border border-purple-100 overflow-hidden">
-            {/* Main Content Area */}
-            <div className="flex-1 p-6 md:p-8 border-r border-purple-200 overflow-hidden">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    {getGroupName()}
-                  </h3>
-                  <p className="text-gray-600 mt-2">Group Members & Participants</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => { setShowMembers(false); setSearchTerm(""); }}
-                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-3 rounded-full transition-all duration-200"
-                >
-                  <X className="w-6 h-6" />
-                </Button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">{getGroupName()}</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {getMemberCount()} member{getMemberCount() !== 1 ? 's' : ''} • {roleStats.admin} admin{roleStats.admin !== 1 ? 's' : ''}
+                </p>
               </div>
-              
-              {/* Search Bar */}
-              <div className="mb-8">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-500" />
+              <button
+                onClick={() => {
+                  setShowMembers(false);
+                  setSearchTerm("");
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Search and Stats */}
+            <div className="p-6 pb-4 border-b border-gray-100 bg-gray-50">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="Search participants..."
+                    placeholder="Search members by name or email"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 pr-6 py-4 border-2 border-purple-200 focus:border-purple-400 focus:ring-purple-400/30 rounded-xl text-lg shadow-lg bg-white/80 backdrop-blur-sm transition-all duration-200"
+                    className="pl-10 pr-4 py-2 w-full"
                   />
                 </div>
-              </div>
-
-              {/* Members List */}
-              <div className="space-y-3 max-h-[58vh] overflow-y-auto pr-3 custom-scrollbar">
-                {filteredMembers.length === 0 ? (
-                  <div className="text-center py-16 text-gray-500">
-                    <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Users className="w-10 h-10 text-purple-400" />
-                    </div>
-                    <p className="text-xl font-medium mb-2 text-gray-600">
-                      {searchTerm ? 'No members found' : 'No members in this group'}
-                    </p>
-                    <p className="text-gray-500">
-                      {searchTerm ? 'Try adjusting your search terms' : 'This group might be empty'}
-                    </p>
+                
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span className="text-gray-700">{roleStats.admin} Admin</span>
                   </div>
-                ) : (
-                  filteredMembers.map((member, index) => {
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span className="text-gray-700">{roleStats.instructor} Instructor</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span className="text-gray-700">{roleStats.learner} Learner</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Members List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {filteredMembers.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">
+                    {searchTerm ? 'No members found' : 'No members in this group yet'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {searchTerm ? 'Try adjusting your search terms' : 'Members will appear here once they join'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredMembers.map((member, index) => {
                     const roleBadge = getRoleBadge(member);
                     const memberName = getMemberDisplayName(member);
                     const memberEmail = getMemberEmail(member);
                     const memberAvatar = getMemberAvatar(member);
                     
                     return (
-                      <div key={member.id || index} className="bg-white/80 backdrop-blur-sm border border-purple-100 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-purple-300 group">
-                        <div className="flex items-start gap-4">
-                          {/* Avatar */}
-                          <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-purple-200 group-hover:border-purple-400 transition-colors duration-200">
+                      <div key={member.id || index} className="flex items-center p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                        <div className="flex-shrink-0 mr-4">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
                             {member.user?.image ? (
                               <img 
                                 src={member.user.image} 
                                 alt={memberName} 
-                                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg"
+                                className="w-12 h-12 rounded-full object-cover"
                               />
                             ) : (
-                              <span className="text-lg font-bold text-purple-600">
-                                {memberAvatar}
-                              </span>
+                              <span>{memberAvatar}</span>
                             )}
                           </div>
-                          
-                          {/* Member Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-1.5">
-                              <h4 className="text-base font-bold text-gray-800 truncate group-hover:text-purple-700 transition-colors duration-200">
-                                {memberName}
-                              </h4>
-                              <Badge className={`${roleBadge.color} border px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm`}>
-                                {roleBadge.text}
-                              </Badge>
-                            </div>
-                            
-                            <p className="text-sm text-gray-600 mb-1.5 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                              {memberEmail}
-                            </p>
-                            
-                            <p className="text-xs text-gray-500 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                              {formatJoinDate(member.joined_at)}
-                            </p>
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-gray-900 truncate">{memberName}</h4>
+                            <Badge 
+                              variant="outline" 
+                              className={`${roleBadge.color} flex items-center gap-1 py-0.5 text-xs`}
+                            >
+                              {roleBadge.icon}
+                              {roleBadge.text}
+                            </Badge>
                           </div>
+                          
+                          <p className="text-sm text-gray-600 truncate">{memberEmail}</p>
+                          <p className="text-xs text-gray-500 mt-1">{formatJoinDate(member.joined_at)}</p>
                         </div>
                       </div>
                     );
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Right Sidebar - Group Statistics */}
-            <div className="w-80 md:w-96 p-6 md:p-8 bg-gradient-to-b from-purple-50 to-blue-50 border-l border-purple-200 overflow-y-auto">
-              <h4 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-                Group Statistics
-              </h4>
-              
-              <div className="space-y-6">
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-gray-700">Total Members</span>
-                    <span className="text-3xl font-bold text-blue-600">{getMemberCount()}</span>
-                  </div>
-                </div>
-                
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-gray-700">Admins</span>
-                    <span className="text-2xl font-bold text-red-600">
-                      {groupMembers.filter(m => m.role === "ADMIN").length}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-gray-700">Instructors</span>
-                    <span className="text-2xl font-bold text-blue-600">
-                      {groupMembers.filter(m => m.role === "INSTRUCTOR").length}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold text-gray-700">Learners</span>
-                    <span className="text-2xl font-bold text-green-600">
-                      {groupMembers.filter(m => m.role === "LEARNER").length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+              <Button 
+                onClick={() => {
+                  setShowMembers(false);
+                  setSearchTerm("");
+                }}
+              >
+                Close
+              </Button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Custom CSS for scrollbar */}
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(135deg, #8b5cf6, #3b82f6);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(135deg, #7c3aed, #2563eb);
-        }
-      `}</style>
     </div>
   );
 }
