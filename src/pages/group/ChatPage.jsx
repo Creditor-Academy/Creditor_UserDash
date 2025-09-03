@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
 import { professionalAvatars } from "@/lib/avatar-utils";
+import getSocket from "@/services/socketClient";
 
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
 import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage } from "@/services/groupService";
+import { useUser } from "@/contexts/UserContext";
 
 const initialMessages = [
   {
@@ -89,7 +91,8 @@ export function ChatPage() {
   const [loadingGroup, setLoadingGroup] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { groupId } = useParams();
-  const currentUserId = 0;
+  const { userProfile } = useUser();
+  const currentUserId = userProfile?.id || 0;
 
   // Fetch group information and members on component mount
   useEffect(() => {
@@ -98,6 +101,32 @@ export function ChatPage() {
     fetchGroupMembers({ openModal: false, silent: true });
     // load messages
     loadMessages();
+
+    // Realtime: join group room
+    const socket = getSocket();
+    const uid = currentUserId;
+    socket.emit('joinGroup', { groupId, userId: uid });
+
+    const onNewMessage = (payload) => {
+      // only accept messages for current group
+      if (payload?.group_id === groupId || payload?.groupId === groupId) {
+        setMessages(prev => [...prev, {
+          id: payload.id,
+          senderId: payload.sender_id || payload.senderId,
+          senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
+          senderAvatar: payload.sender?.image || '',
+          content: payload.content,
+          timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
+        }]);
+      }
+    };
+    socket.on('newGroupMessage', onNewMessage);
+
+    return () => {
+      socket.emit('leaveGroup', { groupId, userId: uid });
+      socket.off('newGroupMessage', onNewMessage);
+    };
   }, [groupId]);
 
   const loadMessages = async () => {
@@ -222,6 +251,10 @@ export function ChatPage() {
     const toSend = newMessage;
     setNewMessage("");
     try {
+      // emit over socket to let backend broadcast; also call REST as fallback
+      const socket = getSocket();
+      socket.emit('sendGroupMessage', { groupId, userId: currentUserId, content: toSend });
+
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
       if (m?.id) {

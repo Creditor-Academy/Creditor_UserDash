@@ -4,7 +4,7 @@ import { VoiceMessage } from "@/components/messages/VoiceMessage";
 import { Download, Pencil, Trash2, Check, X } from "lucide-react";
 
 export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, isAdmin = false }) {
-  const isUser = message.senderId === currentUserId;
+  const isUser = String(message.senderId) === String(currentUserId);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
 
