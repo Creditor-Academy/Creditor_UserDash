@@ -231,6 +231,113 @@ export const makeGroupAdmin = async ({ groupId, userId }) => {
   }
 };
 
+// ANNOUNCEMENT FUNCTIONS
+
+// Create announcement
+export const createAnnouncement = async (groupId, announcementData) => {
+  try {
+    const formData = new FormData();
+    formData.append('title', announcementData.title);
+    formData.append('content', announcementData.content);
+    
+    if (announcementData.media) {
+      formData.append('media', announcementData.media);
+    }
+
+    const response = await api.post(`${API_BASE}/groups/${groupId}/announcements`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating announcement:', error);
+    throw error;
+  }
+};
+
+// Get announcements
+export const getAnnouncements = async (groupId) => {
+  try {
+    const response = await api.get(`${API_BASE}/groups/${groupId}/announcements`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching announcements:', error);
+    throw error;
+  }
+};
+
+// Get single announcement
+export const getAnnouncementById = async (announcementId) => {
+  try {
+    const response = await api.get(`${API_BASE}/groups/announcements/${announcementId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching announcement:', error);
+    throw error;
+  }
+};
+
+// Update announcement
+export const updateAnnouncement = async (announcementId, announcementData) => {
+  try {
+    // Accept either FormData or plain object
+    const formData = announcementData instanceof FormData ? announcementData : (() => {
+      const fd = new FormData();
+      if (announcementData?.title !== undefined && announcementData?.title !== null) {
+        fd.append('title', announcementData.title);
+      }
+      if (announcementData?.content !== undefined && announcementData?.content !== null) {
+        fd.append('content', announcementData.content);
+      }
+      if (announcementData?.media) {
+        fd.append('media', announcementData.media);
+      }
+      return fd;
+    })();
+
+    const response = await api.put(`${API_BASE}/groups/announcements/${announcementId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating announcement:', error);
+    throw error;
+  }
+};
+
+// Delete announcement
+export const deleteAnnouncement = async (announcementId) => {
+  try {
+    const response = await api.delete(`${API_BASE}/groups/announcements/${announcementId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting announcement:', error);
+    throw error;
+  }
+};
+
+// Check if user is admin of a specific group
+export const isUserGroupAdmin = async (groupId) => {
+  try {
+    const response = await api.get(`${API_BASE}/groups/${groupId}/members`);
+    const members = response.data?.data || response.data || [];
+    const currentUserId = localStorage.getItem('userId');
+    
+    // Check if current user is in the members list with ADMIN role
+    const currentUserMember = members.find(member => 
+      (member.user?.id || member.user_id || member.id) === currentUserId
+    );
+    
+    return currentUserMember?.role === 'ADMIN' || currentUserMember?.is_admin === true;
+  } catch (error) {
+    console.error('Error checking group admin status:', error);
+    return false;
+  }
+};
+
 // Add like to post
 export const addLike = async (postId) => {
   try {

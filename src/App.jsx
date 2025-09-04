@@ -38,7 +38,7 @@ import GroupLayout from "@/layouts/GroupLayout";
 import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
 
-import AnnouncementPage from "@/pages/group/AnnouncementPage";
+import AnnouncementsPage from "@/pages/group/AnnouncementsPage";
 import ChatPage from "@/pages/group/ChatPage";
 import  SpeechifyReaderView  from "@/pages/SpeechifyReaderView";
 import AvatarPickerPage from "@/pages/AvatarPickerPage";
@@ -233,7 +233,7 @@ function App() {
                 <Route path="news" element={<NewsPage />} />
                 <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
-                <Route path="announcements" element={<AnnouncementPage />} />
+                <Route path="announcements" element={<AnnouncementsPage />} />
                 <Route path="*" element={<NewsPage />} />
               </Route>
             </Route>

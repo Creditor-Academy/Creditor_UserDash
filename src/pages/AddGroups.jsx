@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye, UserPlus, Upload, File, Image, Video, FileText } from "lucide-react";
 import GroupInfo from "./GroupInfo";
+import CreateAnnouncementModal from "@/components/modals/CreateAnnouncementModal";
 import { createGroup, getGroups, createGroupPost, addGroupMember, getGroupMembers, createCourseGroup } from "@/services/groupService";
 import { fetchAllCourses } from "@/services/courseService";
 import { useUser } from "@/contexts/UserContext";
@@ -45,6 +46,7 @@ const AddGroups = () => {
   // Create menu & post modal state
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showPostModal, setShowPostModal] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   const [postSubmitting, setPostSubmitting] = useState(false);
   const [postForm, setPostForm] = useState({
@@ -1015,7 +1017,11 @@ const AddGroups = () => {
               <Button
                 className="w-full"
                 variant="outline"
-                onClick={() => { toast.info("Announcements coming soon"); }}
+                onClick={() => { 
+                  setShowCreateMenu(false); 
+                  setShowAnnouncementModal(true); 
+                }}
+                disabled={!isAdminOrInstructor && groups.find(g => g.id === selectedGroupId)?.createdBy !== userProfile?.id}
               >
                 Create Announcement
               </Button>
@@ -1499,6 +1505,21 @@ const AddGroups = () => {
           </div>
         </div>
       )}
+
+      {/* Create Announcement Modal */}
+      <CreateAnnouncementModal
+        isOpen={showAnnouncementModal}
+        onClose={() => {
+          setShowAnnouncementModal(false);
+          setSelectedGroupId(null);
+        }}
+        groupId={selectedGroupId}
+        groupName={groups.find(g => g.id === selectedGroupId)?.name || "Selected Group"}
+        onAnnouncementCreated={(announcement) => {
+          toast.success("Announcement created successfully!");
+          // Optionally refresh groups or show success message
+        }}
+      />
     </div>
   );
 };

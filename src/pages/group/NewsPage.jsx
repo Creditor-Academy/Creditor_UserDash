@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Heart, Bell, Send, ThumbsUp } from "lucide-react";
+import { MessageSquare, Heart, Send, ThumbsUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +99,9 @@ export function NewsPage() {
 
   // Normalizer uses the latest userDirectory to map comment authors reliably
   const normalizePosts = (list) => {
-    return (list || []).map((p, idx) => {
+    return (list || [])
+      .filter(p => (p.type || "POST") !== "ANNOUNCEMENT") // Filter out announcements
+      .map((p, idx) => {
       const author = p.user || p.author || {};
       const first = author.first_name || author.firstName || "";
       const last = author.last_name || author.lastName || "";
@@ -138,7 +140,7 @@ export function NewsPage() {
         timestamp: p.createdAt ? new Date(p.createdAt).toLocaleString() : (p.created_at ? new Date(p.created_at).toLocaleString() : ""),
         likesCount: derivedLikesCount,
         likedByMe: Boolean(derivedLikedByMe),
-        isAnnouncement: (p.type || "POST") === "ANNOUNCEMENT",
+        isAnnouncement: false, // No announcements in news feed
         comments: Array.isArray(p.comments) ? p.comments.map((c, i) => {
           const authorMeta = resolveUser(c.user || c.author, c.user_id || c.userId);
           return {
@@ -267,8 +269,8 @@ export function NewsPage() {
 
       <div className="space-y-4">
         {posts.map((post) => (
-          <Card key={post.id} className={`overflow-hidden border ${post.isAnnouncement ? "border-blue-300" : "border-indigo-200"} bg-white/90 backdrop-blur-sm hover:shadow-md transition-all duration-200 rounded-xl`}>
-            <div className={`h-1 w-full ${post.isAnnouncement ? "bg-gradient-to-r from-sky-400 to-blue-600" : "bg-gradient-to-r from-blue-300 via-sky-300 to-indigo-300"}`} />
+          <Card key={post.id} className="overflow-hidden border border-indigo-200 bg-white/90 backdrop-blur-sm hover:shadow-md transition-all duration-200 rounded-xl">
+            <div className="h-1 w-full bg-gradient-to-r from-blue-300 via-sky-300 to-indigo-300" />
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
@@ -281,13 +283,6 @@ export function NewsPage() {
                     <div className="text-sm text-muted-foreground">{post.timestamp}</div>
                   </div>
                 </div>
-                
-                {post.isAnnouncement && (
-                  <Badge variant="outline" className="flex items-center gap-1 bg-gradient-to-r from-sky-50 to-blue-50 text-blue-700 border-blue-200">
-                    <Bell className="h-3 w-3" />
-                    Announcement
-                  </Badge>
-                )}
               </div>
             </CardHeader>
             
