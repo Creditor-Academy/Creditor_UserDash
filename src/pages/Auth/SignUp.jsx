@@ -5,9 +5,11 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Mail, ArrowRight, ArrowLeft, UserPlus, Phone, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function SignUp({ onBack }) {
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -89,7 +91,7 @@ function SignUp({ onBack }) {
         // Gracefully handle backends that respond 4xx with an "already sent" message
         if (data?.message && /already sent/i.test(data.message)) {
           setOtpOpen(true);
-          setResendIn(20);
+          setResendIn(300);
           toast.success(`OTP sent to ${email}`);
           return;
         }
@@ -97,7 +99,7 @@ function SignUp({ onBack }) {
       }
       toast.success(`OTP sent to ${email}`);
       setOtpOpen(true);
-      setResendIn(20);
+      setResendIn(300);
     } catch (e) {
       toast.error(e.message);
     } finally {
@@ -200,7 +202,7 @@ function SignUp({ onBack }) {
         // Treat "already sent" as success for a smoother UX
         if (data?.message && /already sent/i.test(data.message)) {
           toast.success("OTP resent");
-          setResendIn(20);
+          setResendIn(300);
           return;
         }
         throw new Error(data?.message || "Failed to resend OTP");
@@ -208,12 +210,20 @@ function SignUp({ onBack }) {
       // Ensure OTP modal is visible after resend
       setOtpOpen(true);
       toast.success("OTP resent");
-      setResendIn(20);
+      setResendIn(300);
     } catch (e) {
       toast.error(e.message || "Failed to resend OTP");
     } finally {
       setIsResending(false);
     }
+  };
+
+  const handleTermsClick = () => {
+    navigate('/termcondition');
+  };
+
+  const handlePrivacyClick = () => {
+    navigate('/privacy');
   };
 
   return (
@@ -241,8 +251,8 @@ function SignUp({ onBack }) {
         <label className="flex items-start gap-3 text-sm text-slate-600">
           <input type="checkbox" className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" checked={acceptTnC} onChange={(e) => setAcceptTnC(e.target.checked)} disabled={isLoading} />
           <span>
-            I agree to the <span className="font-medium text-slate-800">Terms & Conditions</span> and
-            <span className="font-medium text-slate-800"> Privacy Policy</span>.
+            I agree to the <button type="button" onClick={handleTermsClick} className="font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2 transition-colors duration-200">Terms & Conditions</button> and
+            <button type="button" onClick={handlePrivacyClick} className="font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2 transition-colors duration-200 ml-1">Privacy Policy</button>.
           </span>
         </label>
 
@@ -327,7 +337,7 @@ function SignUp({ onBack }) {
                     Resending...
                   </span>
                 ) : resendIn > 0 ? (
-                  `Resend in ${resendIn}s`
+                  `Resend in ${Math.floor(resendIn / 60)}:${(resendIn % 60).toString().padStart(2, '0')}`
                 ) : (
                   'Resend OTP'
                 )}
