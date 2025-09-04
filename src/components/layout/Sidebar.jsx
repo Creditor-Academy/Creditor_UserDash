@@ -19,7 +19,8 @@ import {
   Gamepad2,
   GraduationCap,
   Library,
-  School
+  School,
+  Bot
 } from "lucide-react";
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
@@ -316,6 +317,17 @@ export function Sidebar({ collapsed, setCollapsed }) {
               label="Course Catalog"
               href="/dashboard/catalog"
               active={isActive("/dashboard/catalog")}
+              collapsed={collapsed}
+              onNavigate={handleNavigate}
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={Bot}
+              label="Credit chatbot"
+              href="/dashboard/chatbot"
+              active={isActive("/dashboard/chatbot")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
