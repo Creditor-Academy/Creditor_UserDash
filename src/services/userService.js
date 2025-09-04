@@ -171,6 +171,46 @@ export async function fetchDetailedUserProfile(userId) {
   }
 }
 
+// Public profile for regular users: limited-safe fields
+export async function fetchPublicUserProfile(userId) {
+  try {
+    const response = await api.get(`/api/user/profile/${userId}`);
+    const data = response.data;
+    if (data && (data.success === true || data.code === 200)) {
+      const payload = data.data || {};
+      // Normalize to match consumer expectations
+      return {
+        ...payload,
+        image: payload.profile_photo || payload.image || null,
+        user_roles: payload.user_roles || [{ role: 'user' }], // Add default role if not present
+      };
+    }
+    throw new Error(data?.message || 'Failed to fetch public user profile');
+  } catch (error) {
+    console.error('Error fetching public user profile:', error);
+    throw error;
+  }
+}
+
+
+// Admin/Instructor: fetch all users (includes activity_log for last visited)
+export async function fetchAllUsersAdmin() {
+  try {
+    const response = await api.get('/api/user/all', {
+      withCredentials: true,
+    });
+
+    const data = response.data;
+    if (data && (data.success === true || data.code === 200)) {
+      return data.data || [];
+    }
+    return data?.data || [];
+  } catch (error) {
+    console.error('Error fetching all users (admin):', error);
+    throw error;
+  }
+}
+
 
 export async function logoutUser() {
   try {
