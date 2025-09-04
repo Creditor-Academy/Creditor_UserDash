@@ -15,6 +15,7 @@ const QUESTION_TYPES = [
   { label: 'True/False', value: 'TRUE_FALSE' },
   { label: 'Fill in the Blanks', value: 'FILL_UPS' },
   { label: 'One Word Answer', value: 'ONE_WORD' },
+  { label: 'Sequence Ordering', value: 'SEQUENCE' },
 ];
 
 // Alternative question type values that might be expected by the backend
@@ -23,7 +24,8 @@ const BACKEND_QUESTION_TYPES = {
   MCQ_MULTIPLE: 'MCQ_MULTIPLE', 
   TRUE_FALSE: 'TRUE_FALSE',
   FILL_UPS: 'FILL_UPS',
-  ONE_WORD: 'ONE_WORD'
+  ONE_WORD: 'ONE_WORD',
+  SEQUENCE: 'SEQUENCE'
 };
 
 const QuizModal = ({ 
@@ -232,15 +234,35 @@ const QuizModal = ({
   };
 
   const handleAddOption = (qIdx) => {
-    setQuestions((prev) => prev.map((q, i) =>
-      i === qIdx ? { ...q, options: [...q.options, { text: '', isCorrect: false }] } : q
-    ));
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      if (q.type === 'SEQUENCE') {
+        const nextIndex = q.options.length;
+        return { ...q, options: [...q.options, { text: '', orderIndex: nextIndex }] };
+      }
+      return { ...q, options: [...q.options, { text: '', isCorrect: false }] };
+    }));
   };
 
   const handleRemoveOption = (qIdx, optIdx) => {
-    setQuestions((prev) => prev.map((q, i) =>
-      i === qIdx ? { ...q, options: q.options.filter((_, oi) => oi !== optIdx) } : q
-    ));
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const filtered = q.options.filter((_, oi) => oi !== optIdx);
+      if (q.type === 'SEQUENCE') {
+        const renumbered = filtered.map((opt, idx) => ({ ...opt, orderIndex: idx }));
+        return { ...q, options: renumbered };
+      }
+      return { ...q, options: filtered };
+    }));
+  };
+
+  const handleOrderIndexChange = (qIdx, optIdx, value) => {
+    const parsed = Number(value);
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => oi === optIdx ? { ...opt, orderIndex: isNaN(parsed) ? '' : parsed } : opt);
+      return { ...q, options: updated };
+    }));
   };
 
   // Ensure MCQ questions always have at least 2 options
@@ -265,6 +287,11 @@ const QuizModal = ({
       newOptions = [
         { text: 'True', isCorrect: false },
         { text: 'False', isCorrect: false }
+      ];
+    } else if (newType === 'SEQUENCE') {
+      newOptions = [
+        { text: '', orderIndex: 0 },
+        { text: '', orderIndex: 1 }
       ];
     } else if (newType === 'FILL_UPS' || newType === 'ONE_WORD') {
       newOptions = [];
@@ -315,6 +342,8 @@ const QuizModal = ({
             return 'FILL_UPS';
           case 'ONE_WORD':
             return 'ONE_WORD';
+          case 'SEQUENCE':
+            return 'SEQUENCE';
           default:
             return t;
         }
@@ -343,6 +372,12 @@ const QuizModal = ({
               .join(',');
           } else if (q.type === 'ONE_WORD') {
             return String(q.correctAnswer || '').trim();
+          } else if (q.type === 'SEQUENCE') {
+            const ordered = (q.options || [])
+              .slice()
+              .sort((a, b) => Number(a.orderIndex ?? 0) - Number(b.orderIndex ?? 0))
+              .map(opt => String(opt.text || '').trim());
+            return ordered.join(',');
           }
           return '';
         }),
@@ -359,6 +394,12 @@ const QuizModal = ({
             return q.options.map((opt, idx) => ({
               text: String(opt.text || (idx === 0 ? 'true' : 'false')).toLowerCase(),
               isCorrect: Boolean(opt.isCorrect),
+            }));
+          }
+          if (q.type === 'SEQUENCE') {
+            return (q.options || []).map((opt, idx) => ({
+              text: String(opt.text || '').trim(),
+              orderIndex: Number(opt.orderIndex ?? idx)
             }));
           }
           // For non-option types, send empty array to preserve index alignment
@@ -391,6 +432,29 @@ const QuizModal = ({
           const correctOptions = q.options.filter(opt => opt.isCorrect);
           if (correctOptions.length !== 1) {
             validationErrors.push(`Question ${index + 1} must have exactly one correct answer`);
+          }
+        } else if (q.type === 'SEQUENCE') {
+          if (q.options.length < 2) {
+            validationErrors.push(`Question ${index + 1} needs at least 2 sequence steps`);
+          }
+          const textsValid = q.options.every(opt => String(opt.text || '').trim().length > 0);
+          if (!textsValid) {
+            validationErrors.push(`Question ${index + 1} has empty sequence step text`);
+          }
+          const orderValues = q.options.map(opt => Number(opt.orderIndex));
+          const hasNaN = orderValues.some(v => Number.isNaN(v));
+          if (hasNaN) {
+            validationErrors.push(`Question ${index + 1} has invalid order index values`);
+          } else {
+            const unique = new Set(orderValues);
+            if (unique.size !== orderValues.length) {
+              validationErrors.push(`Question ${index + 1} has duplicate order index values`);
+            }
+            const min = Math.min(...orderValues);
+            const max = Math.max(...orderValues);
+            if (min !== 0 || max !== q.options.length - 1) {
+              validationErrors.push(`Question ${index + 1} orderIndex must be 0..${q.options.length - 1}`);
+            }
           }
         } else if (q.type === 'FILL_UPS' || q.type === 'ONE_WORD') {
           if (!q.correctAnswer.trim()) {
@@ -528,6 +592,31 @@ const QuizModal = ({
                   ))}
                 </div>
               )}
+              {q.type === 'SEQUENCE' && (
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sequence Steps (ordered)</label>
+                  {q.options.map((opt, optIdx) => (
+                    <div key={optIdx} className="flex items-center gap-2 mb-1">
+                      <Input
+                        placeholder={`Step ${optIdx + 1}`}
+                        value={opt.text}
+                        onChange={e => handleOptionChange(qIdx, optIdx, e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        className="w-24 border rounded px-2 py-1"
+                        value={opt.orderIndex ?? optIdx}
+                        min={0}
+                        max={q.options.length - 1}
+                        onChange={e => handleOrderIndexChange(qIdx, optIdx, e.target.value)}
+                      />
+                      <span className="text-xs">Order</span>
+                      <Button size="sm" variant="outline" onClick={() => handleRemoveOption(qIdx, optIdx)} disabled={q.options.length === 1}>Remove</Button>
+                    </div>
+                  ))}
+                  <Button size="sm" variant="outline" onClick={() => handleAddOption(qIdx)}>Add Step</Button>
+                </div>
+              )}
               {(q.type === 'FILL_UPS' || q.type === 'ONE_WORD') && (
                 <div className="mb-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
@@ -601,14 +690,6 @@ const QuizModal = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Max Attempts</label>
               <Input name="maxAttempts" type="number" value={form.maxAttempts} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time Estimate (min)</label>
-              <Input name="time_estimate" type="number" value={form.time_estimate} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text.sm font-medium text-gray-700 mb-1">Max Score</label>
-              <Input name="max_score" type="number" value={form.max_score} onChange={handleChange} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Min Score</label>
