@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
 import { uploadImage } from '@/services/imageUploadService';
+import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
+import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
@@ -671,19 +673,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
-    // If we have existing lesson content, add to that structure
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
-      }));
-    } else {
-      // For new lessons, add to contentBlocks
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
-    }
+    // Always add to local edit list so it appears immediately in edit mode
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
    
     // Close the sidebar
     setShowTextTypeSidebar(false);
@@ -984,7 +975,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
                   <div>
-                    <img src="${imageUrl}" alt="${title}" class="w-full h-auto rounded-lg shadow-lg" />
+                    <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                   </div>
                   <div>
                     ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
@@ -1003,7 +994,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             html = `
               <div class="lesson-image full-width">
                 <div class="space-y-3">
-                  <img src="${imageUrl}" alt="${title}" class="w-full h-auto rounded" />
+                  <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded" />
                   ${caption ? `<p class="text-sm text-gray-600">${caption}</p>` : ''}
                 </div>
               </div>`;
@@ -1011,7 +1002,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             html = `
               <div class="lesson-image centered">
                 <div class="text-center">
-                  <img src="${imageUrl}" alt="${title}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                  <img src="${imageUrl}" alt="${title}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
                   ${caption ? `<span class="text-gray-600 mt-4 italic text-lg">${caption}</span>` : ''}
                 </div>
               </div>`;
@@ -1152,7 +1143,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 htmlContent = `
                   <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
                     <div>
-                      <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
+                      <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                     </div>
                     <div>
                       ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
@@ -1169,14 +1160,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               } else if (layout === 'full-width') {
                 htmlContent = `
                   <div class="space-y-3">
-                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded" />
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
                     ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
                   </div>
                 `;
               } else { // centered or default
                 htmlContent = `
                   <div class="text-center">
-                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
                     ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                   </div>
                 `;
@@ -1381,7 +1372,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
-  const handleAddVideo = () => {
+  const handleAddVideo = async () => {
     // Validate required fields based on upload method
     if (!videoTitle) {
       alert('Please enter a video title');
@@ -1401,7 +1392,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     // Create video URL based on upload method
     let finalVideoUrl = '';
     if (videoUploadMethod === 'file') {
-      finalVideoUrl = URL.createObjectURL(videoFile);
+      try {
+        setIsUploading(true);
+        const upload = await uploadVideoResource(videoFile, { folder: 'lesson-videos', public: true, type: 'video' });
+        if (!upload?.success || !upload?.videoUrl) {
+          throw new Error('Video upload failed');
+        }
+        finalVideoUrl = upload.videoUrl;
+      } catch (e) {
+        setIsUploading(false);
+        toast.error(e.message || 'Video upload failed');
+        return;
+      } finally {
+        setIsUploading(false);
+      }
     } else {
       finalVideoUrl = videoUrl;
     }
@@ -1438,18 +1442,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         prev.map(block => block.id === currentBlock.id ? videoBlock : block)
       );
     } else {
-      // Add new block
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, videoBlock]
-          }
-        }));
-      } else {
-        setContentBlocks(prev => [...prev, videoBlock]);
-      }
+      // Add new block to local edit list
+      setContentBlocks(prev => [...prev, videoBlock]);
     }
    
     handleVideoDialogClose();
@@ -1480,19 +1474,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         alt_text: imageTitle,
         layout: template.layout,
         template: template.id
-      },
-      html_css: `
-        <div class="image-block" style="${template.layout ? `display: flex; flex-direction: ${template.layout.includes('left') ? 'row' : 'column'}; gap: 1rem;` : ''}">
-          <img
-            src="${imageUrl}"
-            alt="${imageTitle}"
-            style="max-width: 100%; height: auto; border-radius: 0.5rem; ${template.layout?.includes('full') ? 'width: 100%;' : ''}"
-          />
-          ${imageText ? `
-            <span class="mt-2 text-sm text-gray-600">${getPlainText(imageText)}</span>
-          ` : ''}
-        </div>
-      `
+      }
     };
    
     // Always add to local edit list so it appears immediately in edit mode
@@ -1974,7 +1956,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       htmlContent = `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
           <div>
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
           <div>
             ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
@@ -1991,14 +1973,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } else if (layout === 'centered') {
       htmlContent = `
         <div class="text-center">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
           ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
         </div>
       `;
     } else if (layout === 'full-width') {
       htmlContent = `
         <div class="space-y-3">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-auto rounded" />
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
           ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
         </div>
       `;
@@ -2132,7 +2114,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
-  const handleAddAudio = () => {
+  const handleAddAudio = async () => {
     // Validate required fields based on upload method
     if (!audioTitle) {
       alert('Please enter an audio title');
@@ -2152,7 +2134,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     // Create audio URL based on upload method
     let finalAudioUrl = '';
     if (audioUploadMethod === 'file') {
-      finalAudioUrl = URL.createObjectURL(audioFile);
+      try {
+        setIsUploading(true);
+        const upload = await uploadAudioResource(audioFile, { folder: 'lesson-audio', public: true, type: 'audio' });
+        if (!upload?.success || !upload?.audioUrl) {
+          throw new Error('Audio upload failed');
+        }
+        finalAudioUrl = upload.audioUrl;
+      } catch (e) {
+        setIsUploading(false);
+        toast.error(e.message || 'Audio upload failed');
+        return;
+      } finally {
+        setIsUploading(false);
+      }
     } else {
       finalAudioUrl = audioUrl;
     }
@@ -2189,19 +2184,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         prev.map(block => block.id === currentBlock.id ? audioBlock : block)
       );
     } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, audioBlock]
-          }
-        }));
-      } else {
-        setContentBlocks(prev => [...prev, audioBlock]);
-      }
+      // Add new block to local edit list
+      setContentBlocks(prev => [...prev, audioBlock]);
     }
    
     handleAudioDialogClose();
@@ -2569,6 +2553,75 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             if (contentData) {
               console.log('Setting lesson content:', contentData);
               setLessonContent(contentData);
+
+              // Mirror fetched content into edit-mode blocks so newly added blocks append after existing ones
+              try {
+                const fetchedBlocks = Array.isArray(contentData?.data?.content) ? contentData.data.content : [];
+                const mappedEditBlocks = fetchedBlocks.map((b, i) => {
+                  const base = {
+                    id: b.block_id || `block_${i + 1}`,
+                    block_id: b.block_id || `block_${i + 1}`,
+                    type: b.type,
+                    order: i + 1,
+                    html_css: b.html_css || '',
+                    details: b.details || {},
+                    isEditing: false,
+                    timestamp: new Date().toISOString()
+                  };
+                  if (b.type === 'image') {
+                    return {
+                      ...base,
+                      title: 'Image',
+                      layout: b.details?.layout || 'centered',
+                      templateType: b.details?.template || undefined,
+                      imageUrl: b.details?.image_url || '',
+                      imageTitle: b.details?.alt_text || 'Image',
+                      imageDescription: b.details?.caption || '',
+                      text: b.details?.caption || ''
+                    };
+                  }
+                  if (b.type === 'audio') {
+                    return {
+                      ...base,
+                      type: 'audio',
+                      title: 'Audio',
+                      audioUrl: b.details?.audio_url || '',
+                      audioTitle: b.details?.caption || 'Audio',
+                      audioDescription: b.details?.description || ''
+                    };
+                  }
+                  if (b.type === 'pdf') {
+                    return {
+                      ...base,
+                      type: 'pdf',
+                      pdfUrl: b.details?.pdf_url || '',
+                      pdfTitle: b.details?.caption || 'PDF Document',
+                      pdfDescription: b.details?.description || ''
+                    };
+                  }
+                  if (b.type === 'video') {
+                    return {
+                      ...base,
+                      type: 'video',
+                      videoUrl: b.details?.video_url || '',
+                      videoTitle: b.details?.caption || ''
+                    };
+                  }
+                  // Default map to text block with preserved HTML
+                  return {
+                    ...base,
+                    type: 'text',
+                    title: 'Text Block',
+                    textType: 'paragraph',
+                    content: b.html_css || ''
+                  };
+                });
+                if (mappedEditBlocks.length > 0) {
+                  setContentBlocks(mappedEditBlocks);
+                }
+              } catch (e) {
+                console.warn('Failed to map fetched content to edit blocks:', e);
+              }
             } else {
               console.log('No content found for this lesson');
             }
@@ -2800,19 +2853,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           {/* Course Content - All in one flowing container */}
                           <div className="p-8 bg-gradient-to-b from-gray-50 to-white">
                             {(() => {
-                              // Combine both contentBlocks and lessonContent blocks
-                              const allBlocks = [];
-                             
-                              // Add blocks from lessonContent (existing lesson)
-                              if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-                                allBlocks.push(...lessonContent.data.content);
-                              }
-                             
-                              // Add blocks from contentBlocks (new blocks)
-                              if (contentBlocks && contentBlocks.length > 0) {
-                                allBlocks.push(...contentBlocks);
-                              }
-                             
+                              // Use a single source to avoid duplicate rendering
+                              // Prefer edit-mode contentBlocks when present; otherwise fall back to fetched lesson content
+                              const allBlocks = (contentBlocks && contentBlocks.length > 0)
+                                ? [...contentBlocks]
+                                : (lessonContent?.data?.content ? [...lessonContent.data.content] : []);
                               // Sort by order if available
                               allBlocks.sort((a, b) => (a.order || 0) - (b.order || 0));
                              
@@ -2870,7 +2915,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                       <img
                                                         src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                         alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                        className="w-full h-auto rounded-lg shadow-lg"
+                                                        className="w-full max-h-[28rem] object-contain rounded-lg shadow-lg"
                                                       />
                                                     </div>
                                                     <div>
@@ -2899,7 +2944,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                     <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                       alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="mx-auto w-full max-w-[720px] h-auto rounded-xl shadow-lg"
+                                                      className="mx-auto w-full max-w-[720px] max-h-[28rem] object-contain rounded-xl shadow-lg"
                                                     />
                                                     {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
                                                       <p className="text-gray-600 mt-3 italic text-base">
@@ -2912,7 +2957,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                     <img
                                                       src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
                                                       alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="w-full max-h-[28rem] object-cover rounded-xl shadow-lg"
+                                                      className="w-full max-h-[28rem] object-contain rounded-xl shadow-lg"
                                                     />
                                                     {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
                                                       <p className="text-gray-700 mt-4 text-lg">
