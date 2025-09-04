@@ -205,6 +205,7 @@ export async function unenrollUser(courseId, userId) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeader(),
     },
     credentials: 'include',
     body: JSON.stringify({ userId }),
