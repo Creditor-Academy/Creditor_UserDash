@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { professionalAvatars } from "@/lib/avatar-utils";
 import { useParams } from "react-router-dom";
-import { addGroupMember, getGroupMembers } from "@/services/groupService";
+import { addGroupMember, getGroupMembers, makeGroupAdmin } from "@/services/groupService";
 import { toast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
@@ -77,6 +77,8 @@ export function MembersPage() {
   const [inviteUserId, setInviteUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [promoting, setPromoting] = useState(false);
 
   // Check if current user is admin or instructor
   const isAdminOrInstructor = isInstructorOrAdmin();
@@ -190,11 +192,38 @@ export function MembersPage() {
     member.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
+  // Selection helpers
+  const getMemberId = (m) => m.id;
+  const isSelected = (m) => selectedIds.includes(getMemberId(m));
+  const toggleSelected = (m) => {
+    const id = getMemberId(m);
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+  const clearSelection = () => setSelectedIds([]);
+
   // Count admins
   const adminCount = members.filter(member => member.isAdmin).length;
 
   // Check if current user is already a member
   const isCurrentUserMember = members.some(member => member.id === currentUserId);
+
+  const handleMakeAdmin = async () => {
+    if (selectedIds.length === 0) return;
+    try {
+      setPromoting(true);
+      // optimistic
+      setMembers(prev => prev.map(m => selectedIds.includes(getMemberId(m)) ? { ...m, isAdmin: true, role: 'Admin' } : m));
+      for (const uid of selectedIds) {
+        await makeGroupAdmin({ groupId, userId: uid });
+      }
+      toast({ title: 'Success', description: `Made ${selectedIds.length} member(s) admin` });
+      clearSelection();
+    } catch (e) {
+      toast({ title: 'Failed to make admin', description: e?.response?.data?.message || e.message, variant: 'destructive' });
+    } finally {
+      setPromoting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -207,6 +236,17 @@ export function MembersPage() {
                 {members.length} members · {adminCount} admins
               </CardDescription>
             </div>
+            {isAdminOrInstructor && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={selectedIds.length ? "default" : "outline"}
+                  disabled={selectedIds.length === 0 || promoting}
+                  onClick={handleMakeAdmin}
+                >
+                  {promoting ? 'Making Admin...' : `Make Admin${selectedIds.length ? ` (${selectedIds.length})` : ''}`}
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -223,6 +263,7 @@ export function MembersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                {isAdminOrInstructor && <TableHead className="w-10"></TableHead>}
                 <TableHead>Member</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined</TableHead>
@@ -239,6 +280,18 @@ export function MembersPage() {
               ) : filteredMembers.length > 0 ? (
                 filteredMembers.map((member) => (
                   <TableRow key={member.id}>
+                    {isAdminOrInstructor && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={isSelected(member)}
+                          onChange={() => toggleSelected(member)}
+                          disabled={member.isAdmin}
+                          title={member.isAdmin ? 'Already an admin' : 'Select member'}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>

@@ -11,7 +11,7 @@ import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
 import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage } from "@/services/groupService";
+import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage, editGroupMessage } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 
 const initialMessages = [
@@ -294,8 +294,17 @@ export function ChatPage() {
   };
 
   // Edit/Delete message handlers
-  const handleEditMessage = (messageId, newContent) => {
+  const handleEditMessage = async (messageId, newContent) => {
+    const snapshot = messages;
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
+    try {
+      await editGroupMessage(groupId, messageId, { content: newContent });
+      const socket = getSocket();
+      // Optionally let backend broadcast an update event if implemented
+      // socket.emit('editGroupMessage', { groupId, messageId, content: newContent });
+    } catch (e) {
+      setMessages(snapshot);
+    }
   };
 
   const handleDeleteMessage = async (messageId) => {

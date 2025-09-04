@@ -661,7 +661,7 @@ export function NewsPage() {
                               <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>Cancel</Button>
                             </div>
                           ) : (
-                            <p className="text-gray-800">{comment.content}</p>
+                          <p className="text-gray-800">{comment.content}</p>
                           )}
                           <div className="text-xs text-gray-500 mt-1">{comment.timestamp}</div>
                         </div>

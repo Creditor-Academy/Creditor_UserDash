@@ -165,6 +165,17 @@ export const deleteGroupMessage = async (groupId, messageId) => {
   }
 };
 
+// Edit group message (owner or admin)
+export const editGroupMessage = async (groupId, messageId, { content }) => {
+  try {
+    const response = await api.put(`${API_BASE}/groups/${groupId}/messages/${messageId}`, { content });
+    return response.data;
+  } catch (error) {
+    console.error('Error editing group message:', error);
+    throw error;
+  }
+};
+
 // Get group posts
 export const getGroupPosts = async (groupId) => {
   try {
@@ -205,6 +216,17 @@ export const deleteComment = async (postId, commentId) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting comment:', error);
+    throw error;
+  }
+};
+
+// Make a user admin of a group (only callable by current group admin)
+export const makeGroupAdmin = async ({ groupId, userId }) => {
+  try {
+    const response = await api.post(`${API_BASE}/groups/make-admin`, { groupId, userId });
+    return response.data;
+  } catch (error) {
+    console.error('Error making group admin:', error);
     throw error;
   }
 };
