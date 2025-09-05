@@ -8,7 +8,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronLeft, Clock, GraduationCap, ChevronDown, BookOpen, Loader2, CheckCircle, XCircle, Award, BarChart2, HelpCircle } from "lucide-react";
 import { fetchCourseModules } from "@/services/courseService";
 import { getModuleQuizzes, getQuizRemainingAttempts, getQuizResults, getUserLatestQuizAttempt } from "@/services/quizService";
+import { fetchQuizCorrectAnswers } from "@/services/quizServices";
 import LastAttemptModal from "@/components/LastAttemptModal";
+import QuizCorrectAns from "@/components/QuizCorrectAns";
 
 // Assessment sections - only Quiz for now
 const assessmentSections = [
@@ -35,6 +37,9 @@ function ModuleAssessmentsView() {
   const [error, setError] = useState("");
   const [isLastAttemptOpen, setIsLastAttemptOpen] = useState(false);
   const [lastAttempt, setLastAttempt] = useState(null);
+  const [isCorrectAnswersOpen, setIsCorrectAnswersOpen] = useState(false);
+  const [correctAnswers, setCorrectAnswers] = useState([]);
+  const [loadingCorrectAnswers, setLoadingCorrectAnswers] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -137,6 +142,20 @@ function ModuleAssessmentsView() {
       ...prev,
       [sectionId]: !prev[sectionId]
     }));
+  };
+
+  const handleViewCorrectAnswers = async (quizId, quizTitle) => {
+    setLoadingCorrectAnswers(prev => ({ ...prev, [quizId]: true }));
+    try {
+      const answers = await fetchQuizCorrectAnswers(quizId);
+      setCorrectAnswers(answers);
+      setIsCorrectAnswersOpen(true);
+    } catch (error) {
+      console.error('Error fetching correct answers:', error);
+      setError('Failed to load correct answers');
+    } finally {
+      setLoadingCorrectAnswers(prev => ({ ...prev, [quizId]: false }));
+    }
   };
 
   const getQuizStatus = (quiz) => {
@@ -409,25 +428,42 @@ function ModuleAssessmentsView() {
                                                </div>
                                              </div>
                                            </div>
-                                          <button
-                                            type="button"
-                                            onClick={async () => {
-                                              try {
-                                                const latest = await getUserLatestQuizAttempt(quiz.quizId || quiz.id);
-                                                setLastAttempt(latest);
-                                                setIsLastAttemptOpen(true);
-                                              } catch (e) {
-                                                setLastAttempt(null);
-                                                setIsLastAttemptOpen(true);
-                                              }
-                                            }}
-                                                                                         className="w-full text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 border border-indigo-500 rounded-lg px-4 py-3 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md active:scale-[0.98]"
-                                          >
-                                            <div className="flex items-center justify-center gap-2">
-                                              <BarChart2 size={16} />
-                                              View Final Score
-                                            </div>
-                                          </button>
+                                          <div className="space-y-3">
+                                            <button
+                                              type="button"
+                                              onClick={async () => {
+                                                try {
+                                                  const latest = await getUserLatestQuizAttempt(quiz.quizId || quiz.id);
+                                                  setLastAttempt(latest);
+                                                  setIsLastAttemptOpen(true);
+                                                } catch (e) {
+                                                  setLastAttempt(null);
+                                                  setIsLastAttemptOpen(true);
+                                                }
+                                              }}
+                                              className="w-full text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 border border-indigo-500 rounded-lg px-4 py-3 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md active:scale-[0.98]"
+                                            >
+                                              <div className="flex items-center justify-center gap-2">
+                                                <BarChart2 size={16} />
+                                                View Final Score
+                                              </div>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleViewCorrectAnswers(quiz.quizId || quiz.id, quiz.title)}
+                                              disabled={loadingCorrectAnswers[quiz.quizId || quiz.id]}
+                                              className="w-full text-sm font-semibold text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-300 rounded-lg px-4 py-3 transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                              <div className="flex items-center justify-center gap-2">
+                                                {loadingCorrectAnswers[quiz.quizId || quiz.id] ? (
+                                                  <Loader2 size={16} className="animate-spin" />
+                                                ) : (
+                                                  <BookOpen size={16} />
+                                                )}
+                                                {loadingCorrectAnswers[quiz.quizId || quiz.id] ? 'Loading...' : 'View Correct Answers'}
+                                              </div>
+                                            </button>
+                                          </div>
                                         </div>
                                       ) : (
                                         (() => {
@@ -503,6 +539,12 @@ function ModuleAssessmentsView() {
         </div>
       </main>
       <LastAttemptModal isOpen={isLastAttemptOpen} onClose={setIsLastAttemptOpen} attempt={lastAttempt} />
+      <QuizCorrectAns 
+        isOpen={isCorrectAnswersOpen} 
+        onClose={() => setIsCorrectAnswersOpen(false)} 
+        questions={correctAnswers}
+        quizTitle={module?.title || 'Quiz'}
+      />
     </div>
   );
 }
