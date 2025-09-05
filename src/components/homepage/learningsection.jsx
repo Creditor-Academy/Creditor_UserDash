@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import athenaDash from "../../assets/athenaDash.png";
+import athenaDash from "../../assets/AthenaDash.png";
 import { FaBolt, FaChalkboardTeacher, FaChartBar, FaArrowRight, FaUser, FaClock, FaBook, FaChartLine } from "react-icons/fa";
 
 // Animation variants
