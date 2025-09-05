@@ -713,3 +713,5 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 };
 
 export default UserDetailsModal;
+
+
