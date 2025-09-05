@@ -7,7 +7,7 @@ import AboutHero from '@/components/homepage/AboutHero.jsx';
 import AboutFeatures from '@/components/homepage/AboutFeatures.jsx';
 //import Ready from '@/components/Ready.jsx';
 import Features from '@/components/homepage/features.jsx';
-import LearningSection from '@/components/homepage/learningSection.jsx';
+import LearningSection from '@/components/homepage/learningsection.jsx';
 
 const Home = () => {
   return (
