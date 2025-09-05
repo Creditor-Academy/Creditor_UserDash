@@ -674,21 +674,35 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
                                     )}
                                   </div>
                                   {options.length > 0 && (
-                                    <div className="mt-3 space-y-1">
-                                      {options.map((opt) => {
-                                        const isCorrect = opt.isCorrect === true || correctAnswers.includes(String(opt.text || '').toLowerCase());
-                                        return (
-                                          <div key={opt.id} className="flex items-center justify-between border rounded p-2">
-                                            <span className="text-sm">{opt.text}</span>
-                                            {isCorrect ? (
-                                              <CheckCircle className="w-4 h-4 text-green-600" />
-                                            ) : (
-                                              <X className="w-4 h-4 text-red-600" />
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
+                                    q.question_type === 'SEQUENCE' ? (
+                                      <div className="mt-3 space-y-1">
+                                        {options
+                                          .slice()
+                                          .sort((a, b) => Number(a.orderIndex ?? 0) - Number(b.orderIndex ?? 0))
+                                          .map((opt, idx) => (
+                                            <div key={opt.id} className="flex items-center justify-between border rounded p-2">
+                                              <span className="text-sm">{idx + 1}. {opt.text}</span>
+                                              <Badge variant="outline">order {Number(opt.orderIndex ?? idx)}</Badge>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    ) : (
+                                      <div className="mt-3 space-y-1">
+                                        {options.map((opt) => {
+                                          const isCorrect = opt.isCorrect === true || correctAnswers.includes(String(opt.text || '').toLowerCase());
+                                          return (
+                                            <div key={opt.id} className="flex items-center justify-between border rounded p-2">
+                                              <span className="text-sm">{opt.text}</span>
+                                              {isCorrect ? (
+                                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                              ) : (
+                                                <X className="w-4 h-4 text-red-600" />
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )
                                   )}
                                   {options.length === 0 && q.correct_answer && (
                                     <div className="mt-3 text-sm">
