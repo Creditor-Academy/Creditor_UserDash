@@ -363,7 +363,6 @@ function QuizTakePage() {
           
         case 'truefalse':
         case 'true_false':
-        case 'truefalse':
         case 'true-false':
         case 'true false':
           formattedAnswer.selectedOptionId = null;
@@ -416,7 +415,6 @@ function QuizTakePage() {
         case 'one word':
         case 'single_word':
         case 'singleword':
-        case 'one_word':
           formattedAnswer.selectedOptionId = null;
           formattedAnswer.answer = String(Array.isArray(answer) ? answer[0] : answer).trim();
           console.log(`One word question ${questionId} formatted:`, formattedAnswer);
@@ -874,6 +872,11 @@ function QuizTakePage() {
         );
         
       case 'one_word':
+      case 'oneword':
+      case 'one word':
+      case 'single_word':
+      case 'singleword':
+      case 'single word':
         return (
           <div>
             <input
