@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
+import { getAllConversations } from "@/services/messageService";
+import getSocket from "@/services/socketClient";
 
 // Will be loaded from backend
 const initialAllUsers = [];
@@ -37,10 +39,83 @@ function Messages() {
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Load all users from backend for the + dialog; conversations remain empty until user starts one
+  // Load conversations for current user on entry; also load all users for starting new chat
+  // Ensure socket connects when Messages section is opened
+  useEffect(() => {
+    const socket = getSocket();
+    // Optional: log to verify connection lifecycle specific to Messages
+    const onConnect = () => console.log('[Messages] socket connected');
+    const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
+
+  // Load conversations for current user on entry; also load all users for starting new chat
   useEffect(() => {
     (async () => {
       try {
+        // Load conversations
+        const convos = await getAllConversations();
+        console.log('getAllConversations ->', convos);
+        // If backend returns only IDs, render placeholder items directly
+        if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
+          const idFriends = convos.map(id => ({
+            id: String(id),
+            name: `Conversation ${String(id).slice(0, 6)}`,
+            avatar: '/placeholder.svg',
+            lastMessage: '',
+          }));
+          setFriends(idFriends);
+        } else {
+        // Expected structure per conversation can vary; normalize to friend entry
+        const currentUserId = localStorage.getItem('userId');
+        const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => {
+          let other = null;
+          // common shapes
+          other = c.otherUser || c.recipient || c.user || c.partner || c.peer || null;
+          // participants array
+          if (!other && Array.isArray(c.participants)) {
+            other = c.participants.find(p => String(p.id || p._id || p.user_id || p.userId) !== String(currentUserId)) || c.participants[0];
+          }
+          // users/members arrays
+          if (!other && Array.isArray(c.users)) {
+            other = c.users.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.users[0];
+          }
+          if (!other && Array.isArray(c.members)) {
+            other = c.members.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.members[0];
+          }
+
+          // fallback: maybe conversation has sender/receiver
+          if (!other && c.sender && String(c.sender.id || c.sender._id) !== String(currentUserId)) other = c.sender;
+          if (!other && c.receiver && String(c.receiver.id || c.receiver._id) !== String(currentUserId)) other = c.receiver;
+
+          // fallback: some APIs return flattened other user fields on conversation
+          const fallbackOtherId = c.otherUserId || c.other_user_id || c.peerId || c.peer_id;
+          const fallbackName = c.otherUserName || c.other_user_name || c.peerName || c.title || c.name;
+          const fallbackAvatar = c.otherUserAvatar || c.other_user_avatar || c.peerAvatar || c.photo || c.avatar;
+
+          const otherId = (other && (other.id || other._id || other.user_id || other.userId)) || fallbackOtherId;
+          const first = other?.first_name || other?.firstName || '';
+          const last = other?.last_name || other?.lastName || '';
+          const otherName = `${(first || '').trim()} ${(last || '').trim()}`.trim() || other?.name || other?.email || fallbackName || 'User';
+          const lastMsg = c.lastMessage || c.last_message || c.latestMessage || c.latest_message || c.message;
+          const lastContent = (lastMsg && (lastMsg.content || lastMsg.text || lastMsg.body)) || '';
+
+          return otherId ? {
+            id: String(otherId),
+            name: otherName,
+            avatar: other?.image || other?.avatar || fallbackAvatar || '/placeholder.svg',
+            lastMessage: lastContent,
+          } : null;
+        }).filter(Boolean);
+        setFriends(normalizedFriends);
+        }
+
+        // Load directory of all users for the + modal
         const users = await fetchAllUsers();
         // Normalize to {id, name, avatar}
         const normalized = (users || []).map(u => ({
@@ -221,6 +296,9 @@ function Messages() {
                                 setFriends(prev => [...prev, user]);
                               }
                               setSelectedFriend(user.id);
+                              // Emit socket event when starting new conversation
+                              const socket = getSocket();
+                              socket.emit("startConversation", { to: user.id });
                             }}
                           >
                             <Avatar className="h-8 w-8">
@@ -251,7 +329,12 @@ function Messages() {
               {filteredFriends.map((friend) => (
                 <div
                   key={friend.id}
-                  onClick={() => setSelectedFriend(friend.id)}
+                  onClick={() => {
+                    setSelectedFriend(friend.id);
+                    // Emit socket event when conversation is clicked
+                    const socket = getSocket();
+                    socket.emit("startConversation", { to: friend.id });
+                  }}
                   className={`p-4 flex items-center gap-3 hover:bg-accent cursor-pointer transition-colors border-b ${
                     selectedFriend === friend.id ? "bg-accent" : ""
                   }`}

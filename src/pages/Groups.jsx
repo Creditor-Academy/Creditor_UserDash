@@ -169,7 +169,7 @@ export function Groups() {
   const handleViewChange = (view) => {
     setActiveView(view);
     setCurrentPage(1);
-  };
+   };
 
   return (
     <div className="container py-6 md:py-8 max-w-6xl">

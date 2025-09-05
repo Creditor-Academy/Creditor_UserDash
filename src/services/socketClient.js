@@ -12,15 +12,26 @@ function deriveSocketOrigin(base) {
   }
 }
 
+// Function to get cookie value by name
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
 const socketOrigin = deriveSocketOrigin(API_BASE);
 
 let socket;
 
 export function getSocket() {
   if (!socket) {
+    const token = getCookie("refresh_token");
+    console.log('refresh_token', token);
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
+      auth: { token }
     });
 
     // Helpful diagnostics in dev
