@@ -1111,6 +1111,84 @@ function QuizTakePage() {
               );
             }
           })()}
+          
+          {/* Question Type Instructions */}
+          {(() => {
+            const renderType = (currentQ.question_type?.toLowerCase()) || (currentQ.type?.toLowerCase());
+            
+            const getInstruction = (type) => {
+              switch (type) {
+                case 'mcq_single':
+                case 'scq':
+                case 'single_choice':
+                case 'single choice':
+                case 'singlechoice':
+                  return "Select the correct answer from the options below.";
+                  
+                case 'mcq_multiple':
+                case 'multiple_choice':
+                case 'multiple choice':
+                case 'multiplechoice':
+                  return "Select all correct answers from the options below.";
+                  
+                case 'mcq':
+                  return currentQ.options && Array.isArray(currentQ.options) && currentQ.options.length > 0
+                    ? "Select all correct answers from the options below."
+                    : "Enter your answer in the text field below.";
+                  
+                case 'sequence':
+                  return "Drag and drop the items below to arrange them in the correct order.";
+                  
+                case 'true_false':
+                case 'truefalse':
+                case 'true-false':
+                case 'true false':
+                  return "Select whether the statement is true or false.";
+                  
+                case 'descriptive':
+                case 'text':
+                case 'essay':
+                case 'long_answer':
+                case 'long answer':
+                  return "Provide a detailed written response to the question.";
+                  
+                case 'fill_blank':
+                case 'fill in the blank':
+                case 'fillintheblank':
+                case 'fill_ups':
+                  return "Fill in the blanks with the correct answers.";
+                  
+                case 'one_word':
+                case 'oneword':
+                case 'one word':
+                case 'single_word':
+                case 'singleword':
+                  return "Provide a single word or short phrase answer.";
+                  
+                case 'matching':
+                case 'match':
+                  return "Match the items correctly.";
+                  
+                default:
+                  return "Please provide your answer below.";
+              }
+            };
+            
+            const instruction = getInstruction(renderType);
+            
+            return (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800 font-medium">
+                  <span className="inline-flex items-center gap-1">
+                    <BookOpen size={14} />
+                    Instructions:
+                  </span>
+                </p>
+                <p className="text-sm text-blue-700 mt-1">{instruction}</p>
+              </div>
+            );
+          })()}
+          
           {renderQuestion()}
         </CardContent>
       </Card>
