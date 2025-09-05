@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, MessageSquare, Bell, Crown, Loader2, Shield, Search, CheckSquare, Square } from "lucide-react";
+import { X, Users, MessageSquare, Bell, Crown, Loader2, Shield, Search, CheckSquare, Square, File } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -12,6 +12,50 @@ import {
 } from "@/services/groupService";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+
+function MediaTile({ url, title }) {
+  const [imageError, setImageError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
+  // Detect video by mime hints if present
+  const lowerUrl = (url || '').toLowerCase();
+  const urlWithoutQuery = (lowerUrl.split('?')[0] || '');
+  const isLikelyVideoByExt = /\.(mp4|webm|ogg|mov|m4v)$/.test(urlWithoutQuery);
+
+  // If extension suggests video, try video first; otherwise try image first
+  const tryVideoFirst = isLikelyVideoByExt;
+
+  return (
+    <div className="aspect-square w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-100 flex items-center justify-center">
+      {!tryVideoFirst && !imageError && (
+        // eslint-disable-next-line jsx-a11y/alt-text
+        <img
+          src={url}
+          className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+          onError={() => setImageError(true)}
+        />
+      )}
+      {(tryVideoFirst || imageError) && !videoError && (
+        <video
+          src={url}
+          className="h-full w-full object-cover"
+          muted
+          playsInline
+          autoPlay
+          loop
+          preload="metadata"
+          onError={() => setVideoError(true)}
+        />
+      )}
+      {(tryVideoFirst && videoError) || (!tryVideoFirst && imageError && videoError) ? (
+        <div className="flex flex-col items-center justify-center text-gray-600 text-xs gap-2">
+          <File className="h-5 w-5 text-gray-400" />
+          <span className="truncate max-w-[90%]">{title || 'View file'}</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function GroupAdminModal({ isOpen, onClose, groupId }) {
   const { isInstructorOrAdmin } = useAuth();
@@ -160,7 +204,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[80] p-4"
+          className="fixed inset-0 z-[80] p-4 overflow-y-auto"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -174,7 +218,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200/60 ring-1 ring-black/5 w-full max-w-3xl max-h-[90vh] overflow-hidden"
+              className="bg-white rounded-2xl shadow-2xl border border-gray-200/60 ring-1 ring-black/5 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
@@ -325,30 +369,44 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                     </div>
                   </div>
                   <div className="p-4">
+                    {/* helpers for media type */}
+                    {/**/}
+                    {/**/}
+                    {/**/}
+                    {/**/}
+                    {/* Inline helpers */}
+                    {(() => {
+                      // no-op to allow function declarations inside JSX scope
+                      return null;
+                    })()}
+                    {
+                      /* eslint-disable no-unused-vars */
+                    }
+                    { /* helpers defined in render scope */ }
+                    {(() => {
+                      return null;
+                    })()}
                     {loading ? (
                       <div className="p-6 text-center text-gray-500 flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" /> Loading attachments...
                       </div>
                     ) : (attachments && attachments.length > 0) ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {attachments.map((att) => (
-                          <a
-                            key={att.id || att.url}
-                            href={att.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block group"
-                            title={att.title || 'Attachment'}
-                          >
-                            <div className="aspect-square w-full overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
-                              {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                              <img
-                                src={att.url}
-                                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                              />
-                            </div>
-                          </a>
-                        ))}
+                        {attachments.map((att) => {
+                          const url = att.url || '';
+                          return (
+                            <a
+                              key={att.id || att.url}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block group"
+                              title={att.title || 'Attachment'}
+                            >
+                              <MediaTile url={url} title={att.title} />
+                            </a>
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="p-6 text-center text-gray-500">No attachments</div>
