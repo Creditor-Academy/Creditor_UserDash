@@ -277,3 +277,18 @@ export async function deleteQuestion(quizId, questionId) {
   }
   return await response.json();
 }
+
+// Fetch correct answers for a quiz (admin endpoint)
+export async function fetchQuizCorrectAnswers(quizId) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/admin/quizzes/${quizId}/questions`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+    throw new Error(errorData.message || `Failed to fetch quiz correct answers (${response.status})`);
+  }
+  const data = await response.json();
+  return data.data || data;
+}
