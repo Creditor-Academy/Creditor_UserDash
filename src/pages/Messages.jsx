@@ -16,44 +16,44 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { fetchAllUsers } from "@/services/userService";
 
-// Dummy data - replace with real data later
-const allUsers = [
-  { id: 1, name: "Sarah Wilson", avatar: "/placeholder.svg" },
-  { id: 2, name: "Michael Chen", avatar: "/placeholder.svg" },
-  { id: 3, name: "Emily Brown", avatar: "/placeholder.svg" },
-  { id: 4, name: "David Kim", avatar: "/placeholder.svg" },
-  { id: 5, name: "Jessica Taylor", avatar: "/placeholder.svg" },
-  { id: 6, name: "Robert Johnson", avatar: "/placeholder.svg" },
-  { id: 7, name: "Alex Morgan", avatar: "/placeholder.svg" },
-  { id: 8, name: "Lisa Wong", avatar: "/placeholder.svg" },
-];
+// Will be loaded from backend
+const initialAllUsers = [];
 
 function Messages() {
-  const [friends, setFriends] = useState([
-    { id: 1, name: "Sarah Wilson", avatar: "/placeholder.svg", lastMessage: "Hey there!" },
-    { id: 2, name: "Michael Chen", avatar: "/placeholder.svg", lastMessage: "Let's catch up later" },
-    { id: 3, name: "Emily Brown", avatar: "/placeholder.svg", lastMessage: "Did you see the new course?" },
-    { id: 4, name: "David Kim", avatar: "/placeholder.svg", lastMessage: "Thanks for your help!" },
-    { id: 5, name: "Jessica Taylor", avatar: "/placeholder.svg", lastMessage: "Are you free tomorrow?" },
-    { id: 6, name: "Robert Johnson", avatar: "/placeholder.svg", lastMessage: "I'll get back to you" },
-  ]);
+  // conversations shown in the left list (starts empty like Google Chat)
+  const [friends, setFriends] = useState([]);
+  // directory of all users to start a chat with (shown in + dialog)
+  const [allUsers, setAllUsers] = useState([]);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: 1, senderId: 1, text: "Hey there!", timestamp: "10:30 AM", type: 'text' },
-    { id: 2, senderId: 0, text: "Hi! How are you?", timestamp: "10:31 AM", type: 'text' },
-    { id: 3, senderId: 1, text: "I'm doing great! Just finished the React module.", timestamp: "10:33 AM", type: 'text' },
-    { id: 4, senderId: 0, text: "That's awesome! I'm still working on it.", timestamp: "10:34 AM", type: 'text' },
-    { id: 5, senderId: 1, text: "Let me know if you need any help with it.", timestamp: "10:36 AM", type: 'text' },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [newChatUsers, setNewChatUsers] = useState([]);
   const [newChatSearch, setNewChatSearch] = useState("");
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  // Load all users from backend for the + dialog; conversations remain empty until user starts one
+  useEffect(() => {
+    (async () => {
+      try {
+        const users = await fetchAllUsers();
+        // Normalize to {id, name, avatar}
+        const normalized = (users || []).map(u => ({
+          id: u.id || u._id || u.user_id || u.userId,
+          name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.email || 'User',
+          avatar: u.image || u.avatar || '/placeholder.svg',
+        })).filter(u => u.id);
+        setAllUsers(normalized);
+      } catch (e) {
+        console.warn('Messages: failed to load users', e);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -177,27 +177,27 @@ function Messages() {
   );
 
   const filteredNewChatUsers = allUsers.filter(user => 
-    user.name.toLowerCase().includes(newChatSearch.toLowerCase()) &&
-    !friends.some(friend => friend.id === user.id)
+    user.name.toLowerCase().includes(newChatSearch.toLowerCase())
   );
 
   return (
     <div className="container py-6">
       <div className="rounded-lg border bg-card shadow-sm mb-8">
-        <div className="flex h-[700px]">
-          {/* Friends List Sidebar */}
-          <div className="w-80 border-r flex flex-col">
+        <div className="h-[700px]">
+          {/* Single-section layout: show list OR chat, not both */}
+          {!selectedFriend && (
+          <div className="w-full flex flex-col h-full">
             <div className="p-4 border-b flex justify-between items-center">
               <h2 className="text-xl font-semibold">Messages</h2>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" title="New Chat">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>New Chat</DialogTitle>
+                    <DialogTitle>Start a new chat</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="relative">
@@ -215,28 +215,23 @@ function Messages() {
                           <div 
                             key={user.id}
                             className="flex items-center gap-3 p-2 hover:bg-accent rounded cursor-pointer"
-                            onClick={() => handleNewChatUserSelect(user.id)}
+                            onClick={() => {
+                              // Immediately open chat with the clicked user
+                              if (!friends.some(f => f.id === user.id)) {
+                                setFriends(prev => [...prev, user]);
+                              }
+                              setSelectedFriend(user.id);
+                            }}
                           >
-                            <Checkbox 
-                              checked={newChatUsers.includes(user.id)}
-                              onCheckedChange={() => handleNewChatUserSelect(user.id)}
-                            />
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{user.name[0]}</AvatarFallback>
+                              <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
                             <span className="font-medium">{user.name}</span>
                           </div>
                         ))}
                       </div>
                     </ScrollArea>
-                    <Button 
-                      onClick={handleCreateNewChat}
-                      disabled={newChatUsers.length === 0}
-                      className="w-full"
-                    >
-                      Start Chat
-                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -263,29 +258,36 @@ function Messages() {
                 >
                   <Avatar>
                     <AvatarImage src={friend.avatar} />
-                    <AvatarFallback>{friend.name[0]}</AvatarFallback>
+                    <AvatarFallback>{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
                       <p className="font-medium">{friend.name}</p>
-                      <p className="text-xs text-muted-foreground">12:30 PM</p>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
-                      {friend.lastMessage}
+                      {friend.lastMessage || 'Start a conversation'}
                     </p>
                   </div>
                 </div>
               ))}
+              {filteredFriends.length === 0 && (
+                <div className="p-6 text-sm text-muted-foreground">
+                  No conversations yet. Click the + icon to start a chat.
+                </div>
+              )}
             </ScrollArea>
           </div>
+          )}
 
-          {/* Chat Area */}
-          <div className="flex-1 flex flex-col">
-            {selectedFriend ? (
-              <>
+          {/* Chat Area - takes full width when a chat is open */}
+          {selectedFriend && (
+          <div className="w-full h-full flex flex-col">
                 {/* Chat Header */}
                 <div className="p-4 border-b bg-muted/30">
                   <div className="flex items-center gap-3">
+                    <Button variant="ghost" size="icon" className="mr-1" onClick={() => setSelectedFriend(null)} title="Back to chats">
+                      ←
+                    </Button>
                     <Avatar>
                       <AvatarImage
                         src={
@@ -474,14 +476,8 @@ function Messages() {
                     </div>
                   )}
                 </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center flex-col gap-4 text-muted-foreground">
-                <MessageCircle className="h-12 w-12" />
-                <p>Select a conversation to start messaging</p>
-              </div>
-            )}
           </div>
+          )}
         </div>
       </div>
     </div>
