@@ -24,6 +24,7 @@ import { useParams } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
 import CreateAnnouncementModal from "@/components/modals/CreateAnnouncementModal";
+import getSocket from "@/services/socketClient";
 
 export function AnnouncementsPage() {
   const { groupId } = useParams();
@@ -44,6 +45,24 @@ export function AnnouncementsPage() {
   useEffect(() => {
     loadAnnouncements();
     checkGroupAdminStatus();
+  }, [groupId]);
+
+  // Socket integration for real-time announcements
+  useEffect(() => {
+    const socket = getSocket();
+    
+    // Listen for new announcements
+    const onNewAnnouncement = (announcementData) => {
+      if (announcementData?.group_id === groupId) {
+        setAnnouncements(prev => [announcementData, ...prev]);
+      }
+    };
+    
+    socket.on('groupAnnouncementCreated', onNewAnnouncement);
+    
+    return () => {
+      socket.off('groupAnnouncementCreated', onNewAnnouncement);
+    };
   }, [groupId]);
 
   const checkGroupAdminStatus = async () => {

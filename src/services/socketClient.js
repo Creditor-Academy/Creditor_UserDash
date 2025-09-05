@@ -22,6 +22,17 @@ export function getSocket() {
       withCredentials: true,
       transports: ['websocket', 'polling'],
     });
+
+    // Helpful diagnostics in dev
+    socket.on('connect', () => {
+      console.log('[socket] connected', socket.id);
+    });
+    socket.on('disconnect', (reason) => {
+      console.log('[socket] disconnected', reason);
+    });
+    socket.on('connect_error', (err) => {
+      console.warn('[socket] connect_error', err?.message || err);
+    });
   }
   return socket;
 }

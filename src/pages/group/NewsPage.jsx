@@ -10,6 +10,7 @@ import { useParams } from "react-router-dom";
 import { getGroupPosts, addComment, addLike, editComment, deleteComment } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 import { fetchAllUsers } from "@/services/userService";
+import getSocket from "@/services/socketClient";
 
 export function NewsPage() {
   const { groupId } = useParams();
@@ -180,6 +181,62 @@ export function NewsPage() {
     return () => { isMounted = false; };
   }, [groupId]);
 
+  // Socket integration for real-time updates
+  useEffect(() => {
+    const socket = getSocket();
+    
+    // Listen for new posts
+    const onNewPost = (postData) => {
+      if (postData?.group_id === groupId) {
+        setRawPosts(prev => [postData, ...prev]);
+      }
+    };
+    
+    // Listen for new comments
+    const onCommentAdded = (data) => {
+      if (data?.postId) {
+        setRawPosts(prev => prev.map(post => 
+          post.id === data.postId 
+            ? { ...post, comments: [...(post.comments || []), data.comment] }
+            : post
+        ));
+      }
+    };
+    
+    // Listen for like changes
+    const onLikeAdded = (data) => {
+      if (data?.postId) {
+        setRawPosts(prev => prev.map(post => 
+          post.id === data.postId 
+            ? { ...post, likes: [...(post.likes || []), data.like] }
+            : post
+        ));
+      }
+    };
+    
+    const onLikeRemoved = (data) => {
+      if (data?.postId) {
+        setRawPosts(prev => prev.map(post => 
+          post.id === data.postId 
+            ? { ...post, likes: (post.likes || []).filter(like => like.user_id !== data.userId) }
+            : post
+        ));
+      }
+    };
+    
+    socket.on('groupPostCreated', onNewPost);
+    socket.on('commentAdded', onCommentAdded);
+    socket.on('likeAdded', onLikeAdded);
+    socket.on('likeRemoved', onLikeRemoved);
+    
+    return () => {
+      socket.off('groupPostCreated', onNewPost);
+      socket.off('commentAdded', onCommentAdded);
+      socket.off('likeAdded', onLikeAdded);
+      socket.off('likeRemoved', onLikeRemoved);
+    };
+  }, [groupId]);
+
   // Re-normalize when userDirectory updates to fill in names/avatars post-refresh
   useEffect(() => {
     if (rawPosts && rawPosts.length) {
@@ -191,6 +248,16 @@ export function NewsPage() {
     if (!newCommentContents[postId] || !newCommentContents[postId].trim()) return;
     try {
       const payload = { content: newCommentContents[postId].trim() };
+      
+      // Emit socket event for real-time updates
+      const socket = getSocket();
+      socket.emit('addComment', { 
+        postId, 
+        userId: userProfile?.id, 
+        content: payload.content,
+        groupId 
+      });
+      
       const res = await addComment(postId, payload);
       const created = res?.data || res; // backend returns {code,data,...}
       const createdCommentId = created?.id || Date.now();
@@ -228,6 +295,15 @@ export function NewsPage() {
     try {
       const target = posts.find(p => p.id === postId);
       if (!target || target.likedByMe) return; // prevent multiple likes by same user
+      
+      // Emit socket event for real-time updates
+      const socket = getSocket();
+      socket.emit('addLike', { 
+        postId, 
+        userId: userProfile?.id,
+        groupId 
+      });
+      
       await addLike(postId);
       setPosts(posts.map(post => post.id === postId ? { ...post, likesCount: (post.likesCount || 0) + 1, likedByMe: true } : post));
       setLikeBurst((prev) => ({ ...prev, [postId]: true }));

@@ -105,27 +105,71 @@ export function ChatPage() {
     // Realtime: join group room
     const socket = getSocket();
     const uid = currentUserId;
+    // Ensure we always join the latest room
     socket.emit('joinGroup', { groupId, userId: uid });
+    // also listen for acks if backend sends any (no-op if not)
+    socket.once && socket.once('joinedGroup', () => {
+      console.log('[socket] joined group', groupId);
+    });
 
+    // Re-join on reconnect to handle network hiccups
+    const onConnect = () => {
+      socket.emit('joinGroup', { groupId, userId: uid });
+    };
+    socket.on('connect', onConnect);
+
+    const sameGroup = (gid) => String(gid) === String(groupId);
     const onNewMessage = (payload) => {
-      // only accept messages for current group
-      if (payload?.group_id === groupId || payload?.groupId === groupId) {
-        setMessages(prev => [...prev, {
-          id: payload.id,
-          senderId: payload.sender_id || payload.senderId,
-          senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
-          senderAvatar: payload.sender?.image || '',
-          content: payload.content,
-          timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-          type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
-        }]);
+      // Backend sends message with group_id field
+      const inThisGroup = sameGroup(payload?.group_id);
+      if (inThisGroup) {
+        setMessages(prev => {
+          // If message already exists by id, skip
+          if (payload?.id && prev.some(m => m.id === payload.id)) return prev;
+
+          const normalized = {
+            id: payload.id,
+            senderId: payload.sender_id,
+            senderName: payload.sender?.first_name || 'Member',
+            senderAvatar: payload.sender?.image || '',
+            content: payload.content,
+            timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
+          };
+
+          // Try to replace a matching optimistic message (same sender and content)
+          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === payload.sender_id && m.content === payload.content);
+          if (idx !== -1) {
+            const clone = [...prev];
+            clone[idx] = normalized;
+            return clone;
+          }
+          return [...prev, normalized];
+        });
       }
     };
     socket.on('newGroupMessage', onNewMessage);
 
+    // Listen for user join/leave notifications
+    const onUserJoined = (data) => {
+      if (sameGroup(data.groupId)) {
+        console.log('[socket] User joined:', data.message);
+      }
+    };
+    const onUserLeft = (data) => {
+      if (sameGroup(data.groupId)) {
+        console.log('[socket] User left:', data.message);
+      }
+    };
+    socket.on('userJoinedGroup', onUserJoined);
+    socket.on('userLeftGroup', onUserLeft);
+
     return () => {
       socket.emit('leaveGroup', { groupId, userId: uid });
+      socket.off('connect', onConnect);
       socket.off('newGroupMessage', onNewMessage);
+      socket.off('userJoinedGroup', onUserJoined);
+      socket.off('userLeftGroup', onUserLeft);
     };
   }, [groupId]);
 
@@ -253,7 +297,12 @@ export function ChatPage() {
     try {
       // emit over socket to let backend broadcast; also call REST as fallback
       const socket = getSocket();
-      socket.emit('sendGroupMessage', { groupId, userId: currentUserId, content: toSend });
+      socket.emit('sendGroupMessage', { 
+        groupId, 
+        userId: currentUserId, 
+        content: toSend,
+        type: 'TEXT'
+      });
 
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
@@ -299,9 +348,7 @@ export function ChatPage() {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
     try {
       await editGroupMessage(groupId, messageId, { content: newContent });
-      const socket = getSocket();
-      // Optionally let backend broadcast an update event if implemented
-      // socket.emit('editGroupMessage', { groupId, messageId, content: newContent });
+      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
     } catch (e) {
       setMessages(snapshot);
     }
@@ -313,6 +360,7 @@ export function ChatPage() {
     setMessages(prev => prev.filter(m => m.id !== messageId));
     try {
       await deleteGroupMessage(groupId, messageId);
+      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
     } catch (e) {
       // restore on failure
       setMessages(snapshot);
