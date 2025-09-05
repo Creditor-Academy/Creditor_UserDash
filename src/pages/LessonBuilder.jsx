@@ -1226,29 +1226,34 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
         if (blockType === 'text') {
           switch (textType) {
-            case 'heading':
+            case 'heading': {
               htmlContent = `<h1 class="lesson-heading">${blockContent}</h1>`;
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
               break;
-            case 'subheading':
+            }
+            case 'subheading': {
               htmlContent = `<h4 class="lesson-subheading">${blockContent}</h4>`;
               styles = '.lesson-subheading { font-size: 20px; font-weight: 600; margin-bottom: 12px; }';
               break;
-            case 'heading_paragraph':
-              const heading = block.heading || '';
-              const content = block.content || '';
-              htmlContent = `<h1 class="lesson-heading">${heading}</h1><p class="lesson-paragraph">${content}</p>`;
+            }
+            case 'heading_paragraph': {
+              const headingText = block.heading || '';
+              const paragraphText = block.content || '';
+              htmlContent = `<h1 class="lesson-heading">${headingText}</h1><p class="lesson-paragraph">${paragraphText}</p>`;
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; } .lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
               break;
-            case 'subheading_paragraph':
-              const subheading = block.subheading || '';
-              const paragraphContent = block.content || '';
-              htmlContent = `<h4 class="lesson-subheading">${subheading}</h4><p class="lesson-paragraph">${paragraphContent}</p>`;
+            }
+            case 'subheading_paragraph': {
+              const subheadingText = block.subheading || '';
+              const paragraphText2 = block.content || '';
+              htmlContent = `<h4 class="lesson-subheading">${subheadingText}</h4><p class="lesson-paragraph">${paragraphText2}</p>`;
               styles = '.lesson-subheading { font-size: 20px; font-weight: 600; margin-bottom: 12px; } .lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
               break;
-            default:
+            }
+            default: {
               htmlContent = `<p class="lesson-paragraph">${blockContent}</p>`;
               styles = '.lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
+            }
           }
         } else if (blockType === 'image') {
           const layout = block.layout || 'centered';
@@ -1338,7 +1343,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } finally {
       setIsUploading(false);
     }
-    alert('Lesson updated successfully!');
   };
 
   const toggleViewMode = () => {
@@ -1441,9 +1445,49 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setContentBlocks(prev =>
         prev.map(block => block.id === currentBlock.id ? videoBlock : block)
       );
+      
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              block.block_id === currentBlock.id ? {
+                ...videoBlock,
+                block_id: currentBlock.id,
+                details: {
+                  video_url: finalVideoUrl,
+                  caption: videoTitle,
+                  description: videoDescription
+                }
+              } : block
+            )
+          }
+        }));
+      }
     } else {
       // Add new block to local edit list
       setContentBlocks(prev => [...prev, videoBlock]);
+      
+      // Also add to lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        const newVideoBlock = {
+          ...videoBlock,
+          details: {
+            video_url: finalVideoUrl,
+            caption: videoTitle,
+            description: videoDescription
+          }
+        };
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, newVideoBlock]
+          }
+        }));
+      }
     }
    
     handleVideoDialogClose();
@@ -1576,227 +1620,273 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleTextEditorSave = () => {
-    // First try to find block in contentBlocks (for new lessons)
-    let blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
-   
-    // If not found, try to find in lessonContent (for fetched lessons)
-    if (!blockToUpdate && lessonContent?.data?.content) {
-      blockToUpdate = lessonContent.data.content.find(b => b.block_id === currentTextBlockId);
-    }
+    try {
+      // First try to find block in contentBlocks (for new lessons)
+      let blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
+     
+      // If not found, try to find in lessonContent (for fetched lessons)
+      if (!blockToUpdate && lessonContent?.data?.content) {
+        blockToUpdate = lessonContent.data.content.find(b => b.block_id === currentTextBlockId);
+      }
 
-    if (blockToUpdate) {
-      let updatedContent = '';
-     
-      // Use currentTextType (detected type) or fallback to blockToUpdate.textType
-      const effectiveTextType = currentTextType || blockToUpdate.textType;
-     
-      // For fetched lessons, preserve original HTML structure and only update content
-      if (blockToUpdate.html_css && lessonContent?.data?.content) {
-        // Use original HTML structure and replace only the text content
-        updatedContent = blockToUpdate.html_css;
+      if (blockToUpdate) {
+        let updatedContent = '';
        
-        // Replace the text content while preserving HTML structure
+        // Use currentTextType (detected type) or fallback to blockToUpdate.textType
+        const effectiveTextType = currentTextType || blockToUpdate.textType;
        
-        if (effectiveTextType === 'heading_paragraph') {
-          // Update heading and paragraph content within existing structure
-          updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
-            return match.replace(p1, editorHeading);
-          });
-          updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
-            return match.replace(p1, editorContent);
-          });
-        } else if (effectiveTextType === 'subheading_paragraph') {
-          // Update subheading and paragraph content within existing structure
-          updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
-            return match.replace(p1, editorSubheading);
-          });
-          updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
-            return match.replace(p1, editorContent);
-          });
-        } else {
-          // For single content blocks, preserve both original HTML structure AND rich text formatting
-          // Extract plain text from rich text content for cases where we need to maintain original styling
-          const richTextContent = editorHtml.trim();
-          const plainTextContent = editorHtml.replace(/<[^>]*>/g, '').trim();
+        // For fetched lessons, preserve original HTML structure and only update content
+        if (blockToUpdate.html_css && lessonContent?.data?.content) {
+          // Use original HTML structure and replace only the text content
+          updatedContent = blockToUpdate.html_css;
          
-          // Check if the original content has specific heading/paragraph structure that should be preserved
-          if (updatedContent.includes('<h1')) {
-            // For headings, we want to preserve the heading tag but allow rich text formatting inside
-            updatedContent = updatedContent.replace(/<h1([^>]*)>(.*?)<\/h1>/i, (match, attributes, content) => {
-              // If rich text content has formatting tags, use it; otherwise use plain text to preserve heading styling
-              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                return `<h1${attributes}>${richTextContent}</h1>`;
-              } else {
-                return `<h1${attributes}>${plainTextContent}</h1>`;
-              }
+          // Replace the text content while preserving HTML structure
+         
+          if (effectiveTextType === 'heading_paragraph') {
+            // Update heading and paragraph content within existing structure
+            updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
+              return match.replace(p1, editorHeading || 'Heading');
             });
-          } else if (updatedContent.includes('<h2')) {
-            updatedContent = updatedContent.replace(/<h2([^>]*)>(.*?)<\/h2>/i, (match, attributes, content) => {
-              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                return `<h2${attributes}>${richTextContent}</h2>`;
-              } else {
-                return `<h2${attributes}>${plainTextContent}</h2>`;
-              }
+            updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
+              return match.replace(p1, editorContent || 'Enter your content here...');
             });
-          } else if (updatedContent.includes('<h3')) {
-            updatedContent = updatedContent.replace(/<h3([^>]*)>(.*?)<\/h3>/i, (match, attributes, content) => {
-              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                return `<h3${attributes}>${richTextContent}</h3>`;
-              } else {
-                return `<h3${attributes}>${plainTextContent}</h3>`;
-              }
+          } else if (effectiveTextType === 'subheading_paragraph') {
+            // Update subheading and paragraph content within existing structure
+            updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
+              return match.replace(p1, editorSubheading || 'Subheading');
             });
-          } else if (updatedContent.includes('<h4')) {
-            updatedContent = updatedContent.replace(/<h4([^>]*)>(.*?)<\/h4>/i, (match, attributes, content) => {
-              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                return `<h4${attributes}>${richTextContent}</h4>`;
-              } else {
-                return `<h4${attributes}>${plainTextContent}</h4>`;
-              }
-            });
-          } else if (updatedContent.includes('<h5')) {
-            updatedContent = updatedContent.replace(/<h5([^>]*)>(.*?)<\/h5>/i, (match, attributes, content) => {
-              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                return `<h5${attributes}>${richTextContent}</h5>`;
-              } else {
-                return `<h5${attributes}>${plainTextContent}</h5>`;
-              }
-            });
-          } else if (updatedContent.includes('<h6')) {
-            updatedContent = updatedContent.replace(/<h6([^>]*)>(.*?)<\/h6>/i, (match, attributes, content) => {
-              if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                return `<h6${attributes}>${richTextContent}</h6>`;
-              } else {
-                return `<h6${attributes}>${plainTextContent}</h6>`;
-              }
-            });
-          } else if (updatedContent.includes('<p')) {
-            // For paragraphs, always use rich text content as paragraphs are more flexible
-            updatedContent = updatedContent.replace(/<p([^>]*)>(.*?)<\/p>/i, (match, attributes, content) => {
-              return `<p${attributes}>${richTextContent}</p>`;
+            updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
+              return match.replace(p1, editorContent || 'Enter your content here...');
             });
           } else {
-            // Fallback: replace text content within the first text node
-            updatedContent = updatedContent.replace(/>([^<]+)</i, (match, textContent) => {
-              if (textContent.trim() && !textContent.includes('<')) {
-                return `>${richTextContent}<`;
-              }
-              return match;
-            });
+            // For single content blocks, preserve both original HTML structure AND rich text formatting
+            // Extract plain text from rich text content for cases where we need to maintain original styling
+            const richTextContent = (editorHtml || '').trim();
+            const plainTextContent = richTextContent.replace(/<[^>]*>/g, '').trim();
+           
+            // Check if the original content has specific heading/paragraph structure that should be preserved
+            if (updatedContent.includes('<h1')) {
+              // For headings, we want to preserve the heading tag but allow rich text formatting inside
+              updatedContent = updatedContent.replace(/<h1([^>]*)>(.*?)<\/h1>/i, (match, attributes, content) => {
+                // If rich text content has formatting tags, use it; otherwise use plain text to preserve heading styling
+                const contentToUse = richTextContent || plainTextContent || 'Heading';
+                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                  return `<h1${attributes}>${richTextContent}</h1>`;
+                } else {
+                  return `<h1${attributes}>${contentToUse}</h1>`;
+                }
+              });
+            } else if (updatedContent.includes('<h2')) {
+              updatedContent = updatedContent.replace(/<h2([^>]*)>(.*?)<\/h2>/i, (match, attributes, content) => {
+                const contentToUse = richTextContent || plainTextContent || 'Subheading';
+                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                  return `<h2${attributes}>${richTextContent}</h2>`;
+                } else {
+                  return `<h2${attributes}>${contentToUse}</h2>`;
+                }
+              });
+            } else if (updatedContent.includes('<h3')) {
+              updatedContent = updatedContent.replace(/<h3([^>]*)>(.*?)<\/h3>/i, (match, attributes, content) => {
+                const contentToUse = richTextContent || plainTextContent || 'Heading';
+                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                  return `<h3${attributes}>${richTextContent}</h3>`;
+                } else {
+                  return `<h3${attributes}>${contentToUse}</h3>`;
+                }
+              });
+            } else if (updatedContent.includes('<h4')) {
+              updatedContent = updatedContent.replace(/<h4([^>]*)>(.*?)<\/h4>/i, (match, attributes, content) => {
+                const contentToUse = richTextContent || plainTextContent || 'Heading';
+                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                  return `<h4${attributes}>${richTextContent}</h4>`;
+                } else {
+                  return `<h4${attributes}>${contentToUse}</h4>`;
+                }
+              });
+            } else if (updatedContent.includes('<h5')) {
+              updatedContent = updatedContent.replace(/<h5([^>]*)>(.*?)<\/h5>/i, (match, attributes, content) => {
+                const contentToUse = richTextContent || plainTextContent || 'Heading';
+                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                  return `<h5${attributes}>${richTextContent}</h5>`;
+                } else {
+                  return `<h5${attributes}>${contentToUse}</h5>`;
+                }
+              });
+            } else if (updatedContent.includes('<h6')) {
+              updatedContent = updatedContent.replace(/<h6([^>]*)>(.*?)<\/h6>/i, (match, attributes, content) => {
+                const contentToUse = richTextContent || plainTextContent || 'Heading';
+                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
+                  return `<h6${attributes}>${richTextContent}</h6>`;
+                } else {
+                  return `<h6${attributes}>${contentToUse}</h6>`;
+                }
+              });
+            } else if (updatedContent.includes('<p')) {
+              // For paragraphs, always use rich text content as paragraphs are more flexible
+              updatedContent = updatedContent.replace(/<p([^>]*)>(.*?)<\/p>/i, (match, attributes, content) => {
+                return `<p${attributes}>${richTextContent || 'Enter your content here...'}</p>`;
+              });
+            } else {
+              // Fallback: replace text content within the first text node
+              const fallbackContent = richTextContent || 'Enter your content here...';
+              updatedContent = updatedContent.replace(/>([^<]+)</i, (match, textContent) => {
+                if (textContent.trim() && !textContent.includes('<')) {
+                  return `>${fallbackContent}<`;
+                }
+                return match;
+              });
+            }
           }
-        }
-      } else {
-        // For new blocks, generate HTML structure
-        const textType = textTypes.find(t => t.id === blockToUpdate.textType);
-       
-       
-        if (effectiveTextType === 'heading_paragraph') {
-          updatedContent = `
-            <div class="content-block">
-              <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
-                ${editorHeading}
-              </h1>
-              <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-                ${editorContent}
-              </div>
-            </div>
-          `;
-        } else if (effectiveTextType === 'subheading_paragraph') {
-          updatedContent = `
-            <div class="content-block">
-              <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
-                ${editorSubheading}
-              </h2>
-              <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-                ${editorContent}
-              </div>
-            </div>
-          `;
         } else {
-          // For single content blocks (heading, subheading, paragraph)
-          const style = textType?.style || {};
-          const styleString = Object.entries(style)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('; ');
+          // For new blocks, generate HTML structure
+          const textType = textTypes.find(t => t.id === blockToUpdate.textType);
+         
+         
+          if (effectiveTextType === 'heading_paragraph') {
+            updatedContent = `
+              <div class="content-block">
+                <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
+                  ${editorHeading || 'Heading'}
+                </h1>
+                <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+                  ${editorContent || 'Enter your content here...'}
+                </div>
+              </div>
+            `;
+          } else if (effectiveTextType === 'subheading_paragraph') {
+            updatedContent = `
+              <div class="content-block">
+                <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
+                  ${editorSubheading || 'Subheading'}
+                </h2>
+                <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+                  ${editorContent || 'Enter your content here...'}
+                </div>
+              </div>
+            `;
+          } else {
+            // For single content blocks (heading, subheading, paragraph)
+            const style = textType?.style || {};
+            const styleString = Object.entries(style)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('; ');
 
+            updatedContent = `
+              <div class="content-block" style="${styleString}">
+                ${editorHtml || 'Enter your content here...'}
+              </div>
+            `;
+          }
+        }
+
+        // Ensure updatedContent is never empty
+        if (!updatedContent || updatedContent.trim() === '') {
           updatedContent = `
-            <div class="content-block" style="${styleString}">
-              ${editorHtml}
+            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+              Enter your content here...
             </div>
           `;
         }
-      }
 
-      setContentBlocks(blocks =>
-        blocks.map(block =>
-          block.id === currentTextBlockId
-            ? {
-                ...block,
-                content: updatedContent,
-                heading: effectiveTextType === 'heading_paragraph' ? editorHeading : block.heading,
-                subheading: effectiveTextType === 'subheading_paragraph' ? editorSubheading : block.subheading,
-                updatedAt: new Date().toISOString(),
-                style: textType?.style || {},
-                textType: effectiveTextType || block.textType
-              }
-            : block
-        )
-      );
+        // Update contentBlocks with error handling
+        setContentBlocks(blocks => {
+          try {
+            return blocks.map(block =>
+              block.id === currentTextBlockId
+                ? {
+                    ...block,
+                    content: updatedContent,
+                    html_css: updatedContent,
+                    heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
+                    subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
+                    updatedAt: new Date().toISOString(),
+                    textType: effectiveTextType || block.textType
+                  }
+                : block
+            );
+          } catch (error) {
+            console.error('Error updating contentBlocks:', error);
+            toast.error('Failed to update content blocks');
+            return blocks;
+          }
+        });
 
-      // Also update lessonContent if it exists (for fetched lessons)
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: prevLessonContent.data.content.map(block =>
-              block.block_id === currentTextBlockId ? {
-                ...block,
-                content: updatedContent,
-                html_css: updatedContent,
-                heading: effectiveTextType === 'heading_paragraph' ? editorHeading : block.heading,
-                subheading: effectiveTextType === 'subheading_paragraph' ? editorSubheading : block.subheading,
-                textType: effectiveTextType || block.textType,
-                updatedAt: new Date().toISOString()
-              } : block
-            )
-          }
-        }));
-      }
-    } else {
-      // For new blocks
-      const newBlock = {
-        id: `text_${Date.now()}`,
-        block_id: `text_${Date.now()}`,
-        type: 'text',
-        title: editorTitle,
-        content: `
-          <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-            ${editorHtml}
-          </div>
-        `,
-        textType: 'paragraph',
-        style: textTypes.find(t => t.id === 'paragraph')?.style || {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-      };
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
-          }
-        }));
+        // Also update lessonContent if it exists (for fetched lessons)
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            try {
+              return {
+                ...prevLessonContent,
+                data: {
+                  ...prevLessonContent.data,
+                  content: prevLessonContent.data.content.map(block =>
+                    block.block_id === currentTextBlockId ? {
+                      ...block,
+                      content: updatedContent,
+                      html_css: updatedContent,
+                      heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
+                      subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
+                      textType: effectiveTextType || block.textType,
+                      updatedAt: new Date().toISOString()
+                    } : block
+                  )
+                }
+              };
+            } catch (error) {
+              console.error('Error updating lessonContent:', error);
+              toast.error('Failed to update lesson content');
+              return prevLessonContent;
+            }
+          });
+        }
       } else {
-        setContentBlocks(prev => [...prev, newBlock]);
+        // For new blocks
+        const newBlock = {
+          id: `text_${Date.now()}`,
+          block_id: `text_${Date.now()}`,
+          type: 'text',
+          title: editorTitle || 'Text Block',
+          content: `
+            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+              ${editorHtml || 'Enter your content here...'}
+            </div>
+          `,
+          html_css: `
+            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+              ${editorHtml || 'Enter your content here...'}
+            </div>
+          `,
+          textType: 'paragraph',
+          style: textTypes.find(t => t.id === 'paragraph')?.style || {},
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
+        };
+        
+        // If we have existing lesson content, add to that structure
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => ({
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: [...prevLessonContent.data.content, newBlock]
+            }
+          }));
+        } else {
+          setContentBlocks(prev => [...prev, newBlock]);
+        }
       }
+     
+      // Close the dialog and reset form
+      handleTextEditorClose();
+      
+      // Show success message
+      toast.success('Text block updated successfully');
+      
+    } catch (error) {
+      console.error('Error in handleTextEditorSave:', error);
+      toast.error('Failed to save text block. Please try again.');
     }
-   
-    // Close the dialog and reset form
-    handleTextEditorClose();
   };
 
   const handleTextEditorClose = () => {
@@ -2183,9 +2273,49 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setContentBlocks(prev =>
         prev.map(block => block.id === currentBlock.id ? audioBlock : block)
       );
+      
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              block.block_id === currentBlock.id ? {
+                ...audioBlock,
+                block_id: currentBlock.id,
+                details: {
+                  audio_url: finalAudioUrl,
+                  caption: audioTitle,
+                  description: audioDescription
+                }
+              } : block
+            )
+          }
+        }));
+      }
     } else {
       // Add new block to local edit list
       setContentBlocks(prev => [...prev, audioBlock]);
+      
+      // Also add to lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        const newAudioBlock = {
+          ...audioBlock,
+          details: {
+            audio_url: finalAudioUrl,
+            caption: audioTitle,
+            description: audioDescription
+          }
+        };
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: [...prevLessonContent.data.content, newAudioBlock]
+          }
+        }));
+      }
     }
    
     handleAudioDialogClose();
@@ -3592,17 +3722,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               </div>
                             )}
                            
-                            {block.type === 'video' && (
+                            {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle || block.details?.caption}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Video
                                   </Badge>
                                 </div>
                                
-                                {block.videoDescription && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.videoDescription}</p>
+                                {(block.videoDescription || block.details?.description) && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.videoDescription || block.details?.description}</p>
                                 )}
                                
                                 <div className="bg-gray-50 rounded-lg p-3">
@@ -3614,7 +3744,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                       preload="metadata"
                                       key={block.id}
                                     >
-                                      <source src={block.videoUrl} type={block.videoFile?.type || 'video/mp4'} />
+                                      <source src={block.videoUrl || block.details?.video_url} type={block.videoFile?.type || 'video/mp4'} />
                                       Your browser does not support the video tag.
                                     </video>
                                   </div>
@@ -3622,22 +3752,22 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               </div>
                             )}
 
-                            {block.type === 'audio' && (
+                            {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.audioTitle}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.audioTitle || block.details?.caption}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Audio
                                   </Badge>
                                 </div>
                                
-                                {block.audioDescription && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.audioDescription}</p>
+                                {(block.audioDescription || block.details?.description) && (
+                                  <p className="text-sm text-gray-600 mb-3">{block.audioDescription || block.details?.description}</p>
                                 )}
                                
                                 <div className="bg-gray-50 rounded-lg p-3">
                                   <audio
-                                    src={block.audioUrl}
+                                    src={block.audioUrl || block.details?.audio_url}
                                     controls
                                     className="w-full rounded-lg border border-gray-200"
                                   />
