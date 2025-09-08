@@ -125,7 +125,7 @@ function Messages() {
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
           const idFriends = convos.map(id => ({
             id: String(id),
-            name: `Conversation ${String(id).slice(0, 6)}`,
+            name: `room ${String(id)}`,
             avatar: '/placeholder.svg',
             lastMessage: '',
           }));
@@ -403,7 +403,6 @@ function Messages() {
                   onClick={() => {
                     // Emit socket event when conversation is clicked and rely on backend fetch
                     const socket = getSocket();
-                    socket.emit("startConversation", { to: friend.id });
                     if (roomId) {
                       socket.emit("joinRoom", roomId);
                     }
