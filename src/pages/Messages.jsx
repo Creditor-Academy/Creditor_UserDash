@@ -200,6 +200,16 @@ function Messages() {
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
+      // Emit socket event to send message to current room
+      try {
+        const socket = getSocket();
+        if (roomId) {
+          socket.emit("sendMessage", { room: roomId, message: newMessage });
+        } else {
+          console.warn('Messages: cannot send, roomId is missing');
+        }
+      } catch {}
+
       setMessages([
         ...messages,
         {
@@ -356,6 +366,9 @@ function Messages() {
                               // Do not optimistically mutate list; rely on backend fetch
                               const socket = getSocket();
                               socket.emit("startConversation", { to: user.id });
+                              if (roomId) {
+                                socket.emit("joinRoom", roomId);
+                              }
                               setSelectedFriend(user.id);
                             }}
                           >
@@ -391,6 +404,9 @@ function Messages() {
                     // Emit socket event when conversation is clicked and rely on backend fetch
                     const socket = getSocket();
                     socket.emit("startConversation", { to: friend.id });
+                    if (roomId) {
+                      socket.emit("joinRoom", roomId);
+                    }
                     setSelectedFriend(friend.id);
                   }}
                   className={`p-4 flex items-center gap-3 hover:bg-accent cursor-pointer transition-colors border-b ${
