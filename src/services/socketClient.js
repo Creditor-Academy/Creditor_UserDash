@@ -12,12 +12,9 @@ function deriveSocketOrigin(base) {
   }
 }
 
-// Function to get cookie value by name
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
+// Function to get token from localStorage
+function getTokenFromStorage() {
+  return localStorage.getItem('token');
 }
 
 const socketOrigin = deriveSocketOrigin(API_BASE);
@@ -26,8 +23,8 @@ let socket;
 
 export function getSocket() {
   if (!socket) {
-    const token = getCookie("refresh_token");
-    console.log('refresh_token', token);
+    const token = getTokenFromStorage();
+    console.log('token from localStorage', token);
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
