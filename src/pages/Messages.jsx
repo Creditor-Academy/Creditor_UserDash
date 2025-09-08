@@ -34,6 +34,7 @@ function Messages() {
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [roomId, setRoomId] = useState(null);
   const [newChatUsers, setNewChatUsers] = useState([]);
   const [newChatSearch, setNewChatSearch] = useState("");
   const fileInputRef = useRef(null);
@@ -46,11 +47,17 @@ function Messages() {
     // Optional: log to verify connection lifecycle specific to Messages
     const onConnect = () => console.log('[Messages] socket connected');
     const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
+    const onRoomIdForSender = (incomingRoomId) => {
+      setRoomId(incomingRoomId);
+      console.log('room id at sender side', incomingRoomId);
+    };
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+    socket.on('roomidforsender', onRoomIdForSender);
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      socket.off('roomidforsender', onRoomIdForSender);
     };
   }, []);
 
