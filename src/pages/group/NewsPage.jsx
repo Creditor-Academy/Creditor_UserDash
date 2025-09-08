@@ -24,63 +24,10 @@ export function NewsPage() {
   const [likeBurst, setLikeBurst] = useState({});
   const [highlightComment, setHighlightComment] = useState({});
   const [userDirectory, setUserDirectory] = useState({});
-  const [videoThumbnails, setVideoThumbnails] = useState({});
-  const [videoDurations, setVideoDurations] = useState({});
   const [editingComment, setEditingComment] = useState(null);
   const [commentDraft, setCommentDraft] = useState("");
+  const [commentSending, setCommentSending] = useState({});
   // Removed lightbox; images render fully inside the post box
-
-  // Generate video thumbnail
-  const generateVideoThumbnail = (videoUrl, postId) => {
-    const video = document.createElement('video');
-    video.crossOrigin = 'anonymous';
-    video.src = videoUrl;
-    video.currentTime = 1; // Seek to 1 second for thumbnail
-    
-    video.addEventListener('loadeddata', () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      
-      try {
-        const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
-        setVideoThumbnails(prev => ({
-          ...prev,
-          [postId]: thumbnailUrl
-        }));
-      } catch (error) {
-        console.warn('Could not generate thumbnail for video:', error);
-      }
-    });
-    
-    video.addEventListener('error', () => {
-      console.warn('Could not load video for thumbnail generation');
-    });
-  };
-
-  // Get video duration
-  const getVideoDuration = (videoUrl, postId) => {
-    const video = document.createElement('video');
-    video.src = videoUrl;
-    
-    video.addEventListener('loadedmetadata', () => {
-      if (video.duration && !isNaN(video.duration)) {
-        const minutes = Math.floor(video.duration / 60);
-        const seconds = Math.floor(video.duration % 60);
-        const duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        setVideoDurations(prev => ({
-          ...prev,
-          [postId]: duration
-        }));
-      }
-    });
-    
-    video.addEventListener('error', () => {
-      console.warn('Could not get duration for video');
-    });
-  };
 
   useEffect(() => {
     // Preload a user directory to resolve commenter identities on refresh
@@ -89,7 +36,7 @@ export function NewsPage() {
         const all = await fetchAllUsers();
         const list = Array.isArray(all?.data) ? all.data : all;
         const map = {};
-        (list || []).forEach(u => { map[u.id] = u; });
+        (list || []).forEach(u => { if (u && (u.id !== undefined && u.id !== null)) { map[String(u.id)] = u; } });
         setUserDirectory(map);
       } catch (e) {
         // Non-fatal; names will fall back to "User" if not resolvable
@@ -107,21 +54,21 @@ export function NewsPage() {
       const first = author.first_name || author.firstName || "";
       const last = author.last_name || author.lastName || "";
       const name = (first || last) ? `${first} ${last}`.trim() : author.name || "Member";
+      const authorId = author.id || author.user?.id || author.user_id || author.userId || p.user_id || p.author_id || p.userId;
+      const authorAvatarCandidate = 
+        author.image || author.avatar || author.photo || author.picture ||
+        author.image_url || author.avatar_url || author.profile_image || author.profile_picture || "";
+      const fallbackUserFromDirectory = authorId ? userDirectory[authorId] : undefined;
+      const resolvedAuthorAvatar = authorAvatarCandidate || fallbackUserFromDirectory?.image || fallbackUserFromDirectory?.avatar || "";
       const resolveUser = (userObj, userId) => {
-        if (userObj) {
-          const f = userObj.first_name || userObj.firstName || "";
-          const l = userObj.last_name || userObj.lastName || "";
-          const n = (f || l) ? `${f} ${l}`.trim() : userObj.name || "User";
-          return { name: n, avatar: userObj.image || userObj.avatar || "" };
-        }
-        const u = userDirectory[userId];
-        if (u) {
-          const f = u.first_name || "";
-          const l = u.last_name || "";
-          const n = (f || l) ? `${f} ${l}`.trim() : u.name || "User";
-          return { name: n, avatar: u.image || "" };
-        }
-        return { name: "User", avatar: "" };
+        const dirUser = (userId !== undefined && userId !== null) ? userDirectory[String(userId)] : undefined;
+        const first = (userObj && (userObj.first_name || userObj.firstName)) || (dirUser && dirUser.first_name) || "";
+        const last = (userObj && (userObj.last_name || userObj.lastName)) || (dirUser && dirUser.last_name) || "";
+        const fallbackName = (userObj && userObj.name) || (dirUser && dirUser.name) || "User";
+        const name = (first || last) ? `${first} ${last}`.trim() : fallbackName;
+        const avatar = (userObj && (userObj.image || userObj.avatar || userObj.photo || userObj.picture)) ||
+                       (dirUser && (dirUser.image || dirUser.avatar)) || "";
+        return { name, avatar };
       };
       // derive like state
       const likesArray = Array.isArray(p.likes) ? p.likes : [];
@@ -133,7 +80,7 @@ export function NewsPage() {
         id: p.id || p.post_id || idx,
         author: {
           name,
-          avatar: author.image || author.avatar || "",
+          avatar: resolvedAuthorAvatar,
           isAdmin: author.role === "ADMIN" || false,
         },
         title: p.title || "",
@@ -143,10 +90,11 @@ export function NewsPage() {
         likedByMe: Boolean(derivedLikedByMe),
         isAnnouncement: false, // No announcements in news feed
         comments: Array.isArray(p.comments) ? p.comments.map((c, i) => {
-          const authorMeta = resolveUser(c.user || c.author, c.user_id || c.userId);
+          const commentUserId = c.user_id || c.userId || (c.user && (c.user.id || c.user.user_id)) || null;
+          const authorMeta = resolveUser(c.user || c.author, commentUserId);
           return {
             id: c.id || i,
-            userId: c.user_id || c.userId || (c.user && (c.user.id || c.user.user_id)) || null,
+            userId: commentUserId,
             author: authorMeta,
             content: c.content || "",
             timestamp: c.createdAt ? new Date(c.createdAt).toLocaleString() : (c.created_at ? new Date(c.created_at).toLocaleString() : "")
@@ -178,6 +126,22 @@ export function NewsPage() {
       }
     };
     if (groupId) fetchPosts();
+    // Realtime updates
+    const socket = getSocket();
+    if (socket && groupId) {
+      socket.emit('group:join', { groupId });
+      const onPostCreated = (payload) => {
+        if (!payload || String(payload.group_id || payload.groupId) !== String(groupId)) return;
+        setRawPosts(prev => [payload, ...(prev || [])]);
+        setPosts(prev => [normalizePosts([payload])[0], ...(prev || [])]);
+      };
+      socket.on('group:post:created', onPostCreated);
+      return () => {
+        isMounted = false;
+        socket.off('group:post:created', onPostCreated);
+        socket.emit('group:leave', { groupId });
+      };
+    }
     return () => { isMounted = false; };
   }, [groupId]);
 
@@ -243,10 +207,28 @@ export function NewsPage() {
       setPosts(normalizePosts(rawPosts));
     }
   }, [userDirectory]);
+ 
+  // Safety net: auto-refresh posts every 2 seconds
+  useEffect(() => {
+    if (!groupId) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await getGroupPosts(groupId);
+        if (cancelled) return;
+        const list = Array.isArray(res?.data) ? res.data : res;
+        setRawPosts(list || []);
+        setPosts(normalizePosts(list || []));
+      } catch {}
+    };
+    const intervalId = setInterval(tick, 2000);
+    return () => { cancelled = true; clearInterval(intervalId); };
+  }, [groupId]);
   
   const handleCommentSubmit = async (postId) => {
     if (!newCommentContents[postId] || !newCommentContents[postId].trim()) return;
     try {
+      setCommentSending((prev) => ({ ...prev, [postId]: true }));
       const payload = { content: newCommentContents[postId].trim() };
       
       // Emit socket event for real-time updates
@@ -288,6 +270,8 @@ export function NewsPage() {
       }, 1200);
     } catch (e) {
       console.error("NewsPage: error adding comment", e);
+    } finally {
+      setCommentSending((prev) => ({ ...prev, [postId]: false }));
     }
   };
   
@@ -351,8 +335,8 @@ export function NewsPage() {
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <Avatar className="ring-2 ring-offset-2 ring-indigo-200">
+                    {post.author.avatar && <AvatarImage src={post.author.avatar} alt={post.author.name} />}
                     <AvatarFallback>{post.author.name[0]}</AvatarFallback>
-                    {post.author.avatar && <AvatarImage src={post.author.avatar} />}
                   </Avatar>
                   <div>
                     <div className="font-semibold text-gray-900">{post.author.name}</div>
@@ -434,141 +418,15 @@ export function NewsPage() {
                       if (isVideo) {
                         return (
                           <div className="space-y-3">
-                            {/* Video Player */}
-                            <div
-                              className="relative"
-                              onMouseEnter={() => {
-                                const video = document.querySelector(`video[src="${url}"]`);
-                                if (video) {
-                                  video.muted = true;
-                                  video.playsInline = true;
-                                  video.loop = true;
-                                  // only autoplay if not already playing
-                                  const playPromise = video.play();
-                                  if (playPromise && typeof playPromise.catch === 'function') {
-                                    playPromise.catch(() => {});
-                                  }
-                                }
-                              }}
-                              onMouseLeave={() => {
-                                const video = document.querySelector(`video[src="${url}"]`);
-                                if (video) {
-                                  video.pause();
-                                  video.currentTime = 0;
-                                }
-                              }}
-                            >
-                          <video
-                            src={url}
-                            controls
-                                muted
-                                playsInline
-                                preload="metadata"
-                                poster={videoThumbnails[post.id] || `data:image/svg+xml;base64,${btoa(`
-                                  <svg width="400" height="225" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="100%" height="100%" fill="#1f2937"/>
-                                    <circle cx="200" cy="112.5" r="40" fill="#6b7280"/>
-                                    <polygon points="185,95 185,130 220,112.5" fill="white"/>
-                                    <text x="200" y="160" text-anchor="middle" fill="#9ca3af" font-family="Arial" font-size="14">Video Preview</text>
-                                  </svg>
-                                `)}`}
-                                className="w-full max-h-[420px] rounded-lg bg-gray-900 shadow-lg transition-opacity duration-300"
-                                onLoadStart={() => {
-                                  // Show loading state
-                                  const video = document.querySelector(`video[src="${url}"]`);
-                                  if (video) {
-                                    video.style.opacity = '0.7';
-                                  }
-                                }}
-                                onCanPlay={() => {
-                                  // Hide loading state
-                                  const video = document.querySelector(`video[src="${url}"]`);
-                                  if (video) {
-                                    video.style.opacity = '1';
-                                  }
-                                }}
-                                onError={() => {
-                                  // Handle video loading error
-                                  const video = document.querySelector(`video[src="${url}"]`);
-                                  if (video) {
-                                    video.style.display = 'none';
-                                  }
-                                }}
-                                onLoadedMetadata={() => {
-                                  // Generate thumbnail when video metadata is loaded
-                                  if (!videoThumbnails[post.id]) {
-                                    generateVideoThumbnail(url, post.id);
-                                  }
-                                  // Get video duration
-                                  if (!videoDurations[post.id]) {
-                                    getVideoDuration(url, post.id);
-                                  }
-                                }}
-                                onPlay={() => {
-                                  // Hide play overlay when video starts playing
-                                  const overlay = document.getElementById(`play-overlay-${post.id}`);
-                                  if (overlay) {
-                                    overlay.style.display = 'none';
-                                  }
-                                }}
-                                onPause={() => {
-                                  // Show play overlay when video is paused
-                                  const overlay = document.getElementById(`play-overlay-${post.id}`);
-                                  if (overlay) {
-                                    overlay.style.display = 'flex';
-                                  }
-                                }}
-                              />
-                              
-                              {/* Loading Overlay */}
-                              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg opacity-0 transition-opacity duration-300" id={`loading-${post.id}`}>
-                                <div className="text-center text-white">
-                                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-2"></div>
-                                  <p className="text-sm">Loading video...</p>
-                                </div>
-                              </div>
-                              
-                              {/* Play Button Overlay */}
-                              <div 
-                                className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 cursor-pointer group" 
-                                id={`play-overlay-${post.id}`}
-                                onClick={() => {
-                                  const video = document.querySelector(`video[src="${url}"]`);
-                                  if (video) {
-                                    video.play();
-                                  }
-                                }}
-                              >
-                                <div className="bg-white bg-opacity-90 rounded-full p-4 group-hover:scale-110 transition-transform duration-200">
-                                  <svg className="w-8 h-8 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Video Info */}
-                            <div className="flex items-center justify-between text-xs text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
-                              <span className="flex items-center gap-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                                Video Content
-                              </span>
-                              <div className="flex items-center gap-3">
-                                {videoDurations[post.id] && (
-                                  <span className="text-gray-500 flex items-center gap-1">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    {videoDurations[post.id]}
-                                  </span>
-                                )}
-                                <span className="text-gray-500">
-                                  {url.split('/').pop()}
-                                </span>
-                              </div>
-                            </div>
+                            <video
+                              src={url}
+                              autoPlay
+                              muted
+                              playsInline
+                              loop
+                              controls
+                              className="w-full max-h-[420px] rounded-lg bg-black shadow-lg"
+                            />
                           </div>
                         );
                       }
@@ -760,10 +618,10 @@ export function NewsPage() {
                     <Button 
                       size="sm" 
                       onClick={() => handleCommentSubmit(post.id)}
-                      disabled={!newCommentContents[post.id] || !newCommentContents[post.id].trim()}
-                      className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white hover:from-blue-700 hover:via-indigo-700 hover:to-sky-700 shadow"
+                      disabled={commentSending[post.id] || !newCommentContents[post.id] || !newCommentContents[post.id].trim()}
+                      className="bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white hover:from-blue-700 hover:via-indigo-700 hover:to-sky-700 shadow disabled:opacity-60"
                     >
-                      <Send className="h-4 w-4" />
+                      {commentSending[post.id] ? 'Sending...' : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
