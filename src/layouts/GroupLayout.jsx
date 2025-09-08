@@ -17,6 +17,7 @@ export function GroupLayout() {
   const location = useLocation();
   const { groupId } = useParams();
   const currentPath = location.pathname;
+  const activeTab = currentPath.split('/').pop() || 'news';
   const [groupName, setGroupName] = useState("");
   const [loading, setLoading] = useState(true);
   const { isInstructorOrAdmin } = useAuth();
@@ -149,14 +150,14 @@ export function GroupLayout() {
       
       <div className="container py-4">
         {/* Sub navigation tabs */}
-        <Tabs defaultValue="news" className="mb-6">
-          <TabsList className="w-full grid grid-cols-4 gap-2">
+        <Tabs value={activeTab} className="mb-6">
+          <TabsList className="w-full inline-flex gap-2">
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.path}
                 value={tab.path.split('/').pop() || ''}
                 className={cn(
-                  "flex items-center gap-2",
+                  "flex items-center gap-2 flex-1 justify-center",
                   currentPath === tab.path ? "bg-primary text-primary-foreground" : ""
                 )}
                 asChild

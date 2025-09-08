@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { 
   Bell, 
   Search, 
-  Plus, 
   Calendar, 
   Download, 
   Edit, 
@@ -20,10 +19,11 @@ import {
 import { toast } from "@/hooks/use-toast";
 import EditAnnouncementModal from "@/components/modals/EditAnnouncementModal";
 import { getAnnouncements, deleteAnnouncement, isUserGroupAdmin } from "@/services/groupService";
+import getSocket from "@/services/socketClient";
 import { useParams } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
-import CreateAnnouncementModal from "@/components/modals/CreateAnnouncementModal";
+// Removed create announcement feature
 
 export function AnnouncementsPage() {
   const { groupId } = useParams();
@@ -31,7 +31,6 @@ export function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -44,6 +43,19 @@ export function AnnouncementsPage() {
   useEffect(() => {
     loadAnnouncements();
     checkGroupAdminStatus();
+    const socket = getSocket();
+    if (socket && groupId) {
+      socket.emit('group:join', { groupId });
+      const onAnnouncementCreated = (payload) => {
+        if (!payload || String(payload.group_id || payload.groupId) !== String(groupId)) return;
+        setAnnouncements(prev => [payload, ...(prev || [])]);
+      };
+      socket.on('group:announcement:created', onAnnouncementCreated);
+      return () => {
+        socket.off('group:announcement:created', onAnnouncementCreated);
+        socket.emit('group:leave', { groupId });
+      };
+    }
   }, [groupId]);
 
   const checkGroupAdminStatus = async () => {
@@ -106,9 +118,7 @@ export function AnnouncementsPage() {
     }
   };
 
-  const handleAnnouncementCreated = (newAnnouncement) => {
-    setAnnouncements(prev => [newAnnouncement, ...prev]);
-  };
+  // Creation flow removed
 
   const getPriorityIcon = (priority) => {
     switch (priority?.toLowerCase()) {
@@ -203,16 +213,7 @@ export function AnnouncementsPage() {
             </div>
           </div>
           
-          {isGroupAdmin && (
-            <Button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={checkingPermissions}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Announcement
-            </Button>
-          )}
+          {/* Create announcement button removed */}
         </div>
       </div>
 
@@ -369,28 +370,12 @@ export function AnnouncementsPage() {
                 : "Group admins can create announcements to share important information"
               }
             </p>
-            {isGroupAdmin && !searchQuery && (
-              <Button 
-                onClick={() => setIsCreateModalOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={checkingPermissions}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Announcement
-              </Button>
-            )}
+            {/* Create first announcement button removed */}
           </CardContent>
         </Card>
       )}
 
-      {/* Create Announcement Modal */}
-      <CreateAnnouncementModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        groupId={groupId}
-        groupName="This Group" // TODO: Get actual group name
-        onAnnouncementCreated={handleAnnouncementCreated}
-      />
+      {/* Create announcement modal removed */}
       {/* Edit Announcement Modal */}
       {editingAnnouncement && (
         <EditAnnouncementModal

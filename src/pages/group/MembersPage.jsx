@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Search, Mail, Shield, UserPlus } from "lucide-react";
+import { Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { professionalAvatars } from "@/lib/avatar-utils";
 import { useParams } from "react-router-dom";
-import { addGroupMember, getGroupMembers, makeGroupAdmin } from "@/services/groupService";
+import { addGroupMember, getGroupMembers } from "@/services/groupService";
 import { toast } from "@/hooks/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
@@ -77,8 +76,7 @@ export function MembersPage() {
   const [inviteUserId, setInviteUserId] = useState("");
   const [loading, setLoading] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [promoting, setPromoting] = useState(false);
+  // Removed make-admin selection state
 
   // Check if current user is admin or instructor
   const isAdminOrInstructor = isInstructorOrAdmin();
@@ -95,15 +93,25 @@ export function MembersPage() {
         
         // Handle different response structures
         const membersData = response?.data || response || [];
-        const mapped = membersData.map((member) => ({
-          id: member.user?.id || member.user_id || member.id,
-          name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
-          email: member.user?.email || member.email || '—',
-          avatar: member.user?.image || professionalAvatars.male[0].url,
-          joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
-          isAdmin: !!member.is_admin,
-          role: member.is_admin ? 'Admin' : 'Member',
-        }));
+        const mapped = membersData.map((member) => {
+          const backendRoleRaw = (member.role || member.user?.role || member.user_role || '').toString();
+          const backendRole = backendRoleRaw.toUpperCase();
+          const isAdmin = member.is_admin === true || backendRole === 'ADMIN' || backendRole === 'OWNER';
+          const displayRole = isAdmin
+            ? 'Admin'
+            : backendRole
+              ? backendRole.charAt(0) + backendRole.slice(1).toLowerCase()
+              : 'Member';
+          return {
+            id: member.user?.id || member.user_id || member.id,
+            name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
+            email: member.user?.email || member.email || '—',
+            avatar: member.user?.image || professionalAvatars.male[0].url,
+            joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
+            isAdmin,
+            role: displayRole,
+          };
+        });
         setMembers(mapped);
       } catch (error) {
         console.error("❌ MembersPage: Error loading members:", error);
@@ -130,15 +138,25 @@ export function MembersPage() {
       // Refresh members list
       const response = await getGroupMembers(groupId);
       const membersData = response?.data || response || [];
-      const mapped = membersData.map((member) => ({
-        id: member.user?.id || member.user_id || member.id,
-        name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
-        email: member.user?.email || member.email || '—',
-        avatar: member.user?.image || professionalAvatars.male[0].url,
-        joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
-        isAdmin: !!member.is_admin,
-        role: member.is_admin ? 'Admin' : 'Member',
-      }));
+      const mapped = membersData.map((member) => {
+        const backendRoleRaw = (member.role || member.user?.role || member.user_role || '').toString();
+        const backendRole = backendRoleRaw.toUpperCase();
+        const isAdmin = member.is_admin === true || backendRole === 'ADMIN' || backendRole === 'OWNER';
+        const displayRole = isAdmin
+          ? 'Admin'
+          : backendRole
+            ? backendRole.charAt(0) + backendRole.slice(1).toLowerCase()
+            : 'Member';
+        return {
+          id: member.user?.id || member.user_id || member.id,
+          name: `${member.user?.first_name ?? member.first_name ?? ''} ${member.user?.last_name ?? member.last_name ?? ''}`.trim() || 'Member',
+          email: member.user?.email || member.email || '—',
+          avatar: member.user?.image || professionalAvatars.male[0].url,
+          joinDate: member.joined_at ? new Date(member.joined_at).toLocaleDateString() : '—',
+          isAdmin,
+          role: displayRole,
+        };
+      });
       setMembers(mapped);
     } catch (error) {
       console.error("❌ MembersPage: Error joining group:", error);
@@ -192,14 +210,7 @@ export function MembersPage() {
     member.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Selection helpers
-  const getMemberId = (m) => m.id;
-  const isSelected = (m) => selectedIds.includes(getMemberId(m));
-  const toggleSelected = (m) => {
-    const id = getMemberId(m);
-    setSelectedIds((prev) => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-  const clearSelection = () => setSelectedIds([]);
+  // Make-admin selection helpers removed
 
   // Count admins
   const adminCount = members.filter(member => member.isAdmin).length;
@@ -207,23 +218,7 @@ export function MembersPage() {
   // Check if current user is already a member
   const isCurrentUserMember = members.some(member => member.id === currentUserId);
 
-  const handleMakeAdmin = async () => {
-    if (selectedIds.length === 0) return;
-    try {
-      setPromoting(true);
-      // optimistic
-      setMembers(prev => prev.map(m => selectedIds.includes(getMemberId(m)) ? { ...m, isAdmin: true, role: 'Admin' } : m));
-      for (const uid of selectedIds) {
-        await makeGroupAdmin({ groupId, userId: uid });
-      }
-      toast({ title: 'Success', description: `Made ${selectedIds.length} member(s) admin` });
-      clearSelection();
-    } catch (e) {
-      toast({ title: 'Failed to make admin', description: e?.response?.data?.message || e.message, variant: 'destructive' });
-    } finally {
-      setPromoting(false);
-    }
-  };
+  // Make-admin action removed
 
   return (
     <div className="space-y-6">
@@ -236,17 +231,7 @@ export function MembersPage() {
                 {members.length} members · {adminCount} admins
               </CardDescription>
             </div>
-            {isAdminOrInstructor && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={selectedIds.length ? "default" : "outline"}
-                  disabled={selectedIds.length === 0 || promoting}
-                  onClick={handleMakeAdmin}
-                >
-                  {promoting ? 'Making Admin...' : `Make Admin${selectedIds.length ? ` (${selectedIds.length})` : ''}`}
-                </Button>
-              </div>
-            )}
+            {/* Make Admin feature removed */}
           </div>
         </CardHeader>
         <CardContent>
@@ -263,38 +248,25 @@ export function MembersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                {isAdminOrInstructor && <TableHead className="w-10"></TableHead>}
                 <TableHead>Member</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
                     Loading members...
                   </TableCell>
                 </TableRow>
               ) : filteredMembers.length > 0 ? (
                 filteredMembers.map((member) => (
-                  <TableRow key={member.id}>
-                    {isAdminOrInstructor && (
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4"
-                          checked={isSelected(member)}
-                          onChange={() => toggleSelected(member)}
-                          disabled={member.isAdmin}
-                          title={member.isAdmin ? 'Already an admin' : 'Select member'}
-                        />
-                      </TableCell>
-                    )}
+                  <TableRow key={member.id} className={member.isAdmin ? "bg-blue-50/50" : undefined}>
+                    {/* Selection checkbox removed */}
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar>
+                        <Avatar className={member.isAdmin ? "ring-2 ring-blue-400" : undefined}>
                           <AvatarImage src={member.avatar} alt={`${member.name}'s avatar`} />
                           <AvatarFallback useSvgFallback={true}>{member.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -306,10 +278,7 @@ export function MembersPage() {
                     </TableCell>
                     <TableCell>
                       {member.isAdmin ? (
-                        <Badge className="bg-primary/10 text-primary border-primary/20 flex items-center gap-1 font-normal">
-                          <Shield className="h-3 w-3" />
-                          {member.role}
-                        </Badge>
+                        <Badge className="bg-primary/10 text-primary border-primary/20">Admin</Badge>
                       ) : (
                         <span className="text-sm text-muted-foreground">{member.role}</span>
                       )}
@@ -317,16 +286,11 @@ export function MembersPage() {
                     <TableCell className="text-sm text-muted-foreground">
                       {member.joinDate}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Mail className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
                     {searchQuery ? "No members found matching your search" : "No members found"}
                   </TableCell>
                 </TableRow>
