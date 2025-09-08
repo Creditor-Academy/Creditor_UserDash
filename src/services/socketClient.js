@@ -31,18 +31,7 @@ export function getSocket() {
       auth: { token: token ? `Bearer ${token}` : undefined }
     });
 
-    // Helpful diagnostics in dev
-    socket.on('connect', () => {
-      console.log('[socket] connected', socket.id);
-    });
-    socket.on('disconnect', (reason) => {
-      console.log('[socket] disconnected', reason);
-    });
-    socket.on('connect_error', (err) => {
-      console.warn('[socket] connect_error', err?.message || err);
-    });
-
-    // Helpful diagnostics in dev
+    // Helpful diagnostics in dev (no duplicates)
     socket.on('connect', () => {
       console.log('[socket] connected', socket.id);
     });

@@ -171,7 +171,7 @@ export function ChatPage() {
       socket.off('userJoinedGroup', onUserJoined);
       socket.off('userLeftGroup', onUserLeft);
     };
-  }, [groupId]);
+  }, [groupId, currentUserId]);
 
   const loadMessages = async () => {
     try {
