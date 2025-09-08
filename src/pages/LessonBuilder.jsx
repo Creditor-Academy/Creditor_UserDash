@@ -19,9 +19,11 @@ import {
   List,
   ListOrdered,
   Table,
-  Loader2
+  Loader2,
+  Quote
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
+import QuoteComponent from '@/components/QuoteComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -325,6 +327,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [selectedImageTemplate, setSelectedImageTemplate] = useState(null);
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const [showAiImageDialog, setShowAiImageDialog] = useState(false);
+  const [aiImagePrompt, setAiImagePrompt] = useState('');
+  const [aiImageGenerating, setAiImageGenerating] = useState(false);
+  const [generatedAiImage, setGeneratedAiImage] = useState('');
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfDescription, setPdfDescription] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
@@ -332,6 +338,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfUploadMethod, setPdfUploadMethod] = useState('file');
   const [mainPdfUploading, setMainPdfUploading] = useState(false);
+  const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
+  const [showQuoteEditDialog, setShowQuoteEditDialog] = useState(false);
+  const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
 
   // Image block templates
   const imageTemplates = [
@@ -377,6 +386,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
         text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy.'
+      }
+    },
+    {
+      id: 'ai-generated',
+      title: 'AI Generated Image',
+      description: 'Generate custom images using AI prompts',
+      icon: <Image className="h-6 w-6" />,
+      layout: 'ai-generated',
+      defaultContent: {
+        imageUrl: '',
+        text: 'AI generated image will appear here',
+        prompt: ''
       }
     }
   ];
@@ -458,6 +479,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       id: 'text',
       title: 'Text',
       icon: <FileTextIcon className="h-5 w-5" />
+    },
+    {
+      id: 'quote',
+      title: 'Quote',
+      icon: <Quote className="h-5 w-5" />
     },
     {
       id: 'image',
@@ -561,11 +587,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
    
   ];
 
+
   const blockRefs = React.useRef({});
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
+    } else if (blockType.id === 'quote') {
+      setShowQuoteTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
     } else if (blockType.id === 'image') {
@@ -719,6 +748,186 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setShowTableTemplateSidebar(false);
   };
 
+  // Quote component callbacks
+  const handleQuoteTemplateSelect = (newBlock) => {
+    // Always add to local edit list so it appears immediately in edit mode
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    
+    // Also add to lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    }
+  };
+
+  const handleQuoteUpdate = (editingBlock, updatedQuoteContent) => {
+    // Generate new HTML content based on quote type and updated content
+    let newHtmlContent = '';
+    const quoteType = editingBlock.details?.quoteType || editingBlock.quoteType;
+    
+    switch (quoteType) {
+      case 'quote_a':
+        newHtmlContent = `
+          <div class="relative bg-white rounded-2xl shadow-lg p-8 border border-gray-100 max-w-2xl mx-auto">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-blue-500 to-purple-600 rounded-l-2xl"></div>
+            <div class="pl-6">
+              <div class="flex items-start space-x-4">
+                <div class="flex-1">
+                  <blockquote class="text-xl italic text-gray-700 mb-4 leading-relaxed">
+                    "${updatedQuoteContent.quote}"
+                  </blockquote>
+                  <div class="flex items-center space-x-3">
+                    <cite class="text-lg font-semibold text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        break;
+      case 'quote_b':
+        newHtmlContent = `
+          <div class="relative bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-xl p-10 border border-gray-200 max-w-3xl mx-auto">
+            <div class="absolute top-0 right-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-r-3xl"></div>
+            <div class="pr-6">
+              <div class="text-center">
+                <blockquote class="text-2xl italic text-gray-800 mb-6 leading-relaxed font-light">
+                  "${updatedQuoteContent.quote}"
+                </blockquote>
+                <cite class="text-xl font-bold text-gray-700 not-italic">— ${updatedQuoteContent.author}</cite>
+              </div>
+            </div>
+          </div>
+        `;
+        break;
+      case 'quote_c':
+        newHtmlContent = `
+          <div class="relative bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
+            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-green-400 to-blue-500"></div>
+            <div class="p-12">
+              <div class="text-center">
+                <blockquote class="text-3xl italic text-gray-700 mb-6 leading-relaxed font-light">
+                  "${updatedQuoteContent.quote}"
+                </blockquote>
+                <cite class="text-2xl font-bold text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
+              </div>
+            </div>
+          </div>
+        `;
+        break;
+      case 'quote_d':
+        newHtmlContent = `
+          <div class="relative bg-white rounded-lg shadow-md p-6 border-l-4 border-indigo-500 max-w-2xl mx-auto">
+            <blockquote class="text-lg italic text-gray-700 mb-3 leading-relaxed">
+              "${updatedQuoteContent.quote}"
+            </blockquote>
+            <cite class="text-base font-medium text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
+          </div>
+        `;
+        break;
+      case 'quote_on_image':
+        newHtmlContent = `
+          <div class="relative bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl shadow-2xl overflow-hidden max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
+            <div class="absolute inset-0 bg-black bg-opacity-30"></div>
+            <div class="relative z-10 text-center text-white p-12">
+              <blockquote class="text-4xl italic font-light mb-8 leading-relaxed">
+                "${updatedQuoteContent.quote}"
+              </blockquote>
+              <cite class="text-2xl font-bold not-italic">— ${updatedQuoteContent.author}</cite>
+            </div>
+          </div>
+        `;
+        break;
+      case 'quote_carousel':
+        const quotes = updatedQuoteContent.quotes || [updatedQuoteContent];
+        newHtmlContent = `
+          <div class="relative bg-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-3xl"></div>
+            <div class="quote-carousel-${Date.now()}" data-current="0">
+              ${quotes.map((q, index) => `
+                <div class="quote-slide ${index === 0 ? 'block' : 'hidden'}" data-index="${index}">
+                  <div class="text-center py-8">
+                    <blockquote class="text-3xl italic text-gray-800 mb-6 leading-relaxed font-light">
+                      "${q.quote}"
+                    </blockquote>
+                    <cite class="text-xl font-bold text-gray-600 not-italic">— ${q.author}</cite>
+                  </div>
+                </div>
+              `).join('')}
+              <div class="flex justify-center items-center space-x-4 mt-8">
+                <button onclick="window.carouselPrev && window.carouselPrev(this)" class="carousel-prev bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                  </svg>
+                </button>
+                <div class="flex space-x-2">
+                  ${quotes.map((_, index) => `
+                    <button onclick="window.carouselGoTo && window.carouselGoTo(this, ${index})" class="carousel-dot w-3 h-3 rounded-full transition-colors ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}" data-index="${index}"></button>
+                  `).join('')}
+                </div>
+                <button onclick="window.carouselNext && window.carouselNext(this)" class="carousel-next bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        break;
+      default:
+        newHtmlContent = `
+          <div class="relative bg-white rounded-2xl shadow-md p-6 border">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+            <div class="pl-4">
+              <blockquote class="text-lg italic text-gray-700 mb-3">
+                "${updatedQuoteContent.quote}"
+              </blockquote>
+              <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
+            </div>
+          </div>
+        `;
+    }
+
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === editingBlock.id ? {
+          ...block,
+          content: JSON.stringify(updatedQuoteContent),
+          html_css: newHtmlContent,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Update lessonContent for fetched lessons
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === editingBlock.id || block.id === editingBlock.id) ? {
+              ...block,
+              content: JSON.stringify(updatedQuoteContent),
+              html_css: newHtmlContent,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+
+    // Reset editing state
+    setEditingQuoteBlock(null);
+  };
+
   const removeContentBlock = (blockId) => {
     setContentBlocks(contentBlocks.filter(block => block.id !== blockId));
   };
@@ -792,6 +1001,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         setEditorContent(block.content || '');
         setEditorHtml(block.content || '');
       }
+    } else if (block.type === 'quote') {
+      // Handle quote block editing
+      setEditingQuoteBlock(block);
+      setShowQuoteEditDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -1008,6 +1221,193 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </div>`;
           }
         }
+      } else if (block.type === 'quote') {
+        // Use saved html_css if available, otherwise generate from content
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from quote content
+          const quoteContent = JSON.parse(block.content || '{}');
+          const quoteType = block.quoteType || 'quote_a';
+          
+          switch (quoteType) {
+            case 'quote_a':
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <div class="pl-4">
+                    <div class="flex items-start space-x-4">
+                      <div class="flex-shrink-0">
+                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
+                      </div>
+                      <div class="flex-1">
+                        <blockquote class="text-lg italic text-gray-700 mb-3">
+                          "${quoteContent.quote || ''}"
+                        </blockquote>
+                        <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+              break;
+            case 'quote_b':
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <div class="pl-4">
+                    <div class="bg-gray-50 rounded-xl p-6">
+                      <div class="flex items-center space-x-4 mb-4">
+                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
+                        <div>
+                          <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
+                        </div>
+                      </div>
+                      <blockquote class="text-xl italic text-gray-700 leading-relaxed">
+                        "${quoteContent.quote || ''}"
+                      </blockquote>
+                    </div>
+                  </div>
+                </div>
+              `;
+              break;
+            case 'quote_c':
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <div class="pl-4">
+                    <div class="text-center">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
+                      <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
+                        "${quoteContent.quote || ''}"
+                      </blockquote>
+                      <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
+                    </div>
+                  </div>
+                </div>
+              `;
+              break;
+            case 'quote_d':
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <div class="pl-4">
+                    <div class="border-l-4 border-blue-500 pl-4">
+                      <blockquote class="text-lg text-gray-700 mb-2">
+                        "${quoteContent.quote || ''}"
+                      </blockquote>
+                      <div class="flex items-center space-x-3">
+                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
+                        <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+              break;
+            case 'quote_on_image':
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl z-10"></div>
+                  <div class="relative">
+                    <img src="${quoteContent.backgroundImage || ''}" alt="Quote background" class="w-full h-64 object-cover" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end">
+                      <div class="p-8 text-white w-full">
+                        <blockquote class="text-xl italic mb-3 leading-relaxed">
+                          "${quoteContent.quote || ''}"
+                        </blockquote>
+                        <cite class="text-lg font-medium opacity-90">— ${quoteContent.author || ''}</cite>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+              break;
+            case 'quote_carousel':
+              const quotes = quoteContent.quotes || [];
+              const quotesHtml = quotes.map((q, index) => `
+                <div class="carousel-item ${index === 0 ? 'active' : 'hidden'}" data-index="${index}">
+                  <blockquote class="text-xl italic text-gray-700 mb-4 text-center leading-relaxed">
+                    "${q.quote || ''}"
+                  </blockquote>
+                  <cite class="text-lg font-medium text-gray-600 text-center block">— ${q.author || ''}</cite>
+                </div>
+              `).join('');
+              
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <div class="pl-4">
+                    <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
+                      ${quotesHtml}
+                      <div class="flex justify-center space-x-2 mt-6">
+                        ${quotes.map((_, index) => `
+                          <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
+                        `).join('')}
+                      </div>
+                      <div class="flex justify-between items-center mt-4">
+                        <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
+                        <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+              
+              // Add carousel JavaScript
+              js = `
+                document.addEventListener('DOMContentLoaded', function() {
+                  const carousel = document.querySelector('.quote-carousel');
+                  if (carousel) {
+                    const items = carousel.querySelectorAll('.carousel-item');
+                    const dots = carousel.querySelectorAll('.carousel-dot');
+                    const prevBtn = carousel.querySelector('.carousel-prev');
+                    const nextBtn = carousel.querySelector('.carousel-next');
+                    let currentIndex = 0;
+
+                    function showItem(index) {
+                      items.forEach((item, i) => {
+                        item.classList.toggle('hidden', i !== index);
+                        item.classList.toggle('active', i === index);
+                      });
+                      dots.forEach((dot, i) => {
+                        dot.classList.toggle('bg-blue-500', i === index);
+                        dot.classList.toggle('bg-gray-300', i !== index);
+                      });
+                      currentIndex = index;
+                    }
+
+                    dots.forEach((dot, index) => {
+                      dot.addEventListener('click', () => showItem(index));
+                    });
+
+                    prevBtn.addEventListener('click', () => {
+                      const newIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                      showItem(newIndex);
+                    });
+
+                    nextBtn.addEventListener('click', () => {
+                      const newIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                      showItem(newIndex);
+                    });
+                  }
+                });
+              `;
+              break;
+            default:
+              html = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                  <div class="pl-4">
+                    <blockquote class="text-lg italic text-gray-700 mb-3">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
+                  </div>
+                </div>
+              `;
+          }
+        }
       } else if (block.type === 'pdf') {
         // Prefer saved html_css to keep consistent embedding
         if (block.html_css && block.html_css.trim()) {
@@ -1175,31 +1575,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             }
             break;
 
-          case 'video':
-            details = {
-              video_url: block.videoUrl,
-              caption: block.videoTitle || ''
-            };
-            htmlContent = `
-              <div style='margin: 20px 0; text-align: center;'>
-                <video controls style='max-width: 100%; border-radius: 8px;'>
-                  <source src='${block.videoUrl}' type='video/mp4'>
-                  Your browser does not support the video tag.
-                </video>
-                ${block.videoTitle ?
-                  `<p style='font-size: 14px; color: #666; margin-top: 8px;'>${block.videoTitle}</p>`
-                  : ''}
-              </div>`;
+          default:
+            htmlContent = block.html_css || block.content || '';
             break;
-
-          // Add other cases as needed for different block types
         }
 
         return {
+          id: block.id,
           type: block.type,
-          script: script,
-          block_id: blockId,
+          title: block.title || '',
+          content: block.content || '',
           html_css: htmlContent,
+          order: block.order || 0,
           ...(Object.keys(details).length > 0 && { details })
         };
       });
@@ -1253,6 +1640,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             default: {
               htmlContent = `<p class="lesson-paragraph">${blockContent}</p>`;
               styles = '.lesson-paragraph { font-size: 16px; line-height: 1.6; margin-bottom: 12px; }';
+              break;
             }
           }
         } else if (blockType === 'image') {
@@ -1493,7 +1881,181 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     handleVideoDialogClose();
   };
 
+  // AI Image Generation Functions
+  const generateAiImage = async (prompt) => {
+    setAiImageGenerating(true);
+    try {
+      console.log('Generating AI image with prompt:', prompt);
+      
+      // Try Pollinations AI (free alternative)
+      try {
+        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&seed=${Date.now()}`;
+        
+        // Test if the URL is accessible
+        const testResponse = await fetch(pollinationsUrl, { method: 'HEAD' });
+        if (testResponse.ok) {
+          console.log('Successfully generated image via Pollinations AI:', pollinationsUrl);
+          setGeneratedAiImage(pollinationsUrl);
+          toast.success('AI image generated successfully!');
+          return pollinationsUrl;
+        }
+      } catch (pollinationsError) {
+        console.log('Pollinations AI not available, trying other options:', pollinationsError);
+      }
+
+      // Try calling through your backend API
+      try {
+        const backendResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/generate-ai-image`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+          }),
+        });
+
+        if (backendResponse.ok) {
+          const backendResult = await backendResponse.json();
+          if (backendResult.imageUrl) {
+            console.log('Successfully generated image via backend:', backendResult.imageUrl);
+            setGeneratedAiImage(backendResult.imageUrl);
+            toast.success('AI image generated successfully!');
+            return backendResult.imageUrl;
+          }
+        }
+      } catch (backendError) {
+        console.log('Backend API not available:', backendError);
+      }
+
+      // Try DeepAI (will likely fail due to credits)
+      try {
+        const response = await fetch("https://api.deepai.org/api/text2img", {
+          method: "POST",
+          headers: { 
+            "api-key": "1293f249-b3b7-471b-b69f-8ee0fe482df7",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: new URLSearchParams({
+            text: prompt,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.output_url) {
+            console.log('Successfully generated image via DeepAI:', result.output_url);
+            setGeneratedAiImage(result.output_url);
+            toast.success('AI image generated successfully!');
+            return result.output_url;
+          }
+        }
+      } catch (deepaiError) {
+        console.log('DeepAI not available:', deepaiError);
+      }
+
+      // Fallback to related images
+      throw new Error('All AI services unavailable');
+      
+    } catch (error) {
+      console.error('Error generating AI image:', error);
+      
+      // Enhanced fallback: Use Unsplash with prompt keywords
+      try {
+        const keywords = prompt.split(' ').slice(0, 3).join(',');
+        const unsplashUrl = `https://source.unsplash.com/800x600/?${encodeURIComponent(keywords)}`;
+        setGeneratedAiImage(unsplashUrl);
+        toast.info(`Using related image for: ${keywords}`);
+        return unsplashUrl;
+      } catch (fallbackError) {
+        // Final fallback to random image
+        const fallbackUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
+        setGeneratedAiImage(fallbackUrl);
+        toast.warning('Using placeholder image - AI generation unavailable');
+        return fallbackUrl;
+      }
+    } finally {
+      setAiImageGenerating(false);
+    }
+  };
+
+  const handleAiImageGenerate = async () => {
+    if (!aiImagePrompt.trim()) {
+      toast.error('Please enter a prompt for image generation');
+      return;
+    }
+
+    const generatedImageUrl = await generateAiImage(aiImagePrompt);
+    
+    const newBlock = {
+      id: `ai-image-${Date.now()}`,
+      block_id: `ai-image-${Date.now()}`,
+      type: 'image',
+      title: 'AI Generated Image',
+      layout: 'centered',
+      templateType: 'ai-generated',
+      imageUrl: generatedImageUrl,
+      imageTitle: `AI Generated: ${aiImagePrompt.substring(0, 50)}...`,
+      imageDescription: `Generated from prompt: "${aiImagePrompt}"`,
+      text: `AI generated image: ${aiImagePrompt}`,
+      isEditing: false,
+      timestamp: new Date().toISOString(),
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1,
+      details: {
+        image_url: generatedImageUrl,
+        caption: `AI generated image: ${aiImagePrompt}`,
+        alt_text: `AI Generated: ${aiImagePrompt.substring(0, 50)}...`,
+        layout: 'centered',
+        template: 'ai-generated',
+        prompt: aiImagePrompt
+      },
+      html_css: `
+        <div class="lesson-image centered">
+          <div class="text-center space-y-4 max-w-4xl mx-auto">
+            <img src="${generatedImageUrl}" alt="AI Generated: ${aiImagePrompt.substring(0, 50)}..." class="mx-auto max-h-96 object-contain rounded-lg shadow-lg border border-gray-200" />
+            <div class="text-sm text-gray-600 italic">
+              <p>AI generated image: ${aiImagePrompt}</p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    // Add to local edit list
+    setContentBlocks(prev => [...prev, newBlock]);
+
+    // Add to lesson content if it exists
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    }
+
+    handleAiImageDialogClose();
+    toast.success('AI image generated and added to lesson!');
+  };
+
+  const handleAiImageDialogClose = () => {
+    setShowAiImageDialog(false);
+    setAiImagePrompt('');
+    setGeneratedAiImage('');
+    setSelectedImageTemplate(null);
+  };
+
   const handleImageTemplateSelect = (template) => {
+    // Handle AI Generated Image template differently
+    if (template.id === 'ai-generated') {
+      setSelectedImageTemplate(template);
+      setShowImageTemplateSidebar(false);
+      setShowAiImageDialog(true);
+      return;
+    }
+
     const imageUrl = template.defaultContent?.imageUrl || '';
     const imageTitle = template.title;
     const imageText = template.defaultContent?.text || '';
@@ -3150,6 +3712,30 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           </div>
                                         )}
                                        
+                                        {/* Quote Content */}
+                                        {block.type === 'quote' && (
+                                          <div className="mb-8">
+                                            {block.html_css ? (
+                                              <div
+                                                className="prose max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                              />
+                                            ) : (
+                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                                                <div className="pl-4">
+                                                  <blockquote className="text-lg italic text-gray-700 mb-3">
+                                                    "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
+                                                  </blockquote>
+                                                  <cite className="text-sm font-medium text-gray-500">
+                                                    — {JSON.parse(block.content || '{}').author || 'Author Name'}
+                                                  </cite>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                       
                                         {/* Audio Content */}
                                         {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
                                           <div className="mb-8">
@@ -3749,6 +4335,50 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     </video>
                                   </div>
                                 </div>
+                              </div>
+                            )}
+
+                            {block.type === 'quote' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Quote'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Quote
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="prose max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                                    <div className="pl-4">
+                                      <blockquote className="text-lg italic text-gray-700 mb-3">
+                                        "{(() => {
+                                          try {
+                                            const content = JSON.parse(block.content || '{}');
+                                            return content.quote || 'Sample quote text';
+                                          } catch {
+                                            return 'Sample quote text';
+                                          }
+                                        })()}"
+                                      </blockquote>
+                                      <cite className="text-sm font-medium text-gray-500">
+                                        — {(() => {
+                                          try {
+                                            const content = JSON.parse(block.content || '{}');
+                                            return content.author || 'Author Name';
+                                          } catch {
+                                            return 'Author Name';
+                                          }
+                                        })()}
+                                      </cite>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -4739,6 +5369,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </div>
       )}
 
+
+      {/* Quote Component */}
+      <QuoteComponent
+        showQuoteTemplateSidebar={showQuoteTemplateSidebar}
+        setShowQuoteTemplateSidebar={setShowQuoteTemplateSidebar}
+        showQuoteEditDialog={showQuoteEditDialog}
+        setShowQuoteEditDialog={setShowQuoteEditDialog}
+        onQuoteTemplateSelect={handleQuoteTemplateSelect}
+        onQuoteUpdate={handleQuoteUpdate}
+        editingQuoteBlock={editingQuoteBlock}
+      />
+
       {/* Image Dialog */}
       <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
@@ -5175,9 +5817,100 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </DialogContent>
       </Dialog>
 
+      {/* AI Image Generation Dialog */}
+      <Dialog open={showAiImageDialog} onOpenChange={handleAiImageDialogClose}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generate AI Image</DialogTitle>
+            <p className="text-sm text-gray-500">Describe the image you want to generate using AI</p>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Image Prompt <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={aiImagePrompt}
+                onChange={(e) => setAiImagePrompt(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Describe the image you want to generate... (e.g., 'A serene mountain landscape at sunset with a lake reflection')"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Be descriptive and specific for better results. Include style, mood, colors, and composition details.
+              </p>
+            </div>
 
+            {/* Preview Section */}
+            {generatedAiImage && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Generated Preview
+                </label>
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <img
+                    src={generatedAiImage}
+                    alt="AI Generated Preview"
+                    className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+                  />
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Prompt: "{aiImagePrompt}"
+                  </p>
+                </div>
+              </div>
+            )}
 
-      
+            {/* Generation Status */}
+            {aiImageGenerating && (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-600">Generating your AI image...</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleAiImageDialogClose}>
+              Cancel
+            </Button>
+            {!generatedAiImage ? (
+              <Button
+                onClick={() => generateAiImage(aiImagePrompt)}
+                disabled={!aiImagePrompt.trim() || aiImageGenerating}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {aiImageGenerating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating...
+                  </>
+                ) : (
+                  'Generate Image'
+                )}
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => generateAiImage(aiImagePrompt)}
+                  disabled={aiImageGenerating}
+                  className="border-purple-600 text-purple-600 hover:bg-purple-50"
+                >
+                  Regenerate
+                </Button>
+                <Button
+                  onClick={handleAiImageGenerate}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Add to Lesson
+                </Button>
+              </div>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* PDF Dialog */}
       <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>
