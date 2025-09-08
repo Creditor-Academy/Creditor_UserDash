@@ -9,7 +9,6 @@ import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Aw
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
-import logoCreditor from "@/assets/logo_creditor.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { SignUp } from "@/pages/Auth/SignUp";
 
@@ -267,17 +266,17 @@ export function Login() {
       <div className="relative w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center p-4 lg:p-8">
         {/* Left Side - Branding */}
         <div className="hidden lg:flex flex-col items-start justify-center h-full text-slate-800 p-8">
-          {/* Logo and Brand */}
+          {/* Brand Header */}
           <div className={`transform transition-all duration-1000 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
             <div className="flex items-center gap-4 mb-8">
               <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-blue-200/50">
-                <img src={logoCreditor} alt="Creditor Academy" className="w-10 h-10" />
+                <span className="text-2xl font-extrabold text-blue-700">A</span>
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-700 bg-clip-text text-transparent">
-                  Creditor Academy
+                  LMS ATHENA
                 </h1>
-                <p className="text-slate-600 text-lg">Premier Private Education Platform</p>
+                <p className="text-slate-600 text-lg">Learning Management Platform</p>
               </div>
             </div>
           </div>
@@ -285,13 +284,13 @@ export function Login() {
           {/* Hero Content */}
           <div className={`transform transition-all duration-1000 delay-300 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
             <h2 className="text-4xl font-bold mb-6 leading-tight text-slate-800">
-              Master the Art of
+              Experience the Future of
               <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Private Excellence
+                Intelligent Learning
               </span>
             </h2>
             <p className="text-lg text-slate-600 leading-relaxed mb-8">
-              Join thousands of professionals who have transformed their careers through our comprehensive, expert-led courses.
+              Join learners advancing their skills through our comprehensive, expert-led courses.
             </p>
           </div>
 
@@ -312,21 +311,21 @@ export function Login() {
         <div className="flex items-center justify-center p-4 lg:p-8">
           <Card className={`w-full max-w-md bg-white/95 backdrop-blur-sm border border-blue-100/50 shadow-2xl transform transition-all duration-1000 ${animateCard ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-95'}`}>
             <CardHeader className="space-y-4 text-center pb-6">
-              {/* Mobile Logo */}
+              {/* Mobile Brand */}
               <div className="flex items-center justify-center gap-3 lg:hidden mb-2">
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border border-blue-200/50">
-                  <img src={logoCreditor} alt="Creditor Academy" className="w-6 h-6" />
+                  <span className="text-lg font-extrabold text-blue-700">A</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-slate-800">Creditor Academy</h2>
-                  <p className="text-xs text-slate-600">Private Education Platform</p>
+                  <h2 className="text-lg font-bold text-slate-800">LMS ATHENA</h2>
+                  <p className="text-xs text-slate-600">Learning Management Platform</p>
                 </div>
               </div>
               
               <div>
                 <CardTitle className="text-2xl font-bold text-slate-800 mb-1">Welcome Back</CardTitle>
                 <CardDescription className="text-slate-600">
-                  Sign in to continue your private education journey
+                  Sign in to continue your learning journey
                 </CardDescription>
               </div>
             </CardHeader>
