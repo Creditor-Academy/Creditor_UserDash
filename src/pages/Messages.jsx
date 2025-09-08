@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
 import { VoiceMessage } from "@/components/messages/VoiceMessage";
 import EmojiPicker from "emoji-picker-react";
@@ -29,6 +30,7 @@ function Messages() {
   // directory of all users to start a chat with (shown in + dialog)
   const [allUsers, setAllUsers] = useState([]);
   const [selectedFriend, setSelectedFriend] = useState(null);
+  const [convosLoaded, setConvosLoaded] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
@@ -39,6 +41,19 @@ function Messages() {
   const [newChatSearch, setNewChatSearch] = useState("");
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const location = useLocation();
+
+  // Reset local UI state when arriving at Messages route to avoid showing stale names
+  useEffect(() => {
+    if (location.pathname.endsWith("/messages")) {
+      setSelectedFriend(null);
+      setFriends([]);
+      setAllUsers([]);
+      setMessages([]);
+      setRoomId(null);
+      setConvosLoaded(false);
+    }
+  }, [location.pathname]);
 
   // Load conversations for current user on entry; also load all users for starting new chat
   // Ensure socket connects when Messages section is opened
@@ -50,6 +65,44 @@ function Messages() {
     const onRoomIdForSender = (incomingRoomId) => {
       setRoomId(incomingRoomId);
       console.log('room id at sender side', incomingRoomId);
+      // After server creates/returns a room, refresh conversations from backend
+      void (async () => {
+        try {
+          const convos = await getAllConversations();
+          const currentUserId = localStorage.getItem('userId');
+          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => {
+            let other = c.otherUser || c.recipient || c.user || c.partner || c.peer || null;
+            if (!other && Array.isArray(c.participants)) {
+              other = c.participants.find(p => String(p.id || p._id || p.user_id || p.userId) !== String(currentUserId)) || c.participants[0];
+            }
+            if (!other && Array.isArray(c.users)) {
+              other = c.users.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.users[0];
+            }
+            if (!other && Array.isArray(c.members)) {
+              other = c.members.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.members[0];
+            }
+            if (!other && c.sender && String(c.sender.id || c.sender._id) !== String(currentUserId)) other = c.sender;
+            if (!other && c.receiver && String(c.receiver.id || c.receiver._id) !== String(currentUserId)) other = c.receiver;
+            const fallbackOtherId = c.otherUserId || c.other_user_id || c.peerId || c.peer_id;
+            const fallbackName = c.otherUserName || c.other_user_name || c.peerName || c.title || c.name;
+            const fallbackAvatar = c.otherUserAvatar || c.other_user_avatar || c.peerAvatar || c.photo || c.avatar;
+            const otherId = (other && (other.id || other._id || other.user_id || other.userId)) || fallbackOtherId;
+            const first = other?.first_name || other?.firstName || '';
+            const last = other?.last_name || other?.lastName || '';
+            const otherName = `${(first || '').trim()} ${(last || '').trim()}`.trim() || other?.name || other?.email || fallbackName || 'User';
+            const lastMsg = c.lastMessage || c.last_message || c.latestMessage || c.latest_message || c.message;
+            const lastContent = (lastMsg && (lastMsg.content || lastMsg.text || lastMsg.body)) || '';
+            return otherId ? {
+              id: String(otherId),
+              name: otherName,
+              avatar: other?.image || other?.avatar || fallbackAvatar || '/placeholder.svg',
+              lastMessage: lastContent,
+            } : null;
+          }).filter(Boolean);
+          setFriends(normalizedFriends);
+          setConvosLoaded(true);
+        } catch {}
+      })();
     };
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
@@ -131,8 +184,10 @@ function Messages() {
           avatar: u.image || u.avatar || '/placeholder.svg',
         })).filter(u => u.id);
         setAllUsers(normalized);
+        setConvosLoaded(true);
       } catch (e) {
         console.warn('Messages: failed to load users', e);
+        setConvosLoaded(true);
       }
     })();
   }, []);
@@ -298,14 +353,10 @@ function Messages() {
                             key={user.id}
                             className="flex items-center gap-3 p-2 hover:bg-accent rounded cursor-pointer"
                             onClick={() => {
-                              // Immediately open chat with the clicked user
-                              if (!friends.some(f => f.id === user.id)) {
-                                setFriends(prev => [...prev, user]);
-                              }
-                              setSelectedFriend(user.id);
-                              // Emit socket event when starting new conversation
+                              // Do not optimistically mutate list; rely on backend fetch
                               const socket = getSocket();
                               socket.emit("startConversation", { to: user.id });
+                              setSelectedFriend(user.id);
                             }}
                           >
                             <Avatar className="h-8 w-8">
@@ -337,10 +388,10 @@ function Messages() {
                 <div
                   key={friend.id}
                   onClick={() => {
-                    setSelectedFriend(friend.id);
-                    // Emit socket event when conversation is clicked
+                    // Emit socket event when conversation is clicked and rely on backend fetch
                     const socket = getSocket();
                     socket.emit("startConversation", { to: friend.id });
+                    setSelectedFriend(friend.id);
                   }}
                   className={`p-4 flex items-center gap-3 hover:bg-accent cursor-pointer transition-colors border-b ${
                     selectedFriend === friend.id ? "bg-accent" : ""
@@ -379,18 +430,18 @@ function Messages() {
                       ←
                     </Button>
                     <Avatar>
-                      <AvatarImage
-                        src={
-                          friends.find((f) => f.id === selectedFriend)?.avatar
-                        }
-                      />
-                      <AvatarFallback>
-                        {friends.find((f) => f.id === selectedFriend)?.name[0]}
-                      </AvatarFallback>
+                      {convosLoaded && (
+                        <>
+                          <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
+                          <AvatarFallback>
+                            {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
+                          </AvatarFallback>
+                        </>
+                      )}
                     </Avatar>
                     <div>
                       <h3 className="font-semibold">
-                        {friends.find((f) => f.id === selectedFriend)?.name}
+                        {convosLoaded ? (friends.find((f) => f.id === selectedFriend)?.name || '') : ''}
                       </h3>
                     </div>
                   </div>
@@ -408,12 +459,14 @@ function Messages() {
                       >
                         {message.senderId !== 0 && (
                           <Avatar className="h-8 w-8 mr-2 mt-1">
-                            <AvatarImage
-                              src={friends.find((f) => f.id === selectedFriend)?.avatar}
-                            />
-                            <AvatarFallback>
-                              {friends.find((f) => f.id === selectedFriend)?.name[0]}
-                            </AvatarFallback>
+                            {convosLoaded && (
+                              <>
+                                <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
+                                <AvatarFallback>
+                                  {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
+                                </AvatarFallback>
+                              </>
+                            )}
                           </Avatar>
                         )}
                         
