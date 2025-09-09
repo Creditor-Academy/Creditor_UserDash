@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, MessageSquare, Bell, Crown, Loader2, Shield, Search, CheckSquare, Square, File } from "lucide-react";
+import { X, Users, MessageSquare, Bell, Crown, Loader2, Shield, Search, CheckSquare, Square, File, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -8,7 +8,8 @@ import {
   getGroupMembers, 
   getGroupPosts, 
   getAnnouncements,
-  makeGroupAdmin
+  makeGroupAdmin,
+  deleteGroupMember
 } from "@/services/groupService";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,6 +70,9 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkPromoting, setBulkPromoting] = useState(false);
   const [search, setSearch] = useState("");
+  const [deleting, setDeleting] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [memberToDelete, setMemberToDelete] = useState(null);
 
   useEffect(() => {
     if (!isOpen || !groupId) return;
@@ -154,6 +158,37 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
     }
   };
 
+  const handleDeleteClick = (memberId, memberName) => {
+    setMemberToDelete({ id: memberId, name: memberName });
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!memberToDelete) return;
+    
+    try {
+      setDeleting(memberToDelete.id);
+      await deleteGroupMember(groupId, memberToDelete.id);
+      toast.success("Member removed from group");
+      
+      // Refresh members list
+      const mRes = await getGroupMembers(groupId);
+      const membersData = mRes?.data || mRes || [];
+      setMembers(Array.isArray(membersData) ? membersData : (membersData.members || []));
+    } catch (e) {
+      toast.error(e?.response?.data?.message || e?.message || "Failed to remove member");
+    } finally {
+      setDeleting(null);
+      setShowDeleteConfirm(false);
+      setMemberToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
+    setMemberToDelete(null);
+  };
+
   const filteredMembers = (members || []).filter((m) => {
     const user = m.user || m;
     const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.name || '';
@@ -199,6 +234,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
       setBulkPromoting(false);
     }
   };
+
 
   return (
     <AnimatePresence>
@@ -333,6 +369,20 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                                 <Crown className="h-3 w-3" /> Admin
                               </span>
                             )}
+                            {isInstructorOrAdmin() && (
+                              <button
+                                className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                onClick={() => handleDeleteClick(uid, name)}
+                                disabled={deleting === uid}
+                                title="Remove member from group"
+                              >
+                                {deleting === uid ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );
@@ -418,6 +468,73 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
           </div>
         </motion.div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={handleDeleteCancel}
+            />
+            <motion.div
+              className="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-md"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Remove Member</h3>
+                    <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  </div>
+                </div>
+                
+                <p className="text-gray-700 mb-6">
+                  Are you sure you want to remove <span className="font-medium">{memberToDelete?.name}</span> from this group?
+                </p>
+                
+                <div className="flex items-center gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={handleDeleteCancel}
+                    disabled={deleting === memberToDelete?.id}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleDeleteConfirm}
+                    disabled={deleting === memberToDelete?.id}
+                  >
+                    {deleting === memberToDelete?.id ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Removing...
+                      </span>
+                    ) : (
+                      'Remove Member'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }
