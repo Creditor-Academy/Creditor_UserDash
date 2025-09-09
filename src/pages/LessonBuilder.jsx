@@ -743,23 +743,48 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
    
+    let blocksToUpdate = [];
+      
+    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+      // For existing lessons, use lessonContent which contains the updated content
+      blocksToUpdate = lessonContent.data.content;
+        
+      // Add any new blocks from contentBlocks that aren't in lessonContent
+      const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
+      const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
+      blocksToUpdate = [...blocksToUpdate, ...newBlocks];
+    } else {
+      // For new lessons, use contentBlocks
+      blocksToUpdate = contentBlocks;
+    }
+   
     // If we have existing lesson content, add to that structure
     if (lessonContent?.data?.content) {
       setLessonContent(prevLessonContent => ({
         ...prevLessonContent,
         data: {
           ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
+          content: [...blocksToUpdate, newBlock]
         }
       }));
     } else {
       // For new lessons, add to contentBlocks
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+      setContentBlocks(prevBlocks => [...blocksToUpdate, newBlock]);
     }
     setShowTableTemplateSidebar(false);
   };
 
   const handleStatementSelect = (statementBlock) => {
+    let blocksToUpdate = [];
+      
+    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+      // For existing lessons, use lessonContent which contains the updated content
+      blocksToUpdate = lessonContent.data.content;
+        
+      // Add any new blocks from contentBlocks that aren't in lessonContent
+      const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
+      const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
+      blocksToUpdate = [...blocksToUpdate, ...newBlocks];
     // If we have existing lesson content, add to that structure
     if (lessonContent?.data?.content) {
       setLessonContent(prevLessonContent => ({
@@ -809,71 +834,78 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
   // Quote component callbacks
   const handleQuoteTemplateSelect = (newBlock) => {
-    // Always add to local edit list so it appears immediately in edit mode
+    // Only add to contentBlocks - this is the primary state for managing blocks
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
-    
-    // Also add to lessonContent if it exists (for fetched lessons)
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
-      }));
-    }
   };
 
-  const handleQuoteUpdate = (editingBlock, updatedQuoteContent) => {
+  const handleQuoteUpdate = (blockId, updatedContentString) => {
+    // Find the block being edited
+    const editingBlock = contentBlocks.find(block => block.id === blockId) || 
+                        lessonContent?.data?.content?.find(block => block.block_id === blockId || block.id === blockId);
+    
+    if (!editingBlock) {
+      console.error('Block not found for update:', blockId);
+      return;
+    }
+    
+    // Parse the updated content
+    let updatedQuoteContent;
+    try {
+      updatedQuoteContent = JSON.parse(updatedContentString);
+    } catch (e) {
+      console.error('Error parsing updated content:', e);
+      return;
+    }
+    
     // Generate new HTML content based on quote type and updated content
     let newHtmlContent = '';
-    const quoteType = editingBlock.details?.quoteType || editingBlock.quoteType;
+    const quoteType = editingBlock.textType || editingBlock.details?.quoteType || editingBlock.quoteType;
     
     switch (quoteType) {
       case 'quote_a':
         newHtmlContent = `
-          <div class="relative bg-white rounded-2xl shadow-lg p-8 border border-gray-100 max-w-2xl mx-auto">
-            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-blue-500 to-purple-600 rounded-l-2xl"></div>
-            <div class="pl-6">
-              <div class="flex items-start space-x-4">
-                <div class="flex-1">
-                  <blockquote class="text-xl italic text-gray-700 mb-4 leading-relaxed">
-                    "${updatedQuoteContent.quote}"
-                  </blockquote>
-                  <div class="flex items-center space-x-3">
-                    <cite class="text-lg font-semibold text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
-                  </div>
-                </div>
+          <div class="relative bg-gradient-to-br from-gray-50 to-white p-12 max-w-4xl mx-auto rounded-lg shadow-sm border border-gray-100">
+            <div class="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-lg"></div>
+            <div class="relative z-10">
+              <div class="w-16 h-px bg-gradient-to-r from-blue-500 to-purple-600 mx-auto mb-8"></div>
+              <div class="text-center">
+                <svg class="w-8 h-8 text-blue-500/30 mx-auto mb-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
+                </svg>
+                <blockquote class="text-xl text-gray-700 mb-8 leading-relaxed font-light italic tracking-wide">
+                  "${updatedQuoteContent.quote}"
+                </blockquote>
+                <cite class="text-sm font-semibold text-gray-600 not-italic uppercase tracking-wider letter-spacing-wide">— ${updatedQuoteContent.author}</cite>
               </div>
+              <div class="w-16 h-px bg-gradient-to-r from-purple-600 to-blue-500 mx-auto mt-8"></div>
             </div>
           </div>
         `;
         break;
       case 'quote_b':
         newHtmlContent = `
-          <div class="relative bg-gradient-to-br from-gray-50 to-white rounded-3xl shadow-xl p-10 border border-gray-200 max-w-3xl mx-auto">
-            <div class="absolute top-0 right-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-r-3xl"></div>
-            <div class="pr-6">
-              <div class="text-center">
-                <blockquote class="text-2xl italic text-gray-800 mb-6 leading-relaxed font-light">
-                  "${updatedQuoteContent.quote}"
-                </blockquote>
-                <cite class="text-xl font-bold text-gray-700 not-italic">— ${updatedQuoteContent.author}</cite>
-              </div>
+          <div class="relative bg-white py-16 px-8 max-w-5xl mx-auto">
+            <div class="text-center">
+              <blockquote class="text-3xl md:text-4xl text-gray-800 mb-12 leading-relaxed font-thin tracking-wide">
+                ${updatedQuoteContent.quote}
+              </blockquote>
+              <cite class="text-lg font-medium text-orange-500 not-italic tracking-wider">${updatedQuoteContent.author}</cite>
             </div>
           </div>
         `;
         break;
       case 'quote_c':
         newHtmlContent = `
-          <div class="relative bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
-            <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-green-400 to-blue-500"></div>
-            <div class="p-12">
-              <div class="text-center">
-                <blockquote class="text-3xl italic text-gray-700 mb-6 leading-relaxed font-light">
+          <div class="relative bg-white rounded-xl shadow-lg p-8 max-w-5xl mx-auto border border-gray-100">
+            <div class="flex items-center space-x-8">
+              <div class="flex-shrink-0">
+                <img src="${updatedQuoteContent.authorImage || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&h=687&q=80'}" alt="${updatedQuoteContent.author}" class="w-32 h-32 rounded-full object-cover shadow-md" />
+              </div>
+              <div class="flex-1">
+                <blockquote class="text-xl text-gray-700 mb-4 leading-relaxed font-normal italic">
                   "${updatedQuoteContent.quote}"
                 </blockquote>
-                <cite class="text-2xl font-bold text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
+                <cite class="text-base font-semibold text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
               </div>
             </div>
           </div>
@@ -881,85 +913,137 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         break;
       case 'quote_d':
         newHtmlContent = `
-          <div class="relative bg-white rounded-lg shadow-md p-6 border-l-4 border-indigo-500 max-w-2xl mx-auto">
-            <blockquote class="text-lg italic text-gray-700 mb-3 leading-relaxed">
-              "${updatedQuoteContent.quote}"
-            </blockquote>
-            <cite class="text-base font-medium text-gray-600 not-italic">— ${updatedQuoteContent.author}</cite>
-          </div>
-        `;
-        break;
-      case 'quote_on_image':
-        newHtmlContent = `
-          <div class="relative bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl shadow-2xl overflow-hidden max-w-4xl mx-auto min-h-[400px] flex items-center justify-center">
-            <div class="absolute inset-0 bg-black bg-opacity-30"></div>
-            <div class="relative z-10 text-center text-white p-12">
-              <blockquote class="text-4xl italic font-light mb-8 leading-relaxed">
-                "${updatedQuoteContent.quote}"
-              </blockquote>
-              <cite class="text-2xl font-bold not-italic">— ${updatedQuoteContent.author}</cite>
-            </div>
-          </div>
-        `;
-        break;
-      case 'quote_carousel':
-        const quotes = updatedQuoteContent.quotes || [updatedQuoteContent];
-        newHtmlContent = `
-          <div class="relative bg-white rounded-3xl shadow-xl p-8 max-w-4xl mx-auto">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-t-3xl"></div>
-            <div class="quote-carousel-${Date.now()}" data-current="0">
-              ${quotes.map((q, index) => `
-                <div class="quote-slide ${index === 0 ? 'block' : 'hidden'}" data-index="${index}">
-                  <div class="text-center py-8">
-                    <blockquote class="text-3xl italic text-gray-800 mb-6 leading-relaxed font-light">
-                      "${q.quote}"
-                    </blockquote>
-                    <cite class="text-xl font-bold text-gray-600 not-italic">— ${q.author}</cite>
-                  </div>
-                </div>
-              `).join('')}
-              <div class="flex justify-center items-center space-x-4 mt-8">
-                <button onclick="window.carouselPrev && window.carouselPrev(this)" class="carousel-prev bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                  </svg>
-                </button>
-                <div class="flex space-x-2">
-                  ${quotes.map((_, index) => `
-                    <button onclick="window.carouselGoTo && window.carouselGoTo(this, ${index})" class="carousel-dot w-3 h-3 rounded-full transition-colors ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}" data-index="${index}"></button>
-                  `).join('')}
-                </div>
-                <button onclick="window.carouselNext && window.carouselNext(this)" class="carousel-next bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </button>
+          <div class="relative bg-gradient-to-br from-slate-50 to-gray-50 py-20 px-12 max-w-4xl mx-auto">
+            <div class="text-left max-w-3xl">
+              <div class="mb-8">
+                <svg class="w-12 h-12 text-slate-300 mb-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
+                </svg>
+                <blockquote class="text-2xl md:text-3xl text-slate-700 leading-relaxed font-light mb-8">
+                  ${updatedQuoteContent.quote}
+                </blockquote>
+              </div>
+              <div class="flex items-center">
+                <div class="w-8 h-px bg-slate-400 mr-4"></div>
+                <cite class="text-sm font-medium text-slate-600 not-italic uppercase tracking-widest">${updatedQuoteContent.author}</cite>
               </div>
             </div>
           </div>
         `;
         break;
-      default:
+      case 'quote_on_image':
         newHtmlContent = `
-          <div class="relative bg-white rounded-2xl shadow-md p-6 border">
-            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-            <div class="pl-4">
-              <blockquote class="text-lg italic text-gray-700 mb-3">
-                "${updatedQuoteContent.quote}"
-              </blockquote>
-              <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
+          <div class="relative rounded-3xl overflow-hidden shadow-2xl max-w-6xl mx-auto min-h-[600px]" style="background-image: url('${updatedQuoteContent.backgroundImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}'); background-size: cover; background-position: center;">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20"></div>
+            <div class="relative z-10 flex items-center justify-center h-full p-16">
+              <div class="text-center max-w-4xl">
+                <div class="mb-8">
+                  <svg class="w-16 h-16 text-white/30 mx-auto mb-8" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
+                  </svg>
+                  <blockquote class="text-4xl md:text-5xl lg:text-6xl text-white leading-tight font-extralight mb-12 tracking-wide">
+                    ${updatedQuoteContent.quote}
+                  </blockquote>
+                </div>
+                <div class="flex items-center justify-center">
+                  <div class="w-12 h-px bg-white/60 mr-6"></div>
+                  <cite class="text-xl font-light text-white/95 not-italic uppercase tracking-[0.2em]">${updatedQuoteContent.author}</cite>
+                  <div class="w-12 h-px bg-white/60 ml-6"></div>
+                </div>
+              </div>
             </div>
           </div>
         `;
+        break;
+      case 'quote_carousel':
+      const quotes = updatedQuoteContent.quotes || [updatedQuoteContent];
+      newHtmlContent = `
+        <div class="relative bg-gradient-to-br from-slate-50 via-white to-blue-50 rounded-2xl shadow-lg border border-slate-200/50 p-6 max-w-2xl mx-auto overflow-hidden backdrop-blur-sm">
+          <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 via-purple-500 to-pink-500 rounded-t-3xl"></div>
+          <div class="absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br from-blue-200/20 via-purple-200/20 to-pink-200/20 rounded-full blur-2xl"></div>
+          <div class="absolute -bottom-6 -left-6 w-28 h-28 bg-gradient-to-br from-indigo-200/20 via-blue-200/20 to-cyan-200/20 rounded-full blur-2xl"></div>
+          <div class="absolute top-1/2 right-8 w-16 h-16 bg-gradient-to-br from-purple-100/30 to-pink-100/30 rounded-full blur-xl"></div>
+          
+          <div class="quote-carousel-${Date.now()} relative z-10" data-current="0">
+            ${quotes.map((q, index) => `
+              <div class="quote-slide ${index === 0 ? 'block' : 'hidden'} transition-all duration-700 ease-in-out transform" data-index="${index}">
+                <div class="text-center py-8 px-6">
+                  <div class="flex justify-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300">
+                      <svg class="w-6 h-6 text-white drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <blockquote class="text-lg md:text-xl text-slate-800 mb-6 leading-relaxed font-light italic min-h-[80px] flex items-center justify-center tracking-wide">
+                    <span class="relative">
+                      "${q.quote}"
+                      <div class="absolute -left-4 -top-2 text-6xl text-blue-200/30 font-serif">"</div>
+                      <div class="absolute -right-4 -bottom-6 text-6xl text-purple-200/30 font-serif">"</div>
+                    </span>
+                  </blockquote>
+                  
+                  <div class="flex items-center justify-center space-x-4">
+                    <div class="w-12 h-px bg-gradient-to-r from-transparent via-slate-400 to-slate-400"></div>
+                    <cite class="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text not-italic tracking-wider uppercase text-sm letter-spacing-widest">${q.author}</cite>
+                    <div class="w-12 h-px bg-gradient-to-r from-slate-400 via-slate-400 to-transparent"></div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+            
+            <div class="flex justify-center items-center space-x-6 mt-6 pt-4 border-t border-slate-200/60">
+              <button onclick="window.carouselPrev && window.carouselPrev(this)" class="carousel-prev group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
+                <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+              </button>
+              
+              <div class="flex space-x-2">
+                ${quotes.map((_, index) => `
+                  <button onclick="window.carouselGoTo && window.carouselGoTo(this, ${index})" class="carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md' : 'bg-slate-300 hover:bg-slate-400 hover:scale-105'}" data-index="${index}"></button>
+                `).join('')}
+              </div>
+              
+              <button onclick="window.carouselNext && window.carouselNext(this)" class="carousel-next group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
+                <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      break;
+    default:
+      newHtmlContent = `
+        <div class="relative bg-white rounded-2xl shadow-md p-6 border">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <blockquote class="text-lg italic text-gray-700 mb-3">
+              "${updatedQuoteContent.quote}"
+            </blockquote>
+            <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
+          </div>
+        </div>
+      `;
     }
 
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
       blocks.map(block =>
-        block.id === editingBlock.id ? {
+        block.id === blockId ? {
           ...block,
           content: JSON.stringify(updatedQuoteContent),
           html_css: newHtmlContent,
+          details: {
+            ...block.details,
+            quote: updatedQuoteContent.quote || updatedQuoteContent.quotes?.[0]?.quote || '',
+            author: updatedQuoteContent.author || updatedQuoteContent.quotes?.[0]?.author || '',
+            authorImage: updatedQuoteContent.authorImage || '',
+            backgroundImage: updatedQuoteContent.backgroundImage || ''
+          },
           updatedAt: new Date().toISOString()
         } : block
       )
@@ -972,7 +1056,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         data: {
           ...prevLessonContent.data,
           content: prevLessonContent.data.content.map(block =>
-            (block.block_id === editingBlock.id || block.id === editingBlock.id) ? {
+            (block.block_id === blockId || block.id === blockId) ? {
               ...block,
               content: JSON.stringify(updatedQuoteContent),
               html_css: newHtmlContent,
@@ -1070,6 +1154,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } else if (block.type === 'quote') {
       // Handle quote block editing
       setEditingQuoteBlock(block);
+      
+      // For quote carousel, initialize carousel state
+      if (block.textType === 'quote_carousel') {
+        try {
+          const content = JSON.parse(block.content);
+          if (content.quotes && Array.isArray(content.quotes)) {
+            quoteComponentRef.current?.setCarouselQuotes(content.quotes);
+            quoteComponentRef.current?.setActiveCarouselTab(0);
+          }
+        } catch (e) {
+          console.error('Error parsing carousel content:', e);
+        }
+      }
+      
       setShowQuoteEditDialog(true);
     } else {
       setCurrentBlock(block);
@@ -1288,7 +1386,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           }
         }
       } else if (block.type === 'quote') {
-        // Use saved html_css if available, otherwise generate from content
+        // For quote blocks, ALWAYS use the saved html_css to prevent extra container wrapping
+        // This preserves the exact design sent to the backend
         if (block.html_css && block.html_css.trim()) {
           html = block.html_css;
         } else {
@@ -1505,9 +1604,23 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     try {
       setIsUploading(true);
 
-      // Use contentBlocks if it has data (newly added content), otherwise use lessonContent (fetched content)
-      // This ensures newly added content takes priority over fetched content
-      const blocksToUpdate = contentBlocks.length > 0 ? contentBlocks : (lessonContent?.data?.content || []);
+      // Merge contentBlocks (newly added) with lessonContent (existing/updated)
+      // For existing lessons, we need to use the updated lessonContent.data.content
+      // For new lessons, we use contentBlocks
+      let blocksToUpdate = [];
+      
+      if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+        // For existing lessons, use lessonContent which contains the updated content
+        blocksToUpdate = lessonContent.data.content;
+        
+        // Add any new blocks from contentBlocks that aren't in lessonContent
+        const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
+        const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
+        blocksToUpdate = [...blocksToUpdate, ...newBlocks];
+      } else {
+        // For new lessons, use contentBlocks
+        blocksToUpdate = contentBlocks;
+      }
 
       // Allow empty content blocks for deletion operations
       /*if (!blocksToUpdate || blocksToUpdate.length === 0) {
@@ -1519,7 +1632,20 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       const content = blocksToUpdate.map((block, index) => {
         const blockId = block.block_id || `block_${index + 1}`;
        
-        // If block already has html_css (fetched content), preserve it to avoid wrapping in new containers
+        // For quote blocks, always preserve the exact html_css to maintain design consistency
+        if (block.type === 'quote' && block.html_css && block.html_css.trim() !== '') {
+          return {
+            type: block.type,
+            textType: block.textType,
+            script: block.script || '',
+            block_id: blockId,
+            html_css: block.html_css,
+            content: block.content,
+            ...(block.details && { details: block.details })
+          };
+        }
+        
+        // For other blocks, preserve existing html_css to avoid wrapping in new containers
         if (block.html_css && block.html_css.trim() !== '') {
           return {
             type: block.type,
@@ -1671,6 +1797,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       const formattedContent = blocksToUpdate.map(block => {
         let htmlContent = '';
         let styles = '';
+
+        // For quote blocks, use the exact html_css to prevent extra wrapping
+        if (block.type === 'quote' && block.html_css && block.html_css.trim()) {
+          return {
+            html_css: block.html_css,
+            styles: ''
+          };
+        }
 
         // Extract content from different possible sources
         const blockContent = block.content || block.html_css || '';
