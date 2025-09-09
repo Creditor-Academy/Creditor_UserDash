@@ -15,7 +15,7 @@ import DashboardAnnouncements from "@/components/dashboard/DashboardAnnouncement
 import LiveClasses from "@/components/dashboard/LiveClasses";
 import ComingSoonPopover from "@/components/dashboard/ComingSoonPopover";
 import axios from "axios";
-import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
+import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
 
@@ -203,33 +203,16 @@ export function Dashboard() {
       setCoursesLoading(true);
       try {
         const data = await fetchUserCourses();
-        // Fetch modules for each course and add modulesCount and totalDuration
-        const coursesWithModules = await Promise.all(
-          data.map(async (course) => {
-            try {
-              const modules = await fetchCourseModules(course.id);
-              const modulesCount = modules.length;
-              const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-              const totalDurationSecs = totalDurationMins * 60;
-              return { 
-                ...course, 
-                modulesCount, 
-                totalDurationSecs,
-                // Ensure image field is set from thumbnail with proper fallbacks
-                image: course.thumbnail || course.image || course.coverImage || course.course_image || course.thumbnail_url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-            } catch {
-              return { 
-                ...course, 
-                modulesCount: 0, 
-                totalDurationSecs: 0,
-                // Ensure image field is set from thumbnail with proper fallbacks
-                image: course.thumbnail || course.image || course.coverImage || course.course_image || course.thumbnail_url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-            }
-          })
-        );
-        setUserCourses(coursesWithModules);
+        // Process courses to include module counts and durations
+        const processedCourses = data.map(course => ({
+          ...course,
+          // Use _count.modules from the API response
+          modulesCount: course._count?.modules || 0,
+          totalDurationSecs: 0, // This can be updated if duration is available in the course data
+          image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+        }));
+
+        setUserCourses(processedCourses);
       } catch (err) {
         setCoursesError('Failed to fetch courses');
       } finally {

@@ -25,6 +25,7 @@ import EssayResultsPage from "@/pages/EssayResultsPage";
 import  Groups  from "@/pages/Groups";
 import Catalog from "@/pages/Catalog";
 import CatelogCourses from "@/pages/CatelogCourses";
+import Home from "@/pages/home.jsx";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
@@ -62,6 +63,7 @@ import CertificatePage from "../src/pages/CertificatePage";
 import SurveyInstructionPage from "@/pages/SurveyInstructionPage";
 import DebateInstructionPage from "@/pages/DebateInstructionPage";
 import DebateTakePage from "@/pages/DebateTakePage";
+import Chatbot from "@/pages/Chatbot";
 import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
@@ -71,7 +73,6 @@ import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
-import LandingPage from "@/pages/LandingPage";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -114,7 +115,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Home />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -260,6 +261,7 @@ function App() {
             <Route path="announcements" element={<Announcements />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="todo" element={<TodoPage />} />
+            <Route path="chatbot" element={<Chatbot />} />
             <Route path="faqs" element={<FAQs />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="guides" element={<Guides />} />

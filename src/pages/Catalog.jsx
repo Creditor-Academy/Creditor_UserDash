@@ -3,39 +3,31 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Search, Loader2, FolderOpen, Star, Gem, Video, Award } from "lucide-react";
 import { Link } from "react-router-dom";
-import { fetchAllCatalogs, fetchCatalogCourses, testCatalogAPI } from "@/services/catalogService";
+import { fetchAllCatalogs } from "@/services/catalogService";
 
 export function CatalogPage() {
   const [catalogs, setCatalogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [courseCounts, setCourseCounts] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
-    const fetchCatalogsAndCounts = async () => {
+    const fetchCatalogs = async () => {
       try {
         setLoading(true);
         const data = await fetchAllCatalogs();
+        // Use the courseCount already set in fetchAllCatalogs
         setCatalogs(data || []);
-        const counts = {};
-        await Promise.all(
-          (data || []).map(async (catalog) => {
-            const courses = await fetchCatalogCourses(catalog.id);
-            counts[catalog.id] = courses.length;
-          })
-        );
-        setCourseCounts(counts);
       } catch (err) {
+        console.error('Error fetching catalogs:', err);
         setError("Failed to load catalogs. Please try again later.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCatalogsAndCounts();
-    testCatalogAPI().then(result => {});
+    fetchCatalogs();
   }, []);
 
   const categories = Array.from(new Set((catalogs || []).map(catalog => catalog.category || "General")));
@@ -178,7 +170,19 @@ export function CatalogPage() {
         <div className="flex items-center gap-4 text-sm text-gray-500 pt-2">
           <span className="flex items-center gap-1">
             <BookOpen className="h-4 w-4" />
-            {courseCounts[catalog.id] || 0} courses
+            <span>{
+              (catalog._count?.catalog_courses !== undefined ? catalog._count.catalog_courses :
+               catalog.catalog_courseCount !== undefined ? catalog.catalog_courseCount : 
+               catalog.courseCount || 0
+              )} courses</span>
+            {/* Debug info - remove after fixing */}
+            <span className="text-xs text-gray-400 ml-2 hidden">
+              (id: {catalog.id}, count: {JSON.stringify({
+                catalog_courseCount: catalog.catalog_courseCount,
+                courseCount: catalog.courseCount,
+                _count: catalog._count
+              })})
+            </span>
           </span>
         </div>
 

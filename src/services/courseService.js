@@ -32,8 +32,10 @@ const data = await response.json();
 return data.data || data;
 }
 
-export async function fetchUserCourses() {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`, {
+export async function fetchUserCourses(withModules = false) {
+  const url = new URL(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`);
+  
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -41,9 +43,11 @@ export async function fetchUserCourses() {
     },
     credentials: 'include',
   });
+  
   if (!response.ok) {
     throw new Error('Failed to fetch user courses');
   }
+  
   const data = await response.json();
   return data.data;
 }
@@ -205,6 +209,7 @@ export async function unenrollUser(courseId, userId) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeader(),
     },
     credentials: 'include',
     body: JSON.stringify({ userId }),
