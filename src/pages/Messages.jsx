@@ -125,7 +125,7 @@ function Messages() {
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
           const idFriends = convos.map(id => ({
             id: String(id),
-            name: `Conversation ${String(id).slice(0, 6)}`,
+            name: `${String(id)}`,
             avatar: '/placeholder.svg',
             lastMessage: '',
           }));
@@ -203,7 +203,7 @@ function Messages() {
       // Emit socket event to send message to current room
       try {
         const socket = getSocket();
-        console.log('selectedFriend', selectedFriend);
+        //console.log('selectedFriend', selectedFriend);
         if (selectedFriend) {
           socket.emit("sendMessage", { room: selectedFriend, message: newMessage });
         } else {
@@ -402,6 +402,7 @@ function Messages() {
                   onClick={() => {
                     // Emit socket event when conversation is clicked and rely on backend fetch
                     const socket = getSocket();
+                    console.log('friend', friend);
                     socket.emit("joinRoom", friend.id);
                     setSelectedFriend(friend.id);
                   }}
