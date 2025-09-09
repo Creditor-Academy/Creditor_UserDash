@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
 import { professionalAvatars } from "@/lib/avatar-utils";
-import getSocket from "@/services/socketClient";
+import { } from "@/services/socketClient";
+import { useGroupChatSocket } from "@/hooks/useGroupChatSocket";
 
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
@@ -83,7 +84,10 @@ const initialMessages = [
 export function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const seenMessageIdsRef = React.useRef(new Set());
+
   const [showMembers, setShowMembers] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -101,33 +105,32 @@ export function ChatPage() {
     fetchGroupMembers({ openModal: false, silent: true });
     // load messages
     loadMessages();
-
-    // Realtime: join group room
-    const socket = getSocket();
-    const uid = currentUserId;
-    socket.emit('joinGroup', { groupId, userId: uid });
-
-    const onNewMessage = (payload) => {
-      // only accept messages for current group
-      if (payload?.group_id === groupId || payload?.groupId === groupId) {
-        setMessages(prev => [...prev, {
-          id: payload.id,
-          senderId: payload.sender_id || payload.senderId,
-          senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
-          senderAvatar: payload.sender?.image || '',
-          content: payload.content,
-          timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-          type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
-        }]);
-      }
-    };
-    socket.on('newGroupMessage', onNewMessage);
-
-    return () => {
-      socket.emit('leaveGroup', { groupId, userId: uid });
-      socket.off('newGroupMessage', onNewMessage);
-    };
   }, [groupId]);
+
+  // Realtime chat socket wiring
+  const { sendMessage, sendTyping } = useGroupChatSocket({
+    groupId,
+    userId: currentUserId,
+    onMessage: (payload) => {
+      if (String(payload?.group_id || payload?.groupId) !== String(groupId)) return;
+        const realId = payload.id;
+        if (realId && seenMessageIdsRef.current.has(realId)) return;
+        if (realId) seenMessageIdsRef.current.add(realId);
+        setMessages(prev => {
+          const withoutTmp = prev.filter(m => !(String(m.senderId) === String(payload.sender_id || payload.senderId) && m.content === payload.content && String(m.id).startsWith('tmp-')));
+          return [...withoutTmp, {
+            id: payload.id,
+            senderId: payload.sender_id || payload.senderId,
+            senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
+            senderAvatar: payload.sender?.image || '',
+            content: payload.content,
+            timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
+          }];
+        });
+    },
+    onTyping: () => {}
+  });
 
   const loadMessages = async () => {
     try {
@@ -238,39 +241,47 @@ export function ChatPage() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
+    const toSend = newMessage;
+    setNewMessage("");
+    setIsSending(true);
+
+    const tempId = `tmp-${Date.now()}`;
     const optimistic = {
-      id: `tmp-${Date.now()}`,
+      id: tempId,
       senderId: currentUserId,
       senderName: "You",
       senderAvatar: "",
-      content: newMessage,
+      content: toSend,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      type: 'text'
+      type: 'text',
+      pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-    const toSend = newMessage;
-    setNewMessage("");
-    try {
-      // emit over socket to let backend broadcast; also call REST as fallback
-      const socket = getSocket();
-      socket.emit('sendGroupMessage', { groupId, userId: currentUserId, content: toSend });
 
+    try {
+      sendMessage({ content: toSend, senderId: currentUserId, type: 'TEXT' });
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
       if (m?.id) {
-        setMessages(prev => prev.map(x => x.id === optimistic.id ? {
-          id: m.id,
-          senderId: m.sender_id,
-          senderName: m.sender?.first_name || 'You',
-          senderAvatar: m.sender?.image || '',
-          content: m.content,
-          timestamp: new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text'
-        } : x));
+        if (seenMessageIdsRef.current.has(m.id)) {
+          setMessages(prev => prev.filter(x => x.id !== tempId));
+        } else {
+          seenMessageIdsRef.current.add(m.id);
+          setMessages(prev => prev.map(x => x.id === tempId ? {
+            id: m.id,
+            senderId: m.sender_id || currentUserId,
+            senderName: m.sender?.first_name || 'You',
+            senderAvatar: m.sender?.image || '',
+            content: m.content,
+            timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
+            type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (m.mime_type ? 'file' : 'text'),
+          } : x));
+        }
       }
     } catch (e) {
-      // rollback
-      setMessages(prev => prev.filter(x => x.id !== optimistic.id));
+      setMessages(prev => prev.filter(x => x.id !== tempId));
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -299,9 +310,6 @@ export function ChatPage() {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
     try {
       await editGroupMessage(groupId, messageId, { content: newContent });
-      const socket = getSocket();
-      // Optionally let backend broadcast an update event if implemented
-      // socket.emit('editGroupMessage', { groupId, messageId, content: newContent });
     } catch (e) {
       setMessages(snapshot);
     }
@@ -505,6 +513,7 @@ export function ChatPage() {
             onFileSelect={handleFileSelect}
             showVoiceRecorder={showVoiceRecorder}
             setShowVoiceRecorder={setShowVoiceRecorder}
+            isSending={isSending}
           />
         </CardContent>
       </Card>

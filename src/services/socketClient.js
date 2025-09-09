@@ -57,3 +57,86 @@ export function refreshSocketAuth(newToken) {
 }
 
 export default getSocket;
+
+// ---- Helper APIs for group rooms and events ----
+
+export function joinGroupRoom(args) {
+  try {
+    const s = getSocket();
+    const groupId = typeof args === 'object' ? args.groupId : args;
+    const userId = typeof args === 'object' ? args.userId : undefined;
+    const payload = { groupId: String(groupId), userId };
+    // New API
+    s.emit('room:join', payload);
+    // Legacy aliases
+    s.emit('joinGroup', payload);
+    s.emit('group:join', payload);
+  } catch {}
+}
+
+export function leaveGroupRoom(args) {
+  try {
+    const s = getSocket();
+    const groupId = typeof args === 'object' ? args.groupId : args;
+    const userId = typeof args === 'object' ? args.userId : undefined;
+    const payload = { groupId: String(groupId), userId };
+    // New API
+    s.emit('room:leave', payload);
+    // Legacy aliases
+    s.emit('leaveGroup', payload);
+    s.emit('group:leave', payload);
+  } catch {}
+}
+
+// Chat: subscribe/unsubscribe
+export function onChatMessage(handler) {
+  const s = getSocket();
+  s.on('chat:message', handler);
+  // Legacy alias
+  s.on('newGroupMessage', handler);
+}
+
+export function offChatMessage(handler) {
+  const s = getSocket();
+  s.off('chat:message', handler);
+  // Legacy alias
+  s.off('newGroupMessage', handler);
+}
+
+export function onChatTyping(handler) {
+  const s = getSocket();
+  s.on('chat:typing', handler);
+}
+
+export function offChatTyping(handler) {
+  const s = getSocket();
+  s.off('chat:typing', handler);
+}
+
+export function emitChatMessage(payload) {
+  const s = getSocket();
+  s.emit('chat:message', payload);
+  // Legacy alias
+  s.emit('sendGroupMessage', payload);
+}
+
+export function emitChatTyping(payload) {
+  const s = getSocket();
+  s.emit('chat:typing', payload);
+}
+
+// Announcements
+export function onAnnouncementNew(handler) {
+  const s = getSocket();
+  s.on('announcement:new', handler);
+}
+
+export function offAnnouncementNew(handler) {
+  const s = getSocket();
+  s.off('announcement:new', handler);
+}
+
+export function emitAnnouncementNew(payload) {
+  const s = getSocket();
+  s.emit('announcement:new', payload);
+}
