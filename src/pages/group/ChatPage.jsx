@@ -110,7 +110,6 @@ export function ChatPage() {
   // Realtime chat socket wiring
   const { sendMessage, sendTyping } = useGroupChatSocket({
     groupId,
-    userId: currentUserId,
     onMessage: (payload) => {
       if (String(payload?.group_id || payload?.groupId) !== String(groupId)) return;
         const realId = payload.id;

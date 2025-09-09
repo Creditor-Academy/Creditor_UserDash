@@ -60,30 +60,26 @@ export default getSocket;
 
 // ---- Helper APIs for group rooms and events ----
 
-export function joinGroupRoom(args) {
+export function joinGroupRoom(groupId) {
   try {
     const s = getSocket();
-    const groupId = typeof args === 'object' ? args.groupId : args;
-    const userId = typeof args === 'object' ? args.userId : undefined;
-    const payload = { groupId: String(groupId), userId };
+    const payload = { groupId: String(groupId) };
     // New API
     s.emit('room:join', payload);
     // Legacy aliases
-    s.emit('joinGroup', payload);
+    s.emit('joinGroup', { groupId: String(groupId), userId: undefined });
     s.emit('group:join', payload);
   } catch {}
 }
 
-export function leaveGroupRoom(args) {
+export function leaveGroupRoom(groupId) {
   try {
     const s = getSocket();
-    const groupId = typeof args === 'object' ? args.groupId : args;
-    const userId = typeof args === 'object' ? args.userId : undefined;
-    const payload = { groupId: String(groupId), userId };
+    const payload = { groupId: String(groupId) };
     // New API
     s.emit('room:leave', payload);
     // Legacy aliases
-    s.emit('leaveGroup', payload);
+    s.emit('leaveGroup', { groupId: String(groupId), userId: undefined });
     s.emit('group:leave', payload);
   } catch {}
 }

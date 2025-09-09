@@ -11,21 +11,16 @@ import {
   emitChatTyping,
 } from '@/services/socketClient';
 
-export function useGroupChatSocket({ groupId, userId, onMessage, onTyping }) {
+export function useGroupChatSocket({ groupId, onMessage, onTyping }) {
   const groupIdRef = useRef(groupId);
   groupIdRef.current = groupId;
 
   useEffect(() => {
     if (!groupId) return;
 
-    const socket = getSocket();
-    // Debug all events to inspect server emissions
-    const onAnyHandler = (event, ...args) => {
-      try { console.debug('[socket:any]', event, args?.[0]); } catch {}
-    };
-    try { socket.onAny(onAnyHandler); } catch {}
-
-    joinGroupRoom({ groupId, userId });
+    // ensure socket is instantiated
+    getSocket();
+    joinGroupRoom(groupId);
 
     if (onMessage) onChatMessage(onMessage);
     if (onTyping) onChatTyping(onTyping);
@@ -33,10 +28,9 @@ export function useGroupChatSocket({ groupId, userId, onMessage, onTyping }) {
     return () => {
       if (onMessage) offChatMessage(onMessage);
       if (onTyping) offChatTyping(onTyping);
-      leaveGroupRoom({ groupId: groupIdRef.current, userId });
-      try { socket.offAny(onAnyHandler); } catch {}
+      leaveGroupRoom(groupIdRef.current);
     };
-  }, [groupId, userId]);
+  }, [groupId]);
 
   const sendMessage = (payload) => emitChatMessage({ ...payload, groupId });
   const sendTyping = (payload) => emitChatTyping({ ...payload, groupId });
