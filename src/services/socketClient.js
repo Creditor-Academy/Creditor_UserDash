@@ -28,7 +28,7 @@ export function getSocket() {
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
-      auth: { token: token ? `Bearer ${token}` : undefined }
+      auth: { token }
     });
 
     // Helpful diagnostics in dev
