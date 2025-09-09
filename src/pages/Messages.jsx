@@ -125,7 +125,7 @@ function Messages() {
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
           const idFriends = convos.map(id => ({
             id: String(id),
-            name: `room ${String(id)}`,
+            name: `Conversation ${String(id).slice(0, 6)}`,
             avatar: '/placeholder.svg',
             lastMessage: '',
           }));
@@ -203,10 +203,11 @@ function Messages() {
       // Emit socket event to send message to current room
       try {
         const socket = getSocket();
-        if (roomId) {
-          socket.emit("sendMessage", { room: roomId, message: newMessage });
+        console.log('selectedFriend', selectedFriend);
+        if (selectedFriend) {
+          socket.emit("sendMessage", { room: selectedFriend, message: newMessage });
         } else {
-          console.warn('Messages: cannot send, roomId is missing');
+          console.warn('Messages: cannot send, no conversation selected');
         }
       } catch {}
 
@@ -366,9 +367,7 @@ function Messages() {
                               // Do not optimistically mutate list; rely on backend fetch
                               const socket = getSocket();
                               socket.emit("startConversation", { to: user.id });
-                              if (roomId) {
-                                socket.emit("joinRoom", roomId);
-                              }
+                              socket.emit("joinRoom", user.id);
                               setSelectedFriend(user.id);
                             }}
                           >
@@ -403,9 +402,8 @@ function Messages() {
                   onClick={() => {
                     // Emit socket event when conversation is clicked and rely on backend fetch
                     const socket = getSocket();
-                    if (roomId) {
-                      socket.emit("joinRoom", roomId);
-                    }
+                    socket.emit("startConversation", { to: friend.id });
+                    socket.emit("joinRoom", friend.id);
                     setSelectedFriend(friend.id);
                   }}
                   className={`p-4 flex items-center gap-3 hover:bg-accent cursor-pointer transition-colors border-b ${
