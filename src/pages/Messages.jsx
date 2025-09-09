@@ -402,7 +402,6 @@ function Messages() {
                   onClick={() => {
                     // Emit socket event when conversation is clicked and rely on backend fetch
                     const socket = getSocket();
-                    socket.emit("startConversation", { to: friend.id });
                     socket.emit("joinRoom", friend.id);
                     setSelectedFriend(friend.id);
                   }}
