@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getAccessToken, setAccessToken, clearAccessToken } from './tokenService';
+import { refreshSocketAuth } from './socketClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
 
@@ -59,6 +60,7 @@ async function refreshAccessToken() {
 		const newToken = response.data?.token || response.data?.accessToken || response.data?.data?.token || response.headers?.['x-access-token'];
 		if (!newToken) throw new Error('No token in refresh response');
 		setAccessToken(newToken);
+		try { refreshSocketAuth(newToken); } catch {}
 		console.log('[Auth] Refresh successful. New access token stored.');
 		// Respect 14-day refresh validity: if server signals refresh token expired, throw to logout via response interceptor
 		return newToken;

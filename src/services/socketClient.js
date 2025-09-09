@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { getAccessToken } from './tokenService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
 
@@ -12,9 +13,14 @@ function deriveSocketOrigin(base) {
   }
 }
 
-// Function to get token from localStorage
+// Function to get access token from the same source as API client
 function getTokenFromStorage() {
-  return localStorage.getItem('token');
+  try {
+    const token = getAccessToken && getAccessToken();
+    return token || localStorage.getItem('token');
+  } catch {
+    return localStorage.getItem('token');
+  }
 }
 
 const socketOrigin = deriveSocketOrigin(API_BASE);
@@ -24,11 +30,15 @@ let socket;
 export function getSocket() {
   if (!socket) {
     const token = getTokenFromStorage();
-    console.log('token from localStorage', token);
+    console.log('[socket] using access token?', Boolean(token));
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
-      auth: { token: token ? `Bearer ${token}` : undefined }
+      // Send both variants for compatibility: token and authorization
+      auth: {
+        token: token ? `Bearer ${token}` : undefined,
+        authorization: token ? `Bearer ${token}` : undefined,
+      }
     });
 
     // Helpful diagnostics in dev (no duplicates)
@@ -47,10 +57,12 @@ export function getSocket() {
 
 // Allow updating token at runtime (e.g., after login/refresh)
 export function refreshSocketAuth(newToken) {
-  localStorage.setItem('token', newToken || '');
   if (socket) {
     try {
-      socket.auth = { token: newToken ? `Bearer ${newToken}` : undefined };
+      socket.auth = {
+        token: newToken ? `Bearer ${newToken}` : undefined,
+        authorization: newToken ? `Bearer ${newToken}` : undefined,
+      };
       socket.connect();
     } catch {}
   }

@@ -102,10 +102,17 @@ export function ChatPage() {
     // load messages
     loadMessages();
 
+    // If user not identified yet, skip socket room join for now
+    if (!groupId || !currentUserId) {
+      console.warn('[chat] skip join: missing groupId or currentUserId');
+      return;
+    }
+
     // Realtime: join group room
     const socket = getSocket();
     const uid = currentUserId;
     // Ensure we always join the latest room
+    console.log('[socket][emit] joinGroup', { groupId, userId: uid });
     socket.emit('joinGroup', { groupId, userId: uid });
     // also listen for acks if backend sends any (no-op if not)
     socket.once && socket.once('joinedGroup', () => {
@@ -114,14 +121,16 @@ export function ChatPage() {
 
     // Re-join on reconnect to handle network hiccups
     const onConnect = () => {
+      console.log('[socket] connected. re-joining', { groupId, userId: uid });
       socket.emit('joinGroup', { groupId, userId: uid });
     };
     socket.on('connect', onConnect);
 
     const sameGroup = (gid) => String(gid) === String(groupId);
     const onNewMessage = (payload) => {
+      console.log('[socket][on] newGroupMessage', payload);
       // Backend sends message with group_id field
-      const inThisGroup = sameGroup(payload?.group_id);
+      const inThisGroup = sameGroup(payload?.group_id ?? payload?.groupId);
       if (inThisGroup) {
         setMessages(prev => {
           // If message already exists by id, skip
@@ -129,16 +138,16 @@ export function ChatPage() {
 
           const normalized = {
             id: payload.id,
-            senderId: payload.sender_id,
+            senderId: payload.sender_id ?? payload.senderId,
             senderName: payload.sender?.first_name || 'Member',
             senderAvatar: payload.sender?.image || '',
             content: payload.content,
             timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
+            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type || payload.mimeType ? 'file' : 'text'),
           };
 
           // Try to replace a matching optimistic message (same sender and content)
-          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === payload.sender_id && m.content === payload.content);
+          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === (payload.sender_id ?? payload.senderId) && m.content === payload.content);
           if (idx !== -1) {
             const clone = [...prev];
             clone[idx] = normalized;
@@ -152,17 +161,81 @@ export function ChatPage() {
 
     // Listen for user join/leave notifications
     const onUserJoined = (data) => {
+      console.log('[socket][on] userJoinedGroup', data);
       if (sameGroup(data.groupId)) {
         console.log('[socket] User joined:', data.message);
+        // Optimistically refresh members count without forcing modal
+        fetchGroupMembers({ openModal: false, silent: true });
       }
     };
     const onUserLeft = (data) => {
+      console.log('[socket][on] userLeftGroup', data);
       if (sameGroup(data.groupId)) {
         console.log('[socket] User left:', data.message);
+        fetchGroupMembers({ openModal: false, silent: true });
       }
     };
     socket.on('userJoinedGroup', onUserJoined);
     socket.on('userLeftGroup', onUserLeft);
+
+    // Group membership and info management
+    const onMemberAdded = (member) => {
+      console.log('[socket][on] memberAdded', member);
+      if (sameGroup(member?.group_id || member?.groupId)) {
+        // Update list if visible; otherwise keep count fresh
+        setGroupMembers((prev) => {
+          // Avoid duplicates by id
+          const exists = prev.some(m => (m.id || m.user?.id) === (member.id || member.user?.id));
+          if (exists) return prev;
+          return [...prev, member];
+        });
+      }
+    };
+    const onMemberRemoved = (payload) => {
+      console.log('[socket][on] memberRemoved', payload);
+      if (sameGroup(payload?.groupId)) {
+        const removedId = payload?.userId;
+        setGroupMembers((prev) => prev.filter(m => (m.user?.id ?? m.id) !== removedId));
+      }
+    };
+    const onGroupInfoUpdated = (updated) => {
+      console.log('[socket][on] groupInfoUpdated', updated);
+      if (sameGroup(updated?.id)) {
+        setGroupInfo((prev) => ({ ...prev, ...updated }));
+      }
+    };
+    socket.on('memberAdded', onMemberAdded);
+    socket.on('memberRemoved', onMemberRemoved);
+    socket.on('groupInfoUpdated', onGroupInfoUpdated);
+
+    // Server error channel
+    const onServerError = (err) => {
+      console.warn('[socket][on] error', err);
+      if (!err) return;
+      try {
+        toast({
+          title: 'Socket error',
+          description: err.message || 'An error occurred',
+          variant: 'destructive'
+        });
+      } catch {}
+    };
+    socket.on('error', onServerError);
+
+    // Connection diagnostics to help identify realtime issues
+    const onConnectError = (err) => {
+      try {
+        console.warn('[socket] connect_error', err?.message || err);
+        toast({ title: 'Connection issue', description: err?.message || 'Failed to connect to realtime server', variant: 'destructive' });
+      } catch {}
+    };
+    const onDisconnect = (reason) => {
+      try {
+        console.warn('[socket] disconnected', reason);
+      } catch {}
+    };
+    socket.on('connect_error', onConnectError);
+    socket.on('disconnect', onDisconnect);
 
     return () => {
       socket.emit('leaveGroup', { groupId, userId: uid });
@@ -170,6 +243,12 @@ export function ChatPage() {
       socket.off('newGroupMessage', onNewMessage);
       socket.off('userJoinedGroup', onUserJoined);
       socket.off('userLeftGroup', onUserLeft);
+      socket.off('memberAdded', onMemberAdded);
+      socket.off('memberRemoved', onMemberRemoved);
+      socket.off('groupInfoUpdated', onGroupInfoUpdated);
+      socket.off('error', onServerError);
+      socket.off('connect_error', onConnectError);
+      socket.off('disconnect', onDisconnect);
     };
   }, [groupId, currentUserId]);
 
@@ -297,12 +376,16 @@ export function ChatPage() {
     try {
       // emit over socket to let backend broadcast; also call REST as fallback
       const socket = getSocket();
-      socket.emit('sendGroupMessage', { 
-        groupId, 
-        userId: currentUserId, 
+      const payload = {
+        groupId,
+        group_id: groupId,
+        userId: currentUserId,
+        sender_id: currentUserId,
         content: toSend,
         type: 'TEXT'
-      });
+      };
+      console.log('[socket][emit] sendGroupMessage', payload);
+      socket.emit('sendGroupMessage', payload);
 
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;

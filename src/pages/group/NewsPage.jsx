@@ -10,7 +10,7 @@ import { useParams } from "react-router-dom";
 import { getGroupPosts, addComment, addLike, editComment, deleteComment, deleteGroupPost, isUserGroupAdmin } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 import { fetchAllUsers, fetchDetailedUserProfile } from "@/services/userService";
-// Socket temporarily disabled
+import getSocket from "@/services/socketClient";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 
 export function NewsPage() {
@@ -232,8 +232,7 @@ export function NewsPage() {
   useEffect(() => {
     let offFns = [];
     try {
-      const { default: getSocket } = require("@/services/socketClient");
-      const socket = getSocket && getSocket();
+      const socket = getSocket();
       if (!socket) return;
 
       // Optionally join group room if backend supports
