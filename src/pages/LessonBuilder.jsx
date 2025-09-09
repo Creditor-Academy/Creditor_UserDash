@@ -20,6 +20,7 @@ import {
   ListOrdered,
   Table,
   Loader2,
+  MessageSquare,
   Quote
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
