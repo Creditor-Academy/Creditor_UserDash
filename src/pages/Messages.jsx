@@ -104,13 +104,32 @@ function Messages() {
         } catch {}
       })();
     };
+
+    const onReceiveMessage = ({ from, message }) => {
+      console.log('Received message from:', from, 'message:', message);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(), // Generate unique ID
+          senderId: from,
+          text: message,
+          timestamp: new Date().toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          type: 'text',
+        },
+      ]);
+    };
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('roomidforsender', onRoomIdForSender);
+    socket.on('receiveMessage', onReceiveMessage);
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('roomidforsender', onRoomIdForSender);
+      socket.off('receiveMessage', onReceiveMessage);
     };
   }, []);
 
@@ -199,32 +218,15 @@ function Messages() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      // Emit socket event to send message to current room
+    if (newMessage.trim() && selectedFriend) {
+      // Emit socket event to send message to selected friend
       try {
         const socket = getSocket();
-        //console.log('selectedFriend', selectedFriend);
-        if (selectedFriend) {
-          socket.emit("sendMessage", { room: selectedFriend, message: newMessage });
-        } else {
-          console.warn('Messages: cannot send, no conversation selected');
-        }
-      } catch {}
-
-      setMessages([
-        ...messages,
-        {
-          id: messages.length + 1,
-          senderId: 0,
-          text: newMessage,
-          timestamp: new Date().toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          type: 'text',
-        },
-      ]);
-      setNewMessage("");
+        socket.emit("sendMessage", { room: selectedFriend, message: newMessage });
+        setNewMessage("");
+      } catch (error) {
+        console.warn('Messages: failed to send message', error);
+      }
     }
   };
 
