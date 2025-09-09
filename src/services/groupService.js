@@ -373,3 +373,16 @@ export const deleteGroupById = async (groupId) => {
     throw error;
   }
 };
+
+// Delete a member from a group
+export const deleteGroupMember = async (groupId, memberId) => {
+  try {
+    const response = await api.delete(`/groups/${groupId}/members/${memberId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting group member:', error);
+    throw error;
+  }
+};
