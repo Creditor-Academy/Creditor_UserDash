@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Quote, X, Plus, Trash2 } from 'lucide-react';
+import { Quote, X, Plus, Trash2, Upload, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
+import { uploadImage } from '@/services/imageUploadService';
 
 const QuoteComponent = forwardRef(({
   showQuoteTemplateSidebar,
@@ -24,6 +25,7 @@ const QuoteComponent = forwardRef(({
     { quote: '', author: '' }
   ]);
   const [activeCarouselTab, setActiveCarouselTab] = useState(0);
+  const [imageUploading, setImageUploading] = useState(false);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -31,14 +33,54 @@ const QuoteComponent = forwardRef(({
     setActiveCarouselTab
   }));
 
-  const handleImageUpload = (e, setImage) => {
+  const handleImageUpload = async (e, setImage, isBackgroundImage = false) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload only JPG, PNG, or WebP images');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size should be less than 10MB');
+      return;
+    }
+
+    if (isBackgroundImage) {
+      setImageUploading(true);
+    }
+
+    try {
+      // Upload image to cloud using the same logic as image blocks
+      const uploadResult = await uploadImage(file, {
+        folder: 'lesson-images',
+        public: true
+      });
+
+      if (uploadResult.success && uploadResult.imageUrl) {
+        setImage(uploadResult.imageUrl);
+        toast.success('Image uploaded successfully!');
+      } else {
+        throw new Error('Upload failed - no image URL returned');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error(error.message || 'Failed to upload image. Please try again.');
+      
+      // Fallback to local URL for immediate preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result);
       };
       reader.readAsDataURL(file);
+    } finally {
+      if (isBackgroundImage) {
+        setImageUploading(false);
+      }
     }
   };
 
@@ -772,13 +814,14 @@ const QuoteComponent = forwardRef(({
                         </div>
                       )}
                       <div>
-                        <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                        <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center">
+                          <Upload className="w-4 h-4 mr-2" />
                           {quoteImage ? 'Change Image' : 'Upload Image'}
                           <input 
                             type="file" 
                             className="hidden" 
                             accept="image/*"
-                            onChange={(e) => handleImageUpload(e, setQuoteImage)}
+                            onChange={(e) => handleImageUpload(e, setQuoteImage, false)}
                           />
                         </label>
                       </div>
@@ -802,15 +845,35 @@ const QuoteComponent = forwardRef(({
                         </div>
                       )}
                       <div>
-                        <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-block">
-                          {backgroundImage ? 'Change Image' : 'Upload Image'}
+                        <label className={`cursor-pointer text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center ${
+                          imageUploading 
+                            ? 'bg-gray-200 cursor-not-allowed' 
+                            : 'bg-gray-100 hover:bg-gray-200'
+                        }`}>
+                          {imageUploading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              {backgroundImage ? 'Change Background' : 'Upload Background'}
+                            </>
+                          )}
                           <input 
                             type="file" 
                             className="hidden" 
                             accept="image/*"
-                            onChange={(e) => handleImageUpload(e, setBackgroundImage)}
+                            disabled={imageUploading}
+                            onChange={(e) => handleImageUpload(e, setBackgroundImage, true)}
                           />
                         </label>
+                        {backgroundImage && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            💡 Image uploaded to cloud and will be accessible from anywhere
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
