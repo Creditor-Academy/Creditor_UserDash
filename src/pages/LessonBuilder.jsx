@@ -2238,12 +2238,66 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setShowTextEditorDialog(true);
     if (block) {
       setEditorTitle(block.title || '');
-      setEditorHtml(block.content || '');
-      setCurrentTextBlockId(block.id);
+      
+      // Properly detect and set the text type
+      const detectedTextType = block.textType || 'paragraph';
+      setCurrentTextType(detectedTextType);
+      setCurrentTextBlockId(block.id || block.block_id);
+      
+      // Reset all editors first
+      setEditorHtml('');
+      setEditorHeading('');
+      setEditorSubheading('');
+      setEditorContent('');
+      
+      // Set content based on the detected text type
+      if (detectedTextType === 'heading_paragraph') {
+        // Extract heading and paragraph from html_css or content
+        const htmlContent = block.html_css || block.content || '';
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const h1Element = tempDiv.querySelector('h1');
+        const pElement = tempDiv.querySelector('p, div:not(:has(h1, h2, h3, h4, h5, h6))');
+        
+        setEditorHeading(h1Element ? h1Element.innerHTML : (block.heading || 'Heading'));
+        setEditorContent(pElement ? pElement.innerHTML : 'Enter your content here...');
+      } else if (detectedTextType === 'subheading_paragraph') {
+        // Extract subheading and paragraph from html_css or content
+        const htmlContent = block.html_css || block.content || '';
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const h2Element = tempDiv.querySelector('h2');
+        const pElement = tempDiv.querySelector('p, div:not(:has(h1, h2, h3, h4, h5, h6))');
+        
+        setEditorSubheading(h2Element ? h2Element.innerHTML : (block.subheading || 'Subheading'));
+        setEditorContent(pElement ? pElement.innerHTML : 'Enter your content here...');
+      } else {
+        // For single content blocks (heading, subheading, paragraph)
+        const htmlContent = block.html_css || block.content || '';
+        
+        // Extract the inner content while preserving rich text formatting
+        if (htmlContent.includes('<')) {
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          // Find the main content element
+          const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
+          if (contentElement) {
+            setEditorHtml(contentElement.innerHTML);
+          } else {
+            setEditorHtml(htmlContent);
+          }
+        } else {
+          setEditorHtml(htmlContent);
+        }
+      }
     } else {
       setEditorTitle('');
       setEditorHtml('');
       setCurrentTextBlockId(null);
+      setCurrentTextType(null);
     }
   };
 
@@ -2263,148 +2317,54 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
         const effectiveTextType = currentTextType || blockToUpdate.textType;
        
-        // For fetched lessons, preserve original HTML structure and only update content
-        if (blockToUpdate.html_css && lessonContent?.data?.content) {
-          // Use original HTML structure and replace only the text content
-          updatedContent = blockToUpdate.html_css;
-         
-          // Replace the text content while preserving HTML structure
-         
-          if (effectiveTextType === 'heading_paragraph') {
-            // Update heading and paragraph content within existing structure
-            updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
-              return match.replace(p1, editorHeading || 'Heading');
-            });
-            updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
-              return match.replace(p1, editorContent || 'Enter your content here...');
-            });
-          } else if (effectiveTextType === 'subheading_paragraph') {
-            // Update subheading and paragraph content within existing structure
-            updatedContent = updatedContent.replace(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i, (match, p1) => {
-              return match.replace(p1, editorSubheading || 'Subheading');
-            });
-            updatedContent = updatedContent.replace(/<p[^>]*>(.*?)<\/p>/i, (match, p1) => {
-              return match.replace(p1, editorContent || 'Enter your content here...');
-            });
-          } else {
-            // For single content blocks, preserve both original HTML structure AND rich text formatting
-            // Extract plain text from rich text content for cases where we need to maintain original styling
-            const richTextContent = (editorHtml || '').trim();
-            const plainTextContent = richTextContent.replace(/<[^>]*>/g, '').trim();
-           
-            // Check if the original content has specific heading/paragraph structure that should be preserved
-            if (updatedContent.includes('<h1')) {
-              // For headings, we want to preserve the heading tag but allow rich text formatting inside
-              updatedContent = updatedContent.replace(/<h1([^>]*)>(.*?)<\/h1>/i, (match, attributes, content) => {
-                // If rich text content has formatting tags, use it; otherwise use plain text to preserve heading styling
-                const contentToUse = richTextContent || plainTextContent || 'Heading';
-                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                  return `<h1${attributes}>${richTextContent}</h1>`;
-                } else {
-                  return `<h1${attributes}>${contentToUse}</h1>`;
-                }
-              });
-            } else if (updatedContent.includes('<h2')) {
-              updatedContent = updatedContent.replace(/<h2([^>]*)>(.*?)<\/h2>/i, (match, attributes, content) => {
-                const contentToUse = richTextContent || plainTextContent || 'Subheading';
-                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                  return `<h2${attributes}>${richTextContent}</h2>`;
-                } else {
-                  return `<h2${attributes}>${contentToUse}</h2>`;
-                }
-              });
-            } else if (updatedContent.includes('<h3')) {
-              updatedContent = updatedContent.replace(/<h3([^>]*)>(.*?)<\/h3>/i, (match, attributes, content) => {
-                const contentToUse = richTextContent || plainTextContent || 'Heading';
-                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                  return `<h3${attributes}>${richTextContent}</h3>`;
-                } else {
-                  return `<h3${attributes}>${contentToUse}</h3>`;
-                }
-              });
-            } else if (updatedContent.includes('<h4')) {
-              updatedContent = updatedContent.replace(/<h4([^>]*)>(.*?)<\/h4>/i, (match, attributes, content) => {
-                const contentToUse = richTextContent || plainTextContent || 'Heading';
-                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                  return `<h4${attributes}>${richTextContent}</h4>`;
-                } else {
-                  return `<h4${attributes}>${contentToUse}</h4>`;
-                }
-              });
-            } else if (updatedContent.includes('<h5')) {
-              updatedContent = updatedContent.replace(/<h5([^>]*)>(.*?)<\/h5>/i, (match, attributes, content) => {
-                const contentToUse = richTextContent || plainTextContent || 'Heading';
-                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                  return `<h5${attributes}>${richTextContent}</h5>`;
-                } else {
-                  return `<h5${attributes}>${contentToUse}</h5>`;
-                }
-              });
-            } else if (updatedContent.includes('<h6')) {
-              updatedContent = updatedContent.replace(/<h6([^>]*)>(.*?)<\/h6>/i, (match, attributes, content) => {
-                const contentToUse = richTextContent || plainTextContent || 'Heading';
-                if (richTextContent.includes('<') && richTextContent !== plainTextContent) {
-                  return `<h6${attributes}>${richTextContent}</h6>`;
-                } else {
-                  return `<h6${attributes}>${contentToUse}</h6>`;
-                }
-              });
-            } else if (updatedContent.includes('<p')) {
-              // For paragraphs, always use rich text content as paragraphs are more flexible
-              updatedContent = updatedContent.replace(/<p([^>]*)>(.*?)<\/p>/i, (match, attributes, content) => {
-                return `<p${attributes}>${richTextContent || 'Enter your content here...'}</p>`;
-              });
-            } else {
-              // Fallback: replace text content within the first text node
-              const fallbackContent = richTextContent || 'Enter your content here...';
-              updatedContent = updatedContent.replace(/>([^<]+)</i, (match, textContent) => {
-                if (textContent.trim() && !textContent.includes('<')) {
-                  return `>${fallbackContent}<`;
-                }
-                return match;
-              });
-            }
-          }
+        // Always use consistent HTML generation for all text types to avoid double-update issues
+        const textType = textTypes.find(t => t.id === effectiveTextType);
+        
+        if (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'subheading_paragraph') {
+          // For compound templates, combine heading/subheading with paragraph
+          const headingTag = effectiveTextType === 'heading_paragraph' ? 'h1' : 'h2';
+          const headingClass = effectiveTextType === 'heading_paragraph' ? 'text-2xl font-bold' : 'text-xl font-semibold';
+          
+          updatedContent = `
+            <div class="content-block">
+              <${headingTag} class="${headingClass} text-gray-800 mb-4">${editorHeading || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
+              <div class="prose prose-lg max-w-none text-gray-700">
+                ${editorHtml || 'Start typing your content here...'}
+              </div>
+            </div>
+          `;
+        } else if (effectiveTextType === 'heading') {
+          // For heading blocks, preserve the original card structure and strip font-size styles
+          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          updatedContent = `
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+              </article>
+            </div>`;
+        } else if (effectiveTextType === 'subheading') {
+          // For subheading blocks, preserve the original card structure and strip font-size styles
+          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          updatedContent = `
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
+              </article>
+            </div>`;
         } else {
-          // For new blocks, generate HTML structure
-          const textType = textTypes.find(t => t.id === blockToUpdate.textType);
-         
-         
-          if (effectiveTextType === 'heading_paragraph') {
-            updatedContent = `
-              <div class="content-block">
-                <h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">
-                  ${editorHeading || 'Heading'}
-                </h1>
-                <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-                  ${editorContent || 'Enter your content here...'}
-                </div>
-              </div>
-            `;
-          } else if (effectiveTextType === 'subheading_paragraph') {
-            updatedContent = `
-              <div class="content-block">
-                <h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">
-                  ${editorSubheading || 'Subheading'}
-                </h2>
-                <div style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-                  ${editorContent || 'Enter your content here...'}
-                </div>
-              </div>
-            `;
-          } else {
-            // For single content blocks (heading, subheading, paragraph)
-            const style = textType?.style || {};
-            const styleString = Object.entries(style)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join('; ');
+          // For paragraph and other single content blocks
+          const style = textType?.style || {};
+          const styleString = Object.entries(style)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join('; ');
 
-            updatedContent = `
-              <div class="content-block" style="${styleString}">
-                ${editorHtml || 'Enter your content here...'}
-              </div>
-            `;
-          }
+          updatedContent = `
+            <div class="content-block" style="${styleString}">
+              ${editorHtml || 'Enter your content here...'}
+            </div>
+          `;
         }
 
         // Ensure updatedContent is never empty
@@ -2439,53 +2399,64 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           }
         });
 
-        // Also update lessonContent if it exists (for fetched lessons)
-        if (lessonContent?.data?.content) {
-          setLessonContent(prevLessonContent => {
-            try {
-              return {
-                ...prevLessonContent,
-                data: {
-                  ...prevLessonContent.data,
-                  content: prevLessonContent.data.content.map(block =>
-                    block.block_id === currentTextBlockId ? {
-                      ...block,
-                      content: updatedContent,
-                      html_css: updatedContent,
-                      heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
-                      subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
-                      textType: effectiveTextType || block.textType,
-                      updatedAt: new Date().toISOString()
-                    } : block
-                  )
-                }
-              };
-            } catch (error) {
-              console.error('Error updating lessonContent:', error);
-              toast.error('Failed to update lesson content');
-              return prevLessonContent;
-            }
-          });
-        }
+        // Don't update lessonContent in edit mode to prevent duplicates
+        // lessonContent is only used for preview mode rendering
       } else {
         // For new blocks
+        const effectiveTextTypeForNew = currentTextType || 'paragraph';
+        let newBlockContent = '';
+        
+        // Generate content based on textType
+        if (effectiveTextTypeForNew === 'heading_paragraph' || effectiveTextTypeForNew === 'subheading_paragraph') {
+          const headingTag = effectiveTextTypeForNew === 'heading_paragraph' ? 'h1' : 'h2';
+          const headingClass = effectiveTextTypeForNew === 'heading_paragraph' ? 'text-2xl font-bold' : 'text-xl font-semibold';
+          
+          newBlockContent = `
+            <div class="content-block">
+              <${headingTag} class="${headingClass} text-gray-800 mb-4">${editorHeading || (effectiveTextTypeForNew === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
+              <div class="prose prose-lg max-w-none text-gray-700">
+                ${editorHtml || 'Start typing your content here...'}
+              </div>
+            </div>
+          `;
+        } else if (effectiveTextTypeForNew === 'heading') {
+          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          newBlockContent = `
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+              </article>
+            </div>`;
+        } else if (effectiveTextTypeForNew === 'subheading') {
+          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          newBlockContent = `
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
+              </article>
+            </div>`;
+        } else {
+          // For paragraph and other blocks
+          newBlockContent = `
+            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
+              ${editorHtml || 'Enter your content here...'}
+            </div>
+          `;
+        }
+        
         const newBlock = {
           id: `text_${Date.now()}`,
           block_id: `text_${Date.now()}`,
           type: 'text',
           title: editorTitle || 'Text Block',
-          content: `
-            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              ${editorHtml || 'Enter your content here...'}
-            </div>
-          `,
-          html_css: `
-            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              ${editorHtml || 'Enter your content here...'}
-            </div>
-          `,
-          textType: 'paragraph',
-          style: textTypes.find(t => t.id === 'paragraph')?.style || {},
+          content: newBlockContent,
+          html_css: newBlockContent,
+          textType: effectiveTextTypeForNew,
+          heading: effectiveTextTypeForNew === 'heading_paragraph' ? editorHeading : undefined,
+          subheading: effectiveTextTypeForNew === 'subheading_paragraph' ? editorSubheading : undefined,
+          style: textTypes.find(t => t.id === effectiveTextTypeForNew)?.style || {},
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
@@ -2532,9 +2503,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     const effectiveTextType = currentBlock.textType;
 
     // Generate updated content based on text type
-    if (effectiveTextType === 'heading-paragraph') {
+    if (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') {
       updatedContent = `${editorHeading}|||${editorContent}`;
-    } else if (effectiveTextType === 'subheading-paragraph') {
+    } else if (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') {
       updatedContent = `${editorSubheading}|||${editorContent}`;
     } else {
       updatedContent = editorContent;
@@ -2547,8 +2518,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           ? {
               ...block,
               content: updatedContent,
-              heading: effectiveTextType === 'heading-paragraph' ? editorHeading : block.heading,
-              subheading: effectiveTextType === 'subheading-paragraph' ? editorSubheading : block.subheading,
+              heading: (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') ? editorHeading : block.heading,
+              subheading: (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') ? editorSubheading : block.subheading,
               updatedAt: new Date().toISOString()
             }
           : block
@@ -2560,16 +2531,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setLessonContent(prevLessonContent => ({
         ...prevLessonContent,
         data: {
-          ...prevLessonContent.data,
-          content: prevLessonContent.data.content.map(block =>
-            block.block_id === currentBlock.id ? {
-              ...block,
-              content: updatedContent,
-              heading: effectiveTextType === 'heading-paragraph' ? editorHeading : block.heading,
-              subheading: effectiveTextType === 'subheading-paragraph' ? editorSubheading : block.subheading,
-              updatedAt: new Date().toISOString()
-            } : block
-          )
+          ...prev.data,
+          content: prev.data.content.map(b => b.block_id === currentBlock.id ? {
+            ...b,
+            html_css: htmlContent,
+            details: { ...(b.details || {}), image_url: imageUrl, caption: textContent, alt_text: imageTitle, layout: layout || b.details?.layout, template: templateType || b.details?.template },
+            imageUrl: imageUrl,
+            imageTitle: imageTitle,
+            imageDescription: getPlainText(textContent || ''),
+            text: getPlainText(textContent || ''),
+            layout: layout || b.layout,
+            templateType: templateType || b.templateType
+          } : b)
         }
       }));
     }
@@ -3376,6 +3349,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 });
                 if (mappedEditBlocks.length > 0) {
                   setContentBlocks(mappedEditBlocks);
+                  // Clear lessonContent to prevent duplicate rendering in edit mode
+                  setLessonContent(prev => ({
+                    ...prev,
+                    data: {
+                      ...prev.data,
+                      content: []
+                    }
+                  }));
                 }
               } catch (e) {
                 console.warn('Failed to map fetched content to edit blocks:', e);
@@ -3645,12 +3626,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           <div className="mb-8">
                                             {block.html_css ? (
                                               <div
-                                                className="prose prose-xl max-w-none text-gray-800 leading-relaxed"
+                                                className="max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.html_css }}
                                               />
                                             ) : (
                                               <div
-                                                className="prose prose-xl max-w-none text-gray-800 leading-relaxed"
+                                                className="max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.content }}
                                               />
                                             )}
@@ -4326,37 +4307,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                          
                           <div className="p-6">
                             {block.type === 'text' && (
-                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                <div className="pl-4">
-                                  {block.textType === 'heading' && (
-                                    <h1 className="text-3xl font-bold text-gray-800">{getPlainText(block.content)}</h1>
-                                  )}
-                                  {block.textType === 'subheading' && (
-                                    <h2 className="text-xl font-semibold text-gray-800">{getPlainText(block.content)}</h2>
-                                  )}
-                                  {block.textType === 'paragraph' && (
-                                    <p className="text-base text-gray-700 leading-relaxed">{getPlainText(block.content)}</p>
-                                  )}
-                                  {block.textType === 'heading_paragraph' && (
-                                    <div className="space-y-2">
-                                      <h1 className="text-3xl font-bold text-gray-800">{getPlainText(block.heading || '')}</h1>
-                                      <p className="text-base text-gray-700 leading-relaxed">{getPlainText(block.content)}</p>
-                                    </div>
-                                  )}
-                                  {block.textType === 'subheading_paragraph' && (
-                                    <div className="space-y-2">
-                                      <h2 className="text-xl font-semibold text-gray-800">{getPlainText(block.subheading || '')}</h2>
-                                      <p className="text-base text-gray-700 leading-relaxed">{getPlainText(block.content)}</p>
-                                    </div>
-                                  )}
-                                  {block.textType === 'table' && (
-                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                  )}
-                                  {!block.textType && (
-                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                  )}
-                                </div>
+                              <div className="mb-8">
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
                               </div>
                             )}
                            
@@ -4436,7 +4398,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                 
                                 {block.html_css ? (
                                   <div
-                                    className="prose max-w-none"
+                                    className="max-w-none"
                                     dangerouslySetInnerHTML={{ __html: block.html_css }}
                                   />
                                 ) : (
