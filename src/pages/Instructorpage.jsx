@@ -185,7 +185,7 @@ const InstructorPage = () => {
                 : "hover:bg-gray-100 text-gray-700"
             }`}
           >
-            <FaImages /> Resources
+            <FaImages /> Assets
           </button>
         </div>
       </div>

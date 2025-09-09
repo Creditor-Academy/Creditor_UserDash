@@ -27,6 +27,7 @@ import QuoteComponent from '@/components/QuoteComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import StatementComponent from '@/components/statement';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -326,6 +327,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [imageTemplateUrl, setImageTemplateUrl] = useState('');
   const [selectedImageTemplate, setSelectedImageTemplate] = useState(null);
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
+  const [showStatementSidebar, setShowStatementSidebar] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
   const [showAiImageDialog, setShowAiImageDialog] = useState(false);
   const [aiImagePrompt, setAiImagePrompt] = useState('');
@@ -481,6 +483,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       icon: <FileTextIcon className="h-5 w-5" />
     },
     {
+      id: 'statement',
+      title: 'Statement',
+      icon: <MessageSquare className="h-5 w-5" />
+    },
+    {
       id: 'quote',
       title: 'Quote',
       icon: <Quote className="h-5 w-5" />
@@ -589,10 +596,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
 
   const blockRefs = React.useRef({});
+  const statementComponentRef = React.useRef();
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
+    } else if (blockType.id === 'statement') {
+      setShowStatementSidebar(true);
     } else if (blockType.id === 'quote') {
       setShowQuoteTemplateSidebar(true);
     } else if (blockType.id === 'video') {
@@ -746,6 +756,54 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
     }
     setShowTableTemplateSidebar(false);
+  };
+
+  const handleStatementSelect = (statementBlock) => {
+    // If we have existing lesson content, add to that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, statementBlock]
+        }
+      }));
+    } else {
+      // For new lessons, add to contentBlocks
+      setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
+    }
+  };
+
+  const handleStatementEdit = (blockId, content, htmlContent) => {
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          content,
+          html_css: htmlContent,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              content,
+              html_css: htmlContent,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
   };
 
   // Quote component callbacks
@@ -976,6 +1034,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
    
     if (!block) return;
+   
+    if (block.type === 'statement') {
+      // Handle statement editing with the StatementComponent
+      // Pass both content and html_css to extract content from HTML if needed
+      statementComponentRef.current?.handleEditStatement(blockId, block.statementType, block.content, block.html_css);
+      return;
+    }
    
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
@@ -3591,6 +3656,23 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           </div>
                                         )}
                                        
+                                        {/* Statement Content */}
+                                        {block.type === 'statement' && (
+                                          <div className="mb-8">
+                                            {block.html_css ? (
+                                              <div
+                                                className="prose prose-xl max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                              />
+                                            ) : (
+                                              <div
+                                                className="prose prose-xl max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: block.content }}
+                                              />
+                                            )}
+                                          </div>
+                                        )}
+                                       
                                         {/* Image Content */}
                                         {block.type === 'image' && (
                                           <div className="mb-8">
@@ -4127,8 +4209,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         </div>
                                       </div>
                                     )}
-                                    <div className="p-6">
-                                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                                    <div className="p-0">
+                                      {block.html_css ? (
+                                        <div dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                                      ) : (
+                                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                      )}
                                       {block.script && (
                                         <script dangerouslySetInnerHTML={{ __html: block.script }} />
                                       )}
@@ -6065,6 +6151,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </DialogContent>
       </Dialog>
 
+      {/* Statement Component */}
+      <StatementComponent
+        ref={statementComponentRef}
+        showStatementSidebar={showStatementSidebar}
+        setShowStatementSidebar={setShowStatementSidebar}
+        onStatementSelect={handleStatementSelect}
+        onStatementEdit={handleStatementEdit}
+        sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+      />
 
     </>
   );

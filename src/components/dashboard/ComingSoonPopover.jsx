@@ -8,25 +8,25 @@ function ComingSoonPopover() {
 
   const features = [
     {
-      title: "Notifications",
-      description: "Real-time alerts for courses, tickets, and classes.",
+      title: "Advanced Quiz Features",
+      description: "First, we're launching advanced quiz with sequence order features for better learning experiences.",
       tags: [
-        { label: "Courses", color: "blue" },
-        { label: "Tickets", color: "amber" },
-        { label: "Classes", color: "purple" }
-      ],
-      banner: "https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/Notifications.jpeg",
-      badge: "Live Preview"
-    },
-    {
-      title: "Assessments",
-      description: "Interactive quizzes and tests to evaluate your knowledge.",
-      tags: [
-        { label: "Quizzes", color: "green" },
-        { label: "Tests", color: "red" },
-        { label: "Progress", color: "indigo" }
+        { label: "Sequence Order", color: "blue" },
+        { label: "Advanced Quizzes", color: "green" },
+        { label: "Learning", color: "purple" }
       ],
       banner: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/AssessmentCard.jpg",
+      badge: "Launching First"
+    },
+    {
+      title: "Groups",
+      description: "Groups with news announcements and chats are launching to enhance collaboration and communication.",
+      tags: [
+        { label: "News", color: "amber" },
+        { label: "Chats", color: "blue" },
+        { label: "Collaboration", color: "indigo" }
+      ],
+      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/Groups.PNG",
       badge: "Coming Soon"
     }
   ];
