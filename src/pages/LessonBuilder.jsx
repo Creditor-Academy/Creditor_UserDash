@@ -785,6 +785,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
       const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
       blocksToUpdate = [...blocksToUpdate, ...newBlocks];
+    }
     // If we have existing lesson content, add to that structure
     if (lessonContent?.data?.content) {
       setLessonContent(prevLessonContent => ({
