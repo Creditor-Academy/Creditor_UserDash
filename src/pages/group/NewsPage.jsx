@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +34,12 @@ export function NewsPage() {
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [infoModalMessage, setInfoModalMessage] = useState("");
   // Removed lightbox; images render fully inside the post box
+
+  // Keep latest posts for normalization fallbacks during auto-refresh
+  const postsRef = useRef([]);
+  useEffect(() => {
+    postsRef.current = posts;
+  }, [posts]);
 
   useEffect(() => {
     // Determine if current user is group admin (controls post delete capability)
@@ -72,26 +78,45 @@ export function NewsPage() {
 
   // Normalizer uses the latest userDirectory to map comment authors reliably
   const normalizePosts = (list) => {
+    const previousPosts = Array.isArray(postsRef.current) ? postsRef.current : [];
+    const previousPostById = new Map(previousPosts.map(p => [String(p.id), p]));
+    const previousCommentById = new Map();
+    previousPosts.forEach(p => {
+      (p.comments || []).forEach(c => {
+        previousCommentById.set(String(c.id), c);
+      });
+    });
     return (list || [])
       .filter(p => (p.type || "POST") !== "ANNOUNCEMENT") // Filter out announcements
       .map((p, idx) => {
       const author = p.user || p.author || {};
       const first = author.first_name || author.firstName || "";
       const last = author.last_name || author.lastName || "";
-      const name = (first || last) ? `${first} ${last}`.trim() : author.name || "Member";
+      let name = (first || last) ? `${first} ${last}`.trim() : author.name || "Member";
       const authorId = author.id || author.user?.id || author.user_id || author.userId || author._id || p.user_id || p.author_id || p.userId || p.authorId;
       const authorAvatarCandidate = 
         author.image || author.avatar || author.photo || author.picture ||
         author.image_url || author.avatar_url || author.profile_image || author.profile_picture || "";
       const fallbackUserFromDirectory = (authorId !== undefined && authorId !== null) ? userDirectory[String(authorId)] : undefined;
       const fallbackUserFlat = fallbackUserFromDirectory && (fallbackUserFromDirectory.user ? fallbackUserFromDirectory.user : fallbackUserFromDirectory);
-      const resolvedAuthorAvatar = authorAvatarCandidate 
+      let resolvedAuthorAvatar = authorAvatarCandidate 
         || fallbackUserFlat?.image 
         || fallbackUserFlat?.avatar 
         || fallbackUserFlat?.profile_picture 
         || fallbackUserFlat?.image_url 
         || fallbackUserFlat?.avatar_url 
         || "";
+      // Fallback to previous normalized author if current payload lacks identity
+      const currentPostId = p.id || p.post_id || idx;
+      const previousPost = previousPostById.get(String(currentPostId));
+      if (previousPost) {
+        const missingName = !name || name === "Member";
+        const missingAvatar = !resolvedAuthorAvatar;
+        if ((missingName || missingAvatar) && previousPost.author) {
+          if (missingName && previousPost.author.name) name = previousPost.author.name;
+          if (missingAvatar && previousPost.author.avatar) resolvedAuthorAvatar = previousPost.author.avatar;
+        }
+      }
       const resolveUser = (userObj, userId) => {
         const dirUserRaw = (userId !== undefined && userId !== null) ? userDirectory[String(userId)] : undefined;
         const dirUser = dirUserRaw && (dirUserRaw.user ? dirUserRaw.user : dirUserRaw);
@@ -100,11 +125,11 @@ export function NewsPage() {
         const fallbackName = (userObj && (userObj.name || userObj.display_name || userObj.full_name || userObj.username || [userObj.first_name, userObj.last_name].filter(Boolean).join(" "))) 
           || (dirUser && (dirUser.name || dirUser.display_name || dirUser.full_name || dirUser.username || [dirUser.first_name, dirUser.last_name].filter(Boolean).join(" "))) 
           || "User";
-        const name = (first || last) ? `${first} ${last}`.trim() : fallbackName;
-        const avatar = (userObj && (userObj.image || userObj.avatar || userObj.photo || userObj.picture || userObj.profile_picture || userObj.image_url || userObj.avatar_url || userObj.avatarUrl || userObj.photoURL)) 
+        let resolvedName = (first || last) ? `${first} ${last}`.trim() : fallbackName;
+        let resolvedAvatar = (userObj && (userObj.image || userObj.avatar || userObj.photo || userObj.picture || userObj.profile_picture || userObj.image_url || userObj.avatar_url || userObj.avatarUrl || userObj.photoURL)) 
                        || (dirUser && (dirUser.image || dirUser.avatar || dirUser.photo || dirUser.picture || dirUser.profile_picture || dirUser.image_url || dirUser.avatar_url || dirUser.avatarUrl || dirUser.photoURL)) 
                        || "";
-        return { name, avatar };
+        return { name: resolvedName, avatar: resolvedAvatar };
       };
       // derive like state
       const likesArray = Array.isArray(p.likes) ? p.likes : [];
@@ -127,9 +152,20 @@ export function NewsPage() {
         isAnnouncement: false, // No announcements in news feed
         comments: Array.isArray(p.comments) ? p.comments.map((c, i) => {
           const commentUserId = c.user_id || c.userId || c.author_id || c.authorId || (c.user && (c.user.id || c.user.user_id || c.user.userId || c.user._id)) || (c.author && (c.author.id || c.author.user_id || c.author.userId || c.author._id)) || null;
-          const authorMeta = resolveUser(c.user || c.author, commentUserId);
+          let authorMeta = resolveUser(c.user || c.author, commentUserId);
+          const commentId = c.id || i;
+          // Fallback to previous normalized comment author if missing
+          const previousComment = previousCommentById.get(String(commentId));
+          if (previousComment && previousComment.author) {
+            const missingName = !authorMeta.name || authorMeta.name === "User";
+            const missingAvatar = !authorMeta.avatar;
+            authorMeta = {
+              name: missingName ? (previousComment.author.name || authorMeta.name) : authorMeta.name,
+              avatar: missingAvatar ? (previousComment.author.avatar || authorMeta.avatar) : authorMeta.avatar,
+            };
+          }
           return {
-            id: c.id || i,
+            id: commentId,
             userId: commentUserId,
             author: authorMeta,
             content: c.content || "",
@@ -645,7 +681,7 @@ export function NewsPage() {
                                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
                                 </button>
                               )}
-                              {((userProfile?.role === 'ADMIN') || (userProfile?.id === (comment.userId || comment.user_id))) && (
+                              {(isGroupAdmin || (userProfile?.id === (comment.userId || comment.user_id))) && (
                                 <button
                                   className="p-1 hover:text-red-700"
                                   onClick={async () => {
