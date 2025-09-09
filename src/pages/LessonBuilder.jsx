@@ -775,7 +775,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         data: {
           ...prevLessonContent.data,
           content: prevLessonContent.data.content.map(block =>
-            block.block_id === blockId ? {
+            (block.block_id === blockId || block.id === blockId) ? {
               ...block,
               content,
               html_css: htmlContent,
@@ -838,7 +838,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
    
     if (block.type === 'statement') {
       // Handle statement editing with the StatementComponent
-      statementComponentRef.current?.handleEditStatement(blockId, block.statementType, block.content);
+      // Pass both content and html_css to extract content from HTML if needed
+      statementComponentRef.current?.handleEditStatement(blockId, block.statementType, block.content, block.html_css);
       return;
     }
    
@@ -3448,8 +3449,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                         </div>
                                       </div>
                                     )}
-                                    <div className="p-6">
-                                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                                    <div className="p-0">
+                                      {block.html_css ? (
+                                        <div dangerouslySetInnerHTML={{ __html: block.html_css }} />
+                                      ) : (
+                                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                      )}
                                       {block.script && (
                                         <script dangerouslySetInnerHTML={{ __html: block.script }} />
                                       )}
