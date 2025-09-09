@@ -198,10 +198,10 @@ export const addComment = async (postId, commentData) => {
   }
 };
 
-// Edit comment
-export const editComment = async (postId, commentId, commentData) => {
+// Edit comment by commentId
+export const editComment = async (commentId, commentData) => {
   try {
-    const response = await api.put(`/groups/posts/${postId}/comments/${commentId}`, commentData);
+    const response = await api.put(`/groups/comments/${commentId}`, commentData);
     return response.data;
   } catch (error) {
     console.error('Error editing comment:', error);
@@ -209,10 +209,10 @@ export const editComment = async (postId, commentId, commentData) => {
   }
 };
 
-// Delete comment
-export const deleteComment = async (postId, commentId) => {
+// Delete comment (admin can delete any, user can delete own)
+export const deleteComment = async (commentId) => {
   try {
-    const response = await api.delete(`/groups/posts/${postId}/comments/${commentId}`);
+    const response = await api.delete(`/groups/comments/${commentId}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting comment:', error);
@@ -345,6 +345,17 @@ export const addLike = async (postId) => {
     return response.data;
   } catch (error) {
     console.error('Error adding like:', error);
+    throw error;
+  }
+};
+
+// Delete a specific group post by postId (admin only)
+export const deleteGroupPost = async (postId) => {
+  try {
+    const response = await api.delete(`/groups/posts/${postId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting group post:', error);
     throw error;
   }
 };

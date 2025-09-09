@@ -7,10 +7,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
-import { getGroupPosts, addComment, addLike, editComment, deleteComment } from "@/services/groupService";
+import { getGroupPosts, addComment, addLike, editComment, deleteComment, deleteGroupPost, isUserGroupAdmin } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
-import { fetchAllUsers } from "@/services/userService";
-import getSocket from "@/services/socketClient";
+import { fetchAllUsers, fetchDetailedUserProfile } from "@/services/userService";
+// Socket temporarily disabled
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 
 export function NewsPage() {
   const { groupId } = useParams();
@@ -27,16 +28,40 @@ export function NewsPage() {
   const [editingComment, setEditingComment] = useState(null);
   const [commentDraft, setCommentDraft] = useState("");
   const [commentSending, setCommentSending] = useState({});
+  const [isGroupAdmin, setIsGroupAdmin] = useState(false);
+  const [deleteTargetPostId, setDeleteTargetPostId] = useState(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [infoModalMessage, setInfoModalMessage] = useState("");
   // Removed lightbox; images render fully inside the post box
 
   useEffect(() => {
+    // Determine if current user is group admin (controls post delete capability)
+    (async () => {
+      try {
+        if (groupId) {
+          const admin = await isUserGroupAdmin(groupId);
+          setIsGroupAdmin(Boolean(admin));
+        } else {
+          setIsGroupAdmin(false);
+        }
+      } catch {
+        setIsGroupAdmin(false);
+      }
+    })();
     // Preload a user directory to resolve commenter identities on refresh
     (async () => {
       try {
         const all = await fetchAllUsers();
         const list = Array.isArray(all?.data) ? all.data : all;
         const map = {};
-        (list || []).forEach(u => { if (u && (u.id !== undefined && u.id !== null)) { map[String(u.id)] = u; } });
+        (list || []).forEach(u => {
+          if (!u) return;
+          const key = (u.id !== undefined && u.id !== null) ? u.id : ((u._id !== undefined && u._id !== null) ? u._id : undefined);
+          if (key !== undefined && key !== null) {
+            map[String(key)] = u;
+          }
+        });
         setUserDirectory(map);
       } catch (e) {
         // Non-fatal; names will fall back to "User" if not resolvable
@@ -54,20 +79,31 @@ export function NewsPage() {
       const first = author.first_name || author.firstName || "";
       const last = author.last_name || author.lastName || "";
       const name = (first || last) ? `${first} ${last}`.trim() : author.name || "Member";
-      const authorId = author.id || author.user?.id || author.user_id || author.userId || p.user_id || p.author_id || p.userId;
+      const authorId = author.id || author.user?.id || author.user_id || author.userId || author._id || p.user_id || p.author_id || p.userId || p.authorId;
       const authorAvatarCandidate = 
         author.image || author.avatar || author.photo || author.picture ||
         author.image_url || author.avatar_url || author.profile_image || author.profile_picture || "";
-      const fallbackUserFromDirectory = authorId ? userDirectory[authorId] : undefined;
-      const resolvedAuthorAvatar = authorAvatarCandidate || fallbackUserFromDirectory?.image || fallbackUserFromDirectory?.avatar || "";
+      const fallbackUserFromDirectory = (authorId !== undefined && authorId !== null) ? userDirectory[String(authorId)] : undefined;
+      const fallbackUserFlat = fallbackUserFromDirectory && (fallbackUserFromDirectory.user ? fallbackUserFromDirectory.user : fallbackUserFromDirectory);
+      const resolvedAuthorAvatar = authorAvatarCandidate 
+        || fallbackUserFlat?.image 
+        || fallbackUserFlat?.avatar 
+        || fallbackUserFlat?.profile_picture 
+        || fallbackUserFlat?.image_url 
+        || fallbackUserFlat?.avatar_url 
+        || "";
       const resolveUser = (userObj, userId) => {
-        const dirUser = (userId !== undefined && userId !== null) ? userDirectory[String(userId)] : undefined;
-        const first = (userObj && (userObj.first_name || userObj.firstName)) || (dirUser && dirUser.first_name) || "";
-        const last = (userObj && (userObj.last_name || userObj.lastName)) || (dirUser && dirUser.last_name) || "";
-        const fallbackName = (userObj && userObj.name) || (dirUser && dirUser.name) || "User";
+        const dirUserRaw = (userId !== undefined && userId !== null) ? userDirectory[String(userId)] : undefined;
+        const dirUser = dirUserRaw && (dirUserRaw.user ? dirUserRaw.user : dirUserRaw);
+        const first = (userObj && (userObj.first_name || userObj.firstName || userObj.given_name)) || (dirUser && (dirUser.first_name || dirUser.firstName || dirUser.given_name)) || "";
+        const last = (userObj && (userObj.last_name || userObj.lastName || userObj.family_name)) || (dirUser && (dirUser.last_name || dirUser.lastName || dirUser.family_name)) || "";
+        const fallbackName = (userObj && (userObj.name || userObj.display_name || userObj.full_name || userObj.username || [userObj.first_name, userObj.last_name].filter(Boolean).join(" "))) 
+          || (dirUser && (dirUser.name || dirUser.display_name || dirUser.full_name || dirUser.username || [dirUser.first_name, dirUser.last_name].filter(Boolean).join(" "))) 
+          || "User";
         const name = (first || last) ? `${first} ${last}`.trim() : fallbackName;
-        const avatar = (userObj && (userObj.image || userObj.avatar || userObj.photo || userObj.picture)) ||
-                       (dirUser && (dirUser.image || dirUser.avatar)) || "";
+        const avatar = (userObj && (userObj.image || userObj.avatar || userObj.photo || userObj.picture || userObj.profile_picture || userObj.image_url || userObj.avatar_url || userObj.avatarUrl || userObj.photoURL)) 
+                       || (dirUser && (dirUser.image || dirUser.avatar || dirUser.photo || dirUser.picture || dirUser.profile_picture || dirUser.image_url || dirUser.avatar_url || dirUser.avatarUrl || dirUser.photoURL)) 
+                       || "";
         return { name, avatar };
       };
       // derive like state
@@ -90,7 +126,7 @@ export function NewsPage() {
         likedByMe: Boolean(derivedLikedByMe),
         isAnnouncement: false, // No announcements in news feed
         comments: Array.isArray(p.comments) ? p.comments.map((c, i) => {
-          const commentUserId = c.user_id || c.userId || (c.user && (c.user.id || c.user.user_id)) || null;
+          const commentUserId = c.user_id || c.userId || c.author_id || c.authorId || (c.user && (c.user.id || c.user.user_id || c.user.userId || c.user._id)) || (c.author && (c.author.id || c.author.user_id || c.author.userId || c.author._id)) || null;
           const authorMeta = resolveUser(c.user || c.author, commentUserId);
           return {
             id: c.id || i,
@@ -126,22 +162,6 @@ export function NewsPage() {
       }
     };
     if (groupId) fetchPosts();
-    // Realtime updates
-    const socket = getSocket();
-    if (socket && groupId) {
-      socket.emit('group:join', { groupId });
-      const onPostCreated = (payload) => {
-        if (!payload || String(payload.group_id || payload.groupId) !== String(groupId)) return;
-        setRawPosts(prev => [payload, ...(prev || [])]);
-        setPosts(prev => [normalizePosts([payload])[0], ...(prev || [])]);
-      };
-      socket.on('group:post:created', onPostCreated);
-      return () => {
-        isMounted = false;
-        socket.off('group:post:created', onPostCreated);
-        socket.emit('group:leave', { groupId });
-      };
-    }
     return () => { isMounted = false; };
   }, [groupId]);
 
@@ -207,6 +227,142 @@ export function NewsPage() {
       setPosts(normalizePosts(rawPosts));
     }
   }, [userDirectory]);
+ 
+  // Realtime socket listeners for posts, likes, and comments
+  useEffect(() => {
+    let offFns = [];
+    try {
+      const { default: getSocket } = require("@/services/socketClient");
+      const socket = getSocket && getSocket();
+      if (!socket) return;
+
+      // Optionally join group room if backend supports
+      if (groupId) {
+        try { socket.emit('group:join', { groupId }); } catch {}
+      }
+
+      const onPostNew = (payload) => {
+        if (!payload) return;
+        if (groupId && String(payload.group_id || payload.groupId) !== String(groupId)) return;
+        const normalized = normalizePosts([payload])[0];
+        setRawPosts(prev => [payload, ...(prev || [])]);
+        setPosts(prev => [normalized, ...(prev || [])]);
+      };
+
+      const onPostLike = (payload) => {
+        if (!payload) return;
+        const pid = payload.post_id || payload.postId || payload.id;
+        if (!pid) return;
+        setPosts(prev => prev.map(p => {
+          if (String(p.id) !== String(pid)) return p;
+          const newCount = (payload.likes_count !== undefined && payload.likes_count !== null)
+            ? payload.likes_count
+            : (p.likesCount || 0) + 1;
+          return { ...p, likesCount: newCount };
+        }));
+      };
+
+      const onPostComment = (payload) => {
+        if (!payload) return;
+        const pid = payload.post_id || payload.postId || (payload.post && (payload.post.id || payload.post.post_id));
+        if (!pid) return;
+        if (groupId && String(payload.group_id || payload.groupId) !== String(groupId)) {
+          // If event carries group identifier, enforce it
+          // Otherwise allow since posts belong to current feed
+        }
+        const comment = payload.comment || payload;
+        const commentUserId = comment.user_id || comment.userId || (comment.user && (comment.user.id || comment.user.user_id || comment.user._id));
+        const dirUserRaw = (commentUserId !== undefined && commentUserId !== null) ? userDirectory[String(commentUserId)] : undefined;
+        const dirUser = dirUserRaw && (dirUserRaw.user ? dirUserRaw.user : dirUserRaw);
+        const first = (comment.user && (comment.user.first_name || comment.user.firstName)) || (dirUser && (dirUser.first_name || dirUser.firstName)) || "";
+        const last = (comment.user && (comment.user.last_name || comment.user.lastName)) || (dirUser && (dirUser.last_name || dirUser.lastName)) || "";
+        const fallbackName = (comment.user && (comment.user.name || [comment.user.first_name, comment.user.last_name].filter(Boolean).join(" "))) || (dirUser && (dirUser.name || [dirUser.first_name, dirUser.last_name].filter(Boolean).join(" "))) || "User";
+        const name = (first || last) ? `${first} ${last}`.trim() : fallbackName;
+        const avatar = (comment.user && (comment.user.image || comment.user.avatar || comment.user.profile_picture || comment.user.image_url || comment.user.avatar_url)) || (dirUser && (dirUser.image || dirUser.avatar || dirUser.profile_picture || dirUser.image_url || dirUser.avatar_url)) || "";
+        const ts = comment.createdAt ? new Date(comment.createdAt).toLocaleString() : (comment.created_at ? new Date(comment.created_at).toLocaleString() : "Just now");
+
+        const newComment = {
+          id: comment.id || Date.now(),
+          userId: commentUserId || null,
+          author: { name, avatar },
+          content: comment.content || "",
+          timestamp: ts,
+        };
+
+        setPosts(prev => prev.map(p => {
+          if (String(p.id) !== String(pid)) return p;
+          return { ...p, comments: [...p.comments, newComment] };
+        }));
+      };
+
+      socket.on('post:new', onPostNew);
+      socket.on('post:like', onPostLike);
+      socket.on('post:comment', onPostComment);
+
+      offFns = [
+        () => socket.off('post:new', onPostNew),
+        () => socket.off('post:like', onPostLike),
+        () => socket.off('post:comment', onPostComment),
+      ];
+
+      return () => {
+        try { offFns.forEach(fn => fn && fn()); } catch {}
+        if (groupId) { try { socket.emit('group:leave', { groupId }); } catch {} }
+      };
+    } catch {}
+  }, [groupId, userDirectory]);
+
+  // Backfill missing user profiles (names/avatars) for post authors and commenters after refresh
+  useEffect(() => {
+    if (!rawPosts || !rawPosts.length) return;
+    const idsToFetch = [];
+    const seen = new Set();
+    try {
+      rawPosts.forEach((p) => {
+        const authorId = p?.user?.id || p?.author?.id || p?.user_id || p?.author_id || p?.userId;
+        if (authorId !== undefined && authorId !== null) {
+          const key = String(authorId);
+          // Only fetch if we truly don't have a usable user object
+          const cached = userDirectory[key];
+          const cachedFlat = cached && (cached.user ? cached.user : cached);
+          const hasName = cachedFlat && (cachedFlat.first_name || cachedFlat.firstName || cachedFlat.name);
+          const hasAvatar = cachedFlat && (cachedFlat.image || cachedFlat.avatar || cachedFlat.profile_picture || cachedFlat.image_url || cachedFlat.avatar_url);
+          if ((!cached || (!hasName && !hasAvatar)) && !seen.has(key)) { idsToFetch.push(key); seen.add(key); }
+        }
+        const comments = Array.isArray(p?.comments) ? p.comments : [];
+        comments.forEach((c) => {
+          const uid = c?.user_id || c?.userId || c?.user?.id || c?.user?.user_id;
+          if (uid !== undefined && uid !== null) {
+            const key = String(uid);
+            const cached = userDirectory[key];
+            const cachedFlat = cached && (cached.user ? cached.user : cached);
+            const hasName = cachedFlat && (cachedFlat.first_name || cachedFlat.firstName || cachedFlat.name);
+            const hasAvatar = cachedFlat && (cachedFlat.image || cachedFlat.avatar || cachedFlat.profile_picture || cachedFlat.image_url || cachedFlat.avatar_url);
+            if ((!cached || (!hasName && !hasAvatar)) && !seen.has(key)) { idsToFetch.push(key); seen.add(key); }
+          }
+        });
+      });
+    } catch {}
+    if (!idsToFetch.length) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const results = await Promise.allSettled(idsToFetch.map((id) => fetchDetailedUserProfile(id)));
+        const additions = {};
+        results.forEach((res, index) => {
+          if (res.status === 'fulfilled' && res.value) {
+            const u = res.value;
+            const key = idsToFetch[index];
+            additions[key] = u;
+          }
+        });
+        if (!cancelled && Object.keys(additions).length) {
+          setUserDirectory((prev) => ({ ...prev, ...additions }));
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [rawPosts]);
  
   // Safety net: auto-refresh posts every 2 seconds
   useEffect(() => {
@@ -343,6 +499,15 @@ export function NewsPage() {
                     <div className="text-sm text-muted-foreground">{post.timestamp}</div>
                   </div>
                 </div>
+                {isGroupAdmin && (
+                  <button
+                    className="text-gray-500 hover:text-red-600 transition-colors p-1"
+                    title="Delete post"
+                    onClick={() => setDeleteTargetPostId(post.id)}
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  </button>
+                )}
               </div>
             </CardHeader>
             
@@ -539,7 +704,7 @@ export function NewsPage() {
                     {post.comments.map((comment) => (
                       <div key={comment.id} className={`group flex gap-2 ${highlightComment[comment.id] ? 'animate-[pulse_1.2s_ease_1]' : ''}`}>
                         <Avatar className="h-6 w-6 ring-2 ring-indigo-200 ring-offset-2">
-                          <AvatarFallback className="text-xs">{comment.author.name[0]}</AvatarFallback>
+                          <AvatarFallback className="text-xs">{(comment.author?.name && comment.author.name[0]) ? comment.author.name[0] : 'U'}</AvatarFallback>
                           {comment.author.avatar && <AvatarImage src={comment.author.avatar} />}
                         </Avatar>
                         <div className={`relative bg-gradient-to-r from-sky-50 via-blue-50 to-indigo-50 border border-indigo-100 rounded-lg px-3 py-2 text-sm flex-1 shadow-sm ${highlightComment[comment.id] ? 'ring-2 ring-blue-200' : ''}`}>
@@ -560,9 +725,11 @@ export function NewsPage() {
                                   className="p-1 hover:text-red-700"
                                   onClick={async () => {
                                     try {
-                                      await deleteComment(post.id, comment.id);
+                                      await deleteComment(comment.id);
                                     } catch {}
                                     setPosts(prev => prev.map(p => p.id === post.id ? ({...p, comments: p.comments.filter(c => c.id !== comment.id)}) : p));
+                                    setInfoModalMessage("Comment deleted successfully");
+                                    setInfoModalOpen(true);
                                   }}
                                   title="Delete comment"
                                 >
@@ -584,7 +751,7 @@ export function NewsPage() {
                                 setEditingComment(null);
                                 setPosts(prev => prev.map(p => p.id === post.id ? ({...p, comments: p.comments.map(c => c.id === comment.id ? ({...c, content: commentDraft}) : c)}) : p));
                                 try {
-                                  await editComment(post.id, comment.id, { content: commentDraft });
+                                  await editComment(comment.id, { content: commentDraft });
                                 } catch {}
                               }}>Save</Button>
                               <Button size="sm" variant="ghost" onClick={() => setEditingComment(null)}>Cancel</Button>
@@ -630,6 +797,45 @@ export function NewsPage() {
           </Card>
         ))}
       </div>
+
+      <ConfirmationDialog
+        isOpen={Boolean(deleteTargetPostId)}
+        onClose={() => { if (!isDeletingPost) setDeleteTargetPostId(null); }}
+        onConfirm={async () => {
+          if (!deleteTargetPostId) return;
+          try {
+            setIsDeletingPost(true);
+            await deleteGroupPost(deleteTargetPostId);
+          } catch (err) {
+            if (err?.response?.status === 404) {
+              console.warn('Post not found on server, removing locally.');
+            } else if (err?.response?.status === 403) {
+              console.warn('Forbidden: insufficient permissions to delete this post');
+            }
+          } finally {
+            setIsDeletingPost(false);
+            setPosts(prev => prev.filter(p => p.id !== deleteTargetPostId));
+            setRawPosts(prev => (prev || []).filter(p => (p.id || p.post_id) !== deleteTargetPostId));
+            setDeleteTargetPostId(null);
+          }
+        }}
+        title="Delete post?"
+        message="This action cannot be undone. The post and its comments will be permanently removed for all members."
+        confirmText={isDeletingPost ? "Deleting..." : "Delete"}
+        cancelText="Cancel"
+        type="danger"
+      />
+
+      <ConfirmationDialog
+        isOpen={infoModalOpen}
+        onClose={() => setInfoModalOpen(false)}
+        onConfirm={() => setInfoModalOpen(false)}
+        title="Success"
+        message={infoModalMessage || "Comment deleted successfully"}
+        confirmText="OK"
+        cancelText="Close"
+        type="info"
+      />
     </div>
   );
 }
