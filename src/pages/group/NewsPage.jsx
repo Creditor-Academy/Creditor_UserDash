@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
-import { getGroupPosts, addComment, addLike, editComment, deleteComment, deleteGroupPost, isUserGroupAdmin } from "@/services/groupService";
+import { getGroupPosts, addComment, addLike, removeLike, editComment, deleteComment, deleteGroupPost, isUserGroupAdmin } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 import { fetchAllUsers, fetchDetailedUserProfile } from "@/services/userService";
 import getSocket from "@/services/socketClient";
@@ -476,27 +476,38 @@ export function NewsPage() {
     }
   };
   
-  const handleLike = async (postId) => {
+  const handleToggleLike = async (postId) => {
     try {
       const target = posts.find(p => p.id === postId);
-      if (!target || target.likedByMe) return; // prevent multiple likes by same user
-      
-      // Emit socket event for real-time updates
-      const socket = getSocket();
-      socket.emit('addLike', { 
-        postId, 
-        userId: userProfile?.id,
-        groupId 
-      });
-      
-      await addLike(postId);
-      setPosts(posts.map(post => post.id === postId ? { ...post, likesCount: (post.likesCount || 0) + 1, likedByMe: true } : post));
-      setLikeBurst((prev) => ({ ...prev, [postId]: true }));
+      if (!target) return;
+      const isLiked = Boolean(target.likedByMe);
+
+      // Optimistic UI update
+      setPosts(posts.map(post => post.id === postId 
+        ? { ...post, likesCount: Math.max(0, (post.likesCount || 0) + (isLiked ? -1 : 1)), likedByMe: !isLiked }
+        : post
+      ));
+      setLikeBurst((prev) => ({ ...prev, [postId]: !isLiked }));
       setTimeout(() => {
         setLikeBurst((prev) => ({ ...prev, [postId]: false }));
       }, 250);
+
+      // Server call
+      if (isLiked) {
+        await removeLike(postId);
+        // Optional: socket emit for unlike if backend supports
+        try { const socket = getSocket(); socket.emit('removeLike', { postId, userId: userProfile?.id, groupId }); } catch {}
+      } else {
+        await addLike(postId);
+        try { const socket = getSocket(); socket.emit('addLike', { postId, userId: userProfile?.id, groupId }); } catch {}
+      }
     } catch (e) {
-      console.error("NewsPage: error liking post", e);
+      console.error("NewsPage: error toggling like", e);
+      // Revert optimistic change on error
+      setPosts(prev => prev.map(post => post.id === postId 
+        ? { ...post, likesCount: Math.max(0, (post.likesCount || 0) + (post.likedByMe ? -1 : 1)), likedByMe: !post.likedByMe }
+        : post
+      ));
     }
   };
   
@@ -721,11 +732,10 @@ export function NewsPage() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  disabled={post.likedByMe}
                   className={`gap-1 rounded-full ${post.likedByMe ? 'text-blue-700 bg-blue-50' : 'text-gray-600 hover:text-blue-700 hover:bg-blue-50'} ${likeBurst[post.id] ? 'scale-105 text-blue-700' : ''}`}
                   style={{ transition: 'transform 150ms ease, color 150ms ease' }}
-                  onClick={() => handleLike(post.id)}
-                  title={post.likedByMe ? 'You liked this' : 'Like'}
+                  onClick={() => handleToggleLike(post.id)}
+                  title={post.likedByMe ? 'Unlike' : 'Like'}
                 >
                   <ThumbsUp className={`h-4 w-4 ${post.likedByMe ? '' : ''} ${likeBurst[post.id] ? 'animate-pulse' : ''}`} />
                   {post.likesCount > 0 && <span className={`${likeBurst[post.id] ? 'animate-pulse' : ''}`}>{post.likesCount}</span>}
