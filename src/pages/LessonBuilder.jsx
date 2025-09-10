@@ -780,6 +780,22 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleStatementEdit = (blockId, content, htmlContent) => {
+    // Detect statement type from HTML content to preserve it
+    let detectedStatementType = 'statement-a'; // default fallback
+    if (htmlContent) {
+      if (htmlContent.includes('border-t border-b border-gray-800')) {
+        detectedStatementType = 'statement-a';
+      } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
+        detectedStatementType = 'statement-b';
+      } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
+        detectedStatementType = 'statement-c';
+      } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
+        detectedStatementType = 'statement-d';
+      } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
+        detectedStatementType = 'note';
+      }
+    }
+
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
       blocks.map(block =>
@@ -787,6 +803,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           ...block,
           content,
           html_css: htmlContent,
+          statementType: detectedStatementType, // Preserve statement type
           updatedAt: new Date().toISOString()
         } : block
       )
@@ -803,6 +820,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               ...block,
               content,
               html_css: htmlContent,
+              statementType: detectedStatementType, // Preserve statement type
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                content,
+                statement_type: detectedStatementType
+              },
               updatedAt: new Date().toISOString()
             } : block
           )
@@ -1101,8 +1125,33 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
    
     if (block.type === 'statement') {
       // Handle statement editing with the StatementComponent
-      // Pass both content and html_css to extract content from HTML if needed
-      statementComponentRef.current?.handleEditStatement(blockId, block.statementType, block.content, block.html_css);
+      // For fetched content, detect statementType from HTML content if not available
+      let statementType = block.statementType || block.details?.statement_type || block.details?.statementType;
+      
+      // If statementType is not available, detect it from HTML content
+      if (!statementType && block.html_css) {
+        const htmlContent = block.html_css;
+        if (htmlContent.includes('border-t border-b border-gray-800')) {
+          statementType = 'statement-a';
+        } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
+          statementType = 'statement-b';
+        } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
+          statementType = 'statement-c';
+        } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
+          statementType = 'statement-d';
+        } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
+          statementType = 'note';
+        } else {
+          statementType = 'statement-a'; // fallback
+        }
+      } else if (!statementType) {
+        statementType = 'statement-c'; // fallback
+      }
+      
+      const content = block.content || block.details?.content || '';
+      const htmlCss = block.html_css || '';
+      
+      statementComponentRef.current?.handleEditStatement(blockId, statementType, content, htmlCss);
       return;
     }
    
@@ -1626,13 +1675,25 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         
         // For other blocks, preserve existing html_css to avoid wrapping in new containers
         if (block.html_css && block.html_css.trim() !== '') {
-          return {
+          const blockData = {
             type: block.type,
             script: block.script || '',
             block_id: blockId,
             html_css: block.html_css,
             ...(block.details && { details: block.details })
           };
+          
+          // For statement blocks, include explicit statement type metadata
+          if (block.type === 'statement') {
+            blockData.statementType = block.statementType || 'statement-a';
+            blockData.details = {
+              ...blockData.details,
+              statement_type: block.statementType || 'statement-a',
+              content: block.content || ''
+            };
+          }
+          
+          return blockData;
         }
 
         // Only generate new HTML for newly created blocks without existing html_css
@@ -1744,6 +1805,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 `;
               }
             }
+            break;
+
+          case 'statement':
+            // For statement blocks, include explicit type metadata
+            details = {
+              statement_type: block.statementType || 'statement-a',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
             break;
 
           default:
@@ -3451,6 +3521,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       videoTitle: b.details?.caption || ''
                     };
                   }
+                  if (b.type === 'statement') {
+                    return {
+                      ...base,
+                      type: 'statement',
+                      title: b.details?.title || 'Statement',
+                      statementType: b.details?.statement_type || b.details?.statementType || 'statement-a',
+                      content: b.details?.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   // Default map to text block with preserved HTML
                   return {
                     ...base,
@@ -4265,6 +4345,37 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   youtubeTitle: block.details?.caption
                                                 });
                                                 setShowYoutubeDialog(true);
+                                                break;
+                                              case 'statement':
+                                                // For statement blocks, detect statementType from HTML content if not available
+                                                let statementType = block.details?.statement_type || block.details?.statementType || block.statementType;
+                                                
+                                                // If statementType is not available, detect it from HTML content
+                                                if (!statementType && block.html_css) {
+                                                  const htmlContent = block.html_css;
+                                                  if (htmlContent.includes('border-t border-b border-gray-800')) {
+                                                    statementType = 'statement-a';
+                                                  } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
+                                                    statementType = 'statement-b';
+                                                  } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
+                                                    statementType = 'statement-c';
+                                                  } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
+                                                    statementType = 'statement-d';
+                                                  } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
+                                                    statementType = 'note';
+                                                  } else {
+                                                    statementType = 'statement-a'; // fallback
+                                                  }
+                                                } else if (!statementType) {
+                                                  statementType = 'statement-a'; // fallback
+                                                }
+                                                
+                                                statementComponentRef.current?.handleEditStatement(
+                                                  block.block_id, 
+                                                  statementType, 
+                                                  block.details?.content || block.content || '', 
+                                                  block.html_css || ''
+                                                );
                                                 break;
                                               default:
                                                 handleEditBlock(block.block_id);
