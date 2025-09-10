@@ -83,7 +83,10 @@ const initialMessages = [
 export function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const seenMessageIdsRef = React.useRef(new Set());
+
   const [showMembers, setShowMembers] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -391,14 +394,20 @@ export function ChatPage() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
+    const toSend = newMessage;
+    setNewMessage("");
+    setIsSending(true);
+
+    const tempId = `tmp-${Date.now()}`;
     const optimistic = {
-      id: `tmp-${Date.now()}`,
+      id: tempId,
       senderId: currentUserId,
       senderName: "You",
       senderAvatar: "",
-      content: newMessage,
+      content: toSend,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      type: 'text'
+      type: 'text',
+      pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
     const toSend = newMessage;
@@ -425,15 +434,20 @@ export function ChatPage() {
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
       if (m?.id) {
-        setMessages(prev => prev.map(x => x.id === optimistic.id ? {
-          id: m.id,
-          senderId: m.sender_id,
-          senderName: m.sender?.first_name || 'You',
-          senderAvatar: m.sender?.image || '',
-          content: m.content,
-          timestamp: new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text'
-        } : x));
+        if (seenMessageIdsRef.current.has(m.id)) {
+          setMessages(prev => prev.filter(x => x.id !== tempId));
+        } else {
+          seenMessageIdsRef.current.add(m.id);
+          setMessages(prev => prev.map(x => x.id === tempId ? {
+            id: m.id,
+            senderId: m.sender_id || currentUserId,
+            senderName: m.sender?.first_name || 'You',
+            senderAvatar: m.sender?.image || '',
+            content: m.content,
+            timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
+            type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (m.mime_type ? 'file' : 'text'),
+          } : x));
+        }
       }
     } catch (e) {
       console.error('Error sending message:', e);
@@ -677,6 +691,7 @@ export function ChatPage() {
             onFileSelect={handleFileSelect}
             showVoiceRecorder={showVoiceRecorder}
             setShowVoiceRecorder={setShowVoiceRecorder}
+            isSending={isSending}
           />
         </CardContent>
       </Card>

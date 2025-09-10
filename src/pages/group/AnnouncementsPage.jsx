@@ -19,7 +19,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import EditAnnouncementModal from "@/components/modals/EditAnnouncementModal";
 import { getAnnouncements, deleteAnnouncement, isUserGroupAdmin } from "@/services/groupService";
-import getSocket from "@/services/socketClient";
+import { } from "@/services/socketClient";
+import { useAnnouncementsSocket } from "@/hooks/useAnnouncementsSocket";
 import { useParams } from "react-router-dom";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
@@ -43,19 +44,30 @@ export function AnnouncementsPage() {
   useEffect(() => {
     loadAnnouncements();
     checkGroupAdminStatus();
-    const socket = getSocket();
-    if (socket && groupId) {
-      socket.emit('group:join', { groupId });
-      const onAnnouncementCreated = (payload) => {
-        if (!payload || String(payload.group_id || payload.groupId) !== String(groupId)) return;
-        setAnnouncements(prev => [payload, ...(prev || [])]);
-      };
-      socket.on('group:announcement:created', onAnnouncementCreated);
-      return () => {
-        socket.off('group:announcement:created', onAnnouncementCreated);
-        socket.emit('group:leave', { groupId });
-      };
+  }, [groupId]);
+
+  useAnnouncementsSocket({
+    groupId,
+    onNew: (payload) => {
+      if (!payload || String(payload.group_id || payload.groupId) !== String(groupId)) return;
+      setAnnouncements(prev => [payload, ...(prev || [])]);
     }
+  });
+
+  // Lightweight auto-refresh every 2s without toggling the loading state
+  useEffect(() => {
+    if (!groupId) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const response = await getAnnouncements(groupId);
+        if (cancelled) return;
+        const announcementsData = response?.data || response || [];
+        setAnnouncements(announcementsData);
+      } catch {}
+    };
+    const intervalId = setInterval(tick, 2000);
+    return () => { cancelled = true; clearInterval(intervalId); };
   }, [groupId]);
 
   const checkGroupAdminStatus = async () => {
