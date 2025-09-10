@@ -349,6 +349,17 @@ export const addLike = async (postId) => {
   }
 };
 
+// Remove like from post
+export const removeLike = async (postId) => {
+  try {
+    const response = await api.delete(`/groups/posts/${postId}/likes`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing like:', error);
+    throw error;
+  }
+};
+
 // Delete a specific group post by postId (admin only)
 export const deleteGroupPost = async (postId) => {
   try {
