@@ -10,7 +10,7 @@ import { useParams } from "react-router-dom";
 import { getGroupPosts, addComment, addLike, editComment, deleteComment, deleteGroupPost, isUserGroupAdmin } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 import { fetchAllUsers, fetchDetailedUserProfile } from "@/services/userService";
-// Socket temporarily disabled
+import getSocket from "@/services/socketClient";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 
 export function NewsPage() {
@@ -49,9 +49,25 @@ export function NewsPage() {
         setIsGroupAdmin(false);
       }
     })();
+    
     // Preload a user directory to resolve commenter identities on refresh
-    (async () => {
+    const loadUserDirectory = async () => {
       try {
+        // Try to load from localStorage first
+        const cached = localStorage.getItem('userDirectory');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && typeof parsed === 'object') {
+              setUserDirectory(parsed);
+              console.log('User directory loaded from cache with', Object.keys(parsed).length, 'users');
+            }
+          } catch (e) {
+            console.warn('Failed to parse cached user directory:', e);
+          }
+        }
+        
+        // Always fetch fresh data
         const all = await fetchAllUsers();
         const list = Array.isArray(all?.data) ? all.data : all;
         const map = {};
@@ -62,13 +78,25 @@ export function NewsPage() {
             map[String(key)] = u;
           }
         });
+        
+        // Update state and cache
         setUserDirectory(map);
+        localStorage.setItem('userDirectory', JSON.stringify(map));
+        console.log('User directory loaded with', Object.keys(map).length, 'users');
       } catch (e) {
         // Non-fatal; names will fall back to "User" if not resolvable
         console.warn("NewsPage: unable to preload users for comments", e);
       }
-    })();
-  }, []);
+    };
+    
+    loadUserDirectory();
+    
+    // Cleanup function to clear cache when groupId changes
+    return () => {
+      // Optionally clear cache on unmount (uncomment if needed)
+      // localStorage.removeItem('userDirectory');
+    };
+  }, [groupId]);
 
   // Normalizer uses the latest userDirectory to map comment authors reliably
   const normalizePosts = (list) => {
@@ -95,15 +123,23 @@ export function NewsPage() {
       const resolveUser = (userObj, userId) => {
         const dirUserRaw = (userId !== undefined && userId !== null) ? userDirectory[String(userId)] : undefined;
         const dirUser = dirUserRaw && (dirUserRaw.user ? dirUserRaw.user : dirUserRaw);
+        
+        // Try to get name from userObj first, then directory
         const first = (userObj && (userObj.first_name || userObj.firstName || userObj.given_name)) || (dirUser && (dirUser.first_name || dirUser.firstName || dirUser.given_name)) || "";
         const last = (userObj && (userObj.last_name || userObj.lastName || userObj.family_name)) || (dirUser && (dirUser.last_name || dirUser.lastName || dirUser.family_name)) || "";
+        
+        // Fallback name sources
         const fallbackName = (userObj && (userObj.name || userObj.display_name || userObj.full_name || userObj.username || [userObj.first_name, userObj.last_name].filter(Boolean).join(" "))) 
           || (dirUser && (dirUser.name || dirUser.display_name || dirUser.full_name || dirUser.username || [dirUser.first_name, dirUser.last_name].filter(Boolean).join(" "))) 
-          || "User";
+          || `User ${userId || 'Unknown'}`;
+        
         const name = (first || last) ? `${first} ${last}`.trim() : fallbackName;
+        
+        // Try to get avatar from userObj first, then directory
         const avatar = (userObj && (userObj.image || userObj.avatar || userObj.photo || userObj.picture || userObj.profile_picture || userObj.image_url || userObj.avatar_url || userObj.avatarUrl || userObj.photoURL)) 
                        || (dirUser && (dirUser.image || dirUser.avatar || dirUser.photo || dirUser.picture || dirUser.profile_picture || dirUser.image_url || dirUser.avatar_url || dirUser.avatarUrl || dirUser.photoURL)) 
                        || "";
+        
         return { name, avatar };
       };
       // derive like state
@@ -165,19 +201,74 @@ export function NewsPage() {
     return () => { isMounted = false; };
   }, [groupId]);
 
+  // Socket integration for real-time updates
+  useEffect(() => {
+    const socket = getSocket();
+    
+    // Listen for new posts
+    const onNewPost = (postData) => {
+      if (postData?.group_id === groupId) {
+        setRawPosts(prev => [postData, ...prev]);
+      }
+    };
+    
+    // Listen for new comments
+    const onCommentAdded = (data) => {
+      if (data?.postId) {
+        setRawPosts(prev => prev.map(post => 
+          post.id === data.postId 
+            ? { ...post, comments: [...(post.comments || []), data.comment] }
+            : post
+        ));
+      }
+    };
+    
+    // Listen for like changes
+    const onLikeAdded = (data) => {
+      if (data?.postId) {
+        setRawPosts(prev => prev.map(post => 
+          post.id === data.postId 
+            ? { ...post, likes: [...(post.likes || []), data.like] }
+            : post
+        ));
+      }
+    };
+    
+    const onLikeRemoved = (data) => {
+      if (data?.postId) {
+        setRawPosts(prev => prev.map(post => 
+          post.id === data.postId 
+            ? { ...post, likes: (post.likes || []).filter(like => like.user_id !== data.userId) }
+            : post
+        ));
+      }
+    };
+    
+    socket.on('groupPostCreated', onNewPost);
+    socket.on('commentAdded', onCommentAdded);
+    socket.on('likeAdded', onLikeAdded);
+    socket.on('likeRemoved', onLikeRemoved);
+    
+    return () => {
+      socket.off('groupPostCreated', onNewPost);
+      socket.off('commentAdded', onCommentAdded);
+      socket.off('likeAdded', onLikeAdded);
+      socket.off('likeRemoved', onLikeRemoved);
+    };
+  }, [groupId]);
+
   // Re-normalize when userDirectory updates to fill in names/avatars post-refresh
   useEffect(() => {
-    if (rawPosts && rawPosts.length) {
+    if (rawPosts && rawPosts.length && Object.keys(userDirectory).length > 0) {
       setPosts(normalizePosts(rawPosts));
     }
-  }, [userDirectory]);
+  }, [userDirectory, rawPosts]);
  
   // Realtime socket listeners for posts, likes, and comments
   useEffect(() => {
     let offFns = [];
     try {
-      const { default: getSocket } = require("@/services/socketClient");
-      const socket = getSocket && getSocket();
+      const socket = getSocket();
       if (!socket) return;
 
       // Optionally join group room if backend supports
@@ -301,7 +392,12 @@ export function NewsPage() {
           }
         });
         if (!cancelled && Object.keys(additions).length) {
-          setUserDirectory((prev) => ({ ...prev, ...additions }));
+          setUserDirectory((prev) => {
+            const updated = { ...prev, ...additions };
+            // Update cache with new user data
+            localStorage.setItem('userDirectory', JSON.stringify(updated));
+            return updated;
+          });
         }
       } catch {}
     })();
@@ -318,18 +414,31 @@ export function NewsPage() {
         if (cancelled) return;
         const list = Array.isArray(res?.data) ? res.data : res;
         setRawPosts(list || []);
-        setPosts(normalizePosts(list || []));
+        // Only normalize if we have user directory data
+        if (Object.keys(userDirectory).length > 0) {
+          setPosts(normalizePosts(list || []));
+        }
       } catch {}
     };
     const intervalId = setInterval(tick, 2000);
     return () => { cancelled = true; clearInterval(intervalId); };
-  }, [groupId]);
+  }, [groupId, userDirectory]);
   
   const handleCommentSubmit = async (postId) => {
     if (!newCommentContents[postId] || !newCommentContents[postId].trim()) return;
     try {
       setCommentSending((prev) => ({ ...prev, [postId]: true }));
       const payload = { content: newCommentContents[postId].trim() };
+      
+      // Emit socket event for real-time updates
+      const socket = getSocket();
+      socket.emit('addComment', { 
+        postId, 
+        userId: userProfile?.id, 
+        content: payload.content,
+        groupId 
+      });
+      
       const res = await addComment(postId, payload);
       const created = res?.data || res; // backend returns {code,data,...}
       const createdCommentId = created?.id || Date.now();
@@ -369,6 +478,15 @@ export function NewsPage() {
     try {
       const target = posts.find(p => p.id === postId);
       if (!target || target.likedByMe) return; // prevent multiple likes by same user
+      
+      // Emit socket event for real-time updates
+      const socket = getSocket();
+      socket.emit('addLike', { 
+        postId, 
+        userId: userProfile?.id,
+        groupId 
+      });
+      
       await addLike(postId);
       setPosts(posts.map(post => post.id === postId ? { ...post, likesCount: (post.likesCount || 0) + 1, likedByMe: true } : post));
       setLikeBurst((prev) => ({ ...prev, [postId]: true }));

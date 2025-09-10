@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
 import { professionalAvatars } from "@/lib/avatar-utils";
-import { } from "@/services/socketClient";
-import { useGroupChatSocket } from "@/hooks/useGroupChatSocket";
+import getSocket, { reconnectSocket } from "@/services/socketClient";
 
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
@@ -106,22 +105,62 @@ export function ChatPage() {
     fetchGroupMembers({ openModal: false, silent: true });
     // load messages
     loadMessages();
-  }, [groupId]);
 
-  // Realtime chat socket wiring
-  const { sendMessage, sendTyping } = useGroupChatSocket({
-    groupId,
-    onMessage: (payload) => {
-      if (String(payload?.group_id || payload?.groupId) !== String(groupId)) return;
-        const realId = payload.id;
-        if (realId && seenMessageIdsRef.current.has(realId)) return;
-        if (realId) seenMessageIdsRef.current.add(realId);
+    // If user not identified yet, skip socket room join for now
+    if (!groupId || !currentUserId) {
+      console.warn('[chat] skip join: missing groupId or currentUserId');
+      return;
+    }
+
+    // Realtime: join group room
+    const socket = getSocket();
+    const uid = currentUserId;
+    
+    // Wait for socket to be connected before joining
+    const joinGroupWhenReady = () => {
+      if (socket.connected) {
+        console.log('[socket][emit] joinGroup', { groupId, userId: uid });
+        socket.emit('joinGroup', { groupId, userId: uid });
+      } else {
+        // Wait for connection, but with timeout
+        const connectTimeout = setTimeout(() => {
+          console.warn('[socket] Connection timeout, skipping group join');
+        }, 5000);
+        
+        socket.once('connect', () => {
+          clearTimeout(connectTimeout);
+          console.log('[socket][emit] joinGroup', { groupId, userId: uid });
+          socket.emit('joinGroup', { groupId, userId: uid });
+        });
+      }
+    };
+
+    // Initial join attempt
+    joinGroupWhenReady();
+
+    // Re-join on reconnect to handle network hiccups
+    const onConnect = () => {
+      console.log('[socket] connected. re-joining', { groupId, userId: uid });
+      socket.emit('joinGroup', { groupId, userId: uid });
+    };
+    socket.on('connect', onConnect);
+
+    const sameGroup = (gid) => String(gid) === String(groupId);
+    
+    // Handle new group messages
+    const onNewMessage = (payload) => {
+      console.log('[socket][on] newGroupMessage', payload);
+      // Backend sends message with group_id field
+      const inThisGroup = sameGroup(payload?.group_id);
+      if (inThisGroup) {
         setMessages(prev => {
-          const withoutTmp = prev.filter(m => !(String(m.senderId) === String(payload.sender_id || payload.senderId) && m.content === payload.content && String(m.id).startsWith('tmp-')));
-          return [...withoutTmp, {
+          // If message already exists by id, skip
+          if (payload?.id && prev.some(m => m.id === payload.id)) return prev;
+
+          const normalized = {
             id: payload.id,
-            senderId: payload.sender_id || payload.senderId,
-            senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
+            senderId: payload.sender_id,
+            senderName: payload.sender?.first_name || 'Member',
             senderAvatar: payload.sender?.image || '',
             content: payload.content,
             imageUrl: payload.image_url || payload.imageUrl,
@@ -129,11 +168,126 @@ export function ChatPage() {
             type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
                   (payload.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
                   (payload.mime_type ? 'file' : 'text'),
-          }];
+          };
+
+          // Try to replace a matching optimistic message (same sender and content)
+          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === payload.sender_id && m.content === payload.content);
+          if (idx !== -1) {
+            const clone = [...prev];
+            clone[idx] = normalized;
+            return clone;
+          }
+          return [...prev, normalized];
         });
-    },
-    onTyping: () => {}
-  });
+      }
+    };
+    socket.on('newGroupMessage', onNewMessage);
+
+    // Listen for user join/leave notifications
+    const onUserJoined = (data) => {
+      console.log('[socket][on] userJoinedGroup', data);
+      if (sameGroup(data.groupId)) {
+        console.log('[socket] User joined:', data.message);
+        // Optimistically refresh members count without forcing modal
+        fetchGroupMembers({ openModal: false, silent: true });
+      }
+    };
+    const onUserLeft = (data) => {
+      console.log('[socket][on] userLeftGroup', data);
+      if (sameGroup(data.groupId)) {
+        console.log('[socket] User left:', data.message);
+        fetchGroupMembers({ openModal: false, silent: true });
+      }
+    };
+    socket.on('userJoinedGroup', onUserJoined);
+    socket.on('userLeftGroup', onUserLeft);
+
+    // Group membership and info management
+    const onMemberAdded = (member) => {
+      console.log('[socket][on] memberAdded', member);
+      if (sameGroup(member?.group_id || member?.groupId)) {
+        // Update list if visible; otherwise keep count fresh
+        setGroupMembers((prev) => {
+          // Avoid duplicates by id
+          const exists = prev.some(m => (m.id || m.user?.id) === (member.id || member.user?.id));
+          if (exists) return prev;
+          return [...prev, member];
+        });
+      }
+    };
+    const onMemberRemoved = (payload) => {
+      console.log('[socket][on] memberRemoved', payload);
+      if (sameGroup(payload?.groupId)) {
+        const removedId = payload?.userId;
+        setGroupMembers((prev) => prev.filter(m => (m.user?.id ?? m.id) !== removedId));
+      }
+    };
+    const onGroupInfoUpdated = (updated) => {
+      console.log('[socket][on] groupInfoUpdated', updated);
+      if (sameGroup(updated?.id)) {
+        setGroupInfo((prev) => ({ ...prev, ...updated }));
+      }
+    };
+    socket.on('memberAdded', onMemberAdded);
+    socket.on('memberRemoved', onMemberRemoved);
+    socket.on('groupInfoUpdated', onGroupInfoUpdated);
+
+    // Server error channel
+    const onServerError = (err) => {
+      console.warn('[socket][on] error', err);
+      if (!err) return;
+      
+      // Only show toast for critical errors, not authentication issues
+      // Authentication errors are handled by connect_error
+      if (err.message && !err.message.includes('Authentication error') && !err.message.includes('Invalid token')) {
+        try {
+          toast({
+            title: 'Socket error',
+            description: err.message || 'An error occurred',
+            variant: 'destructive'
+          });
+        } catch {}
+      }
+    };
+    socket.on('error', onServerError);
+
+    // Connection diagnostics to help identify realtime issues
+    const onConnectError = (err) => {
+      try {
+        console.warn('[socket] connect_error', err?.message || err);
+        // Only show toast for authentication errors, and only once
+        if (err?.message?.includes('Authentication error') && !socket._authErrorShown) {
+          socket._authErrorShown = true; // Prevent multiple toasts
+          toast({ 
+            title: 'Real-time features unavailable', 
+            description: 'Socket connection failed. Messages will still work normally.', 
+            variant: 'default' 
+          });
+        }
+      } catch {}
+    };
+    const onDisconnect = (reason) => {
+      try {
+        console.warn('[socket] disconnected', reason);
+      } catch {}
+    };
+    socket.on('connect_error', onConnectError);
+    socket.on('disconnect', onDisconnect);
+
+    return () => {
+      socket.emit('leaveGroup', { groupId, userId: uid });
+      socket.off('connect', onConnect);
+      socket.off('newGroupMessage', onNewMessage);
+      socket.off('userJoinedGroup', onUserJoined);
+      socket.off('userLeftGroup', onUserLeft);
+      socket.off('memberAdded', onMemberAdded);
+      socket.off('memberRemoved', onMemberRemoved);
+      socket.off('groupInfoUpdated', onGroupInfoUpdated);
+      socket.off('error', onServerError);
+      socket.off('connect_error', onConnectError);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, [groupId, currentUserId]);
 
   const loadMessages = async () => {
     try {
@@ -263,9 +417,25 @@ export function ChatPage() {
       pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-
+    
     try {
-      sendMessage({ content: toSend, senderId: currentUserId, type: 'TEXT' });
+      const socket = getSocket();
+      
+      // Only emit via socket if connected and authenticated, otherwise rely on REST API
+      if (socket.connected && !socket._authErrorShown) {
+        const payload = {
+          groupId, 
+          userId: currentUserId, 
+          content: toSend,
+          type: 'TEXT'
+        };
+        console.log('[socket][emit] sendGroupMessage', payload);
+        socket.emit('sendGroupMessage', payload);
+      } else {
+        console.warn('[socket] not connected or auth failed, using REST API only');
+      }
+
+      // Always call REST API as fallback/primary method
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
       if (m?.id) {
@@ -285,7 +455,14 @@ export function ChatPage() {
         }
       }
     } catch (e) {
+      console.error('Error sending message:', e);
+      // rollback optimistic update
       setMessages(prev => prev.filter(x => x.id !== tempId));
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setIsSending(false);
     }
@@ -298,6 +475,7 @@ export function ChatPage() {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
     try {
       await editGroupMessage(groupId, messageId, { content: newContent });
+      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
     } catch (e) {
       setMessages(snapshot);
     }
@@ -309,6 +487,7 @@ export function ChatPage() {
     setMessages(prev => prev.filter(m => m.id !== messageId));
     try {
       await deleteGroupMessage(groupId, messageId);
+      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
     } catch (e) {
       // restore on failure
       setMessages(snapshot);

@@ -25,10 +25,17 @@ export function getSocket() {
   if (!socket) {
     const token = getTokenFromStorage();
     console.log('token from localStorage', token);
+    
+    if (!token) {
+      console.warn('[socket] No token found, creating unauthenticated socket');
+    }
+    
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
-      auth: { token: token ? `Bearer ${token}` : undefined }
+      auth: { token: token || null },
+      timeout: 20000,
+      forceNew: true
     });
 
     // Helpful diagnostics in dev
@@ -40,99 +47,74 @@ export function getSocket() {
     });
     socket.on('connect_error', (err) => {
       console.warn('[socket] connect_error', err?.message || err);
+      // Don't show toast here as it's handled in ChatPage
     });
   }
   return socket;
 }
 
-// Allow updating token at runtime (e.g., after login/refresh)
 export function refreshSocketAuth(newToken) {
   localStorage.setItem('token', newToken || '');
   if (socket) {
     try {
-      socket.auth = { token: newToken ? `Bearer ${newToken}` : undefined };
+      socket.auth = { token: newToken || undefined };
       socket.connect();
     } catch {}
   }
 }
 
-export default getSocket;
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
 
-// ---- Helper APIs for group rooms and events ----
+export function reconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  return getSocket();
+}
 
+// Group room management
 export function joinGroupRoom(groupId) {
-  try {
-    const s = getSocket();
-    const payload = { groupId: String(groupId) };
-    // New API
-    s.emit('room:join', payload);
-    // Legacy aliases
-    s.emit('joinGroup', { groupId: String(groupId), userId: undefined });
-    s.emit('group:join', payload);
-  } catch {}
+  const s = getSocket();
+  if (s && groupId) {
+    s.emit('join_group_room', { groupId });
+    console.log('[socket] joined group room:', groupId);
+  }
 }
 
 export function leaveGroupRoom(groupId) {
-  try {
-    const s = getSocket();
-    const payload = { groupId: String(groupId) };
-    // New API
-    s.emit('room:leave', payload);
-    // Legacy aliases
-    s.emit('leaveGroup', { groupId: String(groupId), userId: undefined });
-    s.emit('group:leave', payload);
-  } catch {}
+  const s = getSocket();
+  if (s && groupId) {
+    s.emit('leave_group_room', { groupId });
+    console.log('[socket] left group room:', groupId);
+  }
 }
 
-// Chat: subscribe/unsubscribe
-export function onChatMessage(handler) {
+// Announcement functions
+export function onAnnouncementNew(callback) {
   const s = getSocket();
-  s.on('chat:message', handler);
-  // Legacy alias
-  s.on('newGroupMessage', handler);
+  if (s) {
+    s.on('announcement_new', callback);
+  }
 }
 
-export function offChatMessage(handler) {
+export function offAnnouncementNew(callback) {
   const s = getSocket();
-  s.off('chat:message', handler);
-  // Legacy alias
-  s.off('newGroupMessage', handler);
-}
-
-export function onChatTyping(handler) {
-  const s = getSocket();
-  s.on('chat:typing', handler);
-}
-
-export function offChatTyping(handler) {
-  const s = getSocket();
-  s.off('chat:typing', handler);
-}
-
-export function emitChatMessage(payload) {
-  const s = getSocket();
-  s.emit('chat:message', payload);
-  // Legacy alias
-  s.emit('sendGroupMessage', payload);
-}
-
-export function emitChatTyping(payload) {
-  const s = getSocket();
-  s.emit('chat:typing', payload);
-}
-
-// Announcements
-export function onAnnouncementNew(handler) {
-  const s = getSocket();
-  s.on('announcement:new', handler);
-}
-
-export function offAnnouncementNew(handler) {
-  const s = getSocket();
-  s.off('announcement:new', handler);
+  if (s) {
+    s.off('announcement_new', callback);
+  }
 }
 
 export function emitAnnouncementNew(payload) {
   const s = getSocket();
-  s.emit('announcement:new', payload);
+  if (s) {
+    s.emit('announcement_new', payload);
+  }
 }
+
+export default getSocket;
