@@ -1,26 +1,32 @@
 import { useEffect } from 'react';
-import {
-  getSocket,
-  joinGroupRoom,
-  leaveGroupRoom,
-  onAnnouncementNew,
-  offAnnouncementNew,
-  emitAnnouncementNew,
-} from '@/services/socketClient';
+import { getSocket } from '@/services/socketClient';
 
 export function useAnnouncementsSocket({ groupId, onNew }) {
   useEffect(() => {
     if (!groupId) return;
-    getSocket();
-    joinGroupRoom(groupId);
-    if (onNew) onAnnouncementNew(onNew);
+    
+    const socket = getSocket();
+    
+    // Join group room
+    socket.emit('joinGroup', { groupId, userId: 'current-user' });
+    
+    // Listen for new announcements
+    if (onNew) {
+      socket.on('groupAnnouncementCreated', onNew);
+    }
+    
     return () => {
-      if (onNew) offAnnouncementNew(onNew);
-      leaveGroupRoom(groupId);
+      if (onNew) {
+        socket.off('groupAnnouncementCreated', onNew);
+      }
+      socket.emit('leaveGroup', { groupId, userId: 'current-user' });
     };
-  }, [groupId]);
+  }, [groupId, onNew]);
 
-  const publishAnnouncement = (payload) => emitAnnouncementNew({ ...payload, groupId });
+  const publishAnnouncement = (payload) => {
+    const socket = getSocket();
+    socket.emit('createGroupAnnouncement', { ...payload, groupId });
+  };
 
   return { publishAnnouncement };
 }

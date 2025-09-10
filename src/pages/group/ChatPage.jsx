@@ -235,19 +235,8 @@ export function ChatPage() {
     // Server error channel
     const onServerError = (err) => {
       console.warn('[socket][on] error', err);
-      if (!err) return;
-      
-      // Only show toast for critical errors, not authentication issues
-      // Authentication errors are handled by connect_error
-      if (err.message && !err.message.includes('Authentication error') && !err.message.includes('Invalid token')) {
-        try {
-          toast({
-            title: 'Socket error',
-            description: err.message || 'An error occurred',
-            variant: 'destructive'
-          });
-        } catch {}
-      }
+      // Don't show any socket error toasts since messages work via REST API
+      // Just log for debugging
     };
     socket.on('error', onServerError);
 
@@ -458,11 +447,7 @@ export function ChatPage() {
       console.error('Error sending message:', e);
       // rollback optimistic update
       setMessages(prev => prev.filter(x => x.id !== tempId));
-      toast({
-        title: 'Error',
-        description: 'Failed to send message. Please try again.',
-        variant: 'destructive'
-      });
+      // No toast - just log the error
     } finally {
       setIsSending(false);
     }
