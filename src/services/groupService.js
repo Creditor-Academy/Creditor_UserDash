@@ -397,3 +397,14 @@ export const deleteGroupMember = async (groupId, memberId) => {
     throw error;
   }
 };
+
+// Leave group (current user leaves the group)
+export const leaveGroup = async (groupId) => {
+  try {
+    const response = await api.post(`/groups/${groupId}/leave`);
+    return response.data;
+  } catch (error) {
+    console.error('Error leaving group:', error);
+    throw error;
+  }
+};

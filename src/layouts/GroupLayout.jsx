@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getGroupById } from "@/services/groupService";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { createGroupPost, createAnnouncement, deleteGroupById, isUserGroupAdmin } from "@/services/groupService";
+import { createGroupPost, createAnnouncement, deleteGroupById, isUserGroupAdmin, leaveGroup } from "@/services/groupService";
 import GroupAdminModal from "@/components/modals/GroupAdminModal";
 
 export function GroupLayout() {
@@ -144,6 +144,23 @@ export function GroupLayout() {
                 {loading ? "Loading..." : groupName}
               </h1>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+              onClick={async () => {
+                if (!groupId) return;
+                try {
+                  await leaveGroup(groupId);
+                  toast.success('You left the group');
+                  window.location.href = '/dashboard/groups';
+                } catch (err) {
+                  toast.error(err?.response?.data?.message || 'Failed to leave group');
+                }
+              }}
+            >
+              Leave Group
+            </Button>
           </div>
         </div>
       </div>
