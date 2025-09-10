@@ -1,8 +1,13 @@
+// AI-powered course creation routes
 const express = require('express');
 const router = express.Router();
-const { ChatBytez } = require('langchain_bytez');
-const Course = require('../models/Course');
-const auth = require('../middleware/auth');
+const { LangChain } = require('langchain');
+const Bytez = require('bytez.js');
+
+// Initialize Bytez SDK
+const bytezSDK = new Bytez(process.env.BYTEZ_API_KEY);
+
+// AI Proxy Endpoints - Hide implementation from frontend
 
 // Initialize Bytez LangChain integration
 const bytezChat = new ChatBytez({

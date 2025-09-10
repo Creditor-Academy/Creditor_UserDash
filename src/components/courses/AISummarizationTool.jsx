@@ -16,7 +16,7 @@ import {
   File
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import bytezAPI from '../../services/bytezAPI';
+import aiProxyService from '../../services/aiProxyService';
 import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
 
 const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
@@ -94,7 +94,7 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
         contentLength: content.length
       });
       
-      const response = await bytezAPI.summarizeContent(content, {
+      const result = await aiProxyService.summarizeContent(content, {
         length: summaryLength,
         type: summaryType
       });
