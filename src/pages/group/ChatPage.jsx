@@ -410,8 +410,6 @@ export function ChatPage() {
       pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-    const toSend = newMessage;
-    setNewMessage("");
     
     try {
       const socket = getSocket();
@@ -452,12 +450,14 @@ export function ChatPage() {
     } catch (e) {
       console.error('Error sending message:', e);
       // rollback optimistic update
-      setMessages(prev => prev.filter(x => x.id !== optimistic.id));
+      setMessages(prev => prev.filter(x => x.id !== tempId));
       toast({
         title: 'Error',
         description: 'Failed to send message. Please try again.',
         variant: 'destructive'
       });
+    } finally {
+      setIsSending(false);
     }
   };
 
