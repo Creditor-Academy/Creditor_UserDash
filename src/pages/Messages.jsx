@@ -37,6 +37,7 @@ function Messages() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [messages, setMessages] = useState([]);
   const [roomId, setRoomId] = useState(null);
+  const [conversationId, setConversationId] = useState(null);
   const [newChatUsers, setNewChatUsers] = useState([]);
   const [newChatSearch, setNewChatSearch] = useState("");
   const fileInputRef = useRef(null);
@@ -62,43 +63,27 @@ function Messages() {
     // Optional: log to verify connection lifecycle specific to Messages
     const onConnect = () => console.log('[Messages] socket connected');
     const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
-    const onRoomIdForSender = (incomingRoomId) => {
-      setRoomId(incomingRoomId);
-      console.log('room id at sender side', incomingRoomId);
+    const onRoomIdForSender = ({ conversationid, roomId: serverRoomId, to }) => {
+      setRoomId(serverRoomId);
+      setConversationId(conversationid);
+      setSelectedFriend(String(to));
+      console.log('room id at sender side', serverRoomId);
+      // join room immediately
+      try {
+        // const s = getSocket();
+        // s.emit('joinRoom', serverRoomId);
+      } catch {}
       // After server creates/returns a room, refresh conversations from backend
       void (async () => {
         try {
           const convos = await getAllConversations();
-          const currentUserId = localStorage.getItem('userId');
-          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => {
-            let other = c.otherUser || c.recipient || c.user || c.partner || c.peer || null;
-            if (!other && Array.isArray(c.participants)) {
-              other = c.participants.find(p => String(p.id || p._id || p.user_id || p.userId) !== String(currentUserId)) || c.participants[0];
-            }
-            if (!other && Array.isArray(c.users)) {
-              other = c.users.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.users[0];
-            }
-            if (!other && Array.isArray(c.members)) {
-              other = c.members.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.members[0];
-            }
-            if (!other && c.sender && String(c.sender.id || c.sender._id) !== String(currentUserId)) other = c.sender;
-            if (!other && c.receiver && String(c.receiver.id || c.receiver._id) !== String(currentUserId)) other = c.receiver;
-            const fallbackOtherId = c.otherUserId || c.other_user_id || c.peerId || c.peer_id;
-            const fallbackName = c.otherUserName || c.other_user_name || c.peerName || c.title || c.name;
-            const fallbackAvatar = c.otherUserAvatar || c.other_user_avatar || c.peerAvatar || c.photo || c.avatar;
-            const otherId = (other && (other.id || other._id || other.user_id || other.userId)) || fallbackOtherId;
-            const first = other?.first_name || other?.firstName || '';
-            const last = other?.last_name || other?.lastName || '';
-            const otherName = `${(first || '').trim()} ${(last || '').trim()}`.trim() || other?.name || other?.email || fallbackName || 'User';
-            const lastMsg = c.lastMessage || c.last_message || c.latestMessage || c.latest_message || c.message;
-            const lastContent = (lastMsg && (lastMsg.content || lastMsg.text || lastMsg.body)) || '';
-            return otherId ? {
-              id: String(otherId),
-              name: otherName,
-              avatar: other?.image || other?.avatar || fallbackAvatar || '/placeholder.svg',
-              lastMessage: lastContent,
-            } : null;
-          }).filter(Boolean);
+          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
+            id: String(c.id),
+            name: c.title || 'User',
+            avatar: '/placeholder.svg',
+            lastMessage: c.lastMessage || '',
+            room: c.room,
+          }));
           setFriends(normalizedFriends);
           setConvosLoaded(true);
         } catch {}
@@ -106,12 +91,13 @@ function Messages() {
     };
 
     const onReceiveMessage = ({ from, message }) => {
-      console.log('Received message from:', from, 'message:', message);
+      const currentUserId = localStorage.getItem('userId');
+      const isSelf = String(from) === String(currentUserId);
       setMessages(prev => [
         ...prev,
         {
-          id: Date.now() + Math.random(), // Generate unique ID
-          senderId: from,
+          id: Date.now() + Math.random(),
+          senderId: isSelf ? 0 : String(from),
           text: message,
           timestamp: new Date().toLocaleTimeString([], { 
             hour: '2-digit', 
@@ -150,47 +136,15 @@ function Messages() {
           }));
           setFriends(idFriends);
         } else {
-        // Expected structure per conversation can vary; normalize to friend entry
-        const currentUserId = localStorage.getItem('userId');
-        const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => {
-          let other = null;
-          // common shapes
-          other = c.otherUser || c.recipient || c.user || c.partner || c.peer || null;
-          // participants array
-          if (!other && Array.isArray(c.participants)) {
-            other = c.participants.find(p => String(p.id || p._id || p.user_id || p.userId) !== String(currentUserId)) || c.participants[0];
-          }
-          // users/members arrays
-          if (!other && Array.isArray(c.users)) {
-            other = c.users.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.users[0];
-          }
-          if (!other && Array.isArray(c.members)) {
-            other = c.members.find(u => String(u.id || u._id || u.user_id || u.userId) !== String(currentUserId)) || c.members[0];
-          }
-
-          // fallback: maybe conversation has sender/receiver
-          if (!other && c.sender && String(c.sender.id || c.sender._id) !== String(currentUserId)) other = c.sender;
-          if (!other && c.receiver && String(c.receiver.id || c.receiver._id) !== String(currentUserId)) other = c.receiver;
-
-          // fallback: some APIs return flattened other user fields on conversation
-          const fallbackOtherId = c.otherUserId || c.other_user_id || c.peerId || c.peer_id;
-          const fallbackName = c.otherUserName || c.other_user_name || c.peerName || c.title || c.name;
-          const fallbackAvatar = c.otherUserAvatar || c.other_user_avatar || c.peerAvatar || c.photo || c.avatar;
-
-          const otherId = (other && (other.id || other._id || other.user_id || other.userId)) || fallbackOtherId;
-          const first = other?.first_name || other?.firstName || '';
-          const last = other?.last_name || other?.lastName || '';
-          const otherName = `${(first || '').trim()} ${(last || '').trim()}`.trim() || other?.name || other?.email || fallbackName || 'User';
-          const lastMsg = c.lastMessage || c.last_message || c.latestMessage || c.latest_message || c.message;
-          const lastContent = (lastMsg && (lastMsg.content || lastMsg.text || lastMsg.body)) || '';
-
-          return otherId ? {
-            id: String(otherId),
-            name: otherName,
-            avatar: other?.image || other?.avatar || fallbackAvatar || '/placeholder.svg',
-            lastMessage: lastContent,
-          } : null;
-        }).filter(Boolean);
+        // Normalize using backend contract (id, room, title)
+        const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
+          id: String(c.id),
+          name: c.title || 'User',
+          avatar: '/placeholder.svg',
+          lastMessage: c.lastMessage || '',
+          room: c.room,
+          conversationId: c.id,
+        }));
         setFriends(normalizedFriends);
         }
 
@@ -218,15 +172,17 @@ function Messages() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (newMessage.trim() && selectedFriend) {
-      // Emit socket event to send message to selected friend
-      try {
-        const socket = getSocket();
-        socket.emit("sendMessage", { room: selectedFriend, message: newMessage });
-        setNewMessage("");
-      } catch (error) {
-        console.warn('Messages: failed to send message', error);
-      }
+    if (!newMessage.trim()) return;
+    if (!roomId || !conversationId) {
+      console.warn('Messages: cannot send, missing roomId or conversationId');
+      return;
+    }
+    try {
+      const socket = getSocket();
+      socket.emit('sendMessage', { conversationid: conversationId, roomId, message: newMessage });
+      setNewMessage("");
+    } catch (error) {
+      console.warn('Messages: failed to send message', error);
     }
   };
 
@@ -369,8 +325,6 @@ function Messages() {
                               // Do not optimistically mutate list; rely on backend fetch
                               const socket = getSocket();
                               socket.emit("startConversation", { to: user.id });
-                              socket.emit("joinRoom", user.id);
-                              setSelectedFriend(user.id);
                             }}
                           >
                             <Avatar className="h-8 w-8">
@@ -402,10 +356,13 @@ function Messages() {
                 <div
                   key={friend.id}
                   onClick={() => {
-                    // Emit socket event when conversation is clicked and rely on backend fetch
+                    // Open existing conversation: join its room and set IDs
                     const socket = getSocket();
-                    console.log('friend', friend);
-                    socket.emit("joinRoom", friend.id);
+                    if (friend.room) {
+                      setRoomId(friend.room);
+                      setConversationId(friend.conversationId || friend.id);
+                      socket.emit('joinRoom', friend.room);
+                    }
                     setSelectedFriend(friend.id);
                   }}
                   className={`p-4 flex items-center gap-3 hover:bg-accent cursor-pointer transition-colors border-b ${
