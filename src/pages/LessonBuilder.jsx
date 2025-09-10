@@ -1122,6 +1122,175 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
    
     if (!block) return;
+
+    // Enhanced quote block detection - check content structure and HTML patterns
+    const isQuoteBlock = block.type === 'quote' || 
+                        (block.textType && block.textType.startsWith('quote_')) ||
+                        (block.details?.quote_type) ||
+                        // Check if content has quote structure (JSON with quote/author)
+                        (() => {
+                          try {
+                            const content = JSON.parse(block.content || '{}');
+                            return content.quote && content.author;
+                          } catch {
+                            return false;
+                          }
+                        })() ||
+                        // Check HTML patterns for quote blocks
+                        (block.html_css && (
+                          block.html_css.includes('quote-carousel') ||
+                          block.html_css.includes('carousel-dot') ||
+                          block.html_css.includes('blockquote') ||
+                          block.html_css.includes('<cite') ||
+                          block.html_css.includes('background-image:') && block.html_css.includes('bg-gradient-to-t from-black') ||
+                          block.html_css.includes('flex items-center space-x-8') && block.html_css.includes('rounded-full object-cover') ||
+                          block.html_css.includes('text-left max-w-3xl') && block.html_css.includes('bg-gradient-to-br from-slate-50') ||
+                          block.html_css.includes('text-3xl md:text-4xl') && block.html_css.includes('font-thin') ||
+                          block.html_css.includes('bg-gradient-to-br from-gray-50') && block.html_css.includes('backdrop-blur-sm')
+                        ));
+
+    if (isQuoteBlock) {
+      // Handle quote block editing with proper type detection
+      // For fetched content, detect quoteType from HTML content if not available
+      let quoteType = block.textType || block.details?.quote_type || block.details?.quoteType;
+      
+      // Override block type to ensure it's treated as a quote
+      block = { ...block, type: 'quote' };
+      
+      // If quoteType is not available, detect it from HTML content with improved patterns
+      if (!quoteType && block.html_css) {
+        const htmlContent = block.html_css;
+        
+        // Quote Carousel - has carousel controls and multiple quotes
+        if (htmlContent.includes('quote-carousel') || 
+            htmlContent.includes('carousel-dot') || 
+            htmlContent.includes('carousel-prev') || 
+            htmlContent.includes('carousel-next')) {
+          quoteType = 'quote_carousel';
+        }
+        // Quote on Image - has background image with overlay
+        else if (htmlContent.includes('background-image:') || 
+                 (htmlContent.includes('bg-gradient-to-t from-black') && htmlContent.includes('absolute inset-0'))) {
+          quoteType = 'quote_on_image';
+        }
+        // Quote C - has author image with horizontal layout
+        else if (htmlContent.includes('flex items-center space-x-8') || 
+                 (htmlContent.includes('rounded-full object-cover') && htmlContent.includes('w-16 h-16'))) {
+          quoteType = 'quote_c';
+        }
+        // Quote D - has specific styling with slate background
+        else if (htmlContent.includes('text-left max-w-3xl') || 
+                 htmlContent.includes('bg-gradient-to-br from-slate-50')) {
+          quoteType = 'quote_d';
+        }
+        // Quote B - has large text and thin font
+        else if (htmlContent.includes('text-3xl md:text-4xl') || 
+                 htmlContent.includes('font-thin') || 
+                 htmlContent.includes('text-center bg-gray-50')) {
+          quoteType = 'quote_b';
+        }
+        // Quote A - default style with author image on left
+        else if (htmlContent.includes('flex items-start space-x-4') || 
+                 htmlContent.includes('w-12 h-12 rounded-full') || 
+                 htmlContent.includes('bg-gradient-to-br from-gray-50')) {
+          quoteType = 'quote_a';
+        }
+        // Additional fallback detection based on structure
+        else if (htmlContent.includes('blockquote') && htmlContent.includes('cite')) {
+          // Try to detect based on layout structure
+          if (htmlContent.includes('text-center')) {
+            quoteType = 'quote_b';
+          } else if (htmlContent.includes('space-x-4')) {
+            quoteType = 'quote_a';
+          } else {
+            quoteType = 'quote_a'; // default fallback
+          }
+        } else {
+          quoteType = 'quote_a'; // fallback
+        }
+      } else if (!quoteType) {
+        quoteType = 'quote_a'; // fallback
+      }
+      
+      // Debug logging to verify quote type detection
+      console.log('Quote block detected:', {
+        originalType: block.type,
+        originalTextType: block.textType,
+        detectedQuoteType: quoteType,
+        hasHtmlCss: !!block.html_css,
+        blockContent: block.content,
+        htmlPreview: block.html_css ? block.html_css.substring(0, 200) + '...' : 'No HTML'
+      });
+      
+      // Parse and prepare quote content for the editor
+      let quoteContent = {};
+      try {
+        if (block.content) {
+          quoteContent = JSON.parse(block.content);
+        }
+      } catch (e) {
+        console.log('Could not parse quote content as JSON, extracting from HTML');
+        // Extract quote and author from HTML if JSON parsing fails
+        if (block.html_css) {
+          const htmlContent = block.html_css;
+          
+          // Extract quote text
+          const quoteMatch = htmlContent.match(/<blockquote[^>]*>(.*?)<\/blockquote>/s);
+          const quoteText = quoteMatch ? quoteMatch[1].replace(/"/g, '').trim() : '';
+          
+          // Extract author
+          const authorMatch = htmlContent.match(/<cite[^>]*>.*?—\s*(.*?)<\/cite>/s);
+          const authorText = authorMatch ? authorMatch[1].trim() : '';
+          
+          // Extract author image
+          const imgMatch = htmlContent.match(/<img[^>]*src="([^"]*)"[^>]*alt="[^"]*"[^>]*class="[^"]*rounded-full[^"]*"/);
+          const authorImage = imgMatch ? imgMatch[1] : '';
+          
+          // Extract background image
+          const bgMatch = htmlContent.match(/background-image:\s*url\(['"]([^'"]*)['"]\)/);
+          const backgroundImage = bgMatch ? bgMatch[1] : '';
+          
+          quoteContent = {
+            quote: quoteText,
+            author: authorText,
+            authorImage: authorImage,
+            backgroundImage: backgroundImage
+          };
+        } else {
+          quoteContent = {
+            quote: block.content || '',
+            author: '',
+            authorImage: '',
+            backgroundImage: ''
+          };
+        }
+      }
+      
+      // Set the textType to ensure proper editor opens
+      const blockWithType = { 
+        ...block, 
+        type: 'quote', 
+        textType: quoteType,
+        quoteType: quoteType,
+        content: JSON.stringify(quoteContent)
+      };
+      setEditingQuoteBlock(blockWithType);
+      
+      // For quote carousel, initialize carousel state
+      if (quoteType === 'quote_carousel') {
+        try {
+          if (quoteContent.quotes && Array.isArray(quoteContent.quotes)) {
+            quoteComponentRef.current?.setCarouselQuotes(quoteContent.quotes);
+            quoteComponentRef.current?.setActiveCarouselTab(0);
+          }
+        } catch (e) {
+          console.error('Error setting carousel content:', e);
+        }
+      }
+      
+      setShowQuoteEditDialog(true);
+      return;
+    }
    
     if (block.type === 'statement') {
       // Handle statement editing with the StatementComponent
@@ -1179,24 +1348,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         setEditorContent(block.content || '');
         setEditorHtml(block.content || '');
       }
-    } else if (block.type === 'quote') {
-      // Handle quote block editing
-      setEditingQuoteBlock(block);
-      
-      // For quote carousel, initialize carousel state
-      if (block.textType === 'quote_carousel') {
-        try {
-          const content = JSON.parse(block.content);
-          if (content.quotes && Array.isArray(content.quotes)) {
-            quoteComponentRef.current?.setCarouselQuotes(content.quotes);
-            quoteComponentRef.current?.setActiveCarouselTab(0);
-          }
-        } catch (e) {
-          console.error('Error parsing carousel content:', e);
-        }
-      }
-      
-      setShowQuoteEditDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -1693,6 +1844,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             };
           }
           
+          // For quote blocks, include explicit quote type metadata
+          if (block.type === 'quote') {
+            blockData.quoteType = block.textType || block.quoteType || 'quote_a';
+            blockData.details = {
+              ...blockData.details,
+              quote_type: block.textType || block.quoteType || 'quote_a',
+              content: block.content || ''
+            };
+          }
+          
           return blockData;
         }
 
@@ -1707,6 +1868,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         const textType = block.textType;
 
         switch (blockType) {
+          case 'quote':
+            // For quote blocks, include explicit quote type metadata
+            details = {
+              quote_type: block.textType || block.quoteType || 'quote_a',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+            
           case 'text':
             // Handle different text types
             if (textType === 'heading') {
@@ -4496,12 +4666,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                 size="icon"
                                 className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
                                 onClick={() => {
-                                  if (block.type === 'text') {
-                                    handleTextEditorOpen(block);
-                                  } else if (block.type === 'image' && block.layout) {
+                                  // Always use handleEditBlock for proper type detection
+                                  if (block.type === 'image' && block.layout) {
                                     toggleImageBlockEditing(block.id);
-                                  } else if (block.type === 'pdf') {
-                                    handleEditBlock(block.id);
                                   } else {
                                     handleEditBlock(block.id);
                                   }
