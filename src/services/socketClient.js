@@ -1,5 +1,4 @@
 import { io } from 'socket.io-client';
-import { getAccessToken } from './tokenService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
 
@@ -13,14 +12,9 @@ function deriveSocketOrigin(base) {
   }
 }
 
-// Function to get access token from the same source as API client
+// Function to get token from localStorage
 function getTokenFromStorage() {
-  try {
-    const token = getAccessToken && getAccessToken();
-    return token || localStorage.getItem('token');
-  } catch {
-    return localStorage.getItem('token');
-  }
+  return localStorage.getItem('token');
 }
 
 const socketOrigin = deriveSocketOrigin(API_BASE);
@@ -30,18 +24,21 @@ let socket;
 export function getSocket() {
   if (!socket) {
     const token = getTokenFromStorage();
-    console.log('[socket] using access token?', Boolean(token));
+    console.log('token from localStorage', token);
+    
+    if (!token) {
+      console.warn('[socket] No token found, creating unauthenticated socket');
+    }
+    
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
-      // Send both variants for compatibility: token and authorization
-      auth: {
-        token: token ? `Bearer ${token}` : undefined,
-        authorization: token ? `Bearer ${token}` : undefined,
-      }
+      auth: { token: token || null },
+      timeout: 20000,
+      forceNew: true
     });
 
-    // Helpful diagnostics in dev (no duplicates)
+    // Helpful diagnostics in dev
     socket.on('connect', () => {
       console.log('[socket] connected', socket.id);
     });
@@ -50,22 +47,35 @@ export function getSocket() {
     });
     socket.on('connect_error', (err) => {
       console.warn('[socket] connect_error', err?.message || err);
+      // Don't show toast here as it's handled in ChatPage
     });
   }
   return socket;
 }
 
-// Allow updating token at runtime (e.g., after login/refresh)
 export function refreshSocketAuth(newToken) {
+  localStorage.setItem('token', newToken || '');
   if (socket) {
     try {
-      socket.auth = {
-        token: newToken ? `Bearer ${newToken}` : undefined,
-        authorization: newToken ? `Bearer ${newToken}` : undefined,
-      };
+      socket.auth = { token: newToken || undefined };
       socket.connect();
     } catch {}
   }
+}
+
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
+
+export function reconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  return getSocket();
 }
 
 export default getSocket;

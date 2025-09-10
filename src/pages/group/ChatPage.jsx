@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
 import { professionalAvatars } from "@/lib/avatar-utils";
-import getSocket from "@/services/socketClient";
+import getSocket, { reconnectSocket } from "@/services/socketClient";
 
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
@@ -111,13 +111,28 @@ export function ChatPage() {
     // Realtime: join group room
     const socket = getSocket();
     const uid = currentUserId;
-    // Ensure we always join the latest room
-    console.log('[socket][emit] joinGroup', { groupId, userId: uid });
-    socket.emit('joinGroup', { groupId, userId: uid });
-    // also listen for acks if backend sends any (no-op if not)
-    socket.once && socket.once('joinedGroup', () => {
-      console.log('[socket] joined group', groupId);
-    });
+    
+    // Wait for socket to be connected before joining
+    const joinGroupWhenReady = () => {
+      if (socket.connected) {
+        console.log('[socket][emit] joinGroup', { groupId, userId: uid });
+        socket.emit('joinGroup', { groupId, userId: uid });
+      } else {
+        // Wait for connection, but with timeout
+        const connectTimeout = setTimeout(() => {
+          console.warn('[socket] Connection timeout, skipping group join');
+        }, 5000);
+        
+        socket.once('connect', () => {
+          clearTimeout(connectTimeout);
+          console.log('[socket][emit] joinGroup', { groupId, userId: uid });
+          socket.emit('joinGroup', { groupId, userId: uid });
+        });
+      }
+    };
+
+    // Initial join attempt
+    joinGroupWhenReady();
 
     // Re-join on reconnect to handle network hiccups
     const onConnect = () => {
@@ -127,10 +142,12 @@ export function ChatPage() {
     socket.on('connect', onConnect);
 
     const sameGroup = (gid) => String(gid) === String(groupId);
+    
+    // Handle new group messages
     const onNewMessage = (payload) => {
       console.log('[socket][on] newGroupMessage', payload);
       // Backend sends message with group_id field
-      const inThisGroup = sameGroup(payload?.group_id ?? payload?.groupId);
+      const inThisGroup = sameGroup(payload?.group_id);
       if (inThisGroup) {
         setMessages(prev => {
           // If message already exists by id, skip
@@ -138,16 +155,16 @@ export function ChatPage() {
 
           const normalized = {
             id: payload.id,
-            senderId: payload.sender_id ?? payload.senderId,
+            senderId: payload.sender_id,
             senderName: payload.sender?.first_name || 'Member',
             senderAvatar: payload.sender?.image || '',
             content: payload.content,
             timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type || payload.mimeType ? 'file' : 'text'),
+            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
           };
 
           // Try to replace a matching optimistic message (same sender and content)
-          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === (payload.sender_id ?? payload.senderId) && m.content === payload.content);
+          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === payload.sender_id && m.content === payload.content);
           if (idx !== -1) {
             const clone = [...prev];
             clone[idx] = normalized;
@@ -212,13 +229,18 @@ export function ChatPage() {
     const onServerError = (err) => {
       console.warn('[socket][on] error', err);
       if (!err) return;
-      try {
-        toast({
-          title: 'Socket error',
-          description: err.message || 'An error occurred',
-          variant: 'destructive'
-        });
-      } catch {}
+      
+      // Only show toast for critical errors, not authentication issues
+      // Authentication errors are handled by connect_error
+      if (err.message && !err.message.includes('Authentication error') && !err.message.includes('Invalid token')) {
+        try {
+          toast({
+            title: 'Socket error',
+            description: err.message || 'An error occurred',
+            variant: 'destructive'
+          });
+        } catch {}
+      }
     };
     socket.on('error', onServerError);
 
@@ -226,7 +248,15 @@ export function ChatPage() {
     const onConnectError = (err) => {
       try {
         console.warn('[socket] connect_error', err?.message || err);
-        toast({ title: 'Connection issue', description: err?.message || 'Failed to connect to realtime server', variant: 'destructive' });
+        // Only show toast for authentication errors, and only once
+        if (err?.message?.includes('Authentication error') && !socket._authErrorShown) {
+          socket._authErrorShown = true; // Prevent multiple toasts
+          toast({ 
+            title: 'Real-time features unavailable', 
+            description: 'Socket connection failed. Messages will still work normally.', 
+            variant: 'default' 
+          });
+        }
       } catch {}
     };
     const onDisconnect = (reason) => {
@@ -373,20 +403,25 @@ export function ChatPage() {
     setMessages(prev => [...prev, optimistic]);
     const toSend = newMessage;
     setNewMessage("");
+    
     try {
-      // emit over socket to let backend broadcast; also call REST as fallback
       const socket = getSocket();
-      const payload = {
-        groupId,
-        group_id: groupId,
-        userId: currentUserId,
-        sender_id: currentUserId,
-        content: toSend,
-        type: 'TEXT'
-      };
-      console.log('[socket][emit] sendGroupMessage', payload);
-      socket.emit('sendGroupMessage', payload);
+      
+      // Only emit via socket if connected and authenticated, otherwise rely on REST API
+      if (socket.connected && !socket._authErrorShown) {
+        const payload = {
+          groupId, 
+          userId: currentUserId, 
+          content: toSend,
+          type: 'TEXT'
+        };
+        console.log('[socket][emit] sendGroupMessage', payload);
+        socket.emit('sendGroupMessage', payload);
+      } else {
+        console.warn('[socket] not connected or auth failed, using REST API only');
+      }
 
+      // Always call REST API as fallback/primary method
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
       if (m?.id) {
@@ -401,8 +436,14 @@ export function ChatPage() {
         } : x));
       }
     } catch (e) {
-      // rollback
+      console.error('Error sending message:', e);
+      // rollback optimistic update
       setMessages(prev => prev.filter(x => x.id !== optimistic.id));
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
