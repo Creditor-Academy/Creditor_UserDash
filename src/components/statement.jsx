@@ -139,73 +139,103 @@ const StatementComponent = React.forwardRef(({
     
     if (statementType.id === 'statement-a') {
       htmlContent = `
-        <div class="border-t border-b border-gray-800 py-8 px-6">
-          <p class="text-gray-900 text-2xl leading-relaxed text-center font-bold">
-            ${statementType.defaultContent}
-          </p>
-        </div>
-      `;
-    } else if (statementType.id === 'statement-b') {
-      htmlContent = `
-        <div class="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm">
-          <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
-          <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
-          <p class="text-gray-800 text-3xl leading-relaxed text-center font-light">
-            ${statementType.defaultContent}
-          </p>
-        </div>
-      `;
-    } else if (statementType.id === 'statement-c') {
-      htmlContent = `
-        <div class="bg-gray-100 py-8 px-6">
-          <p class="text-gray-700 text-xl leading-relaxed">
-            ${statementType.defaultContent}
-          </p>
-        </div>
-      `;
-    } else if (statementType.id === 'statement-d') {
-      htmlContent = `
-        <div class="relative bg-white py-6 px-6">
-          <div class="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
-          <p class="text-gray-900 text-lg leading-relaxed font-bold">
-            ${statementType.defaultContent}
-          </p>
-        </div>
-      `;
-    } else if (statementType.id === 'statement-e') {
-      htmlContent = `
-        <div class="border border-orange-300 bg-white p-4 rounded">
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="flex-1">
-              <p class="text-gray-800 text-base leading-relaxed">
+        <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <div class="border-t border-b border-gray-800 py-8 px-6">
+              <p class="text-gray-900 text-2xl leading-relaxed text-center font-bold">
                 ${statementType.defaultContent}
               </p>
             </div>
           </div>
         </div>
       `;
-    } else if (statementType.id === 'note') {
+    } else if (statementType.id === 'statement-b') {
       htmlContent = `
-        <div class="border border-orange-300 bg-orange-50 p-4 rounded">
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="flex-1">
-              <p class="text-gray-800 text-sm leading-relaxed">
+        <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <div class="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm rounded-lg">
+              <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+              <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+              <p class="text-gray-800 text-3xl leading-relaxed text-center font-light">
                 ${statementType.defaultContent}
               </p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (statementType.id === 'statement-c') {
+      htmlContent = `
+        <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500 rounded-lg">
+              <p class="text-gray-700 text-xl leading-relaxed">
+                ${statementType.defaultContent}
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (statementType.id === 'statement-d') {
+      htmlContent = `
+        <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <div class="relative bg-white py-6 px-6 border rounded-lg">
+              <div class="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
+              <p class="text-gray-900 text-lg leading-relaxed font-bold">
+                ${statementType.defaultContent}
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (statementType.id === 'statement-e') {
+      htmlContent = `
+        <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <div class="border border-orange-300 bg-white p-4 rounded">
+              <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0 mt-1">
+                  <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                    <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <p class="text-gray-800 text-base leading-relaxed">
+                    ${statementType.defaultContent}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (statementType.id === 'note') {
+      htmlContent = `
+        <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+          <div class="pl-4">
+            <div class="border border-orange-300 bg-orange-50 p-4 rounded">
+              <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0 mt-1">
+                  <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                    <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <p class="text-gray-800 text-sm leading-relaxed">
+                    ${statementType.defaultContent}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -362,54 +392,79 @@ const StatementComponent = React.forwardRef(({
       
       if (currentStatementType === 'statement-a') {
         htmlContent = `
-          <div class="border-t border-b border-gray-800 py-8 px-6">
-            <p class="text-gray-900 text-2xl leading-relaxed text-center font-bold">
-              ${statementContent}
-            </p>
+          <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+            <div class="pl-4">
+              <div class="border-t border-b border-gray-800 py-8 px-6">
+                <p class="text-gray-900 text-2xl leading-relaxed text-center font-bold">
+                  ${statementContent}
+                </p>
+              </div>
+            </div>
           </div>
         `;
       } else if (currentStatementType === 'statement-b') {
         htmlContent = `
-          <div class="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm">
-            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
-            <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
-            <p class="text-gray-800 text-3xl leading-relaxed text-center font-light">
-              ${statementContent}
-            </p>
+          <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+            <div class="pl-4">
+              <div class="relative pt-8 pb-8 px-6 bg-gradient-to-br from-gray-50 to-white shadow-sm rounded-lg">
+                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+                <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full"></div>
+                <p class="text-gray-800 text-3xl leading-relaxed text-center font-light">
+                  ${statementContent}
+                </p>
+              </div>
+            </div>
           </div>
         `;
       } else if (currentStatementType === 'statement-c') {
         htmlContent = `
-          <div class="bg-gray-100 py-8 px-6">
-            <p class="text-gray-700 text-xl leading-relaxed">
-              ${statementContent}
-            </p>
+          <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+            <div class="pl-4">
+              <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500 rounded-lg">
+                <p class="text-gray-700 text-xl leading-relaxed">
+                  ${statementContent}
+                </p>
+              </div>
+            </div>
           </div>
         `;
       } else if (currentStatementType === 'statement-d') {
         htmlContent = `
-          <div class="relative bg-white py-6 px-6">
-            <div class="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
-            <p class="text-gray-900 text-lg leading-relaxed font-bold">
-              ${statementContent}
-            </p>
+          <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+            <div class="pl-4">
+              <div class="relative bg-white py-6 px-6 border rounded-lg">
+                <div class="absolute top-0 left-0 w-16 h-1 bg-orange-500"></div>
+                <p class="text-gray-900 text-lg leading-relaxed font-bold">
+                  ${statementContent}
+                </p>
+              </div>
+            </div>
           </div>
         `;
       } else if (currentStatementType === 'note') {
         htmlContent = `
-          <div class="border border-orange-300 bg-orange-50 p-4 rounded">
-            <div class="flex items-start space-x-3">
-              <div class="flex-shrink-0 mt-1">
-                <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                  <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
+          <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+            <div class="pl-4">
+              <div class="border border-orange-300 bg-orange-50 p-4 rounded">
+                <div class="flex items-start space-x-3">
+                  <div class="flex-shrink-0 mt-1">
+                    <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                      <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-gray-800 text-sm leading-relaxed">
+                      ${statementContent}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div class="flex-1">
-                <p class="text-gray-800 text-sm leading-relaxed">
-                  ${statementContent}
-                </p>
               </div>
             </div>
           </div>
@@ -431,7 +486,7 @@ const StatementComponent = React.forwardRef(({
     <>
       {/* Statement Type Sidebar */}
       {showStatementSidebar && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[9999] flex">
           <div className="w-[480px] bg-white shadow-2xl animate-slide-in-left">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">

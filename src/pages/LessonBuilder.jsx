@@ -775,30 +775,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const handleStatementSelect = (statementBlock) => {
-    let blocksToUpdate = [];
-      
-    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-      // For existing lessons, use lessonContent which contains the updated content
-      blocksToUpdate = lessonContent.data.content;
-        
-      // Add any new blocks from contentBlocks that aren't in lessonContent
-      const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
-      const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-      blocksToUpdate = [...blocksToUpdate, ...newBlocks];
-    }
-    // If we have existing lesson content, add to that structure
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, statementBlock]
-        }
-      }));
-    } else {
-      // For new lessons, add to contentBlocks
-      setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
-    }
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
   };
 
   const handleStatementEdit = (blockId, content, htmlContent) => {
@@ -3778,12 +3756,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           <div className="mb-8">
                                             {block.html_css ? (
                                               <div
-                                                className="prose prose-xl max-w-none"
+                                                className="max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.html_css }}
                                               />
                                             ) : (
                                               <div
-                                                className="prose prose-xl max-w-none"
+                                                className="max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.content }}
                                               />
                                             )}
@@ -4443,6 +4421,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           <div className="p-6">
                             {block.type === 'text' && (
                               <div className="mb-8">
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                            {block.type === 'statement' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">Statement</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Statement
+                                  </Badge>
+                                </div>
+                                
                                 {block.html_css ? (
                                   <div
                                     className="max-w-none text-gray-800 leading-relaxed"
