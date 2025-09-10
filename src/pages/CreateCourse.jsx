@@ -8,6 +8,9 @@ import CourseUsersModal from "../components/courses/CourseUsersModal";
 import CourseModulesSection from "../components/courses/CourseModulesSection";
 import ConfirmationDialog from "../components/ui/ConfirmationDialog";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
+import CreateCourseOptions from "../components/courses/CreateCourseOptions";
+import AIAssistedCourseModal from "../components/courses/AIAssistedCourseModal";
+import AICourseSuccessModal from "../components/courses/AICourseSuccessModal";
 
 const CreateCourse = ({ onCourseCreated }) => {
   const {
@@ -33,12 +36,16 @@ const CreateCourse = ({ onCourseCreated }) => {
   } = useCourseManagement();
 
   // Modal states
+  const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [showAISuccessModal, setShowAISuccessModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
   const [showCreateModuleDialog, setShowCreateModuleDialog] = useState(false);
+  const [createdAICourse, setCreatedAICourse] = useState(null);
   
   // Selected items
   const [selectedCourseForEdit, setSelectedCourseForEdit] = useState(null);
@@ -51,6 +58,24 @@ const CreateCourse = ({ onCourseCreated }) => {
 
   // API response state
   const [apiResponse, setApiResponse] = useState(null);
+
+  // Handle create course option selection
+  const handleCreateOptionSelect = (option) => {
+    setShowCreateOptions(false);
+    if (option === 'ai') {
+      setShowAIModal(true);
+    } else {
+      setShowCreateModal(true);
+    }
+  };
+
+  const handleAICourseCreated = (courseData) => {
+    // Refresh the courses list to show the new AI-generated course
+    handleCourseCreated(courseData);
+    setCreatedAICourse(courseData);
+    setShowAIModal(false);
+    setShowAISuccessModal(true);
+  };
 
   // Handle course edit
   const handleEditClick = (course) => {
@@ -175,7 +200,7 @@ const CreateCourse = ({ onCourseCreated }) => {
           <p className="text-gray-600 mt-1">Create and manage your courses</p>
         </div>
         <button
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => setShowCreateOptions(true)}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -232,31 +257,43 @@ const CreateCourse = ({ onCourseCreated }) => {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
-              <button
-                onClick={() => setPage(page - 1)}
-                disabled={!hasPrev}
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={!hasPrev}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
+          >
+            Previous
+          </button>
           <span className="px-3 py-2 text-sm text-gray-700">
             Page {page + 1} of {totalPages}
           </span>
-              <button
-                onClick={() => setPage(page + 1)}
-                disabled={!hasNext}
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={!hasNext}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
+          >
+            Next
+          </button>
+        </div>
       )}
 
       {/* Modals */}
+      <CreateCourseOptions
+        isOpen={showCreateOptions}
+        onClose={() => setShowCreateOptions(false)}
+        onSelectOption={handleCreateOptionSelect}
+      />
+
       <CreateCourseModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCourseCreated={handleCourseCreated}
+      />
+
+      <AIAssistedCourseModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onCourseCreated={handleAICourseCreated}
       />
 
       <EditCourseModal
@@ -301,6 +338,16 @@ const CreateCourse = ({ onCourseCreated }) => {
         message={`Are you sure you want to delete the course "${courseToDelete?.title}"? This action cannot be undone.`}
         confirmText="Delete Course"
         type="danger"
+      />
+
+      <AICourseSuccessModal
+        isOpen={showAISuccessModal}
+        onClose={() => setShowAISuccessModal(false)}
+        courseData={createdAICourse}
+        onViewCourse={(course) => {
+          // Navigate to course view or expand course modules
+          handleViewModules(course.id);
+        }}
       />
     </div>
   );
