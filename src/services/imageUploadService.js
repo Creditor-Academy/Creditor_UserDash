@@ -1,7 +1,8 @@
 // Image Upload Service for handling image uploads to the resource API
 import api from './apiClient';
 
-const RESOURCE_UPLOAD_API = 'https://sharebackend-sdkp.onrender.com/api/resource/upload-resource';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const RESOURCE_UPLOAD_API = `${API_BASE}/api/resource/upload-resource`;
 
 /**
  * Upload an image file to the resource API
