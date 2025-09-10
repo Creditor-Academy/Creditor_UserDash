@@ -307,6 +307,10 @@ export function NewsPage() {
         }
         const comment = payload.comment || payload;
         const commentUserId = comment.user_id || comment.userId || (comment.user && (comment.user.id || comment.user.user_id || comment.user._id));
+        
+        // Skip if this is our own comment (prevent duplicates from optimistic updates)
+        if (commentUserId === userProfile?.id) return;
+        
         const dirUserRaw = (commentUserId !== undefined && commentUserId !== null) ? userDirectory[String(commentUserId)] : undefined;
         const dirUser = dirUserRaw && (dirUserRaw.user ? dirUserRaw.user : dirUserRaw);
         const first = (comment.user && (comment.user.first_name || comment.user.firstName)) || (dirUser && (dirUser.first_name || dirUser.firstName)) || "";
@@ -326,6 +330,9 @@ export function NewsPage() {
 
         setPosts(prev => prev.map(p => {
           if (String(p.id) !== String(pid)) return p;
+          // Check if comment already exists to prevent duplicates
+          const commentExists = p.comments.some(c => c.id === newComment.id || (c.userId === newComment.userId && c.content === newComment.content));
+          if (commentExists) return p;
           return { ...p, comments: [...p.comments, newComment] };
         }));
       };
@@ -430,20 +437,13 @@ export function NewsPage() {
       setCommentSending((prev) => ({ ...prev, [postId]: true }));
       const payload = { content: newCommentContents[postId].trim() };
       
-      // Emit socket event for real-time updates
-      const socket = getSocket();
-      socket.emit('addComment', { 
-        postId, 
-        userId: userProfile?.id, 
-        content: payload.content,
-        groupId 
-      });
-      
       const res = await addComment(postId, payload);
       const created = res?.data || res; // backend returns {code,data,...}
       const createdCommentId = created?.id || Date.now();
       const createdAt = created?.createdAt ? new Date(created.createdAt).toLocaleString() : "Just now";
       const displayName = [userProfile?.first_name, userProfile?.last_name].filter(Boolean).join(" ") || userProfile?.name || "You";
+      
+      // Add comment optimistically - socket will handle real-time updates for other users
       setPosts(posts.map(post => {
         if (post.id === postId) {
           return {
@@ -452,6 +452,7 @@ export function NewsPage() {
               ...post.comments,
               {
                 id: createdCommentId,
+                userId: userProfile?.id,
                 author: { name: displayName, avatar: userProfile?.image || "" },
                 content: payload.content,
                 timestamp: createdAt
@@ -461,6 +462,7 @@ export function NewsPage() {
         }
         return post;
       }));
+      
       setNewCommentContents({ ...newCommentContents, [postId]: "" });
       setShowCommentFields({ ...showCommentFields, [postId]: false });
       setHighlightComment((prev) => ({ ...prev, [createdCommentId]: true }));
@@ -763,18 +765,22 @@ export function NewsPage() {
                                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
                                 </button>
                               )}
-                              {((userProfile?.role === 'ADMIN') || (userProfile?.id === (comment.userId || comment.user_id))) && (
+                              {(isGroupAdmin || (userProfile?.id === (comment.userId || comment.user_id))) && (
                                 <button
                                   className="p-1 hover:text-red-700"
                                   onClick={async () => {
                                     try {
                                       await deleteComment(comment.id);
-                                    } catch {}
-                                    setPosts(prev => prev.map(p => p.id === post.id ? ({...p, comments: p.comments.filter(c => c.id !== comment.id)}) : p));
-                                    setInfoModalMessage("Comment deleted successfully");
-                                    setInfoModalOpen(true);
+                                      setPosts(prev => prev.map(p => p.id === post.id ? ({...p, comments: p.comments.filter(c => c.id !== comment.id)}) : p));
+                                      setInfoModalMessage("Comment deleted successfully");
+                                      setInfoModalOpen(true);
+                                    } catch (error) {
+                                      console.error("Error deleting comment:", error);
+                                      setInfoModalMessage("Failed to delete comment");
+                                      setInfoModalOpen(true);
+                                    }
                                   }}
-                                  title="Delete comment"
+                                  title={isGroupAdmin ? "Delete comment (Admin)" : "Delete comment"}
                                 >
                                   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                                 </button>
