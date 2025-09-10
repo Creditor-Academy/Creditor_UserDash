@@ -233,6 +233,7 @@ const headingToolbar = [
 
 // Comprehensive toolbar modules for all text types
 const getToolbarModules = (type = 'full') => {
+  // Default base toolbar (includes size picker)
   const baseToolbar = [
     [{ 'font': Font.whitelist }],
     [{ 'size': Size.whitelist }],
@@ -240,6 +241,19 @@ const getToolbarModules = (type = 'full') => {
     [{ 'color': [] }, { 'background': [] }],
     [{ 'align': [] }]
   ];
+
+  // For heading-only and subheading-only editors, REMOVE size picker
+  if (type === 'heading' || type === 'subheading') {
+    return {
+      toolbar: [
+        [{ 'font': Font.whitelist }],
+        ['bold', 'italic', 'underline'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'align': [] }],
+        ['clean']
+      ]
+    };
+  }
   
   if (type === 'full') {
     return {
@@ -2447,8 +2461,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, preserve the original card structure and strip font-size styles
-          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For heading blocks, enforce true h1 with fixed size (strip Quill wrappers and inline font-sizes)
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Heading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Heading') : (editorHtml || 'Heading');
+          const cleanedContent = (extracted || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
@@ -2457,8 +2474,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </article>
             </div>`;
         } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, preserve the original card structure and strip font-size styles
-          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For subheading blocks, enforce true h2 with fixed size (strip Quill wrappers and inline font-sizes)
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Subheading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Subheading') : (editorHtml || 'Subheading');
+          const cleanedContent = (extracted || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
