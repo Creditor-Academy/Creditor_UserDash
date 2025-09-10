@@ -10,7 +10,6 @@ import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
-  const hasAccess = location.state?.isAccessible ?? true;
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -216,21 +215,13 @@ export function CourseView() {
               {filteredModules.map((module) => {
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!hasAccess || !module.resource_url) ? 'opacity-75' : ''}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                       <div className="aspect-video relative overflow-hidden">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Lock overlay for locked modules (non-enrolled or no content) */}
-                        {((!hasAccess) || !module.resource_url) && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/95 rounded-full p-4 shadow-xl">
-                              <Clock className="w-8 h-8 text-gray-700" />
-                            </div>
-                          </div>
-                        )}
                       </div>
                       {/* Fixed height for content area, flex-grow to fill space */}
                       <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
@@ -254,27 +245,18 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          {hasAccess && module.resource_url ? (
-                            <>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
-                                <Button className="w-full">
-                                  <Play size={16} className="mr-2" />
-                                  Start Module
-                                </Button>
-                              </Link>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                               <Button variant="outline" className="w-full">
-                                  <FileText size={16} className="mr-2" />
-                                  Start Assessment
-                                </Button> 
-                              </Link>
-                            </>
-                          ) : (
-                            <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                              <Clock size={16} className="mr-2" />
-                              <span className="font-medium">Upcoming Module</span>
+                          <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} className="w-full">
+                            <Button className="w-full">
+                              <Play size={16} className="mr-2" />
+                              View lessons
                             </Button>
-                          )}
+                          </Link>
+                          <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
+                           <Button variant="outline" className="w-full">
+                              <FileText size={16} className="mr-2" />
+                              View Assessment
+                            </Button> 
+                          </Link>
                         </CardFooter>
                       </div>
                     </Card>

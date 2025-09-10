@@ -5,11 +5,13 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchCourseById, fetchCourseModules, createModule } from "@/services/courseService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
+import { CreateLessonDialog } from "@/components/courses/CreateLessonDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Plus, BookOpen, Clock, ArrowLeft, Eye, Trash2 } from "lucide-react";
-
+import axios from "axios";
+import { getAuthHeader } from '../services/authHeader';
 const InstructorCourseModulesPage = () => {
   const navigate = useNavigate();
   const { courseId } = useParams();
@@ -30,6 +32,8 @@ const InstructorCourseModulesPage = () => {
   const [moduleIdToLessons, setModuleIdToLessons] = useState({});
   const [lessonsLoading, setLessonsLoading] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState(null);
+  const [showCreateLessonDialog, setShowCreateLessonDialog] = useState(false);
+  const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
 
   useEffect(() => {
     if (!isAllowed) return;
@@ -83,6 +87,7 @@ const InstructorCourseModulesPage = () => {
     return `${h} hr ${rem} min`;
   };
 
+  // --- FIX: Fetch existing lessons from backend ---
   const toggleViewLessons = async (module) => {
     if (expandedModuleId === module.id) {
       setExpandedModuleId(null);
@@ -90,43 +95,77 @@ const InstructorCourseModulesPage = () => {
     }
     setExpandedModuleId(module.id);
 
-    // Load lessons if not loaded
+    // Only fetch if not already loaded
     if (!moduleIdToLessons[module.id]) {
       setLessonsLoading(true);
       try {
-        // Dummy lessons only for a specific module title; others start empty
-        let lessons = [];
-        if ((module.title || '').toLowerCase() === 'introduction machine learning' || (module.title || '').toLowerCase() === 'introduction to machine learning') {
-          lessons = [
-            {
-              id: `lesson-${module.id}-1`,
-              title: `Intro: What is Machine Learning?`,
-              description: 'A beginner-friendly introduction to ML concepts.',
-              status: 'PUBLISHED',
-              duration: 20,
-              order: 1,
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: `lesson-${module.id}-2`,
-              title: `Supervised vs Unsupervised Learning`,
-              description: 'Understanding the two main types of ML.',
-              status: 'DRAFT',
-              duration: 25,
-              order: 2,
-              createdAt: new Date().toISOString()
-            }
-          ];
+        const token = localStorage.getItem("token");
+        console.log("Token from localStorage:", token);
+        if (!token) {
+          alert("No token found. Please login again.");
+          setLessonsLoading(false);
+          return;
         }
-        setModuleIdToLessons(prev => ({ ...prev, [module.id]: lessons }));
+        const apiUrl = `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${module.id}/lesson/all-lessons`;
+        console.log("Fetching lessons from:", apiUrl);
+
+        const response = await axios.get(apiUrl, {
+            method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+    ...getAuthHeader(),
+  },
+  credentials: 'include',
+});
+        console.log("Lessons API response:", response.data);
+
+        // The API returns { lessons: [...] }
+        let lessons = Array.isArray(response.data)
+          ? response.data
+          : response.data.lessons || [];
+
+        if (!Array.isArray(lessons)) {
+          console.warn("Lessons data is not an array:", lessons);
+          lessons = [];
+        }
+
+        // Normalize lesson id for frontend rendering
+        lessons = lessons.map(lesson => ({
+          ...lesson,
+          id: lesson.id || lesson._id,
+        }));
+
+        setModuleIdToLessons((prev) => ({
+          ...prev,
+          [module.id]: lessons,
+        }));
+        if (lessons.length === 0) {
+          console.log("No lessons found for this module.");
+        }
+      } catch (error) {
+        console.error("Error fetching lessons:", error);
+        alert("Error fetching lessons: " + (error?.response?.data?.message || error.message));
       } finally {
         setLessonsLoading(false);
       }
+    } else {
+      console.log("Lessons already loaded for module:", module.id);
     }
   };
 
   const handleAddLesson = (moduleId) => {
-    navigate(`/instructor/add-lesson/${courseId}/${moduleId}`);
+    setSelectedModuleForLesson(moduleId);
+    setShowCreateLessonDialog(true);
+  };
+
+  // --- FIX: When a lesson is created, fetch lessons again from backend ---
+  const handleLessonCreated = async (lessonData) => {
+    setShowCreateLessonDialog(false);
+    setSelectedModuleForLesson(null);
+    // Refetch lessons for the module
+    if (expandedModuleId) {
+      await toggleViewLessons({ id: expandedModuleId });
+    }
   };
 
   const handleEditLesson = (lessonId) => {
@@ -256,9 +295,9 @@ const InstructorCourseModulesPage = () => {
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
-                          onClick={() => toggleViewLessons(mod)}
+                          onClick={() => navigate(`/dashboard/courses/${courseId}/module/${mod.id}/lessons`)}
                         >
-                          {expandedModuleId === mod.id ? 'Hide Lessons' : 'View Lessons'}
+                          View Lessons
                         </Button>
                       </div>
                     </div>
@@ -307,7 +346,7 @@ const InstructorCourseModulesPage = () => {
                                     <div className="flex items-center gap-4 text-xs text-gray-500">
                                       <span>Duration: {lesson.duration} min</span>
                                       <span>Order: {lesson.order}</span>
-                                      <span>Created: {new Date(lesson.createdAt).toLocaleDateString()}</span>
+                                      <span>Created: {lesson.createdAt ? new Date(lesson.createdAt).toLocaleDateString() : "N/A"}</span>
                                     </div>
                                   </div>
                                   <div className="flex gap-2">
@@ -353,6 +392,15 @@ const InstructorCourseModulesPage = () => {
         initialData={editModuleData}
         mode={moduleDialogMode}
         onSave={handleModuleSaved}
+      />
+
+      <CreateLessonDialog
+        isOpen={showCreateLessonDialog}
+        onClose={() => setShowCreateLessonDialog(false)}
+        moduleId={selectedModuleForLesson}
+        onLessonCreated={handleLessonCreated}
+        existingLessons={moduleIdToLessons[selectedModuleForLesson] || []}
+        courseId={courseId}
       />
 
       {lessonToDelete && (

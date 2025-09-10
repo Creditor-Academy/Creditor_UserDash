@@ -336,7 +336,10 @@ export function Courses() {
                     
                     <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
                       <div className="flex gap-2 w-full">
-                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+                        <Link 
+                          to={`/dashboard/courses/${course.id}/modules`} 
+                          className="flex-1"
+                        >
                           <Button variant="default" className="w-full">
                             Continue Learning
                           </Button>

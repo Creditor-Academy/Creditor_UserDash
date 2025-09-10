@@ -1,260 +1,733 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Search, Clock, Play, FileText, BookOpen, CheckCircle, Video } from "lucide-react";
+import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, Plus, RefreshCw, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import { getAuthHeader } from "@/services/authHeader";
+import { MoreVertical, Edit, Trash2, Settings } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Sample lessons data for different modules
-const moduleLessonsData = {
-  "1": {
-    title: "Introduction to Business Trust",
-    description: "Understanding the fundamentals of business trust structures and their applications in modern commerce.",
-    totalLessons: 3,
-    estimatedTime: "2 hours",
-    lessons: [
-      {
-        id: "1",
-        title: "What is Business Trust?",
-        description: "Learn the basic definition and key concepts of business trust structures.",
-        type: "video",
-        duration: "15:30",
-        completed: true,
-        thumbnail: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000"
-      },
-      {
-        id: "2", 
-        title: "Types of Business Trusts",
-        description: "Explore different types of business trusts and their specific use cases.",
-        type: "text",
-        duration: "8 min read",
-        completed: false,
-        thumbnail: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1000"
-      },
-      {
-        id: "3",
-        title: "Legal Framework and Compliance",
-        description: "Understanding the legal requirements and compliance aspects of business trusts.",
-        type: "video",
-        duration: "22:15",
-        completed: false,
-        thumbnail: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=1000"
-      }
-    ]
-  },
-  "2": {
-    title: "Context API & useContext",
-    description: "Managing global state with React Context and the useContext hook. Learn how to create, provide, and consume context in your React applications.",
-    totalLessons: 5,
-    estimatedTime: "1h 45m",
-    lessons: [
-      {
-        id: "1",
-        title: "Introduction to Context API",
-        description: "Learn about the React Context API and its use cases",
-        type: "text",
-        duration: "8 min read",
-        completed: true,
-        thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=1000"
-      },
-      {
-        id: "2",
-        title: "Creating a Context",
-        description: "Learn how to create a context and provide it to your component tree.",
-        type: "video", 
-        duration: "18:45",
-        completed: true,
-        thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?q=80&w=1000"
-      },
-      {
-        id: "3",
-        title: "Context API Best Practices",
-        description: "Learn the best practices for using Context API in your React applications",
-        type: "text",
-        duration: "8 min read",
-        completed: false,
-        thumbnail: "https://images.unsplash.com/photo-1545235617-9465d2a55698?q=80&w=1000"
-      },
-      {
-        id: "4",
-        title: "Consuming Context with useContext",
-        description: "How to use the useContext hook to access context values",
-        type: "video",
-        duration: "10:30", 
-        completed: false,
-        thumbnail: "https://images.unsplash.com/photo-1627398242454-45a1465c2479?q=80&w=1000"
-      },
-      {
-        id: "5",
-        title: "Context API vs Redux",
-        description: "Understanding when to use Context API versus state management libraries",
-        type: "text",
-        duration: "5 min read",
-        completed: false,
-        thumbnail: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?q=80&w=1000"
-      }
-    ]
-  }
-};
-
-export function ModuleLessonsView() {
-  const { moduleId } = useParams();
+const ModuleLessonsView = () => {
+  const { courseId, moduleId } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [lessons, setLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [moduleDetails, setModuleDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Lesson creation state
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newLesson, setNewLesson] = useState({
+    title: "",
+    description: "",
+    order: 1,
+    status: "DRAFT",
+  });
 
-  const moduleData = moduleLessonsData[moduleId] || moduleLessonsData["2"];
+  // Lesson deletion state
+  const [lessonToDelete, setLessonToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // Lesson update state
+  const [showUpdateDialog, setShowUpdateDialog] = useState(false);
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Lesson content state
+  const [lessonContent, setLessonContent] = useState(null);
+  const [loadingContent, setLoadingContent] = useState(false);
+
+  // Fetch module and lessons data
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
+    fetchModuleLessons();
+  }, [courseId, moduleId]);
+
+  const fetchModuleLessons = async () => {
+    try {
+      setLoading(true);
+      
+      const [moduleResponse, lessonsResponse] = await Promise.all([
+        axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/view`,
+          {
+            headers: getAuthHeader(),
+            withCredentials: true,
+          }
+        ),
+        axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
+          {
+            headers: getAuthHeader(),
+            withCredentials: true,
+          }
+        )
+      ]);
+
+      // Handle module details response
+      const moduleData = moduleResponse.data.data || moduleResponse.data;
+      setModuleDetails(moduleData);
+      
+      // Handle lessons response
+      let lessonsData = [];
+      if (Array.isArray(lessonsResponse.data)) {
+        lessonsData = lessonsResponse.data;
+      } else if (lessonsResponse.data?.data) {
+        lessonsData = Array.isArray(lessonsResponse.data.data) 
+          ? lessonsResponse.data.data 
+          : [lessonsResponse.data.data];
+      } else if (lessonsResponse.data?.lessons) {
+        lessonsData = Array.isArray(lessonsResponse.data.lessons)
+          ? lessonsResponse.data.lessons
+          : [lessonsResponse.data.lessons];
+      }
+      
+      // Normalize lesson data to ensure consistent field names
+      const normalizedLessons = lessonsData.map(lesson => ({
+        ...lesson,
+        status: lesson.status || lesson.lesson_status || 'DRAFT'
+      }));
+      
+      setLessons(normalizedLessons);
+      
+      // Set the next order number for new lessons
+      const maxOrder = lessonsData.length > 0 
+        ? Math.max(...lessonsData.map(l => l.order || 0)) 
+        : 0;
+      setNewLesson(prev => ({ ...prev, order: maxOrder + 1 }));
+      
+    } catch (err) {
+      console.error("Error fetching module lessons:", err);
+      setError("Failed to load module lessons. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateLesson = async () => {
+    try {
+      setIsCreating(true);
+      
+      // Prepare the lesson data in the expected format
+      const lessonData = {
+        title: newLesson.title,
+        description: newLesson.description,
+        order: parseInt(newLesson.order) || 1,
+        status: newLesson.status,
+      };
+      
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`,
+        lessonData,
+        {
+          headers: {
+            ...getAuthHeader(),
+            'Content-Type': 'application/json',
+          },
+          withCredentials: true,
+        }
+      );
+
+      // Add the new lesson to the list
+      const createdLesson = response.data.data || response.data;
+      setLessons(prev => [...prev, createdLesson]);
+      
+      // Reset form and close dialog
+      setNewLesson({
+        title: "",
+        description: "",
+        order: newLesson.order + 1, // Increment order for next lesson
+        status: "DRAFT",
+      });
+      
+      setShowCreateDialog(false);
+      
+      toast({
+        title: "Success",
+        description: "Lesson created successfully!",
+      });
+      
+    } catch (error) {
+      console.error("Error creating lesson:", error);
+      let errorMessage = "Failed to create lesson. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleUpdateLesson = async () => {
+    if (!currentLesson) return;
     
-    return () => clearTimeout(timer);
-  }, []);
+    try {
+      setIsUpdating(true);
+      
+      // Prepare the update data
+      const updateData = {};
+      if (currentLesson.title) updateData.title = currentLesson.title;
+      if (currentLesson.description) updateData.description = currentLesson.description;
+      if (currentLesson.order !== undefined) updateData.order = parseInt(currentLesson.order) || 1;
+      if (currentLesson.status !== undefined) updateData.lesson_status = currentLesson.status;
+      
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
+        updateData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          }
+        }
+      );
+      
+      // Update the lesson in the state with the current lesson data (user's changes)
+      setLessons(prev => prev.map(lesson => 
+        lesson.id === currentLesson.id ? { ...lesson, ...currentLesson } : lesson
+      ));
+      
+      setShowUpdateDialog(false);
+      
+      toast({
+        title: "Success",
+        description: "Lesson updated successfully!",
+      });
+      
+    } catch (error) {
+      console.error("Error updating lesson:", error);
+      let errorMessage = "Failed to update lesson. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
-  // Animation effect when component mounts
-  useEffect(() => {
-    const lessonCards = document.querySelectorAll(".lesson-card");
-    lessonCards.forEach((card, index) => {
-      setTimeout(() => {
-        card.classList.add("animate-fade-in");
-        card.classList.remove("opacity-0");
-      }, 100 * index);
+  const handleOpenUpdateDialog = (lesson) => {
+    setCurrentLesson({
+      ...lesson,
+      order: lesson.order || 1,
+      status: lesson.status || 'DRAFT'
     });
-  }, [isLoading]);
+    setShowUpdateDialog(true);
+  };
 
-  const filteredLessons = moduleData.lessons.filter(lesson =>
-    lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lesson.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewLesson(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const completedLessons = moduleData.lessons.filter(lesson => lesson.completed).length;
-  const progressPercentage = Math.round((completedLessons / moduleData.lessons.length) * 100);
+  const handleSelectChange = (name, value) => {
+    setNewLesson(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-      </div>
-    );
-  }
+  const filteredLessons = useMemo(() => {
+    if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
+      return [];
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return lessons;
+    
+    return lessons.filter(lesson => {
+      if (!lesson) return false;
+      const title = (lesson.title || '').toLowerCase();
+      const description = (lesson.description || '').toLowerCase();
+      return title.includes(query) || description.includes(query);
+    });
+  }, [lessons, searchQuery]);
+
+  const handleLessonClick = (lesson) => {
+    // Simply navigate to the builder - we'll fetch content there
+    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`, {
+      state: { lessonData: lesson }
+    });
+  };
+
+  const handleAddLesson = () => {
+    setShowCreateDialog(true);
+  };
+
+  const handleDeleteLesson = async () => {
+    if (!lessonToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      // Use the exact same endpoint format as in Postman
+      await axios.delete(
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonToDelete.id}/delete`,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          }
+        }
+      );
+      
+      // Remove the deleted lesson from the state
+      setLessons(prev => prev.filter(lesson => lesson.id !== lessonToDelete.id));
+      
+      toast({
+        title: "Success",
+        description: "Lesson deleted successfully!",
+      });
+      
+    } catch (error) {
+      console.error("Error deleting lesson:", error);
+      let errorMessage = "Failed to delete lesson. Please try again.";
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setLessonToDelete(null);
+    }
+  };
 
   return (
-    <div className="container py-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to={`/courses/1`}>
-            <ChevronLeft size={16} />
-            Back to module
-          </Link>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6 flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back
         </Button>
-        <Badge>Context API</Badge>
-      </div>
-
-      {/* Module Info */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-3 bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-          {moduleData.title}
-        </h1>
-        <p className="text-muted-foreground mb-4 text-lg">
-          {moduleData.description}
-        </p>
-        
-        <div className="flex items-center gap-6 mb-4">
-          <div className="flex items-center gap-2">
-            <BookOpen size={18} className="text-primary" />
-            <span className="font-medium">{moduleData.totalLessons} Lessons</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock size={18} className="text-primary" />
-            <span className="font-medium">{moduleData.estimatedTime}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle size={18} className="text-green-500" />
-            <span className="font-medium">{completedLessons}/{moduleData.totalLessons} Completed ({progressPercentage}%)</span>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {moduleDetails?.title || 'Module Lessons'}
+          </h1>
+          {moduleDetails?.description && (
+            <p className="text-gray-600 mt-1">{moduleDetails.description}</p>
+          )}
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Module Lessons</h2>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            type="search"
+            type="text"
             placeholder="Search lessons..."
-            className="pl-8 w-[200px] rounded-full"
+            className="pl-10 w-full"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <Button 
+          onClick={handleAddLesson}
+          className="w-full sm:w-auto"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Add New Lesson
+        </Button>
       </div>
 
-      {/* Lessons Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredLessons.map((lesson) => (
-          <div key={lesson.id} className="lesson-card opacity-0 transition-all duration-500 ease-in-out">
-            <Link to={`/courses/module/${moduleId}/lesson/${lesson.id}`}>
-              <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                <div className="aspect-video relative overflow-hidden">
-                  <img 
-                    src={lesson.thumbnail} 
-                    alt={lesson.title}
-                    className="w-full h-full object-cover transition-transform hover:scale-105 duration-500"
-                  />
-                  {lesson.type === "video" && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                      <div className="bg-white/90 rounded-full p-3">
-                        <Play size={24} className="text-primary ml-1" />
-                      </div>
-                    </div>
-                  )}
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[200px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading lessons...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center p-6 bg-red-50 rounded-lg">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Lessons</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <Button variant="outline" onClick={fetchModuleLessons}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+          </Button>
+        </div>
+      ) : filteredLessons.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredLessons.map((lesson, index) => (
+            <Card key={lesson.id || `lesson-${index}`} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-2">
+                  <CardTitle className="text-lg line-clamp-2">
+                    {lesson.title || 'Untitled Lesson'}
+                  </CardTitle>
                   <Badge 
-                    className="absolute top-2 right-2 bg-black/70"
-                    variant="secondary"
+                    variant={lesson.status === 'PUBLISHED' ? 'default' : 'secondary'}
+                    className="whitespace-nowrap"
                   >
-                    {lesson.type === "video" ? "Video" : "Article"}
+                    {lesson.status || 'DRAFT'}
                   </Badge>
-                  {lesson.completed && (
-                    <div className="absolute top-2 left-2">
-                      <CheckCircle className="h-6 w-6 text-green-500 bg-white rounded-full" />
-                    </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-4">
+                <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                  {lesson.description || 'No description provided.'}
+                </p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span>Order: {lesson.order || 'N/A'}</span>
+                  {lesson.updatedAt && (
+                    <span>Updated: {new Date(lesson.updatedAt).toLocaleDateString()}</span>
                   )}
                 </div>
-                
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    {lesson.type === "video" ? <Video size={16} /> : <FileText size={16} />}
-                    <span className={lesson.completed ? "text-muted-foreground line-through" : ""}>
-                      {lesson.title}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground line-clamp-2">{lesson.description}</p>
-                  
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock size={14} />
-                      <span>{lesson.duration}</span>
-                    </div>
-                    <Badge variant={lesson.completed ? "default" : "outline"}>
-                      {lesson.completed ? "Completed" : "Not Started"}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={() => handleLessonClick(lesson)}
+                >
+                  <Play className="h-4 w-4" /> View Lesson
+                </Button>
+                <div 
+                  className="flex items-center space-x-2 ml-4" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenUpdateDialog(lesson);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span className="sr-only">Edit</span>
+                  </Button>
+                  {/* <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 text-purple-600 hover:bg-purple-50 border-purple-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Handle settings click
+                    }}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="sr-only">Settings</span>
+                  </Button> */}
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8 text-red-600 hover:bg-red-50 border-red-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setLessonToDelete(lesson);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="sr-only">Delete</span>
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {searchQuery ? 'No matching lessons found' : 'No lessons available yet'}
+          </h3>
+          <p className="text-gray-600 mb-6">
+            {searchQuery 
+              ? 'Try a different search term.' 
+              : 'Create your first lesson to get started.'}
+          </p>
+          <Button onClick={handleAddLesson}>
+            <Plus className="mr-2 h-4 w-4" /> 
+            {searchQuery ? 'Clear Search' : 'Create Your First Lesson'}
+          </Button>
+        </div>
+      )}
+
+      {/* Create Lesson Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Lesson</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to create a new lesson for this module.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Lesson Title *</Label>
+              <Input
+                id="title"
+                name="title"
+                value={newLesson.title}
+                onChange={handleInputChange}
+                placeholder="Enter lesson title"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={newLesson.description}
+                onChange={handleInputChange}
+                placeholder="Enter lesson description"
+                rows={3}
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              
+              <div className="space-y-2">
+                <Label htmlFor="order">Order *</Label>
+                <Input
+                  id="order"
+                  name="order"
+                  type="number"
+                  min="1"
+                  value={newLesson.order}
+                  onChange={handleInputChange}
+                  placeholder="Lesson order"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={newLesson.status} 
+                onValueChange={(value) => handleSelectChange('status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DRAFT">Draft</SelectItem>
+                  <SelectItem value="PUBLISHED">Published</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        ))}
-      </div>
+          
+          <DialogFooter className="sticky bottom-0 bg-background pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateDialog(false)}
+              disabled={isCreating}
+              type="button"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateLesson}
+              disabled={!newLesson.title || !newLesson.description || isCreating}
+              type="submit"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : 'Create Lesson'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Lesson Dialog */}
+      <Dialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Update Lesson</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to update the lesson.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Lesson Title *</Label>
+              <Input
+                id="title"
+                name="title"
+                value={currentLesson?.title}
+                onChange={(e) => setCurrentLesson(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter lesson title"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={currentLesson?.description}
+                onChange={(e) => setCurrentLesson(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter lesson description"
+                rows={3}
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="order">Order *</Label>
+                <Input
+                  id="order"
+                  name="order"
+                  type="number"
+                  min="1"
+                  value={currentLesson?.order}
+                  onChange={(e) => setCurrentLesson(prev => ({ ...prev, order: e.target.value }))}
+                  placeholder="Lesson order"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={currentLesson?.status} 
+                  onValueChange={(value) => setCurrentLesson(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">Draft</SelectItem>
+                    <SelectItem value="PUBLISHED">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="sticky bottom-0 bg-background pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowUpdateDialog(false)}
+              disabled={isUpdating}
+              type="button"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateLesson}
+              disabled={!currentLesson?.title || !currentLesson?.description || isUpdating}
+              type="submit"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : 'Update Lesson'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!lessonToDelete} onOpenChange={(open) => !open && setLessonToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Lesson</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the lesson "{lessonToDelete?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setLessonToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteLesson}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
+};
 
 export default ModuleLessonsView;
