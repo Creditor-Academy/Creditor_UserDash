@@ -187,15 +187,44 @@ export function ChatPage() {
     const onUserJoined = (data) => {
       console.log('[socket][on] userJoinedGroup', data);
       if (sameGroup(data.groupId)) {
-        console.log('[socket] User joined:', data.message);
-        // Optimistically refresh members count without forcing modal
+        // Append a lightweight system message in the chat
+        const systemText = (data?.message || 'A member joined the chat').replace('group', 'chat');
+        setMessages(prev => ([
+          ...prev,
+          {
+            id: `sys-join-${Date.now()}`,
+            senderId: 0,
+            senderName: 'System',
+            senderAvatar: '',
+            content: systemText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text',
+            isSystem: true,
+          }
+        ]));
+
+        // Keep member count fresh without opening modal
         fetchGroupMembers({ openModal: false, silent: true });
       }
     };
     const onUserLeft = (data) => {
       console.log('[socket][on] userLeftGroup', data);
       if (sameGroup(data.groupId)) {
-        console.log('[socket] User left:', data.message);
+        const systemText = (data?.message || 'A member left the chat').replace('group', 'chat');
+        setMessages(prev => ([
+          ...prev,
+          {
+            id: `sys-leave-${Date.now()}`,
+            senderId: 0,
+            senderName: 'System',
+            senderAvatar: '',
+            content: systemText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text',
+            isSystem: true,
+          }
+        ]));
+
         fetchGroupMembers({ openModal: false, silent: true });
       }
     };

@@ -8,6 +8,17 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
 
+  // Render lightweight centered system notices
+  if (message.isSystem) {
+    return (
+      <div className="w-full flex items-center justify-center">
+        <div className="max-w-[80%] text-center text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-gray-100">
@@ -44,7 +55,10 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
               {(isUser || isAdmin) && (
                 <button
                   className="p-1 hover:text-red-600"
-                  onClick={() => onDeleteMessage?.(message.id)}
+                  onClick={() => {
+                    const ok = window.confirm('This message will be deleted for everyone');
+                    if (ok) onDeleteMessage?.(message.id);
+                  }}
                   title="Delete message"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
