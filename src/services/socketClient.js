@@ -25,10 +25,17 @@ export function getSocket() {
   if (!socket) {
     const token = getTokenFromStorage();
     console.log('token from localStorage', token);
+    
+    if (!token) {
+      console.warn('[socket] No token found, creating unauthenticated socket');
+    }
+    
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
-      auth: { token }
+      auth: { token: token || null },
+      timeout: 20000,
+      forceNew: true
     });
 
     // Helpful diagnostics in dev
@@ -40,19 +47,73 @@ export function getSocket() {
     });
     socket.on('connect_error', (err) => {
       console.warn('[socket] connect_error', err?.message || err);
+      // Don't show toast here as it's handled in ChatPage
     });
   }
   return socket;
 }
 
-// Allow updating token at runtime (e.g., after login/refresh)
 export function refreshSocketAuth(newToken) {
   localStorage.setItem('token', newToken || '');
   if (socket) {
     try {
-      socket.auth = { token: newToken ? `Bearer ${newToken}` : undefined };
+      socket.auth = { token: newToken || undefined };
       socket.connect();
     } catch {}
+  }
+}
+
+export function disconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}
+
+export function reconnectSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  return getSocket();
+}
+
+// Group room management
+export function joinGroupRoom(groupId) {
+  const s = getSocket();
+  if (s && groupId) {
+    s.emit('join_group_room', { groupId });
+    console.log('[socket] joined group room:', groupId);
+  }
+}
+
+export function leaveGroupRoom(groupId) {
+  const s = getSocket();
+  if (s && groupId) {
+    s.emit('leave_group_room', { groupId });
+    console.log('[socket] left group room:', groupId);
+  }
+}
+
+// Announcement functions
+export function onAnnouncementNew(callback) {
+  const s = getSocket();
+  if (s) {
+    s.on('announcement_new', callback);
+  }
+}
+
+export function offAnnouncementNew(callback) {
+  const s = getSocket();
+  if (s) {
+    s.off('announcement_new', callback);
+  }
+}
+
+export function emitAnnouncementNew(payload) {
+  const s = getSocket();
+  if (s) {
+    s.emit('announcement_new', payload);
   }
 }
 

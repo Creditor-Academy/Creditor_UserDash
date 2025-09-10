@@ -1,19 +1,22 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Paperclip } from "lucide-react";
-import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
+import { Send, Paperclip, Smile } from "lucide-react";
+import { AttachmentModal } from "./AttachmentModal";
+import { ImagePreview } from "./ImagePreview";
+import { EmojiPicker } from "./EmojiPicker";
 
 export function ChatInput({
   newMessage,
   setNewMessage,
   onSendMessage,
-  onSendVoiceMessage,
   onFileSelect,
-  showVoiceRecorder,
-  setShowVoiceRecorder
+  onImageSelect,
+  isSending = false
 }) {
-  const fileInputRef = useRef(null);
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -23,17 +26,44 @@ export function ChatInput({
   };
 
   const handleAttachmentClick = () => {
-    fileInputRef.current?.click();
+    setShowAttachmentModal(true);
   };
 
-  if (showVoiceRecorder) {
+  const handleImageSelect = (file) => {
+    setSelectedImage(file);
+    if (onImageSelect) {
+      onImageSelect(file);
+    }
+  };
+
+  const handleSendImage = () => {
+    if (selectedImage && onImageSelect) {
+      onImageSelect(selectedImage);
+      setSelectedImage(null);
+    }
+  };
+
+  const handleCancelImage = () => {
+    setSelectedImage(null);
+  };
+
+
+  const handleEmojiClick = () => {
+    setShowEmojiPicker(true);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    setNewMessage(prev => prev + emoji);
+  };
+
+  if (selectedImage) {
     return (
-      <div className="border-t bg-gray-50 p-4 flex-shrink-0">
-        <VoiceRecorder 
-          onSendVoiceMessage={onSendVoiceMessage}
-          onCancel={() => setShowVoiceRecorder(false)}
-        />
-      </div>
+      <ImagePreview
+        imageFile={selectedImage}
+        onSend={handleSendImage}
+        onCancel={handleCancelImage}
+        isSending={isSending}
+      />
     );
   }
 
@@ -49,25 +79,22 @@ export function ChatInput({
           >
             <Paperclip className="h-4 w-4" />
           </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleEmojiClick}
+            className="absolute right-12 bottom-3 h-7 w-7 text-gray-400 hover:text-gray-600 z-10"
+          >
+            <Smile className="h-4 w-4" />
+          </Button>
           <Input
             placeholder="Write your message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="pl-12 pr-4 min-h-[48px] text-sm resize-none rounded-2xl border-gray-300 bg-white shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="pl-12 pr-20 min-h-[48px] text-sm resize-none rounded-2xl border-gray-300 bg-white shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={onFileSelect}
-          className="hidden"
-          accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-        />
-        <VoiceRecorder 
-          onSendVoiceMessage={onSendVoiceMessage}
-          onCancel={() => setShowVoiceRecorder(false)}
-        />
         <Button 
           onClick={onSendMessage}
           disabled={!newMessage.trim()}
@@ -77,6 +104,19 @@ export function ChatInput({
           <Send className="h-5 w-5" />
         </Button>
       </div>
+
+      {/* Attachment Modal */}
+      <AttachmentModal
+        isOpen={showAttachmentModal}
+        onClose={() => setShowAttachmentModal(false)}
+        onImageSelect={handleImageSelect}
+      />
+
+      <EmojiPicker
+        isOpen={showEmojiPicker}
+        onClose={() => setShowEmojiPicker(false)}
+        onEmojiSelect={handleEmojiSelect}
+      />
     </div>
   );
 }

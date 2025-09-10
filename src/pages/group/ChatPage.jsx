@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useParams } from "react-router-dom";
 import { professionalAvatars } from "@/lib/avatar-utils";
-import getSocket from "@/services/socketClient";
+import getSocket, { reconnectSocket } from "@/services/socketClient";
 
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
@@ -83,7 +83,11 @@ const initialMessages = [
 export function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isSendingImage, setIsSendingImage] = useState(false);
+  const seenMessageIdsRef = React.useRef(new Set());
+
   const [showMembers, setShowMembers] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -102,32 +106,177 @@ export function ChatPage() {
     // load messages
     loadMessages();
 
+    // If user not identified yet, skip socket room join for now
+    if (!groupId || !currentUserId) {
+      console.warn('[chat] skip join: missing groupId or currentUserId');
+      return;
+    }
+
     // Realtime: join group room
     const socket = getSocket();
     const uid = currentUserId;
-    socket.emit('joinGroup', { groupId, userId: uid });
+    
+    // Wait for socket to be connected before joining
+    const joinGroupWhenReady = () => {
+      if (socket.connected) {
+        console.log('[socket][emit] joinGroup', { groupId, userId: uid });
+        socket.emit('joinGroup', { groupId, userId: uid });
+      } else {
+        // Wait for connection, but with timeout
+        const connectTimeout = setTimeout(() => {
+          console.warn('[socket] Connection timeout, skipping group join');
+        }, 5000);
+        
+        socket.once('connect', () => {
+          clearTimeout(connectTimeout);
+          console.log('[socket][emit] joinGroup', { groupId, userId: uid });
+          socket.emit('joinGroup', { groupId, userId: uid });
+        });
+      }
+    };
 
+    // Initial join attempt
+    joinGroupWhenReady();
+
+    // Re-join on reconnect to handle network hiccups
+    const onConnect = () => {
+      console.log('[socket] connected. re-joining', { groupId, userId: uid });
+      socket.emit('joinGroup', { groupId, userId: uid });
+    };
+    socket.on('connect', onConnect);
+
+    const sameGroup = (gid) => String(gid) === String(groupId);
+    
+    // Handle new group messages
     const onNewMessage = (payload) => {
-      // only accept messages for current group
-      if (payload?.group_id === groupId || payload?.groupId === groupId) {
-        setMessages(prev => [...prev, {
-          id: payload.id,
-          senderId: payload.sender_id || payload.senderId,
-          senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
-          senderAvatar: payload.sender?.image || '',
-          content: payload.content,
-          timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-          type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
-        }]);
+      console.log('[socket][on] newGroupMessage', payload);
+      // Backend sends message with group_id field
+      const inThisGroup = sameGroup(payload?.group_id);
+      if (inThisGroup) {
+        setMessages(prev => {
+          // If message already exists by id, skip
+          if (payload?.id && prev.some(m => m.id === payload.id)) return prev;
+
+          const normalized = {
+            id: payload.id,
+            senderId: payload.sender_id,
+            senderName: payload.sender?.first_name || 'Member',
+            senderAvatar: payload.sender?.image || '',
+            content: payload.content,
+            imageUrl: payload.image_url || payload.imageUrl,
+            timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
+                  (payload.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
+                  (payload.mime_type ? 'file' : 'text'),
+          };
+
+          // Try to replace a matching optimistic message (same sender and content)
+          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === payload.sender_id && m.content === payload.content);
+          if (idx !== -1) {
+            const clone = [...prev];
+            clone[idx] = normalized;
+            return clone;
+          }
+          return [...prev, normalized];
+        });
       }
     };
     socket.on('newGroupMessage', onNewMessage);
 
+    // Listen for user join/leave notifications
+    const onUserJoined = (data) => {
+      console.log('[socket][on] userJoinedGroup', data);
+      if (sameGroup(data.groupId)) {
+        console.log('[socket] User joined:', data.message);
+        // Optimistically refresh members count without forcing modal
+        fetchGroupMembers({ openModal: false, silent: true });
+      }
+    };
+    const onUserLeft = (data) => {
+      console.log('[socket][on] userLeftGroup', data);
+      if (sameGroup(data.groupId)) {
+        console.log('[socket] User left:', data.message);
+        fetchGroupMembers({ openModal: false, silent: true });
+      }
+    };
+    socket.on('userJoinedGroup', onUserJoined);
+    socket.on('userLeftGroup', onUserLeft);
+
+    // Group membership and info management
+    const onMemberAdded = (member) => {
+      console.log('[socket][on] memberAdded', member);
+      if (sameGroup(member?.group_id || member?.groupId)) {
+        // Update list if visible; otherwise keep count fresh
+        setGroupMembers((prev) => {
+          // Avoid duplicates by id
+          const exists = prev.some(m => (m.id || m.user?.id) === (member.id || member.user?.id));
+          if (exists) return prev;
+          return [...prev, member];
+        });
+      }
+    };
+    const onMemberRemoved = (payload) => {
+      console.log('[socket][on] memberRemoved', payload);
+      if (sameGroup(payload?.groupId)) {
+        const removedId = payload?.userId;
+        setGroupMembers((prev) => prev.filter(m => (m.user?.id ?? m.id) !== removedId));
+      }
+    };
+    const onGroupInfoUpdated = (updated) => {
+      console.log('[socket][on] groupInfoUpdated', updated);
+      if (sameGroup(updated?.id)) {
+        setGroupInfo((prev) => ({ ...prev, ...updated }));
+      }
+    };
+    socket.on('memberAdded', onMemberAdded);
+    socket.on('memberRemoved', onMemberRemoved);
+    socket.on('groupInfoUpdated', onGroupInfoUpdated);
+
+    // Server error channel
+    const onServerError = (err) => {
+      console.warn('[socket][on] error', err);
+      // Don't show any socket error toasts since messages work via REST API
+      // Just log for debugging
+    };
+    socket.on('error', onServerError);
+
+    // Connection diagnostics to help identify realtime issues
+    const onConnectError = (err) => {
+      try {
+        console.warn('[socket] connect_error', err?.message || err);
+        // Only show toast for authentication errors, and only once
+        if (err?.message?.includes('Authentication error') && !socket._authErrorShown) {
+          socket._authErrorShown = true; // Prevent multiple toasts
+          toast({ 
+            title: 'Real-time features unavailable', 
+            description: 'Socket connection failed. Messages will still work normally.', 
+            variant: 'default' 
+          });
+        }
+      } catch {}
+    };
+    const onDisconnect = (reason) => {
+      try {
+        console.warn('[socket] disconnected', reason);
+      } catch {}
+    };
+    socket.on('connect_error', onConnectError);
+    socket.on('disconnect', onDisconnect);
+
     return () => {
       socket.emit('leaveGroup', { groupId, userId: uid });
+      socket.off('connect', onConnect);
       socket.off('newGroupMessage', onNewMessage);
+      socket.off('userJoinedGroup', onUserJoined);
+      socket.off('userLeftGroup', onUserLeft);
+      socket.off('memberAdded', onMemberAdded);
+      socket.off('memberRemoved', onMemberRemoved);
+      socket.off('groupInfoUpdated', onGroupInfoUpdated);
+      socket.off('error', onServerError);
+      socket.off('connect_error', onConnectError);
+      socket.off('disconnect', onDisconnect);
     };
-  }, [groupId]);
+  }, [groupId, currentUserId]);
 
   const loadMessages = async () => {
     try {
@@ -139,8 +288,11 @@ export function ChatPage() {
         senderName: m.sender?.first_name || m.sender?.name || 'Member',
         senderAvatar: m.sender?.image || '',
         content: m.content,
+        imageUrl: m.image_url || m.imageUrl,
         timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-        type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (m.mime_type ? 'file' : 'text'),
+        type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
+              (m.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
+              (m.mime_type ? 'file' : 'text'),
       }));
       setMessages(normalized);
     } catch (e) {
@@ -238,60 +390,69 @@ export function ChatPage() {
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
+    const toSend = newMessage;
+    setNewMessage("");
+    setIsSending(true);
+
+    const tempId = `tmp-${Date.now()}`;
     const optimistic = {
-      id: `tmp-${Date.now()}`,
+      id: tempId,
       senderId: currentUserId,
       senderName: "You",
       senderAvatar: "",
-      content: newMessage,
+      content: toSend,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      type: 'text'
+      type: 'text',
+      pending: true,
     };
     setMessages(prev => [...prev, optimistic]);
-    const toSend = newMessage;
-    setNewMessage("");
+    
     try {
-      // emit over socket to let backend broadcast; also call REST as fallback
       const socket = getSocket();
-      socket.emit('sendGroupMessage', { groupId, userId: currentUserId, content: toSend });
+      
+      // Only emit via socket if connected and authenticated, otherwise rely on REST API
+      if (socket.connected && !socket._authErrorShown) {
+        const payload = {
+          groupId, 
+          userId: currentUserId, 
+          content: toSend,
+          type: 'TEXT'
+        };
+        console.log('[socket][emit] sendGroupMessage', payload);
+        socket.emit('sendGroupMessage', payload);
+      } else {
+        console.warn('[socket] not connected or auth failed, using REST API only');
+      }
 
+      // Always call REST API as fallback/primary method
       const res = await sendGroupMessage(groupId, { content: toSend, type: 'TEXT' });
       const m = res?.data || res;
       if (m?.id) {
-        setMessages(prev => prev.map(x => x.id === optimistic.id ? {
-          id: m.id,
-          senderId: m.sender_id,
-          senderName: m.sender?.first_name || 'You',
-          senderAvatar: m.sender?.image || '',
-          content: m.content,
-          timestamp: new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          type: 'text'
-        } : x));
+        if (seenMessageIdsRef.current.has(m.id)) {
+          setMessages(prev => prev.filter(x => x.id !== tempId));
+        } else {
+          seenMessageIdsRef.current.add(m.id);
+          setMessages(prev => prev.map(x => x.id === tempId ? {
+            id: m.id,
+            senderId: m.sender_id || currentUserId,
+            senderName: m.sender?.first_name || 'You',
+            senderAvatar: m.sender?.image || '',
+            content: m.content,
+            timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
+            type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (m.mime_type ? 'file' : 'text'),
+          } : x));
+        }
       }
     } catch (e) {
-      // rollback
-      setMessages(prev => prev.filter(x => x.id !== optimistic.id));
+      console.error('Error sending message:', e);
+      // rollback optimistic update
+      setMessages(prev => prev.filter(x => x.id !== tempId));
+      // No toast - just log the error
+    } finally {
+      setIsSending(false);
     }
   };
 
-  const handleSendVoiceMessage = (audioBlob, duration) => {
-    const message = {
-      id: Date.now(),
-      senderId: currentUserId,
-      senderName: "You",
-      senderAvatar: "",
-      timestamp: new Date().toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      type: 'voice',
-      audioBlob,
-      duration
-    };
-
-    setMessages([...messages, message]);
-    setShowVoiceRecorder(false);
-  };
 
   // Edit/Delete message handlers
   const handleEditMessage = async (messageId, newContent) => {
@@ -299,9 +460,7 @@ export function ChatPage() {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
     try {
       await editGroupMessage(groupId, messageId, { content: newContent });
-      const socket = getSocket();
-      // Optionally let backend broadcast an update event if implemented
-      // socket.emit('editGroupMessage', { groupId, messageId, content: newContent });
+      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
     } catch (e) {
       setMessages(snapshot);
     }
@@ -313,11 +472,82 @@ export function ChatPage() {
     setMessages(prev => prev.filter(m => m.id !== messageId));
     try {
       await deleteGroupMessage(groupId, messageId);
+      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
     } catch (e) {
       // restore on failure
       setMessages(snapshot);
     }
   };
+
+  const handleImageSelect = async (file) => {
+    if (!file) return;
+    
+    setIsSendingImage(true);
+    const tempId = `tmp-${Date.now()}`;
+    const imageUrl = URL.createObjectURL(file);
+    
+    const optimistic = {
+      id: tempId,
+      senderId: currentUserId,
+      senderName: "You",
+      senderAvatar: "",
+      imageUrl: imageUrl,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'image',
+      pending: true,
+    };
+    
+    setMessages(prev => [...prev, optimistic]);
+    setSelectedImage(null);
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('type', 'IMAGE');
+      
+      // Send image via socket
+      sendMessage({ 
+        content: '', 
+        senderId: currentUserId, 
+        type: 'IMAGE',
+        imageFile: file 
+      });
+      
+      // Send image via API
+      const res = await sendGroupMessage(groupId, formData, true); // true for multipart
+      const m = res?.data || res;
+      
+      if (m?.id) {
+        if (seenMessageIdsRef.current.has(m.id)) {
+          setMessages(prev => prev.filter(x => x.id !== tempId));
+        } else {
+          seenMessageIdsRef.current.add(m.id);
+          setMessages(prev => prev.map(x => x.id === tempId ? {
+            id: m.id,
+            senderId: m.sender_id || currentUserId,
+            senderName: m.sender?.first_name || 'You',
+            senderAvatar: m.sender?.image || '',
+            imageUrl: m.image_url || m.imageUrl || imageUrl,
+            content: m.content || '',
+            timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
+            type: 'image',
+          } : x));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to send image:', e);
+      setMessages(prev => prev.filter(x => x.id !== tempId));
+      toast({
+        title: "Error",
+        description: "Failed to send image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingImage(false);
+    }
+  };
+
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
@@ -501,10 +731,9 @@ export function ChatPage() {
             newMessage={newMessage}
             setNewMessage={setNewMessage}
             onSendMessage={handleSendMessage}
-            onSendVoiceMessage={handleSendVoiceMessage}
             onFileSelect={handleFileSelect}
-            showVoiceRecorder={showVoiceRecorder}
-            setShowVoiceRecorder={setShowVoiceRecorder}
+            onImageSelect={handleImageSelect}
+            isSending={isSending || isSendingImage}
           />
         </CardContent>
       </Card>

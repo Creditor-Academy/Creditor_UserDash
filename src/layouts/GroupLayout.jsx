@@ -111,11 +111,11 @@ export function GroupLayout() {
       icon: Users,
       path: `/dashboard/groups/${groupId}/members`
     },
-    // { 
-    //   label: "Chat", 
-    //   icon: MessageCircle, 
-    //   path: `/dashboard/groups/${groupId}/chat` 
-    // },
+    { 
+      label: "Chat", 
+      icon: MessageCircle, 
+      path: `/dashboard/groups/${groupId}/chat` 
+    },
     { 
       label: "Announcements", 
       icon: Bell, 
