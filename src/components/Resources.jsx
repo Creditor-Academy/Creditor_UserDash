@@ -1526,7 +1526,7 @@ const Resources = () => {
         >
           ✖ Close
         </button>
-        <h2 className="text-xl font-bold mb-4">Search Images (Unsplash + Pexels + Pixabay)</h2>
+        <h2 className="text-xl font-bold mb-4">Search Images</h2>
 
         <div className="flex gap-2 mb-4">
           <input 
