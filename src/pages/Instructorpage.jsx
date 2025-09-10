@@ -10,6 +10,7 @@ import ManageUsers from "./ManageUsers";
 import AddQuiz from "./AddQuiz";
 import SupportTickets from "./Support";
 import Resources from "@/components/Resources";
+import AdminPayments from "@/components/credits/AdminPayments";
 import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,7 +25,8 @@ import {
   FaExclamationTriangle,
   FaArrowLeft,
   FaFileAlt,
-  FaImages
+  FaImages,
+  FaCreditCard
 } from "react-icons/fa";
 
 const InstructorPage = () => {
@@ -187,6 +189,16 @@ const InstructorPage = () => {
           >
             <FaImages /> Assets
           </button>
+          <button 
+            onClick={() => setActiveTab("payments")} 
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === "payments" 
+                ? "bg-blue-100 text-blue-700 font-semibold" 
+                : "hover:bg-gray-100 text-gray-700"
+            }`}
+          >
+            <FaCreditCard /> Payments
+          </button>
         </div>
       </div>
 
@@ -293,6 +305,11 @@ const InstructorPage = () => {
             {activeTab === "resources" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <Resources />
+              </section>
+            )}
+            {activeTab === "payments" && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <AdminPayments />
               </section>
             )}
           </div>
