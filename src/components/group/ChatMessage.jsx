@@ -60,6 +60,26 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
             duration={message.duration}
             isUser={isUser}
           />
+        ) : message.type === 'image' && (message.imageUrl || message.fileUrl) ? (
+          <div
+            className={`rounded-2xl px-4 py-3 shadow-sm break-words word-wrap overflow-wrap-anywhere max-w-full ${
+              isUser
+                ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+                : "bg-gray-100 text-gray-800 border border-gray-200"
+            }`}
+          >
+            <img
+              src={message.imageUrl || message.fileUrl}
+              alt="Shared image"
+              className="max-w-full max-h-64 rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => window.open(message.imageUrl || message.fileUrl, '_blank')}
+            />
+            {message.content && (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2">
+                {message.content}
+              </p>
+            )}
+          </div>
         ) : message.type === 'file' && message.fileUrl && message.fileName ? (
           <div
             className={`rounded-2xl px-4 py-3 shadow-sm break-words word-wrap overflow-wrap-anywhere max-w-full ${

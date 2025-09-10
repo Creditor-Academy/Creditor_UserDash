@@ -85,7 +85,8 @@ export function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isSendingImage, setIsSendingImage] = useState(false);
   const seenMessageIdsRef = React.useRef(new Set());
 
   const [showMembers, setShowMembers] = useState(false);
@@ -123,8 +124,11 @@ export function ChatPage() {
             senderName: payload.sender?.first_name || payload.sender?.name || 'Member',
             senderAvatar: payload.sender?.image || '',
             content: payload.content,
+            imageUrl: payload.image_url || payload.imageUrl,
             timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (payload.mime_type ? 'file' : 'text'),
+            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
+                  (payload.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
+                  (payload.mime_type ? 'file' : 'text'),
           }];
         });
     },
@@ -141,8 +145,11 @@ export function ChatPage() {
         senderName: m.sender?.first_name || m.sender?.name || 'Member',
         senderAvatar: m.sender?.image || '',
         content: m.content,
+        imageUrl: m.image_url || m.imageUrl,
         timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-        type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : (m.mime_type ? 'file' : 'text'),
+        type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
+              (m.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
+              (m.mime_type ? 'file' : 'text'),
       }));
       setMessages(normalized);
     } catch (e) {
@@ -284,24 +291,6 @@ export function ChatPage() {
     }
   };
 
-  const handleSendVoiceMessage = (audioBlob, duration) => {
-    const message = {
-      id: Date.now(),
-      senderId: currentUserId,
-      senderName: "You",
-      senderAvatar: "",
-      timestamp: new Date().toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      type: 'voice',
-      audioBlob,
-      duration
-    };
-
-    setMessages([...messages, message]);
-    setShowVoiceRecorder(false);
-  };
 
   // Edit/Delete message handlers
   const handleEditMessage = async (messageId, newContent) => {
@@ -325,6 +314,76 @@ export function ChatPage() {
       setMessages(snapshot);
     }
   };
+
+  const handleImageSelect = async (file) => {
+    if (!file) return;
+    
+    setIsSendingImage(true);
+    const tempId = `tmp-${Date.now()}`;
+    const imageUrl = URL.createObjectURL(file);
+    
+    const optimistic = {
+      id: tempId,
+      senderId: currentUserId,
+      senderName: "You",
+      senderAvatar: "",
+      imageUrl: imageUrl,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: 'image',
+      pending: true,
+    };
+    
+    setMessages(prev => [...prev, optimistic]);
+    setSelectedImage(null);
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('type', 'IMAGE');
+      
+      // Send image via socket
+      sendMessage({ 
+        content: '', 
+        senderId: currentUserId, 
+        type: 'IMAGE',
+        imageFile: file 
+      });
+      
+      // Send image via API
+      const res = await sendGroupMessage(groupId, formData, true); // true for multipart
+      const m = res?.data || res;
+      
+      if (m?.id) {
+        if (seenMessageIdsRef.current.has(m.id)) {
+          setMessages(prev => prev.filter(x => x.id !== tempId));
+        } else {
+          seenMessageIdsRef.current.add(m.id);
+          setMessages(prev => prev.map(x => x.id === tempId ? {
+            id: m.id,
+            senderId: m.sender_id || currentUserId,
+            senderName: m.sender?.first_name || 'You',
+            senderAvatar: m.sender?.image || '',
+            imageUrl: m.image_url || m.imageUrl || imageUrl,
+            content: m.content || '',
+            timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
+            type: 'image',
+          } : x));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to send image:', e);
+      setMessages(prev => prev.filter(x => x.id !== tempId));
+      toast({
+        title: "Error",
+        description: "Failed to send image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingImage(false);
+    }
+  };
+
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
@@ -508,11 +567,9 @@ export function ChatPage() {
             newMessage={newMessage}
             setNewMessage={setNewMessage}
             onSendMessage={handleSendMessage}
-            onSendVoiceMessage={handleSendVoiceMessage}
             onFileSelect={handleFileSelect}
-            showVoiceRecorder={showVoiceRecorder}
-            setShowVoiceRecorder={setShowVoiceRecorder}
-            isSending={isSending}
+            onImageSelect={handleImageSelect}
+            isSending={isSending || isSendingImage}
           />
         </CardContent>
       </Card>
