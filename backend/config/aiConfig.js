@@ -34,6 +34,10 @@ const aiConfig = {
     textGeneration: {
       primary: process.env.AI_TEXT_MODEL || 'google/flan-t5-base',
       fallback: process.env.AI_TEXT_FALLBACK || 'microsoft/Phi-3-mini-4k-instruct'
+    },
+    courseOutlineGeneration: {
+      primary: process.env.AI_COURSE_MODEL || 'google/flan-t5-base',
+      fallback: process.env.AI_COURSE_FALLBACK || 'microsoft/Phi-3-mini-4k-instruct'
     }
   },
 

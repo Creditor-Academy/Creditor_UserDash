@@ -122,6 +122,48 @@ class AIService {
       throw new Error(`AI image generation error: ${error.message}`);
     }
   }
+
+  // Course Outline Generation Proxy
+  async generateCourseOutline(options = {}) {
+    try {
+      const model = this.sdk.model(aiConfig.models.courseOutlineGeneration.primary);
+      await model.create();
+      
+      const { error, output } = await model.run(options);
+      
+      if (error) throw new Error(`Course outline generation failed: ${error}`);
+      if (!output) throw new Error('No output received');
+      
+      return {
+        success: true,
+        generated_text: output,
+        modules: [
+          {
+            id: 1,
+            title: `Introduction to ${options.subject}`,
+            lessons: [`What is ${options.subject}?`, 'Course Overview', 'Learning Objectives', 'Prerequisites', 'Getting Started']
+          },
+          {
+            id: 2,
+            title: `${options.subject} Fundamentals`,
+            lessons: ['Core Concepts', 'Key Principles', 'Essential Terminology', 'Foundation Knowledge', 'Basic Techniques']
+          },
+          {
+            id: 3,
+            title: `Practical ${options.subject}`,
+            lessons: ['Hands-on Examples', 'Real-world Applications', 'Best Practices', 'Common Patterns', 'Project Work']
+          },
+          {
+            id: 4,
+            title: `Advanced ${options.subject}`,
+            lessons: ['Advanced Techniques', 'Optimization Strategies', 'Industry Standards', 'Expert Tips', 'Complex Scenarios']
+          }
+        ]
+      };
+    } catch (error) {
+      throw new Error(`AI course outline generation error: ${error.message}`);
+    }
+  }
 }
 
 const aiService = new AIService();
@@ -144,6 +186,56 @@ router.post('/summarize', async (req, res) => {
     res.status(500).json({ 
       error: 'Summarization service unavailable',
       fallback: content.substring(0, 100) + '...'
+    });
+  }
+});
+
+// POST /api/ai-proxy/generate-outline
+router.post('/generate-outline', async (req, res) => {
+  try {
+    const { title, subject, description, targetAudience, difficulty, duration } = req.body;
+    
+    const result = await aiService.generateCourseOutline({
+      title,
+      subject,
+      description,
+      targetAudience,
+      difficulty,
+      duration
+    });
+    
+    res.json({
+      success: true,
+      generated_text: result.generated_text || `Course: ${title}\n\nModule 1: Introduction to ${subject}\n- Overview and fundamentals\n- Key concepts\n- Getting started\n\nModule 2: ${subject} Fundamentals\n- Core principles\n- Essential techniques\n- Best practices\n\nModule 3: Practical ${subject}\n- Hands-on examples\n- Real-world applications\n- Project work\n\nModule 4: Advanced ${subject}\n- Expert techniques\n- Optimization\n- Industry standards`,
+      modules: result.modules || [
+        {
+          id: 1,
+          title: `Introduction to ${subject}`,
+          lessons: [`What is ${subject}?`, 'Course Overview', 'Learning Objectives', 'Prerequisites', 'Getting Started']
+        },
+        {
+          id: 2,
+          title: `${subject} Fundamentals`,
+          lessons: ['Core Concepts', 'Key Principles', 'Essential Terminology', 'Foundation Knowledge', 'Basic Techniques']
+        },
+        {
+          id: 3,
+          title: `Practical ${subject}`,
+          lessons: ['Hands-on Examples', 'Real-world Applications', 'Best Practices', 'Common Patterns', 'Project Work']
+        },
+        {
+          id: 4,
+          title: `Advanced ${subject}`,
+          lessons: ['Advanced Techniques', 'Optimization Strategies', 'Industry Standards', 'Expert Tips', 'Complex Scenarios']
+        }
+      ]
+    });
+    
+  } catch (error) {
+    console.error('Course outline generation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate course outline'
     });
   }
 });

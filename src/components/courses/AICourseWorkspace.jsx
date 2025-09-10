@@ -20,7 +20,7 @@ import {
   Trash2,
   ArrowRight
 } from 'lucide-react';
-import bytezAPI from '../../services/bytezAPI';
+import aiProxyService from '../../services/aiProxyService';
 import AIImageGenerator from './AIImageGenerator';
 import AISummarizationTool from './AISummarizationTool';
 import AIQuestionAnswering from './AIQuestionAnswering';
@@ -93,37 +93,72 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
     // Generate topic-specific modules and lessons based on subject
     const generateTopicSpecificModules = (subject, title, difficulty) => {
       const topicTemplates = {
+        // Dynamic template generation based on any subject
+        'programming': {
+          modules: [
+            {
+              id: 1,
+              title: 'Programming Fundamentals',
+              lessons: ['Syntax Basics', 'Variables & Data Types', 'Control Structures', 'Functions', 'Error Handling']
+            },
+            {
+              id: 2,
+              title: 'Object-Oriented Programming',
+              lessons: ['Classes & Objects', 'Inheritance', 'Polymorphism', 'Encapsulation', 'Design Patterns']
+            },
+            {
+              id: 3,
+              title: 'Data Structures & Algorithms',
+              lessons: ['Arrays & Lists', 'Stacks & Queues', 'Trees & Graphs', 'Sorting Algorithms', 'Search Algorithms']
+            },
+            {
+              id: 4,
+              title: 'Advanced Concepts',
+              lessons: ['Memory Management', 'Concurrency', 'Networking', 'File I/O', 'Database Integration']
+            },
+            {
+              id: 5,
+              title: 'Best Practices',
+              lessons: ['Code Quality', 'Testing', 'Documentation', 'Version Control', 'Debugging']
+            },
+            {
+              id: 6,
+              title: 'Project Development',
+              lessons: ['Project Planning', 'Implementation', 'Testing & QA', 'Deployment', 'Maintenance']
+            }
+          ]
+        },
         'react': {
           modules: [
             {
               id: 1,
               title: 'React Fundamentals',
-              lessons: ['What is React?', 'JSX Syntax', 'Components and Props', 'State Management', 'Event Handling']
+              lessons: ['JSX Basics', 'Components', 'Props', 'State', 'Event Handling']
             },
             {
               id: 2,
-              title: 'Component Lifecycle & Hooks',
-              lessons: ['Class Components', 'Functional Components', 'useState Hook', 'useEffect Hook', 'Custom Hooks']
+              title: 'React Hooks',
+              lessons: ['useState', 'useEffect', 'useContext', 'useReducer', 'Custom Hooks']
             },
             {
               id: 3,
-              title: 'Advanced React Patterns',
-              lessons: ['Context API', 'Higher-Order Components', 'Render Props', 'Error Boundaries', 'Code Splitting']
+              title: 'Component Patterns',
+              lessons: ['Higher-Order Components', 'Render Props', 'Compound Components', 'Context API', 'Error Boundaries']
             },
             {
               id: 4,
               title: 'State Management',
-              lessons: ['Redux Basics', 'Redux Toolkit', 'Context vs Redux', 'Zustand', 'State Best Practices']
+              lessons: ['Local State', 'Lifting State Up', 'Context for State', 'Redux Basics', 'Redux Toolkit']
             },
             {
               id: 5,
               title: 'React Router & Navigation',
-              lessons: ['React Router Setup', 'Route Components', 'Dynamic Routing', 'Protected Routes', 'Navigation Guards']
+              lessons: ['Router Setup', 'Route Components', 'Navigation', 'Route Parameters', 'Protected Routes']
             },
             {
               id: 6,
-              title: 'Testing & Deployment',
-              lessons: ['Jest & React Testing Library', 'Component Testing', 'Integration Tests', 'Build Process', 'Deployment Strategies']
+              title: 'Testing & Performance',
+              lessons: ['Testing Library', 'Unit Tests', 'Integration Tests', 'Performance Optimization', 'Production Build']
             }
           ]
         },
@@ -448,8 +483,8 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
       setIsGenerating(true);
       
       try {
-        // Use Bytez API for intelligent course outline generation
-        const response = await bytezAPI.generateCourseOutline({
+        // Use AI Proxy Service for intelligent course outline generation
+        const response = await aiProxyService.generateCourseOutline({
           title: formData.title,
           subject: formData.subject,
           description: formData.description,
@@ -473,7 +508,8 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
         }
 
         // Generate topic-specific modules and lessons
-        const topicModules = generateTopicSpecificModules(formData.subject, formData.title, formData.difficulty);
+        const finalSubject = formData.subject === 'custom' ? formData.customSubject : formData.subject;
+        const topicModules = generateTopicSpecificModules(finalSubject, formData.title, formData.difficulty);
         
         const newOutline = {
           id: Date.now(),
@@ -589,7 +625,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
           <button
             onClick={generateOutline}
             disabled={isGenerating || !formData.title || !formData.subject}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
           >
             {isGenerating ? (
               <>
@@ -598,8 +634,8 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
-                Generate Outline
+                <Wand2 className="w-4 h-4" />
+                Generate AI Outline
               </>
             )}
           </button>

@@ -7,6 +7,8 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
+    subject: '',
+    customSubject: '',
     description: '',
     targetAudience: '',
     duration: '',
@@ -120,7 +122,7 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+          className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -140,7 +142,7 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-6 flex-1 overflow-y-auto">
             <div className="space-y-6">
               <div>
                 <h3 className="text-lg font-semibold mb-4">Tell us about your course</h3>
@@ -154,22 +156,112 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                       value={formData.title}
                       onChange={(e) => setFormData({...formData, title: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="e.g., Introduction to React Development"
+                      placeholder="e.g., Digital Marketing Fundamentals"
                     />
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Target Audience
+                      Subject Domain *
+                    </label>
+                    <select
+                      value={formData.subject}
+                      onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="">Select a domain</option>
+                      <optgroup label="Technology">
+                        <option value="programming">Programming</option>
+                        <option value="web-development">Web Development</option>
+                        <option value="mobile-development">Mobile Development</option>
+                        <option value="data-science">Data Science</option>
+                        <option value="machine-learning">Machine Learning</option>
+                        <option value="artificial-intelligence">Artificial Intelligence</option>
+                        <option value="cybersecurity">Cybersecurity</option>
+                        <option value="cloud-computing">Cloud Computing</option>
+                        <option value="devops">DevOps</option>
+                      </optgroup>
+                      <optgroup label="Business & Marketing">
+                        <option value="digital-marketing">Digital Marketing</option>
+                        <option value="social-media-marketing">Social Media Marketing</option>
+                        <option value="content-marketing">Content Marketing</option>
+                        <option value="email-marketing">Email Marketing</option>
+                        <option value="seo">Search Engine Optimization</option>
+                        <option value="business-strategy">Business Strategy</option>
+                        <option value="entrepreneurship">Entrepreneurship</option>
+                        <option value="project-management">Project Management</option>
+                        <option value="sales">Sales</option>
+                      </optgroup>
+                      <optgroup label="Design & Creative">
+                        <option value="graphic-design">Graphic Design</option>
+                        <option value="ui-ux-design">UI/UX Design</option>
+                        <option value="web-design">Web Design</option>
+                        <option value="photography">Photography</option>
+                        <option value="video-editing">Video Editing</option>
+                        <option value="animation">Animation</option>
+                        <option value="branding">Branding</option>
+                      </optgroup>
+                      <optgroup label="Finance & Accounting">
+                        <option value="personal-finance">Personal Finance</option>
+                        <option value="investing">Investing</option>
+                        <option value="accounting">Accounting</option>
+                        <option value="financial-analysis">Financial Analysis</option>
+                        <option value="cryptocurrency">Cryptocurrency</option>
+                      </optgroup>
+                      <optgroup label="Health & Wellness">
+                        <option value="fitness">Fitness</option>
+                        <option value="nutrition">Nutrition</option>
+                        <option value="mental-health">Mental Health</option>
+                        <option value="yoga">Yoga</option>
+                        <option value="meditation">Meditation</option>
+                      </optgroup>
+                      <optgroup label="Languages">
+                        <option value="english">English</option>
+                        <option value="spanish">Spanish</option>
+                        <option value="french">French</option>
+                        <option value="german">German</option>
+                        <option value="chinese">Chinese</option>
+                        <option value="japanese">Japanese</option>
+                      </optgroup>
+                      <optgroup label="Other">
+                        <option value="music">Music</option>
+                        <option value="cooking">Cooking</option>
+                        <option value="writing">Writing</option>
+                        <option value="public-speaking">Public Speaking</option>
+                        <option value="leadership">Leadership</option>
+                        <option value="productivity">Productivity</option>
+                        <option value="custom">Custom Topic</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+                
+                {formData.subject === 'custom' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Custom Subject Area *
                     </label>
                     <input
                       type="text"
-                      value={formData.targetAudience}
-                      onChange={(e) => setFormData({...formData, targetAudience: e.target.value})}
+                      value={formData.customSubject}
+                      onChange={(e) => setFormData({...formData, customSubject: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="e.g., Beginner developers"
+                      placeholder="Enter your custom subject area"
                     />
                   </div>
+                )}
+                
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Target Audience
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.targetAudience}
+                    onChange={(e) => setFormData({...formData, targetAudience: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="e.g., Beginners, Professionals, Students"
+                  />
                 </div>
                 
                 <div className="mt-4">
@@ -232,7 +324,7 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-6 py-4 flex justify-between items-center">
+          <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t flex-shrink-0">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
@@ -242,11 +334,11 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
             
             <button
               onClick={handleOpenWorkspace}
-              disabled={!formData.title || !formData.description}
+              disabled={!formData.title?.trim() || !formData.description?.trim() || (!formData.subject || (formData.subject === 'custom' && !formData.customSubject?.trim()))}
               className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Sparkles className="w-4 h-4" />
-              Open AI Workspace
+              Generate AI Course
             </button>
           </div>
         </motion.div>
