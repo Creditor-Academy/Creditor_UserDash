@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
+import TableComponent from '@/components/TableComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -321,7 +322,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [linkError, setLinkError] = useState('');
   const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
   const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
-  const [showTableTemplateSidebar, setShowTableTemplateSidebar] = useState(false);
   const [showImageEditDialog, setShowImageEditDialog] = useState(false);
   const [currentImageBlock, setCurrentImageBlock] = useState(null);
   const [imageTemplateText, setImageTemplateText] = useState('');
@@ -344,6 +344,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
   const [showQuoteEditDialog, setShowQuoteEditDialog] = useState(false);
   const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
+  const [showTableComponent, setShowTableComponent] = useState(false);
+  const [editingTableBlock, setEditingTableBlock] = useState(null);
 
   // Image block templates
   const imageTemplates = [
@@ -405,77 +407,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   ];
 
-  // Table/Columns templates
-  const tableTemplates = [
-    {
-      id: 'two_columns',
-      title: 'Two Columns',
-      description: 'Responsive two-column layout for side-by-side content',
-      icon: <Table className="h-6 w-6" />,
-      defaultContent: `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-lg font-semibold mb-2">Left Column</h3>
-            <p class="text-gray-600">Add your content here. You can include text, lists, or images.</p>
-          </div>
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-lg font-semibold mb-2">Right Column</h3>
-            <p class="text-gray-600">Add your content here. You can include text, lists, or images.</p>
-          </div>
-        </div>`
-    },
-    {
-      id: 'three_columns',
-      title: 'Three Columns',
-      description: 'Balanced three-column layout for features or highlights',
-      icon: <Table className="h-6 w-6" />,
-      defaultContent: `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-base font-semibold mb-2">Column One</h3>
-            <p class="text-gray-600">Add your content here.</p>
-          </div>
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-base font-semibold mb-2">Column Two</h3>
-            <p class="text-gray-600">Add your content here.</p>
-          </div>
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-base font-semibold mb-2">Column Three</h3>
-            <p class="text-gray-600">Add your content here.</p>
-          </div>
-        </div>`
-    },
-    {
-      id: 'simple_table',
-      title: 'Simple Table',
-      description: 'Clean table with header and rows',
-      icon: <Table className="h-6 w-6" />,
-      defaultContent: `
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 1</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 2</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 3</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-              <tr>
-                <td class="px-4 py-2 text-gray-700">Row 1, Col 1</td>
-                <td class="px-4 py-2 text-gray-700">Row 1, Col 2</td>
-                <td class="px-4 py-2 text-gray-700">Row 1, Col 3</td>
-              </tr>
-              <tr>
-                <td class="px-4 py-2 text-gray-700">Row 2, Col 1</td>
-                <td class="px-4 py-2 text-gray-700">Row 2, Col 2</td>
-                <td class="px-4 py-2 text-gray-700">Row 2, Col 3</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>`
-    }
-  ];
 
   const contentBlockTypes = [
     {
@@ -611,7 +542,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'tables') {
-      setShowTableTemplateSidebar(true);
+      setShowTableComponent(true);
     } else if (blockType.id === 'audio') {
       setShowAudioDialog(true);
     } else if (blockType.id === 'youtube') {
@@ -721,63 +652,14 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setSidebarCollapsed(true);
   };
 
-  const handleTableTemplateSelect = (template) => {
-    // Generate HTML content with proper card styling to match existing blocks
-    const htmlContent = `
-      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-        <div class="pl-4">
-          ${template.defaultContent}
-        </div>
-      </div>
-    `;
-   
-    const newBlock = {
-      id: `block_${Date.now()}`,
-      block_id: `block_${Date.now()}`,
-      type: 'text',
-      title: template.title,
-      textType: 'table',
-      content: template.defaultContent,
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-   
-    let blocksToUpdate = [];
-      
-    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-      // For existing lessons, use lessonContent which contains the updated content
-      blocksToUpdate = lessonContent.data.content;
-        
-      // Add any new blocks from contentBlocks that aren't in lessonContent
-      const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
-      const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-      blocksToUpdate = [...blocksToUpdate, ...newBlocks];
-    } else {
-      // For new lessons, use contentBlocks
-      blocksToUpdate = contentBlocks;
-    }
-   
-    // If we have existing lesson content, add to that structure
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...blocksToUpdate, newBlock]
-        }
-      }));
-    } else {
-      // For new lessons, add to contentBlocks
-      setContentBlocks(prevBlocks => [...blocksToUpdate, newBlock]);
-    }
-    setShowTableTemplateSidebar(false);
-  };
 
   const handleStatementSelect = (statementBlock) => {
     // Only add to contentBlocks - this is the primary state for managing blocks
     setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
   };
+
+
+
 
   const handleStatementEdit = (blockId, content, htmlContent) => {
     // Detect statement type from HTML content to preserve it
@@ -839,6 +721,68 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleQuoteTemplateSelect = (newBlock) => {
     // Only add to contentBlocks - this is the primary state for managing blocks
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  // Table component callbacks
+  const handleTableTemplateSelect = (newBlock) => {
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  const handleTableUpdate = (blockId, content, htmlContent, tableType = null) => {
+    // Parse content to extract table type if not provided
+    let extractedTableType = tableType;
+    if (!extractedTableType && content) {
+      try {
+        const parsedContent = JSON.parse(content);
+        extractedTableType = parsedContent.templateId || parsedContent.tableType || 'two_columns';
+      } catch (e) {
+        extractedTableType = 'two_columns'; // fallback
+      }
+    }
+
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          content,
+          html_css: htmlContent,
+          tableType: extractedTableType,
+          templateId: extractedTableType,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              content,
+              html_css: htmlContent,
+              tableType: extractedTableType,
+              templateId: extractedTableType,
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                table_type: extractedTableType,
+                templateId: extractedTableType
+              },
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+    
+    setEditingTableBlock(null);
+    setShowTableComponent(false);
   };
 
   const handleQuoteUpdate = (blockId, updatedContentString) => {
@@ -1348,6 +1292,49 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         setEditorContent(block.content || '');
         setEditorHtml(block.content || '');
       }
+    } else if (block.type === 'table') {
+      // Handle table block editing - open edit dialog directly
+      console.log('Table block detected for editing:', block);
+      
+      // Detect table type from existing block data
+      let tableType = block.tableType || block.templateId || block.details?.table_type || block.details?.templateId;
+      
+      // If table type is not available, try to detect from content
+      if (!tableType && block.content) {
+        try {
+          const parsedContent = JSON.parse(block.content);
+          tableType = parsedContent.templateId || parsedContent.tableType || 'two_columns';
+        } catch (e) {
+          // If content parsing fails, try to detect from HTML structure
+          if (block.html_css) {
+            const htmlContent = block.html_css;
+            if (htmlContent.includes('grid') && htmlContent.includes('md:grid-cols-2')) {
+              tableType = 'two_columns';
+            } else if (htmlContent.includes('grid') && htmlContent.includes('md:grid-cols-3')) {
+              tableType = 'three_columns';
+            } else if (htmlContent.includes('<table') || htmlContent.includes('divide-y')) {
+              tableType = 'responsive_table';
+            } else {
+              tableType = 'two_columns'; // fallback
+            }
+          } else {
+            tableType = 'two_columns'; // fallback
+          }
+        }
+      } else if (!tableType) {
+        tableType = 'two_columns'; // fallback
+      }
+      
+      // Ensure the block has the table type information
+      const blockWithType = {
+        ...block,
+        tableType: tableType,
+        templateId: tableType
+      };
+      
+      // Set the editing table block and show the table component in edit mode
+      setEditingTableBlock(blockWithType);
+      setShowTableComponent(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -1854,13 +1841,24 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             };
           }
           
+          // For table blocks, include explicit table type metadata
+          if (block.type === 'table') {
+            blockData.tableType = block.tableType || block.templateId || 'two_columns';
+            blockData.details = {
+              ...blockData.details,
+              table_type: block.tableType || block.templateId || 'two_columns',
+              templateId: block.tableType || block.templateId || 'two_columns',
+              content: block.content || ''
+            };
+          }
+          
           return blockData;
         }
 
-        // Only generate new HTML for newly created blocks without existing html_css
-        let htmlContent = '';
+        // Generate HTML content for blocks without html_css
         let details = {};
         let script = '';
+        let htmlContent = '';
 
         // Extract content from different possible sources
         const blockContent = block.content || '';
@@ -3701,6 +3699,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'table') {
+                    return {
+                      ...base,
+                      type: 'table',
+                      title: b.details?.title || 'Table',
+                      tableType: b.details?.table_type || b.details?.templateId || b.tableType || 'two_columns',
+                      templateId: b.details?.table_type || b.details?.templateId || b.tableType || 'two_columns',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   // Default map to text block with preserved HTML
                   return {
                     ...base,
@@ -4157,6 +4166,25 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   <cite className="text-sm font-medium text-gray-500">
                                                     — {JSON.parse(block.content || '{}').author || 'Author Name'}
                                                   </cite>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                       
+                                        {/* Table Content */}
+                                        {block.type === 'table' && (
+                                          <div className="mb-8">
+                                            {block.html_css ? (
+                                              <div
+                                                className="prose max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                              />
+                                            ) : (
+                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                                                <div className="pl-4">
+                                                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                                 </div>
                                               </div>
                                             )}
@@ -4839,6 +4867,31 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           }
                                         })()}
                                       </cite>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {block.type === 'table' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Table'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Table
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+                                    <div className="pl-4">
+                                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                     </div>
                                   </div>
                                 )}
@@ -5714,63 +5767,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </div>
       )}
 
-      {/* Table Template Sidebar */}
-      {showTableTemplateSidebar && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300"
-            onClick={() => setShowTableTemplateSidebar(false)}
-          />
-         
-          {/* Sidebar */}
-          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Table className="h-6 w-6" />
-                  Table Templates
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowTableTemplateSidebar(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  ×
-                </Button>
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Choose a table/column template to add to your lesson
-              </p>
-            </div>
-           
-            <div className="p-6 space-y-4">
-              {tableTemplates.map((template) => (
-                <div
-                  key={template.id}
-                  onClick={() => handleTableTemplateSelect(template)}
-                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
-                      {template.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{template.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                    </div>
-                  </div>
-                 
-                  {/* Mini Preview */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: template.defaultContent }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Table Component */}
+      {showTableComponent && (
+        <TableComponent
+          onTemplateSelect={handleTableTemplateSelect}
+          onClose={() => {
+            setShowTableComponent(false);
+            setEditingTableBlock(null);
+          }}
+          editingBlock={editingTableBlock}
+          isEditing={!!editingTableBlock}
+          onTableUpdate={handleTableUpdate}
+        />
       )}
 
       {/* Text Type Sidebar */}
