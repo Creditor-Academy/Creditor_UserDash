@@ -108,6 +108,7 @@ function Messages() {
           const mapped = (data?.cov_messages || []).map(m => ({
             id: m.id,
             senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+            senderImage: m?.sender?.image || null,
             text: m.content,
             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             type: 'text',
@@ -119,7 +120,7 @@ function Messages() {
       })();
     };
 
-    const onReceiveMessage = ({ from, message }) => {
+    const onReceiveMessage = ({ from, message, image }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
       setMessages(prev => [
@@ -128,6 +129,7 @@ function Messages() {
           id: Date.now() + Math.random(),
           senderId: isSelf ? 0 : String(from),
           text: message,
+          senderImage: image || null,
           timestamp: new Date().toLocaleTimeString([], { 
             hour: '2-digit', 
             minute: '2-digit' 
@@ -420,6 +422,7 @@ function Messages() {
                           const mapped = (data?.cov_messages || []).map(m => ({
                             id: m.id,
                             senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+                            senderImage: m?.sender?.image || null,
                             text: m.content,
                             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                             type: 'text',
@@ -498,14 +501,10 @@ function Messages() {
                       >
                         {message.senderId !== 0 && (
                           <Avatar className="h-8 w-8 mr-2 mt-1">
-                            {convosLoaded && (
-                              <>
-                                <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                                <AvatarFallback>
-                                  {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
-                                </AvatarFallback>
-                              </>
-                            )}
+                            <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
+                            <AvatarFallback>
+                              {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
+                            </AvatarFallback>
                           </Avatar>
                         )}
                         
@@ -572,6 +571,7 @@ function Messages() {
                         
                         {message.senderId === 0 && (
                           <Avatar className="h-8 w-8 ml-2 mt-1">
+                            <AvatarImage src={message.senderImage || undefined} />
                             <AvatarFallback>Y</AvatarFallback>
                           </Avatar>
                         )}
