@@ -4,9 +4,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight } from "lucide-react";
+import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
+import { getCourseTrialStatus } from '../utils/trialUtils';
+import TrialBadge from '../components/ui/TrialBadge';
+import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
 
 export function Courses() {
   const [courses, setCourses] = useState([]);
@@ -20,6 +23,8 @@ export function Courses() {
   const [error, setError] = useState("");
   const [expandedCourseId, setExpandedCourseId] = useState(null);
   const [courseModules, setCourseModules] = useState({});
+  const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
+  const [showTrialDialog, setShowTrialDialog] = useState(false);
 
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
@@ -99,7 +104,7 @@ export function Courses() {
         // Fetch courses with modules included in a single API call
         const data = await fetchUserCourses(true);
         
-        // Process each course to add modulesCount and totalDuration
+        // Process each course to add modulesCount, totalDuration, and trial status
         const processedCourses = data.map(course => {
           const modules = course.modules || [];
           // Sum durations using 'estimated_duration' (in minutes)
@@ -107,11 +112,15 @@ export function Courses() {
           // Convert to seconds for formatTime
           const totalDurationSecs = totalDurationMins * 60;
           
+          // Get trial status
+          const trialStatus = getCourseTrialStatus(course);
+          
           return {
             ...course,
             modulesCount: course._count?.modules || 0, 
             totalDurationSecs,
-            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
+            trialStatus
           };
         });
         
@@ -140,6 +149,35 @@ export function Courses() {
     
     fetchCourses();
   }, []);
+
+  // Update trial status every minute for real-time countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCourses(prevCourses => 
+        prevCourses.map(course => ({
+          ...course,
+          trialStatus: getCourseTrialStatus(course)
+        }))
+      );
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleCourseClick = (course) => {
+    if (course.trialStatus.isInTrial && course.trialStatus.isExpired) {
+      setSelectedExpiredCourse(course);
+      setShowTrialDialog(true);
+      return;
+    }
+    // Navigate to course normally
+    window.location.href = `/dashboard/courses/${course.id}/modules`;
+  };
+
+  const handleCloseTrialDialog = () => {
+    setShowTrialDialog(false);
+    setSelectedExpiredCourse(null);
+  };
 
   const handleViewModules = (courseId) => {
     if (expandedCourseId === courseId) {
@@ -306,6 +344,21 @@ export function Courses() {
                         alt={course.title}
                         className="w-full h-full object-cover"
                       />
+                      {/* Trial Badge Overlay */}
+                      {course.trialStatus.isInTrial && (
+                        <div className="absolute top-3 left-3">
+                          <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
+                        </div>
+                      )}
+                      {/* Lock Overlay for Expired Trials */}
+                      {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                          <div className="text-white text-center">
+                            <Lock className="w-8 h-8 mx-auto mb-2" />
+                            <p className="text-sm font-medium">Trial Expired</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <CardHeader className="pb-3 flex-shrink-0">
@@ -336,12 +389,32 @@ export function Courses() {
                     
                     <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
                       <div className="flex gap-2 w-full">
-                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
-                          <Button variant="default" className="w-full">
-                            Continue Learning
+                        {course.trialStatus.isInTrial && course.trialStatus.isExpired ? (
+                          <Button 
+                            variant="outline" 
+                            className="w-full border-red-200 text-red-700 hover:bg-red-50"
+                            onClick={() => handleCourseClick(course)}
+                          >
+                            <Lock size={16} className="mr-2" />
+                            Trial Expired - Enroll Now
                           </Button>
-                        </Link>
+                        ) : (
+                          <Button 
+                            variant="default" 
+                            className="w-full"
+                            onClick={() => handleCourseClick(course)}
+                          >
+                            {course.trialStatus.isInTrial ? 'Continue Trial' : 'Continue Learning'}
+                          </Button>
+                        )}
                       </div>
+                      
+                      {/* Trial Status Info */}
+                      {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
+                        <div className="text-xs text-center text-gray-600">
+                          Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
+                        </div>
+                      )}
                       
                       {/* {course.progress === 100 && (
                         <Link to={`/certificate/${course.id}`} className="w-full">
@@ -364,6 +437,13 @@ export function Courses() {
           </div>
         </div>
       </main>
+      
+      {/* Trial Expired Dialog */}
+      <TrialExpiredDialog 
+        isOpen={showTrialDialog}
+        onClose={handleCloseTrialDialog}
+        course={selectedExpiredCourse}
+      />
     </div>
   );
 }
