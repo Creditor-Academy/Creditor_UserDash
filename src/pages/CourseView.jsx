@@ -4,13 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
+import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText, CircleDollarSign, Lock } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
+import { useCredits } from "@/contexts/CreditsContext";
+
+const MODULE_UNLOCK_COST = 10;
 
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
   const hasAccess = location.state?.isAccessible ?? true;
+  const { balance, spendCredits } = useCredits();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -19,6 +23,11 @@ export function CourseView() {
   const [error, setError] = useState("");
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [unlockedModuleIds, setUnlockedModuleIds] = useState(() => {
+    const stored = localStorage.getItem(`unlocked_modules_${courseId}`);
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [confirm, setConfirm] = useState({ open: false, module: null, reason: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -110,6 +119,56 @@ export function CourseView() {
     if (remainingMinutes === 0) return `${hours} hr`;
     return `${hours} hr ${remainingMinutes} min`;
   };
+
+  const handleUnlockClick = (module) => {
+    const moduleOrder = module.order || 0;
+    const previousModule = modules.find(m => (m.order || 0) === moduleOrder - 1);
+    const isUnlocked = unlockedModuleIds.includes(module.id);
+    const isContentAvailable = module.resource_url;
+    const isUpcoming = !isContentAvailable;
+    const isLocked = !hasAccess && isContentAvailable;
+    
+    if (isUnlocked || !isLocked) return;
+    
+    // Check if modules are unlocked in order
+    const canUnlockByOrder = !previousModule || unlockedModuleIds.includes(previousModule.id);
+    
+    if (!canUnlockByOrder) {
+      setConfirm({ open: true, module, reason: 'order' });
+      return;
+    }
+    
+    if (balance < MODULE_UNLOCK_COST) {
+      setConfirm({ open: true, module, reason: 'insufficient' });
+      return;
+    }
+    
+    setConfirm({ open: true, module, reason: 'confirm' });
+  };
+
+  const confirmUnlock = () => {
+    if (!confirm.module) return;
+    
+    const newUnlockedIds = [...unlockedModuleIds, confirm.module.id];
+    setUnlockedModuleIds(newUnlockedIds);
+    localStorage.setItem(`unlocked_modules_${courseId}`, JSON.stringify(newUnlockedIds));
+    
+    // Deduct credits
+    spendCredits(MODULE_UNLOCK_COST, {
+      type: 'Module Unlock',
+      moduleTitle: confirm.module.title,
+      courseTitle: courseDetails?.title,
+      courseId: courseId
+    });
+    
+    setConfirm({ open: false, module: null, reason: '' });
+  };
+
+  const openCreditsModal = () => {
+    window.dispatchEvent(new CustomEvent('open-credits-modal'));
+    setConfirm({ open: false, module: null, reason: '' });
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -214,17 +273,30 @@ export function CourseView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredModules.map((module) => {
+                const isUnlocked = unlockedModuleIds.includes(module.id);
+                const isContentAvailable = module.resource_url;
+                const isUpcoming = !isContentAvailable;
+                const isLocked = !hasAccess && isContentAvailable;
+                
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!hasAccess || !module.resource_url) ? 'opacity-75' : ''}`}>
+                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(isLocked && !isUnlocked) ? 'opacity-75' : ''}`}>
                       <div className="aspect-video relative overflow-hidden">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Lock overlay for locked modules (non-enrolled or no content) */}
-                        {((!hasAccess) || !module.resource_url) && (
+                        {/* Lock overlay for locked modules */}
+                        {isLocked && !isUnlocked && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <div className="bg-white/95 rounded-full p-4 shadow-xl">
+                              <Lock className="w-8 h-8 text-gray-700" />
+                            </div>
+                          </div>
+                        )}
+                        {/* Clock overlay for upcoming modules */}
+                        {isUpcoming && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="bg-white/95 rounded-full p-4 shadow-xl">
                               <Clock className="w-8 h-8 text-gray-700" />
@@ -254,7 +326,7 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          {hasAccess && module.resource_url ? (
+                          {hasAccess && (isUnlocked || !isLocked) && isContentAvailable ? (
                             <>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
                                 <Button className="w-full">
@@ -269,10 +341,18 @@ export function CourseView() {
                                 </Button> 
                               </Link>
                             </>
-                          ) : (
+                          ) : isUpcoming ? (
                             <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
                               <Clock size={16} className="mr-2" />
                               <span className="font-medium">Upcoming Module</span>
+                            </Button>
+                          ) : (
+                            <Button 
+                              onClick={() => handleUnlockClick(module)}
+                              className="w-full bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700 transition-colors duration-200"
+                            >
+                              <Lock size={16} className="mr-2" />
+                              <span className="font-medium">Unlock with {MODULE_UNLOCK_COST} credits</span>
                             </Button>
                           )}
                         </CardFooter>
@@ -285,6 +365,58 @@ export function CourseView() {
           )}
         </div>
       </main>
+
+      {/* Confirmation Modal */}
+      {confirm.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
+            <div className="mb-4">
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                {confirm.reason === 'order' && 'Unlock in Order'}
+                {confirm.reason === 'insufficient' && 'Not Enough Credits'}
+                {confirm.reason === 'confirm' && 'Confirm Unlock'}
+              </h4>
+              <p className="text-sm text-gray-700">
+                {confirm.reason === 'order' && 'Please unlock modules in order. Unlock the previous module first.'}
+                {confirm.reason === 'insufficient' && `You need ${MODULE_UNLOCK_COST} credits to unlock this module. You currently have ${balance} credits.`}
+                {confirm.reason === 'confirm' && `Unlock "${confirm.module?.title}" for ${MODULE_UNLOCK_COST} credits?`}
+              </p>
+              {confirm.reason === 'confirm' && confirm.module && (
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-sm text-gray-600">
+                    <div className="font-medium mb-1">Module Details:</div>
+                    <div>• Duration: {confirm.module.estimated_duration || 0} minutes</div>
+                    <div>• Order: {confirm.module.order || 'N/A'}</div>
+                    <div className="mt-2">
+                      <div className="font-medium">Current Credits: {balance}</div>
+                      <div className="font-medium">Cost: {MODULE_UNLOCK_COST} credits</div>
+                      <div className="font-medium">Remaining: {balance - MODULE_UNLOCK_COST} credits</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setConfirm({ open: false, module: null, reason: '' })}
+              >
+                Cancel
+              </Button>
+              {confirm.reason === 'insufficient' ? (
+                <Button onClick={openCreditsModal} className="bg-blue-600 hover:bg-blue-700">
+                  Buy Credits
+                </Button>
+              ) : confirm.reason === 'confirm' ? (
+                <Button onClick={confirmUnlock} className="bg-purple-600 hover:bg-purple-700">
+                  Confirm Unlock
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
