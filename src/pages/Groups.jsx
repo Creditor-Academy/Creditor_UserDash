@@ -2,8 +2,9 @@ import React, { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Filter, Users2, Calendar, MessageSquare, ArrowRight, BookOpen, UserPlus, Check } from "lucide-react";
+import { Users, Search, Filter, Users2, Calendar, MessageSquare, ArrowRight, BookOpen, UserPlus, Check, Lock } from "lucide-react";
 import { getGroups, addGroupMember } from "@/services/groupService";
+import { fetchUserCourses, fetchAllCourses } from "@/services/courseService";
 import { toast } from "sonner";
 import { useUser } from "@/contexts/UserContext";
 import { isInstructorOrAdmin } from "@/services/userService";
@@ -23,9 +24,59 @@ export function Groups() {
   const [joiningGroup, setJoiningGroup] = useState(null);
   const [activeView, setActiveView] = useState("common"); // "common" or "course"
   const groupsPerPage = 6; // Show 6 groups per page (2 rows of 3 in grid)
+  const [userCourses, setUserCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
+  const [allCourses, setAllCourses] = useState([]);
+  const [loadingAllCourses, setLoadingAllCourses] = useState(false);
 
   // Check if current user is admin or instructor
   const isAdminOrInstructor = isInstructorOrAdmin();
+
+  // Resolve a displayable course name for a course group
+  const getCourseDisplayName = (group) => {
+    if (!group) return "Course";
+    if (group.courseName && group.courseName.trim().length > 0) return group.courseName;
+    // Prefer looking up from allCourses to ensure accuracy
+    const matchAll = allCourses.find(c => (c.id === group.courseId || c.course_id === group.courseId));
+    if (matchAll) return matchAll.name || matchAll.title || matchAll.course_name || "Course";
+    // Fallback to user's courses if necessary
+    const matchUser = userCourses.find(c => (c.id === group.courseId || c.course_id === group.courseId));
+    return matchUser?.name || matchUser?.title || matchUser?.course_name || "Course";
+  };
+
+  // Fetch user's enrolled courses
+  const fetchUserEnrolledCourses = async () => {
+    try {
+      setLoadingCourses(true);
+      const courses = await fetchUserCourses();
+      setUserCourses(courses || []);
+    } catch (error) {
+      console.error("Error fetching user courses:", error);
+      setUserCourses([]);
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
+  // Fetch all courses (for resolving course names on course groups)
+  const fetchAllCoursesList = async () => {
+    try {
+      setLoadingAllCourses(true);
+      const courses = await fetchAllCourses();
+      setAllCourses(Array.isArray(courses) ? courses : []);
+    } catch (error) {
+      console.error("Error fetching all courses:", error);
+      setAllCourses([]);
+    } finally {
+      setLoadingAllCourses(false);
+    }
+  };
+
+  // Check if user is enrolled in a course
+  const isUserEnrolledInCourse = (courseId) => {
+    if (!courseId || !userCourses.length) return false;
+    return userCourses.some(course => course.id === courseId || course.course_id === courseId);
+  };
 
   // Fetch groups from API
   const fetchGroups = async () => {
@@ -97,9 +148,11 @@ export function Groups() {
     }
   };
 
-  // Fetch groups on component mount
+  // Fetch groups, user courses, and all courses on component mount
   useEffect(() => {
     fetchGroups();
+    fetchUserEnrolledCourses();
+    fetchAllCoursesList();
   }, []);
 
   const filteredGroups = useMemo(() => {
@@ -124,8 +177,9 @@ export function Groups() {
       filtered = filtered.filter(g => g.type === "common");
     }
     
-    // Apply sorting
+    // Apply sorting: always show joined groups first, then apply selected sort
     const sorted = [...filtered].sort((a, b) => {
+      if (a.isMember !== b.isMember) return a.isMember ? -1 : 1;
       if (sortBy === "members") return b.members - a.members;
       if (sortBy === "recent") return new Date(b.createdAt) - new Date(a.createdAt);
       return a.name.localeCompare(b.name);
@@ -183,7 +237,7 @@ export function Groups() {
             </p>
           </div>
           
-          {/* View Toggle
+         
           <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-fit">
             <Button
               variant={activeView === "common" ? "default" : "ghost"}
@@ -218,7 +272,7 @@ export function Groups() {
               </span>
             </Button>
           </div>
-           */}
+          
           {/* Search and filter section */}
           <div className="flex flex-col md:flex-row gap-4 mt-4">
             <div className="relative flex-1">
@@ -335,24 +389,25 @@ export function Groups() {
               {currentGroups.map((group) => (
                   <Card 
                     key={group.id} 
-                  className={`relative overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 group ${
-                    activeView === "course" ? "pr-10" : ""
-                  }`}
-                >
-                  <div className={`h-2 w-full ${activeView === "common" ? "bg-blue-500" : "bg-purple-500"}`} />
+                    className="relative overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 group"
+                  >
+                  {/* Left accent bar */}
+                  <div className={`absolute left-0 top-0 h-full w-1 ${
+                    group.type === "course" ? "bg-purple-500" : "bg-blue-500"
+                  }`} />
                   
                   {/* Course tag for course groups */}
-                  {activeView === "course" && group.courseName && (
-                      <div className="absolute top-3 right-3">
+                  {group.type === "course" && group.courseName && (
+                    <div className="absolute top-4 right-4">
                       <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
-                          {group.courseName}
-                        </span>
-                      </div>
-                    )}
+                        {group.courseName}
+                      </span>
+                    </div>
+                  )}
 
                   <CardHeader className="pb-3">
                     <CardTitle className={`text-lg font-semibold text-gray-800 group-hover:${
-                      activeView === "common" ? "text-blue-600" : "text-purple-600"
+                      group.type === "course" ? "text-purple-600" : "text-blue-600"
                     } transition-colors`}>
                         {group.name}
                       </CardTitle>
@@ -364,9 +419,9 @@ export function Groups() {
                     <CardContent className="pb-3 pt-0">
                       <div className="flex flex-wrap gap-2 mb-3">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
-                        activeView === "common" 
-                          ? "bg-blue-50 text-blue-700" 
-                          : "bg-purple-50 text-purple-700"
+                        group.type === "course" 
+                          ? "bg-purple-50 text-purple-700" 
+                          : "bg-blue-50 text-blue-700"
                       }`}>
                           <Users className="h-3 w-3" /> {group.members} members
                         </span>
@@ -381,7 +436,7 @@ export function Groups() {
                       </div>
                     </CardContent>
                     
-                  <CardFooter className="border-t border-gray-100 bg-gray-50/50 py-3 flex justify-between">
+                  <CardFooter className="relative border-t border-gray-100 bg-gray-50/50 py-3 flex justify-between">
                     {group.isMember ? (
                       <>
                         <Button 
@@ -398,9 +453,9 @@ export function Groups() {
                         size="sm" 
                         asChild
                           className={`gap-1 hover:bg-gray-100 ${
-                            activeView === "common" 
-                              ? "text-blue-600 hover:text-blue-700" 
-                              : "text-purple-600 hover:text-purple-700"
+                            group.type === "course" 
+                              ? "text-purple-600 hover:text-purple-700" 
+                              : "text-blue-600 hover:text-blue-700"
                           }`}
                       >
                         <Link to={`/dashboard/groups/${group.id}/news`}>
@@ -408,23 +463,40 @@ export function Groups() {
                         </Link>
                       </Button>
                       </>
+                    ) : group.type === "course" && !isUserEnrolledInCourse(group.courseId) ? (
+                      // Course group - user not enrolled (locked)
+                      <div className="flex flex-col items-center gap-2 w-full">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <Lock className="h-4 w-4" />
+                          <span className="text-sm font-medium">Group Locked</span>
+                        </div>
+                        <p className="text-xs text-gray-600 text-center">
+                          Enroll into <span className="font-medium text-purple-600">"{getCourseDisplayName(group)}"</span> to join this group
+                        </p>
+                      </div>
                     ) : (
+                      // Common group or enrolled course group
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleJoinGroup(group.id)}
                         disabled={joiningGroup === group.id}
                         className={`gap-1 ${
-                          activeView === "common" 
-                            ? "text-blue-600 hover:text-blue-700 hover:bg-blue-50" 
-                            : "text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                          group.type === "course" 
+                            ? "text-purple-600 hover:text-purple-700 hover:bg-purple-50" 
+                            : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         }`}
                       >
                         <UserPlus className="h-4 w-4" />
                         {joiningGroup === group.id ? "Joining..." : "Join Group"}
                       </Button>
                     )}
-                    </CardFooter>
+
+                    {/* Overlay when locked */}
+                    {group.type === "course" && !group.isMember && !isUserEnrolledInCourse(group.courseId) && (
+                      <div className="absolute inset-0 bg-purple-200/30 pointer-events-none rounded-b-xl" />
+                    )}
+                  </CardFooter>
                   </Card>
                 ))}
                  </div>
