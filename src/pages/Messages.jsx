@@ -333,9 +333,24 @@ function Messages() {
     friend.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredNewChatUsers = allUsers.filter(user => 
-    user.name.toLowerCase().includes(newChatSearch.toLowerCase())
-  );
+  const filteredNewChatUsers = (() => {
+    const currentUserId = String(localStorage.getItem('userId') || '');
+    const engagedUserIds = new Set(
+      (friends || []).map(f => {
+        const parts = String(f.room || '').split('_');
+        if (parts.length === 2) {
+          const [a, b] = parts;
+          return String(a) === currentUserId ? String(b) : String(a);
+        }
+        // fallback: no parsable room
+        return null;
+      }).filter(Boolean)
+    );
+    return (allUsers || []).filter(user => {
+      const inSearch = (user.name || '').toLowerCase().includes((newChatSearch || '').toLowerCase());
+      return inSearch && !engagedUserIds.has(String(user.id));
+    });
+  })();
 
   return (
     <div className="container py-6">
@@ -492,28 +507,18 @@ function Messages() {
                 {/* Messages Area */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
-                    {messages.map((message) => {
-                      const isSelf = message.senderId === 0;
-                      const friendForSelected = friends.find((f) => f.id === selectedFriend);
-                      const otherAvatarSrc = message.senderImage || friendForSelected?.avatar;
-                      const selfAvatarSrc = message.senderImage || undefined;
-                      if (!isSelf) {
-                        console.log('[Messages] avatar for incoming msg:', message.id, message.senderImage ? 'backend-senderImage' : 'fallback-friendAvatar');
-                      } else {
-                        console.log('[Messages] avatar for self msg:', message.id, message.senderImage ? 'backend-senderImage' : 'fallback-initial');
-                      }
-                      return (
+                    {messages.map((message) => (
                       <div
                         key={message.id}
                         className={`flex ${
-                          isSelf ? "justify-end" : "justify-start"
+                          message.senderId === 0 ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {!isSelf && (
+                        {message.senderId !== 0 && (
                           <Avatar className="h-8 w-8 mr-2 mt-1">
-                            <AvatarImage src={otherAvatarSrc} />
+                            <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
                             <AvatarFallback>
-                              {friendForSelected?.name?.[0] || 'U'}
+                              {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -579,15 +584,14 @@ function Messages() {
                           </div>
                         )}
                         
-                        {isSelf && (
+                        {message.senderId === 0 && (
                           <Avatar className="h-8 w-8 ml-2 mt-1">
-                            <AvatarImage src={selfAvatarSrc} />
+                            <AvatarImage src={message.senderImage || undefined} />
                             <AvatarFallback>Y</AvatarFallback>
                           </Avatar>
                         )}
                       </div>
-                      );
-                    })}
+                    ))}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
