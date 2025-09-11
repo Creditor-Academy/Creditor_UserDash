@@ -530,10 +530,11 @@ export function ChatPage() {
     setSelectedImage(null);
 
     try {
-      // Create FormData for file upload
+      // Create FormData for file upload (backend expects `media` file field)
       const formData = new FormData();
-      formData.append('image', file);
-      formData.append('type', 'IMAGE');
+      formData.append('media', file);
+      //formData.append('type', 'IMAGE');
+      formData.append('mime_type', file.type || '');
       
       // Send image via API
       const res = await sendGroupMessage(groupId, formData, true); // true for multipart
