@@ -103,10 +103,17 @@ export const getGroupMessages = async (groupId, page = 1, limit = 50) => {
   }
 }
 
-// Send a group message (text/url)
-export const sendGroupMessage = async (groupId, { content, type = 'TEXT' }) => {
+// Send a group message
+// Supports JSON payload for text messages and FormData for image/file messages
+export const sendGroupMessage = async (groupId, payload, isMultipart = false) => {
   try {
-    const response = await api.post(`/groups/${groupId}/messages`, { content, type });
+    const isFormData = isMultipart || (typeof FormData !== 'undefined' && payload instanceof FormData);
+    const config = isFormData
+      ? { headers: { 'Content-Type': 'multipart/form-data' } }
+      : { headers: { 'Content-Type': 'application/json' } };
+
+    const body = isFormData ? payload : payload; // axios handles both
+    const response = await api.post(`/groups/${groupId}/messages`, body, config);
     return response.data;
   } catch (error) {
     console.error('Error sending group message:', error);

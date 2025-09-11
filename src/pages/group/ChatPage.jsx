@@ -157,17 +157,18 @@ export function ChatPage() {
           // If message already exists by id, skip
           if (payload?.id && prev.some(m => m.id === payload.id)) return prev;
 
+          const isImage = (payload?.mime_type || payload?.mimeType || '').startsWith('image/');
+          const derivedImageUrl = (payload?.media_url || payload?.image_url || payload?.imageUrl || (isImage ? payload?.content : undefined));
           const normalized = {
             id: payload.id,
             senderId: payload.sender_id,
             senderName: payload.sender?.first_name || 'Member',
             senderAvatar: payload.sender?.image || '',
-            content: payload.content,
-            imageUrl: payload.image_url || payload.imageUrl,
+            content: isImage ? '' : payload.content,
+            imageUrl: derivedImageUrl,
             timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
             type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
-                  (payload.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
-                  (payload.mime_type ? 'file' : 'text'),
+                  (isImage ? 'image' : (payload.mime_type ? 'file' : 'text')),
           };
 
           // Try to replace a matching optimistic message (same sender and content)
@@ -316,12 +317,11 @@ export function ChatPage() {
         senderId: m.sender_id || m.senderId,
         senderName: m.sender?.first_name || m.sender?.name || 'Member',
         senderAvatar: m.sender?.image || '',
-        content: m.content,
-        imageUrl: m.image_url || m.imageUrl,
+        content: (m?.mime_type || '').startsWith('image/') ? '' : m.content,
+        imageUrl: (m.media_url || m.image_url || m.imageUrl || ((m?.mime_type || '').startsWith('image/') ? m.content : undefined)),
         timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
         type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
-              (m.type || 'TEXT').toLowerCase() === 'image' ? 'image' : 
-              (m.mime_type ? 'file' : 'text'),
+              ((m?.mime_type || '').startsWith('image/') ? 'image' : (m.mime_type ? 'file' : 'text')),
       }));
       setMessages(normalized);
     } catch (e) {
@@ -530,18 +530,10 @@ export function ChatPage() {
     setSelectedImage(null);
 
     try {
-      // Create FormData for file upload
+      // Create FormData for file upload (backend expects `req.file` named 'media')
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('media', file);
       formData.append('type', 'IMAGE');
-      
-      // Send image via socket
-      sendMessage({ 
-        content: '', 
-        senderId: currentUserId, 
-        type: 'IMAGE',
-        imageFile: file 
-      });
       
       // Send image via API
       const res = await sendGroupMessage(groupId, formData, true); // true for multipart
