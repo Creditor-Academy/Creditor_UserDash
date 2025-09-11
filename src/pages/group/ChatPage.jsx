@@ -535,14 +535,6 @@ export function ChatPage() {
       formData.append('image', file);
       formData.append('type', 'IMAGE');
       
-      // Send image via socket
-      sendMessage({ 
-        content: '', 
-        senderId: currentUserId, 
-        type: 'IMAGE',
-        imageFile: file 
-      });
-      
       // Send image via API
       const res = await sendGroupMessage(groupId, formData, true); // true for multipart
       const m = res?.data || res;
