@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle } from "lucide-react";
+import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle, UserPlus, Phone } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
-// Removed logo import as logo display is no longer used
 import { useAuth } from "@/contexts/AuthContext";
+import { SignUp } from "@/pages/Auth/SignUp";
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -134,6 +135,7 @@ export function Login() {
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
   const [animateCard, setAnimateCard] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
@@ -231,9 +233,9 @@ export function Login() {
   };
 
   const features = [
-    { icon: <BookOpen className="h-5 w-5" />, text: "Personalized, role-based learning paths" },
-    { icon: <Users className="h-5 w-5" />, text: "Real-time progress tracking and insights" },
-    { icon: <Award className="h-5 w-5" />, text: "Verified credentials and achievements" }
+    { icon: <BookOpen className="h-5 w-5" />, text: "Expert-Led Courses" },
+    { icon: <Users className="h-5 w-5" />, text: "Professional Network" },
+    { icon: <Award className="h-5 w-5" />, text: "Industry Recognition" }
   ];
 
   return (
@@ -264,23 +266,31 @@ export function Login() {
       <div className="relative w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center p-4 lg:p-8">
         {/* Left Side - Branding */}
         <div className="hidden lg:flex flex-col items-start justify-center h-full text-slate-800 p-8">
-          {/* Brand */}
+          {/* Brand Header */}
           <div className={`transform transition-all duration-1000 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-700 bg-clip-text text-transparent">
-                LMS ATHENA
-              </h1>
-              <p className="text-slate-600 text-lg">Premier Private Education Platform</p>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-blue-200/50">
+                <span className="text-2xl font-extrabold text-blue-700">A</span>
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-700 bg-clip-text text-transparent">
+                  LMS ATHENA
+                </h1>
+                <p className="text-slate-600 text-lg">Learning Management Platform</p>
+              </div>
             </div>
           </div>
 
           {/* Hero Content */}
           <div className={`transform transition-all duration-1000 delay-300 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
             <h2 className="text-4xl font-bold mb-6 leading-tight text-slate-800">
-              Unlock the Future of Learning with Athena
+              Experience the Future of
+              <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Intelligent Learning
+              </span>
             </h2>
             <p className="text-lg text-slate-600 leading-relaxed mb-8">
-              Experience a next-gen platform built to empower your growth through personalized, role-based education.
+              Join learners advancing their skills through our comprehensive, expert-led courses.
             </p>
           </div>
 
@@ -301,24 +311,29 @@ export function Login() {
         <div className="flex items-center justify-center p-4 lg:p-8">
           <Card className={`w-full max-w-md bg-white/95 backdrop-blur-sm border border-blue-100/50 shadow-2xl transform transition-all duration-1000 ${animateCard ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-95'}`}>
             <CardHeader className="space-y-4 text-center pb-6">
-              {/* Mobile Brand (logo removed) */}
+              {/* Mobile Brand */}
               <div className="flex items-center justify-center gap-3 lg:hidden mb-2">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md border border-blue-200/50">
+                  <span className="text-lg font-extrabold text-blue-700">A</span>
+                </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-800">LMS ATHENA</h2>
-                  <p className="text-xs text-slate-600">Private Education Platform</p>
+                  <p className="text-xs text-slate-600">Learning Management Platform</p>
                 </div>
               </div>
               
               <div>
                 <CardTitle className="text-2xl font-bold text-slate-800 mb-1">Welcome Back</CardTitle>
                 <CardDescription className="text-slate-600">
-                  Sign in to continue your private education journey
+                  Sign in to continue your learning journey
                 </CardDescription>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {showForgotPassword ? (
+              {showSignUp ? (
+                <SignUp onBack={() => setShowSignUp(false)} />
+              ) : showForgotPassword ? (
                 <ForgotPassword 
                   onBack={() => setShowForgotPassword(false)}
                   email={email}
@@ -416,6 +431,17 @@ export function Login() {
                       </div>
                     )}
                   </Button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUp(true)}
+                      className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
+                      disabled={isLoading}
+                    >
+                      New here? Create an account
+                    </button>
+                  </div>
                 </form>
               )}
             </CardContent>

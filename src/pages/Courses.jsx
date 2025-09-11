@@ -96,70 +96,60 @@ export function Courses() {
     const fetchCourses = async () => {
       setLoading(true);
       try {
-        const data = await fetchUserCourses();
+        // Fetch courses with modules included in a single API call
+        const data = await fetchUserCourses(true);
         
-        // Fetch modules for each course and add modulesCount and totalDuration
-        const coursesWithModules = await Promise.all(
-          data.map(async (course) => {
-            try {
-              const modules = await fetchCourseModules(course.id);
-              // Sum durations using 'estimated_duration' (in minutes)
-              const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-              // Convert to seconds for formatTime
-              const totalDurationSecs = totalDurationMins * 60;
-              const courseWithModules = { 
-                ...course, 
-                modulesCount: modules.length, 
-                totalDurationSecs,
-                // Ensure image field is set from thumbnail
-                image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-              return courseWithModules;
-            } catch {
-              const courseWithDefaults = { 
-                ...course, 
-                modulesCount: 0, 
-                totalDurationSecs: 0,
-                image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-              return courseWithDefaults;
-            }
-          })
-        );
-        setCourses(coursesWithModules);
-        setFilteredCourses(coursesWithModules);
+        // Process each course to add modulesCount and totalDuration
+        const processedCourses = data.map(course => {
+          const modules = course.modules || [];
+          // Sum durations using 'estimated_duration' (in minutes)
+          const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
+          // Convert to seconds for formatTime
+          const totalDurationSecs = totalDurationMins * 60;
+          
+          return {
+            ...course,
+            modulesCount: course._count?.modules || 0, 
+            totalDurationSecs,
+            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
+          };
+        });
+        
+        setCourses(processedCourses);
+        setFilteredCourses(processedCourses);
+        
+        // Pre-populate courseModules for expanded view
+        const modulesMap = {};
+        data.forEach(course => {
+          if (course.modules) {
+            modulesMap[course.id] = course.modules;
+          }
+        });
+        setCourseModules(prev => ({
+          ...prev,
+          ...modulesMap
+        }));
+        
       } catch (err) {
+        console.error("Error fetching courses:", err);
         setError("Failed to fetch courses");
       } finally {
         setLoading(false);
       }
     };
+    
     fetchCourses();
   }, []);
 
-  const handleViewModules = async (courseId) => {
+  const handleViewModules = (courseId) => {
     if (expandedCourseId === courseId) {
       setExpandedCourseId(null);
       return;
     }
-
     setExpandedCourseId(courseId);
     
-    // Fetch modules if not already loaded
-    if (!courseModules[courseId]) {
-      try {
-        const modules = await fetchCourseModules(courseId);
-        setCourseModules(prev => ({
-          ...prev,
-          [courseId]: modules
-        }));
-      } catch (err) {
-        setCourseModules(prev => ({
-          ...prev,
-          [courseId]: []
-        }));
-      }
-    }
+    // Modules are already loaded in the initial fetch
+    // No need for additional API calls
   };
 
   useEffect(() => {
@@ -325,17 +315,17 @@ export function Courses() {
                     
                     <CardContent className="space-y-3 flex-1">
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                           <Clock size={14} />
                           <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
-                        </div>
+                        </div> */}
                         <div className="flex items-center gap-1">
                           <BookOpen size={14} />
                           <span>{course.modulesCount || 0} modules</span>
                         </div>
                       </div>
                       
-                      <Progress value={course.progress || 0} className="h-2" />
+                      {/* <Progress value={course.progress || 0} className="h-2" /> */}
                       {/*
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>Time spent: {formatTime(courseTimes[course.id] || 0)}</span>

@@ -415,3 +415,44 @@ export const leaveGroup = async (groupId) => {
     throw error;
   }
 };
+
+/**
+ * Get groups for a specific course
+ * @param {string|number} courseId - The course ID
+ * @returns {Promise<Object>} Response with course groups data
+ */
+export const getCourseGroups = async (courseId) => {
+  try {
+    console.log("📤 groupService: Fetching groups for course:", courseId);
+    
+    const response = await api.get(`/groups/course/${courseId}`);
+    
+    console.log("✅ groupService: Course groups fetched successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching course groups:', error);
+    throw error;
+  }
+};
+
+/**
+ * Add multiple users to a group at once
+ * @param {string|number} groupId - The group ID
+ * @param {Array<string|number>} userIds - Array of user IDs to add
+ * @returns {Promise<Object>} Response with bulk addition results
+ */
+export const addMultipleGroupMembers = async (groupId, userIds) => {
+  try {
+    console.log("📤 groupService: Adding multiple members to group:", groupId, userIds);
+    
+    const response = await api.post(`/groups/${groupId}/addMembers`, {
+      userIds: userIds
+    });
+    
+    console.log("✅ groupService: Multiple members added successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding multiple group members:', error);
+    throw error;
+  }
+};
