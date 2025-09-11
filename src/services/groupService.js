@@ -349,6 +349,17 @@ export const addLike = async (postId) => {
   }
 };
 
+// Remove like from post
+export const removeLike = async (postId) => {
+  try {
+    const response = await api.delete(`/groups/posts/${postId}/likes`);
+    return response.data;
+  } catch (error) {
+    console.error('Error removing like:', error);
+    throw error;
+  }
+};
+
 // Delete a specific group post by postId (admin only)
 export const deleteGroupPost = async (postId) => {
   try {
@@ -383,6 +394,17 @@ export const deleteGroupMember = async (groupId, memberId) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting group member:', error);
+    throw error;
+  }
+};
+
+// Leave group (current user leaves the group)
+export const leaveGroup = async (groupId) => {
+  try {
+    const response = await api.post(`/groups/${groupId}/leave`);
+    return response.data;
+  } catch (error) {
+    console.error('Error leaving group:', error);
     throw error;
   }
 };

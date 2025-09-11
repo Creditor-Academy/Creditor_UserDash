@@ -2,11 +2,24 @@ import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VoiceMessage } from "@/components/messages/VoiceMessage";
 import { Download, Pencil, Trash2, Check, X } from "lucide-react";
+import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 
 export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, isAdmin = false }) {
   const isUser = String(message.senderId) === String(currentUserId);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
+  const [showDelete, setShowDelete] = useState(false);
+
+  // Render lightweight centered system notices
+  if (message.isSystem) {
+    return (
+      <div className="w-full flex items-center justify-center">
+        <div className="max-w-[80%] text-center text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
@@ -21,10 +34,10 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
         isUser ? "items-end" : "items-start"
       }`}>
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-xs font-medium text-gray-600">
+          <span className="text-xs font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
             {message.senderName}
           </span>
-          <span className="text-xs text-gray-400">
+          <span className="text-[10px] text-gray-400 group-hover:text-gray-500 transition-colors">
             {message.timestamp}
           </span>
         </div>
@@ -44,7 +57,7 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
               {(isUser || isAdmin) && (
                 <button
                   className="p-1 hover:text-red-600"
-                  onClick={() => onDeleteMessage?.(message.id)}
+                  onClick={() => setShowDelete(true)}
                   title="Delete message"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -62,10 +75,10 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
           />
         ) : message.type === 'image' && (message.imageUrl || message.fileUrl) ? (
           <div
-            className={`rounded-2xl px-4 py-3 shadow-sm break-words word-wrap overflow-wrap-anywhere max-w-full ${
+            className={`rounded-2xl px-4 py-3 shadow-sm break-words word-wrap overflow-wrap-anywhere max-w-full transition-all duration-150 ${
               isUser
                 ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
-                : "bg-gray-100 text-gray-800 border border-gray-200"
+                : "bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-50"
             }`}
           >
             <img
@@ -137,6 +150,17 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={showDelete}
+        onClose={() => setShowDelete(false)}
+        onConfirm={() => { setShowDelete(false); onDeleteMessage?.(message.id); }}
+        title="Delete message for everyone?"
+        message="This action cannot be undone. The message will be removed for all participants."
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 }
