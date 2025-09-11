@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
@@ -16,6 +16,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
 import { getAllConversations, loadPreviousConversation } from "@/services/messageService";
@@ -40,6 +50,8 @@ function Messages() {
   const [conversationId, setConversationId] = useState(null);
   const [newChatUsers, setNewChatUsers] = useState([]);
   const [newChatSearch, setNewChatSearch] = useState("");
+  const [deleteMessageId, setDeleteMessageId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const location = useLocation();
@@ -261,6 +273,26 @@ function Messages() {
       handleSendAttachment(file);
     }
     e.target.value = '';
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    setDeleteMessageId(messageId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteMessage = () => {
+    if (deleteMessageId) {
+      setMessages(prev => prev.filter(msg => msg.id !== deleteMessageId));
+      // TODO: Emit socket event to delete message on backend
+      // socket.emit('deleteMessage', { messageId: deleteMessageId, conversationId, roomId });
+    }
+    setShowDeleteDialog(false);
+    setDeleteMessageId(null);
+  };
+
+  const cancelDeleteMessage = () => {
+    setShowDeleteDialog(false);
+    setDeleteMessageId(null);
   };
 
   const handleNewChatUserSelect = (userId) => {
@@ -515,16 +547,26 @@ function Messages() {
                           </div>
                         ) : (
                           <div
-                            className={`max-w-[70%] rounded-lg p-3 ${
+                            className={`max-w-[70%] rounded-lg p-3 group relative ${
                               message.senderId === 0
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-muted"
                             }`}
                           >
                             <p>{message.text}</p>
-                            <p className="text-xs mt-1 opacity-70 text-right">
-                              {message.timestamp}
-                            </p>
+                            <div className="flex justify-between items-center mt-1">
+                              <p className="text-xs opacity-70">
+                                {message.timestamp}
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                                onClick={() => handleDeleteMessage(message.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         )}
                         
@@ -630,6 +672,29 @@ function Messages() {
           )}
         </div>
       </div>
+
+      {/* Delete Message Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteMessage}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteMessage}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
