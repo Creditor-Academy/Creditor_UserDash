@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FaCoins } from "react-icons/fa";
 import { useCredits } from "@/contexts/CreditsContext";
+import { fetchAllUsersAdmin } from "@/services/userService";
+import { api } from "@/services/apiClient";
 
 const AdminPayments = () => {
   const { transactions, balance, addCredits } = useCredits();
@@ -79,16 +81,44 @@ const AdminPayments = () => {
       used: used + 875   // Add dummy data to real data
     };
   }, [transactions]);
+  const [realUsers, setRealUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState("");
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersSearch, setUsersSearch] = useState("");
+  const [isGranting, setIsGranting] = useState(false);
+  const [grantMessage, setGrantMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        setUsersLoading(true);
+        setUsersError("");
+        const fetched = await fetchAllUsersAdmin();
+        if (cancelled) return;
+        const normalized = Array.isArray(fetched)
+          ? fetched.map(u => ({
+              id: u.id || u.user_id || u._id,
+              name: `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() || u.name || u.username || u.email || "Unknown",
+              email: u.email || u.user_email || "",
+              membership: (u.membership_status || u.membership || "active").toString().toLowerCase(),
+              credits: Number.isFinite(u.credits) ? u.credits : 0,
+            }))
+          : [];
+        setRealUsers(normalized);
+      } catch (e) {
+        if (!cancelled) setUsersError("Failed to load users");
+      } finally {
+        if (!cancelled) setUsersLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
   const users = useMemo(() => {
-    const dummyUsers = [
-      { id: "u_1", name: "Alice Johnson", email: "alice@example.com", membership: "active", credits: 35 },
-      { id: "u_2", name: "Bob Smith", email: "bob@example.com", membership: "inactive", credits: 5 },
-      { id: "u_3", name: "Chris Lee", email: "chris@example.com", membership: "active", credits: 12 },
-      { id: "u_4", name: "Dana Kapoor", email: "dana@example.com", membership: "past_due", credits: 0 },
-      { id: "u_5", name: "Eva Müller", email: "eva@example.com", membership: "active", credits: 60 }
-    ];
-    
-    // Add current user with real credit balance
+    // Add current user with real credit balance at the top (for quick reference)
     const currentUser = {
       id: "current_user",
       name: "Current User",
@@ -96,9 +126,27 @@ const AdminPayments = () => {
       membership: "active",
       credits: balance
     };
-    
-    return [currentUser, ...dummyUsers];
-  }, [balance]);
+    return [currentUser, ...realUsers];
+  }, [balance, realUsers]);
+
+  // Search + paging for users list (credits view)
+  const filteredUsers = useMemo(() => {
+    const term = usersSearch.trim().toLowerCase();
+    if (!term) return users;
+    return users.filter(u =>
+      (u.name || "").toLowerCase().includes(term) ||
+      (u.email || "").toLowerCase().includes(term) ||
+      (u.id || "").toString().toLowerCase().includes(term)
+    );
+  }, [users, usersSearch]);
+
+  const totalUserPages = Math.max(Math.ceil(filteredUsers.length / itemsPerPage), 1);
+  const pagedUsers = useMemo(() => {
+    const start = (usersPage - 1) * itemsPerPage;
+    return filteredUsers.slice(start, start + itemsPerPage);
+  }, [filteredUsers, usersPage, itemsPerPage]);
+
+  useEffect(() => { setUsersPage(1); }, [usersSearch]);
   const remainingCredits = Math.max(credits.sold - credits.used, 0);
 
   return (
@@ -268,7 +316,15 @@ const AdminPayments = () => {
       {paymentsView === "credits" && (
         <div className="space-y-6">
           <div className="border border-gray-200 rounded-lg p-6">
-            <div className="flex items-center justify-end mb-3">
+            <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+              <div className="flex-1 min-w-[220px]">
+                <input
+                  value={usersSearch}
+                  onChange={(e)=>setUsersSearch(e.target.value)}
+                  placeholder="Search users by name, email, or ID"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
               <button
                 disabled={selectedUserIds.length === 0}
                 onClick={() => { if (selectedUserIds.length === 0) { return; } setGrantModal({ open: true }); }}
@@ -283,13 +339,17 @@ const AdminPayments = () => {
             </div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-800">Users</h3>
+              <span className="text-sm text-gray-600">{usersLoading ? 'Loading…' : `${filteredUsers.length} users`}</span>
             </div>
+            {usersError && (
+              <div className="mb-2 text-sm text-red-600">{usersError}</div>
+            )}
             <div className="overflow-x-auto border border-gray-200 rounded-lg">
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50 text-gray-700">
                   <tr>
                     <th className="text-left px-3 py-2 w-10">
-                      <input type="checkbox" aria-label="Select all" onChange={(e)=>{ setSelectedUserIds(e.target.checked ? users.map(u=>u.id) : []); }} checked={selectedUserIds.length>0 && selectedUserIds.length===users.length} />
+                      <input type="checkbox" aria-label="Select page" onChange={(e)=>{ const pageIds = pagedUsers.map(u=>u.id); setSelectedUserIds(prev => e.target.checked ? [...new Set([...prev, ...pageIds])] : prev.filter(id=>!pageIds.includes(id))); }} checked={pagedUsers.length>0 && pagedUsers.every(u=>selectedUserIds.includes(u.id))} />
                     </th>
                     <th className="text-left px-3 py-2">Name</th>
                     <th className="text-left px-3 py-2">Email</th>
@@ -299,7 +359,7 @@ const AdminPayments = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u)=>{
+                  {pagedUsers.map((u)=>{
                     const checked = selectedUserIds.includes(u.id);
                     return (
                       <tr key={u.id} className="border-t hover:bg-gray-50">
@@ -321,6 +381,13 @@ const AdminPayments = () => {
                 </tbody>
               </table>
             </div>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="text-gray-600">Page {usersPage} of {totalUserPages}</span>
+              <div className="flex gap-2">
+                <button disabled={usersPage===1} onClick={() => setUsersPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${usersPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
+                <button disabled={usersPage>=totalUserPages} onClick={() => setUsersPage(p => Math.min(p+1, totalUserPages))} className={`px-3 py-1.5 rounded-md border ${usersPage>=totalUserPages?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+              </div>
+            </div>
           </div>
 
           {grantModal.open && (
@@ -331,14 +398,31 @@ const AdminPayments = () => {
                 <p className="text-sm text-gray-600 mb-4">Selected users: {selectedUserIds.length}</p>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Credits</label>
                 <input value={grantCreditsAmount} onChange={(e)=>setGrantCreditsAmount(parseInt(e.target.value||"0",10))} type="number" min="1" className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200 mb-4" />
+                {grantMessage && (
+                  <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">{grantMessage}</div>
+                )}
                 <div className="flex justify-end gap-2">
-                  <button onClick={()=>setGrantModal({ open:false })} className="px-4 py-2 rounded-md border hover:bg-gray-50">Cancel</button>
-                  <button onClick={()=>{ 
-                    setGrantModal({ open:false }); 
-                    // Add credits to current user's balance
-                    addCredits(grantCreditsAmount);
-                    alert(`Granted ${grantCreditsAmount} credits to your account!`); 
-                  }} className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white">Grant</button>
+                  <button onClick={()=>{ if (!isGranting) setGrantModal({ open:false }); }} className="px-4 py-2 rounded-md border hover:bg-gray-50" disabled={isGranting}>Cancel</button>
+                  <button onClick={async ()=>{ 
+                    if (isGranting) return; 
+                    try {
+                      setGrantMessage("");
+                      setIsGranting(true);
+                      // Call backend to grant credits
+                      await api.post('/payment-order/admin/credits/grant', { userIds: selectedUserIds, credits: grantCreditsAmount }, { withCredentials: true });
+                      // Reflect change locally
+                      setRealUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, credits: (Number(u.credits)||0) + (Number(grantCreditsAmount)||0) } : u));
+                      setGrantMessage(`Granted ${grantCreditsAmount} credits to ${selectedUserIds.length} user(s).`);
+                      // Optionally clear selection
+                      setSelectedUserIds([]);
+                      // Close after brief delay
+                      setTimeout(()=>{ setGrantModal({ open:false }); setGrantMessage(""); }, 800);
+                    } catch (e) {
+                      alert('Failed to grant credits.');
+                    } finally {
+                      setIsGranting(false);
+                    }
+                  }} className={`px-4 py-2 rounded-md text-white ${isGranting? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{isGranting? 'Granting…' : 'Grant'}</button>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock, ArrowLeft, Loader2, Lock } from "lucide-react";
 import { getCatalogCourses, testIndividualCourseAPI } from "@/services/instructorCatalogService";
@@ -7,10 +7,14 @@ import { fetchUserCourses, fetchCourseModules } from "@/services/courseService";
 import { getCourseTrialStatus } from '../utils/trialUtils';
 import TrialBadge from '../components/ui/TrialBadge';
 import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
+import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
+import { useCredits } from '@/contexts/CreditsContext';
 
 const CatelogCourses = () => {
   const { catalogId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { balance: creditsBalance, credits: creditsAlt } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
   const [catalog, setCatalog] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +28,9 @@ const CatelogCourses = () => {
   const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
   const [showTrialDialog, setShowTrialDialog] = useState(false);
   const [userCoursesWithTrial, setUserCoursesWithTrial] = useState([]);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
+  const [selectedCourseToBuy, setSelectedCourseToBuy] = useState(null);
 
   // Helper function to format course level
   const formatCourseLevel = (level) => {
@@ -213,6 +220,31 @@ const CatelogCourses = () => {
 
   // Use the fetched courses directly since they're already filtered by catalog
   const filteredCourses = courses || [];
+  const currentBalance = Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0);
+
+  // Derive a credits price for a course if present; otherwise, estimate from module count
+  const getCoursePriceCredits = (course) => {
+    const explicit = course?.priceCredits || course?.credits || course?.creditPrice || course?.price || course?.costCredits;
+    if (Number.isFinite(explicit)) return explicit;
+    const modulesCount = courseModuleCounts[course?.id] || 0;
+    return modulesCount > 0 ? modulesCount : 0; // fallback: 1 credit per module
+  };
+
+  const handleBuyCourseClick = (course) => {
+    const price = getCoursePriceCredits(course);
+    setSelectedCourseToBuy({ ...course, priceCredits: price });
+    if ((currentBalance || 0) >= (price || 0) && price > 0) {
+      setBuyDetailsOpen(true);
+    } else {
+      setShowCreditsModal(true);
+    }
+  };
+
+  const closeAllModals = () => {
+    setBuyDetailsOpen(false);
+    setShowCreditsModal(false);
+    setSelectedCourseToBuy(null);
+  };
   
   const handleCourseClick = (course) => {
     // Find the user's course data to check trial status
@@ -377,6 +409,7 @@ const CatelogCourses = () => {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredCourses.map((course, idx) => {
                 const isAccessible = accessibleCourseIds.includes(course.id);
+                const coursePriceCredits = getCoursePriceCredits(course);
                 const cardContent = (
                   <div 
                     key={course.id || course._id || course.uuid || idx} 
@@ -545,6 +578,18 @@ const CatelogCourses = () => {
                             </Badge>
                           </div>
                         )}
+                        {/* Buy Course CTA for not-enrolled */}
+                        {!isAccessible && (
+                          <div className="mt-4">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleBuyCourseClick(course); }}
+                              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-sm"
+                            >
+                              {`Buy course${coursePriceCredits ? ` for ${coursePriceCredits} CR` : ''}`}
+                            </button>
+                          </div>
+                        )}
                        </div>
                      </div>
                    </div>
@@ -576,6 +621,42 @@ const CatelogCourses = () => {
         onClose={handleCloseTrialDialog}
         course={selectedExpiredCourse}
       />
+
+      {/* Buy details modal when user has enough credits */}
+      {buyDetailsOpen && selectedCourseToBuy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeAllModals} />
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-5">
+            <div className="mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Purchase</h3>
+            </div>
+            <div className="text-sm text-gray-700 mb-4">
+              <div className="mb-1"><span className="font-medium">Course:</span> {selectedCourseToBuy.title || selectedCourseToBuy.name}</div>
+              <div className="mb-1"><span className="font-medium">Price:</span> {selectedCourseToBuy.priceCredits || 0} CR</div>
+              <div><span className="font-medium">Your balance:</span> {currentBalance || 0} CR</div>
+              <p className="mt-3 text-xs text-gray-600">Buying the course will unlock all its lessons. Lessons purchased individually remain separate.</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={closeAllModals} className="px-4 py-2 rounded-md border hover:bg-gray-50 text-sm">Cancel</button>
+              <button
+                onClick={() => { closeAllModals(); navigate(`/dashboard/courses/${selectedCourseToBuy.id}`); }}
+                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              >
+                Confirm & Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credits purchase modal when not enough credits */}
+      {showCreditsModal && (
+        <CreditPurchaseModal
+          open={showCreditsModal}
+          onClose={() => setShowCreditsModal(false)}
+          balance={Number.isFinite(currentBalance) ? currentBalance : undefined}
+        />
+      )}
     </div>
   );
 };
