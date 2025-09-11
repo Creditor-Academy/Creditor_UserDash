@@ -292,9 +292,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentBlock, setCurrentBlock] = useState(null);
-  const [editorContent, setEditorContent] = useState('');
-  const [editorHeading, setEditorHeading] = useState('');
-  const [editorSubheading, setEditorSubheading] = useState('');
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
@@ -306,6 +303,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showTextEditorDialog, setShowTextEditorDialog] = useState(false);
   const [editorTitle, setEditorTitle] = useState('');
   const [editorHtml, setEditorHtml] = useState('');
+  const [editorHeading, setEditorHeading] = useState('');
+  const [editorSubheading, setEditorSubheading] = useState('');
+  const [editorContent, setEditorContent] = useState('');
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -1132,14 +1132,34 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorContent('');
      
       // Set content based on block type
-      if (block.textType === 'heading-paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorHeading(parts[0] || '');
-        setEditorContent(parts[1] || '');
-      } else if (block.textType === 'subheading-paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorSubheading(parts[0] || '');
-        setEditorContent(parts[1] || '');
+      if (block.textType === 'heading_paragraph') {
+        // Parse existing content to extract heading and paragraph
+        if (block.heading !== undefined && block.content !== undefined) {
+          setEditorHeading(block.heading || '');
+          setEditorContent(block.content || '');
+        } else {
+          // Fallback: try to parse from HTML content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = block.html_css || block.content || '';
+          const h1 = tempDiv.querySelector('h1');
+          const p = tempDiv.querySelector('p');
+          setEditorHeading(h1 ? h1.innerHTML : '');
+          setEditorContent(p ? p.innerHTML : '');
+        }
+      } else if (block.textType === 'subheading_paragraph') {
+        // Parse existing content to extract subheading and paragraph
+        if (block.subheading !== undefined && block.content !== undefined) {
+          setEditorSubheading(block.subheading || '');
+          setEditorContent(block.content || '');
+        } else {
+          // Fallback: try to parse from HTML content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = block.html_css || block.content || '';
+          const h2 = tempDiv.querySelector('h2');
+          const p = tempDiv.querySelector('p');
+          setEditorSubheading(h2 ? h2.innerHTML : '');
+          setEditorContent(p ? p.innerHTML : '');
+        }
       } else {
         setEditorContent(block.content || '');
         setEditorHtml(block.content || '');
@@ -1172,11 +1192,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorContent('');
      
       // Set content based on block type
-      if (block.textType === 'heading-paragraph') {
+      if (block.textType === 'heading_paragraph') {
         const parts = block.content ? block.content.split('|||') : ['', ''];
         setEditorHeading(parts[0] || '');
         setEditorContent(parts[1] || '');
-      } else if (block.textType === 'subheading-paragraph') {
+      } else if (block.textType === 'subheading_paragraph') {
         const parts = block.content ? block.content.split('|||') : ['', ''];
         setEditorSubheading(parts[0] || '');
         setEditorContent(parts[1] || '');
@@ -2379,27 +2399,57 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       
       // Set content based on the detected text type
       if (detectedTextType === 'heading_paragraph') {
-        // Extract heading and paragraph from html_css or content
-        const htmlContent = block.html_css || block.content || '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        
-        const h1Element = tempDiv.querySelector('h1');
-        const pElement = tempDiv.querySelector('p, div:not(:has(h1, h2, h3, h4, h5, h6))');
-        
-        setEditorHeading(h1Element ? h1Element.innerHTML : (block.heading || 'Heading'));
-        setEditorContent(pElement ? pElement.innerHTML : 'Enter your content here...');
+        // For heading + paragraph, try to get from stored properties first
+        if (block.heading !== undefined && block.content !== undefined) {
+          setEditorHeading(block.heading || 'Heading');
+          // Extract paragraph content from the stored content or html_css
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          const proseDiv = tempDiv.querySelector('.prose');
+          if (proseDiv) {
+            setEditorContent(proseDiv.innerHTML || 'Enter your content here...');
+          } else {
+            setEditorContent(block.content || 'Enter your content here...');
+          }
+        } else {
+          // Fallback: parse from HTML
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          const h1Element = tempDiv.querySelector('h1');
+          const proseDiv = tempDiv.querySelector('.prose');
+          
+          setEditorHeading(h1Element ? h1Element.innerHTML : 'Heading');
+          setEditorContent(proseDiv ? proseDiv.innerHTML : 'Enter your content here...');
+        }
       } else if (detectedTextType === 'subheading_paragraph') {
-        // Extract subheading and paragraph from html_css or content
-        const htmlContent = block.html_css || block.content || '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        
-        const h2Element = tempDiv.querySelector('h2');
-        const pElement = tempDiv.querySelector('p, div:not(:has(h1, h2, h3, h4, h5, h6))');
-        
-        setEditorSubheading(h2Element ? h2Element.innerHTML : (block.subheading || 'Subheading'));
-        setEditorContent(pElement ? pElement.innerHTML : 'Enter your content here...');
+        // For subheading + paragraph, try to get from stored properties first
+        if (block.subheading !== undefined && block.content !== undefined) {
+          setEditorSubheading(block.subheading || 'Subheading');
+          // Extract paragraph content from the stored content or html_css
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          const proseDiv = tempDiv.querySelector('.prose');
+          if (proseDiv) {
+            setEditorContent(proseDiv.innerHTML || 'Enter your content here...');
+          } else {
+            setEditorContent(block.content || 'Enter your content here...');
+          }
+        } else {
+          // Fallback: parse from HTML
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          const h2Element = tempDiv.querySelector('h2');
+          const proseDiv = tempDiv.querySelector('.prose');
+          
+          setEditorSubheading(h2Element ? h2Element.innerHTML : 'Subheading');
+          setEditorContent(proseDiv ? proseDiv.innerHTML : 'Enter your content here...');
+        }
       } else {
         // For single content blocks (heading, subheading, paragraph)
         const htmlContent = block.html_css || block.content || '';
@@ -2423,6 +2473,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } else {
       setEditorTitle('');
       setEditorHtml('');
+      setEditorHeading('');
+      setEditorSubheading('');
+      setEditorContent('');
       setCurrentTextBlockId(null);
       setCurrentTextType(null);
     }
@@ -2448,20 +2501,28 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         const textType = textTypes.find(t => t.id === effectiveTextType);
         
         if (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'subheading_paragraph') {
-          // For compound templates, combine heading/subheading with paragraph
+          // For compound templates, combine heading/subheading with paragraph in styled container
           const headingTag = effectiveTextType === 'heading_paragraph' ? 'h1' : 'h2';
-          const headingClass = effectiveTextType === 'heading_paragraph' ? 'text-2xl font-bold' : 'text-xl font-semibold';
+          const headingFontSize = effectiveTextType === 'heading_paragraph' ? '24px' : '20px';
+          const headingFontWeight = effectiveTextType === 'heading_paragraph' ? 'bold' : '600';
+          
+          // Use the correct content variables for each template type
+          const headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
+          const paragraphContent = editorContent;
           
           updatedContent = `
-            <div class="content-block">
-              <${headingTag} class="${headingClass} text-gray-800 mb-4">${editorHeading || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
-              <div class="prose prose-lg max-w-none text-gray-700">
-                ${editorHtml || 'Start typing your content here...'}
-              </div>
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <${headingTag} style="font-size: ${headingFontSize} !important; font-weight: ${headingFontWeight}; color: #1F2937; margin: 0 0 16px 0; line-height: 1.2;">${headingContent || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
+                <div class="prose prose-lg max-w-none text-gray-700">
+                  ${paragraphContent || 'Start typing your content here...'}
+                </div>
+              </article>
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, enforce true h1 with fixed size (strip Quill wrappers and inline font-sizes)
+          // For heading blocks, use same styled container as other blocks
           const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
           if (tmp) { tmp.innerHTML = editorHtml || 'Heading'; }
           const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Heading') : (editorHtml || 'Heading');
@@ -2472,7 +2533,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               <article class="max-w-none pl-4">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
-            </div>`;
+            </div>
+          `;
         } else if (effectiveTextType === 'subheading') {
           // For subheading blocks, enforce true h2 with fixed size (strip Quill wrappers and inline font-sizes)
           const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
@@ -2487,15 +2549,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </article>
             </div>`;
         } else {
-          // For paragraph and other single content blocks
-          const style = textType?.style || {};
-          const styleString = Object.entries(style)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('; ');
-
+          // For paragraph and other single content blocks - use same styled container as heading/subheading
           updatedContent = `
-            <div class="content-block" style="${styleString}">
-              ${editorHtml || 'Enter your content here...'}
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <div class="prose prose-lg max-w-none text-gray-700">
+                  ${editorHtml || 'Enter your content here...'}
+                </div>
+              </article>
             </div>
           `;
         }
@@ -2571,10 +2633,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </article>
             </div>`;
         } else {
-          // For paragraph and other blocks
+          // For paragraph and other blocks - use same styled container as heading/subheading
           newBlockContent = `
-            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              ${editorHtml || 'Enter your content here...'}
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+              <article class="max-w-none pl-4">
+                <div class="prose prose-lg max-w-none text-gray-700">
+                  ${editorHtml || 'Enter your content here...'}
+                </div>
+              </article>
             </div>
           `;
         }
@@ -2664,18 +2731,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setLessonContent(prevLessonContent => ({
         ...prevLessonContent,
         data: {
-          ...prev.data,
-          content: prev.data.content.map(b => b.block_id === currentBlock.id ? {
-            ...b,
-            html_css: htmlContent,
-            details: { ...(b.details || {}), image_url: imageUrl, caption: textContent, alt_text: imageTitle, layout: layout || b.details?.layout, template: templateType || b.details?.template },
-            imageUrl: imageUrl,
-            imageTitle: imageTitle,
-            imageDescription: getPlainText(textContent || ''),
-            text: getPlainText(textContent || ''),
-            layout: layout || b.layout,
-            templateType: templateType || b.templateType
-          } : b)
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            block.block_id === currentBlock.id ? {
+              ...block,
+              content: updatedContent,
+              heading: (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') ? editorHeading : block.heading,
+              subheading: (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') ? editorSubheading : block.subheading,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
         }
       }));
     }
@@ -3472,13 +3537,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                     };
                   }
                   // Default map to text block with preserved HTML
-                  return {
-                    ...base,
-                    type: 'text',
-                    title: 'Text Block',
-                    textType: 'paragraph',
-                    content: b.html_css || ''
-                  };
+                  {
+                    const html = b.html_css || '';
+                    const lowered = html.toLowerCase();
+                    const hasH1 = lowered.includes('<h1');
+                    const hasH2 = lowered.includes('<h2');
+                    const hasP = lowered.includes('<p');
+                    const detectedType = hasH1 && hasP
+                      ? 'heading_paragraph'
+                      : hasH2 && hasP
+                        ? 'subheading_paragraph'
+                        : hasH1
+                          ? 'heading'
+                          : hasH2
+                            ? 'subheading'
+                            : 'paragraph';
+                    return {
+                      ...base,
+                      type: 'text',
+                      title: 'Text Block',
+                      textType: detectedType,
+                      content: html,
+                    };
+                  }
                 });
                 if (mappedEditBlocks.length > 0) {
                   setContentBlocks(mappedEditBlocks);
@@ -3759,7 +3840,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           <div className="mb-8">
                                             {block.html_css ? (
                                               <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
+                                                className="max-w-none"
                                                 dangerouslySetInnerHTML={{ __html: block.html_css }}
                                               />
                                             ) : (
@@ -4443,7 +4524,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                               <div className="mb-8">
                                 {block.html_css ? (
                                   <div
-                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    className="max-w-none"
                                     dangerouslySetInnerHTML={{ __html: block.html_css }}
                                   />
                                 ) : (
@@ -5000,8 +5081,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col" style={{ overflow: 'visible' }}>
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {currentTextBlockId ? 'Edit' : 'Add'} Text Block
               {(() => {
@@ -5016,7 +5097,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             </DialogTitle>
           </DialogHeader>
          
-          <div className="flex-1 overflow-visible px-1" style={{ maxHeight: 'calc(90vh - 140px)', overflow: 'visible' }}>
+          <div className="flex-1 overflow-y-auto px-1" style={{ minHeight: 0 }}>
             <div className="pr-4">
               {(() => {
                 const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
@@ -5204,13 +5285,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             </div>
           </div>
          
-          <DialogFooter className="border-t pt-4">
-            <Button variant="outline" onClick={handleTextEditorClose}>
+          <DialogFooter className="border-t pt-4 flex justify-end gap-2 px-6 pb-4">
+            <Button variant="outline" onClick={handleTextEditorClose} className="min-w-[80px]">
               Cancel
             </Button>
             <Button
               onClick={handleTextEditorSave}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
             >
               {currentTextBlockId ? 'Update' : 'Add'} Block
             </Button>
