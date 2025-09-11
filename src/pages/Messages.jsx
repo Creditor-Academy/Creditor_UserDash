@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations } from "@/services/messageService";
+import { getAllConversations, loadPreviousConversation } from "@/services/messageService";
 import getSocket from "@/services/socketClient";
 
 // Will be loaded from backend
@@ -66,7 +66,7 @@ function Messages() {
     const onRoomIdForSender = ({ conversationid, roomId: serverRoomId, to }) => {
       setRoomId(serverRoomId);
       setConversationId(conversationid);
-      setSelectedFriend(String(to));
+      setSelectedFriend(String(conversationid));
       console.log('room id at sender side', serverRoomId);
       // join room immediately
       try {
@@ -87,6 +87,23 @@ function Messages() {
           setFriends(normalizedFriends);
           setConvosLoaded(true);
         } catch {}
+      })();
+      // Load previous messages for this new conversation
+      (async () => {
+        try {
+          const data = await loadPreviousConversation(conversationid);
+          const currentUserId = localStorage.getItem('userId');
+          const mapped = (data?.cov_messages || []).map(m => ({
+            id: m.id,
+            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+            text: m.content,
+            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text',
+          }));
+          setMessages(mapped);
+        } catch (e) {
+          console.warn('Failed to load previous messages (new)', e);
+        }
       })();
     };
 
@@ -359,9 +376,27 @@ function Messages() {
                     // Open existing conversation: join its room and set IDs
                     const socket = getSocket();
                     if (friend.room) {
+                      const convId = friend.conversationId || friend.id;
                       setRoomId(friend.room);
-                      setConversationId(friend.conversationId || friend.id);
+                      setConversationId(convId);
                       socket.emit('joinRoom', friend.room);
+                      // Load previous messages for this conversation
+                      (async () => {
+                        try {
+                          const data = await loadPreviousConversation(convId);
+                          const currentUserId = localStorage.getItem('userId');
+                          const mapped = (data?.cov_messages || []).map(m => ({
+                            id: m.id,
+                            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+                            text: m.content,
+                            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            type: 'text',
+                          }));
+                          setMessages(mapped);
+                        } catch (e) {
+                          console.warn('Failed to load previous messages', e);
+                        }
+                      })();
                     }
                     setSelectedFriend(friend.id);
                   }}

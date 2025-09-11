@@ -16,3 +16,20 @@ export async function getAllConversations() {
 }
 
 
+// Load previous messages for a specific conversation
+export async function loadPreviousConversation(conversationId) {
+  try {
+    const response = await api.post('/api/private-messaging/PreviousConversation', {
+      conversationid: conversationId,
+    }, {
+      withCredentials: true,
+    });
+    // Response shape: { messages: { id, roomid, cov_messages: [ ... ] } }
+    return response.data?.messages || null;
+  } catch (error) {
+    console.error('messageService.loadPreviousConversation error:', error);
+    throw error;
+  }
+}
+
+
