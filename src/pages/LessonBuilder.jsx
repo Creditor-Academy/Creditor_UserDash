@@ -3710,6 +3710,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'quote') {
+                    return {
+                      ...base,
+                      type: 'quote',
+                      title: b.details?.title || 'Quote',
+                      textType: b.details?.quote_type || b.details?.quoteType || b.textType || 'quote_a',
+                      quoteType: b.details?.quote_type || b.details?.quoteType || b.textType || 'quote_a',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   // Default map to text block with preserved HTML
                   return {
                     ...base,
