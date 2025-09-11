@@ -92,7 +92,7 @@ function Messages() {
           const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
             id: String(c.id),
             name: c.title || 'User',
-            avatar: '/placeholder.svg',
+            avatar: c.image || '/placeholder.svg',
             lastMessage: c.lastMessage || '',
             room: c.room,
           }));
@@ -165,11 +165,11 @@ function Messages() {
           }));
           setFriends(idFriends);
         } else {
-        // Normalize using backend contract (id, room, title)
+        // Normalize using backend contract (id, room, title, image)
         const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
           id: String(c.id),
           name: c.title || 'User',
-          avatar: '/placeholder.svg',
+          avatar: c.image || '/placeholder.svg',
           lastMessage: c.lastMessage || '',
           room: c.room,
           conversationId: c.id,
