@@ -492,18 +492,28 @@ function Messages() {
                 {/* Messages Area */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
-                    {messages.map((message) => (
+                    {messages.map((message) => {
+                      const isSelf = message.senderId === 0;
+                      const friendForSelected = friends.find((f) => f.id === selectedFriend);
+                      const otherAvatarSrc = message.senderImage || friendForSelected?.avatar;
+                      const selfAvatarSrc = message.senderImage || undefined;
+                      if (!isSelf) {
+                        console.log('[Messages] avatar for incoming msg:', message.id, message.senderImage ? 'backend-senderImage' : 'fallback-friendAvatar');
+                      } else {
+                        console.log('[Messages] avatar for self msg:', message.id, message.senderImage ? 'backend-senderImage' : 'fallback-initial');
+                      }
+                      return (
                       <div
                         key={message.id}
                         className={`flex ${
-                          message.senderId === 0 ? "justify-end" : "justify-start"
+                          isSelf ? "justify-end" : "justify-start"
                         }`}
                       >
-                        {message.senderId !== 0 && (
+                        {!isSelf && (
                           <Avatar className="h-8 w-8 mr-2 mt-1">
-                            <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
+                            <AvatarImage src={otherAvatarSrc} />
                             <AvatarFallback>
-                              {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
+                              {friendForSelected?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -569,14 +579,15 @@ function Messages() {
                           </div>
                         )}
                         
-                        {message.senderId === 0 && (
+                        {isSelf && (
                           <Avatar className="h-8 w-8 ml-2 mt-1">
-                            <AvatarImage src={message.senderImage || undefined} />
+                            <AvatarImage src={selfAvatarSrc} />
                             <AvatarFallback>Y</AvatarFallback>
                           </Avatar>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
