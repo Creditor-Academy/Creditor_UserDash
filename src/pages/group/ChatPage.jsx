@@ -87,6 +87,7 @@ export function ChatPage() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isSendingImage, setIsSendingImage] = useState(false);
   const seenMessageIdsRef = React.useRef(new Set());
+  const pendingImageRef = React.useRef(null);
 
   const [showMembers, setShowMembers] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
@@ -159,6 +160,15 @@ export function ChatPage() {
 
           const isImage = (payload?.mime_type || payload?.mimeType || '').startsWith('image/');
           const derivedImageUrl = (payload?.media_url || payload?.image_url || payload?.imageUrl || (isImage ? payload?.content : undefined));
+          
+          // Check if this is a duplicate of a pending image we just sent
+          if (isImage && pendingImageRef.current && 
+              payload.sender_id === currentUserId && 
+              Date.now() - pendingImageRef.current.timestamp < 5000) {
+            console.log('[socket] Ignoring duplicate image message from socket');
+            return prev;
+          }
+          
           const normalized = {
             id: payload.id,
             senderId: payload.sender_id,
@@ -171,8 +181,20 @@ export function ChatPage() {
                   (isImage ? 'image' : (payload.mime_type ? 'file' : 'text')),
           };
 
-          // Try to replace a matching optimistic message (same sender and content)
-          const idx = prev.findIndex(m => String(m.id).startsWith('tmp-') && m.senderId === payload.sender_id && m.content === payload.content);
+          // Try to replace a matching optimistic message
+          // For images, match by sender and imageUrl; for text, match by sender and content
+          const idx = prev.findIndex(m => {
+            if (!String(m.id).startsWith('tmp-') || m.senderId !== payload.sender_id) return false;
+            
+            if (isImage) {
+              // For images, match by imageUrl or if both are images
+              return m.type === 'image' && (m.imageUrl === derivedImageUrl || m.imageUrl);
+            } else {
+              // For text messages, match by content
+              return m.content === payload.content;
+            }
+          });
+          
           if (idx !== -1) {
             const clone = [...prev];
             clone[idx] = normalized;
@@ -418,6 +440,13 @@ export function ChatPage() {
   };
 
   const handleSendMessage = async () => {
+    // Check if we have an image to send
+    if (selectedImage) {
+      await handleSendImage(selectedImage);
+      return;
+    }
+    
+    // Handle text message
     if (!newMessage.trim()) return;
     const toSend = newMessage;
     setNewMessage("");
@@ -508,12 +537,25 @@ export function ChatPage() {
     }
   };
 
-  const handleImageSelect = async (file) => {
+  const handleImageSelect = (file) => {
+    if (!file) return;
+    // Just store the selected image, don't send it yet
+    setSelectedImage(file);
+  };
+
+  const handleSendImage = async (file) => {
     if (!file) return;
     
     setIsSendingImage(true);
     const tempId = `tmp-${Date.now()}`;
     const imageUrl = URL.createObjectURL(file);
+    
+    // Track this pending image to prevent duplicates
+    pendingImageRef.current = {
+      tempId,
+      imageUrl,
+      timestamp: Date.now()
+    };
     
     const optimistic = {
       id: tempId,
@@ -521,13 +563,14 @@ export function ChatPage() {
       senderName: "You",
       senderAvatar: "",
       imageUrl: imageUrl,
+      content: '', // Don't show URL in content
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       type: 'image',
       pending: true,
     };
     
     setMessages(prev => [...prev, optimistic]);
-    setSelectedImage(null);
+    setSelectedImage(null); // Clear selected image
 
     try {
       // Create FormData for file upload (backend expects `req.file` named 'media')
@@ -549,8 +592,8 @@ export function ChatPage() {
             senderId: m.sender_id || currentUserId,
             senderName: m.sender?.first_name || 'You',
             senderAvatar: m.sender?.image || '',
-            imageUrl: m.image_url || m.imageUrl || imageUrl,
-            content: m.content || '',
+            imageUrl: m.media_url || m.image_url || m.imageUrl || imageUrl,
+            content: '', // Don't show URL in content
             timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
             type: 'image',
           } : x));
@@ -566,6 +609,10 @@ export function ChatPage() {
       });
     } finally {
       setIsSendingImage(false);
+      // Clear pending image after a short delay to allow socket event to be processed
+      setTimeout(() => {
+        pendingImageRef.current = null;
+      }, 1000);
     }
   };
 
@@ -754,6 +801,7 @@ export function ChatPage() {
             onSendMessage={handleSendMessage}
             onFileSelect={handleFileSelect}
             onImageSelect={handleImageSelect}
+            selectedImage={selectedImage}
             isSending={isSending || isSendingImage}
           />
         </CardContent>
