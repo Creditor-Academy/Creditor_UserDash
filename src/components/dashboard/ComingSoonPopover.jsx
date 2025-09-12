@@ -8,17 +8,6 @@ function ComingSoonPopover() {
 
   const features = [
     {
-      title: "Advanced Quiz Features",
-      description: "First, we're launching advanced quiz with sequence order features for better learning experiences.",
-      tags: [
-        { label: "Sequence Order", color: "blue" },
-        { label: "Advanced Quizzes", color: "green" },
-        { label: "Learning", color: "purple" }
-      ],
-      banner: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/AssessmentCard.jpg",
-      badge: "Launching First"
-    },
-    {
       title: "Groups",
       description: "Groups with news announcements and chats are launching to enhance collaboration and communication.",
       tags: [
@@ -27,7 +16,17 @@ function ComingSoonPopover() {
         { label: "Collaboration", color: "indigo" }
       ],
       banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/Groups.PNG",
-      badge: "Coming Soon"
+     
+    },
+    {
+      title: "Scenario Assessment",
+      description: "First, we're launching scenario-based assessments for better learning experiences.",
+      tags: [
+        { label: "Scenario Assessment", color: "green" },
+        { label: "Learning", color: "purple" }
+      ],
+      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/S_banner.PNG",
+     
     }
   ];
 

@@ -230,11 +230,11 @@ export function Courses() {
     return (
       <div className="flex flex-col min-h-screen">
         <main className="flex-1">
-          <div className="container py-6 max-w-7xl">
-            <div className="flex items-center justify-center py-12">
+          <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
+            <div className="flex items-center justify-center py-8 sm:py-12">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading courses...</p>
+                <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-muted-foreground text-sm sm:text-base">Loading courses...</p>
               </div>
             </div>
           </div>
@@ -247,17 +247,17 @@ export function Courses() {
     return (
       <div className="flex flex-col min-h-screen">
         <main className="flex-1">
-          <div className="container py-6 max-w-7xl">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-red-800">Error loading courses</h3>
-                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                  <h3 className="text-xs sm:text-sm font-medium text-red-800">Error loading courses</h3>
+                  <p className="text-xs sm:text-sm text-red-700 mt-1">{error}</p>
                 </div>
               </div>
             </div>
@@ -270,17 +270,17 @@ export function Courses() {
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
-        <div className="container py-6 max-w-7xl">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold">My Courses</h1>
+        <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold">My Courses</h1>
             
-            <div className="flex items-center gap-3">
-              <div className="relative w-64">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-none sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   placeholder="Search courses..."
-                  className="pl-8"
+                  className="pl-8 w-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -333,7 +333,7 @@ export function Courses() {
           )} */}
 
           {/* Course Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredCourses.length > 0 ? (
               filteredCourses.map((course) => (
                 <div key={course.id} className="course-card opacity-0">
@@ -362,18 +362,18 @@ export function Courses() {
                     </div>
                     
                     <CardHeader className="pb-3 flex-shrink-0">
-                      <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
-                      <CardDescription className="line-clamp-2">{course.description}</CardDescription>
+                      <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
+                      <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
                     </CardHeader>
                     
                     <CardContent className="space-y-3 flex-1">
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
                         {/* <div className="flex items-center gap-1">
                           <Clock size={14} />
                           <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
                         </div> */}
                         <div className="flex items-center gap-1">
-                          <BookOpen size={14} />
+                          <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
                           <span>{course.modulesCount || 0} modules</span>
                         </div>
                       </div>
@@ -389,24 +389,11 @@ export function Courses() {
                     
                     <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
                       <div className="flex gap-2 w-full">
-                        {course.trialStatus.isInTrial && course.trialStatus.isExpired ? (
-                          <Button 
-                            variant="outline" 
-                            className="w-full border-red-200 text-red-700 hover:bg-red-50"
-                            onClick={() => handleCourseClick(course)}
-                          >
-                            <Lock size={16} className="mr-2" />
-                            Trial Expired - Enroll Now
+                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+                          <Button variant="default" className="w-full text-sm sm:text-base">
+                            Continue Learning
                           </Button>
-                        ) : (
-                          <Button 
-                            variant="default" 
-                            className="w-full"
-                            onClick={() => handleCourseClick(course)}
-                          >
-                            {course.trialStatus.isInTrial ? 'Continue Trial' : 'Continue Learning'}
-                          </Button>
-                        )}
+                        </Link>
                       </div>
                       
                       {/* Trial Status Info */}
@@ -429,9 +416,9 @@ export function Courses() {
                 </div>
               ))
             ) : (
-              <div className="col-span-full text-center py-12">
-                <h3 className="text-lg font-medium">No courses found</h3>
-                <p className="text-muted-foreground">Try adjusting your search or filter criteria</p>
+              <div className="col-span-full text-center py-8 sm:py-12">
+                <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
+                <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
               </div>
             )}
           </div>
