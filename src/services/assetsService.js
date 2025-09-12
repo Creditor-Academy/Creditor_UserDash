@@ -1,6 +1,6 @@
 import api from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
 
 // Organization Management APIs
 export const organizationService = {

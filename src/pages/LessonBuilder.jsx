@@ -494,6 +494,25 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
     },
     {
+      id: 'master_heading',
+      icon: <Heading1 className="h-5 w-5" />,
+      preview: (
+        <div className="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Master Heading</h1>
+        </div>
+      ),
+      defaultContent:
+        '<div class="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white"><h1 class="text-4xl font-extrabold tracking-tight">Master Heading</h1></div>',
+      style: {
+        fontSize: '32px',
+        fontWeight: '800',
+        color: '#FFFFFF',
+        background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+        padding: '16px',
+        borderRadius: '12px'
+      }
+    },
+    {
       id: 'subheading',
       icon: <Heading2 className="h-5 w-5" />,
       preview: <h2 className="text-xl font-semibold mb-2">Subheading</h2>,
@@ -631,6 +650,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       innerContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">${heading || 'Heading'}</h1><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the heading.'}</p>`;
     } else if (textType.id === 'subheading_paragraph') {
       innerContent = `<h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">${subheading || 'Subheading'}</h2><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the subheading.'}</p>`;
+    } else if (textType.id === 'master_heading') {
+      innerContent = `<div style=\"background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%); color: white; padding: 16px; border-radius: 12px;\"><h1 style=\"font-size: 36px; font-weight: 800; line-height: 1.2; margin: 0;\">${'Master Heading'}</h1></div>`;
     } else {
       innerContent = textType.defaultContent || contentHtml;
     }
@@ -638,7 +659,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     // Generate HTML content with proper card styling to match existing blocks
     const htmlContent = `
       <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
         <div class="pl-4">
           ${innerContent}
         </div>
@@ -980,13 +1000,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     default:
       newHtmlContent = `
         <div class="relative bg-white rounded-2xl shadow-md p-6 border">
-          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-          <div class="pl-4">
-            <blockquote class="text-lg italic text-gray-700 mb-3">
-              "${updatedQuoteContent.quote}"
-            </blockquote>
-            <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
-          </div>
+          <blockquote class="text-lg italic text-gray-700 mb-3">
+            "${updatedQuoteContent.quote}"
+          </blockquote>
+          <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
         </div>
       `;
     }
@@ -1599,18 +1616,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_a':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="flex items-start space-x-4">
-                      <div class="flex-shrink-0">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
-                      </div>
-                      <div class="flex-1">
-                        <blockquote class="text-lg italic text-gray-700 mb-3">
-                          "${quoteContent.quote || ''}"
-                        </blockquote>
-                        <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
-                      </div>
+                  <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
+                    </div>
+                    <div class="flex-1">
+                      <blockquote class="text-lg italic text-gray-700 mb-3">
+                        "${quoteContent.quote || ''}"
+                      </blockquote>
+                      <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                     </div>
                   </div>
                 </div>
@@ -1619,19 +1633,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_b':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="bg-gray-50 rounded-xl p-6">
-                      <div class="flex items-center space-x-4 mb-4">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
-                        <div>
-                          <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
-                        </div>
+                  <div class="bg-gray-50 rounded-xl p-6">
+                    <div class="flex items-center space-x-4 mb-4">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
+                      <div>
+                        <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
                       </div>
-                      <blockquote class="text-xl italic text-gray-700 leading-relaxed">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
                     </div>
+                    <blockquote class="text-xl italic text-gray-700 leading-relaxed">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
                   </div>
                 </div>
               `;
@@ -1639,15 +1650,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_c':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="text-center">
-                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
-                      <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
-                      <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
-                    </div>
+                  <div class="text-center">
+                    <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
+                    <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
                   </div>
                 </div>
               `;
@@ -1655,16 +1663,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_d':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="border-l-4 border-blue-500 pl-4">
-                      <blockquote class="text-lg text-gray-700 mb-2">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
-                      <div class="flex items-center space-x-3">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
-                        <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
-                      </div>
+                  <div class="border-l-4 border-blue-500 pl-4">
+                    <blockquote class="text-lg text-gray-700 mb-2">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <div class="flex items-center space-x-3">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
+                      <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
                     </div>
                   </div>
                 </div>
@@ -1673,7 +1678,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_on_image':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl z-10"></div>
                   <div class="relative">
                     <img src="${quoteContent.backgroundImage || ''}" alt="Quote background" class="w-full h-64 object-cover" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end">
@@ -1701,19 +1705,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
-                      ${quotesHtml}
-                      <div class="flex justify-center space-x-2 mt-6">
-                        ${quotes.map((_, index) => `
-                          <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
-                        `).join('')}
-                      </div>
-                      <div class="flex justify-between items-center mt-4">
-                        <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
-                        <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
-                      </div>
+                  <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
+                    ${quotesHtml}
+                    <div class="flex justify-center space-x-2 mt-6">
+                      ${quotes.map((_, index) => `
+                        <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
+                      `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                      <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
+                      <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
                     </div>
                   </div>
                 </div>
@@ -1762,13 +1763,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             default:
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <blockquote class="text-lg italic text-gray-700 mb-3">
-                      "${quoteContent.quote || ''}"
-                    </blockquote>
-                    <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
-                  </div>
+                  <blockquote class="text-lg italic text-gray-700 mb-3">
+                    "${quoteContent.quote || ''}"
+                  </blockquote>
+                  <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                 </div>
               `;
           }
@@ -1914,26 +1912,30 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             if (textType === 'heading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h1 class="text-2xl font-bold text-gray-800">${blockContent}</h1>
                   </article>
                 </div>`;
             } else if (textType === 'subheading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h2 class="text-xl font-semibold text-gray-800">${blockContent}</h2>
                   </article>
+                </div>`;
+            } else if (textType === 'master_heading') {
+              htmlContent = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">${blockContent}</h1>
+                  </div>
                 </div>`;
             } else if (textType === 'heading_paragraph') {
               const heading = block.heading || '';
               const content = block.content || '';
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h1 class="text-2xl font-bold text-gray-800">${heading}</h1>
                     <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
@@ -1943,8 +1945,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               const content = block.content || '';
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h2 class="text-xl font-semibold text-gray-800">${subheading}</h2>
                     <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
@@ -1952,8 +1953,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             } else {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <p class="text-gray-600 leading-relaxed">${blockContent}</p>
                   </article>
                 </div>`;
@@ -2067,6 +2067,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'heading': {
               htmlContent = `<h1 class="lesson-heading">${blockContent}</h1>`;
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
+              break;
+            }
+            case 'master_heading': {
+              htmlContent = `<div class="lesson-master-heading"><h1>${blockContent}</h1></div>`;
+              styles = '.lesson-master-heading { background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%); color: #fff; padding: 16px; border-radius: 12px; } .lesson-master-heading h1 { font-size: 36px; font-weight: 800; margin: 0; line-height: 1.2; }';
               break;
             }
             case 'subheading': {
@@ -2750,8 +2755,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <${headingTag} style="font-size: ${headingFontSize} !important; font-weight: ${headingFontWeight}; color: #1F2937; margin: 0 0 16px 0; line-height: 1.2;">${headingContent || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${paragraphContent || 'Start typing your content here...'}
@@ -2767,8 +2771,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (extracted || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
             </div>
@@ -2781,17 +2784,27 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (extracted || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
               </article>
             </div>`;
+        } else if (effectiveTextType === 'master_heading') {
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
+          const cleanedContent = (extracted || 'Master Heading');
+          updatedContent = `
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
+                <h1 style="font-size: 36px; font-weight: 800; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+              </div>
+            </div>
+          `;
         } else {
           // For paragraph and other single content blocks - use same styled container as heading/subheading
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${editorHtml || 'Enter your content here...'}
                 </div>
@@ -2856,8 +2869,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
             </div>`;
@@ -2865,17 +2877,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
               </article>
+            </div>`;
+        } else if (effectiveTextTypeForNew === 'master_heading') {
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
+          const cleanedContent = (extracted || 'Master Heading');
+          newBlockContent = `
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
+                <h1 style="font-size: 36px; font-weight: 800; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+              </div>
             </div>`;
         } else {
           // For paragraph and other blocks - use same styled container as heading/subheading
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${editorHtml || 'Enter your content here...'}
                 </div>
@@ -4270,15 +4291,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                               />
                                             ) : (
                                               <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                                <div className="pl-4">
-                                                  <blockquote className="text-lg italic text-gray-700 mb-3">
-                                                    "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
-                                                  </blockquote>
-                                                  <cite className="text-sm font-medium text-gray-500">
-                                                    — {JSON.parse(block.content || '{}').author || 'Author Name'}
-                                                  </cite>
-                                                </div>
+                                                <blockquote className="text-lg italic text-gray-700 mb-3">
+                                                  "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
+                                                </blockquote>
+                                                <cite className="text-sm font-medium text-gray-500">
+                                                  — {JSON.parse(block.content || '{}').author || 'Author Name'}
+                                                </cite>
                                               </div>
                                             )}
                                           </div>
@@ -4294,10 +4312,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                               />
                                             ) : (
                                               <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                                <div className="pl-4">
-                                                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                                </div>
+                                                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                               </div>
                                             )}
                                           </div>
@@ -4957,29 +4972,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   />
                                 ) : (
                                   <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                    <div className="pl-4">
-                                      <blockquote className="text-lg italic text-gray-700 mb-3">
-                                        "{(() => {
-                                          try {
-                                            const content = JSON.parse(block.content || '{}');
-                                            return content.quote || 'Sample quote text';
-                                          } catch {
-                                            return 'Sample quote text';
-                                          }
-                                        })()}"
-                                      </blockquote>
-                                      <cite className="text-sm font-medium text-gray-500">
-                                        — {(() => {
-                                          try {
-                                            const content = JSON.parse(block.content || '{}');
-                                            return content.author || 'Author Name';
-                                          } catch {
-                                            return 'Author Name';
-                                          }
-                                        })()}
-                                      </cite>
-                                    </div>
+                                    <blockquote className="text-lg italic text-gray-700 mb-3">
+                                      "{(() => {
+                                        try {
+                                          const content = JSON.parse(block.content || '{}');
+                                          return content.quote || 'Sample quote text';
+                                        } catch {
+                                          return 'Sample quote text';
+                                        }
+                                      })()}"
+                                    </blockquote>
+                                    <cite className="text-sm font-medium text-gray-500">
+                                      — {(() => {
+                                        try {
+                                          const content = JSON.parse(block.content || '{}');
+                                          return content.author || 'Author Name';
+                                        } catch {
+                                          return 'Author Name';
+                                        }
+                                      })()}
+                                    </cite>
                                   </div>
                                 )}
                               </div>
@@ -5001,10 +5013,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   />
                                 ) : (
                                   <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                    <div className="pl-4">
-                                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                    </div>
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                   </div>
                                 )}
                               </div>
