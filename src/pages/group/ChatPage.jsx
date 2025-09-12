@@ -88,6 +88,7 @@ export function ChatPage() {
   const [isSendingImage, setIsSendingImage] = useState(false);
   const seenMessageIdsRef = React.useRef(new Set());
   const pendingImageRef = React.useRef(null);
+  const joinedRef = React.useRef(false);
 
   const [showMembers, setShowMembers] = useState(false);
   const [groupMembers, setGroupMembers] = useState([]);
@@ -119,20 +120,10 @@ export function ChatPage() {
     
     // Wait for socket to be connected before joining
     const joinGroupWhenReady = () => {
-      if (socket.connected) {
+      if (socket.connected && !joinedRef.current) {
         console.log('[socket][emit] joinGroup', { groupId, userId: uid });
         socket.emit('joinGroup', { groupId, userId: uid });
-      } else {
-        // Wait for connection, but with timeout
-        const connectTimeout = setTimeout(() => {
-          console.warn('[socket] Connection timeout, skipping group join');
-        }, 5000);
-        
-        socket.once('connect', () => {
-          clearTimeout(connectTimeout);
-          console.log('[socket][emit] joinGroup', { groupId, userId: uid });
-          socket.emit('joinGroup', { groupId, userId: uid });
-        });
+        joinedRef.current = true;
       }
     };
 
@@ -141,8 +132,11 @@ export function ChatPage() {
 
     // Re-join on reconnect to handle network hiccups
     const onConnect = () => {
-      console.log('[socket] connected. re-joining', { groupId, userId: uid });
-      socket.emit('joinGroup', { groupId, userId: uid });
+      console.log('[socket] connected. ensuring joined', { groupId, userId: uid });
+      if (!joinedRef.current) {
+        socket.emit('joinGroup', { groupId, userId: uid });
+        joinedRef.current = true;
+      }
     };
     socket.on('connect', onConnect);
 
@@ -292,6 +286,26 @@ export function ChatPage() {
     };
     socket.on('error', onServerError);
 
+    // Real-time edits/deletes
+    const onMessageEdited = (payload) => {
+      try {
+        const gid = String(payload?.groupId ?? payload?.group_id ?? payload?.group?.id ?? '');
+        if (gid !== String(groupId)) return;
+        const messageId = payload?.messageId ?? payload?.id ?? payload?.message?.id;
+        const newContent = payload?.content ?? payload?.message?.content;
+        if (!messageId) return;
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
+      } catch {}
+    };
+    const onMessageDeleted = (payload) => {
+      if (!payload || String(payload.groupId) !== String(groupId)) return;
+      setMessages(prev => prev.filter(m => m.id !== payload.messageId));
+    };
+    socket.on('groupMessageEdited', onMessageEdited);
+    socket.on('groupMessageUpdated', onMessageEdited);
+    socket.on('messageEdited', onMessageEdited);
+    socket.on('groupMessageDeleted', onMessageDeleted);
+
     // Connection diagnostics to help identify realtime issues
     const onConnectError = (err) => {
       try {
@@ -316,7 +330,10 @@ export function ChatPage() {
     socket.on('disconnect', onDisconnect);
 
     return () => {
-      socket.emit('leaveGroup', { groupId, userId: uid });
+      if (joinedRef.current) {
+        socket.emit('leaveGroup', { groupId, userId: uid });
+        joinedRef.current = false;
+      }
       socket.off('connect', onConnect);
       socket.off('newGroupMessage', onNewMessage);
       socket.off('userJoinedGroup', onUserJoined);
@@ -327,6 +344,10 @@ export function ChatPage() {
       socket.off('error', onServerError);
       socket.off('connect_error', onConnectError);
       socket.off('disconnect', onDisconnect);
+      socket.off('groupMessageEdited', onMessageEdited);
+      socket.off('groupMessageUpdated', onMessageEdited);
+      socket.off('messageEdited', onMessageEdited);
+      socket.off('groupMessageDeleted', onMessageDeleted);
     };
   }, [groupId, currentUserId]);
 
@@ -518,7 +539,11 @@ export function ChatPage() {
     setMessages(prev => prev.map(m => m.id === messageId ? { ...m, content: newContent } : m));
     try {
       await editGroupMessage(groupId, messageId, { content: newContent });
-      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
+      // Notify others in real-time if backend relays socket events
+      try {
+        const socket = getSocket();
+        socket.emit('editGroupMessage', { groupId, messageId, content: newContent });
+      } catch {}
     } catch (e) {
       setMessages(snapshot);
     }
@@ -530,7 +555,10 @@ export function ChatPage() {
     setMessages(prev => prev.filter(m => m.id !== messageId));
     try {
       await deleteGroupMessage(groupId, messageId);
-      // Note: Backend doesn't have edit/delete socket events, so we rely on REST API only
+      try {
+        const socket = getSocket();
+        socket.emit('deleteGroupMessage', { groupId, messageId });
+      } catch {}
     } catch (e) {
       // restore on failure
       setMessages(snapshot);
