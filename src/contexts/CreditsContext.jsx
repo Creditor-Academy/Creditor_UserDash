@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useUser } from './UserContext';
+import api from '../services/apiClient';
 
 const STORAGE_KEY = 'user_credits_balance_v1';
 const TRANSACTIONS_KEY = 'user_credits_transactions_v1';
@@ -13,6 +15,7 @@ export const useCredits = () => {
 };
 
 export const CreditsProvider = ({ children }) => {
+  const { userProfile } = useUser();
   const [balance, setBalance] = useState(0);
 
   const [transactions, setTransactions] = useState([]);
@@ -27,6 +30,88 @@ export const CreditsProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Note: No persistence. Values reset on page refresh intentionally for preview flows.
+
+  // Backend integration functions
+  const fetchBackendBalance = async (userId) => {
+    try {
+      console.log(`[CreditsContext] Fetching balance for user ${userId}`);
+      console.log(`[CreditsContext] Making GET request to: /payment-order/credits/balance/${userId}`);
+      const response = await api.get(`/payment-order/credits/balance/${userId}`, { withCredentials: true });
+      console.log(`[CreditsContext] Balance response:`, response?.data);
+      console.log(`[CreditsContext] Response status:`, response?.status);
+      console.log(`[CreditsContext] Full response object:`, response);
+      
+      // Handle different response structures
+      const balance = response?.data?.balance || response?.data?.data?.balance;
+      if (balance !== undefined) {
+        console.log(`[CreditsContext] Setting balance to:`, balance);
+        setBalance(balance);
+      } else {
+        console.log(`[CreditsContext] No balance found in response. Response data:`, response?.data);
+        console.log(`[CreditsContext] Response structure:`, {
+          'response.data': response?.data,
+          'response.data.balance': response?.data?.balance,
+          'response.data.data': response?.data?.data,
+          'response.data.data.balance': response?.data?.data?.balance
+        });
+      }
+    } catch (error) {
+      console.error('[CreditsContext] Failed to fetch balance:', error);
+      console.error('[CreditsContext] Error status:', error?.response?.status);
+      console.error('[CreditsContext] Error data:', error?.response?.data);
+      console.error('[CreditsContext] Full error object:', error);
+    }
+  };
+
+  const fetchBackendMembership = async (userId) => {
+    try {
+      console.log(`Fetching membership for user ${userId}`);
+      const response = await api.get(`/payment-order/membership/status/${userId}`, { withCredentials: true });
+      console.log(`Membership response:`, response?.data);
+      
+      // Handle the response format
+      const membershipData = response?.data?.data || response?.data;
+      
+      if (membershipData === null) {
+        // No subscription found - user is inactive
+        setMembership({
+          isActive: false,
+          type: 'free',
+          expiresAt: null,
+          nextBillingDate: null
+        });
+      } else if (membershipData?.status === 'ACTIVE') {
+        setMembership({
+          isActive: true,
+          type: 'monthly',
+          expiresAt: membershipData.expiresAt || null,
+          nextBillingDate: membershipData.nextBillingDate || null
+        });
+      } else {
+        // CANCELLED or other status
+        setMembership({
+          isActive: false,
+          type: 'free',
+          expiresAt: null,
+          nextBillingDate: null
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch membership:', error);
+    }
+  };
+
+  // Fetch data when user profile changes
+  useEffect(() => {
+    if (userProfile?.id) {
+      console.log(`[CreditsContext] User profile changed, fetching data for user ${userProfile.id}`);
+      console.log(`[CreditsContext] User profile object:`, userProfile);
+      fetchBackendBalance(userProfile.id);
+      fetchBackendMembership(userProfile.id);
+    } else {
+      console.log(`[CreditsContext] No user profile ID found. User profile:`, userProfile);
+    }
+  }, [userProfile?.id]);
 
   const addTransaction = (type, amount, metadata = {}) => {
     const transaction = {
@@ -205,8 +290,10 @@ export const CreditsProvider = ({ children }) => {
     renewMembership,
     cancelMembership,
     spendCredits, 
-    resetCredits 
-  }), [balance, transactions, membership, analytics, isLoading]);
+    resetCredits,
+    refreshBalance: () => userProfile?.id && fetchBackendBalance(userProfile.id),
+    refreshMembership: () => userProfile?.id && fetchBackendMembership(userProfile.id)
+  }), [balance, transactions, membership, analytics, isLoading, userProfile?.id]);
 
   return (
     <CreditsContext.Provider value={value}>

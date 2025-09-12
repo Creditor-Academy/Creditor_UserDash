@@ -4,7 +4,7 @@ import { useCredits } from "@/contexts/CreditsContext";
 // Design-only modal for managing credits
 // Props: open, onClose, balance (optional external), onBalanceChange(newBalance) (optional)
 const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: externalBalance, onBalanceChange }) => {
-  const { transactions, addCredits, balance: contextBalance } = useCredits();
+  const { transactions, addCredits, balance: contextBalance, refreshBalance, membership: contextMembership, refreshMembership } = useCredits();
   const [balance, setBalance] = useState(typeof externalBalance === 'number' ? externalBalance : contextBalance);
   const [quantity, setQuantity] = useState(10);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -13,7 +13,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
   const [paymentMethod, setPaymentMethod] = useState("stripe"); // kept for compatibility, not used
   const [customQty, setCustomQty] = useState(""); // retained for compatibility
   const [checkoutStep, setCheckoutStep] = useState("packs"); // only 'packs'
-  const [membership, setMembership] = useState({ status: "active", nextBilling: "2025-10-01" });
+  const [membership, setMembership] = useState(contextMembership);
   const [viewTab, setViewTab] = useState("overview"); // overview | history | usage
   const [confirmModal, setConfirmModal] = useState({ open: false, title: "", message: "", confirmText: "Confirm", cancelText: "Cancel", onConfirm: null });
   const [notice, setNotice] = useState("");
@@ -31,6 +31,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       setBalance(contextBalance);
     }
   }, [contextBalance, externalBalance]);
+
+  // Sync with context membership when it changes
+  useEffect(() => {
+    setMembership(contextMembership);
+  }, [contextMembership]);
 
   // Get real purchase history from transactions
   const history = useMemo(() => {
@@ -68,7 +73,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
 
   const handlePurchase = (e) => {
     e.preventDefault();
-    if (membership.status !== "active") {
+    if (!membership.isActive) {
       setConfirmModal({
         open: true,
         title: "Membership required",
@@ -120,6 +125,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
   
   useEffect(() => {
     if (!open) return;
+    console.log('[CreditModal] Modal opened, refreshing data...');
+    try { 
+      refreshBalance && refreshBalance(); 
+      refreshMembership && refreshMembership();
+    } catch {}
     const onKey = (e) => { if (e.key === "Escape") handleClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -133,7 +143,9 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-3xl">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h3 className="text-xl font-semibold text-gray-900">Manage Credits</h3>
-          <button onClick={handleClose} className="px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">Close</button>
+          <div className="flex gap-2">
+            <button onClick={handleClose} className="px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">Close</button>
+          </div>
         </div>
 
         <div className="max-h-[75vh] overflow-y-auto p-6 space-y-6">
@@ -153,44 +165,16 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
               <div className="text-sm text-gray-600 mb-1">Current Balance</div>
               <div className="text-3xl font-bold text-gray-900">{balance}</div>
               <div className="text-xs text-gray-500 mt-1">credits available</div>
-              <div className="mt-3 text-xs">
-                <span className={`px-2 py-1 rounded ${membership.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{membership.status === 'active' ? 'Membership active' : 'Membership inactive'}</span>
-                {membership.status === 'active' && (
-                  <div className="mt-1 text-gray-500">Next billing: <span className="font-medium text-gray-800">{membership.nextBilling}</span></div>
-                )}
-              </div>
-              {membership.status === 'active' && (
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmModal({ open:true, title: 'Cancel membership', message: 'Are you sure you want to cancel your membership?', confirmText: 'Cancel membership', cancelText: 'Keep membership', onConfirm: () => { setMembership(m => ({ ...m, status: 'inactive' })); setConfirmModal(cm=>({ ...cm, open:false })); } })}
-                    className="px-3 py-1.5 rounded-md text-xs bg-red-600 hover:bg-red-700 text-white"
-                  >
-                    Cancel membership
-                  </button>
-                </div>
-              )}
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-xs text-gray-600">Preview:</span>
-                <button
-                  type="button"
-                  onClick={() => setMembership(m => ({ ...m, status: m.status === 'active' ? 'inactive' : 'active' }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${membership.status === 'active' ? 'bg-green-500' : 'bg-gray-300'}`}
-                  aria-label="Toggle membership preview"
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${membership.status === 'active' ? 'translate-x-5' : 'translate-x-1'}`}
-                  />
-                </button>
-                <span className="text-xs text-gray-700">{membership.status === 'active' ? 'Active' : 'Inactive'}</span>
-              </div>
+               <div className="mt-3 text-xs">
+                 <span className={`px-2 py-1 rounded ${membership.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{membership.isActive ? 'Membership active' : 'Membership inactive'}</span>
+               </div>
             </div>
             <div className="border border-gray-200 rounded-lg p-5 flex flex-col justify-between">
               <div>
                 <div className="font-semibold text-gray-900 mb-1 text-lg">Purchase Credits</div>
                 <div className="text-sm text-gray-600 mb-4">Pick a pack or use custom amount in the next step.</div>
               </div>
-              {membership.status === 'active' ? (
+              {membership.isActive ? (
                 <div className="space-y-3">
                   <form onSubmit={handlePurchase} className="flex items-center gap-3 flex-wrap">
                     <button
@@ -205,52 +189,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     </div>
                   </form>
                   
-                  {/* Dummy Credits for Testing */}
-                  <div className="border-t border-gray-200 pt-3">
-                    <p className="text-xs text-gray-500 mb-2">Testing Mode - Add dummy credits:</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        onClick={async () => {
-                          await addCredits(100);
-                          setNotice("Added 100 dummy credits for testing");
-                          setTimeout(() => setNotice(""), 3000);
-                        }}
-                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
-                      >
-                        +100 Credits
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await addCredits(500);
-                          setNotice("Added 500 dummy credits for testing");
-                          setTimeout(() => setNotice(""), 3000);
-                        }}
-                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
-                      >
-                        +500 Credits
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await addCredits(1000);
-                          setNotice("Added 1000 dummy credits for testing");
-                          setTimeout(() => setNotice(""), 3000);
-                        }}
-                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
-                      >
-                        +1000 Credits
-                      </button>
-                      <button
-                        onClick={async () => {
-                          await addCredits(5000);
-                          setNotice("Added 5000 dummy credits for testing");
-                          setTimeout(() => setNotice(""), 3000);
-                        }}
-                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
-                      >
-                        +5000 Credits
-                      </button>
-                    </div>
-                  </div>
+                  
                 </div>
               ) : (
                 <div className="flex items-center gap-3 flex-wrap">

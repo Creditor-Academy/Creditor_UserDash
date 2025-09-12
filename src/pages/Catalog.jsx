@@ -3,9 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Search, Loader2, FolderOpen, Star, Gem, Video, Award, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
-import { fetchAllCatalogs } from "@/services/catalogService";
+import { fetchAllCatalogs as fetchAllCatalogsPrimary } from "@/services/catalogService";
 import { fetchUserCourses } from "@/services/courseService";
-import { getCatalogCourses } from "@/services/instructorCatalogService";
+import { getCatalogCourses, fetchAllCatalogs as fetchAllCatalogsFallback } from "@/services/instructorCatalogService";
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import { useCredits } from '@/contexts/CreditsContext';
 
@@ -27,8 +27,21 @@ export function CatalogPage() {
     const fetchCatalogs = async () => {
       try {
         setLoading(true);
-        const data = await fetchAllCatalogs();
-        // Use the courseCount already set in fetchAllCatalogs
+        let data = [];
+        try {
+          data = await fetchAllCatalogsPrimary();
+        } catch (primaryErr) {
+          // swallow and try fallback
+        }
+        if (!Array.isArray(data) || data.length === 0) {
+          try {
+            data = await fetchAllCatalogsFallback();
+          } catch (fallbackErr) {
+            // if fallback also fails, rethrow to trigger error UI
+            throw fallbackErr;
+          }
+        }
+        // Use the courseCount already set in fetchAllCatalogs; fallback may not include counts
         setCatalogs(data || []);
         // Preload catalog courses for buy-logic
         try {
@@ -183,6 +196,14 @@ export function CatalogPage() {
     !isFreeCourse(catalog) && 
     !isMasterClass(catalog) && 
     !isPremiumCourse(catalog)
+  );
+
+  // 5. Catch-all for catalogs that don't fit any special group
+  const otherCatalogs = filteredCatalogs.filter(catalog =>
+    !isFreeCourse(catalog) &&
+    !isMasterClass(catalog) &&
+    !isPremiumCourse(catalog) &&
+    !isClassRecording(catalog)
   );
 
   if (loading) {
@@ -342,7 +363,7 @@ export function CatalogPage() {
             </div>
           </div>
           
-          {(freeCourses.length + masterClasses.length + premiumCatalogs.length + classRecordings.length === 0) ? (
+          {(freeCourses.length + masterClasses.length + premiumCatalogs.length + classRecordings.length + otherCatalogs.length === 0) ? (
             <div className="text-center py-16 bg-white rounded-xl shadow-sm">
               <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
                 <Search className="h-6 w-6 text-gray-400" />
@@ -446,6 +467,31 @@ export function CatalogPage() {
                         gradientFrom="from-green-50"
                         gradientTo="to-emerald-100"
                         buttonClass="w-full bg-green-600 hover:bg-green-700 text-white font-medium transition-all duration-200"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {otherCatalogs.length > 0 && (
+                <div>
+                  <div className="flex flex-col mb-6">
+                    <div className="flex items-center mb-2">
+                      <FolderOpen className="h-5 w-5 text-gray-600 mr-2" />
+                      <h2 className="text-2xl font-semibold text-gray-900">All Catalogs</h2>
+                    </div>
+                    <span className="text-sm text-gray-500 ml-7">Other catalogs available for browsing</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {otherCatalogs.map((catalog) => (
+                      <CatalogCard 
+                        key={catalog.id}
+                        catalog={catalog}
+                        badgeColor="bg-gray-100 text-gray-800"
+                        badgeText="Catalog"
+                        gradientFrom="from-gray-50"
+                        gradientTo="to-gray-100"
+                        buttonClass="w-full bg-gray-800 hover:bg-gray-900 text-white font-medium transition-all duration-200"
                       />
                     ))}
                   </div>
