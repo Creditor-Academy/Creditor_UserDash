@@ -74,13 +74,7 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
             isUser={isUser}
           />
         ) : message.type === 'image' && (message.imageUrl || message.fileUrl) ? (
-          <div
-            className={`rounded-2xl px-4 py-3 shadow-sm break-words word-wrap overflow-wrap-anywhere max-w-full transition-all duration-150 ${
-              isUser
-                ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
-                : "bg-gray-100 text-gray-800 border border-gray-200 hover:bg-gray-50"
-            }`}
-          >
+          <div className="max-w-full">
             <img
               src={message.imageUrl || message.fileUrl}
               alt="Shared image"
@@ -88,9 +82,15 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
               onClick={() => window.open(message.imageUrl || message.fileUrl, '_blank')}
             />
             {message.content && (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2">
-                {message.content}
-              </p>
+              <div className={`mt-2 px-3 py-2 rounded-lg ${
+                isUser
+                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+                  : "bg-gray-100 text-gray-800"
+              }`}>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              </div>
             )}
           </div>
         ) : message.type === 'file' && message.fileUrl && message.fileName ? (

@@ -12,10 +12,10 @@ export function ChatInput({
   onSendMessage,
   onFileSelect,
   onImageSelect,
+  selectedImage,
   isSending = false
 }) {
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleKeyPress = (e) => {
@@ -30,21 +30,15 @@ export function ChatInput({
   };
 
   const handleImageSelect = (file) => {
-    setSelectedImage(file);
     if (onImageSelect) {
       onImageSelect(file);
     }
   };
 
-  const handleSendImage = () => {
-    if (selectedImage && onImageSelect) {
-      onImageSelect(selectedImage);
-      setSelectedImage(null);
-    }
-  };
-
   const handleCancelImage = () => {
-    setSelectedImage(null);
+    if (onImageSelect) {
+      onImageSelect(null);
+    }
   };
 
 
@@ -60,7 +54,7 @@ export function ChatInput({
     return (
       <ImagePreview
         imageFile={selectedImage}
-        onSend={handleSendImage}
+        onSend={onSendMessage}
         onCancel={handleCancelImage}
         isSending={isSending}
       />
@@ -97,7 +91,7 @@ export function ChatInput({
         </div>
         <Button 
           onClick={onSendMessage}
-          disabled={!newMessage.trim()}
+          disabled={!newMessage.trim() && !selectedImage}
           size="icon"
           className="h-[48px] w-[48px] rounded-2xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 shadow-lg"
         >
