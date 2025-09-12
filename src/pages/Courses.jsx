@@ -278,6 +278,60 @@ export function Courses() {
     setFilteredLessons(results);
   }, [lessons, searchTerm]);
 
+  // Refresh courses when switching to courses tab
+  useEffect(() => {
+    if (activeTab === 'courses') {
+      const refreshCourses = async () => {
+        try {
+          console.log('[Courses] Refreshing courses data...');
+          // Fetch courses with modules included in a single API call
+          const data = await fetchUserCourses(true);
+          
+          // Process each course to add modulesCount, totalDuration, and trial status
+          const processedCourses = data.map(course => {
+            const modules = course.modules || [];
+            // Sum durations using 'estimated_duration' (in minutes)
+            const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
+            // Convert to seconds for formatTime
+            const totalDurationSecs = totalDurationMins * 60;
+            
+            // Get trial status
+            const trialStatus = getCourseTrialStatus(course);
+            
+            return {
+              ...course,
+              modulesCount: course._count?.modules || 0, 
+              totalDurationSecs,
+              image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
+              trialStatus
+            };
+          });
+          
+          setCourses(processedCourses);
+          setFilteredCourses(processedCourses);
+          
+          // Pre-populate courseModules for expanded view
+          const modulesMap = {};
+          data.forEach(course => {
+            if (course.modules) {
+              modulesMap[course.id] = course.modules;
+            }
+          });
+          setCourseModules(prev => ({
+            ...prev,
+            ...modulesMap
+          }));
+          
+          console.log('[Courses] Courses refreshed successfully');
+        } catch (err) {
+          console.error('[Courses] Error refreshing courses:', err);
+        }
+      };
+      
+      refreshCourses();
+    }
+  }, [activeTab]);
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
