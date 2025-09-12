@@ -33,6 +33,37 @@ function QuizTakePage() {
   const totalQuestions = questions.length;
   const progress = totalQuestions > 0 ? ((currentQuestion + 1) / totalQuestions) * 100 : 0;
 
+  // Helpers to work with CATEGORIZATION questions consistently
+  const getQuestionType = (q) => (q?.question_type || q?.type || '').toString().toUpperCase();
+  const getCategorizationBuckets = (opts = []) => {
+    // Prefer explicit isCategory flag; fall back to category field heuristic
+    if (opts.some(o => typeof o?.isCategory === 'boolean')) {
+      return {
+        categories: opts.filter(o => o?.isCategory === true),
+        items: opts.filter(o => o?.isCategory === false),
+      };
+    }
+    if (opts.some(o => 'category' in (o || {}))) {
+      return {
+        categories: opts.filter(o => !o?.category),
+        items: opts.filter(o => !!o?.category),
+      };
+    }
+    // Fallback: split first 3 as categories (legacy heuristic)
+    return {
+      categories: opts.slice(0, 3),
+      items: opts.slice(3),
+    };
+  };
+
+  const isCategorizationComplete = (q, ans) => {
+    if (!q) return true;
+    if (getQuestionType(q) !== 'CATEGORIZATION') return true;
+    const { items } = getCategorizationBuckets(q.options || []);
+    const assignedCount = Object.keys((ans?.categoryAssignments) || {}).length;
+    return items.length > 0 ? assignedCount === items.length : true;
+  };
+
   // Load answers from localStorage on component mount
   useEffect(() => {
     const savedAnswers = localStorage.getItem(`quiz_${quizId}_answers`);
@@ -427,6 +458,49 @@ function QuizTakePage() {
           console.log(`Matching question ${questionId} formatted:`, formattedAnswer);
           break;
 
+        case 'categorization': {
+          // Build selectedOptionId as an array of { optionId, category }
+          // Our stored answer shape is: { categoryAssignments: { [itemId]: categoryId | categoryName } }
+          // The start API now includes isCategory flags and IDs for both categories and items
+          const q = question;
+          const mapping = (answer && typeof answer === 'object') ? answer.categoryAssignments : null;
+          const opts = Array.isArray(q?.options) ? q.options : [];
+          const categoriesById = new Map();
+          const categoriesByText = new Map();
+          opts.forEach(o => {
+            const id = String(o?.id ?? '');
+            const text = String(o?.text ?? '');
+            if (o?.isCategory === true || (!('isCategory' in o) && !o?.category)) {
+              if (id) categoriesById.set(id, text);
+              if (text) categoriesByText.set(text.toLowerCase(), text);
+            }
+          });
+          const payload = [];
+          if (mapping && typeof mapping === 'object') {
+            Object.entries(mapping).forEach(([itemId, catRef]) => {
+              // Resolve category name from either id or already a name
+              let categoryName = '';
+              const catRefStr = String(catRef ?? '').trim();
+              if (categoriesById.has(catRefStr)) {
+                categoryName = categoriesById.get(catRefStr) || '';
+              } else if (categoriesByText.has(catRefStr.toLowerCase())) {
+                categoryName = categoriesByText.get(catRefStr.toLowerCase()) || '';
+              } else if (catRefStr) {
+                categoryName = catRefStr; // fallback to provided string
+              }
+              // Ensure the item exists in options and is not a category
+              const exists = opts.find(o => String(o?.id) === String(itemId) && (o?.isCategory === false || !!o?.category));
+              if (exists && categoryName) {
+                payload.push({ optionId: String(itemId), category: String(categoryName) });
+              }
+            });
+          }
+          formattedAnswer.selectedOptionId = payload;
+          formattedAnswer.answer = null;
+          console.log(`Categorization question ${questionId} formatted:`, formattedAnswer);
+          break;
+        }
+
         default:
           // Default handling - treat as array
           formattedAnswer.selectedOptionId = null;
@@ -602,6 +676,9 @@ function QuizTakePage() {
           case 'ONE_WORD':
             question.type = 'one_word';
             break;
+          case 'CATEGORIZATION':
+            question.type = 'categorization';
+            break;
           default:
             question.type = backendType.toLowerCase();
         }
@@ -709,6 +786,182 @@ function QuizTakePage() {
               ))}
             </div>
             <div className="text-xs text-gray-500">Your current order will be submitted.</div>
+          </div>
+        );
+      }
+      case 'categorization': {
+        // Drag-and-drop categorization UI
+        const qid = question.id;
+        const options = question.options || [];
+        
+        // Debug logging to see the actual structure
+        console.log('Categorization question options:', options);
+        console.log('Question data:', question);
+        
+        // For the API response structure, we need to determine categories vs items differently
+        // Try multiple approaches to identify categories vs items
+        
+        let categories, items;
+        
+        // Approach 1: Check for explicit isCategory field
+        if (options.some(opt => opt.isCategory !== undefined)) {
+          categories = options.filter(opt => opt.isCategory === true);
+          items = options.filter(opt => opt.isCategory === false);
+        }
+        // Approach 2: Check for category field (items have category, categories don't)
+        else if (options.some(opt => opt.category !== undefined)) {
+          categories = options.filter(opt => !opt.category);
+          items = options.filter(opt => opt.category);
+        }
+        // Approach 3: Heuristic based on your example - first 3 are categories
+        else if (options.length > 3) {
+          categories = options.slice(0, 3);
+          items = options.slice(3);
+        }
+        // Approach 4: If 3 or fewer options, they're all categories
+        else {
+          categories = options;
+          items = [];
+        }
+        
+        console.log('Filtered categories:', categories);
+        console.log('Filtered items:', items);
+        
+        // Initialize answer structure if not exists
+        const currentAnswer = answers[qid] || {};
+        const categoryAssignments = currentAnswer.categoryAssignments || {};
+        
+        const handleItemDrop = (itemId, categoryId) => {
+          const newAssignments = { ...categoryAssignments, [itemId]: categoryId };
+          const newAnswer = { ...currentAnswer, categoryAssignments: newAssignments };
+          handleAnswer(qid, newAnswer);
+        };
+        
+        const handleItemRemove = (itemId) => {
+          const newAssignments = { ...categoryAssignments };
+          delete newAssignments[itemId];
+          const newAnswer = { ...currentAnswer, categoryAssignments: newAssignments };
+          handleAnswer(qid, newAnswer);
+        };
+        
+        const onDragStart = (e, itemId) => {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', itemId);
+        };
+        
+        const onDragOver = (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        };
+        
+        const onDrop = (e, categoryId) => {
+          e.preventDefault();
+          const itemId = e.dataTransfer.getData('text/plain');
+          if (itemId) {
+            handleItemDrop(itemId, categoryId);
+          }
+        };
+        
+        // Debug: If no categories found, show debug info
+        if (categories.length === 0) {
+          return (
+            <div className="space-y-4">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 className="font-medium text-yellow-800 mb-2">Debug: No categories found</h4>
+                <p className="text-sm text-yellow-700 mb-2">Options structure:</p>
+                <pre className="text-xs bg-white p-2 rounded border overflow-auto">
+                  {JSON.stringify(options, null, 2)}
+                </pre>
+              </div>
+              <div className="text-sm text-gray-600">
+                Total options: {options.length}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-6">
+            {/* Categories */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {categories.map(category => {
+                const categoryItems = items.filter(item => categoryAssignments[item.id] === category.id);
+                return (
+                  <div
+                    key={category.id}
+                    className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50 min-h-[200px]"
+                    onDragOver={onDragOver}
+                    onDrop={(e) => onDrop(e, category.id)}
+                  >
+                    <div className="text-center mb-4">
+                      <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-600 text-white text-sm font-medium">
+                        <div className="w-2 h-2 bg-white rounded-full mr-2"></div>
+                        {category.text}
+                      </div>
+                    </div>
+                    <div className="space-y-2 min-h-[120px]">
+                      {categoryItems.map(item => (
+                        <div
+                          key={item.id}
+                          className="bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm flex items-center justify-between group"
+                        >
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            <span className="text-gray-800">{item.text}</span>
+                          </div>
+                          <button
+                            onClick={() => handleItemRemove(item.id)}
+                            className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      {categoryItems.length === 0 && (
+                        <div className="text-center text-gray-400 text-sm py-8">
+                          Drop items here
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Available Items */}
+            <div className="mt-6">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Available Items:</h4>
+              <div className="flex flex-wrap gap-2">
+                {items.map(item => {
+                  const isAssigned = categoryAssignments[item.id];
+                  if (isAssigned) return null; // Don't show assigned items
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white border border-gray-300 rounded-md px-3 py-2 text-sm shadow-sm cursor-move hover:shadow-md transition-shadow select-none"
+                      draggable
+                      onDragStart={(e) => onDragStart(e, item.id)}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                        <span className="text-gray-800">{item.text}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {items.filter(item => !categoryAssignments[item.id]).length === 0 && (
+                <div className="text-center text-gray-500 text-sm py-4">
+                  All items have been categorized
+                </div>
+              )}
+            </div>
+            
+            {/* Progress indicator */}
+            <div className="text-sm text-gray-600">
+              Progress: {Object.keys(categoryAssignments).length} / {items.length} items categorized
+            </div>
           </div>
         );
       }
@@ -1037,6 +1290,9 @@ function QuizTakePage() {
   }
 
   const currentQ = questions[currentQuestion];
+  const canProceed = !currentQ
+    ? true
+    : (getQuestionType(currentQ) !== 'CATEGORIZATION' || isCategorizationComplete(currentQ, answers[currentQ?.id]));
 
   return (
     <div className="container py-6 max-w-4xl mx-auto">
@@ -1172,6 +1428,9 @@ function QuizTakePage() {
                 case 'match':
                   return "Match the items correctly.";
                   
+                case 'categorization':
+                  return "Drag each item into the correct category container below.";
+                  
                 default:
                   return "Please provide your answer below.";
               }
@@ -1208,13 +1467,13 @@ function QuizTakePage() {
         
         <div className="flex items-center gap-3">
           {currentQuestion < totalQuestions - 1 ? (
-            <Button onClick={handleNext}>
+            <Button onClick={handleNext} disabled={!canProceed} title={!canProceed ? 'Categorize all items to continue' : undefined}>
               Next
             </Button>
           ) : (
             <Button 
               onClick={() => setShowSubmitConfirm(true)}
-              disabled={Object.keys(answers).length === 0}
+              disabled={Object.keys(answers).length === 0 || !canProceed}
               className="bg-green-600 hover:bg-green-700"
             >
               {isSubmitting ? (

@@ -45,6 +45,7 @@ const CreateQuizPage = () => {
   const [isAddingQuestions, setIsAddingQuestions] = useState(false);
   const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
   const [selectedQuestionForEdit, setSelectedQuestionForEdit] = useState(null);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
   const isAllowed = allowedScormUserIds.includes(currentUserId);
 
@@ -66,9 +67,11 @@ const CreateQuizPage = () => {
 
   useEffect(() => {
     if (!isAllowed) {
+      setLoadingCourses(false);
       return;
     }
     const fetchCoursesData = async () => {
+      setLoadingCourses(true);
       try {
         const coursesData = await fetchAllCourses();
         const coursesWithModules = await Promise.all(
@@ -85,6 +88,8 @@ const CreateQuizPage = () => {
         setCourses(coursesWithModules);
       } catch (err) {
         console.error('Error fetching courses:', err);
+      } finally {
+        setLoadingCourses(false);
       }
     };
     fetchCoursesData();
@@ -364,7 +369,15 @@ const CreateQuizPage = () => {
         </Card>
       </div>
 
-      {paginatedCourses.length === 0 ? (
+      {loadingCourses ? (
+        <div className="text-center py-12">
+          <div className="flex items-center justify-center mb-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading courses...</h3>
+          <p className="text-gray-500">Please wait while we fetch your course data.</p>
+        </div>
+      ) : paginatedCourses.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -633,6 +646,29 @@ const CreateQuizPage = () => {
                                     ? q.correctAnswer.join(', ')
                                     : (q.correctAnswer || q.correct_answers || q.answer || '—')}
                                 </span>
+                              </div>
+                            ) : q.type === 'CATEGORIZATION' ? (
+                              <div>
+                                <div className="font-medium mb-2">Categories and Items:</div>
+                                <div className="space-y-2">
+                                  {options.map(opt => (
+                                    <div key={opt.id || opt.text} className="flex items-center">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        opt.isCategory 
+                                          ? 'bg-blue-100 text-blue-800' 
+                                          : 'bg-green-100 text-green-800'
+                                      }`}>
+                                        {opt.isCategory ? 'Category' : 'Item'}
+                                      </span>
+                                      <span className="ml-2 text-gray-800">{opt.text || opt}</span>
+                                      {!opt.isCategory && opt.category && (
+                                        <span className="ml-2 text-xs text-gray-500">
+                                          → {opt.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             ) : null}
                           </div>
