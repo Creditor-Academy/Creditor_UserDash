@@ -1,7 +1,8 @@
 // Video Upload Service using the same resource API
 import api from './apiClient';
 
-const RESOURCE_UPLOAD_API = 'https://sharebackend-sdkp.onrender.com/api/resource/upload-resource';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ' https://creditor-backend-ceds.onrender.com';
+const RESOURCE_UPLOAD_API = `${API_BASE}/api/resource/upload-resource`;
 
 /**
  * Upload a video file to the resource API
