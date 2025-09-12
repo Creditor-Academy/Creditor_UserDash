@@ -329,16 +329,16 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div>
 
-          {/* <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants}>
             <SidebarItem
               icon={Users}
               label="Study Groups"
-              href="/groups"
-              active={isActive("/groups")}
+              href="/dashboard/groups"
+              active={isActive("/dashboard/groups")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
-          </motion.div> */}
+          </motion.div>
 
           <motion.div variants={itemVariants}>
             <SidebarItem

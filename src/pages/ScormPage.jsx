@@ -168,7 +168,11 @@ const ScormPage = () => {
         }
       });
 
-      const fullUrl = `${import.meta.env.VITE_API_BASE_URL || ''}${result.data.url}`;
+      // Handle the response based on the actual API response structure
+      const scormUrl = result.url || (result.data && result.data.url) || '';
+      const fullUrl = scormUrl.startsWith('http') 
+        ? scormUrl 
+        : `${import.meta.env.VITE_API_BASE_URL || ''}${scormUrl.startsWith('/') ? '' : '/'}${scormUrl}`;
 
       setScormUploadState((prev) => ({
         ...prev,

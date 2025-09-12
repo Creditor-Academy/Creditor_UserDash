@@ -289,7 +289,7 @@ export function CatalogPage() {
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
                     <Gem className="h-5 w-5 text-purple-500 mr-2" />
-                    <h2 className="text-2xl font-semibold text-gray-900">Premium Courses</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900">Book Smart ( Premium Courses )</h2>
                     </div>
                     <span className="text-sm text-gray-500 ml-7">Comprehensive courses for professional development</span>
                   </div>
@@ -314,7 +314,7 @@ export function CatalogPage() {
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
                       <Video className="h-5 w-5 text-green-600 mr-2" />
-                      <h2 className="text-2xl font-semibold text-gray-900">Class Recordings</h2>
+                      <h2 className="text-2xl font-semibold text-gray-900">Street Smart ( Class recording by Paulmichael Rowland )</h2>
                     </div>
                     <span className="text-sm text-gray-500 ml-7">Archive of past class sessions for review</span>
                   </div>
