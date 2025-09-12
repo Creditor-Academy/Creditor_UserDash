@@ -1,4 +1,5 @@
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
+import axios from 'axios';
 
 export async function fetchAllCourses() {
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getAllCourses`, {
@@ -173,15 +174,23 @@ export async function createLesson(courseId, moduleId, lessonData) {
 // Create lesson content
 export async function createLessonContent(lessonContentData) {
   try {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/create`,
-      lessonContentData,
-      {
-        headers: getAuthHeader(),
-        withCredentials: true,
-      }
-    );
-    return response.data;
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+      body: JSON.stringify(lessonContentData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(errorData.message || `Failed to create lesson content (${response.status})`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
   } catch (error) {
     console.error('Error creating lesson content:', error);
     throw error;
@@ -254,8 +263,13 @@ export async function createAIModulesAndLessons(courseId, outlines) {
           // Generate structured lesson content for AI-generated lessons
           let lessonContent = '';
           
-          // Handle new AI-generated lesson structure
-          if (lessonData.heading || lessonData.introduction || lessonData.content || lessonData.summary) {
+          // First priority: Use rich content from contentBlocks if available
+          if (lessonData.richContent) {
+            lessonContent = lessonData.richContent;
+            console.log('Using rich content from contentBlocks for lesson:', lessonData.title);
+          }
+          // Second priority: Handle new AI-generated lesson structure
+          else if (lessonData.heading || lessonData.introduction || lessonData.content || lessonData.summary) {
             // Build structured HTML content for AI lessons
             if (lessonData.heading) {
               lessonContent += `<h1 class="text-3xl font-bold mb-6 text-slate-800">${lessonData.heading}</h1>\n\n`;
@@ -344,10 +358,25 @@ export async function createAIModulesAndLessons(courseId, outlines) {
                 };
                 
                 console.log('Creating lesson content for lesson:', createdLesson.data.id);
-                await createLessonContent(lessonContentPayload);
+                console.log('Lesson content payload:', lessonContentPayload);
+                
+                const contentResult = await createLessonContent(lessonContentPayload);
+                console.log('Lesson content created successfully:', contentResult);
               } catch (contentError) {
                 console.error('Failed to create lesson content:', contentError);
+                console.error('Content error details:', {
+                  lessonId: createdLesson.data.id,
+                  contentLength: lessonContent.length,
+                  error: contentError.message
+                });
+                // Don't fail the entire process, just log the error
+                console.warn('Continuing without lesson content for lesson:', lessonData.title);
               }
+            } else {
+              console.warn('No lesson content to create for lesson:', lessonData.title, {
+                hasContent: !!lessonContent,
+                hasLessonId: !!createdLesson?.data?.id
+              });
             }
             console.log('Lesson created successfully:', createdLesson);
           } catch (lessonError) {

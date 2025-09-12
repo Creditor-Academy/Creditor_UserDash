@@ -33,6 +33,7 @@ import AISummarizationTool from './AISummarizationTool';
 import AIQuestionAnswering from './AIQuestionAnswering';
 import { AIFeatureAccessProvider } from './AIFeatureAccess';
 import LoadingBuffer from '../LoadingBuffer';
+import LessonPreview from './LessonPreview';
 import { generateCourseImage } from '@/services/aiCourseService';
 import { createModule, createLesson, createAICourse, createAIModulesAndLessons } from '@/services/courseService';
 
@@ -53,6 +54,8 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isGeneratingQA, setIsGeneratingQA] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [previewLesson, setPreviewLesson] = useState(null);
+  const [showLessonPreview, setShowLessonPreview] = useState(false);
   const [formData, setFormData] = useState({
     title: courseData?.title || '',
     subject: '',
@@ -64,6 +67,16 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
     uploadedFiles: []
   });
   const fileInputRef = useRef(null);
+
+  // Helper function to convert contentBlocks to HTML
+  const convertContentBlocksToHTML = (contentBlocks) => {
+    if (!contentBlocks || contentBlocks.length === 0) return '';
+    
+    return contentBlocks
+      .sort((a, b) => a.order - b.order)
+      .map(block => block.html_css)
+      .join('\n\n');
+  };
 
   const handleSaveCourse = async (status = 'PUBLISHED') => {
     if (!formData.title || !formData.description) {
@@ -147,17 +160,69 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                   });
                 }
                 
-                // Add media blocks
-                if (lesson.content?.media && Array.isArray(lesson.content.media)) {
-                  lesson.content.media.forEach((media, index) => {
+                // Add multimedia blocks (images and videos)
+                if (lesson.content?.multimedia) {
+                  const multimedia = lesson.content.multimedia;
+                  
+                  // Add image block
+                  if (multimedia.image) {
+                    const imageData = typeof multimedia.image === 'string' ? 
+                      { url: multimedia.image, alt: `${lesson.title} illustration`, caption: `Visual representation of ${lesson.title}` } :
+                      multimedia.image;
+                    
                     contentBlocks.push({
-                      block_id: `media_${lesson.id}_${contentBlocks.length + 1}`,
-                      type: 'text',
+                      block_id: `image_${lesson.id}_${contentBlocks.length + 1}`,
+                      type: 'image',
                       order: contentBlocks.length + 1,
-                      html_css: `<div class="lesson-media bg-indigo-50 border border-indigo-200 p-4 rounded mb-3 flex items-center"><div class="mr-3">${media.type === 'image' ? '🖼️' : '🎥'}</div><div><span class="font-medium text-indigo-800 capitalize">${media.type}</span><p class="text-indigo-700 text-sm">${media.description}</p></div></div>`,
-                      details: { type: media.type, description: media.description, section: 'media' }
+                      html_css: `<div class="lesson-image bg-indigo-50 border border-indigo-200 p-6 rounded-lg mb-6 text-center">
+                        <h4 class="font-semibold text-indigo-800 mb-4 flex items-center justify-center gap-2">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                          Lesson Illustration
+                        </h4>
+                        <img src="${imageData.url}" alt="${imageData.alt}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md mb-3" />
+                        <p class="text-sm text-indigo-700 italic">${imageData.caption}</p>
+                      </div>`,
+                      details: { 
+                        type: 'image', 
+                        url: imageData.url, 
+                        alt: imageData.alt, 
+                        caption: imageData.caption, 
+                        section: 'multimedia' 
+                      }
                     });
-                  });
+                  }
+                  
+                  // Add video block
+                  if (multimedia.video && multimedia.hasVideo) {
+                    contentBlocks.push({
+                      block_id: `video_${lesson.id}_${contentBlocks.length + 1}`,
+                      type: 'video',
+                      order: contentBlocks.length + 1,
+                      html_css: `<div class="lesson-video bg-purple-50 border border-purple-200 p-6 rounded-lg mb-6">
+                        <h4 class="font-semibold text-purple-800 mb-4 flex items-center gap-2">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                          </svg>
+                          Educational Video (${multimedia.video.duration})
+                        </h4>
+                        <div class="relative bg-gray-900 rounded-lg overflow-hidden">
+                          <video src="${multimedia.video.url}" class="w-full h-64 object-cover" controls muted>
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                        <p class="text-sm text-purple-700 mt-3 italic">Interactive video content to enhance your learning experience</p>
+                      </div>`,
+                      details: { 
+                        type: 'video', 
+                        url: multimedia.video.url, 
+                        duration: multimedia.video.duration, 
+                        prompt: multimedia.video.prompt,
+                        section: 'multimedia' 
+                      }
+                    });
+                  }
                 }
                 
                 // Add activities blocks
@@ -319,10 +384,28 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
       const createdCourse = await createAICourse(finalCourseData);
       console.log('Course created in database:', createdCourse);
       
-      // Then create modules and lessons in the database
+      // Then create modules and lessons in the database with rich content
       if (allModules.length > 0) {
         console.log('Creating modules and lessons in database...');
-        const moduleResults = await createAIModulesAndLessons(createdCourse.data.id, outlines);
+        // Pass the rich content data along with outlines
+        const enrichedOutlines = outlines.map(outline => ({
+          ...outline,
+          modules: outline.modules?.map(module => ({
+            ...module,
+            lessons: module.lessons?.map(lesson => {
+              // Find the corresponding lesson in allLessons to get contentBlocks
+              const enrichedLesson = allLessons.find(l => l.id === lesson.id);
+              return {
+                ...lesson,
+                contentBlocks: enrichedLesson?.contentBlocks || [],
+                richContent: enrichedLesson?.contentBlocks ? 
+                  convertContentBlocksToHTML(enrichedLesson.contentBlocks) : null
+              };
+            })
+          }))
+        }));
+        
+        const moduleResults = await createAIModulesAndLessons(createdCourse.data.id, enrichedOutlines);
         console.log('Modules and lessons created:', moduleResults);
       }
       
@@ -357,7 +440,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
     }
   };
 
-  // API Key Management System
+  // Enhanced API Key Management System for Multiple Content Types
   const getAvailableApiKey = (taskType = 'default') => {
     const keys = [
       import.meta.env.VITE_BYTEZ_KEY,
@@ -367,11 +450,13 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
       import.meta.env.VITE_BYTEZ_API_KEY_4
     ].filter(Boolean);
 
-    // Task-specific key assignment for load balancing
+    // Enhanced task-specific key assignment for multimedia content
     const keyAssignment = {
       'structure': 0,    // Course structure → Key 1
       'text': 1,         // Lesson text → Key 2  
       'image': 2,        // Images → Key 3
+      'video': 3,        // Videos → Key 4
+      'qa': 0,           // Q&A → Key 1 (reuse)
       'default': 0
     };
 
@@ -470,14 +555,67 @@ Return this exact JSON shape without markdown fences:
     }
   };
 
-  // Generate lesson image sequentially after text
-  const generateLessonImage = async (lessonHeading, subject) => {
+  // Generate lesson video using text-to-video model
+  const generateLessonVideo = async (lessonHeading, subject, apiKey) => {
     try {
-      // small delay to respect free model rate limits
-      await new Promise(r => setTimeout(r, 500));
-      // use 'image' channel implicitly via per-lesson orchestration
-      const res = await generateCourseImage(`${lessonHeading} (${subject}) — educational illustration`, { style: 'educational', size: '1024x1024' });
-      if (res?.success && res?.data?.url) return res.data.url;
+      console.log(`🎥 Generating video for: ${lessonHeading}`);
+      
+      const sdk = new Bytez(apiKey);
+      const model = sdk.model("ali-vilab/text-to-video-ms-1.7b");
+      
+      const videoPrompt = `Educational video about ${lessonHeading} in ${subject}, clear and informative, 2-3 seconds`;
+      
+      const { error, output } = await model.run(videoPrompt);
+      
+      if (error) {
+        console.warn('Video generation error:', error);
+        return null;
+      }
+      
+      if (output) {
+        console.log('✅ Video generated successfully');
+        return {
+          url: output,
+          prompt: videoPrompt,
+          duration: '2-3 seconds',
+          type: 'educational'
+        };
+      }
+      
+      return null;
+    } catch (e) {
+      console.warn('Video generation failed:', e?.message);
+      return null;
+    }
+  };
+
+  // Generate lesson image with enhanced prompts
+  const generateLessonImage = async (lessonHeading, subject, apiKey) => {
+    try {
+      console.log(`🖼️ Generating image for: ${lessonHeading}`);
+      
+      const sdk = new Bytez(apiKey);
+      const model = sdk.model("dreamlike-art/dreamlike-photoreal-2.0");
+      
+      const imagePrompt = `Educational illustration of ${lessonHeading} in ${subject}, clean, modern, informative style, high quality`;
+      
+      const { error, output } = await model.run(imagePrompt);
+      
+      if (error) {
+        console.warn('Image generation error:', error);
+        return '/placeholder-lesson-image.jpg';
+      }
+      
+      if (output) {
+        console.log('✅ Image generated successfully');
+        return {
+          url: output,
+          prompt: imagePrompt,
+          alt: `Illustration for ${lessonHeading}`,
+          caption: `Visual representation of ${lessonHeading} concepts`
+        };
+      }
+      
       return '/placeholder-lesson-image.jpg';
     } catch (e) {
       console.warn('Image generation failed, using placeholder:', e?.message);
@@ -485,30 +623,111 @@ Return this exact JSON shape without markdown fences:
     }
   };
 
-  // Orchestrate single lesson generation and return a complete lesson object
-  const generateCompleteLesson = async (lessonTitle, moduleTitle, subject, courseId, moduleId) => {
-    const text = await generateLessonText(lessonTitle, moduleTitle, subject);
-    const imageUrl = await generateLessonImage(text.heading || lessonTitle, subject);
-    return {
-      id: `lesson_${Date.now()}`,
-      title: text.heading || lessonTitle,
-      moduleId,
-      courseId,
-      duration: '15-20 min',
-      content: {
-        introduction: text.introduction,
-        mainContent: text.mainContent,
-        qa: text.qa,
-        summary: text.summary,
-        imageUrl
-      },
-      metadata: {
-        aiGenerated: true,
-        generatedAt: new Date().toISOString(),
-        textModel: 'flan-t5-base',
-        imageModel: 'flux.1-schnell'
+  // Generate enhanced Q&A content
+  const generateEnhancedQA = async (lessonTitle, mainContent, subject, apiKey) => {
+    try {
+      console.log(`❓ Generating Q&A for: ${lessonTitle}`);
+      
+      const sdk = new Bytez(apiKey);
+      const model = sdk.model("google/flan-t5-base");
+      
+      const qaPrompt = `Generate 5 educational questions and answers for lesson "${lessonTitle}" in ${subject}. 
+      Content context: ${mainContent.map(c => c.point).join(', ')}.
+      
+      Return JSON format:
+      {
+        "questions": [
+          {"question": "What is...", "answer": "...", "difficulty": "easy|medium|hard"},
+          {"question": "How does...", "answer": "...", "difficulty": "easy|medium|hard"}
+        ]
+      }`;
+      
+      const { error, output } = await model.run(qaPrompt);
+      
+      if (error) {
+        console.warn('Q&A generation error:', error);
+        return generateFallbackQA(lessonTitle, mainContent);
       }
-    };
+      
+      try {
+        const parsed = JSON.parse(output.replace(/```json\n?|\n?```/g, '').trim());
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+          return parsed.questions;
+        }
+      } catch (parseError) {
+        console.warn('Q&A parsing failed:', parseError);
+      }
+      
+      return generateFallbackQA(lessonTitle, mainContent);
+    } catch (e) {
+      console.warn('Q&A generation failed:', e?.message);
+      return generateFallbackQA(lessonTitle, mainContent);
+    }
+  };
+
+  // Enhanced complete lesson generation with multimedia content
+  const generateCompleteLesson = async (lessonTitle, moduleTitle, subject, courseId, moduleId) => {
+    console.log(`🚀 Generating complete multimedia lesson: ${lessonTitle}`);
+    
+    try {
+      // Generate text content first
+      const textContent = await executeWithApiKeyRotation('text', async (apiKey) => {
+        return await generateLessonText(lessonTitle, moduleTitle, subject);
+      });
+
+      // Generate multimedia content in parallel with different API keys
+      const [image, video, enhancedQA] = await Promise.allSettled([
+        executeWithApiKeyRotation('image', async (apiKey) => {
+          return await generateLessonImage(textContent.heading || lessonTitle, subject, apiKey);
+        }),
+        executeWithApiKeyRotation('video', async (apiKey) => {
+          return await generateLessonVideo(textContent.heading || lessonTitle, subject, apiKey);
+        }),
+        executeWithApiKeyRotation('qa', async (apiKey) => {
+          return await generateEnhancedQA(lessonTitle, textContent.mainContent, subject, apiKey);
+        })
+      ]);
+
+      // Process results
+      const imageResult = image.status === 'fulfilled' ? image.value : '/placeholder-lesson-image.jpg';
+      const videoResult = video.status === 'fulfilled' ? video.value : null;
+      const qaResult = enhancedQA.status === 'fulfilled' ? enhancedQA.value : textContent.qa;
+
+      return {
+        id: `lesson_${Date.now()}`,
+        title: textContent.heading || lessonTitle,
+        moduleId,
+        courseId,
+        duration: '15-20 min',
+        content: {
+          heading: textContent.heading,
+          introduction: textContent.introduction,
+          mainContent: textContent.mainContent,
+          multimedia: {
+            image: imageResult,
+            video: videoResult,
+            hasVideo: !!videoResult
+          },
+          qa: qaResult,
+          summary: textContent.summary
+        },
+        metadata: {
+          aiGenerated: true,
+          generatedAt: new Date().toISOString(),
+          models: {
+            text: 'flan-t5-base',
+            image: 'dreamlike-photoreal-2.0',
+            video: 'text-to-video-ms-1.7b',
+            qa: 'flan-t5-base'
+          },
+          contentTypes: ['text', 'image', videoResult ? 'video' : null, 'qa'].filter(Boolean)
+        }
+      };
+    } catch (error) {
+      console.error('Complete lesson generation failed:', error);
+      // Return fallback lesson
+      return generateFallbackCompleteLesson(lessonTitle, moduleTitle, subject);
+    }
   };
 
   // Generate lessons for the currently selected outline and persist to backend
@@ -2577,10 +2796,14 @@ Return JSON with this complete educational structure:
                                         <span>Ready</span>
                                       </div>
                                       <button
-                                        onClick={() => setSelectedLesson(lesson)}
-                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                                        onClick={() => {
+                                          setPreviewLesson(lesson);
+                                          setShowLessonPreview(true);
+                                        }}
+                                        className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center gap-1"
                                       >
-                                        View
+                                        <Eye className="w-3 h-3" />
+                                        Preview
                                       </button>
                                     </div>
                                   </div>
@@ -2925,6 +3148,29 @@ Return JSON with this complete educational structure:
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lesson Preview Modal */}
+      {showLessonPreview && previewLesson && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-800">Lesson Preview</h2>
+              <button
+                onClick={() => {
+                  setShowLessonPreview(false);
+                  setPreviewLesson(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <LessonPreview lesson={previewLesson} />
             </div>
           </div>
         </div>
