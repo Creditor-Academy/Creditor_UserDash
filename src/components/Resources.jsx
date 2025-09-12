@@ -1235,283 +1235,657 @@ const Resources = () => {
 
       {/* Upload Section */}
       <Card className="border-0 shadow-xl bg-white overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white">
-          <CardTitle className="flex items-center gap-3 text-white">
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-              <Upload className="w-6 h-6" />
-            </div>
-            Upload Assets
-          </CardTitle>
-          <CardDescription className="text-indigo-100">
-             Upload images, videos, audio files, text files, and PDFs with titles, descriptions, and organization settings. Resources assigned to "Global Resources" will be visible to all users. Supported formats: Images (JPG, PNG, GIF), Videos (MP4, MOV, AVI), Audio (MP3, WAV), Text files (TXT, JSON, XML), PDFs (Max 1GB)
-             {filteredResources.length > 0 && (
-               <span className="block mt-2 text-indigo-200">
-                 📊 {filteredResources.length} asset(s) loaded - Use sorting options below to organize them
-               </span>
-             )}
-           </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                Title *
-              </label>
-              <Input
-                placeholder="Enter asset title"
-                value={formData.title}
-                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-lg"
-              />
-            </div>
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                Organization *
-              </label>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
-                  value={formData.organization}
-                  onChange={(e) => {
-                    const newOrgId = e.target.value;
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      organization: newOrgId,
-                      category: "" // Reset category when organization changes
-                    }));
-                    
-                    // Update categories for the selected organization
-                    if (newOrgId && newOrgId !== "") {
-                      const orgCategories = organizationCategories[newOrgId] || [];
-                      setCategories(orgCategories);
-                    } else {
-                      setCategories([]);
-                    }
-                  }}
-                  disabled={loading}
-                >
-                  <option value="">
-                    {loading ? "Loading..." : "Select Organization"}
-                  </option>
-                  {organizations.map(org => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingOrganization(null);
-                    setShowOrganizationModal(true);
-                  }}
-                  className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
-                  title="Add New Organization"
-                  disabled={loading}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (formData.organization) {
-                      const organization = organizations.find(org => org.id === formData.organization);
-                      if (organization) {
-                        setEditingOrganization(organization);
-                        setShowOrganizationModal(true);
-                      }
-                    }
-                  }}
-                  className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
-                  title="Edit Selected Organization"
-                  disabled={!formData.organization || loading}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+      <CardHeader className="bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white">
+        <CardTitle className="flex items-center gap-3 text-white">
+          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+            <Upload className="w-6 h-6" />
           </div>
-
-          {/* Category dropdown - only show when organization is selected */}
-          {formData.organization && (
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                Category *
-              </label>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
-                  value={formData.category}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  disabled={loading}
-                >
-                  <option value="">
-                    {loading ? "Loading..." : "Select Category"}
-                  </option>
-                  {categories.map(category => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingCategory(null);
-                    setCategoryOrganizationId(formData.organization || pendingOrg);
-                    setShowCategoryModal(true);
-                  }}
-                  className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
-                  title="Add New Category"
-                  disabled={loading}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (formData.category) {
-                      const category = categories.find(cat => cat.id === formData.category);
-                      if (category) {
-                        setEditingCategory(category);
-                        setShowCategoryModal(true);
-                      }
-                    }
-                  }}
-                  className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
-                  title="Edit Selected Category"
-                  disabled={!formData.category || loading}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+          Upload Assets
+        </CardTitle>
+        <CardDescription className="text-indigo-100">
+          Upload images, videos, audio files, text files, and PDFs with titles, descriptions, and organization settings. Resources assigned to "Global Resources" will be visible to all users. Supported formats: Images (JPG, PNG, GIF), Videos (MP4, MOV, AVI), Audio (MP3, WAV), Text files (TXT, JSON, XML), PDFs (Max 1GB)
+          {filteredResources.length > 0 && (
+            <span className="block mt-2 text-indigo-200">
+              📊 {filteredResources.length} asset(s) loaded - Use sorting options below to organize them
+            </span>
           )}
+        </CardDescription>
+      </CardHeader>
 
-
-          
+      <CardContent className="space-y-6 p-8">
+      {/* --- Title --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-              Description
+              Title *
             </label>
-            <Textarea
-              placeholder="Enter asset description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-md"
+            <Input
+              placeholder="Enter asset title"
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-lg"
             />
           </div>
 
-          {/* File Type Selection */}
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        {/* --- Organization --- */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-              File Type *
+              Organization *
             </label>
-            <select
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
-              value={formData.file_type}
-              onChange={(e) => setFormData(prev => ({ ...prev, file_type: e.target.value }))}
-              disabled={loading}
-            >
-              <option value="">
-                {loading ? "Loading..." : "Select File Type"}
-              </option>
-              <option value="IMAGE">IMAGE</option>
-              <option value="VIDEO">VIDEO</option>
-              <option value="AUDIO">AUDIO</option>
-              <option value="TEXT_FILE">TEXT_FILE</option>
-              <option value="PDF">PDF</option>
-            </select>
-          </div>
+            <div className="flex gap-2">
+              <select
+                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
+                value={formData.organization}
+                onChange={(e) => {
+                  const newOrgId = e.target.value;
+                  setFormData(prev => ({ 
+                    ...prev, 
+                    organization: newOrgId,
+                    category: ""
+                  }));
+                  if (newOrgId && newOrgId !== "") {
+                    const orgCategories = organizationCategories[newOrgId] || [];
+                    setCategories(orgCategories);
+                  } else {
+                    setCategories([]);
+                  }
+                }}
+                disabled={loading}
+              >
+                <option value="">{loading ? "Loading..." : "Select Organization"}</option>
+                {organizations.map(org => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
 
-          <div className="space-y-3">
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-              Select Files *
-            </label>
-            <div 
-              className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-indigo-400 hover:bg-indigo-50/50 transition-all duration-300 bg-gradient-to-br from-gray-50 to-white focus-within:ring-2 focus-within:ring-indigo-200"
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*,audio/*,.txt,.json,.xml,.pdf"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
               <Button
                 variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="mb-4 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg px-6 py-3 rounded-xl transition-transform duration-200 hover:-translate-y-0.5"
+                size="sm"
+                onClick={() => { setEditingOrganization(null); setShowOrganizationModal(true); }}
+                className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
+                title="Add New Organization"
+                disabled={loading}
               >
-                <Upload className="w-5 h-5 mr-2" />
-                Choose Files
+                <Plus className="w-4 h-4" />
               </Button>
-              <p className="text-base text-gray-600 font-medium">
-                Drag and drop files here, or click to browse
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                Supported formats: Images, Videos, Audio, Text files, PDFs (Max 1GB)
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                💡 Large files up to 1GB are supported for high-quality content
-              </p>
-              {selectedFiles.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Selected Files:</p>
-                  <div className="space-y-1">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
-                        {file.type.startsWith('image/') ? <Image className="w-4 h-4" /> : 
-                         file.type.startsWith('video/') ? <Video className="w-4 h-4" /> :
-                         file.type.startsWith('audio/') ? <FileText className="w-4 h-4" /> :
-                         file.type === 'application/pdf' ? <FileText className="w-4 h-4" /> :
-                         <FileText className="w-4 h-4" />}
-                        <span>{file.name}</span>
-                        <span className={`${file.size > 500 * 1024 * 1024 ? 'text-orange-600 font-medium' : 'text-gray-500'}`}>
-                          ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                          {file.size > 500 * 1024 * 1024 && <span className="text-xs ml-1">⚠️ Large file</span>}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (formData.organization) {
+                    const organization = organizations.find(org => org.id === formData.organization);
+                    if (organization) {
+                      setEditingOrganization(organization);
+                      setShowOrganizationModal(true);
+                    }
+                  }
+                }}
+                className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
+                title="Edit Selected Organization"
+                disabled={!formData.organization || loading}
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
             </div>
           </div>
+        </div>
 
-                      <Button 
-              onClick={handleUpload} 
-              disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.organization || !formData.category || !formData.file_type}
-              className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
+        {/* --- Category --- */}
+        {formData.organization && (
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+              Category *
+            </label>
+            <div className="flex gap-2">
+              <select
+                className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
+                value={formData.category}
+                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                disabled={loading}
+              >
+                <option value="">{loading ? "Loading..." : "Select Category"}</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setEditingCategory(null); setCategoryOrganizationId(formData.organization || pendingOrg); setShowCategoryModal(true); }}
+                className="px-4 py-3 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-sm hover:shadow-md"
+                title="Add New Category"
+                disabled={loading}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (formData.category) {
+                    const category = categories.find(cat => cat.id === formData.category);
+                    if (category) {
+                      setEditingCategory(category);
+                      setShowCategoryModal(true);
+                    }
+                  }
+                }}
+                className="px-4 py-3 bg-slate-600 text-white border-0 hover:bg-slate-700 shadow-sm hover:shadow-md"
+                title="Edit Selected Category"
+                disabled={!formData.category || loading}
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* --- Description --- */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+            Description
+          </label>
+          <Textarea
+            placeholder="Enter asset description"
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            rows={3}
+            className="border-2 border-gray-200 focus:border-indigo-400 focus:ring-indigo-400/30 rounded-xl transition-shadow duration-200 focus:shadow-md"
+          />
+        </div>
+
+        {/* --- File Type --- */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+            File Type *
+          </label>
+          <select
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-shadow duration-200 focus:shadow-md"
+            value={formData.file_type}
+            onChange={(e) => setFormData(prev => ({ ...prev, file_type: e.target.value }))}
+            disabled={loading}
+          >
+            <option value="">{loading ? "Loading..." : "Select File Type"}</option>
+            <option value="IMAGE">IMAGE</option>
+            <option value="VIDEO">VIDEO</option>
+            <option value="AUDIO">AUDIO</option>
+            <option value="TEXT_FILE">TEXT_FILE</option>
+            <option value="PDF">PDF</option>
+          </select>
+        </div>
+
+        {/* --- Select Files --- */}
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+            Select Files *
+          </label>
+          <div 
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-indigo-400 hover:bg-indigo-50/50 transition-all duration-300 bg-gradient-to-br from-gray-50 to-white focus-within:ring-2 focus-within:ring-indigo-200"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*,audio/*,.txt,.json,.xml,.pdf"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              className="mb-4 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-lg px-6 py-3 rounded-xl transition-transform duration-200 hover:-translate-y-0.5"
             >
-            {uploading ? (
-              <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                Uploading... {selectedFiles.length > 0 && selectedFiles[0].size > 100 * 1024 * 1024 && (
-                  <span className="text-xs">(Large file - may take a moment)</span>
-                )}
+              <Upload className="w-5 h-5 mr-2" />
+              Choose Files
+            </Button>
+            <p className="text-base text-gray-600 font-medium">
+              Drag and drop files here, or click to browse
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Supported formats: Images, Videos, Audio, Text files, PDFs (Max 1GB)
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              💡 Large files up to 1GB are supported for high-quality content
+            </p>
+            {selectedFiles.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-2">Selected Files:</p>
+                <div className="space-y-1">
+                  {selectedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                      {file.type.startsWith('image/') ? <Image className="w-4 h-4" /> : 
+                      file.type.startsWith('video/') ? <Video className="w-4 h-4" /> :
+                      file.type.startsWith('audio/') ? <FileText className="w-4 h-4" /> :
+                      file.type === 'application/pdf' ? <FileText className="w-4 h-4" /> :
+                      <FileText className="w-4 h-4" />}
+                      <span>{file.name}</span>
+                      <span className={file.size > 500 * 1024 * 1024 ? 'text-orange-600 font-medium' : 'text-gray-500'}>
+                        ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                        {file.size > 500 * 1024 * 1024 && <span className="text-xs ml-1">⚠️ Large file</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : (
-              "Upload Assets"
             )}
-          </Button>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+
+        {/* --- Web Search Button (Unsplash + Pexels + Pixabay) --- */}
+        <Button 
+          onClick={() => {
+            const modal = document.getElementById("imageSearchModal");
+            if (modal) modal.classList.remove("hidden");
+          }}
+          className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
+        >
+          Web Search
+        </Button>
+
+        {/* --- Upload Assets Button --- */}
+        <Button 
+          onClick={handleUpload} 
+          disabled={uploading || loading || selectedFiles.length === 0 || !formData.title.trim() || !formData.organization || !formData.category || !formData.file_type}
+          className="w-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-500 text-white border-0 hover:from-indigo-600 hover:via-sky-600 hover:to-cyan-600 shadow-xl py-4 rounded-xl text-lg font-semibold transition-transform duration-200 hover:-translate-y-0.5"
+        >
+          {uploading ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+              Uploading... {selectedFiles.length > 0 && selectedFiles[0].size > 100 * 1024 * 1024 && (
+                <span className="text-xs">(Large file - may take a moment)</span>
+              )}
+            </div>
+          ) : (
+            "Upload Assets"
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+
+    {/* --- Combined Modal (Unsplash + Pexels + Pixabay) --- */}
+    <div id="imageSearchModal" className="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[95%] overflow-hidden relative flex flex-col">
+        {/* Modal Header */}
+        <div className="bg-gray-50 border-b border-gray-200 p-6 relative">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold mb-1 text-gray-800">Image Search</h2>
+              <p className="text-gray-600 text-sm">Find high-quality images from Unsplash and Pixabay</p>
+            </div>
+            <button 
+              onClick={() => {
+                const modal = document.getElementById("imageSearchModal");
+                if (modal) modal.classList.add("hidden");
+              }}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded-full transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Content */}
+        <div className="flex-1 overflow-auto p-6">
+
+        {/* Pre-loaded Finance Templates */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Quick Finance Templates</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {[
+              "business finance", "investment", "money", "banking", "financial planning", 
+              "stock market", "wealth management", "accounting", "budget", "credit",
+              "loan", "mortgage", "insurance", "retirement", "tax", "economics"
+            ].map((template) => (
+              <button
+                key={template}
+                onClick={() => {
+                  const queryInput = document.getElementById("imageSearchQuery");
+                  if (queryInput) {
+                    queryInput.value = template;
+                  }
+                }}
+                className="px-4 py-2.5 text-sm bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 capitalize font-medium"
+              >
+                {template}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Custom Search</h3>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <input 
+                id="imageSearchQuery"
+                type="text"
+                placeholder="Type your search query here..."
+                className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-lg focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 text-gray-700 placeholder-gray-400"
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+            <button 
+              onClick={async () => {
+                const queryInput = document.getElementById("imageSearchQuery");
+                const query = queryInput ? queryInput.value : "";
+                const resultsDiv = document.getElementById("imageSearchResults");
+                if (!resultsDiv) return;
+                
+                // Show loading state
+                resultsDiv.innerHTML = `
+                  <div class="flex items-center justify-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600"></div>
+                    <span class="ml-3 text-gray-600">Searching for images...</span>
+                  </div>
+                `;
+
+                try {
+                  // Unsplash
+                  const UNSPLASH_KEY = "80kWci6xr65tHJChHAG2cj8qDxsIs1TmAFnkka1C-Mk";
+                  const unsplashRes = await fetch(
+                    `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=15`,
+                    {
+                      headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
+                    }
+                  );
+                  const unsplashData = await unsplashRes.json();
+
+                  // Clear loading state
+                  resultsDiv.innerHTML = "";
+
+                  if (!unsplashData.results || unsplashData.results.length === 0) {
+                    resultsDiv.innerHTML = `
+                      <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No images found</h3>
+                        <p class="text-gray-500">Try a different search term or use one of the finance templates above.</p>
+                      </div>
+                    `;
+                    return;
+                  }
+
+                  (unsplashData.results || []).forEach((photo) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className =
+                      "img-wrapper inline-block w-full mb-6 cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white";
+
+                    // --- Unsplash Image ---
+                    const img = document.createElement("img");
+                    img.src = photo.urls.small;
+                    img.alt = photo.alt_description || "Unsplash image";
+                    img.className =
+                      "w-full h-auto block rounded-t-xl hover:scale-105 transition-transform duration-300";
+
+                    // When the user clicks/chooses this image:
+                    img.onclick = async () => {
+                      const previewImg = document.getElementById("previewImage");
+                      if (previewImg) previewImg.src = photo.urls.full;
+
+                      const previewModal = document.getElementById("previewModal");
+                      if (previewModal) {
+                        previewModal.dataset.source = "unsplash";
+                        previewModal.dataset.downloadUrl = photo.links.download_location;
+                        previewModal.classList.remove("hidden");
+                        
+                        console.log("Preview modal opened for Unsplash image");
+                        console.log("Download URL stored:", photo.links.download_location);
+                        
+                        // Also track the download immediately when user selects the image
+                        try {
+                          console.log("Tracking download on image selection...");
+                          const downloadResponse = await fetch(photo.links.download_location, {
+                            method: 'GET',
+                            headers: {
+                              'Authorization': 'Client-ID 80kWci6xr65tHJChHAG2cj8qDxsIs1TmAFnkka1C-Mk'
+                            },
+                            mode: 'cors'
+                          });
+                          
+                          if (downloadResponse.ok) {
+                            console.log("✅ Download tracked on image selection!");
+                          } else {
+                            console.log("❌ Download tracking failed on selection:", downloadResponse.status);
+                          }
+                        } catch (error) {
+                          console.error("❌ Error tracking download on selection:", error);
+                        }
+                      }
+                    };
+
+                    wrapper.appendChild(img);
+
+                    // --- Required Attribution ---
+                    const credit = document.createElement("div");
+                    credit.className = "text-xs text-gray-500 p-3 bg-gray-50 border-t border-gray-100";
+                    credit.innerHTML = `Photo by 
+                      <a href="${photo.user.links.html}?utm_source=ATHENA_LMS&utm_medium=referral" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="underline text-gray-700 hover:text-gray-900">
+                        ${photo.user.name}
+                      </a> on 
+                      <a href="https://unsplash.com/?utm_source=ATHENA_LMS&utm_medium=referral" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="underline text-gray-700 hover:text-gray-900">
+                        Unsplash
+                      </a>`;
+                    wrapper.appendChild(credit);
+
+                    resultsDiv.appendChild(wrapper);
+                  });
+                } catch (error) {
+                  resultsDiv.innerHTML = `
+                    <div class="text-center py-12">
+                      <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                      </div>
+                      <h3 class="text-lg font-medium text-gray-900 mb-2">Search failed</h3>
+                      <p class="text-gray-500">There was an error searching for images. Please try again.</p>
+                    </div>
+                  `;
+                }
+
+
+
+              // // Pexels
+              // const PEXELS_KEY = "W4RFJr0wYkRJfOIU5pXOo0VCQsHbPMAW1jR70wDxUpyE4kQexpdWkzJw";
+              // const pexelsRes = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=15`, {
+              //   headers: { Authorization: PEXELS_KEY }
+              // });
+              // const pexelsData = await pexelsRes.json();
+              // (pexelsData.photos || []).forEach(photo => {
+              //   const wrapper = document.createElement("div");
+              //   wrapper.className = "img-wrapper inline-block w-full mb-4 cursor-pointer rounded-lg overflow-hidden shadow-md";
+              //   const img = document.createElement("img");
+              //   img.src = photo.src.medium;
+              //   img.alt = photo.alt || "Pexels image";
+              //   img.className = "w-full h-auto block rounded-lg hover:scale-105 transition-transform";
+              //   img.onclick = () => {
+              //     const previewImg = document.getElementById("previewImage");
+              //     if (previewImg) previewImg.src = photo.src.large;
+              //     const previewModal = document.getElementById("previewModal");
+              //     if (previewModal) {
+              //       previewModal.dataset.source = "pexels";
+              //       previewModal.classList.remove("hidden");
+              //     }
+              //   };
+              //   wrapper.appendChild(img);
+              //   resultsDiv.appendChild(wrapper);
+              // });
+
+              // Pixabay
+              const PIXABAY_KEY = "52197445-09bbdec7dc5671aa2bbe2830a";
+              const pixabayRes = await fetch(`https://pixabay.com/api/?key=${PIXABAY_KEY}&q=${encodeURIComponent(query)}&per_page=15`);
+              const pixabayData = await pixabayRes.json();
+              (pixabayData.hits || []).forEach(photo => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "img-wrapper inline-block w-full mb-4 cursor-pointer rounded-lg overflow-hidden shadow-md";
+                const img = document.createElement("img");
+                img.src = photo.webformatURL;
+                img.alt = photo.tags || "Pixabay image";
+                img.className = "w-full h-auto block rounded-lg hover:scale-105 transition-transform";
+                img.onclick = () => {
+                  const previewImg = document.getElementById("previewImage");
+                  if (previewImg) previewImg.src = photo.largeImageURL;
+                  const previewModal = document.getElementById("previewModal");
+                  if (previewModal) {
+                    previewModal.dataset.source = "pixabay";
+                    previewModal.classList.remove("hidden");
+                  }
+                };
+                wrapper.appendChild(img);
+                resultsDiv.appendChild(wrapper);
+              });
+            }}
+            className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Search Images
+          </button>
+        </div>
+
+        {/* Results Section */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Search Results</h3>
+          </div>
+          <div id="imageSearchResults" className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6"></div>
+        </div>
+
+        </div>
+        </div>
+      </div>
+    </div>
+
+    {/* --- Preview Modal --- */}
+    <div id="previewModal" className="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl max-h-[95%] overflow-hidden">
+        {/* Preview Header */}
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800">Image Preview</h3>
+              <p className="text-gray-600 text-sm">Review the image before adding to your upload list</p>
+            </div>
+            <button 
+              onClick={() => {
+                const previewModalElem = document.getElementById("previewModal");
+                if (previewModalElem) previewModalElem.classList.add("hidden");
+              }}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded-full transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Preview Content */}
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <img id="previewImage" src="" alt="Preview" className="max-w-full max-h-[60vh] rounded-xl shadow-lg mx-auto"/>
+          </div>
+          
+          <div className="flex justify-center gap-4">
+            <button 
+              onClick={async () => {
+                const previewImgElem = document.getElementById("previewImage");
+                const url = previewImgElem ? previewImgElem.src : "";
+                const previewModalElem = document.getElementById("previewModal");
+                const source = previewModalElem ? previewModalElem.dataset.source : "";
+                const downloadUrl = previewModalElem ? previewModalElem.dataset.downloadUrl : "";
+                
+                if (!url) return alert("No image selected");
+                
+                // Note: Download tracking is now handled on image selection to avoid duplicates
+                console.log("Adding image to upload list:", { source, url });
+                
+                setSelectedFiles(prev => [
+                  ...prev,
+                  {
+                    name: `${source}-image.jpg`,
+                    size: 500000,
+                    type: "image/jpeg",
+                    url,
+                    source
+                  }
+                ]);
+                alert(`${source} image added to upload list. Fill details and click 'Upload Assets'.`);
+                if (previewModalElem) previewModalElem.classList.add("hidden");
+                const searchModal = document.getElementById("imageSearchModal");
+                if (searchModal) searchModal.classList.add("hidden");
+              }}
+              className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add to Upload List
+            </button>
+            <button 
+              onClick={() => {
+                const previewModalElem = document.getElementById("previewModal");
+                if (previewModalElem) previewModalElem.classList.add("hidden");
+              }}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
       {/* Resources List */}
       <Card className="border-0 shadow-xl bg-white overflow-hidden">

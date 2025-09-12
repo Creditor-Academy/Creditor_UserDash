@@ -42,6 +42,10 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         dotColor: n.read ? 'bg-gray-300' : 'bg-blue-500',
         read: !!n.read,
       }));
+      console.log('All notifications from API:', notificationsFromApi);
+      console.log('Mapped notifications:', mapped);
+      console.log('Read notifications count:', mapped.filter(n => n.read).length);
+      console.log('Unread notifications count:', mapped.filter(n => !n.read).length);
       setNotifications(mapped);
     } else {
       setNotifications([]);
@@ -79,17 +83,17 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md w-[92vw] sm:w-[28rem] p-0 bg-white rounded-xl shadow-lg max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-w-md w-[92vw] sm:w-[28rem] p-0 bg-white rounded-xl shadow-lg max-h-[90vh] h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="p-4 pb-0 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-base font-semibold text-gray-900">
             <Bell className="h-4 w-4 text-gray-700" />
             Notifications
           </DialogTitle>
         </DialogHeader>
         
-        <div className="px-4 pb-4 overflow-y-auto">
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-3 h-8 bg-gray-100 rounded-lg p-1">
+        <Tabs defaultValue="all" className="w-full flex flex-col flex-1 min-h-0">
+          <div className="px-4 pb-2 border-b border-gray-100 flex-shrink-0">
+            <TabsList className="grid w-full grid-cols-4 h-8 bg-gray-100 rounded-lg p-1">
               <TabsTrigger 
                 value="all" 
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
@@ -115,54 +119,65 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 Settings
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="all" className="space-y-2 mt-3">
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-3 min-h-0">
+            <TabsContent value="all" className="space-y-2 mt-0">
               {notifications.length === 0 ? (
                 <div className="p-6 text-center">
                   <p className="text-gray-500 text-xs">No notifications yet</p>
                 </div>
-              ) : notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className={`w-2 h-2 rounded-full ${notification.dotColor} mt-1.5 flex-shrink-0`} />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-xs">
-                        {notification.title}
-                      </h4>
-                      <p className="text-gray-700 text-xs mt-1">
-                        {notification.description}
-                      </p>
-                      <p className="text-blue-600 text-xs mt-1.5">
-                        {notification.time}
-                      </p>
-                    </div>
-                    {!notification.read && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => markAsRead(notification.id)}
-                        className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
-                      >
-                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                      </Button>
-                    )}
+              ) : (
+                <>
+                  {/* Debug info */}
+                  <div className="text-xs text-gray-500 mb-2">
+                    Total: {notifications.length} | 
+                    Unread: {notifications.filter(n => !n.read).length} | 
+                    Read: {notifications.filter(n => n.read).length}
                   </div>
-                </div>
-              ))}
-              
-              <Button
-                variant="outline"
-                className="w-full mt-4 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
-                onClick={handleMarkAllAsRead}
-              >
-                Mark All as Read
-              </Button>
+                  
+                  {/* Show all notifications - both read and unread */}
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className={`w-2 h-2 rounded-full ${notification.dotColor} mt-1.5 flex-shrink-0`} />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-gray-900 text-xs">
+                            {notification.title}
+                            {notification.read && <span className="ml-2 text-gray-400 text-xs">(Read)</span>}
+                          </h4>
+                          <p className="text-gray-700 text-xs mt-1">
+                            {notification.description}
+                          </p>
+                          <p className="text-blue-600 text-xs mt-1.5">
+                            {notification.time}
+                          </p>
+                        </div>
+                        {!notification.read ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsRead(notification.id)}
+                            className="h-5 w-5 p-0 text-gray-400 hover:text-gray-600"
+                          >
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                          </Button>
+                        ) : (
+                          <div className="h-5 w-5 flex items-center justify-center">
+                            <div className="h-1.5 w-1.5 rounded-full bg-gray-300"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </TabsContent>
             
-            <TabsContent value="unread" className="space-y-2 mt-3">
+            <TabsContent value="unread" className="space-y-2 mt-0">
               {notifications.filter(n => !n.read).length > 0 ? (
                 notifications
                   .filter(n => !n.read)
@@ -201,18 +216,9 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 </div>
               )}
               
-              {notifications.filter(n => !n.read).length > 0 && (
-                <Button
-                  variant="outline"
-                  className="w-full mt-4 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
-                  onClick={handleMarkAllAsRead}
-                >
-                  Mark All as Read
-                </Button>
-              )}
             </TabsContent>
 
-            <TabsContent value="payment" className="space-y-2 mt-3">
+            <TabsContent value="payment" className="space-y-2 mt-0">
               {notifications.filter(n => n.type === 'payment').length > 0 ? (
                 notifications
                   .filter(n => n.type === 'payment')
@@ -221,7 +227,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                       key={notification.id}
                       className={`p-3 rounded-lg ${notification.color} border border-gray-100 ${notification.read ? 'opacity-70' : ''}`}
                     >
-                      <div className="flex items.start gap-2">
+                      <div className="flex items-start gap-2">
                         <div className={`w-2 h-2 rounded-full ${notification.dotColor} mt-1.5 flex-shrink-0`} />
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-gray-900 text-xs">
@@ -253,18 +259,9 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 </div>
               )}
 
-              {notifications.filter(n => n.type === 'payment' && !n.read).length > 0 && (
-                <Button
-                  variant="outline"
-                  className="w-full mt-4 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
-                  onClick={handleMarkAllAsRead}
-                >
-                  Mark All as Read
-                </Button>
-              )}
             </TabsContent>
             
-            <TabsContent value="settings" className="space-y-3 mt-3">
+            <TabsContent value="settings" className="space-y-3 mt-0">
               <h4 className="font-medium text-gray-900 text-sm">Notification Settings</h4>
               <Separator />
               
@@ -341,7 +338,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                   />
                 </div>
                 
-                <div className="flex items.center justify-between">
+                <div className="flex items-center justify-between">
                   <Label htmlFor="system-announcements" className="flex flex-col">
                     <span className="text-xs text-gray-900">System Announcements</span>
                     <span className="text-xs text-gray-500">Platform updates and maintenance notices</span>
@@ -428,8 +425,19 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 </div>
               </div>
             </TabsContent>
-          </Tabs>
-        </div>
+          </div>
+
+          {/* Fixed Mark All as Read button at bottom */}
+          <div className="px-4 py-3 border-t border-gray-100 bg-white flex-shrink-0">
+            <Button
+              variant="outline"
+              className="w-full h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
+              onClick={handleMarkAllAsRead}
+            >
+              Mark All as Read
+            </Button>
+          </div>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
