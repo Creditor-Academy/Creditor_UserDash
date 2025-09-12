@@ -244,9 +244,18 @@ export default function DashboardGroup() {
 
       {/* Empty State */}
       {!loading && !error && groups.length === 0 && (
-        <div className="text-center py-8">
-          <Users2 className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600 text-sm">No groups available yet</p>
+        <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-white">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50/70 via-indigo-50/70 to-purple-50/70 animate-pulse" aria-hidden></div>
+          <div className="relative text-center py-10 px-6">
+            <div className="mx-auto w-14 h-14 rounded-xl bg-white shadow-sm border border-blue-100 flex items-center justify-center mb-4">
+              <Users2 className="h-7 w-7 text-blue-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Communities are coming soon</h3>
+            <p className="text-sm text-gray-600 mt-2 max-w-md mx-auto">
+              We’re curating vibrant learning communities. Check back shortly to join discussions, announcements, and media.
+            </p>
+            
+          </div>
         </div>
       )}
 

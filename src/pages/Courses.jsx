@@ -393,7 +393,7 @@ export function Courses() {
                           <Button variant="default" className="w-full text-sm sm:text-base">
                             Continue Learning
                           </Button>
-                        )}
+                        </Link>
                       </div>
                       
                       {/* Trial Status Info */}
