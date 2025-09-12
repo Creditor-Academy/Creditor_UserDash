@@ -18,6 +18,7 @@ import axios from "axios";
 import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
+import { getCourseTrialStatus } from '../utils/trialUtils';
 
 export function Dashboard() {
   const { userProfile } = useUser();
@@ -203,14 +204,18 @@ export function Dashboard() {
       setCoursesLoading(true);
       try {
         const data = await fetchUserCourses();
-        // Process courses to include module counts and durations
-        const processedCourses = data.map(course => ({
-          ...course,
-          // Use _count.modules from the API response
-          modulesCount: course._count?.modules || 0,
-          totalDurationSecs: 0, // This can be updated if duration is available in the course data
-          image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-        }));
+        // Process courses to include module counts, durations, and trial status
+        const processedCourses = data.map(course => {
+          const trialStatus = getCourseTrialStatus(course);
+          return {
+            ...course,
+            // Use _count.modules from the API response
+            modulesCount: course._count?.modules || 0,
+            totalDurationSecs: 0, // This can be updated if duration is available in the course data
+            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
+            trialStatus
+          };
+        });
 
         setUserCourses(processedCourses);
       } catch (err) {
@@ -498,7 +503,7 @@ export function Dashboard() {
                           key={course.id}
                           className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
                         >
-                          <CourseCard {...course} />
+                          <CourseCard {...course} course={course} />
                         </div>
                       ))}
                     </div>
