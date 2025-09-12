@@ -10,34 +10,39 @@ const aiConfig = {
     version: process.env.AI_API_VERSION || 'v2'
   },
 
-  // Model mappings (hidden from public code)
+  // Model mappings - Optimized for course generation
   models: {
     summarization: {
-      primary: process.env.AI_SUMMARY_MODEL || 'ainize/bart-base-cnn',
+      primary: process.env.AI_SUMMARY_MODEL || 'facebook/bart-large-cnn',
       fallback: process.env.AI_SUMMARY_FALLBACK || 'microsoft/DialoGPT-medium'
     },
     questionAnswering: {
       primary: process.env.AI_QA_MODEL || 'deepset/roberta-base-squad2',
       fallbacks: [
         process.env.AI_QA_FALLBACK_1 || 'microsoft/DialoGPT-medium',
-        process.env.AI_QA_FALLBACK_2 || 'google/flan-t5-base',
+        process.env.AI_QA_FALLBACK_2 || 'google/flan-t5-large',
         process.env.AI_QA_FALLBACK_3 || 'microsoft/Phi-3-mini-4k-instruct'
       ]
     },
     imageGeneration: {
-      primary: process.env.AI_IMAGE_MODEL || 'dreamlike-art/dreamlike-photoreal-2.0',
+      primary: process.env.AI_IMAGE_MODEL || 'runwayml/stable-diffusion-v1-5',
       fallbacks: [
-        process.env.AI_IMAGE_FALLBACK_1 || 'prompthero/openjourney-v4',
-        process.env.AI_IMAGE_FALLBACK_2 || 'SG161222/Realistic_Vision_V3.0_VAE'
+        process.env.AI_IMAGE_FALLBACK_1 || 'dreamlike-art/dreamlike-photoreal-2.0',
+        process.env.AI_IMAGE_FALLBACK_2 || 'prompthero/openjourney-v4'
       ]
     },
     textGeneration: {
-      primary: process.env.AI_TEXT_MODEL || 'google/flan-t5-base',
-      fallback: process.env.AI_TEXT_FALLBACK || 'microsoft/Phi-3-mini-4k-instruct'
+      primary: process.env.AI_TEXT_MODEL || 'microsoft/Phi-3-mini-4k-instruct',
+      fallback: process.env.AI_TEXT_FALLBACK || 'google/flan-t5-large'
     },
     courseOutlineGeneration: {
-      primary: process.env.AI_COURSE_MODEL || 'google/flan-t5-base',
-      fallback: process.env.AI_COURSE_FALLBACK || 'microsoft/Phi-3-mini-4k-instruct'
+      // Best models for educational content generation
+      primary: process.env.AI_COURSE_MODEL || 'microsoft/Phi-3-mini-4k-instruct',
+      fallbacks: [
+        process.env.AI_COURSE_FALLBACK_1 || 'google/flan-t5-large',
+        process.env.AI_COURSE_FALLBACK_2 || 'microsoft/DialoGPT-medium',
+        process.env.AI_COURSE_FALLBACK_3 || 'huggingface/CodeBERTa-small-v1'
+      ]
     }
   },
 

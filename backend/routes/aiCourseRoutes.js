@@ -1,22 +1,22 @@
 // AI-powered course creation routes
 const express = require('express');
 const router = express.Router();
-const { LangChain } = require('langchain');
+
+// Use Bytez SDK for AI generation
 const Bytez = require('bytez.js');
 
 // Initialize Bytez SDK
-const bytezSDK = new Bytez(process.env.BYTEZ_API_KEY);
-
-// AI Proxy Endpoints - Hide implementation from frontend
-
-// Initialize Bytez LangChain integration
-const bytezChat = new ChatBytez({
-  apiKey: process.env.BYTEZ_API_KEY,
-  model: 'microsoft/Phi-3-mini-4k-instruct'
-});
+let bytezSDK = null;
+if (process.env.BYTEZ_API_KEY) {
+  try {
+    bytezSDK = new Bytez(process.env.BYTEZ_API_KEY);
+  } catch (error) {
+    console.warn('Failed to initialize Bytez SDK:', error);
+  }
+}
 
 // POST /api/ai/create-course - Generate initial course modules and lessons
-router.post('/create-course', auth, async (req, res) => {
+router.post('/create-course', async (req, res) => {
   try {
     const { title, subject, description, targetAudience, difficulty, duration } = req.body;
     
@@ -32,56 +32,87 @@ Course Details:
 - Difficulty: ${difficulty}
 - Duration: ${duration}
 
-Generate a JSON structure with 3-4 modules, where the first 2 modules contain detailed lessons.
+Generate a JSON structure with exactly 2 modules, each containing exactly 1 lesson.
 Each module should have:
 - id (number)
 - title (string)
 - description (string)  
-- lessons (array of lesson objects)
+- lessons (array with 1 lesson object)
 
 Each lesson should have:
 - id (number)
 - title (string)
-- description (string)
-- content (string, can be empty for now)
-- duration (string, e.g., "20 min")
+- intro (string, brief introduction)
+- subtopics (array of 3-4 key points)
+- summary (string, brief conclusion)
+- duration (string, e.g., "15 min")
 
-Ensure the first 1-2 modules have at least 3-5 lessons each.
+Keep content concise for free model usage.
 Return only valid JSON without any markdown formatting.`;
 
-    // Generate course outline using Bytez LangChain
-    const response = await bytezChat.call([
-      {
-        role: 'system',
-        content: 'You are an expert course designer. Generate comprehensive, well-structured course outlines in JSON format.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]);
-    
+    // Try AI generation first, fallback if it fails
     let courseStructure;
-    try {
-      // Parse the AI response
-      const cleanResponse = response.content.replace(/```json\n?|\n?```/g, '').trim();
-      courseStructure = JSON.parse(cleanResponse);
-    } catch (parseError) {
-      console.warn('Failed to parse AI response, using fallback structure');
-      courseStructure = generateFallbackStructure(title, subject, difficulty);
-    }
     
-    // Ensure minimum requirements
-    if (!courseStructure.modules || courseStructure.modules.length < 3) {
-      courseStructure = generateFallbackStructure(title, subject, difficulty);
+    if (bytezSDK) {
+      try {
+        console.log('Attempting AI generation with Bytez...');
+        
+        const model = bytezSDK.model("google/flan-t5-base");
+        await model.create();
+        
+        const aiPrompt = `Create a course outline for "${title}". Generate exactly 2 modules, each with 1 lesson.
+        
+Format as JSON:
+{
+  "modules": [
+    {
+      "id": 1,
+      "title": "Module name",
+      "description": "Module description", 
+      "lessons": [{
+        "id": 1,
+        "title": "Lesson name",
+        "intro": "Brief introduction",
+        "subtopics": ["Topic 1", "Topic 2", "Topic 3", "Topic 4"],
+        "summary": "Brief conclusion",
+        "duration": "15 min"
+      }]
     }
-    
-    // Enhance first 2 modules with detailed lessons if needed
-    for (let i = 0; i < Math.min(2, courseStructure.modules.length); i++) {
-      const module = courseStructure.modules[i];
-      if (!module.lessons || module.lessons.length < 3) {
-        module.lessons = await generateModuleLessons(module.title, subject, difficulty);
+  ]
+}`;
+
+        const { error, output } = await model.run(aiPrompt, {
+          max_new_tokens: 300,
+          min_new_tokens: 100,
+          temperature: 0.7
+        });
+        
+        if (!error && output) {
+          try {
+            // Try to parse AI response
+            const cleanOutput = output.replace(/```json\n?|\n?```/g, '').trim();
+            const aiResult = JSON.parse(cleanOutput);
+            
+            if (aiResult.modules && aiResult.modules.length > 0) {
+              courseStructure = aiResult;
+              console.log('✅ Successfully generated course with AI');
+            } else {
+              throw new Error('Invalid AI response structure');
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse AI response, using fallback');
+            courseStructure = generateFallbackStructure(title, subject, difficulty);
+          }
+        } else {
+          throw new Error(error || 'AI generation failed');
+        }
+      } catch (aiError) {
+        console.warn('AI generation failed:', aiError.message);
+        courseStructure = generateFallbackStructure(title, subject, difficulty);
       }
+    } else {
+      console.log('Bytez SDK not available, using fallback');
+      courseStructure = generateFallbackStructure(title, subject, difficulty);
     }
     
     res.json({
@@ -318,103 +349,60 @@ function generateFallbackStructure(title, subject, difficulty) {
         lessons: [
           {
             id: 1,
-            title: `What is ${subject}?`,
-            description: 'Understanding the basics and core concepts',
-            content: '',
+            title: `Getting Started with ${subject}`,
+            intro: `Welcome to your ${subject} learning journey. This lesson covers the essential basics you need to know.`,
+            subtopics: [
+              `What is ${subject} and why is it important?`,
+              'Key terminology and concepts',
+              'Real-world applications and benefits',
+              'Setting up your learning environment'
+            ],
+            summary: `You now have a solid foundation in ${subject} basics and are ready to dive deeper into the fundamentals.`,
             duration: '15 min'
-          },
-          {
-            id: 2,
-            title: `Why Learn ${subject}?`,
-            description: 'Benefits and real-world applications',
-            content: '',
-            duration: '10 min'
-          },
-          {
-            id: 3,
-            title: 'Getting Started',
-            description: 'Setting up your learning environment',
-            content: '',
-            duration: '20 min'
           }
         ]
       },
       {
         id: 2,
         title: `${subject} Fundamentals`,
-        description: 'Core principles and essential knowledge',
+        description: 'Core principles and practical application',
         lessons: [
           {
-            id: 4,
-            title: 'Key Concepts',
-            description: 'Essential terminology and principles',
-            content: '',
-            duration: '25 min'
-          },
-          {
-            id: 5,
-            title: 'Basic Techniques',
-            description: 'Fundamental methods and approaches',
-            content: '',
-            duration: '30 min'
+            id: 2,
+            title: `Core ${subject} Concepts`,
+            intro: `Now that you understand the basics, let's explore the fundamental concepts that form the backbone of ${subject}.`,
+            subtopics: [
+              'Essential principles and methodologies',
+              'Common patterns and best practices',
+              'Hands-on examples and exercises',
+              'Troubleshooting common issues'
+            ],
+            summary: `You've mastered the core concepts of ${subject} and can now apply these principles in practical scenarios.`,
+            duration: '20 min'
           }
         ]
-      },
-      {
-        id: 3,
-        title: `Practical ${subject}`,
-        description: 'Hands-on experience and real-world applications',
-        lessons: []
-      },
-      {
-        id: 4,
-        title: `Advanced ${subject}`,
-        description: 'Expert-level concepts and advanced techniques',
-        lessons: []
       }
     ]
   };
 }
 
 async function generateModuleLessons(moduleTitle, subject, difficulty) {
-  try {
-    const prompt = `Generate 3-5 detailed lessons for the module "${moduleTitle}" in ${subject} at ${difficulty} level.
-    
-Return a JSON array of lesson objects with:
-- id (number)
-- title (string)
-- description (string)
-- content (empty string for now)
-- duration (string like "20 min")
-
-Focus on practical, actionable learning objectives.`;
-
-    const response = await bytezChat.call([
-      {
-        role: 'system',
-        content: 'You are a curriculum designer. Generate detailed lesson plans in JSON format.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]);
-    
-    const lessons = JSON.parse(response.content.replace(/```json\n?|\n?```/g, '').trim());
-    return Array.isArray(lessons) ? lessons : [];
-    
-  } catch (error) {
-    console.warn('Failed to generate module lessons:', error);
-    return [
-      {
-        id: Date.now(),
-        title: 'Lesson 1',
-        description: 'Introduction to the topic',
-        content: '',
-        duration: '20 min'
-      }
-    ];
-  }
+  // Always use fallback for now (AI service disabled)
+  return [
+    {
+      id: Date.now(),
+      title: `${moduleTitle} Essentials`,
+      intro: `This lesson introduces you to the key concepts of ${moduleTitle}.`,
+      subtopics: [
+        'Core concepts and definitions',
+        'Practical applications',
+        'Best practices and tips',
+        'Common challenges and solutions'
+      ],
+      summary: `You now understand the essential aspects of ${moduleTitle} and can apply this knowledge effectively.`,
+      duration: '15 min'
+    }
+  ];
 }
 
 function determineContentType(question) {
