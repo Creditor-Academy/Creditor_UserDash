@@ -430,29 +430,29 @@ function QuizResultsPage() {
                                 if (typeLower === 'categorization') return null;
                                 if (!(questionData?.options && Array.isArray(questionData.options) && questionData.options.length > 0)) return null;
                                 return (
-                                  <div className="space-y-2 mb-3">
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
-                                    {questionData.options.map((option, optIndex) => {
-                                      const optionText = option?.text || option?.label || option?.value || String(option);
-                                      const optionId = option?.id || option?._id || option?.optionId || option?.value || optIndex;
-                                      const isSelected = Array.isArray(userAnswerData) 
-                                        ? userAnswerData.some(ans => String(ans) === String(optionId) || String(ans) === String(optIndex))
-                                        : String(userAnswerData) === String(optionId) || String(userAnswerData) === String(optIndex);
-                                      let optionStyle = "p-2 rounded border";
-                                      if (isSelected && answer.isCorrect) {
-                                        optionStyle += " bg-green-100 border-green-300 text-green-800";
-                                      } else if (isSelected && !answer.isCorrect) {
-                                        optionStyle += " bg-red-100 border-red-300 text-red-800";
-                                      } else {
-                                        optionStyle += " bg-gray-50 border-gray-200 text-gray-700";
-                                      }
-                                      return (
-                                        <div key={optIndex} className={optionStyle}>
-                                          <span className="font-medium">{optionText}</span>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
+                                <div className="space-y-2 mb-3">
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
+                                  {questionData.options.map((option, optIndex) => {
+                                    const optionText = option?.text || option?.label || option?.value || String(option);
+                                    const optionId = option?.id || option?._id || option?.optionId || option?.value || optIndex;
+                                    const isSelected = Array.isArray(userAnswerData) 
+                                      ? userAnswerData.some(ans => String(ans) === String(optionId) || String(ans) === String(optIndex))
+                                      : String(userAnswerData) === String(optionId) || String(userAnswerData) === String(optIndex);
+                                    let optionStyle = "p-2 rounded border";
+                                    if (isSelected && answer.isCorrect) {
+                                      optionStyle += " bg-green-100 border-green-300 text-green-800";
+                                    } else if (isSelected && !answer.isCorrect) {
+                                      optionStyle += " bg-red-100 border-red-300 text-red-800";
+                                    } else {
+                                      optionStyle += " bg-gray-50 border-gray-200 text-gray-700";
+                                    }
+                                    return (
+                                      <div key={optIndex} className={optionStyle}>
+                                        <span className="font-medium">{optionText}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                                 );
                               })()}
 
