@@ -6,7 +6,7 @@ import { api } from "@/services/apiClient";
 
 const AdminPayments = () => {
   const { transactions, balance, addCredits, refreshBalance, refreshMembership } = useCredits();
-  const [paymentsView, setPaymentsView] = useState("orders");
+  const [paymentsView, setPaymentsView] = useState("credits");
   const [ordersPage, setOrdersPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [subsPage, setSubsPage] = useState(1);
@@ -212,10 +212,10 @@ const AdminPayments = () => {
             <p className="text-gray-600">Dummy data preview for admin payments dashboard.</p>
           </div>
           <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+            <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
             <button onClick={() => setPaymentsView("orders")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "orders" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Orders</button>
             <button onClick={() => setPaymentsView("payments")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "payments" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Payments</button>
             <button onClick={() => setPaymentsView("subscriptions")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "subscriptions" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Subscriptions</button>
-            <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
           </div>
         </div>
       </div>
