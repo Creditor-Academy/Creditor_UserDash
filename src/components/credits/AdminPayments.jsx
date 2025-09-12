@@ -88,6 +88,15 @@ const AdminPayments = () => {
   const [usersSearch, setUsersSearch] = useState("");
   const [isGranting, setIsGranting] = useState(false);
   const [grantMessage, setGrantMessage] = useState("");
+  const [localMembership, setLocalMembership] = useState({});
+
+  const membershipColorClasses = (status) => {
+    const s = (status || "active").toString().toLowerCase();
+    if (s === "active") return "bg-green-100 text-green-700 border-green-200";
+    if (s === "expired") return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    if (s === "cancelled") return "bg-red-100 text-red-700 border-red-200";
+    return "bg-gray-100 text-gray-700 border-gray-200";
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -117,17 +126,39 @@ const AdminPayments = () => {
     return () => { cancelled = true; };
   }, []);
 
+  // Keep local membership (frontend-only) in sync with loaded users
+  useEffect(() => {
+    if (!Array.isArray(realUsers)) return;
+    setLocalMembership(prev => {
+      const next = { ...prev };
+      for (const u of realUsers) {
+        const id = u?.id;
+        if (id == null) continue;
+        if (next[id] == null) {
+          next[id] = (u.membership || "active").toString().toLowerCase();
+        }
+      }
+      if (next["current_user"] == null) next["current_user"] = "active";
+      return next;
+    });
+  }, [realUsers]);
+
   const users = useMemo(() => {
     // Add current user with real credit balance at the top (for quick reference)
     const currentUser = {
       id: "current_user",
       name: "Current User",
       email: "current@user.com",
-      membership: "active",
+      membership: (localMembership["current_user"] || "active"),
       credits: balance
     };
-    return [currentUser, ...realUsers];
-  }, [balance, realUsers]);
+    // Apply local membership overrides to real users
+    const withLocal = realUsers.map(u => ({
+      ...u,
+      membership: (localMembership[u.id] || u.membership || "active").toString().toLowerCase()
+    }));
+    return [currentUser, ...withLocal];
+  }, [balance, realUsers, localMembership]);
 
   // Search + paging for users list (credits view)
   const filteredUsers = useMemo(() => {
@@ -371,7 +402,24 @@ const AdminPayments = () => {
                         <td className="px-3 py-2 font-medium text-gray-900 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.name}</td>
                         <td className="px-3 py-2 text-gray-700 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.email}</td>
                         <td className="px-3 py-2">
-                          <span className={`px-2 py-1 rounded text-xs ${u.membership === "active" ? "bg-green-100 text-green-700" : u.membership === "past_due" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700"}`}>{u.membership}</span>
+                          {(() => {
+                            const value = (localMembership[u.id] || u.membership || "active").toString().toLowerCase();
+                            return (
+                              <select
+                                value={value}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setLocalMembership(prev => ({ ...prev, [u.id]: v }));
+                                  setRealUsers(prev => prev.map(r => r.id === u.id ? { ...r, membership: v } : r));
+                                }}
+                                className={`rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200 ${membershipColorClasses(value)}`}
+                              >
+                                <option value="active">active</option>
+                                <option value="expired">expired</option>
+                                <option value="cancelled">cancelled</option>
+                              </select>
+                            );
+                          })()}
                         </td>
                         <td className="px-3 py-2 text-gray-700">{u.credits}</td>
                         <td className="px-3 py-2 text-gray-400">—</td>
@@ -458,7 +506,27 @@ const AdminPayments = () => {
                         <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
                           <div className="flex justify-between py-1"><span className="text-gray-600">Name</span><span className="font-medium">{u.name}</span></div>
                           <div className="flex justify-between py-1"><span className="text-gray-600">Email</span><span className="font-medium">{u.email}</span></div>
-                          <div className="flex justify-between py-1"><span className="text-gray-600">Membership</span><span className="font-medium capitalize">{u.membership}</span></div>
+                          <div className="flex justify-between items-center py-1 gap-2">
+                            <span className="text-gray-600">Membership</span>
+                            {(() => {
+                              const value = (localMembership[u.id] || u.membership || "active").toString().toLowerCase();
+                              return (
+                                <select
+                                  value={value}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    setLocalMembership(prev => ({ ...prev, [u.id]: v }));
+                                    setRealUsers(prev => prev.map(r => r.id === u.id ? { ...r, membership: v } : r));
+                                  }}
+                                  className={`ml-auto rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200 ${membershipColorClasses(value)}`}
+                                >
+                                  <option value="active">active</option>
+                                  <option value="expired">expired</option>
+                                  <option value="cancelled">cancelled</option>
+                                </select>
+                              );
+                            })()}
+                          </div>
                           <div className="flex justify-between py-1"><span className="text-gray-600">Membership Ends</span><span className="font-medium">{membershipEnd}</span></div>
                           <div className="flex justify-between py-1"><span className="text-gray-600">Credits</span><span className="font-medium">{u.credits}</span></div>
                         </div>

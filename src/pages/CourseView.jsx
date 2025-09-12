@@ -277,6 +277,8 @@ export function CourseView() {
                 const isContentAvailable = module.resource_url;
                 const isUpcoming = !isContentAvailable;
                 const isLocked = !hasAccess && isContentAvailable;
+                const previousModule = modules.find(m => (m.order || 0) === (module.order || 0) - 1);
+                const canUnlockByOrder = !previousModule || unlockedModuleIds.includes(previousModule?.id);
                 
                 return (
                   <div key={module.id} className="module-card h-full">
@@ -349,7 +351,7 @@ export function CourseView() {
                           ) : (
                             <Button 
                               onClick={() => handleUnlockClick(module)}
-                              className="w-full bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700 transition-colors duration-200"
+                              className={`w-full transition-colors duration-200 ${canUnlockByOrder ? 'bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700' : 'bg-gray-200 border-gray-300 text-gray-700 hover:bg-gray-200 hover:border-gray-300'}`}
                             >
                               <Lock size={16} className="mr-2" />
                               <span className="font-medium">Unlock with {MODULE_UNLOCK_COST} credits</span>

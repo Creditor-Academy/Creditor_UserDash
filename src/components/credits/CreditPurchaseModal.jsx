@@ -4,8 +4,8 @@ import { useCredits } from "@/contexts/CreditsContext";
 // Design-only modal for managing credits
 // Props: open, onClose, balance (optional external), onBalanceChange(newBalance) (optional)
 const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: externalBalance, onBalanceChange }) => {
-  const { transactions } = useCredits();
-  const [balance, setBalance] = useState(typeof externalBalance === 'number' ? externalBalance : 35);
+  const { transactions, addCredits, balance: contextBalance } = useCredits();
+  const [balance, setBalance] = useState(typeof externalBalance === 'number' ? externalBalance : contextBalance);
   const [quantity, setQuantity] = useState(10);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -24,6 +24,13 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       setBalance(externalBalance);
     }
   }, [externalBalance]);
+
+  // Sync with context balance when it changes
+  useEffect(() => {
+    if (typeof externalBalance !== 'number') {
+      setBalance(contextBalance);
+    }
+  }, [contextBalance, externalBalance]);
 
   // Get real purchase history from transactions
   const history = useMemo(() => {
@@ -184,25 +191,76 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                 <div className="text-sm text-gray-600 mb-4">Pick a pack or use custom amount in the next step.</div>
               </div>
               {membership.status === 'active' ? (
-                <form onSubmit={handlePurchase} className="flex items-center gap-3 flex-wrap">
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-md font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Buy credits
-                  </button>
-                  <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
-                    <span className="px-2 py-1 rounded border">500 for $500</span>
-                    <span className="px-2 py-1 rounded border">2800 for $2800</span>
+                <div className="space-y-3">
+                  <form onSubmit={handlePurchase} className="flex items-center gap-3 flex-wrap">
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-md font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Buy credits
+                    </button>
+                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
+                      <span className="px-2 py-1 rounded border">500 for $500</span>
+                      <span className="px-2 py-1 rounded border">2800 for $2800</span>
+                    </div>
+                  </form>
+                  
+                  {/* Dummy Credits for Testing */}
+                  <div className="border-t border-gray-200 pt-3">
+                    <p className="text-xs text-gray-500 mb-2">Testing Mode - Add dummy credits:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={async () => {
+                          await addCredits(100);
+                          setNotice("Added 100 dummy credits for testing");
+                          setTimeout(() => setNotice(""), 3000);
+                        }}
+                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
+                      >
+                        +100 Credits
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await addCredits(500);
+                          setNotice("Added 500 dummy credits for testing");
+                          setTimeout(() => setNotice(""), 3000);
+                        }}
+                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
+                      >
+                        +500 Credits
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await addCredits(1000);
+                          setNotice("Added 1000 dummy credits for testing");
+                          setTimeout(() => setNotice(""), 3000);
+                        }}
+                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
+                      >
+                        +1000 Credits
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await addCredits(5000);
+                          setNotice("Added 5000 dummy credits for testing");
+                          setTimeout(() => setNotice(""), 3000);
+                        }}
+                        className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md font-medium"
+                      >
+                        +5000 Credits
+                      </button>
+                    </div>
                   </div>
-                </form>
+                </div>
               ) : (
                 <div className="flex items-center gap-3 flex-wrap">
                   <button
-                    onClick={() => setConfirmModal({ open:true, title:'Purchase membership', message:'You need a membership to buy credits. Continue to purchase?', confirmText:'Continue', cancelText:'Close', onConfirm: () => setConfirmModal(m=>({ ...m, open:false })) })}
+                    onClick={() => {
+                      window.location.href = "https://quickclick.com/r/m7o5skh90z5o7s6x6bg9yeklf7ql3f";
+                    }}
                     className="px-5 py-2.5 rounded-md font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
-                    Buy membership
+                    Buy membership ($69)
                   </button>
                   <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
                     <span className="px-2 py-1 rounded border">Membership unlocks credits</span>
@@ -291,24 +349,24 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-3xl p-3">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-gray-900">Checkout</h4>
               <button aria-label="Close" onClick={()=>setCheckoutOpen(false)} className="px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">Close</button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-4">
               {checkoutStep === "packs" && (
                 <>
                   <div>
-                    <div className="text-center mb-2">
-                      <h3 className="text-base font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
-                      <p className="text-xs text-gray-600">Select the amount of credits you'd like to purchase</p>
+                    <div className="text-center mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
+                      <p className="text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* 500 Credits Pack */}
-                      <label className={`relative border-2 rounded-lg p-2 cursor-pointer transition-all duration-200 ${
+                      <label className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                         packType === "pack500" 
-                          ? "border-blue-500 bg-blue-50 shadow-lg scale-105" 
-                          : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                          ? "border-blue-500 bg-blue-50 shadow-md" 
+                          : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                       }`}>
                         <input 
                           type="radio" 
@@ -318,16 +376,16 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           onChange={()=>setPackType("pack500")} 
                         />
                         <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full mb-2">
-                            <span className="text-blue-600 font-bold text-sm">500</span>
+                          <div className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full mb-2">
+                            <span className="text-blue-600 font-bold text-xs">500</span>
                           </div>
-                          <h4 className="text-base font-semibold text-gray-900 mb-1">500 Credits</h4>
-                          <div className="text-xl font-bold text-gray-900 mb-1">$500</div>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1">500 Credits</h4>
+                          <div className="text-lg font-bold text-gray-900 mb-1">$500</div>
                           <div className="text-xs text-gray-500">$1.00 per credit</div>
                           {packType === "pack500" && (
-                            <div className="absolute top-3 right-3">
-                              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="absolute top-2 right-2">
+                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                               </div>
@@ -337,10 +395,10 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       </label>
 
                       {/* 2800 Credits Pack */}
-                      <label className={`relative border-2 rounded-lg p-2 cursor-pointer transition-all duration-200 ${
+                      <label className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                         packType === "pack2800" 
-                          ? "border-blue-500 bg-blue-50 shadow-lg scale-105" 
-                          : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                          ? "border-blue-500 bg-blue-50 shadow-md" 
+                          : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
                       }`}>
                         <input 
                           type="radio" 
@@ -350,19 +408,19 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           onChange={()=>setPackType("pack2800")} 
                         />
                         <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-10 h-10 bg-green-100 rounded-full mb-2">
-                            <span className="text-green-600 font-bold text-sm">2800</span>
+                          <div className="inline-flex items-center justify-center w-8 h-8 bg-green-100 rounded-full mb-2">
+                            <span className="text-green-600 font-bold text-xs">2800</span>
                           </div>
-                          <h4 className="text-base font-semibold text-gray-900 mb-1">2800 Credits</h4>
-                          <div className="text-xl font-bold text-gray-900 mb-1">$2800</div>
+                          <h4 className="text-sm font-semibold text-gray-900 mb-1">2800 Credits</h4>
+                          <div className="text-lg font-bold text-gray-900 mb-1">$2800</div>
                           <div className="text-xs text-gray-500">$1.00 per credit</div>
-                          <div className="mt-2 inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                          <div className="mt-1 inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                             Most Popular
                           </div>
                           {packType === "pack2800" && (
-                            <div className="absolute top-3 right-3">
-                              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <div className="absolute top-2 right-2">
+                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                               </div>
@@ -372,33 +430,32 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       </label>
                     </div>
                   </div>
-                  <div className="mt-3 p-2 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-4">
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="text-sm text-gray-600">Selected credits</div>
-                        <div className="text-2xl font-bold text-gray-900">{derived.credits}</div>
+                        <div className="text-xl font-bold text-gray-900">{derived.credits}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-gray-600">Total due</div>
-                        <div className="text-2xl font-bold text-blue-600">${derived.price}</div>
+                        <div className="text-xl font-bold text-blue-600">${derived.price}</div>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <button 
                         onClick={()=>setCheckoutOpen(false)} 
-                        className="flex-1 px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                        className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                       >
                         Cancel
                       </button>
                       <button 
                         onClick={() => {
-                          const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
-                          const link500 = import.meta.env.VITE_CREDITS_PACK500_URL || `${API_BASE}/payment/credits/500`;
-                          const link2800 = import.meta.env.VITE_CREDITS_PACK2800_URL || `${API_BASE}/payment/credits/2800`;
+                          const link500 = "https://quickclick.com/r/o0h2bwvcumvpwgot6qxsm6moukluyn";
+                          const link2800 = "https://quickclick.com/r/06k6zonz2prrxt1pqknxgwgi2jsbtr";
                           const target = packType === 'pack2800' ? link2800 : link500;
                           window.location.href = target;
                         }} 
-                        className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl`}
+                        className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg`}
                       >
                         Continue to Payment
                       </button>
