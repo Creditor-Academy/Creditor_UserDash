@@ -805,10 +805,8 @@ const QuoteComponent = forwardRef(({
                   />
                 </div>
                 
-                {/* Author Image Upload - Available for quote_a, quote_c, quote_d */}
-                {(editingQuoteBlock?.textType === 'quote_a' || 
-                  editingQuoteBlock?.textType === 'quote_c' || 
-                  editingQuoteBlock?.textType === 'quote_d') && (
+                {/* Author Image Upload - Available only for quote_c */}
+                {editingQuoteBlock?.textType === 'quote_c' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Author Image

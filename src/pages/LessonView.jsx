@@ -12,7 +12,7 @@ import { SidebarContext } from "@/layouts/DashboardLayout";
 
 const LessonView = () => {
   const { courseId, moduleId } = useParams();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   const { toast } = useToast();
   const { setSidebarCollapsed } = useContext(SidebarContext);
   
@@ -94,10 +94,15 @@ const LessonView = () => {
         type: lesson.type || lesson.lesson_type || 'text'
       }));
       
-      // Sort lessons by order
-      normalizedLessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+      // Filter to only show published lessons
+      const publishedLessons = normalizedLessons.filter(lesson => 
+        lesson.status && lesson.status.toUpperCase() === 'PUBLISHED'
+      );
       
-      setLessons(normalizedLessons);
+      // Sort lessons by order
+      publishedLessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      setLessons(publishedLessons);
       
     } catch (err) {
       console.error("Error fetching module lessons:", err);
