@@ -75,11 +75,6 @@ function Messages() {
     // Optional: log to verify connection lifecycle specific to Messages
     const onConnect = () => {
       console.log('[Messages] socket connected');
-      // Join user's personal room for conversation updates
-      const currentUserId = localStorage.getItem('userId');
-      if (currentUserId) {
-        socket.emit('joinRoom', `user_${currentUserId}`);
-      }
     };
     const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
     const onRoomIdForSender = ({ conversationid, roomId: serverRoomId, to }) => {
@@ -387,9 +382,9 @@ function Messages() {
   })();
 
   return (
-    <div className="container py-6">
-      <div className="rounded-lg border bg-card shadow-sm mb-8">
-        <div className="h-[700px]">
+    <div className="container py-2">
+      <div className="rounded-lg border bg-card shadow-sm">
+        <div className="h-[calc(100vh-96px)]">
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
           <div className="w-full flex flex-col h-full">
@@ -515,7 +510,7 @@ function Messages() {
           {selectedFriend && (
           <div className="w-full h-full flex flex-col">
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-muted/30">
+                <div className="p-4 border-b bg-muted/30 sticky top-0 z-10">
                   <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="mr-1" onClick={() => setSelectedFriend(null)} title="Back to chats">
                       ←
@@ -524,9 +519,9 @@ function Messages() {
                       {convosLoaded && (
                         <>
                           <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                          <AvatarFallback>
+                      <AvatarFallback>
                             {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
-                          </AvatarFallback>
+                      </AvatarFallback>
                         </>
                       )}
                     </Avatar>
@@ -539,17 +534,17 @@ function Messages() {
                 </div>
 
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
+                <ScrollArea className="flex-1 px-4 py-6 overflow-y-auto">
+                  <div className="space-y-5">
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${
+                        className={`flex items-end gap-2 ${
                           message.senderId === 0 ? "justify-end" : "justify-start"
                         }`}
                       >
                         {message.senderId !== 0 && (
-                          <Avatar className="h-8 w-8 mr-2 mt-1">
+                          <Avatar className="h-8 w-8 mt-1">
                             <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
                             <AvatarFallback>
                               {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
@@ -558,7 +553,7 @@ function Messages() {
                         )}
                         
                         {message.type === 'voice' && message.audioBlob ? (
-                          <div className="max-w-[70%]">
+                          <div className="max-w-[68%]">
                             <VoiceMessage 
                               audioBlob={message.audioBlob} 
                               duration={message.audioDuration || 0}
@@ -569,8 +564,8 @@ function Messages() {
                             </p>
                           </div>
                         ) : message.type === 'attachment' ? (
-                          <div className="max-w-[70%]">
-                            <div className={`rounded-lg overflow-hidden ${
+                          <div className="max-w-[68%]">
+                            <div className={`rounded-xl overflow-hidden shadow-sm ${
                               message.senderId === 0 
                                 ? "border border-primary/20" 
                                 : "border border-muted"
@@ -595,21 +590,19 @@ function Messages() {
                           </div>
                         ) : (
                           <div
-                            className={`max-w-[70%] rounded-lg p-3 group relative ${
-                              message.senderId === 0
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                            }`}
+                            className={`max-w-[68%] group relative ${
+                              message.senderId === 0 ? "bg-gradient-to-tr from-purple-500 to-purple-600 text-white" : "bg-white border border-muted/60"
+                            } rounded-2xl px-4 py-3 shadow-sm`}
                           >
-                            <p>{message.text}</p>
-                            <div className="flex justify-between items-center mt-1">
-                              <p className="text-xs opacity-70">
-                                {message.timestamp}
-                              </p>
+                            <p className="leading-relaxed">{message.text}</p>
+                            <div className="flex justify-between items-center mt-1 gap-3">
+                              <p className={`text-[11px] ${message.senderId === 0 ? "text-white/80" : "text-muted-foreground"}`}>
+                              {message.timestamp}
+                            </p>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                                className={`opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ${message.senderId === 0 ? "hover:bg-white/15 text-white" : "hover:bg-destructive hover:text-destructive-foreground"}`}
                                 onClick={() => handleDeleteMessage(message.id)}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -619,7 +612,7 @@ function Messages() {
                         )}
                         
                         {message.senderId === 0 && (
-                          <Avatar className="h-8 w-8 ml-2 mt-1">
+                          <Avatar className="h-8 w-8 mt-1">
                             <AvatarImage src={message.senderImage || undefined} />
                             <AvatarFallback>Y</AvatarFallback>
                           </Avatar>
