@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
@@ -276,7 +277,7 @@ const getToolbarModules = (type = 'full') => {
 };
 
 function LessonBuilder({ viewMode: initialViewMode = false }) {
-  const { sidebarCollapsed, setSidebarCollapsed } = useOutletContext();
+  const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
   const { courseId, moduleId, lessonId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
