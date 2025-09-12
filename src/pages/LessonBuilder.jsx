@@ -651,13 +651,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } else if (textType.id === 'subheading_paragraph') {
       innerContent = `<h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">${subheading || 'Subheading'}</h2><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the subheading.'}</p>`;
     } else if (textType.id === 'master_heading') {
-      innerContent = `<div style=\"background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%); color: white; padding: 16px; border-radius: 12px;\"><h1 style=\"font-size: 36px; font-weight: 800; line-height: 1.2; margin: 0;\">${'Master Heading'}</h1></div>`;
+      innerContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${'Master Heading'}</h1>`;
     } else {
       innerContent = textType.defaultContent || contentHtml;
     }
 
     // Generate HTML content with proper card styling to match existing blocks
-    const htmlContent = `
+    const htmlContent = textType.id === 'master_heading' ? innerContent : `
       <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
         <div class="pl-4">
           ${innerContent}
@@ -1821,11 +1821,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
 
       // Allow empty content blocks for deletion operations
-      /*if (!blocksToUpdate || blocksToUpdate.length === 0) {
-        toast.error('Please add some content before updating');
-        return;
-      }*/
-
       // Convert content blocks to the required format
       const content = blocksToUpdate.map((block, index) => {
         const blockId = block.block_id || `block_${index + 1}`;
@@ -1852,6 +1847,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             html_css: block.html_css,
             ...(block.details && { details: block.details })
           };
+          
+          // For text blocks, include textType to differentiate between heading, paragraph, master heading, etc.
+          if (block.type === 'text' && block.textType) {
+            blockData.textType = block.textType;
+          }
           
           // For statement blocks, include explicit statement type metadata
           if (block.type === 'statement') {
@@ -2026,6 +2026,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         return {
           id: block.id,
           type: block.type,
+          textType: block.textType,
           title: block.title || '',
           content: block.content || '',
           html_css: htmlContent,
@@ -2071,7 +2072,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             }
             case 'master_heading': {
               htmlContent = `<div class="lesson-master-heading"><h1>${blockContent}</h1></div>`;
-              styles = '.lesson-master-heading { background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%); color: #fff; padding: 16px; border-radius: 12px; } .lesson-master-heading h1 { font-size: 36px; font-weight: 800; margin: 0; line-height: 1.2; }';
+              styles = '.lesson-master-heading h1 { font-size: 40px; font-weight: 600; margin: 0; line-height: 1.2; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; }';
               break;
             }
             case 'subheading': {
@@ -2630,7 +2631,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorTitle(block.title || '');
       
       // Properly detect and set the text type
-      const detectedTextType = block.textType || 'paragraph';
+      let detectedTextType = block.textType || 'paragraph';
+      
+      // If textType is not set or unreliable, detect from HTML content
+      if (!block.textType || block.textType === 'heading') {
+        const htmlContent = block.html_css || block.content || '';
+        
+        // Check for master heading first (has gradient background)
+        if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+          detectedTextType = 'master_heading';
+        } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+          detectedTextType = 'heading_paragraph';
+        } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
+          detectedTextType = 'subheading_paragraph';
+        } else if (htmlContent.includes('<h1')) {
+          detectedTextType = 'heading';
+        } else if (htmlContent.includes('<h2')) {
+          detectedTextType = 'subheading';
+        }
+      }
+      
       setCurrentTextType(detectedTextType);
       setCurrentTextBlockId(block.id || block.block_id);
       
@@ -2697,20 +2717,37 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         // For single content blocks (heading, subheading, paragraph)
         const htmlContent = block.html_css || block.content || '';
         
-        // Extract the inner content while preserving rich text formatting
-        if (htmlContent.includes('<')) {
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          
-          // Find the main content element
-          const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
-          if (contentElement) {
-            setEditorHtml(contentElement.innerHTML);
+        // Special handling for master heading to preserve text content only
+        if (detectedTextType === 'master_heading') {
+          if (htmlContent.includes('<h1')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const h1Element = tempDiv.querySelector('h1');
+            if (h1Element) {
+              // Extract only the text content, not the styling
+              setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
+            } else {
+              setEditorHtml('Master Heading');
+            }
+          } else {
+            setEditorHtml(htmlContent || 'Master Heading');
+          }
+        } else {
+          // Extract the inner content while preserving rich text formatting for other types
+          if (htmlContent.includes('<')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // Find the main content element
+            const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
+            if (contentElement) {
+              setEditorHtml(contentElement.innerHTML);
+            } else {
+              setEditorHtml(htmlContent);
+            }
           } else {
             setEditorHtml(htmlContent);
           }
-        } else {
-          setEditorHtml(htmlContent);
         }
       }
     } else {
@@ -2738,7 +2775,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         let updatedContent = '';
        
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
-        const effectiveTextType = currentTextType || blockToUpdate.textType;
+        let effectiveTextType = currentTextType || blockToUpdate.textType;
+        
+        // Double-check for master heading if textType seems wrong
+        if (effectiveTextType === 'heading' && blockToUpdate.html_css) {
+          const htmlContent = blockToUpdate.html_css || '';
+          if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+            effectiveTextType = 'master_heading';
+          }
+        }
        
         // Always use consistent HTML generation for all text types to avoid double-update issues
         const textType = textTypes.find(t => t.id === effectiveTextType);
@@ -2793,13 +2838,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
           const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
           const cleanedContent = (extracted || 'Master Heading');
-          updatedContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
-                <h1 style="font-size: 36px; font-weight: 800; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
-              </div>
-            </div>
-          `;
+          updatedContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${cleanedContent}</h1>`;
         } else {
           // For paragraph and other single content blocks - use same styled container as heading/subheading
           updatedContent = `
@@ -2845,8 +2884,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           }
         });
 
-        // Don't update lessonContent in edit mode to prevent duplicates
-        // lessonContent is only used for preview mode rendering
+        // Also update lessonContent if it exists (for fetched lessons)
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => ({
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: prevLessonContent.data.content.map(block =>
+                block.block_id === currentTextBlockId ? {
+                  ...block,
+                  content: updatedContent,
+                  html_css: updatedContent,
+                  heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
+                  subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
+                  updatedAt: new Date().toISOString(),
+                  textType: effectiveTextType || block.textType
+                } : block
+              )
+            }
+          }));
+        }
       } else {
         // For new blocks
         const effectiveTextTypeForNew = currentTextType || 'paragraph';
@@ -2876,27 +2933,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         } else if (effectiveTextTypeForNew === 'subheading') {
           const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
-              </article>
-            </div>`;
-        } else if (effectiveTextTypeForNew === 'master_heading') {
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
-          const cleanedContent = (extracted || 'Master Heading');
-          newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
-                <h1 style="font-size: 36px; font-weight: 800; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
-              </div>
-            </div>`;
-        } else {
-          // For paragraph and other blocks - use same styled container as heading/subheading
-          newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${editorHtml || 'Enter your content here...'}
                 </div>
@@ -4452,8 +4488,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 let detectedTextType = 'paragraph'; // default
                                                 const htmlContent = block.html_css || '';
                                                
-                                                // Check for heading + paragraph combination
-                                                if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+                                                // Check for master heading first (has gradient background)
+                                                if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+                                                  detectedTextType = 'master_heading';
+                                                } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
                                                   detectedTextType = 'heading_paragraph';
                                                 } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
                                                   detectedTextType = 'subheading_paragraph';
@@ -4629,10 +4667,22 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   // For single content blocks, extract the inner content
                                                   const tempDiv = document.createElement('div');
                                                   tempDiv.innerHTML = htmlContent;
-                                                  const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
-                                                  setEditorHtml(contentElement.innerHTML || htmlContent);
+                                                  
+                                                  // Special handling for master heading to preserve text content only
+                                                  if (detectedTextType === 'master_heading') {
+                                                    const h1Element = tempDiv.querySelector('h1');
+                                                    if (h1Element) {
+                                                      // Extract only the text content, not the styling
+                                                      setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
+                                                    } else {
+                                                      setEditorHtml('Master Heading');
+                                                    }
+                                                  } else {
+                                                    const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
+                                                    setEditorHtml(contentElement.innerHTML || htmlContent);
+                                                  }
                                                 }
-                                               
+                                              
                                                 // Store the detected textType for the save function
                                                 const blockWithTextType = { ...block, textType: detectedTextType };
                                                 setCurrentBlock(blockWithTextType);
