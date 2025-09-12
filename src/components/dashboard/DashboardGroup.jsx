@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowRight, Users2, BookOpen, Loader2 } from "lucide-react";
+import { Users, ArrowRight, Users2, BookOpen, Loader2, Megaphone, MessageSquare, Image as ImageIcon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { getGroups } from "@/services/groupService";
+import { getGroups, getGroupPosts, getAnnouncements } from "@/services/groupService";
 import { toast } from "sonner";
 
 export default function DashboardGroup() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statsByGroup, setStatsByGroup] = useState({});
+
+  // Accept only common image types; exclude gifs/videos/docs
+  const isImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return false;
+    return /(\.jpg|\.jpeg|\.png|\.webp)$/i.test(url.split('?')[0]);
+  };
 
   // Fetch groups from API
   useEffect(() => {
@@ -39,6 +46,60 @@ export default function DashboardGroup() {
             .slice(0, 4); // Take top 4 groups
           
           setGroups(transformedGroups);
+
+          // Fetch stats for visible groups
+          const fetchStatsForGroups = async (groupList) => {
+            try {
+              const results = await Promise.all(
+                groupList.map(async (g) => {
+                  try {
+                    const [postsRes, annRes] = await Promise.all([
+                      getGroupPosts(g.id).catch(() => ({ success: false, data: [] })),
+                      getAnnouncements(g.id).catch(() => ({ success: false, data: [] }))
+                    ]);
+
+                    const posts = postsRes?.data || postsRes || [];
+                    const announcements = annRes?.data || annRes || [];
+
+                    const postsCount = Array.isArray(posts)
+                      ? posts.filter(p => (p.type || p.post_type || "POST").toString().toUpperCase() === "POST").length || posts.length
+                      : 0;
+                    const announcementsCount = Array.isArray(announcements) && announcements.length > 0
+                      ? announcements.length
+                      : (Array.isArray(posts) ? posts.filter(p => (p.type || p.post_type || "POST").toString().toUpperCase() === "ANNOUNCEMENT").length : 0);
+
+                    const mediaFromPosts = Array.isArray(posts)
+                      ? posts.filter(p => Boolean(p.media_url || p.media)).length
+                      : 0;
+                    const mediaFromAnnouncements = Array.isArray(announcements)
+                      ? announcements.filter(a => Boolean(a.media || a.media_url)).length
+                      : 0;
+                    const mediaCount = mediaFromPosts + mediaFromAnnouncements;
+
+                    // Collect up to 3 image URLs for preview (filter out gifs/videos)
+                    const mediaUrls = [
+                      ...(Array.isArray(posts) ? posts.map(p => p.media_url || p.media).filter(isImageUrl) : []),
+                      ...(Array.isArray(announcements) ? announcements.map(a => a.media_url || a.media).filter(isImageUrl) : [])
+                    ].slice(0, 3);
+
+                    return [g.id, { posts: postsCount, announcements: announcementsCount, media: mediaCount, mediaUrls }];
+                  } catch {
+                    return [g.id, { posts: 0, announcements: 0, media: 0, mediaUrls: [] }];
+                  }
+                })
+              );
+
+              const stats = results.reduce((acc, [id, stat]) => {
+                acc[id] = stat;
+                return acc;
+              }, {});
+              setStatsByGroup(stats);
+            } catch (e) {
+              console.warn("Failed to load group stats", e);
+            }
+          };
+
+          fetchStatsForGroups(transformedGroups);
         } else {
           throw new Error(response.message || "Failed to fetch groups");
         }
@@ -234,9 +295,44 @@ export default function DashboardGroup() {
                     </div>
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                     {group.description || "Join this community to connect with like-minded learners"}
                   </p>
+                  {/* Stats row */}
+                  <div className="flex items-center gap-3 text-xs text-gray-600 mb-4">
+                    <div className="inline-flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1">
+                      <MessageSquare className="h-3.5 w-3.5 text-gray-700" />
+                      <span>{statsByGroup[group.id]?.posts ?? 0}</span>
+                      <span className="text-gray-400">Posts</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1">
+                      <Megaphone className="h-3.5 w-3.5 text-gray-700" />
+                      <span>{statsByGroup[group.id]?.announcements ?? 0}</span>
+                      <span className="text-gray-400">Announcements</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1">
+                      <ImageIcon className="h-3.5 w-3.5 text-gray-700" />
+                      <span>{statsByGroup[group.id]?.media ?? 0}</span>
+                      <span className="text-gray-400">Media</span>
+                    </div>
+                  </div>
+
+                  {/* Tiny media preview row */}
+                  {Boolean(statsByGroup[group.id]?.mediaUrls?.length) && (
+                    <div className="flex items-center mb-4">
+                      {statsByGroup[group.id].mediaUrls.map((url, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-12 h-12 rounded-md overflow-hidden bg-gray-100 border border-white shadow-sm -ml-2 first:ml-0 ${idx === 0 ? '' : ''}`}
+                          style={{ zIndex: 10 - idx }}
+                          title="media preview"
+                        >
+                          {/* eslint-disable-next-line jsx-a11y/img-redundant-alt */}
+                          <img src={url} alt="media preview" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-xs text-gray-500">
