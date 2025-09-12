@@ -99,7 +99,6 @@ import AddUsersPage from "@/pages/AddUsersPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import  ModuleView  from "@/pages/ModuleView";
-import AIQuestionAnsweringTest from "./components/courses/AIQuestionAnsweringTest";
      
 
 function ProtectedScormRoute() {
@@ -277,7 +276,6 @@ function App() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="todo" element={<TodoPage />} />
             <Route path="chatbot" element={<Chatbot />} />
-            <Route path="ai-qa-test" element={<AIQuestionAnsweringTest />} />
             <Route path="faqs" element={<FAQs />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="guides" element={<Guides />} />

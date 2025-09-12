@@ -5,6 +5,12 @@ const router = express.Router();
 // Use Bytez SDK for AI generation
 const Bytez = require('bytez.js');
 
+// Simple auth middleware (or remove auth from routes that don't need it)
+const auth = (req, res, next) => {
+  // For now, just pass through - implement proper auth later
+  next();
+};
+
 // Initialize Bytez SDK
 let bytezSDK = null;
 if (process.env.BYTEZ_API_KEY) {
@@ -14,6 +20,154 @@ if (process.env.BYTEZ_API_KEY) {
     console.warn('Failed to initialize Bytez SDK:', error);
   }
 }
+
+// POST /api/ai/generate-content - Generate AI course content using Bytez API
+router.post('/generate-content', async (req, res) => {
+  try {
+    const { title, description, subject, difficulty } = req.body;
+    
+    console.log('🤖 Generating AI content for:', title);
+    
+    const prompt = `You are an AI course generator. 
+Generate content in JSON format only, no extra text. 
+
+Requirements:
+1. Create a course outline with 2 modules for "${title}". 
+2. Each module should contain 1 lesson. 
+3. Each lesson must include:
+   - "lesson_title"
+   - "lesson_intro" (short introduction paragraph)
+   - "lesson_content" (array of subtopics, each with "subtopic" and "content")
+   - "examples" (array of 1–2 short examples, if relevant)
+   - "summary" (a short recap)
+
+Course Details:
+- Title: ${title}
+- Description: ${description}
+- Subject: ${subject || 'General'}
+- Difficulty: ${difficulty || 'intermediate'}
+
+Output JSON format:
+{
+  "course_name": "${title}",
+  "modules": [
+    {
+      "module_title": "Module 1 Title",
+      "module_description": "Brief description",
+      "lessons": [
+        {
+          "lesson_title": "Lesson Title",
+          "lesson_intro": "Introduction text",
+          "lesson_content": [
+            {"subtopic": "Subtopic 1", "content": "Details"},
+            {"subtopic": "Subtopic 2", "content": "Details"}
+          ],
+          "examples": ["Example 1", "Example 2"],
+          "summary": "Key takeaways"
+        }
+      ]
+    },
+    {
+      "module_title": "Module 2 Title", 
+      "module_description": "Brief description",
+      "lessons": [
+        {
+          "lesson_title": "Lesson Title",
+          "lesson_intro": "Introduction text",
+          "lesson_content": [
+            {"subtopic": "Subtopic 1", "content": "Details"},
+            {"subtopic": "Subtopic 2", "content": "Details"}
+          ],
+          "examples": ["Example 1", "Example 2"],
+          "summary": "Key takeaways"
+        }
+      ]
+    }
+  ]
+}`;
+
+    // Try Bytez API if available
+    if (process.env.BYTEZ_API_KEY) {
+      try {
+        const response = await fetch('https://api.bytez.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.BYTEZ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an expert course creator. Generate structured, educational content in the exact JSON format requested.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            max_tokens: 2000,
+            temperature: 0.7
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const aiContent = result.choices[0].message.content;
+          
+          // Parse AI response
+          const cleanContent = aiContent.replace(/```json\n?|\n?```/g, '').trim();
+          const parsedContent = JSON.parse(cleanContent);
+          
+          // Transform to backend format
+          const transformedContent = {
+            modules: parsedContent.modules.map((module, index) => ({
+              id: index + 1,
+              title: module.module_title,
+              description: module.module_description,
+              lessons: module.lessons.map((lesson, lessonIndex) => ({
+                id: lessonIndex + 1,
+                title: lesson.lesson_title,
+                intro: lesson.lesson_intro,
+                subtopics: lesson.lesson_content ? 
+                  lesson.lesson_content.map(item => `${item.subtopic}: ${item.content}`) :
+                  ['Core concepts and definitions', 'Practical applications'],
+                examples: lesson.examples || [],
+                summary: lesson.summary,
+                duration: '15 min'
+              }))
+            }))
+          };
+
+          return res.json({
+            success: true,
+            data: transformedContent,
+            source: 'ai'
+          });
+        }
+      } catch (aiError) {
+        console.warn('AI generation failed:', aiError.message);
+      }
+    }
+
+    // Fallback to local generation
+    const fallbackContent = generateFallbackStructure(title, subject || 'General', difficulty || 'intermediate');
+    
+    res.json({
+      success: true,
+      data: fallbackContent,
+      source: 'fallback'
+    });
+    
+  } catch (error) {
+    console.error('❌ AI content generation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate AI content'
+    });
+  }
+});
 
 // POST /api/ai/create-course - Generate initial course modules and lessons
 router.post('/create-course', async (req, res) => {
@@ -60,23 +214,54 @@ Return only valid JSON without any markdown formatting.`;
         const model = bytezSDK.model("google/flan-t5-base");
         await model.create();
         
-        const aiPrompt = `Create a course outline for "${title}". Generate exactly 2 modules, each with 1 lesson.
-        
-Format as JSON:
+        const aiPrompt = `You are an AI course generator. 
+Generate content in JSON format only, no extra text. 
+
+Requirements:
+1. Create a course outline with 2 modules. 
+2. Each module should contain 1 lesson. 
+3. Each lesson must include:
+   - "lesson_title"
+   - "lesson_intro" (short introduction paragraph)
+   - "lesson_content" (array of subtopics, each with "subtopic" and "content")
+   - "examples" (array of 1–2 short examples, if relevant)
+   - "summary" (a short recap)
+
+Output JSON format:
 {
+  "course_name": "${title}",
   "modules": [
     {
-      "id": 1,
-      "title": "Module name",
-      "description": "Module description", 
-      "lessons": [{
-        "id": 1,
-        "title": "Lesson name",
-        "intro": "Brief introduction",
-        "subtopics": ["Topic 1", "Topic 2", "Topic 3", "Topic 4"],
-        "summary": "Brief conclusion",
-        "duration": "15 min"
-      }]
+      "module_title": "Module 1 Title",
+      "module_description": "Brief description",
+      "lessons": [
+        {
+          "lesson_title": "Lesson Title",
+          "lesson_intro": "Introduction text",
+          "lesson_content": [
+            {"subtopic": "Subtopic 1", "content": "Details"},
+            {"subtopic": "Subtopic 2", "content": "Details"}
+          ],
+          "examples": ["Example 1", "Example 2"],
+          "summary": "Key takeaways"
+        }
+      ]
+    },
+    {
+      "module_title": "Module 2 Title",
+      "module_description": "Brief description",
+      "lessons": [
+        {
+          "lesson_title": "Lesson Title",
+          "lesson_intro": "Introduction text",
+          "lesson_content": [
+            {"subtopic": "Subtopic 1", "content": "Details"},
+            {"subtopic": "Subtopic 2", "content": "Details"}
+          ],
+          "examples": ["Example 1", "Example 2"],
+          "summary": "Key takeaways"
+        }
+      ]
     }
   ]
 }`;
@@ -94,7 +279,25 @@ Format as JSON:
             const aiResult = JSON.parse(cleanOutput);
             
             if (aiResult.modules && aiResult.modules.length > 0) {
-              courseStructure = aiResult;
+              // Transform new format to existing structure
+              courseStructure = {
+                modules: aiResult.modules.map((module, index) => ({
+                  id: index + 1,
+                  title: module.module_title,
+                  description: module.module_description,
+                  lessons: module.lessons.map((lesson, lessonIndex) => ({
+                    id: lessonIndex + 1,
+                    title: lesson.lesson_title,
+                    intro: lesson.lesson_intro,
+                    subtopics: lesson.lesson_content ? 
+                      lesson.lesson_content.map(item => `${item.subtopic}: ${item.content}`) :
+                      ['Core concepts and definitions', 'Practical applications'],
+                    examples: lesson.examples || [],
+                    summary: lesson.summary,
+                    duration: '15 min'
+                  }))
+                }))
+              };
               console.log('✅ Successfully generated course with AI');
             } else {
               throw new Error('Invalid AI response structure');

@@ -1,7 +1,14 @@
 // AI Proxy Service - Clean frontend interface, no implementation details exposed
 class AIProxyService {
   constructor() {
-    this.baseURL = '/api/ai-proxy';
+    // Use environment variable or fallback to localhost:5000 for backend
+    // Check if we're in a browser environment
+    const isClient = typeof window !== 'undefined';
+    const apiUrl = isClient && window.location.origin.includes('localhost:3000') ? 
+      'http://localhost:5000' : 
+      (isClient ? window.location.origin : 'http://localhost:5000');
+    
+    this.baseURL = `${apiUrl}/api/ai-proxy`;
   }
 
   // Generic request handler

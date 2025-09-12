@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles } from 'lucide-react';
 import AICourseWorkspace from './AICourseWorkspace';
+import Bytez from 'bytez.js'; // ✅ Import Bytez SDK
 
 const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
   const [showWorkspace, setShowWorkspace] = useState(false);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
@@ -16,8 +18,96 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
     difficulty: 'beginner'
   });
 
-  const handleOpenWorkspace = () => {
-    setShowWorkspace(true);
+  // ✅ Initialize Bytez SDK
+  const bytezSDK = new Bytez("YOUR_BYTEZ_KEY"); // 🔑 Replace with your key
+  const model = bytezSDK.model("google/flan-t5-base");
+
+  const handleOpenWorkspace = async () => {
+    setIsLoadingAI(true);
+
+    try {
+      // ✅ Wait for model init
+      await model.create();
+
+      // ✅ Build AI prompt based on user input
+      const topic = formData.subject === 'custom' ? formData.customSubject : formData.subject;
+      const prompt = `
+Generate a course titled "${formData.title || topic}".
+It has 2 modules. Each module has 1 lesson.
+Each lesson must include:
+- lesson_title (string)
+- lesson_intro (string)
+- lesson_content: array of 2 subtopics, each with "subtopic" and "content" (string)
+- summary (string)
+
+Return ONLY valid JSON in this structure:
+{
+  "course_title": "${formData.title || topic}",
+  "modules": [
+    {
+      "module_title": "",
+      "lesson": {
+        "lesson_title": "",
+        "lesson_intro": "",
+        "lesson_content": [
+          { "subtopic": "", "content": "" },
+          { "subtopic": "", "content": "" }
+        ],
+        "summary": ""
+      }
+    },
+    {
+      "module_title": "",
+      "lesson": {
+        "lesson_title": "",
+        "lesson_intro": "",
+        "lesson_content": [
+          { "subtopic": "", "content": "" },
+          { "subtopic": "", "content": "" }
+        ],
+        "summary": ""
+      }
+    }
+  ]
+}
+Do not add explanations. Do not wrap in markdown. Only return the JSON object.
+`;
+
+      // ✅ Run AI generation
+      const { error, output } = await model.run(prompt, {
+        max_new_tokens: 400,
+        min_new_tokens: 100,
+        temperature: 0.5
+      });
+
+      if (error) throw new Error(error);
+
+      let aiOutline;
+      try {
+        aiOutline = JSON.parse(output.trim());
+      } catch (parseError) {
+        console.error("Failed to parse AI output:", output);
+        throw new Error("Invalid AI response format");
+      }
+
+      // ✅ Inject AI outline into formData for workspace
+      const enrichedFormData = {
+        ...formData,
+        outlines: aiOutline.modules.map(m => ({
+          moduleTitle: m.module_title,
+          lessons: [m.lesson] // 1 lesson per module
+        }))
+      };
+
+      setFormData(enrichedFormData);
+      setShowWorkspace(true);
+
+    } catch (err) {
+      console.error("AI Generation failed:", err);
+      alert("Failed to generate AI course outline: " + err.message);
+    } finally {
+      setIsLoadingAI(false);
+    }
   };
 
   const handleCloseWorkspace = () => {
@@ -26,12 +116,10 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
 
   const handleSaveCourse = async (courseData) => {
     console.log('AIAssistedCourseModal - handleSaveCourse called with:', courseData);
-    
+
     try {
-      // Use regular createCourse function and createAIModulesAndLessons
       const { createCourse, createAIModulesAndLessons } = await import('../../services/courseService');
-      
-      // Prepare data in exact format as CreateCourseModal
+
       const coursePayload = {
         title: courseData.title || '',
         description: courseData.description || '',
@@ -47,33 +135,29 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
         requireFinalQuiz: true,
         thumbnail: courseData.thumbnail || null
       };
-      
+
       console.log('Creating course with payload:', coursePayload);
-      
-      // Create the course using regular function
+
       const response = await createCourse(coursePayload);
-      
+
       console.log('Course created successfully:', response);
-      
-      // Now create the AI-generated modules and lessons
+
       if (response.success && courseData.outlines && courseData.outlines.length > 0) {
         console.log('Creating AI modules and lessons for course ID:', response.data.id || response.data._id);
-        
+
         try {
           const moduleResult = await createAIModulesAndLessons(
-            response.data.id || response.data._id, 
+            response.data.id || response.data._id,
             courseData.outlines
           );
           console.log('AI modules and lessons created:', moduleResult);
         } catch (moduleError) {
           console.error('Failed to create AI modules and lessons:', moduleError);
-          // Don't fail the entire process, just log the error
           alert('Course created but failed to add AI-generated modules: ' + moduleError.message);
         }
       }
-      
+
       if (response.success && onCourseCreated) {
-        // Add AI metadata to the created course data
         const courseWithAI = {
           ...response.data,
           isAIGenerated: true,
@@ -87,7 +171,7 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
         };
         onCourseCreated(courseWithAI);
       }
-      
+
       setShowWorkspace(false);
       onClose();
     } catch (error) {
@@ -154,19 +238,19 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                     <input
                       type="text"
                       value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                      placeholder="e.g., Digital Marketing Fundamentals"
+                      placeholder="e.g., JavaScript Fundamentals"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Subject Domain *
                     </label>
                     <select
                       value={formData.subject}
-                      onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     >
                       <option value="">Select a domain</option>
@@ -235,7 +319,7 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                     </select>
                   </div>
                 </div>
-                
+
                 {formData.subject === 'custom' && (
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -244,13 +328,13 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                     <input
                       type="text"
                       value={formData.customSubject}
-                      onChange={(e) => setFormData({...formData, customSubject: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, customSubject: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       placeholder="Enter your custom subject area"
                     />
                   </div>
                 )}
-                
+
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Target Audience
@@ -258,25 +342,25 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                   <input
                     type="text"
                     value={formData.targetAudience}
-                    onChange={(e) => setFormData({...formData, targetAudience: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     placeholder="e.g., Beginners, Professionals, Students"
                   />
                 </div>
-                
+
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Course Description *
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows="4"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     placeholder="Describe what students will learn in this course..."
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -285,19 +369,19 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                     <input
                       type="number"
                       value={formData.duration}
-                      onChange={(e) => setFormData({...formData, duration: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       placeholder="4"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Difficulty Level
                     </label>
                     <select
                       value={formData.difficulty}
-                      onChange={(e) => setFormData({...formData, difficulty: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     >
                       <option value="beginner">Beginner</option>
@@ -306,14 +390,14 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Learning Objectives
                   </label>
                   <textarea
                     value={formData.objectives}
-                    onChange={(e) => setFormData({...formData, objectives: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, objectives: e.target.value })}
                     rows="3"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                     placeholder="What will students be able to do after completing this course?"
@@ -331,14 +415,28 @@ const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
             >
               Cancel
             </button>
-            
+
             <button
               onClick={handleOpenWorkspace}
-              disabled={!formData.title?.trim() || !formData.description?.trim() || (!formData.subject || (formData.subject === 'custom' && !formData.customSubject?.trim()))}
+              disabled={
+                isLoadingAI ||
+                !formData.title?.trim() ||
+                !formData.description?.trim() ||
+                (!formData.subject || (formData.subject === 'custom' && !formData.customSubject?.trim()))
+              }
               className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Sparkles className="w-4 h-4" />
-              Generate AI Course
+              {isLoadingAI ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate AI Course
+                </>
+              )}
             </button>
           </div>
         </motion.div>

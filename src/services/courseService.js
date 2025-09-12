@@ -151,7 +151,7 @@ export async function updateCourse(courseId, courseData) {
 
 // Create lesson in a module
 export async function createLesson(courseId, moduleId, lessonData) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lessons/create`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -168,6 +168,24 @@ export async function createLesson(courseId, moduleId, lessonData) {
 
   const data = await response.json();
   return data.data || data;
+}
+
+// Create lesson content
+export async function createLessonContent(lessonContentData) {
+  try {
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/create`,
+      lessonContentData,
+      {
+        headers: getAuthHeader(),
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error creating lesson content:', error);
+    throw error;
+  }
 }
 
 // Create AI-generated modules and lessons for a course
@@ -203,7 +221,9 @@ export async function createAIModulesAndLessons(courseId, outlines) {
       
       // Create module
       const modulePayload = {
-        title: moduleData.title || `Module ${i + 1}`,
+        title: (moduleData.title || `Module ${i + 1}`).length > 150 ? 
+               (moduleData.title || `Module ${i + 1}`).substring(0, 147) + '...' : 
+               (moduleData.title || `Module ${i + 1}`),
         description: moduleData.description || 'test description',
         order: i + 1,
         estimated_duration: 60,
@@ -231,13 +251,78 @@ export async function createAIModulesAndLessons(courseId, outlines) {
           
           console.log(`Creating lesson ${j + 1} in module ${i + 1}:`, lessonData.title);
           
+          // Generate structured lesson content for AI-generated lessons
+          let lessonContent = '';
+          
+          // Handle new AI-generated lesson structure
+          if (lessonData.heading || lessonData.introduction || lessonData.content || lessonData.summary) {
+            // Build structured HTML content for AI lessons
+            if (lessonData.heading) {
+              lessonContent += `<h1 class="text-3xl font-bold mb-6 text-slate-800">${lessonData.heading}</h1>\n\n`;
+            }
+            
+            if (lessonData.introduction) {
+              lessonContent += `<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">\n`;
+              lessonContent += `<h3 class="text-lg font-semibold text-blue-800 mb-2">Introduction</h3>\n`;
+              lessonContent += `<p class="text-blue-700">${lessonData.introduction}</p>\n`;
+              lessonContent += `</div>\n\n`;
+            }
+            
+            if (lessonData.content && Array.isArray(lessonData.content)) {
+              lessonContent += `<h2 class="text-2xl font-bold mb-4 text-slate-800">Key Learning Points</h2>\n\n`;
+              lessonData.content.forEach((point, index) => {
+                lessonContent += `<div class="bg-gray-50 border border-gray-200 p-4 mb-4 rounded-lg">\n`;
+                lessonContent += `<h4 class="text-lg font-semibold text-gray-800 mb-2">${index + 1}. ${point.title}</h4>\n`;
+                lessonContent += `<p class="text-gray-700">${point.description}</p>\n`;
+                lessonContent += `</div>\n\n`;
+              });
+            }
+            
+            if (lessonData.images && Array.isArray(lessonData.images)) {
+              lessonContent += `<h2 class="text-2xl font-bold mb-4 text-slate-800">Visual Learning</h2>\n\n`;
+              lessonData.images.forEach((image, index) => {
+                lessonContent += `<div class="mb-6 text-center">\n`;
+                lessonContent += `<img src="${image.url}" alt="${image.alt}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md mb-3" />\n`;
+                lessonContent += `<p class="text-sm text-slate-600 italic">${image.caption}</p>\n`;
+                lessonContent += `</div>\n\n`;
+              });
+            }
+            
+            if (lessonData.summary) {
+              lessonContent += `<div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg">\n`;
+              lessonContent += `<h3 class="text-lg font-semibold text-green-800 mb-2">Summary</h3>\n`;
+              lessonContent += `<p class="text-green-700">${lessonData.summary}</p>\n`;
+              lessonContent += `</div>\n\n`;
+            }
+          } else {
+            // Fallback to old format for backward compatibility
+            if (lessonData.intro) {
+              lessonContent += `${lessonData.intro}\n\n`;
+            }
+            if (lessonData.subtopics && lessonData.subtopics.length > 0) {
+              lessonContent += `## Key Topics:\n\n`;
+              lessonData.subtopics.forEach((topic, index) => {
+                lessonContent += `### ${index + 1}. ${topic}\n\n`;
+              });
+            }
+            if (lessonData.examples && lessonData.examples.length > 0) {
+              lessonContent += `## Examples:\n\n`;
+              lessonData.examples.forEach((example, index) => {
+                lessonContent += `**Example ${index + 1}:** ${example}\n\n`;
+              });
+            }
+            if (lessonData.summary) {
+              lessonContent += `## Summary:\n\n${lessonData.summary}`;
+            }
+          }
+
           const lessonPayload = {
-            title: lessonData.title || `Lesson ${j + 1}`,
-            description: lessonData.description || '',
-            content: lessonData.content || '',
-            lesson_order: j + 1,
-            duration: lessonData.duration || '20 min',
-            isPublished: true
+            title: (lessonData.title || `Lesson ${j + 1}`).length > 150 ? 
+                   (lessonData.title || `Lesson ${j + 1}`).substring(0, 147) + '...' : 
+                   (lessonData.title || `Lesson ${j + 1}`),
+            description: lessonContent || lessonData.intro || `This lesson covers ${lessonData.title || 'key concepts'}.`,
+            order: j + 1,
+            status: 'PUBLISHED'
           };
           
           console.log('Lesson payload being sent:', lessonPayload);
@@ -248,6 +333,22 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             
             const createdLesson = await createLesson(courseId, moduleId, lessonPayload);
             createdLessons.push(createdLesson);
+            
+            // Create lesson content if we have structured content
+            if (lessonContent && createdLesson?.data?.id) {
+              try {
+                const lessonContentPayload = {
+                  lesson_id: createdLesson.data.id,
+                  content: lessonContent,
+                  content_type: 'html'
+                };
+                
+                console.log('Creating lesson content for lesson:', createdLesson.data.id);
+                await createLessonContent(lessonContentPayload);
+              } catch (contentError) {
+                console.error('Failed to create lesson content:', contentError);
+              }
+            }
             console.log('Lesson created successfully:', createdLesson);
           } catch (lessonError) {
             console.error(`Failed to create lesson ${j + 1} in module ${i + 1}:`, lessonError);

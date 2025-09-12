@@ -9,7 +9,7 @@ import CourseModulesSection from "../components/courses/CourseModulesSection";
 import ConfirmationDialog from "../components/ui/ConfirmationDialog";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import CreateCourseOptions from "../components/courses/CreateCourseOptions";
-import AIAssistedCourseModal from "../components/courses/AIAssistedCourseModal";
+import AICourseWorkspace from "../components/courses/AICourseWorkspace";
 import AICourseSuccessModal from "../components/courses/AICourseSuccessModal";
 
 const CreateCourse = ({ onCourseCreated }) => {
@@ -38,7 +38,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   // Modal states
   const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAIModal, setShowAIModal] = useState(false);
+  const [showAIWorkspace, setShowAIWorkspace] = useState(false);
   const [showAISuccessModal, setShowAISuccessModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
@@ -63,7 +63,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   const handleCreateOptionSelect = (option) => {
     setShowCreateOptions(false);
     if (option === 'ai') {
-      setShowAIModal(true);
+      setShowAIWorkspace(true);
     } else {
       setShowCreateModal(true);
     }
@@ -73,7 +73,7 @@ const CreateCourse = ({ onCourseCreated }) => {
     // Refresh the courses list to show the new AI-generated course
     handleCourseCreated(courseData);
     setCreatedAICourse(courseData);
-    setShowAIModal(false);
+    setShowAIWorkspace(false);
     setShowAISuccessModal(true);
   };
 
@@ -290,10 +290,11 @@ const CreateCourse = ({ onCourseCreated }) => {
         onCourseCreated={handleCourseCreated}
       />
 
-      <AIAssistedCourseModal
-        isOpen={showAIModal}
-        onClose={() => setShowAIModal(false)}
-        onCourseCreated={handleAICourseCreated}
+      <AICourseWorkspace
+        isOpen={showAIWorkspace}
+        onClose={() => setShowAIWorkspace(false)}
+        courseData={{}}
+        onSave={handleAICourseCreated}
       />
 
       <EditCourseModal
