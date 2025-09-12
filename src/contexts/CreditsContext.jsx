@@ -209,6 +209,56 @@ export const CreditsProvider = ({ children }) => {
     addTransaction('spend', -safe, { credits: safe, ...metadata });
   };
 
+  // Unlock content (catalog or lesson) using credits
+  const unlockContent = async (unlockType, unlockId, creditsSpent) => {
+    if (!userProfile?.id) {
+      throw new Error('User not logged in');
+    }
+
+    setIsLoading(true);
+    try {
+      console.log(`[CreditsContext] Unlocking ${unlockType} with ID ${unlockId} for ${creditsSpent} credits`);
+      
+      const unlockData = {
+        userId: userProfile.id,
+        credits_spent: creditsSpent,
+        unlock_type: unlockType,
+        unlock_id: unlockId
+      };
+
+      console.log(`[CreditsContext] Making POST request to: /payment-order/unlock`);
+      console.log(`[CreditsContext] Unlock data:`, unlockData);
+
+      const response = await api.post('/payment-order/unlock', unlockData, { withCredentials: true });
+      
+      console.log(`[CreditsContext] Unlock response:`, response?.data);
+      console.log(`[CreditsContext] Response status:`, response?.status);
+
+      // Don't deduct locally - let backend handle it
+      // The backend will update the user's total_credits
+      // We'll fetch the updated balance after successful unlock
+      
+      // Add transaction record for local display
+      addTransaction('spend', -creditsSpent, { 
+        unlockType, 
+        unlockId, 
+        type: 'unlock' 
+      });
+
+      // Fetch updated balance from backend
+      await fetchBackendBalance(userProfile.id);
+
+      return response.data;
+    } catch (error) {
+      console.error('[CreditsContext] Failed to unlock content:', error);
+      console.error('[CreditsContext] Error status:', error?.response?.status);
+      console.error('[CreditsContext] Error data:', error?.response?.data);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetCredits = () => {
     setBalance(0);
     setTransactions([]);
@@ -291,6 +341,7 @@ export const CreditsProvider = ({ children }) => {
     cancelMembership,
     spendCredits, 
     resetCredits,
+    unlockContent,
     refreshBalance: () => userProfile?.id && fetchBackendBalance(userProfile.id),
     refreshMembership: () => userProfile?.id && fetchBackendMembership(userProfile.id)
   }), [balance, transactions, membership, analytics, isLoading, userProfile?.id]);

@@ -22,7 +22,8 @@ export function CatalogPage() {
   const [selectedCatalogToBuy, setSelectedCatalogToBuy] = useState(null);
   const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
   const [purchaseNotice, setPurchaseNotice] = useState("");
-  const { balance: creditsBalance, credits: creditsAlt } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const { balance: creditsBalance, credits: creditsAlt, unlockContent, refreshBalance } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
 
   useEffect(() => {
     const fetchCatalogs = async () => {
@@ -123,10 +124,10 @@ export function CatalogPage() {
   const handleBuyCatalogClick = (catalog) => {
     const price = getCatalogPriceCredits(catalog);
     const currentBalance = Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0);
-    const courseIdsSet = catalogCourseIdsMap[catalog.id] || new Set();
-    const coursesCount = courseIdsSet.size || 0;
+      const courseIdsSet = catalogCourseIdsMap[catalog.id] || new Set();
+      const coursesCount = courseIdsSet.size || 0;
     
-    setSelectedCatalogToBuy({ ...catalog, priceCredits: price, coursesCount });
+      setSelectedCatalogToBuy({ ...catalog, priceCredits: price, coursesCount });
     
     if ((currentBalance || 0) >= (price || 0) && price > 0) {
       // User has enough credits - show purchase confirmation
@@ -142,6 +143,7 @@ export function CatalogPage() {
     setShowCreditsModal(false);
     setShowInsufficientCreditsModal(false);
     setSelectedCatalogToBuy(null);
+    setIsPurchasing(false);
   };
 
   // 1. Free Courses
@@ -517,15 +519,40 @@ export function CatalogPage() {
             <div className="flex justify-end gap-2">
               <button onClick={closeAllModals} className="px-4 py-2 rounded-md border hover:bg-gray-50 text-sm">Cancel</button>
               <button
-                onClick={() => { 
-                  // Keep user on catalog, show success notice
-                  setPurchaseNotice(`Successfully purchased catalog: ${selectedCatalogToBuy.name}. All included courses are now unlocked.`);
-                  closeAllModals();
-                  setTimeout(() => setPurchaseNotice(""), 4000);
+                disabled={isPurchasing}
+                onClick={async () => { 
+                  if (isPurchasing) return; // Prevent multiple clicks
+                  
+                  try {
+                    setIsPurchasing(true);
+                    
+                    // Call unlock API for catalog
+                    await unlockContent('CATALOG', selectedCatalogToBuy.id, selectedCatalogToBuy.priceCredits);
+                    
+                    // Refresh balance to show updated credits
+                    if (refreshBalance) {
+                      await refreshBalance();
+                    }
+                    
+                    // Show success notice
+                    setPurchaseNotice(`Successfully purchased catalog: ${selectedCatalogToBuy.name}. All included courses are now unlocked.`);
+                    closeAllModals();
+                    setTimeout(() => setPurchaseNotice(""), 4000);
+                  } catch (error) {
+                    console.error('Failed to purchase catalog:', error);
+                    setPurchaseNotice(`Failed to purchase catalog: ${error.message}`);
+                    setTimeout(() => setPurchaseNotice(""), 4000);
+                  } finally {
+                    setIsPurchasing(false);
+                  }
                 }}
-                className="px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm"
+                className={`px-4 py-2 rounded-md text-white text-sm ${
+                  isPurchasing 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
               >
-                Confirm & Purchase
+                {isPurchasing ? 'Processing...' : 'Confirm & Purchase'}
               </button>
             </div>
           </div>

@@ -10,8 +10,11 @@ import { fetchUserCourses, fetchCourseModules } from '../services/courseService'
 import { getCourseTrialStatus } from '../utils/trialUtils';
 import TrialBadge from '../components/ui/TrialBadge';
 import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
+import { useCredits } from '../contexts/CreditsContext';
+import api from '../services/apiClient';
 
 export function Courses() {
+  const { userProfile } = useCredits();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCourses, setFilteredCourses] = useState([]);
@@ -25,6 +28,9 @@ export function Courses() {
   const [courseModules, setCourseModules] = useState({});
   const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
   const [showTrialDialog, setShowTrialDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('courses'); // 'courses' or 'lessons'
+  const [lessons, setLessons] = useState([]);
+  const [filteredLessons, setFilteredLessons] = useState([]);
 
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
@@ -150,6 +156,37 @@ export function Courses() {
     fetchCourses();
   }, []);
 
+  // Fetch user's unlocked lessons
+  useEffect(() => {
+    const fetchLessons = async () => {
+      if (!userProfile?.id) return;
+      
+      try {
+        console.log(`[Courses] Fetching lessons for user ${userProfile.id}`);
+        const response = await api.get(`/payment-order/unlock/history`, { 
+          withCredentials: true,
+          data: { userId: userProfile.id }
+        });
+        
+        console.log(`[Courses] Lessons response:`, response?.data);
+        
+        // Filter for LESSON type unlocks
+        const lessonUnlocks = response?.data?.data || response?.data || [];
+        const lessonsData = lessonUnlocks.filter(unlock => unlock.unlock_type === 'LESSON');
+        
+        console.log(`[Courses] Found ${lessonsData.length} lessons`);
+        setLessons(lessonsData);
+        setFilteredLessons(lessonsData);
+      } catch (error) {
+        console.error('[Courses] Failed to fetch lessons:', error);
+        setLessons([]);
+        setFilteredLessons([]);
+      }
+    };
+    
+    fetchLessons();
+  }, [userProfile?.id]);
+
   // Update trial status every minute for real-time countdown
   useEffect(() => {
     const interval = setInterval(() => {
@@ -226,6 +263,21 @@ export function Courses() {
     setFilteredCourses(results);
   }, [courses, searchTerm, progressFilter, categoryFilter]);
 
+  // Filter lessons based on search term
+  useEffect(() => {
+    let results = lessons;
+
+    // Apply search filter
+    if (searchTerm) {
+      results = results.filter(lesson =>
+        lesson.unlock_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lesson.unlock_type?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredLessons(results);
+  }, [lessons, searchTerm]);
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -272,14 +324,14 @@ export function Courses() {
       <main className="flex-1">
         <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold">My Courses</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">My Learning</h1>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search courses..."
+                  placeholder={activeTab === 'courses' ? "Search courses..." : "Search lessons..."}
                   className="pl-8 w-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -294,6 +346,32 @@ export function Courses() {
                 Filters
               </Button> */}
             </div>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
+            <button 
+              onClick={() => setActiveTab('courses')} 
+              className={`px-4 py-2 text-sm rounded-md transition-all duration-200 ${
+                activeTab === 'courses' 
+                  ? 'bg-white shadow-sm text-gray-900 font-medium' 
+                  : 'text-gray-700 hover:text-gray-900'
+              }`}
+            >
+              <BookOpen className="h-4 w-4 inline mr-2" />
+              My Courses
+            </button>
+            <button 
+              onClick={() => setActiveTab('lessons')} 
+              className={`px-4 py-2 text-sm rounded-md transition-all duration-200 ${
+                activeTab === 'lessons' 
+                  ? 'bg-white shadow-sm text-gray-900 font-medium' 
+                  : 'text-gray-700 hover:text-gray-900'
+              }`}
+            >
+              <Award className="h-4 w-4 inline mr-2" />
+              My Lessons
+            </button>
           </div>
 
           {/* Filters */}
@@ -332,10 +410,12 @@ export function Courses() {
             </div>
           )} */}
 
-          {/* Course Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredCourses.length > 0 ? (
-              filteredCourses.map((course) => (
+          {/* Content based on active tab */}
+          {activeTab === 'courses' ? (
+            /* Course Grid */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {filteredCourses.length > 0 ? (
+                filteredCourses.map((course) => (
                 <div key={course.id} className="course-card opacity-0">
                   <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                     <div className="aspect-video relative overflow-hidden">
@@ -421,7 +501,78 @@ export function Courses() {
                 <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
               </div>
             )}
-          </div>
+            </div>
+          ) : (
+            /* Lessons Grid */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {filteredLessons.length > 0 ? (
+                filteredLessons.map((lesson, index) => (
+                  <div key={`${lesson.unlock_id}-${index}`} className="lesson-card opacity-0">
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                      <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-100">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Award className="h-16 w-16 text-purple-400" />
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-indigo-500"></div>
+                      </div>
+                      
+                      <CardHeader className="pb-3 flex-shrink-0">
+                        <CardTitle className="text-base sm:text-lg line-clamp-2">
+                          Lesson {lesson.unlock_id}
+                        </CardTitle>
+                        <CardDescription className="line-clamp-2 text-sm sm:text-base">
+                          Individual lesson unlocked with credits
+                        </CardDescription>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-3 flex-1">
+                        <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <span>Unlocked</span>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {lesson.credits_spent} credits
+                          </Badge>
+                        </div>
+                        
+                        <div className="text-xs sm:text-sm text-muted-foreground">
+                          <div>Unlocked: {new Date(lesson.used_at).toLocaleDateString()}</div>
+                        </div>
+                      </CardContent>
+                      
+                      <CardFooter className="pt-3">
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={() => {
+                            // Navigate to lesson or show lesson content
+                            console.log('Opening lesson:', lesson.unlock_id);
+                          }}
+                        >
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          Open Lesson
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
+                    <Award className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No lessons unlocked yet</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Purchase individual lessons with credits to see them here
+                  </p>
+                  <Button asChild>
+                    <Link to="/catalog">Browse Lessons</Link>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
       

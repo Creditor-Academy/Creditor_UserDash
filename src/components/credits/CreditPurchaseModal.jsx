@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useCredits } from "@/contexts/CreditsContext";
+import { useUser } from "@/contexts/UserContext";
+import api from "@/services/apiClient";
 
 // Design-only modal for managing credits
 // Props: open, onClose, balance (optional external), onBalanceChange(newBalance) (optional)
 const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: externalBalance, onBalanceChange }) => {
   const { transactions, addCredits, balance: contextBalance, refreshBalance, membership: contextMembership, refreshMembership } = useCredits();
+  const { userProfile } = useUser();
+  const [unlockHistory, setUnlockHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [balance, setBalance] = useState(typeof externalBalance === 'number' ? externalBalance : contextBalance);
   const [quantity, setQuantity] = useState(10);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -51,18 +56,41 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       .sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [transactions]);
 
-  // Get real usage data from transactions
+  // Fetch unlock history from backend
+  const fetchUnlockHistory = async () => {
+    if (!userProfile?.id) return;
+    
+    setLoadingHistory(true);
+    try {
+      console.log(`[CreditModal] Fetching usage history for user ${userProfile.id}`);
+      const response = await api.get(`/payment-order/credits/usages/${userProfile.id}`, { 
+        withCredentials: true
+      });
+      
+      console.log(`[CreditModal] Usage history response:`, response?.data);
+      
+      const historyData = response?.data?.data || response?.data || [];
+      setUnlockHistory(historyData);
+    } catch (error) {
+      console.error('[CreditModal] Failed to fetch usage history:', error);
+      setUnlockHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Get real usage data from backend unlock history
   const usages = useMemo(() => {
-    return transactions
-      .filter(t => t.type === 'spend')
-      .map(t => ({
-        date: new Date(t.timestamp).toISOString().slice(0, 10),
-        type: t.metadata?.type || 'Spend',
-        ref: t.metadata?.moduleTitle || t.metadata?.courseTitle || 'Unknown',
-        credits: t.amount
-      }))
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [transactions]);
+    return unlockHistory.map(unlock => ({
+      date: new Date(unlock.used_at).toISOString().slice(0, 10),
+      type: unlock.unlock_type === 'CATALOG' ? 'Catalog Purchase' : 
+            unlock.unlock_type === 'LESSON' ? 'Lesson Purchase' : 
+            unlock.unlock_type || 'Unlock',
+      ref: unlock.unlock_id || 'Unknown',
+      credits: unlock.credits_spent || 0
+    }))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [unlockHistory]);
 
   const canPurchase = useMemo(() => quantity > 0 && !isPurchasing, [quantity, isPurchasing]);
   const derived = useMemo(() => {
@@ -129,11 +157,12 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
     try { 
       refreshBalance && refreshBalance(); 
       refreshMembership && refreshMembership();
+      fetchUnlockHistory();
     } catch {}
     const onKey = (e) => { if (e.key === "Escape") handleClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, userProfile?.id]);
 
   if (!open) return null;
 
@@ -251,6 +280,9 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="font-semibold text-gray-800">Credit Usage</div>
+                {loadingHistory && (
+                  <div className="text-xs text-gray-500">Loading...</div>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-sm">
@@ -263,15 +295,25 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     </tr>
                   </thead>
                   <tbody>
-                    {usages.length === 0 ? (
-                      <tr><td className="py-2 text-gray-500" colSpan="4">No usage yet</td></tr>
+                    {loadingHistory ? (
+                      <tr><td className="py-4 text-gray-500 text-center" colSpan="4">Loading usage history...</td></tr>
+                    ) : usages.length === 0 ? (
+                      <tr><td className="py-4 text-gray-500 text-center" colSpan="4">No credit usage yet</td></tr>
                     ) : (
                       usages.map((u, i) => (
-                        <tr key={i} className="border-t">
-                          <td className="py-1 pr-2">{u.date}</td>
-                          <td className="py-1 pr-2">{u.type}</td>
-                          <td className="py-1 pr-2">{u.ref}</td>
-                          <td className="py-1 pr-2 font-medium text-red-600">{u.credits}</td>
+                        <tr key={i} className="border-t hover:bg-gray-50">
+                          <td className="py-2 pr-2">{u.date}</td>
+                          <td className="py-2 pr-2">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              u.type === 'Catalog Purchase' ? 'bg-purple-100 text-purple-800' :
+                              u.type === 'Lesson Purchase' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {u.type}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-2 font-medium">{u.ref}</td>
+                          <td className="py-2 pr-2 font-medium text-red-600">-{u.credits}</td>
                         </tr>
                       ))
                     )}
