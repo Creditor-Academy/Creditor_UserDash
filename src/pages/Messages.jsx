@@ -73,7 +73,14 @@ function Messages() {
   useEffect(() => {
     const socket = getSocket();
     // Optional: log to verify connection lifecycle specific to Messages
-    const onConnect = () => console.log('[Messages] socket connected');
+    const onConnect = () => {
+      console.log('[Messages] socket connected');
+      // Join user's personal room for conversation updates
+      const currentUserId = localStorage.getItem('userId');
+      if (currentUserId) {
+        socket.emit('joinRoom', `user_${currentUserId}`);
+      }
+    };
     const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
     const onRoomIdForSender = ({ conversationid, roomId: serverRoomId, to }) => {
       setRoomId(serverRoomId);
@@ -138,15 +145,42 @@ function Messages() {
         },
       ]);
     };
+
+    const onConversationUpdated = (updatePayload) => {
+      console.log('Conversation updated:', updatePayload);
+      setFriends(prev => {
+        const existingIndex = prev.findIndex(f => f.id === updatePayload.id);
+        const updatedFriend = {
+          id: String(updatePayload.id),
+          name: updatePayload.title || 'User',
+          avatar: updatePayload.image || '/placeholder.svg',
+          lastMessage: updatePayload.lastMessage || '',
+          room: updatePayload.room,
+          conversationId: updatePayload.id,
+        };
+        
+        if (existingIndex >= 0) {
+          // Update existing conversation and move to top
+          const updated = [...prev];
+          updated[existingIndex] = updatedFriend;
+          return [updatedFriend, ...updated.filter((_, i) => i !== existingIndex)];
+        } else {
+          // Add new conversation to top
+          return [updatedFriend, ...prev];
+        }
+      });
+    };
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('roomidforsender', onRoomIdForSender);
     socket.on('receiveMessage', onReceiveMessage);
+    socket.on('conversationUpdated', onConversationUpdated);
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('roomidforsender', onRoomIdForSender);
       socket.off('receiveMessage', onReceiveMessage);
+      socket.off('conversationUpdated', onConversationUpdated);
     };
   }, []);
 
