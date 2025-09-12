@@ -1515,59 +1515,217 @@ const Resources = () => {
     </Card>
 
     {/* --- Combined Modal (Unsplash + Pexels + Pixabay) --- */}
-    <div id="imageSearchModal" className="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-[90%] h-[90%] overflow-auto relative">
-        <button 
-          onClick={() => {
-            const modal = document.getElementById("imageSearchModal");
-            if (modal) modal.classList.add("hidden");
-          }}
-          className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600"
-        >
-          ✖ Close
-        </button>
-        <h2 className="text-xl font-bold mb-4">Search Images</h2>
+    <div id="imageSearchModal" className="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl h-[95%] overflow-hidden relative flex flex-col">
+        {/* Modal Header */}
+        <div className="bg-gray-50 border-b border-gray-200 p-6 relative">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold mb-1 text-gray-800">Image Search</h2>
+              <p className="text-gray-600 text-sm">Find high-quality images from Unsplash and Pixabay</p>
+            </div>
+            <button 
+              onClick={() => {
+                const modal = document.getElementById("imageSearchModal");
+                if (modal) modal.classList.add("hidden");
+              }}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded-full transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
-        <div className="flex gap-2 mb-4">
-          <input 
-            id="imageSearchQuery"
-            type="text"
-            placeholder="Search images..."
-            className="flex-1 px-4 py-2 border rounded-md"
-          />
-          <button 
-            onClick={async () => {
-              const queryInput = document.getElementById("imageSearchQuery");
-              const query = queryInput ? queryInput.value : "";
-              const resultsDiv = document.getElementById("imageSearchResults");
-              if (!resultsDiv) return;
-              resultsDiv.innerHTML = "";
+        {/* Modal Content */}
+        <div className="flex-1 overflow-auto p-6">
 
-              // Unsplash
-              const UNSPLASH_KEY = "80kWci6xr65tHJChHAG2cj8qDxsIs1TmAFnkka1C-Mk";
-              const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${query}&per_page=15`, {
-                headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` }
-              });
-              const unsplashData = await unsplashRes.json();
-              (unsplashData.results || []).forEach(photo => {
-                const wrapper = document.createElement("div");
-                wrapper.className = "img-wrapper inline-block w-full mb-4 cursor-pointer rounded-lg overflow-hidden shadow-md";
-                const img = document.createElement("img");
-                img.src = photo.urls.small;
-                img.alt = photo.alt_description || "Unsplash image";
-                img.className = "w-full h-auto block rounded-lg hover:scale-105 transition-transform";
-                img.onclick = () => {
-                  const previewImg = document.getElementById("previewImage");
-                  if (previewImg) previewImg.src = photo.urls.full;
-                  const previewModal = document.getElementById("previewModal");
-                  if (previewModal) {
-                    previewModal.dataset.source = "unsplash";
-                    previewModal.classList.remove("hidden");
+        {/* Pre-loaded Finance Templates */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Quick Finance Templates</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {[
+              "business finance", "investment", "money", "banking", "financial planning", 
+              "stock market", "wealth management", "accounting", "budget", "credit",
+              "loan", "mortgage", "insurance", "retirement", "tax", "economics"
+            ].map((template) => (
+              <button
+                key={template}
+                onClick={() => {
+                  const queryInput = document.getElementById("imageSearchQuery");
+                  if (queryInput) {
+                    queryInput.value = template;
                   }
-                };
-                wrapper.appendChild(img);
-                resultsDiv.appendChild(wrapper);
-              });
+                }}
+                className="px-4 py-2.5 text-sm bg-white hover:bg-gray-50 text-gray-700 hover:text-gray-900 rounded-lg border border-gray-200 hover:border-gray-300 transition-all duration-200 capitalize font-medium"
+              >
+                {template}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Search Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Custom Search</h3>
+          </div>
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <input 
+                id="imageSearchQuery"
+                type="text"
+                placeholder="Type your search query here..."
+                className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-lg focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-all duration-200 text-gray-700 placeholder-gray-400"
+              />
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+            <button 
+              onClick={async () => {
+                const queryInput = document.getElementById("imageSearchQuery");
+                const query = queryInput ? queryInput.value : "";
+                const resultsDiv = document.getElementById("imageSearchResults");
+                if (!resultsDiv) return;
+                
+                // Show loading state
+                resultsDiv.innerHTML = `
+                  <div class="flex items-center justify-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600"></div>
+                    <span class="ml-3 text-gray-600">Searching for images...</span>
+                  </div>
+                `;
+
+                try {
+                  // Unsplash
+                  const UNSPLASH_KEY = "80kWci6xr65tHJChHAG2cj8qDxsIs1TmAFnkka1C-Mk";
+                  const unsplashRes = await fetch(
+                    `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=15`,
+                    {
+                      headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
+                    }
+                  );
+                  const unsplashData = await unsplashRes.json();
+
+                  // Clear loading state
+                  resultsDiv.innerHTML = "";
+
+                  if (!unsplashData.results || unsplashData.results.length === 0) {
+                    resultsDiv.innerHTML = `
+                      <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No images found</h3>
+                        <p class="text-gray-500">Try a different search term or use one of the finance templates above.</p>
+                      </div>
+                    `;
+                    return;
+                  }
+
+                  (unsplashData.results || []).forEach((photo) => {
+                    const wrapper = document.createElement("div");
+                    wrapper.className =
+                      "img-wrapper inline-block w-full mb-6 cursor-pointer rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-white";
+
+                    // --- Unsplash Image ---
+                    const img = document.createElement("img");
+                    img.src = photo.urls.small;
+                    img.alt = photo.alt_description || "Unsplash image";
+                    img.className =
+                      "w-full h-auto block rounded-t-xl hover:scale-105 transition-transform duration-300";
+
+                    // When the user clicks/chooses this image:
+                    img.onclick = async () => {
+                      const previewImg = document.getElementById("previewImage");
+                      if (previewImg) previewImg.src = photo.urls.full;
+
+                      const previewModal = document.getElementById("previewModal");
+                      if (previewModal) {
+                        previewModal.dataset.source = "unsplash";
+                        previewModal.dataset.downloadUrl = photo.links.download_location;
+                        previewModal.classList.remove("hidden");
+                        
+                        console.log("Preview modal opened for Unsplash image");
+                        console.log("Download URL stored:", photo.links.download_location);
+                        
+                        // Also track the download immediately when user selects the image
+                        try {
+                          console.log("Tracking download on image selection...");
+                          const downloadResponse = await fetch(photo.links.download_location, {
+                            method: 'GET',
+                            headers: {
+                              'Authorization': 'Client-ID 80kWci6xr65tHJChHAG2cj8qDxsIs1TmAFnkka1C-Mk'
+                            },
+                            mode: 'cors'
+                          });
+                          
+                          if (downloadResponse.ok) {
+                            console.log("✅ Download tracked on image selection!");
+                          } else {
+                            console.log("❌ Download tracking failed on selection:", downloadResponse.status);
+                          }
+                        } catch (error) {
+                          console.error("❌ Error tracking download on selection:", error);
+                        }
+                      }
+                    };
+
+                    wrapper.appendChild(img);
+
+                    // --- Required Attribution ---
+                    const credit = document.createElement("div");
+                    credit.className = "text-xs text-gray-500 p-3 bg-gray-50 border-t border-gray-100";
+                    credit.innerHTML = `Photo by 
+                      <a href="${photo.user.links.html}?utm_source=ATHENA_LMS&utm_medium=referral" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="underline text-gray-700 hover:text-gray-900">
+                        ${photo.user.name}
+                      </a> on 
+                      <a href="https://unsplash.com/?utm_source=ATHENA_LMS&utm_medium=referral" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="underline text-gray-700 hover:text-gray-900">
+                        Unsplash
+                      </a>`;
+                    wrapper.appendChild(credit);
+
+                    resultsDiv.appendChild(wrapper);
+                  });
+                } catch (error) {
+                  resultsDiv.innerHTML = `
+                    <div class="text-center py-12">
+                      <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                      </div>
+                      <h3 class="text-lg font-medium text-gray-900 mb-2">Search failed</h3>
+                      <p class="text-gray-500">There was an error searching for images. Please try again.</p>
+                    </div>
+                  `;
+                }
+
+
 
               // // Pexels
               // const PEXELS_KEY = "W4RFJr0wYkRJfOIU5pXOo0VCQsHbPMAW1jR70wDxUpyE4kQexpdWkzJw";
@@ -1619,56 +1777,112 @@ const Resources = () => {
                 resultsDiv.appendChild(wrapper);
               });
             }}
-            className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
+            className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
           >
-            Search
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            Search Images
           </button>
         </div>
 
-        <div id="imageSearchResults" className="columns-2 md:columns-3 lg:columns-4 gap-4"></div>
+        {/* Results Section */}
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Search Results</h3>
+          </div>
+          <div id="imageSearchResults" className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6"></div>
+        </div>
+
+        </div>
+        </div>
       </div>
     </div>
 
     {/* --- Preview Modal --- */}
-    <div id="previewModal" className="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-white p-4 rounded-lg text-center max-w-[90%] max-h-[90%]">
-        <img id="previewImage" src="" alt="Preview" className="max-w-full max-h-[70vh] rounded-lg mb-4"/>
-        <div className="flex justify-center gap-4">
-          <button 
-            onClick={() => {
-              const previewImgElem = document.getElementById("previewImage");
-              const url = previewImgElem ? previewImgElem.src : "";
-              const previewModalElem = document.getElementById("previewModal");
-              const source = previewModalElem ? previewModalElem.dataset.source : "";
-              if (!url) return alert("No image selected");
-              setSelectedFiles(prev => [
-                ...prev,
-                {
-                  name: `${source}-image.jpg`,
-                  size: 500000,
-                  type: "image/jpeg",
-                  url,
-                  source
-                }
-              ]);
-              alert(`${source} image added to upload list. Fill details and click 'Upload Assets'.`);
-              if (previewModalElem) previewModalElem.classList.add("hidden");
-              const searchModal = document.getElementById("imageSearchModal");
-              if (searchModal) searchModal.classList.add("hidden");
-            }}
-            className="bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600"
-          >
-            Add to Upload List
-          </button>
-          <button 
-            onClick={() => {
-              const previewModalElem = document.getElementById("previewModal");
-              if (previewModalElem) previewModalElem.classList.add("hidden");
-            }}
-            className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
-          >
-            Cancel
-          </button>
+    <div id="previewModal" className="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl max-h-[95%] overflow-hidden">
+        {/* Preview Header */}
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-800">Image Preview</h3>
+              <p className="text-gray-600 text-sm">Review the image before adding to your upload list</p>
+            </div>
+            <button 
+              onClick={() => {
+                const previewModalElem = document.getElementById("previewModal");
+                if (previewModalElem) previewModalElem.classList.add("hidden");
+              }}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-600 p-2 rounded-full transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Preview Content */}
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <img id="previewImage" src="" alt="Preview" className="max-w-full max-h-[60vh] rounded-xl shadow-lg mx-auto"/>
+          </div>
+          
+          <div className="flex justify-center gap-4">
+            <button 
+              onClick={async () => {
+                const previewImgElem = document.getElementById("previewImage");
+                const url = previewImgElem ? previewImgElem.src : "";
+                const previewModalElem = document.getElementById("previewModal");
+                const source = previewModalElem ? previewModalElem.dataset.source : "";
+                const downloadUrl = previewModalElem ? previewModalElem.dataset.downloadUrl : "";
+                
+                if (!url) return alert("No image selected");
+                
+                // Note: Download tracking is now handled on image selection to avoid duplicates
+                console.log("Adding image to upload list:", { source, url });
+                
+                setSelectedFiles(prev => [
+                  ...prev,
+                  {
+                    name: `${source}-image.jpg`,
+                    size: 500000,
+                    type: "image/jpeg",
+                    url,
+                    source
+                  }
+                ]);
+                alert(`${source} image added to upload list. Fill details and click 'Upload Assets'.`);
+                if (previewModalElem) previewModalElem.classList.add("hidden");
+                const searchModal = document.getElementById("imageSearchModal");
+                if (searchModal) searchModal.classList.add("hidden");
+              }}
+              className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add to Upload List
+            </button>
+            <button 
+              onClick={() => {
+                const previewModalElem = document.getElementById("previewModal");
+                if (previewModalElem) previewModalElem.classList.add("hidden");
+              }}
+              className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>
