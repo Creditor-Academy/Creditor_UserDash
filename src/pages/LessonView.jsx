@@ -115,7 +115,7 @@ const LessonView = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }; 
 
   const filteredLessons = useMemo(() => {
     if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
