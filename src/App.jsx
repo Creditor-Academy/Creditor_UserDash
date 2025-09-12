@@ -72,7 +72,7 @@ import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
-import LandingPage from "@/pages/LandingPage";
+import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -117,7 +117,7 @@ function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Home />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
