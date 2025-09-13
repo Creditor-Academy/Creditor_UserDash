@@ -94,6 +94,7 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import CreateScenario from "@/pages/CreateScenario";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import  ModuleView  from "@/pages/ModuleView";
@@ -147,6 +148,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <AddUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-quiz"
+            element={
+              <ProtectedRoute>
+                <Instructorpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-scenario"
+            element={
+              <ProtectedRoute>
+                <CreateScenario />
               </ProtectedRoute>
             }
           />

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import { fetchAllCourses, fetchCourseModules } from "@/services/courseService";
@@ -6,19 +7,21 @@ import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, Eye, Plus, Trash2, Trophy, Edit } from "lucide-react";
+import { Search, Clock, ChevronLeft, Play, Eye, Plus, Trash2, Trophy, Edit, Users, Brain } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import QuizModal from '@/components/courses/QuizModal';
 import QuizScoresModal from '@/components/courses/QuizScoresModal';
 import EditQuestionModal from '@/components/courses/EditQuestionModal';
 import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
 import { getQuizQuestions } from '@/services/quizService';
+import { fetchScenariosByModule, deleteScenario } from '@/services/scenarioService';
 import { getAuthHeader } from '@/services/authHeader';
 import { toast } from "sonner";
 
 const COURSES_PER_PAGE = 5;
 
 const CreateQuizPage = () => {
+  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,6 +48,11 @@ const CreateQuizPage = () => {
   const [isAddingQuestions, setIsAddingQuestions] = useState(false);
   const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
   const [selectedQuestionForEdit, setSelectedQuestionForEdit] = useState(null);
+  
+  // Scenario-related state
+  const [assessmentType, setAssessmentType] = useState('quiz'); // 'quiz' or 'scenario'
+  const [moduleScenarios, setModuleScenarios] = useState({}); // { [moduleId]: [scenario, ...] }
+  const [loadingScenarios, setLoadingScenarios] = useState({}); // { [moduleId]: boolean }
 
   const isAllowed = allowedScormUserIds.includes(currentUserId);
 
@@ -61,6 +69,23 @@ const CreateQuizPage = () => {
     } finally {
       // Clear loading state
       setLoadingQuizzes(prev => ({ ...prev, [moduleId]: false }));
+    }
+  };
+
+  const fetchAndSetModuleScenarios = async (moduleId) => {
+    // Set loading state
+    setLoadingScenarios(prev => ({ ...prev, [moduleId]: true }));
+    
+    try {
+      // TODO: Replace with actual scenario API call
+      const scenarios = await fetchScenariosByModule(moduleId);
+      setModuleScenarios(prev => ({ ...prev, [moduleId]: scenarios }));
+    } catch (err) {
+      console.error(`Error fetching scenarios for module ${moduleId}:`, err);
+      setModuleScenarios(prev => ({ ...prev, [moduleId]: [] }));
+    } finally {
+      // Clear loading state
+      setLoadingScenarios(prev => ({ ...prev, [moduleId]: false }));
     }
   };
 
@@ -117,15 +142,22 @@ const CreateQuizPage = () => {
     const newExpandedId = expandedCourseId === courseId ? null : courseId;
     setExpandedCourseId(newExpandedId);
     
-    // If expanding, load quizzes for all modules in this course
+    // If expanding, load quizzes and scenarios for all modules in this course
     if (newExpandedId) {
       const course = courses.find(c => c.id === courseId);
       if (course && course.modules) {
-        // Load quizzes for all modules in parallel
+        // Load quizzes and scenarios for all modules in parallel
         await Promise.all(
           course.modules.map(async (module) => {
-            if (module?.id && !moduleQuizzes[module.id]) {
-              await fetchAndSetModuleQuizzes(module.id);
+            if (module?.id) {
+              const promises = [];
+              if (!moduleQuizzes[module.id]) {
+                promises.push(fetchAndSetModuleQuizzes(module.id));
+              }
+              if (!moduleScenarios[module.id]) {
+                promises.push(fetchAndSetModuleScenarios(module.id));
+              }
+              await Promise.all(promises);
             }
           })
         );
@@ -156,6 +188,31 @@ const CreateQuizPage = () => {
   const handleCreateQuiz = (moduleId) => {
     setSelectedModuleForQuiz(moduleId);
     setShowQuizModal(true);
+  };
+
+  const handleCreateScenario = (moduleId) => {
+    navigate('/create-scenario', { state: { moduleId } });
+  };
+
+  const handleEditScenario = (scenario) => {
+    navigate('/create-scenario', { state: { moduleId: scenario.module_id, editingScenario: scenario } });
+  };
+
+  const handleDeleteScenario = async (scenario) => {
+    try {
+      await deleteScenario(scenario.id);
+      setModuleScenarios(prev => {
+        const moduleId = scenario.module_id;
+        return {
+          ...prev,
+          [moduleId]: prev[moduleId]?.filter(s => s.id !== scenario.id) || []
+        };
+      });
+      toast.success('Scenario deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting scenario:', err);
+      toast.error('Failed to delete scenario.');
+    }
   };
 
   const handlePreviewQuiz = async (quiz) => {
@@ -288,8 +345,41 @@ const CreateQuizPage = () => {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Management</h1>
-        <p className="text-gray-600">Create and manage quizzes for your course modules</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Assessment Management</h1>
+            <p className="text-gray-600">Create and manage quizzes and scenarios for your course modules</p>
+          </div>
+          
+          {/* Assessment Type Toggle - Right Side */}
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">Assessment Type:</span>
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setAssessmentType('quiz')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  assessmentType === 'quiz'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Trophy className="w-4 h-4" />
+                Quizzes
+              </button>
+              <button
+                onClick={() => setAssessmentType('scenario')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  assessmentType === 'scenario'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Brain className="w-4 h-4" />
+                Scenarios
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Search input */}
@@ -304,7 +394,7 @@ const CreateQuizPage = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
@@ -324,40 +414,26 @@ const CreateQuizPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center">
+              <Brain className="w-8 h-8 text-purple-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">Total Scenarios</p>
+                <p className="text-2xl font-bold">
+                  {Object.keys(moduleScenarios).length > 0
+                    ? Object.values(moduleScenarios).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0)
+                    : 0}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center">
               <Plus className="w-8 h-8 text-green-600 mr-3" />
               <div>
                 <p className="text-sm text-gray-600">Active Courses</p>
                 <p className="text-2xl font-bold">{courses.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Eye className="w-8 h-8 text-purple-600 mr-3" />
-              <div>
-                <p className="text-sm text-gray-600">Total Modules</p>
-                <p className="text-2xl font-bold">
-                  {courses.reduce((sum, course) => sum + (course.modules?.length || 0), 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Clock className="w-8 h-8 text-orange-600 mr-3" />
-              <div>
-                <p className="text-sm text-gray-600">Quizzes with Questions</p>
-                <p className="text-2xl font-bold">
-                  {Object.keys(moduleQuizzes).length > 0
-                    ? Object.values(moduleQuizzes).reduce((sum, list) => sum + (Array.isArray(list) ? list.filter(q => (q.questions?.length || q.question_count || 0) > 0).length : 0), 0)
-                    : allQuizzes.filter(q => (q.questions?.length || q.question_count || 0) > 0).length}
-                </p>
               </div>
             </div>
           </CardContent>
@@ -445,20 +521,27 @@ const CreateQuizPage = () => {
                               </div>
                               
                               <div className="flex flex-col gap-2 ml-4">
-                                <Button onClick={() => handleCreateQuiz(mod.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
-                                  <Plus size={16} className="mr-2" /> Create Quiz
-                                </Button>
+                                {assessmentType === 'quiz' ? (
+                                  <Button onClick={() => handleCreateQuiz(mod.id)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+                                    <Plus size={16} className="mr-2" /> Create Quiz
+                                  </Button>
+                                ) : (
+                                  <Button onClick={() => handleCreateScenario(mod.id)} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md">
+                                    <Plus size={16} className="mr-2" /> Create Scenario
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                            {/* List all quizzes for this module */}
-                            {loadingQuizzes[mod.id] ? (
-                              <div className="mt-4 flex items-center justify-center py-8">
-                                <div className="flex items-center space-x-2">
-                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                                  <span className="text-sm text-gray-600">Loading quizzes...</span>
+                            {/* List all assessments for this module */}
+                            {assessmentType === 'quiz' ? (
+                              loadingQuizzes[mod.id] ? (
+                                <div className="mt-4 flex items-center justify-center py-8">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                    <span className="text-sm text-gray-600">Loading quizzes...</span>
+                                  </div>
                                 </div>
-                              </div>
-                            ) : quizzes.length > 0 ? (
+                              ) : quizzes.length > 0 ? (
                               <div className="mt-4 space-y-4">
                                 {quizzes.map((quiz) => (
                                   <div key={quiz.id} className="border rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between bg-gray-50">
@@ -524,10 +607,61 @@ const CreateQuizPage = () => {
                                   </div>
                                 ))}
                               </div>
+                              ) : (
+                                <div className="mt-4 text-center py-4">
+                                  <p className="text-sm text-gray-500">No quizzes found for this module</p>
+                                </div>
+                              )
                             ) : (
-                              <div className="mt-4 text-center py-4">
-                                <p className="text-sm text-gray-500">No quizzes found for this module</p>
-                              </div>
+                              loadingScenarios[mod.id] ? (
+                                <div className="mt-4 flex items-center justify-center py-8">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                                    <span className="text-sm text-gray-600">Loading scenarios...</span>
+                                  </div>
+                                </div>
+                              ) : (moduleScenarios[mod.id] || []).length > 0 ? (
+                                <div className="mt-4 space-y-4">
+                                  {(moduleScenarios[mod.id] || []).map((scenario) => (
+                                    <div key={scenario.id} className="border rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between bg-purple-50">
+                                      <div>
+                                        <div className="font-semibold text-gray-900">{scenario.title}</div>
+                                        <div className="text-xs text-gray-500 mb-1">Type: {scenario.type} | Decisions: {scenario.decisions?.length || 0}</div>
+                                        <div className="text-xs text-gray-500 mb-1">Avatar: {scenario.avatar || 'Default'} | Background: {scenario.background || 'Default'}</div>
+                                        <div className="text-xs text-gray-500 mb-1">Duration: {scenario.time_estimate || 0} min</div>
+                                      </div>
+                                      <div className="flex gap-2 mt-2 md:mt-0">
+                                        <Button
+                                          onClick={() => handleEditScenario(scenario)}
+                                          className="group relative overflow-hidden bg-purple-500 hover:bg-purple-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
+                                        >
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Edit className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Edit
+                                            </span>
+                                          </div>
+                                        </Button>
+                                        <Button
+                                          onClick={() => handleDeleteScenario(scenario)}
+                                          className="group relative overflow-hidden bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
+                                        >
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Trash2 className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Delete
+                                            </span>
+                                          </div>
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="mt-4 text-center py-4">
+                                  <p className="text-sm text-gray-500">No scenarios found for this module</p>
+                                </div>
+                              )
                             )}
                           </div>
                         );
@@ -749,6 +883,7 @@ const CreateQuizPage = () => {
         quizId={previewQuizData?.id}
         onQuestionUpdated={handleQuestionUpdated}
       />
+
     </div>
   );
 };
