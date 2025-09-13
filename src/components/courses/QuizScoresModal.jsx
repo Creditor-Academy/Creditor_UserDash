@@ -686,6 +686,72 @@ const QuizScoresModal = ({ isOpen, onClose, quiz, courseId }) => {
                                             </div>
                                           ))}
                                       </div>
+                                    ) : q.question_type === 'CATEGORIZATION' ? (
+                                      <div className="mt-4">
+                                        <div className="text-sm font-medium text-gray-700 mb-3">Categories and Items:</div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                          {(() => {
+                                            const categories = options.filter(opt => opt.isCategory);
+                                            const items = options.filter(opt => !opt.isCategory);
+                                            
+                                            return categories.map(category => {
+                                              const categoryItems = items.filter(item => item.category === category.text);
+                                              return (
+                                                <div key={category.id} className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+                                                  <div className="text-center mb-3">
+                                                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
+                                                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                                                      {category.text}
+                                                    </div>
+                                                  </div>
+                                                  <div className="space-y-2 min-h-[60px]">
+                                                    {categoryItems.length > 0 ? (
+                                                      categoryItems.map(item => (
+                                                        <div 
+                                                          key={item.id} 
+                                                          className="bg-white border border-gray-200 rounded-md px-3 py-2 text-sm shadow-sm hover:shadow-md transition-shadow"
+                                                        >
+                                                          <div className="flex items-center">
+                                                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                                            <span className="text-gray-800">{item.text}</span>
+                                                          </div>
+                                                        </div>
+                                                      ))
+                                                    ) : (
+                                                      <div className="text-center text-gray-400 text-sm py-4">
+                                                        No items assigned
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              );
+                                            });
+                                          })()}
+                                        </div>
+                                        
+                                        {/* Show unassigned items if any */}
+                                        {(() => {
+                                          const unassignedItems = options.filter(opt => !opt.isCategory && !opt.category);
+                                          return unassignedItems.length > 0 && (
+                                            <div className="mt-4">
+                                              <div className="text-sm font-medium text-gray-700 mb-2">Unassigned Items:</div>
+                                              <div className="flex flex-wrap gap-2">
+                                                {unassignedItems.map(item => (
+                                                  <div 
+                                                    key={item.id} 
+                                                    className="bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2 text-sm"
+                                                  >
+                                                    <div className="flex items-center">
+                                                      <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                                                      <span className="text-gray-800">{item.text}</span>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        })()}
+                                      </div>
                                     ) : (
                                       <div className="mt-3 space-y-1">
                                         {options.map((opt) => {

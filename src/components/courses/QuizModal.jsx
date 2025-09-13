@@ -16,6 +16,7 @@ const QUESTION_TYPES = [
   { label: 'Fill in the Blanks', value: 'FILL_UPS' },
   { label: 'One Word Answer', value: 'ONE_WORD' },
   { label: 'Sequence Ordering', value: 'SEQUENCE' },
+  { label: 'Drag and Drop Categories', value: 'CATEGORIZATION' },
 ];
 
 // Alternative question type values that might be expected by the backend
@@ -25,7 +26,8 @@ const BACKEND_QUESTION_TYPES = {
   TRUE_FALSE: 'TRUE_FALSE',
   FILL_UPS: 'FILL_UPS',
   ONE_WORD: 'ONE_WORD',
-  SEQUENCE: 'SEQUENCE'
+  SEQUENCE: 'SEQUENCE',
+  CATEGORIZATION: 'CATEGORIZATION'
 };
 
 const QuizModal = ({ 
@@ -265,6 +267,51 @@ const QuizModal = ({
     }));
   };
 
+  // Handlers for CATEGORIZATION questions
+  const handleCategoryChange = (qIdx, optIdx, value) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => 
+        oi === optIdx ? { ...opt, text: value } : opt
+      );
+      return { ...q, options: updated };
+    }));
+  };
+
+  const handleDraggableItemChange = (qIdx, optIdx, value) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => 
+        oi === optIdx ? { ...opt, text: value } : opt
+      );
+      return { ...q, options: updated };
+    }));
+  };
+
+  const handleDraggableCategoryChange = (qIdx, optIdx, categoryValue) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => 
+        oi === optIdx ? { ...opt, category: categoryValue } : opt
+      );
+      return { ...q, options: updated };
+    }));
+  };
+
+  const handleAddCategory = (qIdx) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      return { ...q, options: [...q.options, { text: '', isCategory: true }] };
+    }));
+  };
+
+  const handleAddDraggableItem = (qIdx) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      return { ...q, options: [...q.options, { text: '', category: '', isCategory: false }] };
+    }));
+  };
+
   // Ensure MCQ questions always have at least 2 options
   const ensureMinimumOptions = (qIdx) => {
     const question = questions[qIdx];
@@ -292,6 +339,13 @@ const QuizModal = ({
       newOptions = [
         { text: '', orderIndex: 0 },
         { text: '', orderIndex: 1 }
+      ];
+    } else if (newType === 'CATEGORIZATION') {
+      newOptions = [
+        { text: '', isCategory: true },
+        { text: '', isCategory: true },
+        { text: '', category: '', isCategory: false },
+        { text: '', category: '', isCategory: false }
       ];
     } else if (newType === 'FILL_UPS' || newType === 'ONE_WORD') {
       newOptions = [];
@@ -344,6 +398,8 @@ const QuizModal = ({
             return 'ONE_WORD';
           case 'SEQUENCE':
             return 'SEQUENCE';
+          case 'CATEGORIZATION':
+            return 'CATEGORIZATION';
           default:
             return t;
         }
@@ -378,6 +434,9 @@ const QuizModal = ({
               .sort((a, b) => Number(a.orderIndex ?? 0) - Number(b.orderIndex ?? 0))
               .map(opt => String(opt.text || '').trim());
             return ordered.join(',');
+          } else if (q.type === 'CATEGORIZATION') {
+            // For categorization, we don't need a correct answer string as the mapping is in question_options
+            return '';
           }
           return '';
         }),
@@ -400,6 +459,13 @@ const QuizModal = ({
             return (q.options || []).map((opt, idx) => ({
               text: String(opt.text || '').trim(),
               orderIndex: Number(opt.orderIndex ?? idx)
+            }));
+          }
+          if (q.type === 'CATEGORIZATION') {
+            return (q.options || []).map(opt => ({
+              text: String(opt.text || '').trim(),
+              isCategory: Boolean(opt.isCategory),
+              category: opt.category ? String(opt.category).trim() : undefined
             }));
           }
           // For non-option types, send empty array to preserve index alignment
@@ -459,6 +525,39 @@ const QuizModal = ({
         } else if (q.type === 'FILL_UPS' || q.type === 'ONE_WORD') {
           if (!q.correctAnswer.trim()) {
             validationErrors.push(`Question ${index + 1} is missing correct answer`);
+          }
+        } else if (q.type === 'CATEGORIZATION') {
+          const categories = q.options.filter(opt => opt.isCategory);
+          const draggableItems = q.options.filter(opt => !opt.isCategory);
+          
+          if (categories.length < 2) {
+            validationErrors.push(`Question ${index + 1} needs at least 2 categories`);
+          }
+          
+          const categoryTexts = categories.map(cat => cat.text.trim()).filter(Boolean);
+          if (categoryTexts.length !== categories.length) {
+            validationErrors.push(`Question ${index + 1} has empty category names`);
+          }
+          
+          if (draggableItems.length < 2) {
+            validationErrors.push(`Question ${index + 1} needs at least 2 draggable items`);
+          }
+          
+          const itemTexts = draggableItems.map(item => item.text.trim()).filter(Boolean);
+          if (itemTexts.length !== draggableItems.length) {
+            validationErrors.push(`Question ${index + 1} has empty draggable item names`);
+          }
+          
+          const itemsWithCategories = draggableItems.filter(item => item.category && item.category.trim());
+          if (itemsWithCategories.length !== draggableItems.length) {
+            validationErrors.push(`Question ${index + 1} has draggable items without assigned categories`);
+          }
+          
+          // Check that all assigned categories exist in the category list
+          const assignedCategories = draggableItems.map(item => item.category).filter(Boolean);
+          const invalidCategories = assignedCategories.filter(cat => !categoryTexts.includes(cat));
+          if (invalidCategories.length > 0) {
+            validationErrors.push(`Question ${index + 1} has items assigned to non-existent categories`);
           }
         }
       });
@@ -625,6 +724,73 @@ const QuizModal = ({
                     value={q.correctAnswer}
                     onChange={e => handleQuestionChange(qIdx, 'correctAnswer', e.target.value)}
                   />
+                </div>
+              )}
+              {q.type === 'CATEGORIZATION' && (
+                <div className="mb-2">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Categories (Drop Zones)</label>
+                    {q.options.filter(opt => opt.isCategory).map((opt, optIdx) => (
+                      <div key={optIdx} className="flex items-center gap-2 mb-2">
+                        <Input
+                          placeholder={`Category ${optIdx + 1}`}
+                          value={opt.text}
+                          onChange={e => handleCategoryChange(qIdx, q.options.findIndex(o => o === opt), e.target.value)}
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleRemoveOption(qIdx, q.options.findIndex(o => o === opt))}
+                          disabled={q.options.filter(o => o.isCategory).length <= 1}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={() => handleAddCategory(qIdx)}>
+                      Add Category
+                    </Button>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Draggable Items</label>
+                    {q.options.filter(opt => !opt.isCategory).map((opt, optIdx) => {
+                      const actualIdx = q.options.findIndex(o => o === opt);
+                      const categories = q.options.filter(o => o.isCategory && o.text.trim());
+                      return (
+                        <div key={optIdx} className="flex items-center gap-2 mb-2">
+                          <Input
+                            placeholder={`Item ${optIdx + 1}`}
+                            value={opt.text}
+                            onChange={e => handleDraggableItemChange(qIdx, actualIdx, e.target.value)}
+                          />
+                          <select
+                            value={opt.category}
+                            onChange={e => handleDraggableCategoryChange(qIdx, actualIdx, e.target.value)}
+                            className="border rounded px-3 py-2 min-w-[120px]"
+                          >
+                            <option value="">Select Category</option>
+                            {categories.map((cat, catIdx) => (
+                              <option key={catIdx} value={cat.text}>
+                                {cat.text}
+                              </option>
+                            ))}
+                          </select>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleRemoveOption(qIdx, actualIdx)}
+                            disabled={q.options.filter(o => !o.isCategory).length <= 1}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    <Button size="sm" variant="outline" onClick={() => handleAddDraggableItem(qIdx)}>
+                      Add Item
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
