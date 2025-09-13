@@ -11,7 +11,6 @@ import { getCourseTrialStatus } from '../utils/trialUtils';
 import TrialBadge from '../components/ui/TrialBadge';
 import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
 import { useCredits } from '../contexts/CreditsContext';
-import api from '../services/apiClient';
 
 export function Courses() {
   const { userProfile } = useCredits();
@@ -28,9 +27,7 @@ export function Courses() {
   const [courseModules, setCourseModules] = useState({});
   const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
   const [showTrialDialog, setShowTrialDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState('courses'); // 'courses' or 'lessons'
-  const [lessons, setLessons] = useState([]);
-  const [filteredLessons, setFilteredLessons] = useState([]);
+  const [activeTab, setActiveTab] = useState('courses'); // 'courses' only
 
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
@@ -156,36 +153,6 @@ export function Courses() {
     fetchCourses();
   }, []);
 
-  // Fetch user's unlocked lessons
-  useEffect(() => {
-    const fetchLessons = async () => {
-      if (!userProfile?.id) return;
-      
-      try {
-        console.log(`[Courses] Fetching lessons for user ${userProfile.id}`);
-        const response = await api.get(`/payment-order/unlock/history`, { 
-          withCredentials: true,
-          data: { userId: userProfile.id }
-        });
-        
-        console.log(`[Courses] Lessons response:`, response?.data);
-        
-        // Filter for LESSON type unlocks
-        const lessonUnlocks = response?.data?.data || response?.data || [];
-        const lessonsData = lessonUnlocks.filter(unlock => unlock.unlock_type === 'LESSON');
-        
-        console.log(`[Courses] Found ${lessonsData.length} lessons`);
-        setLessons(lessonsData);
-        setFilteredLessons(lessonsData);
-      } catch (error) {
-        console.error('[Courses] Failed to fetch lessons:', error);
-        setLessons([]);
-        setFilteredLessons([]);
-      }
-    };
-    
-    fetchLessons();
-  }, [userProfile?.id]);
 
   // Update trial status every minute for real-time countdown
   useEffect(() => {
@@ -263,74 +230,7 @@ export function Courses() {
     setFilteredCourses(results);
   }, [courses, searchTerm, progressFilter, categoryFilter]);
 
-  // Filter lessons based on search term
-  useEffect(() => {
-    let results = lessons;
 
-    // Apply search filter
-    if (searchTerm) {
-      results = results.filter(lesson =>
-        lesson.unlock_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lesson.unlock_type?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredLessons(results);
-  }, [lessons, searchTerm]);
-
-  // Refresh courses when switching to courses tab
-  useEffect(() => {
-    if (activeTab === 'courses') {
-      const refreshCourses = async () => {
-        try {
-          console.log('[Courses] Refreshing courses data...');
-          // Fetch courses with modules included in a single API call
-          const data = await fetchUserCourses(true);
-          
-          // Process each course to add modulesCount, totalDuration, and trial status
-          const processedCourses = data.map(course => {
-            const modules = course.modules || [];
-            // Sum durations using 'estimated_duration' (in minutes)
-            const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-            // Convert to seconds for formatTime
-            const totalDurationSecs = totalDurationMins * 60;
-            
-            // Get trial status
-            const trialStatus = getCourseTrialStatus(course);
-            
-            return {
-              ...course,
-              modulesCount: course._count?.modules || 0, 
-              totalDurationSecs,
-              image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
-              trialStatus
-            };
-          });
-          
-          setCourses(processedCourses);
-          setFilteredCourses(processedCourses);
-          
-          // Pre-populate courseModules for expanded view
-          const modulesMap = {};
-          data.forEach(course => {
-            if (course.modules) {
-              modulesMap[course.id] = course.modules;
-            }
-          });
-          setCourseModules(prev => ({
-            ...prev,
-            ...modulesMap
-          }));
-          
-          console.log('[Courses] Courses refreshed successfully');
-        } catch (err) {
-          console.error('[Courses] Error refreshing courses:', err);
-        }
-      };
-      
-      refreshCourses();
-    }
-  }, [activeTab]);
 
   if (loading) {
     return (
@@ -385,7 +285,7 @@ export function Courses() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder={activeTab === 'courses' ? "Search courses..." : "Search lessons..."}
+                  placeholder="Search courses..."
                   className="pl-8 w-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -402,31 +302,6 @@ export function Courses() {
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-fit mb-6">
-            <button 
-              onClick={() => setActiveTab('courses')} 
-              className={`px-4 py-2 text-sm rounded-md transition-all duration-200 ${
-                activeTab === 'courses' 
-                  ? 'bg-white shadow-sm text-gray-900 font-medium' 
-                  : 'text-gray-700 hover:text-gray-900'
-              }`}
-            >
-              <BookOpen className="h-4 w-4 inline mr-2" />
-              My Courses
-            </button>
-            <button 
-              onClick={() => setActiveTab('lessons')} 
-              className={`px-4 py-2 text-sm rounded-md transition-all duration-200 ${
-                activeTab === 'lessons' 
-                  ? 'bg-white shadow-sm text-gray-900 font-medium' 
-                  : 'text-gray-700 hover:text-gray-900'
-              }`}
-            >
-              <Award className="h-4 w-4 inline mr-2" />
-              My Lessons
-            </button>
-          </div>
 
           {/* Filters */}
           {/* {showFilters && (
@@ -464,169 +339,96 @@ export function Courses() {
             </div>
           )} */}
 
-          {/* Content based on active tab */}
-          {activeTab === 'courses' ? (
-            /* Course Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredCourses.length > 0 ? (
-                filteredCourses.map((course) => (
-                <div key={course.id} className="course-card opacity-0">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-                    <div className="aspect-video relative overflow-hidden">
-                      <img 
-                        src={course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                        alt={course.title}
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Trial Badge Overlay */}
-                      {course.trialStatus.isInTrial && (
-                        <div className="absolute top-3 left-3">
-                          <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
+          {/* Course Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {filteredCourses.length > 0 ? (
+              filteredCourses.map((course) => (
+              <div key={course.id} className="course-card opacity-0">
+                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                  <div className="aspect-video relative overflow-hidden">
+                    <img 
+                      src={course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Trial Badge Overlay */}
+                    {course.trialStatus.isInTrial && (
+                      <div className="absolute top-3 left-3">
+                        <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
+                      </div>
+                    )}
+                    {/* Lock Overlay for Expired Trials */}
+                    {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <Lock className="w-8 h-8 mx-auto mb-2" />
+                          <p className="text-sm font-medium">Trial Expired</p>
                         </div>
-                      )}
-                      {/* Lock Overlay for Expired Trials */}
-                      {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                          <div className="text-white text-center">
-                            <Lock className="w-8 h-8 mx-auto mb-2" />
-                            <p className="text-sm font-medium">Trial Expired</p>
-                          </div>
-                        </div>
-                      )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <CardHeader className="pb-3 flex-shrink-0">
+                    <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
+                    <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-3 flex-1">
+                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                      {/* <div className="flex items-center gap-1">
+                        <Clock size={14} />
+                        <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
+                      </div> */}
+                      <div className="flex items-center gap-1">
+                        <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
+                        <span>{course.modulesCount || 0} modules</span>
+                      </div>
                     </div>
                     
-                    <CardHeader className="pb-3 flex-shrink-0">
-                      <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
-                      <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-3 flex-1">
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                        {/* <div className="flex items-center gap-1">
-                          <Clock size={14} />
-                          <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
-                        </div> */}
-                        <div className="flex items-center gap-1">
-                          <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
-                          <span>{course.modulesCount || 0} modules</span>
-                        </div>
-                      </div>
-                      
-                      {/* <Progress value={course.progress || 0} className="h-2" /> */}
-                      {/*
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Time spent: {formatTime(courseTimes[course.id] || 0)}</span>
-                        <span>{course.category || "Uncategorized"}</span>
-                      </div>
-                      */}
-                    </CardContent>
-                    
-                    <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
-                      <div className="flex gap-2 w-full">
-                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
-                          <Button variant="default" className="w-full text-sm sm:text-base">
-                            Continue Learning
-                          </Button>
-                        </Link>
-                      </div>
-                      
-                      {/* Trial Status Info */}
-                      {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
-                        <div className="text-xs text-center text-gray-600">
-                          Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
-                        </div>
-                      )}
-                      
-                      {/* {course.progress === 100 && (
-                        <Link to={`/certificate/${course.id}`} className="w-full">
-                          <Button variant="outline" className="w-full">
-                            <Award size={16} className="mr-2" />
-                            View Certificate
-                          </Button>
-                        </Link>
-                      )} */}
-                    </CardFooter>
-                  </Card>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8 sm:py-12">
-                <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
-                <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
-              </div>
-            )}
-            </div>
-          ) : (
-            /* Lessons Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredLessons.length > 0 ? (
-                filteredLessons.map((lesson, index) => (
-                  <div key={`${lesson.unlock_id}-${index}`} className="lesson-card opacity-0">
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-                      <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-100">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Award className="h-16 w-16 text-purple-400" />
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-400 to-indigo-500"></div>
-                      </div>
-                      
-                      <CardHeader className="pb-3 flex-shrink-0">
-                        <CardTitle className="text-base sm:text-lg line-clamp-2">
-                          Lesson {lesson.unlock_id}
-                        </CardTitle>
-                        <CardDescription className="line-clamp-2 text-sm sm:text-base">
-                          Individual lesson unlocked with credits
-                        </CardDescription>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-3 flex-1">
-                        <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
-                            <span>Unlocked</span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            {lesson.credits_spent} credits
-                          </Badge>
-                        </div>
-                        
-                        <div className="text-xs sm:text-sm text-muted-foreground">
-                          <div>Unlocked: {new Date(lesson.used_at).toLocaleDateString()}</div>
-                        </div>
-                      </CardContent>
-                      
-                      <CardFooter className="pt-3">
-                        <Button 
-                          className="w-full" 
-                          variant="outline"
-                          onClick={() => {
-                            // Navigate to lesson or show lesson content
-                            console.log('Opening lesson:', lesson.unlock_id);
-                          }}
-                        >
-                          <BookOpen className="h-4 w-4 mr-2" />
-                          Open Lesson
+                    {/* <Progress value={course.progress || 0} className="h-2" /> */}
+                    {/*
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>Time spent: {formatTime(courseTimes[course.id] || 0)}</span>
+                      <span>{course.category || "Uncategorized"}</span>
+                    </div>
+                    */}
+                  </CardContent>
+                  
+                  <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
+                    <div className="flex gap-2 w-full">
+                      <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+                        <Button variant="default" className="w-full text-sm sm:text-base">
+                          Continue Learning
                         </Button>
-                      </CardFooter>
-                    </Card>
-                  </div>
-                ))
-              ) : (
-                <div className="col-span-full text-center py-12">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-gray-100 mb-4">
-                    <Award className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No lessons unlocked yet</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    Purchase individual lessons with credits to see them here
-                  </p>
-                  <Button asChild>
-                    <Link to="/catalog">Browse Lessons</Link>
-                  </Button>
-                </div>
-              )}
+                      </Link>
+                    </div>
+                    
+                    {/* Trial Status Info */}
+                    {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
+                      <div className="text-xs text-center text-gray-600">
+                        Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
+                      </div>
+                    )}
+                    
+                    {/* {course.progress === 100 && (
+                      <Link to={`/certificate/${course.id}`} className="w-full">
+                        <Button variant="outline" className="w-full">
+                          <Award size={16} className="mr-2" />
+                          View Certificate
+                        </Button>
+                      </Link>
+                    )} */}
+                  </CardFooter>
+                </Card>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8 sm:py-12">
+              <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
+              <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
             </div>
           )}
+          </div>
         </div>
       </main>
       

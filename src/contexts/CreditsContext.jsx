@@ -220,7 +220,7 @@ export const CreditsProvider = ({ children }) => {
       console.log(`[CreditsContext] Unlocking ${unlockType} with ID ${unlockId} for ${creditsSpent} credits`);
       
       const unlockData = {
-        userId: userProfile.id,
+        userId: userProfile.id, // Keep as string - don't parse to int
         credits_spent: creditsSpent,
         unlock_type: unlockType,
         unlock_id: unlockId

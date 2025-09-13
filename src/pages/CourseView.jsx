@@ -4,17 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText, CircleDollarSign, Lock } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, CircleDollarSign, Lock } from "lucide-react";
 import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
+import api from "@/services/apiClient";
 
-const MODULE_UNLOCK_COST = 10;
+// MODULE_UNLOCK_COST will be fetched from backend per module
 
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
   const hasAccess = location.state?.isAccessible ?? true;
-  const { balance, spendCredits } = useCredits();
+  const { balance, spendCredits, unlockContent, userProfile } = useCredits();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -23,10 +24,7 @@ export function CourseView() {
   const [error, setError] = useState("");
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [unlockedModuleIds, setUnlockedModuleIds] = useState(() => {
-    const stored = localStorage.getItem(`unlocked_modules_${courseId}`);
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [userLessonAccess, setUserLessonAccess] = useState([]);
   const [confirm, setConfirm] = useState({ open: false, module: null, reason: '' });
 
   useEffect(() => {
@@ -50,6 +48,10 @@ export function CourseView() {
           return sum + duration;
         }, 0);
         setTotalDuration(total);
+        
+        // Fetch user's lesson access
+        await fetchUserLessonAccess();
+        
       } catch (err) {
         setError("Failed to load course data");
       } finally {
@@ -58,6 +60,49 @@ export function CourseView() {
     };
     if (courseId) fetchData();
   }, [courseId]);
+
+  // Fetch user's individual lesson access
+  const fetchUserLessonAccess = async () => {
+    console.log(`[CourseView] fetchUserLessonAccess called`);
+    console.log(`[CourseView] userProfile:`, userProfile);
+    console.log(`[CourseView] userProfile?.id:`, userProfile?.id);
+    
+    if (!userProfile?.id) {
+      console.log(`[CourseView] No userProfile.id available, skipping fetch`);
+      return;
+    }
+    
+    try {
+      console.log(`[CourseView] Fetching user lesson access for user: ${userProfile?.id}`);
+      console.log(`[CourseView] Making API call to: /api/modules/getUserModulesByUserId`);
+      console.log(`[CourseView] Request body:`, { userId: userProfile?.id.toString() });
+      
+      const response = await api.post(`/api/modules/getUserModulesByUserId`, {
+        userId: userProfile?.id.toString()
+      }, {
+        withCredentials: true
+      });
+      
+      console.log(`[CourseView] Full API response:`, response);
+      console.log(`[CourseView] Response data:`, response?.data);
+      console.log(`[CourseView] Response status:`, response?.status);
+      
+      const unlockedModules = response?.data?.data || response?.data || [];
+      console.log(`[CourseView] Raw unlocked modules:`, unlockedModules);
+      
+      const lessonIds = unlockedModules.map(moduleAccess => {
+        console.log(`[CourseView] Processing module access:`, moduleAccess);
+        return moduleAccess.module.id;
+      });
+      
+      console.log(`[CourseView] Found ${lessonIds.length} unlocked lessons:`, lessonIds);
+      setUserLessonAccess(lessonIds);
+    } catch (error) {
+      console.error('Failed to fetch user lesson access:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setUserLessonAccess([]);
+    }
+  };
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -70,6 +115,30 @@ export function CourseView() {
       setFilteredModules(filtered);
     }
   }, [searchQuery, modules]);
+
+  // Fetch user access when component mounts or userProfile changes
+  useEffect(() => {
+    console.log(`[CourseView] useEffect triggered - userProfile:`, userProfile);
+    console.log(`[CourseView] userProfile?.id:`, userProfile?.id);
+    if (userProfile?.id) {
+      console.log(`[CourseView] UserProfile changed, fetching lesson access for: ${userProfile.id}`);
+      fetchUserLessonAccess();
+    } else {
+      console.log(`[CourseView] No userProfile.id, skipping fetch`);
+    }
+  }, [userProfile?.id]);
+
+  // Refresh user access periodically to ensure real-time data
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    
+    const interval = setInterval(() => {
+      fetchUserLessonAccess();
+    }, 10000); // Refresh every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, [userProfile?.id]);
+
 
   if (isLoading) {
     return (
@@ -123,22 +192,23 @@ export function CourseView() {
   const handleUnlockClick = (module) => {
     const moduleOrder = module.order || 0;
     const previousModule = modules.find(m => (m.order || 0) === moduleOrder - 1);
-    const isUnlocked = unlockedModuleIds.includes(module.id);
+    const isUnlocked = userLessonAccess.includes(module.id);
     const isContentAvailable = module.resource_url;
     const isUpcoming = !isContentAvailable;
-    const isLocked = !hasAccess && isContentAvailable;
+    const isLocked = !isUnlocked && isContentAvailable;
     
     if (isUnlocked || !isLocked) return;
     
     // Check if modules are unlocked in order
-    const canUnlockByOrder = !previousModule || unlockedModuleIds.includes(previousModule.id);
+    const canUnlockByOrder = !previousModule || userLessonAccess.includes(previousModule.id);
     
     if (!canUnlockByOrder) {
       setConfirm({ open: true, module, reason: 'order' });
       return;
     }
     
-    if (balance < MODULE_UNLOCK_COST) {
+    const modulePrice = module.price || 10; // Use module's price or default to 10
+    if (balance < modulePrice) {
       setConfirm({ open: true, module, reason: 'insufficient' });
       return;
     }
@@ -146,22 +216,31 @@ export function CourseView() {
     setConfirm({ open: true, module, reason: 'confirm' });
   };
 
-  const confirmUnlock = () => {
+  const confirmUnlock = async () => {
     if (!confirm.module) return;
     
-    const newUnlockedIds = [...unlockedModuleIds, confirm.module.id];
-    setUnlockedModuleIds(newUnlockedIds);
-    localStorage.setItem(`unlocked_modules_${courseId}`, JSON.stringify(newUnlockedIds));
-    
-    // Deduct credits
-    spendCredits(MODULE_UNLOCK_COST, {
-      type: 'Module Unlock',
-      moduleTitle: confirm.module.title,
-      courseTitle: courseDetails?.title,
-      courseId: courseId
-    });
-    
-    setConfirm({ open: false, module: null, reason: '' });
+    try {
+      const modulePrice = confirm.module.price || 10; // Use module's price or default to 10
+      
+      // Call backend unlock API
+      await unlockContent('LESSON', confirm.module.id, modulePrice);
+      
+      // Refresh user lesson access from backend to get real-time data
+      await fetchUserLessonAccess();
+      
+      // Add local transaction record
+      spendCredits(modulePrice, {
+        type: 'Module Unlock',
+        moduleTitle: confirm.module.title,
+        courseTitle: courseDetails?.title,
+        courseId: courseId
+      });
+      
+      setConfirm({ open: false, module: null, reason: '' });
+    } catch (error) {
+      console.error('Failed to unlock lesson:', error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const openCreditsModal = () => {
@@ -174,14 +253,6 @@ export function CourseView() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <main className="flex-1">
         <div className="container py-8 max-w-7xl">
-          <div className="flex items-center gap-2 mb-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard/courses">
-                <ChevronLeft size={16} />
-                Back to courses
-              </Link>
-            </Button>
-          </div>
 
           {/* Course Details Section */}
           {courseDetails && (
@@ -272,13 +343,23 @@ export function CourseView() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredModules.map((module) => {
-                const isUnlocked = unlockedModuleIds.includes(module.id);
-                const isContentAvailable = module.resource_url;
-                const isUpcoming = !isContentAvailable;
-                const isLocked = !hasAccess && isContentAvailable;
-                const previousModule = modules.find(m => (m.order || 0) === (module.order || 0) - 1);
-                const canUnlockByOrder = !previousModule || unlockedModuleIds.includes(previousModule?.id);
+               {filteredModules.map((module) => {
+                 const isUnlocked = userLessonAccess.includes(module.id);
+                 const isContentAvailable = !!module.resource_url;
+                 const isUpcoming = !isContentAvailable;
+                 const isLocked = !isUnlocked && isContentAvailable;
+                 const previousModule = modules.find(m => (m.order || 0) === (module.order || 0) - 1);
+                 const canUnlockByOrder = !previousModule || userLessonAccess.includes(previousModule?.id);
+                 
+                 // Debug logging
+                 console.log(`[CourseView] Module ${module.id} (${module.title}):`, {
+                   isUnlocked,
+                   userLessonAccess,
+                   isContentAvailable,
+                   isUpcoming,
+                   isLocked,
+                   hasAccess
+                 });
                 
                 return (
                   <div key={module.id} className="module-card h-full">
@@ -328,7 +409,7 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          {hasAccess && (isUnlocked || !isLocked) && isContentAvailable ? (
+                           {(isUnlocked || !isLocked) && isContentAvailable ? (
                             <>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
                                 <Button className="w-full">
@@ -349,13 +430,13 @@ export function CourseView() {
                               <span className="font-medium">Upcoming Module</span>
                             </Button>
                           ) : (
-                            <Button 
-                              onClick={() => handleUnlockClick(module)}
-                              className={`w-full transition-colors duration-200 ${canUnlockByOrder ? 'bg-purple-600 border-purple-600 text-white hover:bg-purple-700 hover:border-purple-700' : 'bg-gray-200 border-gray-300 text-gray-700 hover:bg-gray-200 hover:border-gray-300'}`}
-                            >
-                              <Lock size={16} className="mr-2" />
-                              <span className="font-medium">Unlock with {MODULE_UNLOCK_COST} credits</span>
-                            </Button>
+                             <Button 
+                               className="w-full bg-gray-200 border-gray-300 text-gray-700 hover:bg-gray-200 hover:border-gray-300 transition-colors duration-200"
+                               disabled
+                             >
+                               <Lock size={16} className="mr-2" />
+                               <span className="font-medium">Locked</span>
+                             </Button>
                           )}
                         </CardFooter>
                       </div>
@@ -379,22 +460,22 @@ export function CourseView() {
                 {confirm.reason === 'insufficient' && 'Not Enough Credits'}
                 {confirm.reason === 'confirm' && 'Confirm Unlock'}
               </h4>
-              <p className="text-sm text-gray-700">
-                {confirm.reason === 'order' && 'Please unlock modules in order. Unlock the previous module first.'}
-                {confirm.reason === 'insufficient' && `You need ${MODULE_UNLOCK_COST} credits to unlock this module. You currently have ${balance} credits.`}
-                {confirm.reason === 'confirm' && `Unlock "${confirm.module?.title}" for ${MODULE_UNLOCK_COST} credits?`}
-              </p>
+               <p className="text-sm text-gray-700">
+                 {confirm.reason === 'order' && 'Please unlock modules in order. Unlock the previous module first.'}
+                 {confirm.reason === 'insufficient' && `You need ${confirm.module?.price || 10} credits to unlock this module. You currently have ${balance} credits.`}
+                 {confirm.reason === 'confirm' && `Unlock "${confirm.module?.title}" for ${confirm.module?.price || 10} credits?`}
+               </p>
               {confirm.reason === 'confirm' && confirm.module && (
                 <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-600">
                     <div className="font-medium mb-1">Module Details:</div>
                     <div>• Duration: {confirm.module.estimated_duration || 0} minutes</div>
                     <div>• Order: {confirm.module.order || 'N/A'}</div>
-                    <div className="mt-2">
-                      <div className="font-medium">Current Credits: {balance}</div>
-                      <div className="font-medium">Cost: {MODULE_UNLOCK_COST} credits</div>
-                      <div className="font-medium">Remaining: {balance - MODULE_UNLOCK_COST} credits</div>
-                    </div>
+                     <div className="mt-2">
+                       <div className="font-medium">Current Credits: {balance}</div>
+                       <div className="font-medium">Cost: {confirm.module?.price || 10} credits</div>
+                       <div className="font-medium">Remaining: {balance - (confirm.module?.price || 10)} credits</div>
+                     </div>
                   </div>
                 </div>
               )}
