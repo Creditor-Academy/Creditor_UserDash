@@ -61,18 +61,31 @@ const CreateScenario = () => {
   const [createdScenario, setCreatedScenario] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   
-  // Decision state for step 2
+  // Decision state for step 2 - Enhanced for branching simulation
   const [decisions, setDecisions] = useState([
     {
       id: 1,
-      title: '',
-      description: '',
+      title: 'Decision Point 1',
+      description: 'Enter the opening scenario or first decision point...',
       choices: [
-        { id: 1, text: '', outcome: '', points: 0 },
-        { id: 2, text: '', outcome: '', points: 0 }
-      ]
+        { 
+          id: 1, 
+          text: 'Choice 1', 
+          outcome: 'What happens with this choice?', 
+          points: 0,
+          feedback: 'Immediate feedback for this choice',
+          nextDecisionId: null,
+          branchType: 'neutral'
+        }
+      ],
+      level: 1,
+      branchPath: 'main'
     }
   ]);
+
+  // Track decision tree structure
+  const [decisionTree, setDecisionTree] = useState({});
+  const [currentBranch, setCurrentBranch] = useState('main');
 
   // Initialize form with editing data if available
   useEffect(() => {
@@ -164,6 +177,9 @@ const CreateScenario = () => {
         });
         setStep(2);
       } else if (step === 2) {
+        // Go to step 3 for preview
+        setStep(3);
+      } else if (step === 3) {
         // For frontend demo, just show success and navigate back
         toast.success('Scenario created successfully! (Demo Mode)');
         navigate('/add-quiz');
@@ -184,17 +200,57 @@ const CreateScenario = () => {
     }
   };
 
-  const handleAddDecision = () => {
+  const handleAddDecision = (parentDecisionId = null, branchPath = 'main') => {
     const newDecision = {
       id: Math.max(...decisions.map(d => d.id)) + 1,
       title: '',
       description: '',
       choices: [
-        { id: 1, text: '', outcome: '', points: 0 },
-        { id: 2, text: '', outcome: '', points: 0 }
-      ]
+        { id: 1, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' },
+        { id: 2, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' },
+        { id: 3, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' }
+      ],
+      level: parentDecisionId ? decisions.find(d => d.id === parentDecisionId)?.level + 1 || 2 : 1,
+      branchPath: branchPath,
+      parentDecisionId: parentDecisionId
     };
     setDecisions([...decisions, newDecision]);
+  };
+
+  const handleAddBranch = (parentDecisionId, choiceId) => {
+    const parentDecision = decisions.find(d => d.id === parentDecisionId);
+    const choice = parentDecision.choices.find(c => c.id === choiceId);
+    const newBranchPath = `${parentDecision.branchPath}_${choiceId}`;
+    
+    // Update the choice to point to new decision
+    const updatedDecisions = decisions.map(d => {
+      if (d.id === parentDecisionId) {
+        return {
+          ...d,
+          choices: d.choices.map(c => 
+            c.id === choiceId ? { ...c, nextDecisionId: Math.max(...decisions.map(d => d.id)) + 1 } : c
+          )
+        };
+      }
+      return d;
+    });
+    
+    // Add new decision for the branch
+    const newDecision = {
+      id: Math.max(...decisions.map(d => d.id)) + 1,
+      title: `Branch from "${choice.text.substring(0, 30)}..."`,
+      description: '',
+      choices: [
+        { id: 1, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' },
+        { id: 2, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' },
+        { id: 3, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' }
+      ],
+      level: parentDecision.level + 1,
+      branchPath: newBranchPath,
+      parentDecisionId: parentDecisionId
+    };
+    
+    setDecisions([...updatedDecisions, newDecision]);
   };
 
   const handleRemoveDecision = (decisionId) => {
@@ -215,7 +271,15 @@ const CreateScenario = () => {
         const newChoiceId = Math.max(...d.choices.map(c => c.id)) + 1;
         return {
           ...d,
-          choices: [...d.choices, { id: newChoiceId, text: '', outcome: '', points: 0 }]
+          choices: [...d.choices, { 
+            id: newChoiceId, 
+            text: '', 
+            outcome: '', 
+            points: 0,
+            feedback: '',
+            nextDecisionId: null,
+            branchType: 'neutral'
+          }]
         };
       }
       return d;
@@ -226,7 +290,7 @@ const CreateScenario = () => {
     setDecisions(decisions.map(d => {
       if (d.id === decisionId) {
         const updatedChoices = d.choices.filter(c => c.id !== choiceId);
-        if (updatedChoices.length >= 2) {
+        if (updatedChoices.length >= 1) {
           return { ...d, choices: updatedChoices };
         }
       }
@@ -248,6 +312,456 @@ const CreateScenario = () => {
     }));
   };
 
+  const getBranchTypeColor = (branchType) => {
+    switch (branchType) {
+      case 'success': return 'border-green-500 bg-green-50 text-green-700';
+      case 'failure': return 'border-red-500 bg-red-50 text-red-700';
+      case 'neutral': return 'border-yellow-500 bg-yellow-50 text-yellow-700';
+      default: return 'border-gray-300 bg-gray-50 text-gray-700';
+    }
+  };
+
+  const getBranchTypeIcon = (branchType) => {
+    switch (branchType) {
+      case 'success': return '✅';
+      case 'failure': return '❌';
+      case 'neutral': return '⚠️';
+      default: return '📝';
+    }
+  };
+
+  const renderFlowchart = () => {
+    const mainDecisions = decisions.filter(d => d.level === 1);
+    
+    return (
+      <div className="flowchart">
+        {mainDecisions.map(decision => (
+          <div key={decision.id} className="flowchart-branch">
+            {renderFlowchartNode(decision)}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderFlowchartNode = (decision) => {
+    return (
+      <div className="flowchart-node-container">
+        {/* Decision Node */}
+        <div className="flowchart-decision-node">
+          <div className="flowchart-decision-title">
+            <div className="flowchart-level-badge">L{decision.level}</div>
+            <div className="flowchart-decision-text">{decision.title}</div>
+          </div>
+        </div>
+        
+        {/* Choices */}
+        <div className="flowchart-choices">
+          {decision.choices.map((choice, cIdx) => (
+            <div key={choice.id} className="flowchart-choice-container">
+              {/* Choice Line */}
+              <div className="flowchart-choice-line">
+                <div className={`flowchart-choice-badge ${getBranchTypeColor(choice.branchType)}`}>
+                  {getBranchTypeIcon(choice.branchType)}
+                </div>
+                <div className="flowchart-choice-text">{choice.text}</div>
+              </div>
+              
+              {/* Next Decision or End */}
+              {choice.nextDecisionId ? (
+                <div className="flowchart-next">
+                  {decisions.find(d => d.id === choice.nextDecisionId) && (
+                    <>
+                      <div className="flowchart-arrow">↓</div>
+                      <div className="flowchart-next-decision">
+                        {renderFlowchartNode(decisions.find(d => d.id === choice.nextDecisionId))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flowchart-end">
+                  <div className="flowchart-end-node">
+                    <div className="flowchart-end-text">End</div>
+                    <div className={`flowchart-end-badge ${getBranchTypeColor(choice.branchType)}`}>
+                      {getBranchTypeIcon(choice.branchType)}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDecisionTree = () => {
+    const mainDecisions = decisions.filter(d => d.level === 1);
+    
+    return mainDecisions.map(decision => (
+      <div key={decision.id} className="space-y-4">
+        {renderDecisionNode(decision)}
+        {renderChildDecisions(decision.id)}
+      </div>
+    ));
+  };
+
+  const renderChildDecisions = (parentId) => {
+    const children = decisions.filter(d => d.parentDecisionId === parentId);
+    return children.map(child => (
+      <div key={child.id} className="ml-8 border-l-2 border-gray-200 pl-4">
+        {renderDecisionNode(child)}
+        {renderChildDecisions(child.id)}
+      </div>
+    ));
+  };
+
+  const renderDecisionNode = (decision) => {
+    return (
+      <Card key={decision.id} className="border-l-4 border-l-purple-500 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">
+                {decision.level}
+              </div>
+              <CardTitle className="text-lg text-gray-900">{decision.title}</CardTitle>
+              <Badge variant="outline" className="text-xs">
+                Level {decision.level}
+              </Badge>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => handleRemoveDecision(decision.id)}
+                disabled={decisions.length === 1}
+                className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Decision Description</label>
+            <textarea
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[100px] focus:border-purple-500 focus:ring-purple-500"
+              placeholder="Describe the situation or decision point in detail..."
+              value={decision.description}
+              onChange={e => handleDecisionChange(decision.id, 'description', e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700">Available Choices</label>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => handleAddChoice(decision.id)}
+                className="border-purple-200 text-purple-600 hover:bg-purple-50"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Choice
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              {decision.choices.map((choice, cIdx) => (
+                <div key={choice.id} className={`border-2 rounded-lg p-4 transition-colors ${getBranchTypeColor(choice.branchType)}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{getBranchTypeIcon(choice.branchType)}</span>
+                      <div className="w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-semibold">
+                        {cIdx + 1}
+                      </div>
+                      <span className="text-sm font-medium">Choice {cIdx + 1}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleAddBranch(decision.id, choice.id)}
+                        className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 font-medium"
+                      >
+                        <ArrowRight className="w-3 h-3 mr-1" />
+                        Add Branch
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => handleRemoveChoice(decision.id, choice.id)}
+                        disabled={decision.choices.length === 1}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Choice Text</label>
+                      <Input
+                        placeholder="Enter choice text"
+                        value={choice.text}
+                        onChange={e => handleChoiceChange(decision.id, choice.id, 'text', e.target.value)}
+                        className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Branch Type</label>
+                      <select
+                        value={choice.branchType}
+                        onChange={e => handleChoiceChange(decision.id, choice.id, 'branchType', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-purple-500"
+                      >
+                        <option value="neutral">⚠️ Neutral</option>
+                        <option value="success">✅ Success</option>
+                        <option value="failure">❌ Failure</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Outcome Description</label>
+                      <Input
+                        placeholder="What happens when this choice is made?"
+                        value={choice.outcome}
+                        onChange={e => handleChoiceChange(decision.id, choice.id, 'outcome', e.target.value)}
+                        className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Next Action</label>
+                      <select
+                        value={choice.nextDecisionId && choice.nextDecisionId !== 'pending' ? 'continue' : 'end'}
+                        onChange={e => {
+                          if (e.target.value === 'end') {
+                            handleChoiceChange(decision.id, choice.id, 'nextDecisionId', null);
+                          } else {
+                            // Will be handled when user selects a specific decision
+                            handleChoiceChange(decision.id, choice.id, 'nextDecisionId', 'pending');
+                          }
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-purple-500"
+                      >
+                        <option value="end">End Scenario</option>
+                        <option value="continue">Continue to Next Decision</option>
+                      </select>
+                    </div>
+                    
+                    {choice.nextDecisionId === 'pending' && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Select Next Decision</label>
+                        <select
+                          value={choice.nextDecisionId || ''}
+                          onChange={e => handleChoiceChange(decision.id, choice.id, 'nextDecisionId', e.target.value ? parseInt(e.target.value) : null)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:ring-purple-500"
+                        >
+                          <option value="">Choose a decision...</option>
+                          {decisions
+                            .filter(d => d.id !== decision.id) // Don't allow self-reference
+                            .map(d => (
+                              <option key={d.id} value={d.id}>
+                                Level {d.level}: {d.title}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Points Awarded</label>
+                      <Input
+                        type="number"
+                        placeholder="Points"
+                        value={choice.points}
+                        onChange={e => handleChoiceChange(decision.id, choice.id, 'points', parseInt(e.target.value) || 0)}
+                        className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Immediate Feedback</label>
+                    <Input
+                      placeholder="Feedback shown immediately after choice"
+                      value={choice.feedback}
+                      onChange={e => handleChoiceChange(decision.id, choice.id, 'feedback', e.target.value)}
+                      className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                    />
+                  </div>
+                  
+                  {choice.nextDecisionId && (
+                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                      <span className="font-medium">Branches to:</span> Decision {choice.nextDecisionId}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Step 3: Preview and Flowchart
+  if (step === 3) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center">
+                <Button variant="ghost" onClick={handleBack} className="mr-4">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900">Preview Scenario</h1>
+                  <p className="text-sm text-gray-600">Review your scenario and flowchart before publishing</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Badge variant="outline" className="px-3 py-1">
+                  Step 3 of 3
+                </Badge>
+                <Button onClick={handleNext} disabled={loading}>
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Publishing...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Publish Scenario
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            {/* Scenario Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Eye className="w-5 h-5 mr-2 text-purple-600" />
+                  Scenario Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">{form.title}</h3>
+                    <p className="text-gray-600 mb-4">{form.description}</p>
+                    <div className="space-y-2 text-sm">
+                      <div><strong>Total Attempts:</strong> {form.totalAttempts}</div>
+                      <div><strong>Decision Points:</strong> {decisions.length}</div>
+                      <div><strong>Total Choices:</strong> {decisions.reduce((acc, d) => acc + d.choices.length, 0)}</div>
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <div className="relative w-32 h-40 rounded-lg overflow-hidden border-2 border-gray-200">
+                      <img 
+                        src={getBackgroundImage(form.background)} 
+                        alt="Background" 
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <img 
+                          src={getAvatarImage(form.avatar)} 
+                          alt="Avatar" 
+                          className="w-16 h-20 object-contain mx-auto"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Decision Tree Flowchart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Brain className="w-5 h-5 mr-2 text-purple-600" />
+                  Decision Tree Flowchart
+                </CardTitle>
+                <p className="text-sm text-gray-600">Visual representation of your branching scenario</p>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
+                  <div className="flowchart-container">
+                    {renderFlowchart()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Decision Points List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Settings className="w-5 h-5 mr-2 text-purple-600" />
+                  Decision Points Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {decisions.map((decision, dIdx) => (
+                    <div key={decision.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-lg">Level {decision.level}: {decision.title}</h4>
+                        <Badge variant="outline">Decision {dIdx + 1}</Badge>
+                      </div>
+                      <p className="text-gray-600 mb-3">{decision.description}</p>
+                      <div className="space-y-2">
+                        <h5 className="font-medium text-sm text-gray-700">Choices:</h5>
+                        {decision.choices.map((choice, cIdx) => (
+                          <div key={choice.id} className={`p-3 rounded-lg border-l-4 ${getBranchTypeColor(choice.branchType)}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium">{cIdx + 1}. {choice.text}</span>
+                                <span className="text-lg">{getBranchTypeIcon(choice.branchType)}</span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {choice.nextDecisionId ? `→ Decision ${choice.nextDecisionId}` : 'End Scenario'}
+                              </div>
+                            </div>
+                            <div className="text-xs text-gray-600 mt-1">
+                              <strong>Outcome:</strong> {choice.outcome}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              <strong>Feedback:</strong> {choice.feedback}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Step 2: Add decisions UI
   if (step === 2) {
     return (
@@ -267,9 +781,9 @@ const CreateScenario = () => {
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <Badge variant="outline" className="px-3 py-1">
-                  Step 2 of 2
-                </Badge>
+              <Badge variant="outline" className="px-3 py-1">
+                Step 2 of 3
+              </Badge>
                 <Button onClick={handleNext} disabled={loading}>
                   {loading ? (
                     <div className="flex items-center space-x-2">
@@ -278,8 +792,8 @@ const CreateScenario = () => {
                     </div>
                   ) : (
                     <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Scenario
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                      Next: Preview
                     </>
                   )}
                 </Button>
@@ -291,145 +805,98 @@ const CreateScenario = () => {
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-6">
-            {decisions.map((decision, dIdx) => (
-              <Card key={decision.id} className="border-l-4 border-l-purple-500 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold">
-                        {dIdx + 1}
-                      </div>
-                      <CardTitle className="text-lg text-gray-900">Decision Point {dIdx + 1}</CardTitle>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => handleRemoveDecision(decision.id)}
-                      disabled={decisions.length === 1}
-                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Decision Title</label>
-                      <Input
-                        placeholder="Enter decision title"
-                        value={decision.title}
-                        onChange={e => handleDecisionChange(decision.id, 'title', e.target.value)}
-                        className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Time Limit (optional)</label>
-                      <Input
-                        type="number"
-                        placeholder="Minutes"
-                        className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Decision Description</label>
-                    <textarea
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[100px] focus:border-purple-500 focus:ring-purple-500"
-                      placeholder="Describe the situation or decision point in detail..."
-                      value={decision.description}
-                      onChange={e => handleDecisionChange(decision.id, 'description', e.target.value)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Available Choices</label>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleAddChoice(decision.id)}
-                        className="border-purple-200 text-purple-600 hover:bg-purple-50"
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Add Choice
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {decision.choices.map((choice, cIdx) => (
-                        <div key={choice.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <div className="w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-semibold">
-                                {cIdx + 1}
-                              </div>
-                              <span className="text-sm font-medium text-gray-700">Choice {cIdx + 1}</span>
-                            </div>
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => handleRemoveChoice(decision.id, choice.id)}
-                              disabled={decision.choices.length === 2}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Choice Text</label>
-                              <Input
-                                placeholder="Enter choice text"
-                                value={choice.text}
-                                onChange={e => handleChoiceChange(decision.id, choice.id, 'text', e.target.value)}
-                                className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Outcome Description</label>
-                              <Input
-                                placeholder="What happens when this choice is made?"
-                                value={choice.outcome}
-                                onChange={e => handleChoiceChange(decision.id, choice.id, 'outcome', e.target.value)}
-                                className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                              />
-                            </div>
-                            
-                            <div>
-                              <label className="block text-xs font-medium text-gray-600 mb-1">Points Awarded</label>
-                              <Input
-                                type="number"
-                                placeholder="Points"
-                                value={choice.points}
-                                onChange={e => handleChoiceChange(decision.id, choice.id, 'points', parseInt(e.target.value) || 0)}
-                                className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {/* Decision Tree Header */}
+            <Card className="border-2 border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="flex items-center text-blue-800">
+                  <Brain className="w-5 h-5 mr-2" />
+                  Branching Decision Tree
+                </CardTitle>
+                <p className="text-sm text-blue-600">
+                  Create complex branching scenarios with multiple decision levels. Each choice can lead to different paths with immediate feedback.
+                </p>
+              </CardHeader>
+            </Card>
+
+
+            {/* Decision Tree */}
+            {renderDecisionTree()}
             
-            <Card className="border-2 border-dashed border-purple-300 hover:border-purple-400 transition-colors">
-              <CardContent className="p-8 text-center">
-                <Button 
-                  onClick={handleAddDecision} 
-                  variant="outline" 
-                  className="w-full h-20 border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300"
-                >
-                  <div className="flex flex-col items-center space-y-2">
-                    <Plus className="w-6 h-6" />
-                    <span className="font-medium">Add Another Decision Point</span>
+            {/* Add New Decision Options */}
+            <Card className="border-2 border-dashed border-purple-300">
+              <CardHeader>
+                <CardTitle className="text-center text-purple-700">Add New Content</CardTitle>
+                <p className="text-sm text-center text-gray-600">Choose how you want to expand your scenario</p>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Add New Level */}
+                  <Button 
+                    onClick={() => handleAddDecision()} 
+                    variant="outline" 
+                    className="h-24 border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300"
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Plus className="w-4 h-4" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Add New Level</div>
+                        <div className="text-xs text-gray-500">Create a new decision point at the same level</div>
+                      </div>
+                    </div>
+                  </Button>
+
+                  {/* Add New Branch */}
+                  <Button 
+                    onClick={() => {
+                      // Find the first decision to add a branch to
+                      const firstDecision = decisions[0];
+                      if (firstDecision) {
+                        handleAddBranch(firstDecision.id, firstDecision.choices[0].id);
+                      }
+                    }} 
+                    variant="outline" 
+                    className="h-24 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <ArrowRight className="w-4 h-4" />
+                      </div>
+                      <div className="text-center">
+                        <div className="font-medium">Add New Branch</div>
+                        <div className="text-xs text-gray-500">Create a branching path from existing choice</div>
+                      </div>
+                    </div>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+
+            {/* Branch Type Legend */}
+            <Card className="border border-gray-200">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-gray-700">Branch Type Legend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">✅</span>
+                    <span className="text-green-700 font-medium">Success Path</span>
+                    <span className="text-gray-500">- Leads to positive outcomes</span>
                   </div>
-                </Button>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">❌</span>
+                    <span className="text-red-700 font-medium">Failure Path</span>
+                    <span className="text-gray-500">- Ends scenario or leads to negative outcomes</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">⚠️</span>
+                    <span className="text-yellow-700 font-medium">Neutral Path</span>
+                    <span className="text-gray-500">- Continues scenario with mixed results</span>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -465,7 +932,7 @@ const CreateScenario = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="outline" className="px-3 py-1">
-                Step 1 of 2
+                Step 1 of 3
               </Badge>
               <Button onClick={handleNext} disabled={loading || !form.title.trim()}>
                 {loading ? (
@@ -773,3 +1240,185 @@ const CreateScenario = () => {
 };
 
 export default CreateScenario;
+
+// Flowchart Styles (inline for now, can be moved to CSS file later)
+const flowchartStyles = `
+  .flowchart {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  .flowchart-branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  
+  .flowchart-node-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+  }
+  
+  .flowchart-decision-node {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    min-width: 200px;
+    text-align: center;
+    position: relative;
+  }
+  
+  .flowchart-decision-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .flowchart-level-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  .flowchart-decision-text {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  
+  .flowchart-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+    width: 100%;
+  }
+  
+  .flowchart-choice-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  
+  .flowchart-choice-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    min-width: 200px;
+    position: relative;
+  }
+  
+  .flowchart-choice-line::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 20px;
+    background: #cbd5e1;
+  }
+  
+  .flowchart-choice-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+  }
+  
+  .flowchart-choice-text {
+    font-size: 13px;
+    color: #374151;
+    flex: 1;
+  }
+  
+  .flowchart-arrow {
+    font-size: 20px;
+    color: #6b7280;
+    margin: 8px 0;
+  }
+  
+  .flowchart-next {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 16px;
+  }
+  
+  .flowchart-next-decision {
+    margin-top: 8px;
+  }
+  
+  .flowchart-end {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  
+  .flowchart-end-node {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #f3f4f6;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    position: relative;
+  }
+  
+  .flowchart-end-node::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 20px;
+    background: #cbd5e1;
+  }
+  
+  .flowchart-end-text {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+  }
+  
+  .flowchart-end-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .flowchart-decision-node,
+    .flowchart-choice-line {
+      min-width: 150px;
+    }
+    
+    .flowchart-decision-text,
+    .flowchart-choice-text {
+      font-size: 12px;
+    }
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = flowchartStyles;
+  document.head.appendChild(styleSheet);
+}
