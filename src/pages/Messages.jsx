@@ -152,6 +152,8 @@ function Messages() {
           lastMessage: updatePayload.lastMessage || '',
           room: updatePayload.room,
           conversationId: updatePayload.id,
+          isRead: updatePayload.isRead,
+          lastMessageFrom: updatePayload.lastMessageFrom,
         };
         
         if (existingIndex >= 0) {
@@ -196,7 +198,7 @@ function Messages() {
           }));
           setFriends(idFriends);
         } else {
-        // Normalize using backend contract (id, room, title, image)
+        // Normalize using backend contract (id, room, title, image, isRead, lastMessageFrom)
         const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
           id: String(c.id),
           name: c.title || 'User',
@@ -204,6 +206,8 @@ function Messages() {
           lastMessage: c.lastMessage || '',
           room: c.room,
           conversationId: c.id,
+          isRead: c.isRead,
+          lastMessageFrom: c.lastMessageFrom,
         }));
         setFriends(normalizedFriends);
         }
@@ -382,9 +386,9 @@ function Messages() {
   })();
 
   return (
-    <div className="container py-2">
+    <div className="container py-4">
       <div className="rounded-lg border bg-card shadow-sm">
-        <div className="h-[calc(100vh-96px)]">
+        <div className="h-[calc(100vh-160px)]">
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
           <div className="w-full flex flex-col h-full">
@@ -487,14 +491,23 @@ function Messages() {
                     <AvatarImage src={friend.avatar} />
                     <AvatarFallback>{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
-                      <p className="font-medium">{friend.name}</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {friend.lastMessage || 'Start a conversation'}
-                    </p>
-                  </div>
+                   <div className="flex-1 min-w-0">
+                     <div className="flex justify-between items-center">
+                       <p className="font-medium">{friend.name}</p>
+                       {(() => {
+                         const currentUserId = localStorage.getItem('userId');
+                         const isUnread = friend.isRead === false && 
+                                         friend.lastMessageFrom && 
+                                         String(friend.lastMessageFrom) !== String(currentUserId);
+                         return isUnread ? (
+                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                         ) : null;
+                       })()}
+                     </div>
+                     <p className="text-sm text-muted-foreground truncate">
+                       {friend.lastMessage || 'Start a conversation'}
+                     </p>
+                   </div>
                 </div>
               ))}
               {filteredFriends.length === 0 && (
@@ -519,9 +532,9 @@ function Messages() {
                       {convosLoaded && (
                         <>
                           <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                      <AvatarFallback>
+                          <AvatarFallback>
                             {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
-                      </AvatarFallback>
+                          </AvatarFallback>
                         </>
                       )}
                     </Avatar>
@@ -597,8 +610,8 @@ function Messages() {
                             <p className="leading-relaxed">{message.text}</p>
                             <div className="flex justify-between items-center mt-1 gap-3">
                               <p className={`text-[11px] ${message.senderId === 0 ? "text-white/80" : "text-muted-foreground"}`}>
-                              {message.timestamp}
-                            </p>
+                                {message.timestamp}
+                              </p>
                               <Button
                                 variant="ghost"
                                 size="sm"
