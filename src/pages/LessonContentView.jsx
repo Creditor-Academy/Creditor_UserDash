@@ -13,7 +13,7 @@ const LessonContentView = () => {
   const { courseId, moduleId, lessonId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { setSidebarCollapsed } = useContext(SidebarContext);
+  const { setSidebarCollapsed } = useContext(SidebarContext); 
   
   const [lessonContent, setLessonContent] = useState(null);
   const [loading, setLoading] = useState(true);

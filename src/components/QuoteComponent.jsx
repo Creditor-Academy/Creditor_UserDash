@@ -26,6 +26,7 @@ const QuoteComponent = forwardRef(({
   ]);
   const [activeCarouselTab, setActiveCarouselTab] = useState(0);
   const [imageUploading, setImageUploading] = useState(false);
+  const [authorImageUploading, setAuthorImageUploading] = useState(false);
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -33,7 +34,7 @@ const QuoteComponent = forwardRef(({
     setActiveCarouselTab
   }));
 
-  const handleImageUpload = async (e, setImage, isBackgroundImage = false) => {
+  const handleImageUpload = async (e, setImage, imageType = 'background') => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -50,8 +51,11 @@ const QuoteComponent = forwardRef(({
       return;
     }
 
-    if (isBackgroundImage) {
+    // Set appropriate loading state
+    if (imageType === 'background') {
       setImageUploading(true);
+    } else if (imageType === 'author') {
+      setAuthorImageUploading(true);
     }
 
     try {
@@ -78,8 +82,11 @@ const QuoteComponent = forwardRef(({
       };
       reader.readAsDataURL(file);
     } finally {
-      if (isBackgroundImage) {
+      // Reset appropriate loading state
+      if (imageType === 'background') {
         setImageUploading(false);
+      } else if (imageType === 'author') {
+        setAuthorImageUploading(false);
       }
     }
   };
@@ -798,37 +805,70 @@ const QuoteComponent = forwardRef(({
                   />
                 </div>
                 
+                {/* Author Image Upload - Available only for quote_c */}
                 {editingQuoteBlock?.textType === 'quote_c' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Author Image
                     </label>
-                    <div className="flex items-center space-x-4">
+                    <div className="space-y-2">
                       {quoteImage && (
-                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow">
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow">
                           <img 
                             src={quoteImage} 
                             alt="Author" 
                             className="w-full h-full object-cover"
                           />
+                          {/* Loading overlay for author image */}
+                          {authorImageUploading && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Show loading placeholder when no image but uploading */}
+                      {!quoteImage && authorImageUploading && (
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-gray-300 bg-gray-100 flex items-center justify-center">
+                          <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
                         </div>
                       )}
                       <div>
-                        <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center">
-                          <Upload className="w-4 h-4 mr-2" />
-                          {quoteImage ? 'Change Image' : 'Upload Image'}
+                        <label className={`cursor-pointer text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center ${
+                          authorImageUploading 
+                            ? 'bg-gray-200 cursor-not-allowed' 
+                            : 'bg-gray-100 hover:bg-gray-200'
+                        }`}>
+                          {authorImageUploading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              {quoteImage ? 'Change Image' : 'Upload Image'}
+                            </>
+                          )}
                           <input 
                             type="file" 
                             className="hidden" 
                             accept="image/*"
-                            onChange={(e) => handleImageUpload(e, setQuoteImage, false)}
+                            disabled={authorImageUploading}
+                            onChange={(e) => handleImageUpload(e, setQuoteImage, 'author')}
                           />
                         </label>
+                        {quoteImage && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            💡 Image uploaded to cloud and will be accessible from anywhere
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
                 
+                {/* Background Image Upload - Available for quote_on_image */}
                 {editingQuoteBlock?.textType === 'quote_on_image' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -836,12 +876,30 @@ const QuoteComponent = forwardRef(({
                     </label>
                     <div className="space-y-2">
                       {backgroundImage && (
-                        <div className="w-full h-40 rounded-md overflow-hidden border">
+                        <div className="relative w-full h-40 rounded-md overflow-hidden border">
                           <img 
                             src={backgroundImage} 
                             alt="Background" 
                             className="w-full h-full object-cover"
                           />
+                          {/* Loading overlay for background image */}
+                          {imageUploading && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <div className="text-center">
+                                <Loader2 className="w-8 h-8 text-white animate-spin mx-auto mb-2" />
+                                <p className="text-white text-sm font-medium">Uploading...</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {/* Show loading placeholder when no image but uploading */}
+                      {!backgroundImage && imageUploading && (
+                        <div className="relative w-full h-40 rounded-md overflow-hidden border-2 border-gray-300 bg-gray-100 flex items-center justify-center">
+                          <div className="text-center">
+                            <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-2" />
+                            <p className="text-gray-500 text-sm font-medium">Uploading...</p>
+                          </div>
                         </div>
                       )}
                       <div>
@@ -866,7 +924,7 @@ const QuoteComponent = forwardRef(({
                             className="hidden" 
                             accept="image/*"
                             disabled={imageUploading}
-                            onChange={(e) => handleImageUpload(e, setBackgroundImage, true)}
+                            onChange={(e) => handleImageUpload(e, setBackgroundImage, 'background')}
                           />
                         </label>
                         {backgroundImage && (

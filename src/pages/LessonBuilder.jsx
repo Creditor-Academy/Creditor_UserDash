@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
+import TableComponent from '@/components/TableComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -234,6 +236,7 @@ const headingToolbar = [
 
 // Comprehensive toolbar modules for all text types
 const getToolbarModules = (type = 'full') => {
+  // Default base toolbar (includes size picker)
   const baseToolbar = [
     [{ 'font': Font.whitelist }],
     [{ 'size': Size.whitelist }],
@@ -241,6 +244,19 @@ const getToolbarModules = (type = 'full') => {
     [{ 'color': [] }, { 'background': [] }],
     [{ 'align': [] }]
   ];
+
+  // For heading-only and subheading-only editors, REMOVE size picker
+  if (type === 'heading' || type === 'subheading') {
+    return {
+      toolbar: [
+        [{ 'font': Font.whitelist }],
+        ['bold', 'italic', 'underline'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'align': [] }],
+        ['clean']
+      ]
+    };
+  }
   
   if (type === 'full') {
     return {
@@ -262,7 +278,7 @@ const getToolbarModules = (type = 'full') => {
 };
 
 function LessonBuilder({ viewMode: initialViewMode = false }) {
-  const { sidebarCollapsed, setSidebarCollapsed } = useOutletContext();
+  const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
   const { courseId, moduleId, lessonId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -279,9 +295,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentBlock, setCurrentBlock] = useState(null);
-  const [editorContent, setEditorContent] = useState('');
-  const [editorHeading, setEditorHeading] = useState('');
-  const [editorSubheading, setEditorSubheading] = useState('');
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
@@ -293,6 +306,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showTextEditorDialog, setShowTextEditorDialog] = useState(false);
   const [editorTitle, setEditorTitle] = useState('');
   const [editorHtml, setEditorHtml] = useState('');
+  const [editorHeading, setEditorHeading] = useState('');
+  const [editorSubheading, setEditorSubheading] = useState('');
+  const [editorContent, setEditorContent] = useState('');
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -322,7 +338,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [linkError, setLinkError] = useState('');
   const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
   const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
-  const [showTableTemplateSidebar, setShowTableTemplateSidebar] = useState(false);
   const [showImageEditDialog, setShowImageEditDialog] = useState(false);
   const [currentImageBlock, setCurrentImageBlock] = useState(null);
   const [imageTemplateText, setImageTemplateText] = useState('');
@@ -345,6 +360,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
   const [showQuoteEditDialog, setShowQuoteEditDialog] = useState(false);
   const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
+  const [showTableComponent, setShowTableComponent] = useState(false);
+  const [editingTableBlock, setEditingTableBlock] = useState(null);
 
   // Image block templates
   const imageTemplates = [
@@ -406,77 +423,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   ];
 
-  // Table/Columns templates
-  const tableTemplates = [
-    {
-      id: 'two_columns',
-      title: 'Two Columns',
-      description: 'Responsive two-column layout for side-by-side content',
-      icon: <Table className="h-6 w-6" />,
-      defaultContent: `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-lg font-semibold mb-2">Left Column</h3>
-            <p class="text-gray-600">Add your content here. You can include text, lists, or images.</p>
-          </div>
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-lg font-semibold mb-2">Right Column</h3>
-            <p class="text-gray-600">Add your content here. You can include text, lists, or images.</p>
-          </div>
-        </div>`
-    },
-    {
-      id: 'three_columns',
-      title: 'Three Columns',
-      description: 'Balanced three-column layout for features or highlights',
-      icon: <Table className="h-6 w-6" />,
-      defaultContent: `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-base font-semibold mb-2">Column One</h3>
-            <p class="text-gray-600">Add your content here.</p>
-          </div>
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-base font-semibold mb-2">Column Two</h3>
-            <p class="text-gray-600">Add your content here.</p>
-          </div>
-          <div class="p-4 rounded-lg border bg-white shadow-sm">
-            <h3 class="text-base font-semibold mb-2">Column Three</h3>
-            <p class="text-gray-600">Add your content here.</p>
-          </div>
-        </div>`
-    },
-    {
-      id: 'simple_table',
-      title: 'Simple Table',
-      description: 'Clean table with header and rows',
-      icon: <Table className="h-6 w-6" />,
-      defaultContent: `
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 border rounded-lg overflow-hidden">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 1</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 2</th>
-                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Header 3</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-100">
-              <tr>
-                <td class="px-4 py-2 text-gray-700">Row 1, Col 1</td>
-                <td class="px-4 py-2 text-gray-700">Row 1, Col 2</td>
-                <td class="px-4 py-2 text-gray-700">Row 1, Col 3</td>
-              </tr>
-              <tr>
-                <td class="px-4 py-2 text-gray-700">Row 2, Col 1</td>
-                <td class="px-4 py-2 text-gray-700">Row 2, Col 2</td>
-                <td class="px-4 py-2 text-gray-700">Row 2, Col 3</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>`
-    }
-  ];
 
   const contentBlockTypes = [
     {
@@ -550,6 +496,25 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
     },
     {
+      id: 'master_heading',
+      icon: <Heading1 className="h-5 w-5" />,
+      preview: (
+        <div className="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Master Heading</h1>
+        </div>
+      ),
+      defaultContent:
+        '<div class="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white"><h1 class="text-4xl font-extrabold tracking-tight">Master Heading</h1></div>',
+      style: {
+        fontSize: '32px',
+        fontWeight: '800',
+        color: '#FFFFFF',
+        background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+        padding: '16px',
+        borderRadius: '12px'
+      }
+    },
+    {
       id: 'subheading',
       icon: <Heading2 className="h-5 w-5" />,
       preview: <h2 className="text-xl font-semibold mb-2">Subheading</h2>,
@@ -612,7 +577,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'tables') {
-      setShowTableTemplateSidebar(true);
+      setShowTableComponent(true);
     } else if (blockType.id === 'audio') {
       setShowAudioDialog(true);
     } else if (blockType.id === 'youtube') {
@@ -687,14 +652,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       innerContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">${heading || 'Heading'}</h1><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the heading.'}</p>`;
     } else if (textType.id === 'subheading_paragraph') {
       innerContent = `<h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">${subheading || 'Subheading'}</h2><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the subheading.'}</p>`;
+    } else if (textType.id === 'master_heading') {
+      innerContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${'Master Heading'}</h1>`;
     } else {
       innerContent = textType.defaultContent || contentHtml;
     }
 
     // Generate HTML content with proper card styling to match existing blocks
-    const htmlContent = `
+    const htmlContent = textType.id === 'master_heading' ? innerContent : `
       <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
         <div class="pl-4">
           ${innerContent}
         </div>
@@ -722,87 +688,32 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setSidebarCollapsed(true);
   };
 
-  const handleTableTemplateSelect = (template) => {
-    // Generate HTML content with proper card styling to match existing blocks
-    const htmlContent = `
-      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-        <div class="pl-4">
-          ${template.defaultContent}
-        </div>
-      </div>
-    `;
-   
-    const newBlock = {
-      id: `block_${Date.now()}`,
-      block_id: `block_${Date.now()}`,
-      type: 'text',
-      title: template.title,
-      textType: 'table',
-      content: template.defaultContent,
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-   
-    let blocksToUpdate = [];
-      
-    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-      // For existing lessons, use lessonContent which contains the updated content
-      blocksToUpdate = lessonContent.data.content;
-        
-      // Add any new blocks from contentBlocks that aren't in lessonContent
-      const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
-      const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-      blocksToUpdate = [...blocksToUpdate, ...newBlocks];
-    } else {
-      // For new lessons, use contentBlocks
-      blocksToUpdate = contentBlocks;
-    }
-   
-    // If we have existing lesson content, add to that structure
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...blocksToUpdate, newBlock]
-        }
-      }));
-    } else {
-      // For new lessons, add to contentBlocks
-      setContentBlocks(prevBlocks => [...blocksToUpdate, newBlock]);
-    }
-    setShowTableTemplateSidebar(false);
-  };
 
   const handleStatementSelect = (statementBlock) => {
-    let blocksToUpdate = [];
-      
-    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-      // For existing lessons, use lessonContent which contains the updated content
-      blocksToUpdate = lessonContent.data.content;
-        
-      // Add any new blocks from contentBlocks that aren't in lessonContent
-      const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
-      const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-      blocksToUpdate = [...blocksToUpdate, ...newBlocks];
-    }
-    // If we have existing lesson content, add to that structure
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, statementBlock]
-        }
-      }));
-    } else {
-      // For new lessons, add to contentBlocks
-      setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
-    }
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
   };
 
+
+
+
   const handleStatementEdit = (blockId, content, htmlContent) => {
+    // Detect statement type from HTML content to preserve it
+    let detectedStatementType = 'statement-a'; // default fallback
+    if (htmlContent) {
+      if (htmlContent.includes('border-t border-b border-gray-800')) {
+        detectedStatementType = 'statement-a';
+      } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
+        detectedStatementType = 'statement-b';
+      } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
+        detectedStatementType = 'statement-c';
+      } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
+        detectedStatementType = 'statement-d';
+      } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
+        detectedStatementType = 'note';
+      }
+    }
+
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
       blocks.map(block =>
@@ -810,6 +721,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           ...block,
           content,
           html_css: htmlContent,
+          statementType: detectedStatementType, // Preserve statement type
           updatedAt: new Date().toISOString()
         } : block
       )
@@ -826,6 +738,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               ...block,
               content,
               html_css: htmlContent,
+              statementType: detectedStatementType, // Preserve statement type
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                content,
+                statement_type: detectedStatementType
+              },
               updatedAt: new Date().toISOString()
             } : block
           )
@@ -838,6 +757,68 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleQuoteTemplateSelect = (newBlock) => {
     // Only add to contentBlocks - this is the primary state for managing blocks
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  // Table component callbacks
+  const handleTableTemplateSelect = (newBlock) => {
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  const handleTableUpdate = (blockId, content, htmlContent, tableType = null) => {
+    // Parse content to extract table type if not provided
+    let extractedTableType = tableType;
+    if (!extractedTableType && content) {
+      try {
+        const parsedContent = JSON.parse(content);
+        extractedTableType = parsedContent.templateId || parsedContent.tableType || 'two_columns';
+      } catch (e) {
+        extractedTableType = 'two_columns'; // fallback
+      }
+    }
+
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          content,
+          html_css: htmlContent,
+          tableType: extractedTableType,
+          templateId: extractedTableType,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              content,
+              html_css: htmlContent,
+              tableType: extractedTableType,
+              templateId: extractedTableType,
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                table_type: extractedTableType,
+                templateId: extractedTableType
+              },
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+    
+    setEditingTableBlock(null);
+    setShowTableComponent(false);
   };
 
   const handleQuoteUpdate = (blockId, updatedContentString) => {
@@ -1021,13 +1002,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     default:
       newHtmlContent = `
         <div class="relative bg-white rounded-2xl shadow-md p-6 border">
-          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-          <div class="pl-4">
-            <blockquote class="text-lg italic text-gray-700 mb-3">
-              "${updatedQuoteContent.quote}"
-            </blockquote>
-            <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
-          </div>
+          <blockquote class="text-lg italic text-gray-700 mb-3">
+            "${updatedQuoteContent.quote}"
+          </blockquote>
+          <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
         </div>
       `;
     }
@@ -1121,11 +1099,205 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
    
     if (!block) return;
+
+    // Enhanced quote block detection - check content structure and HTML patterns
+    const isQuoteBlock = block.type === 'quote' || 
+                        (block.textType && block.textType.startsWith('quote_')) ||
+                        (block.details?.quote_type) ||
+                        // Check if content has quote structure (JSON with quote/author)
+                        (() => {
+                          try {
+                            const content = JSON.parse(block.content || '{}');
+                            return content.quote && content.author;
+                          } catch {
+                            return false;
+                          }
+                        })() ||
+                        // Check HTML patterns for quote blocks
+                        (block.html_css && (
+                          block.html_css.includes('quote-carousel') ||
+                          block.html_css.includes('carousel-dot') ||
+                          block.html_css.includes('blockquote') ||
+                          block.html_css.includes('<cite') ||
+                          block.html_css.includes('background-image:') && block.html_css.includes('bg-gradient-to-t from-black') ||
+                          block.html_css.includes('flex items-center space-x-8') && block.html_css.includes('rounded-full object-cover') ||
+                          block.html_css.includes('text-left max-w-3xl') && block.html_css.includes('bg-gradient-to-br from-slate-50') ||
+                          block.html_css.includes('text-3xl md:text-4xl') && block.html_css.includes('font-thin') ||
+                          block.html_css.includes('bg-gradient-to-br from-gray-50') && block.html_css.includes('backdrop-blur-sm')
+                        ));
+
+    if (isQuoteBlock) {
+      // Handle quote block editing with proper type detection
+      // For fetched content, detect quoteType from HTML content if not available
+      let quoteType = block.textType || block.details?.quote_type || block.details?.quoteType;
+      
+      // Override block type to ensure it's treated as a quote
+      block = { ...block, type: 'quote' };
+      
+      // If quoteType is not available, detect it from HTML content with improved patterns
+      if (!quoteType && block.html_css) {
+        const htmlContent = block.html_css;
+        
+        // Quote Carousel - has carousel controls and multiple quotes
+        if (htmlContent.includes('quote-carousel') || 
+            htmlContent.includes('carousel-dot') || 
+            htmlContent.includes('carousel-prev') || 
+            htmlContent.includes('carousel-next')) {
+          quoteType = 'quote_carousel';
+        }
+        // Quote on Image - has background image with overlay
+        else if (htmlContent.includes('background-image:') || 
+                 (htmlContent.includes('bg-gradient-to-t from-black') && htmlContent.includes('absolute inset-0'))) {
+          quoteType = 'quote_on_image';
+        }
+        // Quote C - has author image with horizontal layout
+        else if (htmlContent.includes('flex items-center space-x-8') || 
+                 (htmlContent.includes('rounded-full object-cover') && htmlContent.includes('w-16 h-16'))) {
+          quoteType = 'quote_c';
+        }
+        // Quote D - has specific styling with slate background
+        else if (htmlContent.includes('text-left max-w-3xl') || 
+                 htmlContent.includes('bg-gradient-to-br from-slate-50')) {
+          quoteType = 'quote_d';
+        }
+        // Quote B - has large text and thin font
+        else if (htmlContent.includes('text-3xl md:text-4xl') || 
+                 htmlContent.includes('font-thin') || 
+                 htmlContent.includes('text-center bg-gray-50')) {
+          quoteType = 'quote_b';
+        }
+        // Quote A - default style with author image on left
+        else if (htmlContent.includes('flex items-start space-x-4') || 
+                 htmlContent.includes('w-12 h-12 rounded-full') || 
+                 htmlContent.includes('bg-gradient-to-br from-gray-50')) {
+          quoteType = 'quote_a';
+        }
+        // Additional fallback detection based on structure
+        else if (htmlContent.includes('blockquote') && htmlContent.includes('cite')) {
+          // Try to detect based on layout structure
+          if (htmlContent.includes('text-center')) {
+            quoteType = 'quote_b';
+          } else if (htmlContent.includes('space-x-4')) {
+            quoteType = 'quote_a';
+          } else {
+            quoteType = 'quote_a'; // default fallback
+          }
+        } else {
+          quoteType = 'quote_a'; // fallback
+        }
+      } else if (!quoteType) {
+        quoteType = 'quote_a'; // fallback
+      }
+      
+      // Debug logging to verify quote type detection
+      console.log('Quote block detected:', {
+        originalType: block.type,
+        originalTextType: block.textType,
+        detectedQuoteType: quoteType,
+        hasHtmlCss: !!block.html_css,
+        blockContent: block.content,
+        htmlPreview: block.html_css ? block.html_css.substring(0, 200) + '...' : 'No HTML'
+      });
+      
+      // Parse and prepare quote content for the editor
+      let quoteContent = {};
+      try {
+        if (block.content) {
+          quoteContent = JSON.parse(block.content);
+        }
+      } catch (e) {
+        console.log('Could not parse quote content as JSON, extracting from HTML');
+        // Extract quote and author from HTML if JSON parsing fails
+        if (block.html_css) {
+          const htmlContent = block.html_css;
+          
+          // Extract quote text
+          const quoteMatch = htmlContent.match(/<blockquote[^>]*>(.*?)<\/blockquote>/s);
+          const quoteText = quoteMatch ? quoteMatch[1].replace(/"/g, '').trim() : '';
+          
+          // Extract author
+          const authorMatch = htmlContent.match(/<cite[^>]*>.*?—\s*(.*?)<\/cite>/s);
+          const authorText = authorMatch ? authorMatch[1].trim() : '';
+          
+          // Extract author image
+          const imgMatch = htmlContent.match(/<img[^>]*src="([^"]*)"[^>]*alt="[^"]*"[^>]*class="[^"]*rounded-full[^"]*"/);
+          const authorImage = imgMatch ? imgMatch[1] : '';
+          
+          // Extract background image
+          const bgMatch = htmlContent.match(/background-image:\s*url\(['"]([^'"]*)['"]\)/);
+          const backgroundImage = bgMatch ? bgMatch[1] : '';
+          
+          quoteContent = {
+            quote: quoteText,
+            author: authorText,
+            authorImage: authorImage,
+            backgroundImage: backgroundImage
+          };
+        } else {
+          quoteContent = {
+            quote: block.content || '',
+            author: '',
+            authorImage: '',
+            backgroundImage: ''
+          };
+        }
+      }
+      
+      // Set the textType to ensure proper editor opens
+      const blockWithType = { 
+        ...block, 
+        type: 'quote', 
+        textType: quoteType,
+        quoteType: quoteType,
+        content: JSON.stringify(quoteContent)
+      };
+      setEditingQuoteBlock(blockWithType);
+      
+      // For quote carousel, initialize carousel state
+      if (quoteType === 'quote_carousel') {
+        try {
+          if (quoteContent.quotes && Array.isArray(quoteContent.quotes)) {
+            quoteComponentRef.current?.setCarouselQuotes(quoteContent.quotes);
+            quoteComponentRef.current?.setActiveCarouselTab(0);
+          }
+        } catch (e) {
+          console.error('Error setting carousel content:', e);
+        }
+      }
+      
+      setShowQuoteEditDialog(true);
+      return;
+    }
    
     if (block.type === 'statement') {
       // Handle statement editing with the StatementComponent
-      // Pass both content and html_css to extract content from HTML if needed
-      statementComponentRef.current?.handleEditStatement(blockId, block.statementType, block.content, block.html_css);
+      // For fetched content, detect statementType from HTML content if not available
+      let statementType = block.statementType || block.details?.statement_type || block.details?.statementType;
+      
+      // If statementType is not available, detect it from HTML content
+      if (!statementType && block.html_css) {
+        const htmlContent = block.html_css;
+        if (htmlContent.includes('border-t border-b border-gray-800')) {
+          statementType = 'statement-a';
+        } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
+          statementType = 'statement-b';
+        } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
+          statementType = 'statement-c';
+        } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
+          statementType = 'statement-d';
+        } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
+          statementType = 'note';
+        } else {
+          statementType = 'statement-a'; // fallback
+        }
+      } else if (!statementType) {
+        statementType = 'statement-c'; // fallback
+      }
+      
+      const content = block.content || block.details?.content || '';
+      const htmlCss = block.html_css || '';
+      
+      statementComponentRef.current?.handleEditStatement(blockId, statementType, content, htmlCss);
       return;
     }
    
@@ -1141,36 +1313,81 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorContent('');
      
       // Set content based on block type
-      if (block.textType === 'heading-paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorHeading(parts[0] || '');
-        setEditorContent(parts[1] || '');
-      } else if (block.textType === 'subheading-paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorSubheading(parts[0] || '');
-        setEditorContent(parts[1] || '');
+      if (block.textType === 'heading_paragraph') {
+        // Parse existing content to extract heading and paragraph
+        if (block.heading !== undefined && block.content !== undefined) {
+          setEditorHeading(block.heading || '');
+          setEditorContent(block.content || '');
+        } else {
+          // Fallback: try to parse from HTML content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = block.html_css || block.content || '';
+          const h1 = tempDiv.querySelector('h1');
+          const p = tempDiv.querySelector('p');
+          setEditorHeading(h1 ? h1.innerHTML : '');
+          setEditorContent(p ? p.innerHTML : '');
+        }
+      } else if (block.textType === 'subheading_paragraph') {
+        // Parse existing content to extract subheading and paragraph
+        if (block.subheading !== undefined && block.content !== undefined) {
+          setEditorSubheading(block.subheading || '');
+          setEditorContent(block.content || '');
+        } else {
+          // Fallback: try to parse from HTML content
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = block.html_css || block.content || '';
+          const h2 = tempDiv.querySelector('h2');
+          const p = tempDiv.querySelector('p');
+          setEditorSubheading(h2 ? h2.innerHTML : '');
+          setEditorContent(p ? p.innerHTML : '');
+        }
       } else {
         setEditorContent(block.content || '');
         setEditorHtml(block.content || '');
       }
-    } else if (block.type === 'quote') {
-      // Handle quote block editing
-      setEditingQuoteBlock(block);
+    } else if (block.type === 'table') {
+      // Handle table block editing - open edit dialog directly
+      console.log('Table block detected for editing:', block);
       
-      // For quote carousel, initialize carousel state
-      if (block.textType === 'quote_carousel') {
+      // Detect table type from existing block data
+      let tableType = block.tableType || block.templateId || block.details?.table_type || block.details?.templateId;
+      
+      // If table type is not available, try to detect from content
+      if (!tableType && block.content) {
         try {
-          const content = JSON.parse(block.content);
-          if (content.quotes && Array.isArray(content.quotes)) {
-            quoteComponentRef.current?.setCarouselQuotes(content.quotes);
-            quoteComponentRef.current?.setActiveCarouselTab(0);
-          }
+          const parsedContent = JSON.parse(block.content);
+          tableType = parsedContent.templateId || parsedContent.tableType || 'two_columns';
         } catch (e) {
-          console.error('Error parsing carousel content:', e);
+          // If content parsing fails, try to detect from HTML structure
+          if (block.html_css) {
+            const htmlContent = block.html_css;
+            if (htmlContent.includes('grid') && htmlContent.includes('md:grid-cols-2')) {
+              tableType = 'two_columns';
+            } else if (htmlContent.includes('grid') && htmlContent.includes('md:grid-cols-3')) {
+              tableType = 'three_columns';
+            } else if (htmlContent.includes('<table') || htmlContent.includes('divide-y')) {
+              tableType = 'responsive_table';
+            } else {
+              tableType = 'two_columns'; // fallback
+            }
+          } else {
+            tableType = 'two_columns'; // fallback
+          }
         }
+      } else if (!tableType) {
+        tableType = 'two_columns'; // fallback
       }
       
-      setShowQuoteEditDialog(true);
+      // Ensure the block has the table type information
+      const blockWithType = {
+        ...block,
+        tableType: tableType,
+        templateId: tableType
+      };
+      
+      // Set the editing table block and show the table component in edit mode
+      setEditingTableBlock(blockWithType);
+      setShowTableComponent(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -1181,11 +1398,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorContent('');
      
       // Set content based on block type
-      if (block.textType === 'heading-paragraph') {
+      if (block.textType === 'heading_paragraph') {
         const parts = block.content ? block.content.split('|||') : ['', ''];
         setEditorHeading(parts[0] || '');
         setEditorContent(parts[1] || '');
-      } else if (block.textType === 'subheading-paragraph') {
+      } else if (block.textType === 'subheading_paragraph') {
         const parts = block.content ? block.content.split('|||') : ['', ''];
         setEditorSubheading(parts[0] || '');
         setEditorContent(parts[1] || '');
@@ -1521,18 +1738,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_a':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="flex items-start space-x-4">
-                      <div class="flex-shrink-0">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
-                      </div>
-                      <div class="flex-1">
-                        <blockquote class="text-lg italic text-gray-700 mb-3">
-                          "${quoteContent.quote || ''}"
-                        </blockquote>
-                        <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
-                      </div>
+                  <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
+                    </div>
+                    <div class="flex-1">
+                      <blockquote class="text-lg italic text-gray-700 mb-3">
+                        "${quoteContent.quote || ''}"
+                      </blockquote>
+                      <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                     </div>
                   </div>
                 </div>
@@ -1541,19 +1755,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_b':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="bg-gray-50 rounded-xl p-6">
-                      <div class="flex items-center space-x-4 mb-4">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
-                        <div>
-                          <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
-                        </div>
+                  <div class="bg-gray-50 rounded-xl p-6">
+                    <div class="flex items-center space-x-4 mb-4">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
+                      <div>
+                        <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
                       </div>
-                      <blockquote class="text-xl italic text-gray-700 leading-relaxed">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
                     </div>
+                    <blockquote class="text-xl italic text-gray-700 leading-relaxed">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
                   </div>
                 </div>
               `;
@@ -1561,15 +1772,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_c':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="text-center">
-                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
-                      <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
-                      <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
-                    </div>
+                  <div class="text-center">
+                    <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
+                    <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
                   </div>
                 </div>
               `;
@@ -1577,16 +1785,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_d':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="border-l-4 border-blue-500 pl-4">
-                      <blockquote class="text-lg text-gray-700 mb-2">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
-                      <div class="flex items-center space-x-3">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
-                        <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
-                      </div>
+                  <div class="border-l-4 border-blue-500 pl-4">
+                    <blockquote class="text-lg text-gray-700 mb-2">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <div class="flex items-center space-x-3">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
+                      <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
                     </div>
                   </div>
                 </div>
@@ -1595,7 +1800,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_on_image':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl z-10"></div>
                   <div class="relative">
                     <img src="${quoteContent.backgroundImage || ''}" alt="Quote background" class="w-full h-64 object-cover" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end">
@@ -1623,19 +1827,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
-                      ${quotesHtml}
-                      <div class="flex justify-center space-x-2 mt-6">
-                        ${quotes.map((_, index) => `
-                          <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
-                        `).join('')}
-                      </div>
-                      <div class="flex justify-between items-center mt-4">
-                        <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
-                        <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
-                      </div>
+                  <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
+                    ${quotesHtml}
+                    <div class="flex justify-center space-x-2 mt-6">
+                      ${quotes.map((_, index) => `
+                        <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
+                      `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                      <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
+                      <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
                     </div>
                   </div>
                 </div>
@@ -1684,13 +1885,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             default:
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <blockquote class="text-lg italic text-gray-700 mb-3">
-                      "${quoteContent.quote || ''}"
-                    </blockquote>
-                    <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
-                  </div>
+                  <blockquote class="text-lg italic text-gray-700 mb-3">
+                    "${quoteContent.quote || ''}"
+                  </blockquote>
+                  <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                 </div>
               `;
           }
@@ -1745,11 +1943,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
 
       // Allow empty content blocks for deletion operations
-      /*if (!blocksToUpdate || blocksToUpdate.length === 0) {
-        toast.error('Please add some content before updating');
-        return;
-      }*/
-
       // Convert content blocks to the required format
       const content = blocksToUpdate.map((block, index) => {
         const blockId = block.block_id || `block_${index + 1}`;
@@ -1769,19 +1962,57 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         
         // For other blocks, preserve existing html_css to avoid wrapping in new containers
         if (block.html_css && block.html_css.trim() !== '') {
-          return {
+          const blockData = {
             type: block.type,
             script: block.script || '',
             block_id: blockId,
             html_css: block.html_css,
             ...(block.details && { details: block.details })
           };
+          
+          // For text blocks, include textType to differentiate between heading, paragraph, master heading, etc.
+          if (block.type === 'text' && block.textType) {
+            blockData.textType = block.textType;
+          }
+          
+          // For statement blocks, include explicit statement type metadata
+          if (block.type === 'statement') {
+            blockData.statementType = block.statementType || 'statement-a';
+            blockData.details = {
+              ...blockData.details,
+              statement_type: block.statementType || 'statement-a',
+              content: block.content || ''
+            };
+          }
+          
+          // For quote blocks, include explicit quote type metadata
+          if (block.type === 'quote') {
+            blockData.quoteType = block.textType || block.quoteType || 'quote_a';
+            blockData.details = {
+              ...blockData.details,
+              quote_type: block.textType || block.quoteType || 'quote_a',
+              content: block.content || ''
+            };
+          }
+          
+          // For table blocks, include explicit table type metadata
+          if (block.type === 'table') {
+            blockData.tableType = block.tableType || block.templateId || 'two_columns';
+            blockData.details = {
+              ...blockData.details,
+              table_type: block.tableType || block.templateId || 'two_columns',
+              templateId: block.tableType || block.templateId || 'two_columns',
+              content: block.content || ''
+            };
+          }
+          
+          return blockData;
         }
 
-        // Only generate new HTML for newly created blocks without existing html_css
-        let htmlContent = '';
+        // Generate HTML content for blocks without html_css
         let details = {};
         let script = '';
+        let htmlContent = '';
 
         // Extract content from different possible sources
         const blockContent = block.content || '';
@@ -1789,31 +2020,44 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         const textType = block.textType;
 
         switch (blockType) {
+          case 'quote':
+            // For quote blocks, include explicit quote type metadata
+            details = {
+              quote_type: block.textType || block.quoteType || 'quote_a',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+            
           case 'text':
             // Handle different text types
             if (textType === 'heading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h1 class="text-2xl font-bold text-gray-800">${blockContent}</h1>
                   </article>
                 </div>`;
             } else if (textType === 'subheading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h2 class="text-xl font-semibold text-gray-800">${blockContent}</h2>
                   </article>
+                </div>`;
+            } else if (textType === 'master_heading') {
+              htmlContent = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">${blockContent}</h1>
+                  </div>
                 </div>`;
             } else if (textType === 'heading_paragraph') {
               const heading = block.heading || '';
               const content = block.content || '';
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h1 class="text-2xl font-bold text-gray-800">${heading}</h1>
                     <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
@@ -1823,8 +2067,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               const content = block.content || '';
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h2 class="text-xl font-semibold text-gray-800">${subheading}</h2>
                     <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
@@ -1832,8 +2075,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             } else {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <p class="text-gray-600 leading-relaxed">${blockContent}</p>
                   </article>
                 </div>`;
@@ -1889,6 +2131,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             }
             break;
 
+          case 'statement':
+            // For statement blocks, include explicit type metadata
+            details = {
+              statement_type: block.statementType || 'statement-a',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
           default:
             htmlContent = block.html_css || block.content || '';
             break;
@@ -1897,6 +2148,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         return {
           id: block.id,
           type: block.type,
+          textType: block.textType,
           title: block.title || '',
           content: block.content || '',
           html_css: htmlContent,
@@ -1938,6 +2190,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'heading': {
               htmlContent = `<h1 class="lesson-heading">${blockContent}</h1>`;
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
+              break;
+            }
+            case 'master_heading': {
+              htmlContent = `<div class="lesson-master-heading"><h1>${blockContent}</h1></div>`;
+              styles = '.lesson-master-heading h1 { font-size: 40px; font-weight: 600; margin: 0; line-height: 1.2; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; }';
               break;
             }
             case 'subheading': {
@@ -2496,7 +2753,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorTitle(block.title || '');
       
       // Properly detect and set the text type
-      const detectedTextType = block.textType || 'paragraph';
+      let detectedTextType = block.textType || 'paragraph';
+      
+      // If textType is not set or unreliable, detect from HTML content
+      if (!block.textType || block.textType === 'heading') {
+        const htmlContent = block.html_css || block.content || '';
+        
+        // Check for master heading first (has gradient background)
+        if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+          detectedTextType = 'master_heading';
+        } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+          detectedTextType = 'heading_paragraph';
+        } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
+          detectedTextType = 'subheading_paragraph';
+        } else if (htmlContent.includes('<h1')) {
+          detectedTextType = 'heading';
+        } else if (htmlContent.includes('<h2')) {
+          detectedTextType = 'subheading';
+        }
+      }
+      
       setCurrentTextType(detectedTextType);
       setCurrentTextBlockId(block.id || block.block_id);
       
@@ -2508,50 +2784,100 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       
       // Set content based on the detected text type
       if (detectedTextType === 'heading_paragraph') {
-        // Extract heading and paragraph from html_css or content
-        const htmlContent = block.html_css || block.content || '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        
-        const h1Element = tempDiv.querySelector('h1');
-        const pElement = tempDiv.querySelector('p, div:not(:has(h1, h2, h3, h4, h5, h6))');
-        
-        setEditorHeading(h1Element ? h1Element.innerHTML : (block.heading || 'Heading'));
-        setEditorContent(pElement ? pElement.innerHTML : 'Enter your content here...');
+        // For heading + paragraph, try to get from stored properties first
+        if (block.heading !== undefined && block.content !== undefined) {
+          setEditorHeading(block.heading || 'Heading');
+          // Extract paragraph content from the stored content or html_css
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          const proseDiv = tempDiv.querySelector('.prose');
+          if (proseDiv) {
+            setEditorContent(proseDiv.innerHTML || 'Enter your content here...');
+          } else {
+            setEditorContent(block.content || 'Enter your content here...');
+          }
+        } else {
+          // Fallback: parse from HTML
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          const h1Element = tempDiv.querySelector('h1');
+          const proseDiv = tempDiv.querySelector('.prose');
+          
+          setEditorHeading(h1Element ? h1Element.innerHTML : 'Heading');
+          setEditorContent(proseDiv ? proseDiv.innerHTML : 'Enter your content here...');
+        }
       } else if (detectedTextType === 'subheading_paragraph') {
-        // Extract subheading and paragraph from html_css or content
-        const htmlContent = block.html_css || block.content || '';
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        
-        const h2Element = tempDiv.querySelector('h2');
-        const pElement = tempDiv.querySelector('p, div:not(:has(h1, h2, h3, h4, h5, h6))');
-        
-        setEditorSubheading(h2Element ? h2Element.innerHTML : (block.subheading || 'Subheading'));
-        setEditorContent(pElement ? pElement.innerHTML : 'Enter your content here...');
+        // For subheading + paragraph, try to get from stored properties first
+        if (block.subheading !== undefined && block.content !== undefined) {
+          setEditorSubheading(block.subheading || 'Subheading');
+          // Extract paragraph content from the stored content or html_css
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          const proseDiv = tempDiv.querySelector('.prose');
+          if (proseDiv) {
+            setEditorContent(proseDiv.innerHTML || 'Enter your content here...');
+          } else {
+            setEditorContent(block.content || 'Enter your content here...');
+          }
+        } else {
+          // Fallback: parse from HTML
+          const htmlContent = block.html_css || block.content || '';
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = htmlContent;
+          
+          const h2Element = tempDiv.querySelector('h2');
+          const proseDiv = tempDiv.querySelector('.prose');
+          
+          setEditorSubheading(h2Element ? h2Element.innerHTML : 'Subheading');
+          setEditorContent(proseDiv ? proseDiv.innerHTML : 'Enter your content here...');
+        }
       } else {
         // For single content blocks (heading, subheading, paragraph)
         const htmlContent = block.html_css || block.content || '';
         
-        // Extract the inner content while preserving rich text formatting
-        if (htmlContent.includes('<')) {
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          
-          // Find the main content element
-          const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
-          if (contentElement) {
-            setEditorHtml(contentElement.innerHTML);
+        // Special handling for master heading to preserve text content only
+        if (detectedTextType === 'master_heading') {
+          if (htmlContent.includes('<h1')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const h1Element = tempDiv.querySelector('h1');
+            if (h1Element) {
+              // Extract only the text content, not the styling
+              setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
+            } else {
+              setEditorHtml('Master Heading');
+            }
+          } else {
+            setEditorHtml(htmlContent || 'Master Heading');
+          }
+        } else {
+          // Extract the inner content while preserving rich text formatting for other types
+          if (htmlContent.includes('<')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // Find the main content element
+            const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
+            if (contentElement) {
+              setEditorHtml(contentElement.innerHTML);
+            } else {
+              setEditorHtml(htmlContent);
+            }
           } else {
             setEditorHtml(htmlContent);
           }
-        } else {
-          setEditorHtml(htmlContent);
         }
       }
     } else {
       setEditorTitle('');
       setEditorHtml('');
+      setEditorHeading('');
+      setEditorSubheading('');
+      setEditorContent('');
       setCurrentTextBlockId(null);
       setCurrentTextType(null);
     }
@@ -2571,54 +2897,79 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         let updatedContent = '';
        
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
-        const effectiveTextType = currentTextType || blockToUpdate.textType;
+        let effectiveTextType = currentTextType || blockToUpdate.textType;
+        
+        // Double-check for master heading if textType seems wrong
+        if (effectiveTextType === 'heading' && blockToUpdate.html_css) {
+          const htmlContent = blockToUpdate.html_css || '';
+          if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+            effectiveTextType = 'master_heading';
+          }
+        }
        
         // Always use consistent HTML generation for all text types to avoid double-update issues
         const textType = textTypes.find(t => t.id === effectiveTextType);
         
         if (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'subheading_paragraph') {
-          // For compound templates, combine heading/subheading with paragraph
+          // For compound templates, combine heading/subheading with paragraph in styled container
           const headingTag = effectiveTextType === 'heading_paragraph' ? 'h1' : 'h2';
-          const headingClass = effectiveTextType === 'heading_paragraph' ? 'text-2xl font-bold' : 'text-xl font-semibold';
+          const headingFontSize = effectiveTextType === 'heading_paragraph' ? '24px' : '20px';
+          const headingFontWeight = effectiveTextType === 'heading_paragraph' ? 'bold' : '600';
+          
+          // Use the correct content variables for each template type
+          const headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
+          const paragraphContent = editorContent;
           
           updatedContent = `
-            <div class="content-block">
-              <${headingTag} class="${headingClass} text-gray-800 mb-4">${editorHeading || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
-              <div class="prose prose-lg max-w-none text-gray-700">
-                ${editorHtml || 'Start typing your content here...'}
-              </div>
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <article class="max-w-none">
+                <${headingTag} style="font-size: ${headingFontSize} !important; font-weight: ${headingFontWeight}; color: #1F2937; margin: 0 0 16px 0; line-height: 1.2;">${headingContent || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
+                <div class="prose prose-lg max-w-none text-gray-700">
+                  ${paragraphContent || 'Start typing your content here...'}
+                </div>
+              </article>
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, preserve the original card structure and strip font-size styles
-          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For heading blocks, use same styled container as other blocks
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Heading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Heading') : (editorHtml || 'Heading');
+          const cleanedContent = (extracted || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
-            </div>`;
+            </div>
+          `;
         } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, preserve the original card structure and strip font-size styles
-          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For subheading blocks, enforce true h2 with fixed size (strip Quill wrappers and inline font-sizes)
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Subheading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Subheading') : (editorHtml || 'Subheading');
+          const cleanedContent = (extracted || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
               </article>
             </div>`;
+        } else if (effectiveTextType === 'master_heading') {
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
+          const cleanedContent = (extracted || 'Master Heading');
+          updatedContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${cleanedContent}</h1>`;
         } else {
-          // For paragraph and other single content blocks
-          const style = textType?.style || {};
-          const styleString = Object.entries(style)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join('; ');
-
+          // For paragraph and other single content blocks - use same styled container as heading/subheading
           updatedContent = `
-            <div class="content-block" style="${styleString}">
-              ${editorHtml || 'Enter your content here...'}
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <article class="max-w-none">
+                <div class="prose prose-lg max-w-none text-gray-700">
+                  ${editorHtml || 'Enter your content here...'}
+                </div>
+              </article>
             </div>
           `;
         }
@@ -2655,8 +3006,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           }
         });
 
-        // Don't update lessonContent in edit mode to prevent duplicates
-        // lessonContent is only used for preview mode rendering
+        // Also update lessonContent if it exists (for fetched lessons)
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => ({
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: prevLessonContent.data.content.map(block =>
+                block.block_id === currentTextBlockId ? {
+                  ...block,
+                  content: updatedContent,
+                  html_css: updatedContent,
+                  heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
+                  subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
+                  updatedAt: new Date().toISOString(),
+                  textType: effectiveTextType || block.textType
+                } : block
+              )
+            }
+          }));
+        }
       } else {
         // For new blocks
         const effectiveTextTypeForNew = currentTextType || 'paragraph';
@@ -2679,25 +3048,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
             </div>`;
         } else if (effectiveTextTypeForNew === 'subheading') {
           const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
-                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
+                <div class="prose prose-lg max-w-none text-gray-700">
+                  ${editorHtml || 'Enter your content here...'}
+                </div>
               </article>
-            </div>`;
-        } else {
-          // For paragraph and other blocks
-          newBlockContent = `
-            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              ${editorHtml || 'Enter your content here...'}
             </div>
           `;
         }
@@ -2787,18 +3148,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setLessonContent(prevLessonContent => ({
         ...prevLessonContent,
         data: {
-          ...prev.data,
-          content: prev.data.content.map(b => b.block_id === currentBlock.id ? {
-            ...b,
-            html_css: htmlContent,
-            details: { ...(b.details || {}), image_url: imageUrl, caption: textContent, alt_text: imageTitle, layout: layout || b.details?.layout, template: templateType || b.details?.template },
-            imageUrl: imageUrl,
-            imageTitle: imageTitle,
-            imageDescription: getPlainText(textContent || ''),
-            text: getPlainText(textContent || ''),
-            layout: layout || b.layout,
-            templateType: templateType || b.templateType
-          } : b)
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            block.block_id === currentBlock.id ? {
+              ...block,
+              content: updatedContent,
+              heading: (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') ? editorHeading : block.heading,
+              subheading: (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') ? editorSubheading : block.subheading,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
         }
       }));
     }
@@ -3594,14 +3953,62 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       videoTitle: b.details?.caption || ''
                     };
                   }
+                  if (b.type === 'statement') {
+                    return {
+                      ...base,
+                      type: 'statement',
+                      title: b.details?.title || 'Statement',
+                      statementType: b.details?.statement_type || b.details?.statementType || 'statement-a',
+                      content: b.details?.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'table') {
+                    return {
+                      ...base,
+                      type: 'table',
+                      title: b.details?.title || 'Table',
+                      tableType: b.details?.table_type || b.details?.templateId || b.tableType || 'two_columns',
+                      templateId: b.details?.table_type || b.details?.templateId || b.tableType || 'two_columns',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'quote') {
+                    return {
+                      ...base,
+                      type: 'quote',
+                      title: b.details?.title || 'Quote',
+                      textType: b.details?.quote_type || b.details?.quoteType || b.textType || 'quote_a',
+                      quoteType: b.details?.quote_type || b.details?.quoteType || b.textType || 'quote_a',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   // Default map to text block with preserved HTML
-                  return {
-                    ...base,
-                    type: 'text',
-                    title: 'Text Block',
-                    textType: 'paragraph',
-                    content: b.html_css || ''
-                  };
+                  {
+                    const html = b.html_css || '';
+                    const lowered = html.toLowerCase();
+                    const hasH1 = lowered.includes('<h1');
+                    const hasH2 = lowered.includes('<h2');
+                    const hasP = lowered.includes('<p');
+                    const detectedType = hasH1 && hasP
+                      ? 'heading_paragraph'
+                      : hasH2 && hasP
+                        ? 'subheading_paragraph'
+                        : hasH1
+                          ? 'heading'
+                          : hasH2
+                            ? 'subheading'
+                            : 'paragraph';
+                    return {
+                      ...base,
+                      type: 'text',
+                      title: 'Text Block',
+                      textType: detectedType,
+                      content: html,
+                    };
+                  }
                 });
                 if (mappedEditBlocks.length > 0) {
                   setContentBlocks(mappedEditBlocks);
@@ -3892,7 +4299,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           <div className="mb-8">
                                             {block.html_css ? (
                                               <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
+                                                className="max-w-none"
                                                 dangerouslySetInnerHTML={{ __html: block.html_css }}
                                               />
                                             ) : (
@@ -3909,12 +4316,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                           <div className="mb-8">
                                             {block.html_css ? (
                                               <div
-                                                className="prose prose-xl max-w-none"
+                                                className="max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.html_css }}
                                               />
                                             ) : (
                                               <div
-                                                className="prose prose-xl max-w-none"
+                                                className="max-w-none text-gray-800 leading-relaxed"
                                                 dangerouslySetInnerHTML={{ __html: block.content }}
                                               />
                                             )}
@@ -4052,15 +4459,28 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                               />
                                             ) : (
                                               <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                                <div className="pl-4">
-                                                  <blockquote className="text-lg italic text-gray-700 mb-3">
-                                                    "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
-                                                  </blockquote>
-                                                  <cite className="text-sm font-medium text-gray-500">
-                                                    — {JSON.parse(block.content || '{}').author || 'Author Name'}
-                                                  </cite>
-                                                </div>
+                                                <blockquote className="text-lg italic text-gray-700 mb-3">
+                                                  "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
+                                                </blockquote>
+                                                <cite className="text-sm font-medium text-gray-500">
+                                                  — {JSON.parse(block.content || '{}').author || 'Author Name'}
+                                                </cite>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                       
+                                        {/* Table Content */}
+                                        {block.type === 'table' && (
+                                          <div className="mb-8">
+                                            {block.html_css ? (
+                                              <div
+                                                className="prose max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                              />
+                                            ) : (
+                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                               </div>
                                             )}
                                           </div>
@@ -4200,8 +4620,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                 let detectedTextType = 'paragraph'; // default
                                                 const htmlContent = block.html_css || '';
                                                
-                                                // Check for heading + paragraph combination
-                                                if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+                                                // Check for master heading first (has gradient background)
+                                                if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+                                                  detectedTextType = 'master_heading';
+                                                } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
                                                   detectedTextType = 'heading_paragraph';
                                                 } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
                                                   detectedTextType = 'subheading_paragraph';
@@ -4377,10 +4799,22 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   // For single content blocks, extract the inner content
                                                   const tempDiv = document.createElement('div');
                                                   tempDiv.innerHTML = htmlContent;
-                                                  const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
-                                                  setEditorHtml(contentElement.innerHTML || htmlContent);
+                                                  
+                                                  // Special handling for master heading to preserve text content only
+                                                  if (detectedTextType === 'master_heading') {
+                                                    const h1Element = tempDiv.querySelector('h1');
+                                                    if (h1Element) {
+                                                      // Extract only the text content, not the styling
+                                                      setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
+                                                    } else {
+                                                      setEditorHtml('Master Heading');
+                                                    }
+                                                  } else {
+                                                    const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
+                                                    setEditorHtml(contentElement.innerHTML || htmlContent);
+                                                  }
                                                 }
-                                               
+                                              
                                                 // Store the detected textType for the save function
                                                 const blockWithTextType = { ...block, textType: detectedTextType };
                                                 setCurrentBlock(blockWithTextType);
@@ -4418,6 +4852,37 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                                   youtubeTitle: block.details?.caption
                                                 });
                                                 setShowYoutubeDialog(true);
+                                                break;
+                                              case 'statement':
+                                                // For statement blocks, detect statementType from HTML content if not available
+                                                let statementType = block.details?.statement_type || block.details?.statementType || block.statementType;
+                                                
+                                                // If statementType is not available, detect it from HTML content
+                                                if (!statementType && block.html_css) {
+                                                  const htmlContent = block.html_css;
+                                                  if (htmlContent.includes('border-t border-b border-gray-800')) {
+                                                    statementType = 'statement-a';
+                                                  } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
+                                                    statementType = 'statement-b';
+                                                  } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
+                                                    statementType = 'statement-c';
+                                                  } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
+                                                    statementType = 'statement-d';
+                                                  } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
+                                                    statementType = 'note';
+                                                  } else {
+                                                    statementType = 'statement-a'; // fallback
+                                                  }
+                                                } else if (!statementType) {
+                                                  statementType = 'statement-a'; // fallback
+                                                }
+                                                
+                                                statementComponentRef.current?.handleEditStatement(
+                                                  block.block_id, 
+                                                  statementType, 
+                                                  block.details?.content || block.content || '', 
+                                                  block.html_css || ''
+                                                );
                                                 break;
                                               default:
                                                 handleEditBlock(block.block_id);
@@ -4538,12 +5003,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                 size="icon"
                                 className="h-8 w-8 rounded-full bg-white/80 hover:bg-gray-200"
                                 onClick={() => {
-                                  if (block.type === 'text') {
-                                    handleTextEditorOpen(block);
-                                  } else if (block.type === 'image' && block.layout) {
+                                  // Always use handleEditBlock for proper type detection
+                                  if (block.type === 'image' && block.layout) {
                                     toggleImageBlockEditing(block.id);
-                                  } else if (block.type === 'pdf') {
-                                    handleEditBlock(block.id);
                                   } else {
                                     handleEditBlock(block.id);
                                   }
@@ -4574,6 +5036,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                           <div className="p-6">
                             {block.type === 'text' && (
                               <div className="mb-8">
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                            {block.type === 'statement' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">Statement</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Statement
+                                  </Badge>
+                                </div>
+                                
                                 {block.html_css ? (
                                   <div
                                     className="max-w-none text-gray-800 leading-relaxed"
@@ -4669,29 +5154,48 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   />
                                 ) : (
                                   <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                    <div className="pl-4">
-                                      <blockquote className="text-lg italic text-gray-700 mb-3">
-                                        "{(() => {
-                                          try {
-                                            const content = JSON.parse(block.content || '{}');
-                                            return content.quote || 'Sample quote text';
-                                          } catch {
-                                            return 'Sample quote text';
-                                          }
-                                        })()}"
-                                      </blockquote>
-                                      <cite className="text-sm font-medium text-gray-500">
-                                        — {(() => {
-                                          try {
-                                            const content = JSON.parse(block.content || '{}');
-                                            return content.author || 'Author Name';
-                                          } catch {
-                                            return 'Author Name';
-                                          }
-                                        })()}
-                                      </cite>
-                                    </div>
+                                    <blockquote className="text-lg italic text-gray-700 mb-3">
+                                      "{(() => {
+                                        try {
+                                          const content = JSON.parse(block.content || '{}');
+                                          return content.quote || 'Sample quote text';
+                                        } catch {
+                                          return 'Sample quote text';
+                                        }
+                                      })()}"
+                                    </blockquote>
+                                    <cite className="text-sm font-medium text-gray-500">
+                                      — {(() => {
+                                        try {
+                                          const content = JSON.parse(block.content || '{}');
+                                          return content.author || 'Author Name';
+                                        } catch {
+                                          return 'Author Name';
+                                        }
+                                      })()}
+                                    </cite>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {block.type === 'table' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Table'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Table
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                   </div>
                                 )}
                               </div>
@@ -5110,8 +5614,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col" style={{ overflow: 'visible' }}>
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {currentTextBlockId ? 'Edit' : 'Add'} Text Block
               {(() => {
@@ -5126,7 +5630,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             </DialogTitle>
           </DialogHeader>
          
-          <div className="flex-1 overflow-visible px-1" style={{ maxHeight: 'calc(90vh - 140px)', overflow: 'visible' }}>
+          <div className="flex-1 overflow-y-auto px-1" style={{ minHeight: 0 }}>
             <div className="pr-4">
               {(() => {
                 const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
@@ -5314,13 +5818,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             </div>
           </div>
          
-          <DialogFooter className="border-t pt-4">
-            <Button variant="outline" onClick={handleTextEditorClose}>
+          <DialogFooter className="border-t pt-4 flex justify-end gap-2 px-6 pb-4">
+            <Button variant="outline" onClick={handleTextEditorClose} className="min-w-[80px]">
               Cancel
             </Button>
             <Button
               onClick={handleTextEditorSave}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
             >
               {currentTextBlockId ? 'Update' : 'Add'} Block
             </Button>
@@ -5566,63 +6070,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         </div>
       )}
 
-      {/* Table Template Sidebar */}
-      {showTableTemplateSidebar && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300"
-            onClick={() => setShowTableTemplateSidebar(false)}
-          />
-         
-          {/* Sidebar */}
-          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Table className="h-6 w-6" />
-                  Table Templates
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowTableTemplateSidebar(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  ×
-                </Button>
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Choose a table/column template to add to your lesson
-              </p>
-            </div>
-           
-            <div className="p-6 space-y-4">
-              {tableTemplates.map((template) => (
-                <div
-                  key={template.id}
-                  onClick={() => handleTableTemplateSelect(template)}
-                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
-                      {template.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{template.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                    </div>
-                  </div>
-                 
-                  {/* Mini Preview */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: template.defaultContent }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Table Component */}
+      {showTableComponent && (
+        <TableComponent
+          onTemplateSelect={handleTableTemplateSelect}
+          onClose={() => {
+            setShowTableComponent(false);
+            setEditingTableBlock(null);
+          }}
+          editingBlock={editingTableBlock}
+          isEditing={!!editingTableBlock}
+          onTableUpdate={handleTableUpdate}
+        />
       )}
 
       {/* Text Type Sidebar */}

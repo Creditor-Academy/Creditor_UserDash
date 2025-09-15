@@ -1,7 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, Clock, Calendar } from "lucide-react";
+import { BookOpen, Clock, Calendar, Lock } from "lucide-react";
+import { getCourseTrialStatus } from '../../utils/trialUtils';
+import TrialBadge from '../ui/TrialBadge';
+import { useState } from 'react';
+import TrialExpiredDialog from '../ui/TrialExpiredDialog';
 
 function formatDuration(secs) {
   if (!secs) return "Duration not specified";
@@ -19,10 +23,27 @@ export function CourseCard({
   modulesCount,
   totalDurationSecs,
   category,
-  isUpcoming = false
+  isUpcoming = false,
+  course // Full course object for trial data
 }) {
 
   const navigate = useNavigate();
+  const [showTrialDialog, setShowTrialDialog] = useState(false);
+  
+  // Get trial status if course object is provided
+  const trialStatus = course ? getCourseTrialStatus(course) : { isInTrial: false, isExpired: false, canAccess: true };
+  
+  const handleCourseClick = () => {
+    if (trialStatus.isInTrial && trialStatus.isExpired) {
+      setShowTrialDialog(true);
+      return;
+    }
+    navigate(`/dashboard/courses/${id}`);
+  };
+  
+  const handleCloseTrialDialog = () => {
+    setShowTrialDialog(false);
+  };
   return (
     <div>
       <div className="flex flex-col overflow-hidden rounded-lg border bg-card min-h-[220px]">
@@ -34,6 +55,23 @@ export function CourseCard({
             style={{height: '110px'}}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0"></div>
+          
+          {/* Trial Badge Overlay */}
+          {trialStatus.isInTrial && (
+            <div className="absolute top-2 left-2">
+              <TrialBadge timeRemaining={trialStatus.timeRemaining} />
+            </div>
+          )}
+          
+          {/* Lock Overlay for Expired Trials */}
+          {trialStatus.isInTrial && trialStatus.isExpired && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="text-white text-center">
+                <Lock className="w-6 h-6 mx-auto mb-1" />
+                <p className="text-xs font-medium">Trial Expired</p>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex flex-col flex-1 p-3 relative">
           <h3 className="font-semibold text-base line-clamp-1">{title}</h3>
@@ -63,15 +101,41 @@ export function CourseCard({
               </div>
             </div>
           ) : (
-            <button
-              className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200"
-              onClick={() => navigate(`/dashboard/courses/${id}`)}
-            >
-              View Course
-            </button>
+            <div className="mt-3 space-y-2">
+              {trialStatus.isInTrial && trialStatus.isExpired ? (
+                <button
+                  className="w-full bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow transition-colors duration-200 flex items-center justify-center gap-2"
+                  onClick={handleCourseClick}
+                >
+                  <Lock size={14} />
+                  Trial Expired - Enroll Now
+                </button>
+              ) : (
+                <button
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition-colors duration-200"
+                  onClick={handleCourseClick}
+                >
+                  {trialStatus.isInTrial ? 'Continue Trial' : 'View Course'}
+                </button>
+              )}
+              
+              {/* Trial Status Info */}
+              {trialStatus.isInTrial && !trialStatus.isExpired && (
+                <div className="text-xs text-center text-gray-600">
+                  Trial ends: {new Date(trialStatus.subscriptionEnd).toLocaleDateString()}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
+      
+      {/* Trial Expired Dialog */}
+      <TrialExpiredDialog 
+        isOpen={showTrialDialog}
+        onClose={handleCloseTrialDialog}
+        course={course}
+      />
     </div>
   );
 }

@@ -5,10 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   FileText, X, ChevronRight, MessageSquare, AlertCircle, Info, CheckCircle, 
-  FileTextIcon, Type, Heading1, Heading2, Text
+  FileTextIcon, Type, Heading1, Heading2, Text, Bold
 } from 'lucide-react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 
 // Statement types with their specific styling and content
 const statementTypes = [
@@ -91,28 +89,6 @@ const statementTypes = [
   }
 ];
 
-// Import Quill and register font families
-const Font = ReactQuill.Quill.import('formats/font');
-Font.whitelist = ['arial', 'helvetica', 'times', 'courier', 'verdana', 'georgia', 'impact', 'roboto'];
-ReactQuill.Quill.register(Font, true);
-
-const Size = ReactQuill.Quill.import('formats/size');
-Size.whitelist = ['small', 'normal', 'large', 'huge'];
-ReactQuill.Quill.register(Size, true);
-
-// Comprehensive toolbar configuration for statement editor
-const statementToolbar = [
-  [{ 'font': Font.whitelist }],
-  [{ 'size': Size.whitelist }],
-  ['bold', 'italic', 'underline', 'strike'],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'align': [] }],
-  ['clean']
-];
-
-const getStatementToolbarModules = () => ({
-  toolbar: statementToolbar
-});
 
 const StatementComponent = React.forwardRef(({ 
   showStatementSidebar, 
@@ -127,6 +103,7 @@ const StatementComponent = React.forwardRef(({
   const [statementContent, setStatementContent] = useState('');
   const [currentStatementBlockId, setCurrentStatementBlockId] = useState(null);
   const [previewContent, setPreviewContent] = useState('');
+  const [textareaRef, setTextareaRef] = useState(null);
 
   // Expose handleEditStatement to parent component
   React.useImperativeHandle(ref, () => ({
@@ -134,7 +111,7 @@ const StatementComponent = React.forwardRef(({
   }));
 
   const handleStatementTypeSelect = (statementType) => {
-    // Generate HTML content with proper styling to match the preview exactly
+    // Generate HTML content to match the original statement template exactly
     let htmlContent = '';
     
     if (statementType.id === 'statement-a') {
@@ -157,7 +134,7 @@ const StatementComponent = React.forwardRef(({
       `;
     } else if (statementType.id === 'statement-c') {
       htmlContent = `
-        <div class="bg-gray-100 py-8 px-6">
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
           <p class="text-gray-700 text-xl leading-relaxed">
             ${statementType.defaultContent}
           </p>
@@ -170,25 +147,6 @@ const StatementComponent = React.forwardRef(({
           <p class="text-gray-900 text-lg leading-relaxed font-bold">
             ${statementType.defaultContent}
           </p>
-        </div>
-      `;
-    } else if (statementType.id === 'statement-e') {
-      htmlContent = `
-        <div class="border border-orange-300 bg-white p-4 rounded">
-          <div class="flex items-start space-x-3">
-            <div class="flex-shrink-0 mt-1">
-              <div class="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
-                <svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="flex-1">
-              <p class="text-gray-800 text-base leading-relaxed">
-                ${statementType.defaultContent}
-              </p>
-            </div>
-          </div>
         </div>
       `;
     } else if (statementType.id === 'note') {
@@ -254,14 +212,16 @@ const StatementComponent = React.forwardRef(({
     
     setCurrentStatementType(detectedStatementType);
     
-    // Always prioritize the content parameter if it exists and has meaningful content
+    // Extract plain text content from HTML or use content directly
     let actualContent = '';
     
     if (content && content.trim() !== '') {
-      // Use the content parameter directly - this is the saved/updated content
-      actualContent = content;
+      // Remove HTML tags if content contains them, keep only plain text
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content;
+      actualContent = tempDiv.textContent || tempDiv.innerText || content;
     } else if (htmlContent) {
-      // Only extract from HTML if no content parameter exists
+      // Extract plain text from HTML
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = htmlContent;
       
@@ -280,11 +240,10 @@ const StatementComponent = React.forwardRef(({
       }
       
       if (contentElement) {
-        actualContent = contentElement.innerHTML;
+        actualContent = contentElement.textContent || contentElement.innerText || '';
       } else {
-        // Final fallback: get all text content and preserve basic formatting
-        const textContent = tempDiv.textContent || tempDiv.innerText || '';
-        actualContent = textContent.trim();
+        // Final fallback: get all text content
+        actualContent = tempDiv.textContent || tempDiv.innerText || '';
       }
     }
     
@@ -294,8 +253,8 @@ const StatementComponent = React.forwardRef(({
       actualContent = defaultStatementType?.defaultContent || '';
     }
     
-    setStatementContent(actualContent);
-    setPreviewContent(actualContent);
+    setStatementContent(actualContent.trim());
+    setPreviewContent(actualContent.trim());
     setShowStatementEditorDialog(true);
   };
 
@@ -303,6 +262,43 @@ const StatementComponent = React.forwardRef(({
   const handleContentChange = (content) => {
     setStatementContent(content);
     setPreviewContent(content);
+  };
+
+  // Handle bold formatting for statement-c
+  const handleBoldToggle = () => {
+    if (!textareaRef) return;
+    
+    const start = textareaRef.selectionStart;
+    const end = textareaRef.selectionEnd;
+    const selectedText = statementContent.substring(start, end);
+    
+    if (selectedText) {
+      let newContent;
+      // Check if selected text is already bold
+      if (selectedText.startsWith('<strong>') && selectedText.endsWith('</strong>')) {
+        // Remove bold tags
+        newContent = statementContent.substring(0, start) + 
+                    selectedText.replace('<strong>', '').replace('</strong>', '') + 
+                    statementContent.substring(end);
+      } else {
+        // Add bold tags
+        newContent = statementContent.substring(0, start) + 
+                    `<strong>${selectedText}</strong>` + 
+                    statementContent.substring(end);
+      }
+      
+      setStatementContent(newContent);
+      setPreviewContent(newContent);
+      
+      // Restore focus and selection
+      setTimeout(() => {
+        textareaRef.focus();
+        const newEnd = selectedText.startsWith('<strong>') ? 
+                      start + selectedText.length - 17 : // Remove 17 chars (<strong></strong>)
+                      start + selectedText.length + 17;  // Add 17 chars
+        textareaRef.setSelectionRange(start, newEnd);
+      }, 0);
+    }
   };
 
   // Generate preview HTML based on statement type and content
@@ -324,8 +320,8 @@ const StatementComponent = React.forwardRef(({
       );
     } else if (statementType === 'statement-c') {
       return (
-        <div className="bg-gray-100 py-8 px-6">
-          <div className="text-gray-700 text-xl leading-relaxed" dangerouslySetInnerHTML={{ __html: cleanContent }} />
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
+          <div className="text-gray-700 text-xl leading-relaxed" dangerouslySetInnerHTML={{ __html: cleanContent.replace(/<strong>/g, '<span class="font-bold text-gray-900 bg-orange-100 px-1 rounded">').replace(/<\/strong>/g, '</span>') }} />
         </div>
       );
     } else if (statementType === 'statement-d') {
@@ -357,7 +353,7 @@ const StatementComponent = React.forwardRef(({
 
   const handleSaveStatement = () => {
     if (onStatementEdit && currentStatementBlockId) {
-      // Generate updated HTML content with the new formatted content
+      // Generate updated HTML content with the new formatted content (original template only)
       let htmlContent = '';
       
       if (currentStatementType === 'statement-a') {
@@ -379,10 +375,12 @@ const StatementComponent = React.forwardRef(({
           </div>
         `;
       } else if (currentStatementType === 'statement-c') {
+        // Convert <strong> tags to the proper highlighted format for statement-c
+        const formattedContent = statementContent.replace(/<strong>/g, '<span class="font-bold text-gray-900 bg-orange-100 px-1 rounded">').replace(/<\/strong>/g, '</span>');
         htmlContent = `
-          <div class="bg-gray-100 py-8 px-6">
+          <div class="bg-gradient-to-r from-gray-50 to-gray-100 py-8 px-6 border-l-4 border-orange-500">
             <p class="text-gray-700 text-xl leading-relaxed">
-              ${statementContent}
+              ${formattedContent}
             </p>
           </div>
         `;
@@ -431,7 +429,7 @@ const StatementComponent = React.forwardRef(({
     <>
       {/* Statement Type Sidebar */}
       {showStatementSidebar && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[9999] flex">
           <div className="w-[480px] bg-white shadow-2xl animate-slide-in-left">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -479,14 +477,32 @@ const StatementComponent = React.forwardRef(({
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Content</label>
-              <ReactQuill
+              <label className="block text-sm font-medium mb-2">Statement Text</label>
+              {/* Bold button only for statement-c */}
+              {currentStatementType === 'statement-c' && (
+                <div className="mb-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBoldToggle}
+                    className="flex items-center gap-2"
+                  >
+                    <Bold className="h-4 w-4" />
+                    Bold
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select text and click Bold to highlight important words
+                  </p>
+                </div>
+              )}
+              <textarea
+                ref={setTextareaRef}
                 value={statementContent}
-                onChange={handleContentChange}
-                modules={getStatementToolbarModules()}
-                theme="snow"
+                onChange={(e) => handleContentChange(e.target.value)}
                 placeholder="Enter your statement content..."
-                style={{ height: '250px', marginBottom: '50px' }}
+                className="w-full h-40 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={6}
               />
             </div>
           </div>

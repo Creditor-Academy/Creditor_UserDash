@@ -139,7 +139,7 @@ const ModuleLessonsView = () => {
         title: newLesson.title,
         description: newLesson.description,
         order: parseInt(newLesson.order) || 1,
-        status: newLesson.status,
+        lesson_status: newLesson.status,
       };
       
       const response = await axios.post(
@@ -154,9 +154,14 @@ const ModuleLessonsView = () => {
         }
       );
 
-      // Add the new lesson to the list
+      // Add the new lesson to the list with normalized status field
       const createdLesson = response.data.data || response.data;
-      setLessons(prev => [...prev, createdLesson]);
+      // Normalize the status field to ensure consistent display
+      const normalizedLesson = {
+        ...createdLesson,
+        status: createdLesson.lesson_status || createdLesson.status || newLesson.status
+      };
+      setLessons(prev => [...prev, normalizedLesson]);
       
       // Reset form and close dialog
       setNewLesson({
