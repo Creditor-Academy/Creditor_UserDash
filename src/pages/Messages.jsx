@@ -122,7 +122,7 @@ function Messages() {
       })();
     };
 
-    const onReceiveMessage = ({ from, message, image }) => {
+    const onReceiveMessage = ({ from, message, image, messageid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
       setMessages(prev => [
@@ -139,6 +139,14 @@ function Messages() {
           type: 'text',
         },
       ]);
+
+      // If the message is from someone else and we're inside this conversation, mark it seen
+      try {
+        if (!isSelf && conversationId && messageid) {
+          const s = getSocket();
+          s.emit('messageSeenByReceiver', { messageid, conversationid: conversationId });
+        }
+      } catch {}
     };
 
     const onConversationUpdated = (updatePayload) => {
@@ -503,7 +511,7 @@ function Messages() {
                   </Avatar>
                    <div className="flex-1 min-w-0">
                      <div className="flex justify-between items-center">
-                       <p className="font-medium">{friend.name}</p>
+                       <p className={`font-medium ${friend.isRead === false ? 'font-extrabold' : ''}`}>{friend.name}</p>
                        {(() => {
                          const currentUserId = localStorage.getItem('userId');
                          const isUnread = friend.isRead === false && 
@@ -514,7 +522,7 @@ function Messages() {
                          ) : null;
                        })()}
                      </div>
-                     <p className="text-sm text-muted-foreground truncate">
+                     <p className={`text-sm truncate ${friend.isRead === false ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                        {friend.lastMessage || 'Start a conversation'}
                      </p>
                    </div>
