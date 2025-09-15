@@ -344,9 +344,74 @@ const CreateScenario = () => {
     );
   };
 
+  // New function to render all choices horizontally at the same level
+  const renderChoicesHorizontally = (choices, level) => {
+    return (
+      <div className="flowchart-choices-horizontal" data-level={level}>
+        {choices.map((choice, cIdx) => (
+          <div key={choice.id} className="flowchart-choice-wrapper">
+            {/* Choice Node */}
+            <div className="flowchart-choice-node">
+              <div className={`flowchart-choice-badge ${getBranchTypeColor(choice.branchType)}`}>
+                {getBranchTypeIcon(choice.branchType)}
+              </div>
+              <div className="flowchart-choice-text">{choice.text}</div>
+            </div>
+            
+            {/* Connection line from choice to next decision */}
+            {choice.nextDecisionId ? (
+              <div className="flowchart-choice-connector">
+                <div className="flowchart-choice-arrow">↓</div>
+              </div>
+            ) : (
+              <div className="flowchart-choice-connector">
+                <div className="flowchart-end-arrow">●</div>
+              </div>
+            )}
+            
+            {/* Next Decision or End */}
+            {choice.nextDecisionId ? (
+              <div className="flowchart-next-decision">
+                {decisions.find(d => d.id === choice.nextDecisionId) && (
+                  (() => {
+                    const nextDecision = decisions.find(d => d.id === choice.nextDecisionId);
+                    return (
+                      <div className="flowchart-node-container" data-level={nextDecision.level}>
+                        {/* Decision Node */}
+                        <div className="flowchart-decision-node">
+                          <div className="flowchart-decision-title">
+                            <div className="flowchart-level-badge">L{nextDecision.level}</div>
+                            <div className="flowchart-decision-text">{nextDecision.title}</div>
+                          </div>
+                        </div>
+                        
+                        {/* Connection line from decision to choices */}
+                        <div className="flowchart-decision-connector"></div>
+                        
+                        {/* Choices Container - Horizontal Layout */}
+                        {renderChoicesHorizontally(nextDecision.choices, nextDecision.level)}
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
+            ) : (
+              <div className="flowchart-end-node">
+                <div className="flowchart-end-text">End</div>
+                <div className={`flowchart-end-badge ${getBranchTypeColor(choice.branchType)}`}>
+                  {getBranchTypeIcon(choice.branchType)}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderFlowchartNode = (decision) => {
     return (
-      <div className="flowchart-node-container">
+      <div className="flowchart-node-container" data-level={decision.level}>
         {/* Decision Node */}
         <div className="flowchart-decision-node">
           <div className="flowchart-decision-title">
@@ -355,43 +420,11 @@ const CreateScenario = () => {
           </div>
         </div>
         
-        {/* Choices */}
-        <div className="flowchart-choices">
-          {decision.choices.map((choice, cIdx) => (
-            <div key={choice.id} className="flowchart-choice-container">
-              {/* Choice Line */}
-              <div className="flowchart-choice-line">
-                <div className={`flowchart-choice-badge ${getBranchTypeColor(choice.branchType)}`}>
-                  {getBranchTypeIcon(choice.branchType)}
-                </div>
-                <div className="flowchart-choice-text">{choice.text}</div>
-              </div>
-              
-              {/* Next Decision or End */}
-              {choice.nextDecisionId ? (
-                <div className="flowchart-next">
-                  {decisions.find(d => d.id === choice.nextDecisionId) && (
-                    <>
-                      <div className="flowchart-arrow">↓</div>
-                      <div className="flowchart-next-decision">
-                        {renderFlowchartNode(decisions.find(d => d.id === choice.nextDecisionId))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="flowchart-end">
-                  <div className="flowchart-end-node">
-                    <div className="flowchart-end-text">End</div>
-                    <div className={`flowchart-end-badge ${getBranchTypeColor(choice.branchType)}`}>
-                      {getBranchTypeIcon(choice.branchType)}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        {/* Connection line from decision to choices */}
+        <div className="flowchart-decision-connector"></div>
+        
+        {/* Choices Container - Horizontal Layout for ALL levels */}
+        {renderChoicesHorizontally(decision.choices, decision.level)}
       </div>
     );
   };
@@ -1252,6 +1285,12 @@ const flowchartStyles = `
     flex-direction: column;
     align-items: center;
     position: relative;
+    margin-bottom: 40px;
+  }
+  
+  .flowchart-branch:not(:last-child) {
+    border-bottom: 2px dashed #e5e7eb;
+    padding-bottom: 40px;
   }
   
   .flowchart-node-container {
@@ -1259,6 +1298,36 @@ const flowchartStyles = `
     flex-direction: column;
     align-items: center;
     margin: 20px 0;
+    position: relative;
+  }
+  
+  /* Add visual depth for nested levels - only for main decision containers */
+  .flowchart-branch .flowchart-node-container[data-level="2"] {
+    background: rgba(139, 92, 246, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+  
+  .flowchart-branch .flowchart-node-container[data-level="3"] {
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+  
+  .flowchart-branch .flowchart-node-container[data-level="4"] {
+    background: rgba(16, 185, 129, 0.05);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  
+  /* Remove background for nested decisions within choices */
+  .flowchart-next-decision .flowchart-node-container[data-level] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
   }
   
   .flowchart-decision-node {
@@ -1291,102 +1360,199 @@ const flowchartStyles = `
     font-size: 14px;
   }
   
-  .flowchart-choices {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-top: 20px;
-    width: 100%;
-  }
-  
-  .flowchart-choice-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-  }
-  
-  .flowchart-choice-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    min-width: 200px;
-    position: relative;
-  }
-  
-  .flowchart-choice-line::before {
-    content: '';
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
+  .flowchart-decision-connector {
     width: 2px;
     height: 20px;
     background: #cbd5e1;
+    margin: 10px auto;
+  }
+  
+  .flowchart-choices-horizontal {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 20px;
+    width: 100%;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  
+  /* Ensure all levels use horizontal layout */
+  .flowchart-choices-horizontal .flowchart-choices-horizontal {
+    margin-top: 10px;
+  }
+  
+  /* Force horizontal layout for all nested levels */
+  .flowchart-choices-horizontal[data-level] {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+    flex-wrap: wrap !important;
+  }
+  
+  /* Ensure nested decision choices are also horizontal */
+  .flowchart-next-decision .flowchart-choices-horizontal {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+    flex-wrap: wrap !important;
+  }
+  
+  /* Make sure L2 choices appear horizontally like L1 */
+  .flowchart-choice-wrapper .flowchart-next-decision {
+    position: relative;
+    width: 100%;
+  }
+  
+  .flowchart-choice-wrapper .flowchart-next-decision .flowchart-choices-horizontal {
+    position: relative;
+    width: 100%;
+    margin-top: 15px;
+  }
+  
+  .flowchart-choice-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 180px;
+    max-width: 250px;
+  }
+  
+  .flowchart-choice-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    min-width: 160px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .flowchart-choice-node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .flowchart-choice-connector {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+  }
+  
+  .flowchart-choice-arrow {
+    font-size: 18px;
+    color: #6b7280;
+    font-weight: bold;
+  }
+  
+  .flowchart-end-arrow {
+    font-size: 16px;
+    color: #ef4444;
+    font-weight: bold;
   }
   
   .flowchart-choice-badge {
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 14px;
     font-weight: bold;
-    min-width: 24px;
+    min-width: 32px;
     text-align: center;
   }
   
   .flowchart-choice-text {
     font-size: 13px;
     color: #374151;
-    flex: 1;
-  }
-  
-  .flowchart-arrow {
-    font-size: 20px;
-    color: #6b7280;
-    margin: 8px 0;
-  }
-  
-  .flowchart-next {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+    word-wrap: break-word;
   }
   
   .flowchart-next-decision {
-    margin-top: 8px;
-  }
-  
-  .flowchart-end {
+    margin-top: 20px;
     display: flex;
     justify-content: center;
-    margin-top: 16px;
+    position: relative;
+    width: 100%;
+  }
+  
+  .flowchart-next-decision::before {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 15px;
+    background: #cbd5e1;
+  }
+  
+  /* Ensure nested decisions also display choices horizontally */
+  .flowchart-next-decision .flowchart-node-container {
+    margin: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    width: 100%;
+  }
+  
+  .flowchart-next-decision .flowchart-decision-node {
+    margin-bottom: 10px;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  .flowchart-next-decision .flowchart-choices-horizontal {
+    margin-top: 10px;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 15px !important;
+    flex-wrap: wrap !important;
+  }
+  
+  /* Make nested decision choices smaller and more compact */
+  .flowchart-next-decision .flowchart-choice-wrapper {
+    min-width: 120px;
+    max-width: 180px;
+  }
+  
+  .flowchart-next-decision .flowchart-choice-node {
+    padding: 8px 12px;
+    min-width: 100px;
+    font-size: 11px;
+  }
+  
+  .flowchart-next-decision .flowchart-choice-text {
+    font-size: 11px;
   }
   
   .flowchart-end-node {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 12px 16px;
     background: #f3f4f6;
     border: 2px solid #d1d5db;
-    border-radius: 8px;
-    position: relative;
-  }
-  
-  .flowchart-end-node::before {
-    content: '';
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 20px;
-    background: #cbd5e1;
+    border-radius: 12px;
+    min-width: 120px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
   
   .flowchart-end-text {
@@ -1402,16 +1568,64 @@ const flowchartStyles = `
     font-weight: bold;
   }
   
+  /* Add visual indicators for decision level depth */
+  .flowchart-node-container[data-level="1"] .flowchart-decision-node {
+    background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  }
+  
+  .flowchart-node-container[data-level="2"] .flowchart-decision-node {
+    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+  
+  .flowchart-node-container[data-level="3"] .flowchart-decision-node {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+  
+  .flowchart-node-container[data-level="4"] .flowchart-decision-node {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  }
+
   /* Responsive adjustments */
   @media (max-width: 768px) {
-    .flowchart-decision-node,
-    .flowchart-choice-line {
+    .flowchart-choices-horizontal {
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .flowchart-choice-wrapper {
       min-width: 150px;
+      max-width: 200px;
+    }
+    
+    .flowchart-decision-node,
+    .flowchart-choice-node {
+      min-width: 140px;
     }
     
     .flowchart-decision-text,
     .flowchart-choice-text {
       font-size: 12px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .flowchart-choices-horizontal {
+      gap: 12px;
+    }
+    
+    .flowchart-choice-wrapper {
+      min-width: 120px;
+      max-width: 160px;
+    }
+    
+    .flowchart-choice-node {
+      padding: 8px 12px;
+      min-width: 120px;
     }
   }
 `;
