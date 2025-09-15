@@ -23,7 +23,8 @@ import AssignmentResultsPage from "@/pages/AssignmentResultsPage";
 import EssayInstructionPage from "@/pages/EssayInstructionPage";
 import EssayTakePage from "@/pages/EssayTakePage";
 import EssayResultsPage from "@/pages/EssayResultsPage";
-import  Groups  from "@/pages/Groups";
+import ModernLessonDemo from "@/pages/ModernLessonDemo";
+import Groups from "@/pages/Groups";
 import Catalog from "@/pages/Catalog";
 import CatelogCourses from "@/pages/CatelogCourses";
 import Home from "@/pages/home.jsx";
@@ -201,7 +202,7 @@ function App() {
                   <Route path="assessments" element={<ModuleAssessmentsView />} />
                   <Route path="lesson/:lessonId">
                     <Route index element={<LessonView />} />
-                    <Route path="view" element={<LessonBuilder viewMode={true} />} />
+                    <Route path="view" element={<LessonBuilder />} />
                     <Route path="detail" element={<LessonDetail />} />
                     <Route path="builder" element={<LessonBuilder />} />
                   </Route>
@@ -323,6 +324,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
           <Route path="/scorm/:courseId" element={<Scrompack />} />
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
+          <Route path="/modern-lesson-demo" element={<ModernLessonDemo />} />
           <Route path="/games" element={<Games />} />
           </Routes>
           <Toaster />

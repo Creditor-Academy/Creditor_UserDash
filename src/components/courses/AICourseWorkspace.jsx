@@ -33,7 +33,8 @@ import AISummarizationTool from './AISummarizationTool';
 import AIQuestionAnswering from './AIQuestionAnswering';
 import { AIFeatureAccessProvider } from './AIFeatureAccess';
 import LoadingBuffer from '../LoadingBuffer';
-import UnifiedLessonPreview from './UnifiedLessonPreview';
+import ModernLessonPreview from './ModernLessonPreview';
+import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import { generateCourseImage } from '@/services/aiCourseService';
 import { createModule, createLesson, createAICourse, createAIModulesAndLessons } from '@/services/courseService';
 
@@ -286,7 +287,11 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
             
             // Add introduction
             if (lesson.introduction || lesson.intro) {
-              lessonContent += `## Introduction\n\n${lesson.introduction || lesson.intro}\n\n`;
+              lessonContent += `## Introduction
+
+${lesson.introduction || lesson.intro}
+
+`;
             }
             
             // Add content points
@@ -294,7 +299,11 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
               lessonContent += `## Key Learning Points\n\n`;
               lesson.content.forEach((point, index) => {
                 if (typeof point === 'object' && point.title && point.description) {
-                  lessonContent += `### ${index + 1}. ${point.title}\n\n${point.description}\n\n`;
+                  lessonContent += `### ${index + 1}. ${point.title}
+
+${point.description}
+
+`;
                 } else {
                   lessonContent += `### ${index + 1}. ${point}\n\n`;
                 }
@@ -311,7 +320,11 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
             
             // Add summary
             if (lesson.summary) {
-              lessonContent += `## Summary\n\n${lesson.summary}\n\n`;
+              lessonContent += `## Summary
+
+${lesson.summary}
+
+`;
             }
 
             allLessons.push({
@@ -773,7 +786,13 @@ Return this exact JSON shape without markdown fences:
             const points = (completeLesson?.content?.mainContent || []).map((p, i) => `- ${p.point}: ${p.description}`).join('\n');
             const qa = (completeLesson?.content?.qa || []).map((q, i) => `Q${i + 1}: ${q.question}\nA: ${q.answer}`).join('\n');
             const summary = completeLesson?.content?.summary || '';
-            const description = [intro, points && `\nKey Points:\n${points}`, qa && `\nPractice:\n${qa}`, summary && `\nSummary:\n${summary}`]
+            const description = [intro, points && `
+Key Points:
+${points}`, qa && `
+Practice:
+${qa}`, summary && `
+Summary:
+${summary}`]
               .filter(Boolean)
               .join('\n\n');
 
@@ -3135,21 +3154,17 @@ Return JSON with this complete educational structure:
         </div>
       )}
 
-      {/* Unified Lesson Preview Modal */}
-      <UnifiedLessonPreview
-        lesson={previewLesson}
-        isOpen={showLessonPreview}
-        onClose={() => {
-          setShowLessonPreview(false);
-          setPreviewLesson(null);
-        }}
-        isAILesson={true}
-        onBlockUpdate={(blockId, content) => {
-          // Handle block updates for AI lessons
-          console.log('Updating AI lesson block:', blockId, content);
-          // You can implement the update logic here
-        }}
-      />
+      {/* Modern Lesson Preview Modal */}
+      {previewLesson && (
+        <ModernLessonPreview
+          lesson={convertToModernLessonFormat(previewLesson, [], true)}
+          isOpen={showLessonPreview}
+          onClose={() => {
+            setShowLessonPreview(false);
+            setPreviewLesson(null);
+          }}
+        />
+      )}
     </div>
   );
 };
