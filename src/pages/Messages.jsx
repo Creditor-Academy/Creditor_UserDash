@@ -140,7 +140,7 @@ function Messages() {
         },
       ]);
 
-      // If the message is from someone else and we're inside this conversation, mark it seen
+      // If the incoming message is from someone else and we're inside this conversation, mark it read
       try {
         if (!isSelf && conversationId && messageid) {
           const s = getSocket();
@@ -511,7 +511,7 @@ function Messages() {
                   </Avatar>
                    <div className="flex-1 min-w-0">
                      <div className="flex justify-between items-center">
-                       <p className={`font-medium ${friend.isRead === false ? 'font-extrabold' : ''}`}>{friend.name}</p>
+                       <p className="font-medium">{friend.name}</p>
                        {(() => {
                          const currentUserId = localStorage.getItem('userId');
                          const isUnread = friend.isRead === false && 
@@ -522,7 +522,7 @@ function Messages() {
                          ) : null;
                        })()}
                      </div>
-                     <p className={`text-sm truncate ${friend.isRead === false ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                     <p className="text-sm text-muted-foreground truncate">
                        {friend.lastMessage || 'Start a conversation'}
                      </p>
                    </div>
