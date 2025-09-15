@@ -21,11 +21,13 @@ import {
   Table,
   Loader2,
   MessageSquare,
-  Quote
+  Quote,
+  Layers
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
 import TableComponent from '@/components/TableComponent';
+import InteractiveComponent from '@/components/InteractiveComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -186,7 +188,7 @@ const slideInLeftStyle = `
     font-size: 1.5em;
   }
   .ql-size-huge {
-    font-size: 2.5em;
+    font-size: 3em;
   }
 `;
 
@@ -198,6 +200,56 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(styleSheet);
 }
 
+// Global functions for interactive components
+if (typeof window !== 'undefined') {
+  window.switchTab = function(containerId, activeIndex) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const tabButtons = container.querySelectorAll('.tab-button');
+    const tabPanels = container.querySelectorAll('.tab-panel');
+    
+    tabButtons.forEach((button, index) => {
+      if (index === activeIndex) {
+        button.classList.add('border-b-2', 'border-blue-500', 'text-blue-600', 'bg-blue-50');
+        button.classList.remove('text-gray-500');
+      } else {
+        button.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600', 'bg-blue-50');
+        button.classList.add('text-gray-500');
+      }
+    });
+    
+    tabPanels.forEach((panel, index) => {
+      if (index === activeIndex) {
+        panel.classList.remove('hidden');
+        panel.classList.add('block');
+      } else {
+        panel.classList.add('hidden');
+        panel.classList.remove('block');
+      }
+    });
+  };
+
+  window.toggleAccordion = function(containerId, index) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const content = container.querySelector(`[data-content="${index}"]`);
+    const icon = container.querySelector(`[data-icon="${index}"]`);
+    
+    if (!content || !icon) return;
+    
+    if (content.classList.contains('max-h-0')) {
+      content.classList.remove('max-h-0');
+      content.classList.add('max-h-96', 'pb-4');
+      icon.classList.add('rotate-180');
+    } else {
+      content.classList.add('max-h-0');
+      content.classList.remove('max-h-96', 'pb-4');
+      icon.classList.remove('rotate-180');
+    }
+  };
+}
 
 // Register font families with proper display names
 const Font = Quill.import('formats/font');
@@ -360,6 +412,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
   const [showTableComponent, setShowTableComponent] = useState(false);
   const [editingTableBlock, setEditingTableBlock] = useState(null);
+  const [showInteractiveTemplateSidebar, setShowInteractiveTemplateSidebar] = useState(false);
+  const [showInteractiveEditDialog, setShowInteractiveEditDialog] = useState(false);
+  const [editingInteractiveBlock, setEditingInteractiveBlock] = useState(null);
 
   // Image block templates
   const imageTemplates = [
@@ -477,6 +532,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       id: 'scorm',
       title: 'SCORM',
       icon: <Box className="h-5 w-5" />
+    },
+    {
+      id: 'interactive',
+      title: 'Interactive',
+      icon: <Layers className="h-5 w-5" />
     }
   ];
 
@@ -584,6 +644,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setShowLinkDialog(true);
     } else if (blockType.id === 'pdf') {
       setShowPdfDialog(true);
+    } else if (blockType.id === 'interactive') {
+      setShowInteractiveTemplateSidebar(true);
     } else {
       addContentBlock(blockType);
     }
@@ -761,6 +823,31 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const handleTableTemplateSelect = (newBlock) => {
     // Only add to contentBlocks - this is the primary state for managing blocks
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  // Interactive component callbacks
+  const handleInteractiveTemplateSelect = (newBlock) => {
+    const interactiveBlock = {
+      id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
+      type: 'interactive',
+      title: 'Interactive',
+      content: newBlock.content,
+      html_css: newBlock.html_css,
+      order: contentBlocks.length + 1
+    };
+    setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+  };
+
+  const handleInteractiveUpdate = (blockId, updatedContent) => {
+    setContentBlocks(prevBlocks =>
+      prevBlocks.map(block =>
+        block.id === blockId
+          ? { ...block, content: updatedContent.content, html_css: updatedContent.html_css }
+          : block
+      )
+    );
+    setEditingInteractiveBlock(null);
   };
 
   const handleTableUpdate = (blockId, content, htmlContent, tableType = null) => {
@@ -1386,6 +1473,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
+    } else if (block.type === 'interactive') {
+      // Handle interactive block editing
+      console.log('Interactive block detected for editing:', block);
+      
+      // Set the editing interactive block and show the interactive edit dialog
+      setEditingInteractiveBlock(block);
+      setShowInteractiveEditDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -1786,6 +1880,78 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               <iframe src="${url}" class="pdf-iframe" style="width: 100%; height: 600px; border: none; border-radius: 12px;"></iframe>
             </div>
           `;
+        }
+      } else if (block.type === 'interactive') {
+        // For interactive blocks, use the saved html_css content
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from interactive content
+          try {
+            const interactiveContent = JSON.parse(block.content || '{}');
+            const template = interactiveContent.template;
+            const data = interactiveContent[template === 'tabs' ? 'tabsData' : 'accordionData'] || [];
+            
+            if (template === 'tabs') {
+              const tabsId = `tabs-${Date.now()}`;
+              html = `
+                <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-blue-500 to-purple-600">
+                  <div class="interactive-tabs" data-template="tabs" id="${tabsId}">
+                    <div class="flex border-b border-gray-200 mb-4" role="tablist">
+                      ${data.map((tab, index) => `
+                        <button class="tab-button px-4 py-2 text-sm font-medium transition-colors duration-200 ${index === 0 ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}" 
+                                role="tab" 
+                                data-tab="${index}"
+                                data-container="${tabsId}"
+                                onclick="window.switchTab('${tabsId}', ${index})">
+                          ${tab.title}
+                        </button>
+                      `).join('')}
+                    </div>
+                    <div class="tab-content">
+                      ${data.map((tab, index) => `
+                        <div class="tab-panel ${index === 0 ? 'block' : 'hidden'}" 
+                             role="tabpanel" 
+                             data-tab="${index}">
+                          <div class="text-gray-700 leading-relaxed">${tab.content}</div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                </div>
+              `;
+            } else if (template === 'accordion') {
+              const accordionId = `accordion-${Date.now()}`;
+              html = `
+                <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-green-500 to-blue-600">
+                  <div class="interactive-accordion" data-template="accordion" id="${accordionId}">
+                    <div class="space-y-3">
+                      ${data.map((item, index) => `
+                        <div class="accordion-item border border-gray-200 rounded-lg">
+                          <button class="accordion-header w-full px-4 py-3 text-left bg-gray-50 hover:bg-gray-100 transition-colors duration-200 flex items-center justify-between rounded-lg"
+                                  data-accordion="${index}"
+                                  data-container="${accordionId}"
+                                  onclick="window.toggleAccordion('${accordionId}', ${index})">
+                            <span class="font-medium text-gray-800">${item.title}</span>
+                            <svg class="accordion-icon w-5 h-5 text-gray-500 transition-transform duration-200" 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                          </button>
+                          <div class="accordion-content hidden px-4 py-3 text-gray-700 leading-relaxed border-t border-gray-200">
+                            ${item.content}
+                          </div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+          } catch (error) {
+            console.error('Error parsing interactive content:', error);
+            html = '<div class="text-red-500">Error loading interactive content</div>';
+          }
         }
       }
 
@@ -4434,6 +4600,23 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                             </div>
                                           </div>
                                         )}
+
+                                        {/* Interactive Content */}
+                                        {block.type === 'interactive' && (
+                                          <div className="mb-8">
+                                            {block.html_css ? (
+                                              <div
+                                                className="max-w-none"
+                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                              />
+                                            ) : (
+                                              <div
+                                                className="max-w-none text-gray-800 leading-relaxed"
+                                                dangerouslySetInnerHTML={{ __html: block.content }}
+                                              />
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })}
@@ -4924,6 +5107,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   <h3 className="text-lg font-semibold text-gray-900">Statement</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Statement
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none text-gray-800 leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
+                              </div>
+                            )}
+                           
+                            {block.type === 'interactive' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">Interactive</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Interactive
                                   </Badge>
                                 </div>
                                 
@@ -6021,6 +6227,17 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         onQuoteTemplateSelect={handleQuoteTemplateSelect}
         onQuoteUpdate={handleQuoteUpdate}
         editingQuoteBlock={editingQuoteBlock}
+      />
+
+      {/* Interactive Component */}
+      <InteractiveComponent
+        showInteractiveTemplateSidebar={showInteractiveTemplateSidebar}
+        setShowInteractiveTemplateSidebar={setShowInteractiveTemplateSidebar}
+        showInteractiveEditDialog={showInteractiveEditDialog}
+        setShowInteractiveEditDialog={setShowInteractiveEditDialog}
+        onInteractiveTemplateSelect={handleInteractiveTemplateSelect}
+        onInteractiveUpdate={handleInteractiveUpdate}
+        editingInteractiveBlock={editingInteractiveBlock}
       />
 
       {/* Image Dialog */}
