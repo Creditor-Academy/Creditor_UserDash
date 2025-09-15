@@ -8,6 +8,7 @@ import { uploadVideo as uploadVideoResource } from '@/services/videoUploadServic
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import UnifiedLessonPreview from '@/components/courses/UnifiedLessonPreview';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
   Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
@@ -1318,9 +1319,129 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
+  const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
+
   const handlePreview = () => {
     console.log('Previewing lesson:', { lessonTitle, contentBlocks });
-    alert('Preview functionality coming soon!');
+    setShowUnifiedPreview(true);
+  };
+
+  // Convert LessonBuilder content blocks to UnifiedLessonPreview format
+  const convertToUnifiedFormat = () => {
+    // Use contentBlocks if available, otherwise fall back to lessonContent
+    const sourceBlocks = (contentBlocks && contentBlocks.length > 0) 
+      ? contentBlocks 
+      : (lessonContent?.data?.content || []);
+
+    const convertedBlocks = sourceBlocks.map((block, index) => {
+      const baseBlock = {
+        id: block.id || block.block_id || `block-${index}`,
+        type: block.type || 'text',
+        order: block.order || index
+      };
+
+      switch (block.type) {
+        case 'text':
+          return {
+            ...baseBlock,
+            content: block.content || block.html_css || '',
+            textType: block.textType || 'paragraph'
+          };
+        
+        case 'image':
+          return {
+            ...baseBlock,
+            imageUrl: block.imageUrl || block.details?.image_url || '',
+            imageTitle: block.imageTitle || block.details?.caption || 'Image',
+            imageDescription: block.imageDescription || block.text || block.details?.description || '',
+            layout: block.layout || block.details?.layout || 'centered'
+          };
+        
+        case 'video':
+          return {
+            ...baseBlock,
+            videoUrl: block.videoUrl || block.details?.video_url || '',
+            videoTitle: block.videoTitle || block.details?.caption || 'Video',
+            videoDescription: block.videoDescription || block.details?.description || ''
+          };
+        
+        case 'youtube':
+          return {
+            ...baseBlock,
+            youtubeId: block.youtubeId || (block.youtubeUrl || block.details?.url)?.split('v=')[1]?.split('&')[0] || '',
+            youtubeTitle: block.youtubeTitle || block.details?.caption || 'YouTube Video',
+            youtubeDescription: block.youtubeDescription || block.details?.description || ''
+          };
+        
+        case 'audio':
+          return {
+            ...baseBlock,
+            audioUrl: block.audioUrl || block.details?.audio_url || '',
+            audioTitle: block.audioTitle || block.details?.caption || 'Audio',
+            audioDescription: block.audioDescription || block.details?.description || ''
+          };
+        
+        case 'pdf':
+          return {
+            ...baseBlock,
+            pdfUrl: block.pdfUrl || block.details?.pdf_url || '',
+            pdfTitle: block.pdfTitle || block.details?.caption || 'PDF Document',
+            pdfDescription: block.pdfDescription || block.details?.description || ''
+          };
+        
+        case 'statement':
+          return {
+            ...baseBlock,
+            content: block.content || block.html_css || '',
+            textType: 'statement'
+          };
+        
+        default:
+          return {
+            ...baseBlock,
+            type: 'text',
+            content: block.content || block.html_css || 'Content block',
+            textType: 'paragraph'
+          };
+      }
+    });
+
+    return {
+      title: lessonTitle || lessonData?.title || 'Untitled Lesson',
+      description: lessonData?.description || '',
+      blocks: convertedBlocks.sort((a, b) => (a.order || 0) - (b.order || 0))
+    };
+  };
+
+  // Handle block updates from the unified preview
+  const handleBlockUpdate = (blockId, updatedBlock) => {
+    console.log('Updating block:', blockId, updatedBlock);
+    
+    // Update contentBlocks if they exist
+    if (contentBlocks && contentBlocks.length > 0) {
+      setContentBlocks(prevBlocks => 
+        prevBlocks.map(block => 
+          (block.id || block.block_id) === blockId 
+            ? { ...block, ...updatedBlock }
+            : block
+        )
+      );
+    }
+    
+    // Also update lessonContent if it exists
+    if (lessonContent?.data?.content) {
+      setLessonContent(prev => ({
+        ...prev,
+        data: {
+          ...prev.data,
+          content: prev.data.content.map(block => 
+            (block.id || block.block_id) === blockId 
+              ? { ...block, ...updatedBlock }
+              : block
+          )
+        }
+      }));
+    }
   };
 
   // Convert blocks to HTML/CSS format
@@ -3676,9 +3797,19 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                     ) : (
                       <>
                         <Eye className="h-4 w-4 mr-1" />
-                        Preview
+                        View
                       </>
                     )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreview}
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Interactive Preview
                   </Button>
                  
                   {!isViewMode && (
@@ -6259,6 +6390,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+
+      {/* Unified Lesson Preview Modal */}
+      {showUnifiedPreview && (
+        <UnifiedLessonPreview
+          lesson={convertToUnifiedFormat()}
+          isOpen={showUnifiedPreview}
+          onClose={() => setShowUnifiedPreview(false)}
+          onBlockUpdate={handleBlockUpdate}
+        />
+      )}
 
     </>
   );

@@ -33,7 +33,7 @@ import AISummarizationTool from './AISummarizationTool';
 import AIQuestionAnswering from './AIQuestionAnswering';
 import { AIFeatureAccessProvider } from './AIFeatureAccess';
 import LoadingBuffer from '../LoadingBuffer';
-import LessonPreview from './LessonPreview';
+import UnifiedLessonPreview from './UnifiedLessonPreview';
 import { generateCourseImage } from '@/services/aiCourseService';
 import { createModule, createLesson, createAICourse, createAIModulesAndLessons } from '@/services/courseService';
 
@@ -129,7 +129,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                     block_id: `intro_${lesson.id}_${contentBlocks.length + 1}`,
                     type: 'text',
                     order: contentBlocks.length + 1,
-                    html_css: `<div class="lesson-introduction bg-blue-50 border-l-4 border-blue-400 p-4 rounded"><h4 class="font-semibold text-blue-800 mb-2">Introduction</h4><p class="text-blue-700">${introText}</p></div>`,
+                    html_css: `<div class="intro"><h4>Introduction</h4><p>${introText}</p></div>`,
                     details: { content: introText, section: 'introduction' }
                   });
                 }
@@ -141,7 +141,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                       block_id: `explanation_${lesson.id}_${contentBlocks.length + 1}`,
                       type: 'text',
                       order: contentBlocks.length + 1,
-                      html_css: `<div class="lesson-explanation bg-gray-50 border border-gray-200 p-4 rounded mb-3"><h5 class="font-medium text-gray-800 mb-2">${explanation.concept}</h5><p class="text-gray-600">${explanation.explanation}</p></div>`,
+                      html_css: `<div class="explanation"><h5>${explanation.concept}</h5><p>${explanation.explanation}</p></div>`,
                       details: { concept: explanation.concept, explanation: explanation.explanation, section: 'textExplanations' }
                     });
                   });
@@ -154,7 +154,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                       block_id: `example_${lesson.id}_${contentBlocks.length + 1}`,
                       type: 'text',
                       order: contentBlocks.length + 1,
-                      html_css: `<div class="lesson-example bg-purple-50 border border-purple-200 p-4 rounded mb-3"><h5 class="font-medium text-purple-800 mb-2">${example.title}</h5><p class="text-purple-700">${example.description}</p></div>`,
+                      html_css: `<div class="example"><h5>${example.title}</h5><p>${example.description}</p></div>`,
                       details: { title: example.title, description: example.description, section: 'examples' }
                     });
                   });
@@ -174,16 +174,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                       block_id: `image_${lesson.id}_${contentBlocks.length + 1}`,
                       type: 'image',
                       order: contentBlocks.length + 1,
-                      html_css: `<div class="lesson-image bg-indigo-50 border border-indigo-200 p-6 rounded-lg mb-6 text-center">
-                        <h4 class="font-semibold text-indigo-800 mb-4 flex items-center justify-center gap-2">
-                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                          </svg>
-                          Lesson Illustration
-                        </h4>
-                        <img src="${imageData.url}" alt="${imageData.alt}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md mb-3" />
-                        <p class="text-sm text-indigo-700 italic">${imageData.caption}</p>
-                      </div>`,
+                      html_css: `<div class="image"><img src="${imageData.url}" alt="${imageData.alt}" /></div>`,
                       details: { 
                         type: 'image', 
                         url: imageData.url, 
@@ -200,20 +191,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                       block_id: `video_${lesson.id}_${contentBlocks.length + 1}`,
                       type: 'video',
                       order: contentBlocks.length + 1,
-                      html_css: `<div class="lesson-video bg-purple-50 border border-purple-200 p-6 rounded-lg mb-6">
-                        <h4 class="font-semibold text-purple-800 mb-4 flex items-center gap-2">
-                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                          </svg>
-                          Educational Video (${multimedia.video.duration})
-                        </h4>
-                        <div class="relative bg-gray-900 rounded-lg overflow-hidden">
-                          <video src="${multimedia.video.url}" class="w-full h-64 object-cover" controls muted>
-                            Your browser does not support the video tag.
-                          </video>
-                        </div>
-                        <p class="text-sm text-purple-700 mt-3 italic">Interactive video content to enhance your learning experience</p>
-                      </div>`,
+                      html_css: `<div class="video"><video src="${multimedia.video.url}" controls></video></div>`,
                       details: { 
                         type: 'video', 
                         url: multimedia.video.url, 
@@ -232,7 +210,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                       block_id: `activity_${lesson.id}_${contentBlocks.length + 1}`,
                       type: 'text',
                       order: contentBlocks.length + 1,
-                      html_css: `<div class="lesson-activity bg-orange-50 border border-orange-200 p-4 rounded mb-3"><div class="flex items-center mb-2"><span class="bg-orange-200 text-orange-800 text-xs px-2 py-1 rounded-full mr-2 capitalize">${activity.type}</span><h5 class="font-medium text-orange-800">${activity.title}</h5></div><p class="text-orange-700">${activity.description}</p></div>`,
+                      html_css: `<div class="activity"><h5>${activity.title}</h5><p>${activity.description}</p></div>`,
                       details: { type: activity.type, title: activity.title, description: activity.description, section: 'activities' }
                     });
                   });
@@ -241,14 +219,14 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                 // Add key takeaways block
                 if (lesson.content?.keyTakeaways && Array.isArray(lesson.content.keyTakeaways)) {
                   const takeawaysHtml = lesson.content.keyTakeaways.map((takeaway, index) => 
-                    `<li class="flex items-start"><span class="bg-yellow-200 text-yellow-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-medium mr-3 mt-0.5">${index + 1}</span><span class="text-yellow-700">${takeaway}</span></li>`
+                    `<li>${index + 1}. ${takeaway}</li>`
                   ).join('');
                   
                   contentBlocks.push({
                     block_id: `takeaways_${lesson.id}_${contentBlocks.length + 1}`,
                     type: 'text',
                     order: contentBlocks.length + 1,
-                    html_css: `<div class="lesson-takeaways bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded"><h4 class="font-semibold text-yellow-800 mb-3">Key Takeaways</h4><ul class="space-y-2">${takeawaysHtml}</ul></div>`,
+                    html_css: `<div class="takeaways"><h4>Key Takeaways</h4><ul>${takeawaysHtml}</ul></div>`,
                     details: { takeaways: lesson.content.keyTakeaways, section: 'keyTakeaways' }
                   });
                 }
@@ -260,7 +238,7 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
                     block_id: `summary_${lesson.id}_${contentBlocks.length + 1}`,
                     type: 'text',
                     order: contentBlocks.length + 1,
-                    html_css: `<div class="lesson-summary bg-green-50 border-l-4 border-green-400 p-4 rounded"><h4 class="font-semibold text-green-800 mb-2">Summary</h4><p class="text-green-700">${summaryText}</p></div>`,
+                    html_css: `<div class="summary"><h4>Summary</h4><p>${summaryText}</p></div>`,
                     details: { content: summaryText, section: 'summary' }
                   });
                 }
@@ -443,10 +421,9 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
   // Enhanced API Key Management System for Multiple Content Types
   const getAvailableApiKey = (taskType = 'default') => {
     const keys = [
-      import.meta.env.VITE_BYTEZ_KEY,
       import.meta.env.VITE_BYTEZ_API_KEY,
-      import.meta.env.VITE_BYTEZ_API_KEY_2, 
-      import.meta.env.VITE_BYTEZ_API_KEY_3,
+      import.meta.env.VITE_BYTEZ_API_KEY_2,
+      import.meta.env.VITE_BYTEZ_API_KEY_3, 
       import.meta.env.VITE_BYTEZ_API_KEY_4
     ].filter(Boolean);
 
@@ -469,7 +446,6 @@ const AICourseWorkspace = ({ isOpen, onClose, courseData, onSave }) => {
   // Retry with different API key on failure
   const executeWithApiKeyRotation = async (taskType, apiCall) => {
     const keys = [
-      import.meta.env.VITE_BYTEZ_KEY,
       import.meta.env.VITE_BYTEZ_API_KEY,
       import.meta.env.VITE_BYTEZ_API_KEY_2,
       import.meta.env.VITE_BYTEZ_API_KEY_3,
@@ -1315,13 +1291,35 @@ Return this exact JSON shape without markdown fences:
               id: 1,
               title: `Getting Started with ${subject}`,
               heading: `Getting Started with ${subject}`,
-              introduction: `Welcome to your ${subject} learning journey. This comprehensive lesson will introduce you to the essential concepts and provide you with a solid foundation to build upon.`,
-              content: [
-                `Understanding what ${subject} is and why it's important in today's world`,
-                `Key terminology, concepts, and fundamental principles you need to know`,
-                `Setting up your learning environment and exploring available resources`
-              ],
-              summary: `You now have a clear understanding of ${subject} fundamentals and are well-prepared to continue your learning journey with confidence.`,
+              introduction: `${subject} is a modern technology for building applications.`,
+              content: {
+                introduction: `${subject} is a modern technology for building applications.`,
+                mainContent: [
+                  `Understanding what ${subject} is and why it's important in today's world`,
+                  `Key terminology, concepts, and fundamental principles you need to know`,
+                  `Setting up your learning environment and exploring available resources`
+                ],
+                examples: [
+                  { title: `Basic ${subject} Example`, description: `A simple demonstration of ${subject} concepts in action` },
+                  { title: `Real-world Application`, description: `How ${subject} is used in professional environments` }
+                ],
+                multimedia: {
+                  image: `/placeholder-${subject.toLowerCase()}-diagram.jpg`,
+                  video: null,
+                  hasVideo: false
+                },
+                qa: [
+                  { question: `What is ${subject}?`, answer: `${subject} is a powerful technology/concept that enables developers to build modern applications efficiently.` },
+                  { question: `Why should I learn ${subject}?`, answer: `Learning ${subject} opens up numerous career opportunities and helps you build better applications.` }
+                ],
+                keyTakeaways: [
+                  `${subject} is essential for modern development`,
+                  `Understanding core concepts is crucial for success`,
+                  `Practical application reinforces theoretical knowledge`
+                ],
+                summary: `${subject} fundamentals covered successfully.`
+              },
+              summary: `${subject} fundamentals covered successfully.`,
               duration: '15-20 min',
               isAIGenerated: false
             }
@@ -1337,13 +1335,36 @@ Return this exact JSON shape without markdown fences:
               id: 2,
               title: `Core ${subject} Concepts`,
               heading: `Core ${subject} Concepts`,
-              introduction: `Building on your foundational knowledge, this lesson dives deeper into the core concepts that make ${subject} powerful and practical for real-world applications.`,
-              content: [
-                `Essential principles and methodologies that drive ${subject} success`,
-                `Common patterns, best practices, and industry standards to follow`,
-                `Practical examples and hands-on exercises to reinforce your learning`
-              ],
-              summary: `You've successfully mastered the core concepts of ${subject} and are now equipped with the knowledge to tackle more advanced topics and real-world challenges.`,
+              introduction: `Advanced ${subject} concepts and implementation.`,
+              content: {
+                introduction: `Advanced ${subject} concepts and implementation.`,
+                mainContent: [
+                  `Essential principles and methodologies that drive ${subject} success`,
+                  `Common patterns, best practices, and industry standards to follow`,
+                  `Practical examples and hands-on exercises to reinforce your learning`
+                ],
+                examples: [
+                  { title: `Advanced ${subject} Pattern`, description: `Complex implementation showcasing ${subject} best practices` },
+                  { title: `Performance Optimization`, description: `Techniques to optimize ${subject} applications for better performance` }
+                ],
+                multimedia: {
+                  image: `/placeholder-${subject.toLowerCase()}-architecture.jpg`,
+                  video: `/placeholder-${subject.toLowerCase()}-tutorial.mp4`,
+                  hasVideo: true
+                },
+                qa: [
+                  { question: `What are the key principles of ${subject}?`, answer: `The key principles include modularity, reusability, and maintainability.` },
+                  { question: `How do I implement best practices?`, answer: `Follow established patterns, write clean code, and test thoroughly.` },
+                  { question: `What are common mistakes to avoid?`, answer: `Avoid overcomplicating solutions and neglecting performance considerations.` }
+                ],
+                keyTakeaways: [
+                  `Master the fundamental principles before moving to advanced topics`,
+                  `Best practices ensure maintainable and scalable code`,
+                  `Regular practice and real-world application solidify understanding`
+                ],
+                summary: `Core ${subject} concepts mastered.`
+              },
+              summary: `Core ${subject} concepts mastered.`,
               duration: '20-25 min',
               isAIGenerated: false
             }
@@ -1647,7 +1668,7 @@ Return this exact JSON shape without markdown fences:
 
     try {
       // Use Bytez SDK for lesson generation
-      const bytezKey = import.meta.env.VITE_BYTEZ_KEY || import.meta.env.VITE_BYTEZ_API_KEY || localStorage.getItem('BYTEZ_API_KEY');
+      const bytezKey = import.meta.env.VITE_BYTEZ_KEY || localStorage.getItem('BYTEZ_API_KEY');
       
       if (!bytezKey) {
         throw new Error('Bytez API key not configured');
@@ -1805,8 +1826,10 @@ Return this exact JSON shape without markdown fences:
     console.log('🚀 Starting course generation for:', courseTitle);
     
     try {
-      // Check for API key
-      const apiKey = import.meta.env.VITE_BYTEZ_KEY || import.meta.env.VITE_BYTEZ_API_KEY;
+      // Check for API key using actual environment variable names
+      const apiKey = import.meta.env.VITE_BYTEZ_API_KEY || localStorage.getItem('BYTEZ_API_KEY');
+      
+      console.log('🔑 Final API key check:', apiKey ? 'API key available' : 'No API key found');
       
       if (!apiKey) {
         console.log('No Bytez API key found, using fallback generation');
@@ -1816,12 +1839,12 @@ Return this exact JSON shape without markdown fences:
         return;
       }
 
-      // Multiple API accounts configuration with free/basic models
+      // Updated API accounts with correct Bytez endpoint format
       const apiAccounts = [
-        { key: apiKey, model: 'google/flan-t5-base' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_2, model: 'google/flan-t5-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_3, model: 'microsoft/DialoGPT-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_4, model: 'gpt2' }
+        { key: import.meta.env.VITE_BYTEZ_API_KEY, model: 'openai-community/gpt2' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_2, model: 'microsoft/DialoGPT-medium' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_3, model: 'openai-community/gpt2' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_4, model: 'microsoft/DialoGPT-medium' }
       ].filter(account => account.key); // Only use accounts with valid keys
 
       // Try each API account until one works
@@ -1841,63 +1864,22 @@ Return this exact JSON shape without markdown fences:
           await model.create();
           console.log('✅ Model instance created successfully');
           
-          const prompt = `Generate a comprehensive course outline for: "${courseTitle}".
+          const prompt = `Create a course outline for ${courseTitle}. 
+          
+Title: ${courseTitle}
+Description: Complete guide to ${courseTitle}
+Module: ${courseTitle} Fundamentals
+Lesson: Introduction to ${courseTitle}
 
-Return ONLY a JSON object with this exact structure:
-{
-  "title": "${courseTitle}",
-  "description": "2-3 sentence course description",
-  "targetAudience": "Who this course is for",
-  "learningObjectives": ["Objective 1", "Objective 2", "Objective 3"],
-  "modules": [
-    {
-      "id": 1,
-      "title": "Module 1 Title",
-      "description": "Module description",
-      "lessons": [
-        {
-          "id": 1,
-          "title": "Lesson 1 Title",
-          "content": {
-            "introduction": "2-3 sentences introducing the lesson topic",
-            "textExplanations": [
-              {"concept": "Definition/Theory 1", "explanation": "Clear explanation with context"},
-              {"concept": "Definition/Theory 2", "explanation": "Clear explanation with context"}
-            ],
-            "examples": [
-              {"title": "Example 1", "description": "Worked-out problem or case study"},
-              {"title": "Example 2", "description": "Real-world demonstration"}
-            ],
-            "media": [
-              {"type": "image", "description": "Visual diagram or illustration"},
-              {"type": "video", "description": "Educational video content"}
-            ],
-            "activities": [
-              {"type": "exercise", "title": "Practice Exercise", "description": "Hands-on activity"},
-              {"type": "question", "title": "Discussion Question", "description": "Thought-provoking prompt"}
-            ],
-            "keyTakeaways": [
-              "Important point to remember",
-              "Key concept summary",
-              "Practical application"
-            ],
-            "summary": "2-3 sentences summarizing what was learned"
-          }
-        }
-      ]
-    }
-  ]
-}
-
-Generate realistic, educational content for ${courseTitle}. Return only valid JSON, no other text.`;
+Return only the lesson title.`;
           
           console.log('📝 Prompt:', prompt);
           console.log('🚀 Running model with parameters...');
           
           const result = await model.run(prompt, {
-            max_new_tokens: 300,
-            min_new_tokens: 50,
-            temperature: 0.5
+            max_new_tokens: 50,
+            min_new_tokens: 10,
+            temperature: 0.3
           });
           
           console.log('📊 Model result:', result);
@@ -2197,10 +2179,10 @@ Return JSON with this complete educational structure:
       console.log('🖼️ Generating images for lesson:', lesson.title);
       
       const apiAccounts = [
-        { key: import.meta.env.VITE_BYTEZ_KEY, model: 'google/flan-t5-base' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_2, model: 'google/flan-t5-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_3, model: 'microsoft/DialoGPT-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_4, model: 'gpt2' }
+        { key: import.meta.env.VITE_BYTEZ_API_KEY, model: 'google/flan-t5-base' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_2, model: 'google/flan-t5-small' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_3, model: 'microsoft/DialoGPT-small' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_4, model: 'gpt2' }
       ].filter(account => account.key);
 
       for (const account of apiAccounts) {
@@ -2249,10 +2231,10 @@ Return JSON with this complete educational structure:
       console.log('❓ Generating Q&A for lesson:', lesson.title);
       
       const apiAccounts = [
-        { key: import.meta.env.VITE_BYTEZ_KEY, model: 'google/flan-t5-base' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_2, model: 'google/flan-t5-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_3, model: 'microsoft/DialoGPT-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_4, model: 'gpt2' }
+        { key: import.meta.env.VITE_BYTEZ_API_KEY, model: 'google/flan-t5-base' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_2, model: 'google/flan-t5-small' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_3, model: 'microsoft/DialoGPT-small' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_4, model: 'gpt2' }
       ].filter(account => account.key);
 
       for (const account of apiAccounts) {
@@ -2305,10 +2287,10 @@ Return JSON with this complete educational structure:
       console.log('📝 Generating enhanced summary for lesson:', lesson.title);
       
       const apiAccounts = [
-        { key: import.meta.env.VITE_BYTEZ_KEY, model: 'google/flan-t5-base' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_2, model: 'google/flan-t5-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_3, model: 'microsoft/DialoGPT-small' },
-        { key: import.meta.env.VITE_BYTEZ_KEY_4, model: 'gpt2' }
+        { key: import.meta.env.VITE_BYTEZ_API_KEY, model: 'google/flan-t5-base' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_2, model: 'google/flan-t5-small' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_3, model: 'microsoft/DialoGPT-small' },
+        { key: import.meta.env.VITE_BYTEZ_API_KEY_4, model: 'gpt2' }
       ].filter(account => account.key);
 
       for (const account of apiAccounts) {
@@ -2407,7 +2389,7 @@ Return JSON with this complete educational structure:
         
         try {
         // Use Bytez SDK for course outline generation
-        const bytezKey = import.meta.env.VITE_BYTEZ_KEY || import.meta.env.VITE_BYTEZ_API_KEY || localStorage.getItem('BYTEZ_API_KEY');
+        const bytezKey = import.meta.env.VITE_BYTEZ_KEY || localStorage.getItem('BYTEZ_API_KEY');
         
         if (!bytezKey) {
           throw new Error('Bytez API key not configured');
@@ -2493,7 +2475,7 @@ Return JSON with this complete educational structure:
         
         try {
         // Use Bytez SDK for lesson generation
-        const bytezKey = import.meta.env.VITE_BYTEZ_KEY || import.meta.env.VITE_BYTEZ_API_KEY || localStorage.getItem('BYTEZ_API_KEY');
+        const bytezKey = import.meta.env.VITE_BYTEZ_KEY || localStorage.getItem('BYTEZ_API_KEY');
         
         if (!bytezKey) {
           throw new Error('Bytez API key not configured');
@@ -3153,28 +3135,21 @@ Return JSON with this complete educational structure:
         </div>
       )}
 
-      {/* Lesson Preview Modal */}
-      {showLessonPreview && previewLesson && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-800">Lesson Preview</h2>
-              <button
-                onClick={() => {
-                  setShowLessonPreview(false);
-                  setPreviewLesson(null);
-                }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-              <LessonPreview lesson={previewLesson} />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified Lesson Preview Modal */}
+      <UnifiedLessonPreview
+        lesson={previewLesson}
+        isOpen={showLessonPreview}
+        onClose={() => {
+          setShowLessonPreview(false);
+          setPreviewLesson(null);
+        }}
+        isAILesson={true}
+        onBlockUpdate={(blockId, content) => {
+          // Handle block updates for AI lessons
+          console.log('Updating AI lesson block:', blockId, content);
+          // You can implement the update logic here
+        }}
+      />
     </div>
   );
 };

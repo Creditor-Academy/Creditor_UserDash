@@ -101,17 +101,17 @@ const AISummarizationTool = ({ onFeatureUse, usageInfo }) => {
 
       const newSummary = {
         id: Date.now(),
-        content: response.summary || response.generated_text || 'Summary generated successfully',
+        content: result.summary || result.generated_text || 'Summary generated successfully',
         originalContent: content.substring(0, 200) + (content.length > 200 ? '...' : ''),
         length: summaryLength,
         type: summaryType,
-        model: response.model,
-        chunked: response.chunked || false,
-        chunkCount: response.chunkCount || 1,
-        originalLength: response.originalLength || content.length,
-        summaryLength: response.summaryLength || 0,
-        lengthConfig: response.lengthConfig,
-        success: response.success !== false,
+        model: result.model,
+        chunked: result.chunked || false,
+        chunkCount: result.chunkCount || 1,
+        originalLength: result.originalLength || content.length,
+        summaryLength: result.summaryLength || 0,
+        lengthConfig: result.lengthConfig,
+        success: result.success !== false,
         createdAt: new Date().toISOString()
       };
 

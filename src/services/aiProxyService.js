@@ -135,9 +135,46 @@ class AIProxyService {
     ];
   }
 
-  // Text Summarization - No model details exposed
+  // Text Summarization using Bytez with BART model
   async summarizeContent(content, options = {}) {
     try {
+      // Try Bytez API with BART model first
+      const apiKey = import.meta.env.VITE_BYTEZ_API_KEY;
+      if (apiKey) {
+        try {
+          const { Bytez } = await import('bytez.js');
+          const sdk = new Bytez(apiKey);
+          const model = sdk.model('ainize/bart-base-cnn');
+          
+          await model.create();
+          
+          // Prepare content for BART (limit length for better performance)
+          const maxLength = 1024;
+          const truncatedContent = content.length > maxLength ? 
+            content.substring(0, maxLength) + '...' : content;
+          
+          const result = await model.run(truncatedContent, {
+            max_length: options.length === 'short' ? 50 : options.length === 'long' ? 200 : 100,
+            min_length: options.length === 'short' ? 20 : options.length === 'long' ? 80 : 40,
+            do_sample: false
+          });
+          
+          if (result.output) {
+            return {
+              success: true,
+              summary: result.output,
+              generated_text: result.output,
+              originalLength: content.length,
+              summaryLength: result.output.length,
+              model: 'ainize/bart-base-cnn'
+            };
+          }
+        } catch (bytezError) {
+          console.warn('Bytez BART model failed:', bytezError);
+        }
+      }
+      
+      // Fallback to proxy service
       const result = await this.makeRequest('/summarize', { content, options });
       
       if (result.success) {
@@ -153,7 +190,7 @@ class AIProxyService {
         throw new Error('Summarization failed');
       }
     } catch (error) {
-      // Fallback summary
+      // Fallback summary using extractive approach
       const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
       const summaryLength = options.length === 'short' ? 1 : options.length === 'long' ? 3 : 2;
       const fallbackSummary = sentences.slice(0, summaryLength).join('. ') + '.';
@@ -162,7 +199,7 @@ class AIProxyService {
         success: false,
         summary: fallbackSummary,
         generated_text: fallbackSummary,
-        model: 'fallback',
+        model: 'extractive fallback',
         error: 'AI service unavailable'
       };
     }

@@ -171,28 +171,49 @@ export async function createLesson(courseId, moduleId, lessonData) {
   return data.data || data;
 }
 
-// Create lesson content
-export async function createLessonContent(lessonContentData) {
+// Update lesson content using PUT method with lesson ID
+export async function updateLessonContent(lessonId, contentData) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/create`, {
-      method: 'POST',
+    // Add timeout and retry logic
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader(),
       },
       credentials: 'include',
-      body: JSON.stringify(lessonContentData),
+      body: JSON.stringify(contentData),
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(errorData.message || `Failed to create lesson content (${response.status})`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error('Backend response:', response.status, errorText);
+      
+      // Try to parse as JSON, fallback to text
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || `HTTP ${response.status}` };
+      }
+      
+      throw new Error(errorData.message || `Failed to update lesson content (${response.status})`);
     }
 
     const data = await response.json();
     return data.data || data;
   } catch (error) {
-    console.error('Error creating lesson content:', error);
+    if (error.name === 'AbortError') {
+      console.error('Lesson content update timed out');
+      throw new Error('Request timed out - content may be too large');
+    }
+    console.error('Error updating lesson content:', error);
     throw error;
   }
 }
@@ -237,7 +258,8 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         order: i + 1,
         estimated_duration: 60,
         module_status: 'PUBLISHED',
-        thumbnail: 'test thumbnail'
+        thumbnail: 'test thumbnail',
+        price: '0'
       };
       
       console.log('Module payload being sent:', modulePayload);
@@ -330,12 +352,51 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             }
           }
 
+          // Generate AI-powered lesson description
+          let cleanDescription = lessonData.introduction || lessonData.content?.introduction;
+          
+          if (!cleanDescription) {
+            try {
+              // Use Bytez AI to generate contextual description
+              const apiKey = import.meta.env.VITE_BYTEZ_API_KEY || import.meta.env.VITE_BYTEZ_API_KEY_2;
+              if (apiKey) {
+                const { Bytez } = await import('bytez.js');
+                const sdk = new Bytez(apiKey);
+                const model = sdk.model('openai-community/gpt2');
+                
+                await model.create();
+                
+                const prompt = `Write a brief, professional description for a lesson titled "${lessonData.title}". Keep it under 15 words and focus on what students will learn.`;
+                
+                const result = await model.run(prompt, {
+                  max_length: 50,
+                  temperature: 0.7,
+                  do_sample: true
+                });
+                
+                if (result.output) {
+                  cleanDescription = result.output.trim().replace(/['"]/g, '').split('.')[0] + '.';
+                }
+              }
+            } catch (aiError) {
+              console.warn('AI description generation failed:', aiError);
+            }
+            
+            // Fallback to smart template-based descriptions
+            if (!cleanDescription) {
+              cleanDescription = lessonData.title.includes('React') ? 'React is a frontend framework for building user interfaces.' :
+                lessonData.title.includes('JavaScript') ? 'JavaScript is a programming language for web development.' :
+                lessonData.title.includes('Python') ? 'Python is a versatile programming language.' :
+                lessonData.title.includes('CSS') ? 'CSS is used for styling web pages.' :
+                lessonData.title.includes('HTML') ? 'HTML is the markup language for web pages.' :
+                `${lessonData.title} fundamentals and concepts.`;
+            }
+          }
+
           const lessonPayload = {
-            title: (lessonData.title || `Lesson ${j + 1}`).length > 150 ? 
-                   (lessonData.title || `Lesson ${j + 1}`).substring(0, 147) + '...' : 
-                   (lessonData.title || `Lesson ${j + 1}`),
-            description: lessonContent || lessonData.intro || `This lesson covers ${lessonData.title || 'key concepts'}.`,
-            order: j + 1,
+            title: lessonData.title,
+            description: cleanDescription,
+            order: lessonData.order || j + 1,
             status: 'PUBLISHED'
           };
           
@@ -348,35 +409,209 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             const createdLesson = await createLesson(courseId, moduleId, lessonPayload);
             createdLessons.push(createdLesson);
             
-            // Create lesson content if we have structured content
-            if (lessonContent && createdLesson?.data?.id) {
+            // Update lesson content using PUT method with proper JSON format
+            const lessonId = createdLesson?.data?.id || createdLesson?.id;
+            if (lessonContent && lessonId) {
               try {
-                const lessonContentPayload = {
-                  lesson_id: createdLesson.data.id,
-                  content: lessonContent,
-                  content_type: 'html'
+                // Create content as block-based array matching LessonBuilder format
+                // Use lesson ID for consistent block IDs to prevent regeneration on edits
+                const baseId = lessonId.replace(/-/g, '').substring(0, 8);
+                const contentBlocks = [
+                  // Title Block
+                  {
+                    type: "text",
+                    script: "",
+                    block_id: `block_${baseId}_title`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h1 class="text-2xl font-bold text-gray-800">${lessonData.title}</h1>
+        </div>
+      </div>
+    `
+                  },
+                  // Introduction Block
+                  {
+                    type: "text",
+                    script: "",
+                    block_id: `block_${baseId}_intro`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-blue-500 to-purple-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Introduction</h2>
+          <p class="text-base text-gray-700">${lessonData.introduction || lessonData.content?.introduction || `${lessonData.title} is a modern framework for building applications.`}</p>
+        </div>
+      </div>
+    `
+                  },
+                  // Main Content Block
+                  {
+                    type: "text", 
+                    script: "",
+                    block_id: `block_${baseId}_content`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-green-500 to-teal-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Key Concepts</h2>
+          ${Array.isArray(lessonData.content?.mainContent) ? 
+            lessonData.content.mainContent.map((point, index) => 
+              `<div class="mb-3 p-3 bg-gray-50 rounded-lg">
+                <p class="text-base text-gray-700"><strong>${index + 1}.</strong> ${point}</p>
+              </div>`
+            ).join('') : 
+            `<p class="text-base text-gray-700">${lessonData.content?.mainContent || lessonContent.replace(/<[^>]*>/g, ' ').trim()}</p>`
+          }
+        </div>
+      </div>
+    `
+                  }
+                ];
+
+                // Add Examples Block if available
+                if (Array.isArray(lessonData.content?.examples) && lessonData.content.examples.length > 0) {
+                  contentBlocks.push({
+                    type: "text",
+                    script: "",
+                    block_id: `block_${baseId}_examples`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-purple-500 to-pink-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Examples</h2>
+          ${lessonData.content.examples.map(example => 
+            `<div class="mb-4 p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+              <h4 class="font-semibold text-purple-800 mb-2">${example.title}</h4>
+              <p class="text-gray-700">${example.description}</p>
+            </div>`
+          ).join('')}
+        </div>
+      </div>
+    `
+                  });
+                }
+
+                // Add Multimedia Block if available
+                if (lessonData.content?.multimedia?.image || lessonData.content?.multimedia?.video) {
+                  contentBlocks.push({
+                    type: "text",
+                    script: "",
+                    block_id: `block_${baseId}_multimedia`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-red-500 to-orange-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Visual Learning</h2>
+          ${lessonData.content?.multimedia?.image ? 
+            `<div class="mb-4 text-center">
+              <img src="${lessonData.content.multimedia.image}" alt="Lesson illustration" class="max-w-full h-auto rounded-lg shadow-md" />
+            </div>` : ''
+          }
+          ${lessonData.content?.multimedia?.video ? 
+            `<div class="mb-4 text-center">
+              <video controls class="max-w-full h-auto rounded-lg shadow-md">
+                <source src="${lessonData.content.multimedia.video}" type="video/mp4" />
+              </video>
+            </div>` : ''
+          }
+        </div>
+      </div>
+    `
+                  });
+                }
+
+                // Add Q&A Block if available
+                if (Array.isArray(lessonData.content?.qa) && lessonData.content.qa.length > 0) {
+                  contentBlocks.push({
+                    type: "text",
+                    script: "document.querySelectorAll('.qa-item').forEach(item => { item.addEventListener('click', () => { item.classList.toggle('expanded'); }); });",
+                    block_id: `block_${baseId}_qa`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-cyan-500 to-blue-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Questions & Answers</h2>
+          ${lessonData.content.qa.map((qa, index) => 
+            `<div class="qa-item mb-4 p-4 bg-cyan-50 rounded-lg border cursor-pointer hover:bg-cyan-100 transition">
+              <h4 class="font-semibold text-cyan-800 mb-2">Q${index + 1}: ${qa.question}</h4>
+              <p class="text-gray-700"><strong>A:</strong> ${qa.answer}</p>
+            </div>`
+          ).join('')}
+        </div>
+      </div>
+    `
+                  });
+                }
+
+                // Add Key Takeaways Block if available
+                if (Array.isArray(lessonData.content?.keyTakeaways) && lessonData.content.keyTakeaways.length > 0) {
+                  contentBlocks.push({
+                    type: "text",
+                    script: "",
+                    block_id: `block_${baseId}_takeaways`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-orange-500 to-red-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Key Takeaways</h2>
+          <ul class="space-y-3">
+            ${lessonData.content.keyTakeaways.map((takeaway, index) => 
+              `<li class="flex items-start p-3 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+                <span class="font-bold text-orange-600 mr-3">${index + 1}.</span>
+                <span class="text-gray-700">${takeaway}</span>
+              </li>`
+            ).join('')}
+          </ul>
+        </div>
+      </div>
+    `
+                  });
+                }
+
+                // Add Summary Block
+                contentBlocks.push({
+                  type: "text",
+                  script: "",
+                  block_id: `block_${baseId}_summary`,
+                  html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-green-500 to-emerald-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Summary</h2>
+          <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+            <p class="text-gray-700">${lessonData.content?.summary || lessonData.summary || `${lessonData.title} concepts covered.`}</p>
+          </div>
+        </div>
+      </div>
+    `
+                });
+
+                // Backend expects 'content' field with block array
+                const contentData = {
+                  content: contentBlocks
                 };
                 
-                console.log('Creating lesson content for lesson:', createdLesson.data.id);
-                console.log('Lesson content payload:', lessonContentPayload);
+                console.log('Updating lesson content for lesson:', lessonId);
+                console.log('Content data structure:', { 
+                  hasContent: !!contentData.content,
+                  blocksCount: contentData.content?.length || 0,
+                  blockTypes: contentData.content?.map(block => block.type) || []
+                });
                 
-                const contentResult = await createLessonContent(lessonContentPayload);
-                console.log('Lesson content created successfully:', contentResult);
+                const contentResult = await updateLessonContent(lessonId, contentData);
+                console.log('Lesson content updated successfully:', contentResult);
               } catch (contentError) {
-                console.error('Failed to create lesson content:', contentError);
+                console.error('Failed to update lesson content:', contentError);
                 console.error('Content error details:', {
-                  lessonId: createdLesson.data.id,
-                  contentLength: lessonContent.length,
+                  lessonId: lessonId,
                   error: contentError.message
                 });
-                // Don't fail the entire process, just log the error
                 console.warn('Continuing without lesson content for lesson:', lessonData.title);
               }
             } else {
-              console.warn('No lesson content to create for lesson:', lessonData.title, {
-                hasContent: !!lessonContent,
-                hasLessonId: !!createdLesson?.data?.id
-              });
+              console.log('✅ Lesson content stored in description field, no separate content needed');
             }
             console.log('Lesson created successfully:', createdLesson);
           } catch (lessonError) {
