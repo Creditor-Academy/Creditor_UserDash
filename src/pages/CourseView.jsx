@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, ArrowLeft, ChevronRight } from "lucide-react";
 import { fetchCourseModules, fetchCourseById, fetchUserCourses } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import api from "@/services/apiClient";
@@ -14,6 +14,7 @@ import api from "@/services/apiClient";
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasAccessFromState = location.state?.isAccessible ?? true;
   const { userProfile } = useCredits();
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,6 +168,22 @@ export function CourseView() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <main className="flex-1">
         <div className="container py-8 max-w-7xl">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/dashboard/courses')}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft size={16} />
+              Back to Courses
+            </Button>
+            <ChevronRight size={16} className="text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {courseDetails?.title || 'Course Details'}
+            </span>
+          </div>
 
           {/* Course Details Section */}
           {courseDetails && (
@@ -260,15 +277,8 @@ export function CourseView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {filteredModules.map((module) => {
-                const isContentAvailable = !!module.resource_url;
-                // User has access if they came from catalog with access OR if they are enrolled
-                const hasAccess = hasAccessFromState || isEnrolled;
-                const isUpcoming = !isContentAvailable || !hasAccess;
-                 
-                
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                       <div className="aspect-video relative overflow-hidden">
                         <img 
@@ -276,14 +286,6 @@ export function CourseView() {
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Clock overlay for upcoming modules only */}
-                        {isUpcoming && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/95 rounded-full p-4 shadow-xl">
-                              <Clock className="w-8 h-8 text-gray-700" />
-                            </div>
-                          </div>
-                        )}
                       </div>
                       {/* Fixed height for content area, flex-grow to fill space */}
                       <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
@@ -307,31 +309,10 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                           {isContentAvailable && hasAccess ? (
-                            <>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
-                                <Button className="w-full">
-                                  <Play size={16} className="mr-2" />
-                                  Start Module
-                                </Button>
-                              </Link>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                               <Button variant="outline" className="w-full">
-                                  <FileText size={16} className="mr-2" />
-                                  Start Assessment
-                                </Button> 
-                              </Link>
-                            </>
-                          ) : (
-                            <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                              <Clock size={16} className="mr-2" />
-                              <span className="font-medium">Upcoming Module</span>
-                            </Button>
-                          )}
                           <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} className="w-full">
                             <Button className="w-full">
                               <Play size={16} className="mr-2" />
-                              View lessons
+                              View Lessons
                             </Button>
                           </Link>
                           <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">

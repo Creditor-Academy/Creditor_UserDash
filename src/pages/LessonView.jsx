@@ -3,12 +3,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, RefreshCw } from "lucide-react";
+import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, RefreshCw, ArrowLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import axios from "axios";
+import { fetchCourseById, fetchCourseModules } from "@/services/courseService";
 import { getAuthHeader } from "@/services/authHeader";
 import { SidebarContext } from "@/layouts/DashboardLayout";
+import axios from "axios";
 
 const LessonView = () => {
   const { courseId, moduleId } = useParams();
@@ -22,6 +23,7 @@ const LessonView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [moduleDetails, setModuleDetails] = useState(null);
+  const [courseDetails, setCourseDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch module and lessons data
@@ -37,35 +39,55 @@ const LessonView = () => {
       setLoading(true);
       console.log('Fetching lessons for courseId:', courseId, 'moduleId:', moduleId);
       
-      // Fetch both module details and lessons
-      const [moduleResponse, lessonsResponse] = await Promise.all([
-        axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/view`,
-          {
-            headers: getAuthHeader(),
-            withCredentials: true,
-          }
-        ),
-        axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
-          {
-            headers: getAuthHeader(),
-            withCredentials: true,
-          }
-        )
+      // Use the same API pattern as CourseView.jsx
+      const [courseData, modulesData] = await Promise.all([
+        fetchCourseById(courseId),
+        fetchCourseModules(courseId)
       ]);
-
-      console.log('Module response:', moduleResponse.data);
-      console.log('Lessons response:', lessonsResponse.data);
-
-      // Handle module details response
-      const moduleData = moduleResponse.data.data || moduleResponse.data;
-      setModuleDetails({
-        title: moduleData.title || moduleData.module_title || 'Module',
-        description: moduleData.description || moduleData.module_description || '',
-        totalModules: moduleData.total_modules || 0,
-        duration: moduleData.duration || moduleData.total_duration || 0
+      
+      console.log('Course data:', courseData);
+      console.log('Modules data:', modulesData);
+      
+      // Set course details
+      setCourseDetails({
+        title: courseData.title || courseData.course_title || courseData.name || 'Course',
+        description: courseData.description || courseData.course_description || ''
       });
+      
+      // Find the specific module from the modules data
+      const currentModule = modulesData.find(module => 
+        module.id?.toString() === moduleId?.toString() ||
+        module.module_id?.toString() === moduleId?.toString()
+      );
+      
+      console.log('Current module:', currentModule);
+      
+      if (currentModule) {
+        setModuleDetails({
+          title: currentModule.title || currentModule.module_title || currentModule.name || 'Module',
+          description: currentModule.description || currentModule.module_description || '',
+          totalModules: modulesData.length || 0,
+          duration: currentModule.estimated_duration || currentModule.duration || 0
+        });
+      } else {
+        setModuleDetails({
+          title: 'Module',
+          description: '',
+          totalModules: 0,
+          duration: 0
+        });
+      }
+      
+      // Fetch lessons using the same pattern
+      const lessonsResponse = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
+        {
+          headers: getAuthHeader(),
+          withCredentials: true,
+        }
+      );
+      
+      console.log('Lessons response:', lessonsResponse.data);
       
       // Handle lessons response
       let lessonsData = [];
@@ -168,16 +190,30 @@ const LessonView = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header with Back Button */}
-      <div className="mb-6 flex items-center gap-4">
+      {/* Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 mb-6">
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2"
+          onClick={() => navigate('/dashboard/courses')}
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-4 w-4" /> Back to courses
+          <ArrowLeft size={16} />
+          Back to Courses
         </Button>
+        <ChevronRight size={16} className="text-muted-foreground" />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate(`/dashboard/courses/${courseId}`)}
+          className="text-muted-foreground hover:text-foreground text-sm"
+        >
+          {courseDetails?.title || 'Course'}
+        </Button>
+        <ChevronRight size={16} className="text-muted-foreground" />
+        <span className="text-sm font-medium">
+          {moduleDetails?.title || 'Module Lessons'}
+        </span>
       </div>
 
       {/* Module Header */}
