@@ -17,13 +17,57 @@ const ListComponent = forwardRef(({
   const [listItems, setListItems] = useState(['']);
   const [listType, setListType] = useState('bulleted');
   const [checkedItems, setCheckedItems] = useState({});
+  const [numberingStyle, setNumberingStyle] = useState('decimal'); // decimal, upper-roman, lower-roman, upper-alpha, lower-alpha
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     setListItems,
     setListType,
-    setCheckedItems
+    setCheckedItems,
+    setNumberingStyle
   }));
+
+  // Numbering style options
+  const numberingStyles = [
+    { value: 'decimal', label: '1, 2, 3', example: '1' },
+    { value: 'upper-roman', label: 'I, II, III', example: 'I' },
+    { value: 'lower-roman', label: 'i, ii, iii', example: 'i' },
+    { value: 'upper-alpha', label: 'A, B, C', example: 'A' },
+    { value: 'lower-alpha', label: 'a, b, c', example: 'a' }
+  ];
+
+  // Function to get numbering based on style
+  const getNumbering = (index, style) => {
+    const num = index + 1;
+    switch (style) {
+      case 'upper-roman':
+        return toRoman(num).toUpperCase();
+      case 'lower-roman':
+        return toRoman(num).toLowerCase();
+      case 'upper-alpha':
+        return String.fromCharCode(64 + num); // A, B, C...
+      case 'lower-alpha':
+        return String.fromCharCode(96 + num); // a, b, c...
+      case 'decimal':
+      default:
+        return num.toString();
+    }
+  };
+
+  // Convert number to Roman numerals
+  const toRoman = (num) => {
+    const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+    const symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+    let result = '';
+    
+    for (let i = 0; i < values.length; i++) {
+      while (num >= values[i]) {
+        result += symbols[i];
+        num -= values[i];
+      }
+    }
+    return result;
+  };
 
   // List templates with beautiful previews
   const listTemplates = [
@@ -61,7 +105,8 @@ const ListComponent = forwardRef(({
           'List of essentials. You can also add or delete items as needed. Next, let\'s focus on how you can build better habits.',
           'Without distractions. The most rewarding adventures often start and end with meaningful connections and shared experiences.'
         ],
-        listType: 'numbered'
+        listType: 'numbered',
+        numberingStyle: 'decimal'
       }
     },
     {
@@ -151,11 +196,13 @@ const ListComponent = forwardRef(({
         setListItems(listContent.items || ['']);
         setListType(listContent.listType || 'bulleted');
         setCheckedItems(listContent.checkedItems || {});
+        setNumberingStyle(listContent.numberingStyle || 'decimal');
       } catch (e) {
         console.error('Error parsing list content:', e);
         setListItems(['']);
         setListType('bulleted');
         setCheckedItems({});
+        setNumberingStyle('decimal');
       }
     }
   }, [showListEditDialog, editingListBlock]);
@@ -166,22 +213,7 @@ const ListComponent = forwardRef(({
 
     switch (template.type) {
       case 'numbered':
-        htmlContent = `
-          <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
-            <ol class="space-y-4 list-none">
-              ${content.items.map((item, index) => `
-                <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-orange-300/50 hover:shadow-md transition-all duration-200">
-                  <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                    ${index + 1}
-                  </div>
-                  <div class="flex-1 text-gray-800 leading-relaxed">
-                    ${item}
-                  </div>
-                </li>
-              `).join('')}
-            </ol>
-          </div>
-        `;
+        htmlContent = generateNumberedListHTML(content.items, content.numberingStyle || 'decimal');
         break;
 
       case 'checkbox':
@@ -254,16 +286,81 @@ const ListComponent = forwardRef(({
     setShowListTemplateSidebar(false);
   };
 
+  // Generate HTML for numbered lists with proper numbering style
+  const generateNumberedListHTML = (items, style = 'decimal') => {
+    return `
+      <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
+        <ol class="space-y-4 list-none">
+          ${items.map((item, index) => `
+            <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-orange-300/50 hover:shadow-md transition-all duration-200">
+              <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                ${getNumbering(index, style)}
+              </div>
+              <div class="flex-1 text-gray-800 leading-relaxed">
+                ${item}
+              </div>
+            </li>
+          `).join('')}
+        </ol>
+      </div>
+    `;
+  };
+
   const handleListUpdate = () => {
     if (!editingListBlock) return;
     
     const updatedContent = {
       items: listItems,
       listType: listType,
-      checkedItems: listType === 'checkbox' ? checkedItems : {}
+      checkedItems: listType === 'checkbox' ? checkedItems : {},
+      numberingStyle: listType === 'numbered' ? numberingStyle : 'decimal'
     };
     
-    onListUpdate(editingListBlock.id, JSON.stringify(updatedContent));
+    // Generate updated HTML with current numbering style
+    let updatedHtml = '';
+    if (listType === 'numbered') {
+      updatedHtml = generateNumberedListHTML(listItems, numberingStyle);
+    } else if (listType === 'checkbox') {
+      updatedHtml = `
+        <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
+          <div class="space-y-4">
+            ${listItems.map((item, index) => `
+              <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+                <div class="flex-shrink-0 mt-1">
+                  <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                    <input type="checkbox" class="hidden checkbox-item" data-index="${index}" ${checkedItems[index] ? 'checked' : ''} />
+                    <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
+                  </div>
+                </div>
+                <div class="flex-1 text-gray-800 leading-relaxed">
+                  ${item}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else {
+      // Bulleted list
+      updatedHtml = `
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+          <ul class="space-y-4 list-none">
+            ${listItems.map((item) => `
+              <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-blue-300/50 hover:shadow-md transition-all duration-200">
+                <div class="flex-shrink-0 mt-2">
+                  <div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
+                </div>
+                <div class="flex-1 text-gray-800 leading-relaxed">
+                  ${item}
+                </div>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    }
+    
+    onListUpdate(editingListBlock.id, JSON.stringify(updatedContent), updatedHtml);
     setShowListEditDialog(false);
   };
 
@@ -424,6 +521,35 @@ const ListComponent = forwardRef(({
               </div>
             </div>
 
+            {/* Numbering Style Selector (only for numbered lists) */}
+            {listType === 'numbered' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Numbering Style</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {numberingStyles.map((style) => (
+                    <div
+                      key={style.value}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                        numberingStyle === style.value
+                          ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setNumberingStyle(style.value)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                          {style.example}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{style.label}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* List Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -440,6 +566,13 @@ const ListComponent = forwardRef(({
               <div className="space-y-3">
                 {listItems.map((item, index) => (
                   <div key={index} className="flex items-start space-x-3">
+                    {listType === 'numbered' && (
+                      <div className="mt-3">
+                        <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                          {getNumbering(index, numberingStyle)}
+                        </div>
+                      </div>
+                    )}
                     {listType === 'checkbox' && (
                       <div className="mt-3">
                         <input
@@ -448,6 +581,11 @@ const ListComponent = forwardRef(({
                           onChange={() => toggleCheckboxItem(index)}
                           className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
                         />
+                      </div>
+                    )}
+                    {listType === 'bulleted' && (
+                      <div className="mt-4">
+                        <div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full"></div>
                       </div>
                     )}
                     <div className="flex-1">

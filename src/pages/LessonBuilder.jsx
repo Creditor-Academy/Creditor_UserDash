@@ -783,17 +783,51 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
   };
 
-  const handleListUpdate = (blockId, content) => {
-    // Parse content to regenerate HTML
-    let htmlContent = '';
+  const handleListUpdate = (blockId, content, updatedHtml = null) => {
+    // Use provided HTML if available, otherwise regenerate
+    let htmlContent = updatedHtml || '';
     let extractedListType = 'bulleted';
     
-    if (content) {
+    if (content && !updatedHtml) {
       try {
         const parsedContent = JSON.parse(content);
         extractedListType = parsedContent.listType || 'bulleted';
         const items = parsedContent.items || [];
         const checkedItems = parsedContent.checkedItems || {};
+        const numberingStyle = parsedContent.numberingStyle || 'decimal';
+
+        // Helper function to get numbering based on style (same as ListComponent)
+        const getNumbering = (index, style) => {
+          const num = index + 1;
+          switch (style) {
+            case 'upper-roman':
+              return toRoman(num).toUpperCase();
+            case 'lower-roman':
+              return toRoman(num).toLowerCase();
+            case 'upper-alpha':
+              return String.fromCharCode(64 + num); // A, B, C...
+            case 'lower-alpha':
+              return String.fromCharCode(96 + num); // a, b, c...
+            case 'decimal':
+            default:
+              return num.toString();
+          }
+        };
+
+        // Convert number to Roman numerals
+        const toRoman = (num) => {
+          const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+          const symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+          let result = '';
+          
+          for (let i = 0; i < values.length; i++) {
+            while (num >= values[i]) {
+              result += symbols[i];
+              num -= values[i];
+            }
+          }
+          return result;
+        };
 
         // Generate HTML based on list type with original styled format
         if (extractedListType === 'numbered') {
@@ -803,7 +837,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 ${items.map((item, index) => `
                   <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-orange-300/50 hover:shadow-md transition-all duration-200">
                     <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                      ${index + 1}
+                      ${getNumbering(index, numberingStyle)}
                     </div>
                     <div class="flex-1 text-gray-800 leading-relaxed">
                       ${item}
@@ -1573,6 +1607,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         listComponentRef.current.setListItems(listContent.items || ['']);
         listComponentRef.current.setListType(listType);
         listComponentRef.current.setCheckedItems(listContent.checkedItems || {});
+        listComponentRef.current.setNumberingStyle(listContent.numberingStyle || 'decimal');
       }
       
       setShowListEditDialog(true);
