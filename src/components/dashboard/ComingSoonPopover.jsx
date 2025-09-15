@@ -8,14 +8,14 @@ function ComingSoonPopover() {
 
   const features = [
     {
-      title: "Groups",
-      description: "Groups with news announcements and chats are launching to enhance collaboration and communication.",
+      title: "Private Chat",
+      description: "One‑to‑one private chats with announcements are launching to enhance direct communication.",
       tags: [
-        { label: "News", color: "amber" },
-        { label: "Chats", color: "blue" },
-        { label: "Collaboration", color: "indigo" }
+        { label: "Private", color: "amber" },
+        { label: "Chat", color: "blue" },
+        { label: "Direct", color: "indigo" }
       ],
-      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/Groups.PNG",
+      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/P_banner.PNG",
      
     },
     {
