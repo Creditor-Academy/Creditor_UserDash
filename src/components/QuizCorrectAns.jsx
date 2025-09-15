@@ -43,13 +43,31 @@ const QuizCorrectAns = ({ isOpen, onClose, questions = [], quizTitle = "Quiz" })
       const correctOptions = question.question_options?.filter(option => option.isCorrect) || [];
       return correctOptions.map(option => option.text).join(', ');
     }
+    if (question.question_type === 'CATEGORIZATION') {
+      // Derive a readable mapping like "Category: item1, item2"
+      const opts = Array.isArray(question?.question_options) ? question.question_options : [];
+      const categories = opts.filter(o => o?.isCategory === true || (!('isCategory' in (o || {})) && !o?.category));
+      const items = opts.filter(o => o?.isCategory === false || (!!o?.category && !o?.isCategory));
+      const grouped = new Map();
+      items.forEach(it => {
+        const cat = String(it?.category || '').trim();
+        if (!cat) return;
+        if (!grouped.has(cat)) grouped.set(cat, []);
+        grouped.get(cat).push(it.text);
+      });
+      const lines = categories.map(c => {
+        const list = grouped.get(c.text) || [];
+        return `${c.text}: ${list.join(', ')}`;
+      });
+      return lines.filter(Boolean).join(' | ');
+    }
     return question.correct_answer || 'No answer provided';
   };
 
   const shouldShowCorrectAnswerSection = (question) => {
     // For MCQ and TRUE_FALSE, we already show the correct options above
     // So we don't need to show the correct_answer field again
-    if (question.question_type === 'MCQ' || question.question_type === 'TRUE_FALSE') {
+    if (question.question_type === 'MCQ' || question.question_type === 'TRUE_FALSE' || question.question_type === 'CATEGORIZATION') {
       return false;
     }
     // For other question types, show the correct_answer field
@@ -99,6 +117,74 @@ const QuizCorrectAns = ({ isOpen, onClose, questions = [], quizTitle = "Quiz" })
                 </CardHeader>
 
                 <CardContent className="pt-0">
+                  {/* Category-wise visualization for CATEGORIZATION */}
+                  {question.question_type === 'CATEGORIZATION' && Array.isArray(question.question_options) && (
+                    <div className="space-y-4 mb-4">
+                      {(() => {
+                        const opts = question.question_options;
+                        const categories = opts.filter(o => o?.isCategory === true || (!('isCategory' in (o || {})) && !o?.category));
+                        const items = opts.filter(o => o?.isCategory === false || (!!o?.category && !o?.isCategory));
+                        const grouped = new Map();
+                        items.forEach(it => {
+                          const cat = String(it?.category || '').trim();
+                          if (!cat) return;
+                          if (!grouped.has(cat)) grouped.set(cat, []);
+                          grouped.get(cat).push(it);
+                        });
+                        const assignedIds = new Set(items.filter(it => it?.category).map(it => String(it.id)));
+                        const unassigned = items.filter(it => !assignedIds.has(String(it.id)));
+                        return (
+                          <>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {categories.map(cat => (
+                                <div key={cat.id} className="group rounded-2xl border-2 border-dashed border-blue-200 bg-gradient-to-b from-blue-50 to-blue-100/40 p-5 min-h-[160px] shadow-sm">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-600 text-white text-xs font-semibold shadow">
+                                      <span className="inline-block w-2 h-2 bg-white rounded-full mr-2" />
+                                      {cat.text}
+                                    </div>
+                                    <span className="ml-2 inline-flex items-center justify-center text-xs font-semibold text-blue-700 bg-white/70 border border-blue-200 rounded-full h-6 px-2">
+                                      {(grouped.get(cat.text) || []).length}
+                                    </span>
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-2 min-h-[90px]">
+                                    {(grouped.get(cat.text) || []).length ? (
+                                      (grouped.get(cat.text) || []).map(item => (
+                                        <div key={item.id} className="bg-white/95 border border-gray-200 rounded-lg px-3 py-2 text-sm shadow-sm">
+                                          <div className="flex items-center">
+                                            <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-2" />
+                                            <span className="text-gray-800">{item.text}</span>
+                                          </div>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="flex items-center justify-center text-gray-400 text-sm py-6">No items</div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {unassigned.length > 0 && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h5 className="text-xs font-semibold text-gray-800">Unassigned Items</h5>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {unassigned.map(item => (
+                                    <div key={item.id} className="bg-yellow-50 border border-yellow-200 rounded-md px-3 py-1.5 text-xs">
+                                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2 align-middle" />
+                                      <span className="text-gray-800 align-middle">{item.text}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {/* Options for MCQ and TRUE_FALSE */}
                   {(question.question_type === 'MCQ' || question.question_type === 'TRUE_FALSE') && 
                    question.question_options && question.question_options.length > 0 && (

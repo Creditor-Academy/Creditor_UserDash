@@ -25,7 +25,6 @@ import EssayResultsPage from "@/pages/EssayResultsPage";
 import  Groups  from "@/pages/Groups";
 import Catalog from "@/pages/Catalog";
 import CatelogCourses from "@/pages/CatelogCourses";
-import Home from "@/pages/home.jsx";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
@@ -73,6 +72,7 @@ import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
+import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -97,6 +97,7 @@ import AddUsersPage from "@/pages/AddUsersPage";
 import CreateScenario from "@/pages/CreateScenario";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
      
 
@@ -112,6 +113,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <UserProvider>
+          <CreditsProvider>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -328,6 +330,7 @@ function App() {
           <Route path="/games" element={<Games />} />
           </Routes>
           <Toaster />
+          </CreditsProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>

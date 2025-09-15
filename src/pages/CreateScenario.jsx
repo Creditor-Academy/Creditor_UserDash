@@ -26,8 +26,8 @@ import { toast } from "sonner";
 
 const AVATAR_OPTIONS = [
   { id: 'default', name: 'Default Avatar', image: '/default-avatar.png', description: 'Generic professional avatar' },
-  { id: 'business-woman', name: 'Business Woman', image: '/avatars/business-woman.png', description: 'Professional female executive' },
-  { id: 'business-man', name: 'Business Man', image: '/avatars/business-man.png', description: 'Professional male executive' },
+  { id: 'business-woman', name: 'Business Woman', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_women.png', description: 'Professional female executive' },
+  { id: 'business-man', name: 'Business Man', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_man.png', description: 'Professional male executive' },
   { id: 'student', name: 'Student', image: '/avatars/student.png', description: 'Young learner avatar' },
   { id: 'teacher', name: 'Teacher', image: '/avatars/teacher.png', description: 'Educational instructor' },
   { id: 'manager', name: 'Manager', image: '/avatars/manager.png', description: 'Team leader avatar' },
@@ -139,11 +139,19 @@ const CreateScenario = () => {
     if (avatarId === 'default') {
       return '/default-avatar.png';
     }
-    // If it's a base64 string (uploaded image), return it directly
-    if (avatarId.startsWith('data:')) {
+    // If it's a base64 string, full URL, or direct local path under /avatars, return it as-is
+    if (
+      typeof avatarId === 'string' &&
+      (avatarId.startsWith('data:') || avatarId.startsWith('http') || avatarId.startsWith('/avatars/'))
+    ) {
       return avatarId;
     }
-    // Otherwise, return the predefined avatar path
+    // Try to resolve from predefined options (supports mapping ids to external URLs)
+    const preset = AVATAR_OPTIONS.find((opt) => opt.id === avatarId);
+    if (preset && typeof preset.image === 'string') {
+      return preset.image;
+    }
+    // Fallback to conventional local path
     return `/avatars/${avatarId}.png`;
   };
 
@@ -559,15 +567,7 @@ const CreateScenario = () => {
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Outcome Description</label>
-                      <Input
-                        placeholder="What happens when this choice is made?"
-                        value={choice.outcome}
-                        onChange={e => handleChoiceChange(decision.id, choice.id, 'outcome', e.target.value)}
-                        className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                      />
-                    </div>
+                    
                     
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Next Action</label>
@@ -855,58 +855,7 @@ const CreateScenario = () => {
             {/* Decision Tree */}
             {renderDecisionTree()}
             
-            {/* Add New Decision Options */}
-            <Card className="border-2 border-dashed border-purple-300">
-              <CardHeader>
-                <CardTitle className="text-center text-purple-700">Add New Content</CardTitle>
-                <p className="text-sm text-center text-gray-600">Choose how you want to expand your scenario</p>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Add New Level */}
-                  <Button 
-                    onClick={() => handleAddDecision()} 
-                    variant="outline" 
-                    className="h-24 border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300"
-                  >
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Add New Level</div>
-                        <div className="text-xs text-gray-500">Create a new decision point at the same level</div>
-                      </div>
-                    </div>
-                  </Button>
-
-                  {/* Add New Branch */}
-                  <Button 
-                    onClick={() => {
-                      // Find the first decision to add a branch to
-                      const firstDecision = decisions[0];
-                      if (firstDecision) {
-                        handleAddBranch(firstDecision.id, firstDecision.choices[0].id);
-                      }
-                    }} 
-                    variant="outline" 
-                    className="h-24 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300"
-                  >
-                    <div className="flex flex-col items-center space-y-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <ArrowRight className="w-4 h-4" />
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium">Add New Branch</div>
-                        <div className="text-xs text-gray-500">Create a branching path from existing choice</div>
-                      </div>
-                    </div>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-
+            
             {/* Branch Type Legend */}
             <Card className="border border-gray-200">
               <CardHeader>
@@ -1099,7 +1048,14 @@ const CreateScenario = () => {
                       >
                         <div className="flex flex-col items-center">
                           <div className="w-12 h-16 bg-gray-200 rounded mb-2 flex items-center justify-center overflow-hidden">
-                            <User className="w-6 h-6 text-gray-500" />
+                            <img
+                              src={avatar.image}
+                              alt={avatar.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
                           </div>
                           <span className="text-xs text-center text-gray-600">{avatar.name}</span>
                         </div>
