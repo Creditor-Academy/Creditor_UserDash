@@ -93,11 +93,16 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
   }, [unlockHistory]);
 
   const canPurchase = useMemo(() => quantity > 0 && !isPurchasing, [quantity, isPurchasing]);
+  // New rate: 5 credits per $1 (no bonus credits)
+  const CREDIT_RATE = 5;
   const derived = useMemo(() => {
-    if (packType === "pack500") return { credits: 500, price: 500 };
-    if (packType === "pack2800") return { credits: 2800, price: 2800 };
+    if (packType === "pack500") return { credits: 500 * CREDIT_RATE, price: 500 };
+    if (packType === "pack2800") return { credits: 2800 * CREDIT_RATE, price: 2800 };
     return { credits: 0, price: 0 };
   }, [packType]);
+
+  const formatNumber = (val) =>
+    typeof val === 'number' ? val.toLocaleString(undefined) : String(val);
 
   const handlePurchase = (e) => {
     e.preventDefault();
@@ -213,8 +218,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       Buy credits
                     </button>
                     <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
-                      <span className="px-2 py-1 rounded border">500 for $500</span>
-                      <span className="px-2 py-1 rounded border">2800 for $2800</span>
+                      <span className="px-2 py-1 rounded border">2,500 credits for $500</span>
+                      <span className="px-2 py-1 rounded border">14,000 credits for $2,800</span>
                     </div>
                   </form>
                   
@@ -343,7 +348,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       <p className="text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* 500 Credits Pack */}
+                      {/* $500 Pack */}
                       <label className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                         packType === "pack500" 
                           ? "border-blue-500 bg-blue-50 shadow-md" 
@@ -358,11 +363,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         />
                         <div className="text-center">
                           <div className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full mb-2">
-                            <span className="text-blue-600 font-bold text-xs">500</span>
+                            <span className="text-blue-600 font-bold text-xs">$500</span>
                           </div>
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1">500 Credits</h4>
-                          <div className="text-lg font-bold text-gray-900 mb-1">$500</div>
-                          <div className="text-xs text-gray-500">$1.00 per credit</div>
+                          <h4 className="text-2xl font-bold text-gray-900 mb-1">2,500 Credits</h4>
+                          <div className="text-sm font-medium text-gray-600 mb-1">$500</div>
+                          <div className="text-xs text-gray-500">5 credits per $1</div>
                           {packType === "pack500" && (
                             <div className="absolute top-2 right-2">
                               <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
@@ -375,7 +380,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         </div>
                       </label>
 
-                      {/* 2800 Credits Pack */}
+                      {/* $2,800 Pack */}
                       <label className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
                         packType === "pack2800" 
                           ? "border-blue-500 bg-blue-50 shadow-md" 
@@ -390,11 +395,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         />
                         <div className="text-center">
                           <div className="inline-flex items-center justify-center w-8 h-8 bg-green-100 rounded-full mb-2">
-                            <span className="text-green-600 font-bold text-xs">2800</span>
+                            <span className="text-green-600 font-bold text-xs">$2800</span>
                           </div>
-                          <h4 className="text-sm font-semibold text-gray-900 mb-1">2800 Credits</h4>
-                          <div className="text-lg font-bold text-gray-900 mb-1">$2800</div>
-                          <div className="text-xs text-gray-500">$1.00 per credit</div>
+                          <h4 className="text-2xl font-bold text-gray-900 mb-1">14,000 Credits</h4>
+                          <div className="text-sm font-medium text-gray-600 mb-1">$2800</div>
+                          <div className="text-xs text-gray-500">5 credits per $1</div>
                           <div className="mt-1 inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                             Most Popular
                           </div>
@@ -415,11 +420,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="text-sm text-gray-600">Selected credits</div>
-                        <div className="text-xl font-bold text-gray-900">{derived.credits}</div>
+                        <div className="text-3xl font-bold text-gray-900">{formatNumber(derived.credits)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-gray-600">Total due</div>
-                        <div className="text-xl font-bold text-blue-600">${derived.price}</div>
+                        <div className="text-lg font-semibold text-gray-700">${derived.price}</div>
                       </div>
                     </div>
                     <div className="flex gap-3">
