@@ -122,7 +122,7 @@ function Messages() {
       })();
     };
 
-    const onReceiveMessage = ({ from, message, image, messageid }) => {
+    const onReceiveMessage = ({ from, message, image, messageid, conversationid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
       setMessages(prev => [
@@ -142,9 +142,13 @@ function Messages() {
 
       // If the incoming message is from someone else and we're inside this conversation, mark it read
       try {
-        if (!isSelf && conversationId && messageid) {
+        console.log("conversation id:", conversationid);
+        
+        if (!isSelf && conversationid && messageid) {
           const s = getSocket();
-          s.emit('messageSeenByReceiver', { messageid, conversationid: conversationId });
+          s.emit('messageSeenByReceiver', { messageid, conversationid: conversationid });
+          console.log("message seen by receiver", messageid, conversationid);
+          
         }
       } catch {}
     };
