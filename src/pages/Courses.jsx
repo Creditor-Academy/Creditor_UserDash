@@ -10,8 +10,10 @@ import { fetchUserCourses, fetchCourseModules } from '../services/courseService'
 import { getCourseTrialStatus } from '../utils/trialUtils';
 import TrialBadge from '../components/ui/TrialBadge';
 import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
+import { useCredits } from '../contexts/CreditsContext';
 
 export function Courses() {
+  const { userProfile } = useCredits();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCourses, setFilteredCourses] = useState([]);
@@ -25,6 +27,7 @@ export function Courses() {
   const [courseModules, setCourseModules] = useState({});
   const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
   const [showTrialDialog, setShowTrialDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('courses'); // 'courses' only
 
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
@@ -150,6 +153,7 @@ export function Courses() {
     fetchCourses();
   }, []);
 
+
   // Update trial status every minute for real-time countdown
   useEffect(() => {
     const interval = setInterval(() => {
@@ -226,6 +230,8 @@ export function Courses() {
     setFilteredCourses(results);
   }, [courses, searchTerm, progressFilter, categoryFilter]);
 
+
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -272,7 +278,7 @@ export function Courses() {
       <main className="flex-1">
         <div className="container py-4 sm:py-6 max-w-7xl px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold">My Courses</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">My Learning</h1>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-none sm:w-64">
@@ -295,6 +301,7 @@ export function Courses() {
               </Button> */}
             </div>
           </div>
+
 
           {/* Filters */}
           {/* {showFilters && (
@@ -336,91 +343,91 @@ export function Courses() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredCourses.length > 0 ? (
               filteredCourses.map((course) => (
-                <div key={course.id} className="course-card opacity-0">
-                  <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-                    <div className="aspect-video relative overflow-hidden">
-                      <img 
-                        src={course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                        alt={course.title}
-                        className="w-full h-full object-cover"
-                      />
-                      {/* Trial Badge Overlay */}
-                      {course.trialStatus.isInTrial && (
-                        <div className="absolute top-3 left-3">
-                          <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
+              <div key={course.id} className="course-card opacity-0">
+                <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                  <div className="aspect-video relative overflow-hidden">
+                    <img 
+                      src={course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Trial Badge Overlay */}
+                    {course.trialStatus.isInTrial && (
+                      <div className="absolute top-3 left-3">
+                        <TrialBadge timeRemaining={course.trialStatus.timeRemaining} />
+                      </div>
+                    )}
+                    {/* Lock Overlay for Expired Trials */}
+                    {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div className="text-white text-center">
+                          <Lock className="w-8 h-8 mx-auto mb-2" />
+                          <p className="text-sm font-medium">Trial Expired</p>
                         </div>
-                      )}
-                      {/* Lock Overlay for Expired Trials */}
-                      {course.trialStatus.isInTrial && course.trialStatus.isExpired && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                          <div className="text-white text-center">
-                            <Lock className="w-8 h-8 mx-auto mb-2" />
-                            <p className="text-sm font-medium">Trial Expired</p>
-                          </div>
-                        </div>
-                      )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <CardHeader className="pb-3 flex-shrink-0">
+                    <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
+                    <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-3 flex-1">
+                    <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                      {/* <div className="flex items-center gap-1">
+                        <Clock size={14} />
+                        <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
+                      </div> */}
+                      <div className="flex items-center gap-1">
+                        <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
+                        <span>{course.modulesCount || 0} modules</span>
+                      </div>
                     </div>
                     
-                    <CardHeader className="pb-3 flex-shrink-0">
-                      <CardTitle className="text-base sm:text-lg line-clamp-2">{course.title}</CardTitle>
-                      <CardDescription className="line-clamp-2 text-sm sm:text-base">{course.description}</CardDescription>
-                    </CardHeader>
+                    {/* <Progress value={course.progress || 0} className="h-2" /> */}
+                    {/*
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>Time spent: {formatTime(courseTimes[course.id] || 0)}</span>
+                      <span>{course.category || "Uncategorized"}</span>
+                    </div>
+                    */}
+                  </CardContent>
+                  
+                  <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
+                    <div className="flex gap-2 w-full">
+                      <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
+                        <Button variant="default" className="w-full text-sm sm:text-base">
+                          Continue Learning
+                        </Button>
+                      </Link>
+                    </div>
                     
-                    <CardContent className="space-y-3 flex-1">
-                      <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                        {/* <div className="flex items-center gap-1">
-                          <Clock size={14} />
-                          <span>{course.totalDurationSecs ? formatTime(course.totalDurationSecs) : "Duration not specified"}</span>
-                        </div> */}
-                        <div className="flex items-center gap-1">
-                          <BookOpen size={12} className="sm:w-3.5 sm:h-3.5" />
-                          <span>{course.modulesCount || 0} modules</span>
-                        </div>
+                    {/* Trial Status Info */}
+                    {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
+                      <div className="text-xs text-center text-gray-600">
+                        Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
                       </div>
-                      
-                      {/* <Progress value={course.progress || 0} className="h-2" /> */}
-                      {/*
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Time spent: {formatTime(courseTimes[course.id] || 0)}</span>
-                        <span>{course.category || "Uncategorized"}</span>
-                      </div>
-                      */}
-                    </CardContent>
+                    )}
                     
-                    <CardFooter className="pt-2 flex flex-col gap-2 flex-shrink-0">
-                      <div className="flex gap-2 w-full">
-                        <Link to={`/dashboard/courses/${course.id}/modules`} className="flex-1">
-                          <Button variant="default" className="w-full text-sm sm:text-base">
-                            Continue Learning
-                          </Button>
-                        </Link>
-                      </div>
-                      
-                      {/* Trial Status Info */}
-                      {course.trialStatus.isInTrial && !course.trialStatus.isExpired && (
-                        <div className="text-xs text-center text-gray-600">
-                          Trial ends: {new Date(course.trialStatus.subscriptionEnd).toLocaleDateString()}
-                        </div>
-                      )}
-                      
-                      {/* {course.progress === 100 && (
-                        <Link to={`/certificate/${course.id}`} className="w-full">
-                          <Button variant="outline" className="w-full">
-                            <Award size={16} className="mr-2" />
-                            View Certificate
-                          </Button>
-                        </Link>
-                      )} */}
-                    </CardFooter>
-                  </Card>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8 sm:py-12">
-                <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
-                <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
+                    {/* {course.progress === 100 && (
+                      <Link to={`/certificate/${course.id}`} className="w-full">
+                        <Button variant="outline" className="w-full">
+                          <Award size={16} className="mr-2" />
+                          View Certificate
+                        </Button>
+                      </Link>
+                    )} */}
+                  </CardFooter>
+                </Card>
               </div>
-            )}
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8 sm:py-12">
+              <h3 className="text-base sm:text-lg font-medium">No courses found</h3>
+              <p className="text-muted-foreground text-sm sm:text-base">Try adjusting your search or filter criteria</p>
+            </div>
+          )}
           </div>
         </div>
       </main>

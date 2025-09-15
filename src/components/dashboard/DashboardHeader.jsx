@@ -8,17 +8,21 @@ import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
 import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
 import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
+import { useCredits } from "@/contexts/CreditsContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const { isInstructorOrAdmin, hasRole } = useAuth();
+  const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -39,6 +43,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Listen for a global request to open the credits modal
+  useEffect(() => {
+    const handler = () => setCreditsModalOpen(true);
+    window.addEventListener('open-credits-modal', handler);
+    return () => window.removeEventListener('open-credits-modal', handler);
+  }, []);
 
   // Local notifications persistence helpers
   const LOCAL_NOTIFS_KEY = 'local_notifications';
@@ -644,6 +655,19 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             >
               <Search className="h-5 w-5" />
             </button>
+            {/* Credits Badge */}
+            <button
+              onClick={() => setCreditsModalOpen(true)}
+              className="group relative px-3 py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-2 shadow-sm hover:shadow transition-all"
+              aria-label="Open credits purchase"
+              title="Manage credits"
+            >
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[10px] font-extrabold shadow-inner">
+                CP
+              </span>
+              <span className="text-sm font-semibold tabular-nums tracking-wide">{balance}</span>
+              <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
+            </button>
             
             {/* Notification Bell */}
             <button
@@ -872,6 +896,17 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           viewerTimezone={viewerTimezone}
         />
       </header>
+
+      {/* Credits Modal - render outside header to center across full viewport */}
+      <CreditPurchaseModal 
+        open={creditsModalOpen} 
+        onClose={() => setCreditsModalOpen(false)}
+        balance={balance}
+        onBalanceChange={(_, meta) => {
+          const delta = meta?.added ?? 0;
+          if (delta) addCredits(delta);
+        }}
+      />
 
       {/* Enrollment Alert Modal */}
       {showEnrollmentAlert && (
