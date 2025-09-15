@@ -171,12 +171,22 @@ function Messages() {
     socket.on('disconnect', onDisconnect);
     socket.on('roomidforsender', onRoomIdForSender);
     socket.on('receiveMessage', onReceiveMessage);
+    const onMessagesRead = ({ conversationId: readConvId }) => {
+      if (!readConvId) return;
+      setFriends(prev => prev.map(f => (
+        String(f.conversationId || f.id) === String(readConvId)
+          ? { ...f, isRead: true }
+          : f
+      )));
+    };
+    socket.on('messagesRead', onMessagesRead);
     socket.on('conversationUpdated', onConversationUpdated);
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('roomidforsender', onRoomIdForSender);
       socket.off('receiveMessage', onReceiveMessage);
+      socket.off('messagesRead', onMessagesRead);
       socket.off('conversationUpdated', onConversationUpdated);
     };
   }, []);
@@ -461,7 +471,7 @@ function Messages() {
                       const convId = friend.conversationId || friend.id;
                       setRoomId(friend.room);
                       setConversationId(convId);
-                      socket.emit('joinRoom', friend.room);
+                      socket.emit('joinRoom', friend.room, convId);
                       // Load previous messages for this conversation
                       (async () => {
                         try {
