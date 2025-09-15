@@ -9,7 +9,7 @@ function ComingSoonPopover() {
   const features = [
     {
       title: "Private Chat",
-      description: "One‑to‑one private chats with announcements are launching to enhance direct communication.",
+      description: "One‑to‑one private chats are launching to enhance direct communication and user interaction.",
       tags: [
         { label: "Private", color: "amber" },
         { label: "Chat", color: "blue" },
@@ -19,8 +19,8 @@ function ComingSoonPopover() {
      
     },
     {
-      title: "Scenario Assessment",
-      description: "First, we're launching scenario-based assessments for better learning experiences.",
+      title: "Scenario - Decision Tree Assessment",
+      description: "We're launching scenario-decision tree based assessments for better learning experiences.",
       tags: [
         { label: "Scenario Assessment", color: "green" },
         { label: "Learning", color: "purple" }
