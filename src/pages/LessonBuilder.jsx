@@ -1422,6 +1422,162 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       statementComponentRef.current?.handleEditStatement(blockId, statementType, content, htmlCss);
       return;
     }
+
+    // Enhanced list block detection - check content structure and HTML patterns
+    const isListBlock = block.type === 'list' || 
+                       (block.details?.list_type) ||
+                       (block.details?.listType) ||
+                       // Check if content has list structure (JSON with items array)
+                       (() => {
+                         try {
+                           const content = JSON.parse(block.content || '{}');
+                           return content.items && Array.isArray(content.items);
+                         } catch {
+                           return false;
+                         }
+                       })() ||
+                       // Check HTML patterns for list blocks
+                       (block.html_css && (
+                         block.html_css.includes('bg-gradient-to-br from-orange-50 to-red-50') ||
+                         block.html_css.includes('bg-gradient-to-br from-pink-50 to-rose-50') ||
+                         block.html_css.includes('bg-gradient-to-br from-blue-50 to-indigo-50') ||
+                         block.html_css.includes('checkbox-item') ||
+                         block.html_css.includes('list-none') ||
+                         (block.html_css.includes('<ol') && block.html_css.includes('space-y-4')) ||
+                         (block.html_css.includes('<ul') && block.html_css.includes('space-y-4'))
+                       ));
+
+    if (isListBlock) {
+      // Handle list block editing with proper type detection
+      // For fetched content, detect listType from HTML content if not available
+      let listType = block.listType || block.details?.list_type || block.details?.listType;
+      
+      // Override block type to ensure it's treated as a list
+      block = { ...block, type: 'list' };
+      
+      // If listType is not available, detect it from HTML content
+      if (!listType && block.html_css) {
+        const htmlContent = block.html_css;
+        
+        // Numbered list - has numbered items with gradient orange background
+        if (htmlContent.includes('bg-gradient-to-br from-orange-50 to-red-50') || 
+            htmlContent.includes('from-orange-500 to-red-500') ||
+            htmlContent.includes('<ol')) {
+          listType = 'numbered';
+        }
+        // Checkbox list - has checkbox items with pink background
+        else if (htmlContent.includes('bg-gradient-to-br from-pink-50 to-rose-50') || 
+                 htmlContent.includes('checkbox-item') ||
+                 htmlContent.includes('border-pink-400')) {
+          listType = 'checkbox';
+        }
+        // Bulleted list - has bullet points with blue background
+        else if (htmlContent.includes('bg-gradient-to-br from-blue-50 to-indigo-50') || 
+                 htmlContent.includes('from-blue-500 to-indigo-500') ||
+                 htmlContent.includes('rounded-full shadow-sm')) {
+          listType = 'bulleted';
+        }
+        // Fallback detection based on HTML structure
+        else if (htmlContent.includes('<ol')) {
+          listType = 'numbered';
+        } else if (htmlContent.includes('checkbox') || htmlContent.includes('input type="checkbox"')) {
+          listType = 'checkbox';
+        } else {
+          listType = 'bulleted'; // default fallback
+        }
+      } else if (!listType) {
+        listType = 'bulleted'; // fallback
+      }
+      
+      // Debug logging to verify list type detection
+      console.log('List block detected:', {
+        originalType: block.type,
+        detectedListType: listType,
+        hasHtmlCss: !!block.html_css,
+        blockContent: block.content,
+        htmlPreview: block.html_css ? block.html_css.substring(0, 200) + '...' : 'No HTML'
+      });
+      
+      // Parse and prepare list content for the editor
+      let listContent = {};
+      try {
+        if (block.content) {
+          listContent = JSON.parse(block.content);
+        }
+      } catch (e) {
+        console.log('Could not parse list content as JSON, extracting from HTML');
+        // Extract list items from HTML if JSON parsing fails
+        if (block.html_css) {
+          const htmlContent = block.html_css;
+          const items = [];
+          
+          // Extract items from different list types
+          if (listType === 'numbered') {
+            const matches = htmlContent.match(/<li[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/li>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          } else if (listType === 'checkbox') {
+            const matches = htmlContent.match(/<div[^>]*class="flex items-start space-x-4[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/div>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          } else {
+            // Bulleted list
+            const matches = htmlContent.match(/<li[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/li>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          }
+          
+          listContent = {
+            items: items.length > 0 ? items : [''],
+            listType: listType,
+            checkedItems: {}
+          };
+        } else {
+          listContent = {
+            items: [''],
+            listType: listType,
+            checkedItems: {}
+          };
+        }
+      }
+      
+      // Set the listType to ensure proper editor opens
+      const blockWithType = { 
+        ...block, 
+        type: 'list', 
+        listType: listType,
+        content: JSON.stringify(listContent)
+      };
+      setEditingListBlock(blockWithType);
+      
+      // Initialize list component state
+      if (listComponentRef.current) {
+        listComponentRef.current.setListItems(listContent.items || ['']);
+        listComponentRef.current.setListType(listType);
+        listComponentRef.current.setCheckedItems(listContent.checkedItems || {});
+      }
+      
+      setShowListEditDialog(true);
+      return;
+    }
    
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
