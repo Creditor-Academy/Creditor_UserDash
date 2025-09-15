@@ -136,7 +136,7 @@ const InstructorPage = () => {
                 : "hover:bg-gray-100 text-gray-700"
             }`}
           >
-            <FaEdit /> Create Quiz
+            <FaEdit /> Manage Assessments
           </button>
           {/* <button 
             onClick={() => setActiveTab("scorm")} 
