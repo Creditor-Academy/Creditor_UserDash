@@ -5,7 +5,6 @@ import { ExternalLink, Play, Video, Clock, Calendar, Users, FileVideo } from "lu
 import { AttendanceViewerModal } from "./AttendanceViewerModal";
 import ClassRecording from "./ClassRecording";
 import { getAuthHeader } from '../../services/authHeader'; // adjust path as needed
-// Empty array - no recordings exist yet
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
@@ -503,7 +502,7 @@ export function LiveClasses() {
             
             {cancelledEvent.reason && (
               <div className="mt-3 p-3 bg-red-50 rounded-md text-sm text-red-700">
-                <div className="font-medium">Cancellation reason:</div>
+                <div className="font-medium">Cancellation Reason:</div>
                 <div>{cancelledEvent.reason}</div>
               </div>
             )}
