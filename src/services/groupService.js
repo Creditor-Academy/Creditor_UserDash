@@ -35,8 +35,20 @@ export const getGroupMembers = async (groupId) => {
  */
 export async function createCourseGroup(payload) {
   try {
-    console.log("📤 groupService: Creating course group:", payload);
-    const response = await api.post('/groups/course', payload, {
+    // Normalize possible image field aliases so backend variants capture it
+    const image = payload.thumbnail || payload.banner || payload.image_url || payload.imageUrl || payload.image;
+    const body = {
+      ...payload,
+      ...(image ? {
+        thumbnail: image,
+        banner: image,
+        image_url: image,
+        imageUrl: image,
+        image: image,
+      } : {}),
+    };
+    console.log("📤 groupService: Creating course group:", body);
+    const response = await api.post('/groups/course', body, {
       withCredentials: true,
     });
     console.log("✅ groupService: Course group created successfully:", response.data);
@@ -82,10 +94,44 @@ export const addGroupMember = async (groupId, userId = null) => {
 // Create new group
 export const createGroup = async (groupData) => {
   try {
-    const response = await api.post(`/groups`, groupData);
+    // send common aliases for the image so backend variations still capture it
+    const image = groupData.thumbnail || groupData.banner || groupData.image_url || groupData.imageUrl || groupData.image;
+    const payload = {
+      ...groupData,
+      ...(image ? {
+        thumbnail: image,
+        banner: image,
+        image_url: image,
+        imageUrl: image,
+        image: image,
+      } : {}),
+    };
+    const response = await api.post(`/groups`, payload);
     return response.data;
   } catch (error) {
     console.error('Error creating group:', error);
+    throw error;
+  }
+};
+
+// Update an existing group
+export const updateGroup = async (groupId, update) => {
+  try {
+    const image = update.thumbnail || update.banner || update.image_url || update.imageUrl || update.image;
+    const payload = {
+      ...update,
+      ...(image ? {
+        thumbnail: image,
+        banner: image,
+        image_url: image,
+        imageUrl: image,
+        image: image,
+      } : {}),
+    };
+    const response = await api.put(`/groups/${groupId}`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating group:', error);
     throw error;
   }
 };
