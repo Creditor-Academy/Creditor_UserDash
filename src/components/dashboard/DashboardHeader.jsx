@@ -457,7 +457,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
               aria-label="Open menu"
               onClick={() => onMobileMenuClick && onMobileMenuClick()}
             >
-              <Menu className="h-5 w-5" />
+              <MenuIcon className="h-5 w-5" />
             </button>
             <button
               className="flex items-center focus:outline-none"

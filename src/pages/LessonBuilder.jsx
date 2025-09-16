@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
@@ -8,6 +9,8 @@ import { uploadVideo as uploadVideoResource } from '@/services/videoUploadServic
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import ModernLessonPreview from '@/components/courses/ModernLessonPreview';
+import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
   Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
@@ -275,8 +278,8 @@ const getToolbarModules = (type = 'full') => {
   };
 };
 
-function LessonBuilder({ viewMode: initialViewMode = false }) {
-  const { sidebarCollapsed, setSidebarCollapsed } = useOutletContext();
+function LessonBuilder() {
+  const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
   const { courseId, moduleId, lessonId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -288,7 +291,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [mainImageUploading, setMainImageUploading] = useState(false);
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
-  const [isViewMode, setIsViewMode] = useState(initialViewMode);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -494,6 +496,25 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
     },
     {
+      id: 'master_heading',
+      icon: <Heading1 className="h-5 w-5" />,
+      preview: (
+        <div className="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Master Heading</h1>
+        </div>
+      ),
+      defaultContent:
+        '<div class="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white"><h1 class="text-4xl font-extrabold tracking-tight">Master Heading</h1></div>',
+      style: {
+        fontSize: '32px',
+        fontWeight: '800',
+        color: '#FFFFFF',
+        background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+        padding: '16px',
+        borderRadius: '12px'
+      }
+    },
+    {
       id: 'subheading',
       icon: <Heading2 className="h-5 w-5" />,
       preview: <h2 className="text-xl font-semibold mb-2">Subheading</h2>,
@@ -631,14 +652,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       innerContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">${heading || 'Heading'}</h1><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the heading.'}</p>`;
     } else if (textType.id === 'subheading_paragraph') {
       innerContent = `<h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">${subheading || 'Subheading'}</h2><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the subheading.'}</p>`;
+    } else if (textType.id === 'master_heading') {
+      innerContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${'Master Heading'}</h1>`;
     } else {
       innerContent = textType.defaultContent || contentHtml;
     }
 
     // Generate HTML content with proper card styling to match existing blocks
-    const htmlContent = `
+    const htmlContent = textType.id === 'master_heading' ? innerContent : `
       <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
         <div class="pl-4">
           ${innerContent}
         </div>
@@ -980,13 +1002,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     default:
       newHtmlContent = `
         <div class="relative bg-white rounded-2xl shadow-md p-6 border">
-          <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-          <div class="pl-4">
-            <blockquote class="text-lg italic text-gray-700 mb-3">
-              "${updatedQuoteContent.quote}"
-            </blockquote>
-            <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
-          </div>
+          <blockquote class="text-lg italic text-gray-700 mb-3">
+            "${updatedQuoteContent.quote}"
+          </blockquote>
+          <cite class="text-sm font-medium text-gray-500">— ${updatedQuoteContent.author}</cite>
         </div>
       `;
     }
@@ -1517,9 +1536,62 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
+  const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
+
   const handlePreview = () => {
     console.log('Previewing lesson:', { lessonTitle, contentBlocks });
-    alert('Preview functionality coming soon!');
+    setShowUnifiedPreview(true);
+  };
+
+  // Convert LessonBuilder content blocks to Modern format
+  const convertToModernFormat = () => {
+    // Create lesson data object
+    const currentLessonData = {
+      id: lessonId || Math.random().toString(36).substr(2, 9),
+      title: lessonTitle || 'Untitled Lesson',
+      description: lessonData?.description || 'No description available',
+      duration: '30 min',
+      author: 'Course Creator',
+      difficulty: 'Intermediate'
+    };
+
+    // Use contentBlocks if available, otherwise fall back to lessonContent
+    const sourceBlocks = (contentBlocks && contentBlocks.length > 0) 
+      ? contentBlocks 
+      : (lessonContent?.data?.content || []);
+
+    return convertToModernLessonFormat(currentLessonData, sourceBlocks, false);
+  };
+
+  // Handle block updates from the unified preview
+  const handleBlockUpdate = (blockId, updatedBlock) => {
+    console.log('Updating block:', blockId, updatedBlock);
+    
+    // Update contentBlocks if they exist
+    if (contentBlocks && contentBlocks.length > 0) {
+      setContentBlocks(prevBlocks => 
+        prevBlocks.map(block => 
+          (block.id || block.block_id) === blockId 
+            ? { ...block, ...updatedBlock }
+            : block
+        )
+      );
+    }
+    
+    // Also update lessonContent if it exists
+    if (lessonContent?.data?.content) {
+      setLessonContent(prev => ({
+        ...prev,
+        data: {
+          ...prev.data,
+          content: prev.data.content.map(block => 
+            (block.id || block.block_id) === blockId 
+              ? { ...block, ...updatedBlock }
+              : block
+          )
+        }
+      }));
+    }
   };
 
   // Convert blocks to HTML/CSS format
@@ -1599,18 +1671,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_a':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="flex items-start space-x-4">
-                      <div class="flex-shrink-0">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
-                      </div>
-                      <div class="flex-1">
-                        <blockquote class="text-lg italic text-gray-700 mb-3">
-                          "${quoteContent.quote || ''}"
-                        </blockquote>
-                        <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
-                      </div>
+                  <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-12 h-12 rounded-full object-cover" />
+                    </div>
+                    <div class="flex-1">
+                      <blockquote class="text-lg italic text-gray-700 mb-3">
+                        "${quoteContent.quote || ''}"
+                      </blockquote>
+                      <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                     </div>
                   </div>
                 </div>
@@ -1619,19 +1688,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_b':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="bg-gray-50 rounded-xl p-6">
-                      <div class="flex items-center space-x-4 mb-4">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
-                        <div>
-                          <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
-                        </div>
+                  <div class="bg-gray-50 rounded-xl p-6">
+                    <div class="flex items-center space-x-4 mb-4">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-lg" />
+                      <div>
+                        <cite class="text-lg font-semibold text-gray-800">${quoteContent.author || ''}</cite>
                       </div>
-                      <blockquote class="text-xl italic text-gray-700 leading-relaxed">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
                     </div>
+                    <blockquote class="text-xl italic text-gray-700 leading-relaxed">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
                   </div>
                 </div>
               `;
@@ -1639,15 +1705,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_c':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="text-center">
-                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
-                      <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
-                      <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
-                    </div>
+                  <div class="text-center">
+                    <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-24 h-24 rounded-full object-cover mx-auto mb-6 border-4 border-gray-100 shadow-lg" />
+                    <blockquote class="text-2xl italic text-gray-700 mb-4 leading-relaxed">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <cite class="text-lg font-medium text-gray-600">— ${quoteContent.author || ''}</cite>
                   </div>
                 </div>
               `;
@@ -1655,16 +1718,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_d':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="border-l-4 border-blue-500 pl-4">
-                      <blockquote class="text-lg text-gray-700 mb-2">
-                        "${quoteContent.quote || ''}"
-                      </blockquote>
-                      <div class="flex items-center space-x-3">
-                        <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
-                        <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
-                      </div>
+                  <div class="border-l-4 border-blue-500 pl-4">
+                    <blockquote class="text-lg text-gray-700 mb-2">
+                      "${quoteContent.quote || ''}"
+                    </blockquote>
+                    <div class="flex items-center space-x-3">
+                      <img src="${quoteContent.authorImage || ''}" alt="${quoteContent.author || ''}" class="w-8 h-8 rounded-full object-cover" />
+                      <cite class="text-sm font-medium text-gray-500">${quoteContent.author || ''}</cite>
                     </div>
                   </div>
                 </div>
@@ -1673,7 +1733,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'quote_on_image':
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl z-10"></div>
                   <div class="relative">
                     <img src="${quoteContent.backgroundImage || ''}" alt="Quote background" class="w-full h-64 object-cover" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex items-end">
@@ -1701,19 +1760,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
-                      ${quotesHtml}
-                      <div class="flex justify-center space-x-2 mt-6">
-                        ${quotes.map((_, index) => `
-                          <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
-                        `).join('')}
-                      </div>
-                      <div class="flex justify-between items-center mt-4">
-                        <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
-                        <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
-                      </div>
+                  <div class="quote-carousel relative bg-gray-50 rounded-xl p-8 min-h-[200px] flex flex-col justify-center">
+                    ${quotesHtml}
+                    <div class="flex justify-center space-x-2 mt-6">
+                      ${quotes.map((_, index) => `
+                        <button class="carousel-dot w-3 h-3 rounded-full ${index === 0 ? 'bg-blue-500' : 'bg-gray-300'}" data-index="${index}"></button>
+                      `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center mt-4">
+                      <button class="carousel-prev text-gray-500 hover:text-gray-700 p-2">‹</button>
+                      <button class="carousel-next text-gray-500 hover:text-gray-700 p-2">›</button>
                     </div>
                   </div>
                 </div>
@@ -1762,13 +1818,10 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             default:
               html = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <div class="pl-4">
-                    <blockquote class="text-lg italic text-gray-700 mb-3">
-                      "${quoteContent.quote || ''}"
-                    </blockquote>
-                    <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
-                  </div>
+                  <blockquote class="text-lg italic text-gray-700 mb-3">
+                    "${quoteContent.quote || ''}"
+                  </blockquote>
+                  <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                 </div>
               `;
           }
@@ -1823,11 +1876,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }
 
       // Allow empty content blocks for deletion operations
-      /*if (!blocksToUpdate || blocksToUpdate.length === 0) {
-        toast.error('Please add some content before updating');
-        return;
-      }*/
-
       // Convert content blocks to the required format
       const content = blocksToUpdate.map((block, index) => {
         const blockId = block.block_id || `block_${index + 1}`;
@@ -1854,6 +1902,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             html_css: block.html_css,
             ...(block.details && { details: block.details })
           };
+          
+          // For text blocks, include textType to differentiate between heading, paragraph, master heading, etc.
+          if (block.type === 'text' && block.textType) {
+            blockData.textType = block.textType;
+          }
           
           // For statement blocks, include explicit statement type metadata
           if (block.type === 'statement') {
@@ -1914,26 +1967,30 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             if (textType === 'heading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h1 class="text-2xl font-bold text-gray-800">${blockContent}</h1>
                   </article>
                 </div>`;
             } else if (textType === 'subheading') {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h2 class="text-xl font-semibold text-gray-800">${blockContent}</h2>
                   </article>
+                </div>`;
+            } else if (textType === 'master_heading') {
+              htmlContent = `
+                <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                  <div class="rounded-xl p-4 text-white" style="background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);">
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">${blockContent}</h1>
+                  </div>
                 </div>`;
             } else if (textType === 'heading_paragraph') {
               const heading = block.heading || '';
               const content = block.content || '';
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h1 class="text-2xl font-bold text-gray-800">${heading}</h1>
                     <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
@@ -1943,8 +2000,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               const content = block.content || '';
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <h2 class="text-xl font-semibold text-gray-800">${subheading}</h2>
                     <p class="text-gray-600 leading-relaxed">${content}</p>
                   </article>
@@ -1952,8 +2008,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             } else {
               htmlContent = `
                 <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                  <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                  <article class="prose prose-gray max-w-none pl-4">
+                  <article class="prose prose-gray max-w-none">
                     <p class="text-gray-600 leading-relaxed">${blockContent}</p>
                   </article>
                 </div>`;
@@ -2026,6 +2081,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         return {
           id: block.id,
           type: block.type,
+          textType: block.textType,
           title: block.title || '',
           content: block.content || '',
           html_css: htmlContent,
@@ -2067,6 +2123,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             case 'heading': {
               htmlContent = `<h1 class="lesson-heading">${blockContent}</h1>`;
               styles = '.lesson-heading { font-size: 24px; font-weight: bold; margin-bottom: 16px; }';
+              break;
+            }
+            case 'master_heading': {
+              htmlContent = `<div class="lesson-master-heading"><h1>${blockContent}</h1></div>`;
+              styles = '.lesson-master-heading h1 { font-size: 40px; font-weight: 600; margin: 0; line-height: 1.2; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; }';
               break;
             }
             case 'subheading': {
@@ -2185,7 +2246,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const toggleViewMode = () => {
-    setIsViewMode(!isViewMode);
+    // View mode functionality removed - now using Modern Preview only
   };
 
   const handleVideoDialogClose = () => {
@@ -2625,7 +2686,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setEditorTitle(block.title || '');
       
       // Properly detect and set the text type
-      const detectedTextType = block.textType || 'paragraph';
+      let detectedTextType = block.textType || 'paragraph';
+      
+      // If textType is not set or unreliable, detect from HTML content
+      if (!block.textType || block.textType === 'heading') {
+        const htmlContent = block.html_css || block.content || '';
+        
+        // Check for master heading first (has gradient background)
+        if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+          detectedTextType = 'master_heading';
+        } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
+          detectedTextType = 'heading_paragraph';
+        } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
+          detectedTextType = 'subheading_paragraph';
+        } else if (htmlContent.includes('<h1')) {
+          detectedTextType = 'heading';
+        } else if (htmlContent.includes('<h2')) {
+          detectedTextType = 'subheading';
+        }
+      }
+      
       setCurrentTextType(detectedTextType);
       setCurrentTextBlockId(block.id || block.block_id);
       
@@ -2692,20 +2772,37 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         // For single content blocks (heading, subheading, paragraph)
         const htmlContent = block.html_css || block.content || '';
         
-        // Extract the inner content while preserving rich text formatting
-        if (htmlContent.includes('<')) {
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          
-          // Find the main content element
-          const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
-          if (contentElement) {
-            setEditorHtml(contentElement.innerHTML);
+        // Special handling for master heading to preserve text content only
+        if (detectedTextType === 'master_heading') {
+          if (htmlContent.includes('<h1')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            const h1Element = tempDiv.querySelector('h1');
+            if (h1Element) {
+              // Extract only the text content, not the styling
+              setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
+            } else {
+              setEditorHtml('Master Heading');
+            }
+          } else {
+            setEditorHtml(htmlContent || 'Master Heading');
+          }
+        } else {
+          // Extract the inner content while preserving rich text formatting for other types
+          if (htmlContent.includes('<')) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            // Find the main content element
+            const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
+            if (contentElement) {
+              setEditorHtml(contentElement.innerHTML);
+            } else {
+              setEditorHtml(htmlContent);
+            }
           } else {
             setEditorHtml(htmlContent);
           }
-        } else {
-          setEditorHtml(htmlContent);
         }
       }
     } else {
@@ -2733,7 +2830,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         let updatedContent = '';
        
         // Use currentTextType (detected type) or fallback to blockToUpdate.textType
-        const effectiveTextType = currentTextType || blockToUpdate.textType;
+        let effectiveTextType = currentTextType || blockToUpdate.textType;
+        
+        // Double-check for master heading if textType seems wrong
+        if (effectiveTextType === 'heading' && blockToUpdate.html_css) {
+          const htmlContent = blockToUpdate.html_css || '';
+          if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
+            effectiveTextType = 'master_heading';
+          }
+        }
        
         // Always use consistent HTML generation for all text types to avoid double-update issues
         const textType = textTypes.find(t => t.id === effectiveTextType);
@@ -2750,8 +2855,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <${headingTag} style="font-size: ${headingFontSize} !important; font-weight: ${headingFontWeight}; color: #1F2937; margin: 0 0 16px 0; line-height: 1.2;">${headingContent || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${paragraphContent || 'Start typing your content here...'}
@@ -2767,8 +2871,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (extracted || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
             </div>
@@ -2781,17 +2884,21 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (extracted || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
               </article>
             </div>`;
+        } else if (effectiveTextType === 'master_heading') {
+          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
+          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
+          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
+          const cleanedContent = (extracted || 'Master Heading');
+          updatedContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${cleanedContent}</h1>`;
         } else {
           // For paragraph and other single content blocks - use same styled container as heading/subheading
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${editorHtml || 'Enter your content here...'}
                 </div>
@@ -2832,8 +2939,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           }
         });
 
-        // Don't update lessonContent in edit mode to prevent duplicates
-        // lessonContent is only used for preview mode rendering
+        // Also update lessonContent if it exists (for fetched lessons)
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => ({
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: prevLessonContent.data.content.map(block =>
+                block.block_id === currentTextBlockId ? {
+                  ...block,
+                  content: updatedContent,
+                  html_css: updatedContent,
+                  heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
+                  subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
+                  updatedAt: new Date().toISOString(),
+                  textType: effectiveTextType || block.textType
+                } : block
+              )
+            }
+          }));
+        }
       } else {
         // For new blocks
         const effectiveTextTypeForNew = currentTextType || 'paragraph';
@@ -2856,26 +2981,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
+              <article class="max-w-none">
                 <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
               </article>
             </div>`;
         } else if (effectiveTextTypeForNew === 'subheading') {
           const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
           newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
-                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
-              </article>
-            </div>`;
-        } else {
-          // For paragraph and other blocks - use same styled container as heading/subheading
-          newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-              <article class="max-w-none pl-4">
                 <div class="prose prose-lg max-w-none text-gray-700">
                   ${editorHtml || 'Enter your content here...'}
                 </div>
@@ -3928,13 +4040,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   return (
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
-        {/* Content Blocks Sidebar - Only show in edit mode */}
-        {!isViewMode && (
-          <div
-            className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
-            style={{
-              left: sidebarCollapsed ? "4.5rem" : "17rem"
-            }}
+        {/* Content Blocks Sidebar */}
+        <div
+          className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
+          style={{
+            left: sidebarCollapsed ? "4.5rem" : "17rem"
+          }}
           >
             <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-full">
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -3979,16 +4090,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </div> */}
             </div>
           </div>
-        )}
 
         {/* Main Content */}
         <div
           className={`flex-1 transition-all duration-300 relative ${
-            isViewMode
-              ? 'ml-0'
-              : sidebarCollapsed
-                ? 'ml-[calc(4.5rem+16rem)]'
-                : 'ml-[calc(17rem+16rem)]'
+            sidebarCollapsed
+              ? 'ml-[calc(4.5rem+16rem)]'
+              : 'ml-[calc(17rem+16rem)]'
           }`}
         >
           <div className="w-full h-full bg-[#fafafa]">
@@ -3996,17 +4104,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
               <div className="max-w-[800px] mx-auto flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  {!isViewMode && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(-1)}
-                      className="flex items-center space-x-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      <span>Back</span>
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(-1)}
+                    className="flex items-center space-x-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Back</span>
+                  </Button>
                   <h1 className="text-lg font-bold">{lessonData?.title || lessonTitle || 'Untitled Lesson'}</h1>
                 </div>
                
@@ -4014,43 +4120,30 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={toggleViewMode}
+                    onClick={handlePreview}
                     className="flex items-center gap-1"
                   >
-                    {isViewMode ? (
-                      <>
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-1" />
-                        Preview
-                      </>
-                    )}
+                    <Eye className="h-4 w-4 mr-1" />
+                    Modern Preview
                   </Button>
                  
-                  {!isViewMode && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={handleSave}>
-                        Save as Draft
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleUpdate}
-                        disabled={isUploading}
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Updating...
-                          </>
-                        ) : (
-                          'Update'
-                        )}
-                      </Button>
-                    </>
-                  )}
+                  <Button variant="outline" size="sm" onClick={handleSave}>
+                    Save as Draft
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleUpdate}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Updating...
+                      </>
+                    ) : (
+                      'Update'
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
@@ -4058,736 +4151,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
             {/* Main Content Canvas */}
             <div className="py-4">
                 <div>
-                  {isViewMode ? (
-                        <div className="min-h-screen bg-white overflow-hidden relative">
-                          {/* Course Header with Gradient */}
-                          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-8 text-white relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black opacity-10"></div>
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
-                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
-                            <div className="relative z-10 text-center">
-                              <h1 className="text-4xl font-bold mb-3">
-                                {lessonData?.title || lessonTitle || 'Untitled Lesson'}
-                              </h1>
-                              <div className="w-32 h-1 bg-white bg-opacity-30 mx-auto rounded-full"></div>
-                            </div>
-                          </div>
-
-                          {/* Course Content - All in one flowing container */}
-                          <div className="p-8 bg-gradient-to-b from-gray-50 to-white">
-                            {(() => {
-                              // Use a single source to avoid duplicate rendering
-                              // Prefer edit-mode contentBlocks when present; otherwise fall back to fetched lesson content
-                              const allBlocks = (contentBlocks && contentBlocks.length > 0)
-                                ? [...contentBlocks]
-                                : (lessonContent?.data?.content ? [...lessonContent.data.content] : []);
-                              // Sort by order if available
-                              allBlocks.sort((a, b) => (a.order || 0) - (b.order || 0));
-                             
-                              if (allBlocks.length === 0) {
-                                return (
-                                  <div className="text-center py-16">
-                                    <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
-                                    <h3 className="text-2xl font-semibold text-gray-700 mb-3">
-                                      No Content Available
-                                    </h3>
-                                    <p className="text-gray-500 text-lg">
-                                      This lesson doesn't have any content yet. Switch to edit mode to start adding content.
-                                    </p>
-                                  </div>
-                                );
-                              }
-                             
-                              return (
-                                <div className="prose prose-xl max-w-none space-y-8">
-                                  {allBlocks.map((block, index) => {
-                                    const blockId = block.id || block.block_id;
-                                   
-                                    return (
-                                      <div key={blockId} className="relative">
-                                        {/* Text Content */}
-                                        {block.type === 'text' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.content }}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Statement Content */}
-                                        {block.type === 'statement' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.content }}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Image Content */}
-                                        {block.type === 'image' && (
-                                          <div className="mb-8">
-                                            {(block.html_css || block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url) && (
-                                              <div>
-                                                {block.html_css && block.html_css.trim() ? (
-                                                  <div
-                                                    className="prose max-w-none"
-                                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                                  />
-                                                ) : ((block.layout || block.details?.layout) === 'side-by-side' ? (
-                                                  <div className="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                                                    <div>
-                                                      <img
-                                                        src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                        alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                        className="w-full max-h-[28rem] object-contain rounded-lg shadow-lg"
-                                                      />
-                                                    </div>
-                                                    <div>
-                                                      <p className="text-gray-700 text-lg leading-relaxed">
-                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                      </p>
-                                                    </div>
-                                                  </div>
-                                                ) : ((block.layout || block.details?.layout) === 'overlay') ? (
-                                                  <div className="relative rounded-xl overflow-hidden">
-                                                    <img
-                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="w-full h-96 object-cover"
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end">
-                                                      <div className="text-white p-8 w-full">
-                                                        <p className="text-xl font-medium leading-relaxed">
-                                                          {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                        </p>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                ) : ((block.layout || block.details?.layout) === 'centered') ? (
-                                                  <div className="text-center">
-                                                    <img
-                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="mx-auto w-full max-w-[720px] max-h-[28rem] object-contain rounded-xl shadow-lg"
-                                                    />
-                                                    {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
-                                                      <p className="text-gray-600 mt-3 italic text-base">
-                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                ) : ((block.layout || block.details?.layout) === 'full-width') ? (
-                                                  <div className="w-full">
-                                                    <img
-                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="w-full max-h-[28rem] object-contain rounded-xl shadow-lg"
-                                                    />
-                                                    {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
-                                                      <p className="text-gray-700 mt-4 text-lg">
-                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                ) : null)}
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Video Content */}
-                                        {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-gray-900 rounded-xl p-6">
-                                              <video
-                                                src={block.videoUrl || block.details?.video_url}
-                                                controls
-                                                className="w-full h-96 rounded-lg"
-                                              >
-                                                Your browser does not support the video tag.
-                                              </video>
-                                              {(block.videoTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-white mt-4 mb-2">
-                                                  {block.videoTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.videoDescription || block.details?.description) && (
-                                                <p className="text-gray-300 text-lg">
-                                                  {block.videoDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* YouTube Content */}
-                                        {block.type === 'youtube' && (block.youtubeId || block.youtubeUrl || block.details?.url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-                                              <iframe
-                                                src={`https://www.youtube.com/embed/${block.youtubeId || (block.youtubeUrl || block.details?.url)?.split('v=')[1]?.split('&')[0]}`}
-                                                title={block.youtubeTitle || block.details?.caption || 'YouTube video'}
-                                                allowFullScreen
-                                                className="w-full h-96 rounded-lg"
-                                              />
-                                              {(block.youtubeTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
-                                                  {block.youtubeTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.youtubeDescription || block.details?.description) && (
-                                                <p className="text-gray-700 text-lg">
-                                                  {block.youtubeDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* Quote Content */}
-                                        {block.type === 'quote' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="prose max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                                <div className="pl-4">
-                                                  <blockquote className="text-lg italic text-gray-700 mb-3">
-                                                    "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
-                                                  </blockquote>
-                                                  <cite className="text-sm font-medium text-gray-500">
-                                                    — {JSON.parse(block.content || '{}').author || 'Author Name'}
-                                                  </cite>
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Table Content */}
-                                        {block.type === 'table' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="prose max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                                <div className="pl-4">
-                                                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Audio Content */}
-                                        {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-green-50 rounded-xl p-6 border border-green-100">
-                                              <audio
-                                                src={block.audioUrl || block.details?.audio_url}
-                                                controls
-                                                className="w-full mb-4"
-                                              >
-                                                Your browser does not support the audio tag.
-                                              </audio>
-                                              {(block.audioTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                                  {block.audioTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.audioDescription || block.details?.description) && (
-                                                <p className="text-gray-700 text-lg">
-                                                  {block.audioDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* Link Content */}
-                                        {block.type === 'link' && (block.linkUrl || block.details?.url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-100">
-                                              {(block.linkTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                                  {block.linkTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.linkDescription || block.details?.description) && (
-                                                <p className="text-gray-700 mb-6 text-lg">
-                                                  {block.linkDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                              <a
-                                                href={block.linkUrl || block.details?.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`inline-flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
-                                                  block.linkButtonStyle === 'secondary'
-                                                    ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-lg'
-                                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
-                                                }`}
-                                              >
-                                                <Link2 className="h-5 w-5 mr-3" />
-                                                {block.linkButtonText || 'Visit Link'}
-                                              </a>
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* PDF Content */}
-                                        {block.type === 'pdf' && (block.pdfUrl || block.details?.pdf_url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-orange-50 rounded-xl p-6 border border-orange-100">
-                                              {(block.pdfTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                                  {block.pdfTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.pdfDescription || block.details?.description) && (
-                                                <p className="text-gray-700 mb-4 text-lg">
-                                                  {block.pdfDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                              <div className="w-full rounded-xl overflow-hidden border border-orange-200 bg-white">
-                                                <iframe
-                                                  src={block.pdfUrl || block.details?.pdf_url}
-                                                  className="w-full h-[600px]"
-                                                  title={block.pdfTitle || 'PDF Document'}
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })()}
-                          </div>
-                         
-                          {/* Course Footer */}
-                          <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-6 text-center border-t">
-                            <div className="flex items-center justify-center space-x-3">
-                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                              <span className="text-gray-600 font-medium">Lesson Complete</span>
-                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                            </div>
-                          </div>
-                        </div>
-                  ) : contentBlocks.length === 0 ? (
-                    <div>
-                      <div >
-                        <div>
-                          <h2 className="text-xl font-bold text-gray-900 mb-2">
-                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "" : ""}
-                          </h2>
-                          {fetchingContent ? (
-                            <div >
-                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                          ) : lessonContent?.data?.content && lessonContent.data.content.length > 0 ? (
-                            <div >
-                              <div >
-                                {lessonContent.data.content.map((block, index) => (
-                                  <div
-                                    key={block.block_id}
-                                    className="relative w-full  mb-4 group"
-                                    draggable="true"
-                                    data-block-id={block.block_id}
-                                    onDragStart={(e) => handleDragStart(e, block.block_id)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, block.block_id)}
-                                    onDragEnd={handleDragEnd}
-                                  >
-                                    {/* Edit/Delete Controls */}
-                                    {!isViewMode && (
-                                      <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                        <button
-                                          onClick={() => {
-                                            const blockType = block.type || 'text';
-                                            switch(blockType) {
-                                              case 'text':
-                                                // Detect textType from HTML content structure
-                                                let detectedTextType = 'paragraph'; // default
-                                                const htmlContent = block.html_css || '';
-                                               
-                                                // Check for heading + paragraph combination
-                                                if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
-                                                  detectedTextType = 'heading_paragraph';
-                                                } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
-                                                  detectedTextType = 'subheading_paragraph';
-                                                } else if (htmlContent.includes('<h1')) {
-                                                  detectedTextType = 'heading';
-                                                } else if (htmlContent.includes('<h2')) {
-                                                  detectedTextType = 'subheading';
-                                                } else if (htmlContent.includes('<table') || htmlContent.includes('grid')) {
-                                                  detectedTextType = 'table';
-                                                }
-                                               
-                                                // Set the appropriate editor state based on detected type
-                                                setCurrentTextBlockId(block.block_id);
-                                               
-                                                // Reset all editor states first
-                                                setEditorHtml('');
-                                                setEditorHeading('');
-                                                setEditorSubheading('');
-                                                setEditorContent('');
-                                               
-                                                // Set content based on detected type
-                                                if (detectedTextType === 'heading_paragraph') {
-                                                  // Extract heading and paragraph content
-                                                  const tempDiv = document.createElement('div');
-                                                  tempDiv.innerHTML = htmlContent;
-                                                 
-                                                  // Try multiple selectors for heading
-                                                  const h1 = tempDiv.querySelector('h1') || tempDiv.querySelector('[class*="heading"]') || tempDiv.querySelector('h2, h3, h4, h5, h6');
-                                                  // Try multiple selectors for paragraph - look for p tags or div with paragraph content
-                                                  const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
-                                                 
-                                                  // Extract text content, preserving rich text formatting
-                                                  let headingContent = '';
-                                                  let paragraphContent = '';
-                                                 
-                                                  if (h1) {
-                                                    headingContent = h1.innerHTML || '';
-                                                  }
-                                                 
-                                                  if (p) {
-                                                    paragraphContent = p.innerHTML || '';
-                                                  }
-                                                 
-                                                  // If we couldn't find structured content, try to parse manually while preserving HTML
-                                                  if (!headingContent && !paragraphContent) {
-                                                    const fullHTML = tempDiv.innerHTML || '';
-                                                   
-                                                    // Try to find heading and paragraph content in the HTML
-                                                    // Look for heading patterns first
-                                                    const headingMatch = fullHTML.match(/<(h[1-6])[^>]*>(.*?)<\/h[1-6]>/i);
-                                                    if (headingMatch) {
-                                                      headingContent = headingMatch[2] || '';
-                                                      // Remove the heading from HTML and get remaining content
-                                                      const remainingHTML = fullHTML.replace(headingMatch[0], '').trim();
-                                                      if (remainingHTML) {
-                                                        // Clean up remaining content - remove wrapper divs but keep inner formatting
-                                                        const cleanedContent = remainingHTML
-                                                          .replace(/^<div[^>]*>/, '')
-                                                          .replace(/<\/div>$/, '')
-                                                          .trim();
-                                                        paragraphContent = cleanedContent || remainingHTML;
-                                                      }
-                                                    } else {
-                                                      // Look for strong/bold text as potential heading
-                                                      const boldMatch = fullHTML.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/i);
-                                                      if (boldMatch) {
-                                                        headingContent = boldMatch[2] || '';
-                                                        // Get content after the bold text
-                                                        const afterBold = fullHTML.substring(fullHTML.indexOf(boldMatch[0]) + boldMatch[0].length).trim();
-                                                        if (afterBold) {
-                                                          paragraphContent = afterBold;
-                                                        }
-                                                      } else {
-                                                        // Last resort: try to split by line breaks or common patterns
-                                                        const textContent = tempDiv.textContent || '';
-                                                        const htmlContent = tempDiv.innerHTML || '';
-                                                       
-                                                        // If there's formatted content, try to detect heading vs paragraph
-                                                        if (htmlContent.includes('<') && textContent) {
-                                                          // Split by common separators and take first part as heading
-                                                          const parts = textContent.split(/[\n\r]+/).filter(part => part.trim());
-                                                          if (parts.length >= 2) {
-                                                            headingContent = parts[0].trim();
-                                                            paragraphContent = parts.slice(1).join(' ').trim();
-                                                          } else {
-                                                            headingContent = htmlContent;
-                                                          }
-                                                        } else {
-                                                          headingContent = htmlContent || textContent;
-                                                        }
-                                                      }
-                                                    }
-                                                  }
-                                                 
-                                                  setEditorHeading(headingContent);
-                                                  setEditorContent(paragraphContent);
-                                                } else if (detectedTextType === 'subheading_paragraph') {
-                                                  // Extract subheading and paragraph content
-                                                  const tempDiv = document.createElement('div');
-                                                  tempDiv.innerHTML = htmlContent;
-                                                 
-                                                  // Try multiple selectors for subheading
-                                                  const h2 = tempDiv.querySelector('h2') || tempDiv.querySelector('[class*="subheading"]') || tempDiv.querySelector('h3, h4, h5, h6, h1');
-                                                  // Try multiple selectors for paragraph
-                                                  const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
-                                                 
-                                                  // Extract text content, preserving rich text formatting
-                                                  let subheadingContent = '';
-                                                  let paragraphContent = '';
-                                                 
-                                                  if (h2) {
-                                                    subheadingContent = h2.innerHTML || '';
-                                                  }
-                                                 
-                                                  if (p) {
-                                                    paragraphContent = p.innerHTML || '';
-                                                  }
-                                                 
-                                                  // If we couldn't find structured content, try to parse manually while preserving HTML
-                                                  if (!subheadingContent && !paragraphContent) {
-                                                    const fullHTML = tempDiv.innerHTML || '';
-                                                   
-                                                    // Try to find subheading and paragraph content in the HTML
-                                                    // Look for subheading patterns first
-                                                    const subheadingMatch = fullHTML.match(/<(h[2-6])[^>]*>(.*?)<\/h[2-6]>/i);
-                                                    if (subheadingMatch) {
-                                                      subheadingContent = subheadingMatch[2] || '';
-                                                      // Remove the subheading from HTML and get remaining content
-                                                      const remainingHTML = fullHTML.replace(subheadingMatch[0], '').trim();
-                                                      if (remainingHTML) {
-                                                        // Clean up remaining content - remove wrapper divs but keep inner formatting
-                                                        const cleanedContent = remainingHTML
-                                                          .replace(/^<div[^>]*>/, '')
-                                                          .replace(/<\/div>$/, '')
-                                                          .trim();
-                                                        paragraphContent = cleanedContent || remainingHTML;
-                                                      }
-                                                    } else {
-                                                      // Look for strong/bold text as potential subheading
-                                                      const boldMatch = fullHTML.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/i);
-                                                      if (boldMatch) {
-                                                        subheadingContent = boldMatch[2] || '';
-                                                        // Get content after the bold text
-                                                        const afterBold = fullHTML.substring(fullHTML.indexOf(boldMatch[0]) + boldMatch[0].length).trim();
-                                                        if (afterBold) {
-                                                          paragraphContent = afterBold;
-                                                        }
-                                                      } else {
-                                                        // Last resort: try to split by line breaks or common patterns
-                                                        const textContent = tempDiv.textContent || '';
-                                                        const htmlContent = tempDiv.innerHTML || '';
-                                                       
-                                                        // If there's formatted content, try to detect subheading vs paragraph
-                                                        if (htmlContent.includes('<') && textContent) {
-                                                          // Split by common separators and take first part as subheading
-                                                          const parts = textContent.split(/[\n\r]+/).filter(part => part.trim());
-                                                          if (parts.length >= 2) {
-                                                            subheadingContent = parts[0].trim();
-                                                            paragraphContent = parts.slice(1).join(' ').trim();
-                                                          } else {
-                                                            subheadingContent = htmlContent;
-                                                          }
-                                                        } else {
-                                                          subheadingContent = htmlContent || textContent;
-                                                        }
-                                                      }
-                                                    }
-                                                  }
-                                                 
-                                                  setEditorSubheading(subheadingContent);
-                                                  setEditorContent(paragraphContent);
-                                                } else {
-                                                  // For single content blocks, extract the inner content
-                                                  const tempDiv = document.createElement('div');
-                                                  tempDiv.innerHTML = htmlContent;
-                                                  const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
-                                                  setEditorHtml(contentElement.innerHTML || htmlContent);
-                                                }
-                                               
-                                                // Store the detected textType for the save function
-                                                const blockWithTextType = { ...block, textType: detectedTextType };
-                                                setCurrentBlock(blockWithTextType);
-                                                setCurrentTextType(detectedTextType);
-                                                setCurrentTextBlockId(block.block_id);
-                                               
-                                                setShowTextEditorDialog(true);
-                                                break;
-                                              case 'image':
-                                                // Open image dialog in edit mode with existing data populated
-                                                setCurrentBlock({
-                                                  id: block.block_id,
-                                                  layout: block.layout || block.details?.layout,
-                                                  templateType: block.templateType || block.details?.template
-                                                });
-                                                setImageTitle(block.details?.alt_text || block.imageTitle || '');
-                                                setImageDescription(block.details?.caption || block.imageDescription || '');
-                                                setImageFile(null);
-                                                setImagePreview(block.details?.image_url || '');
-                                                setImageTemplateText(block.text || block.details?.caption || '');
-                                                setShowImageDialog(true);
-                                                break;
-                                              case 'video':
-                                                setCurrentBlock({
-                                                  id: block.block_id,
-                                                  videoUrl: block.details?.video_url,
-                                                  videoTitle: block.details?.caption
-                                                });
-                                                setShowVideoDialog(true);
-                                                break;
-                                              case 'youtube':
-                                                setCurrentYoutubeBlock({
-                                                  id: block.block_id,
-                                                  youtubeUrl: block.details?.url,
-                                                  youtubeTitle: block.details?.caption
-                                                });
-                                                setShowYoutubeDialog(true);
-                                                break;
-                                              case 'statement':
-                                                // For statement blocks, detect statementType from HTML content if not available
-                                                let statementType = block.details?.statement_type || block.details?.statementType || block.statementType;
-                                                
-                                                // If statementType is not available, detect it from HTML content
-                                                if (!statementType && block.html_css) {
-                                                  const htmlContent = block.html_css;
-                                                  if (htmlContent.includes('border-t border-b border-gray-800')) {
-                                                    statementType = 'statement-a';
-                                                  } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
-                                                    statementType = 'statement-b';
-                                                  } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
-                                                    statementType = 'statement-c';
-                                                  } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
-                                                    statementType = 'statement-d';
-                                                  } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
-                                                    statementType = 'note';
-                                                  } else {
-                                                    statementType = 'statement-a'; // fallback
-                                                  }
-                                                } else if (!statementType) {
-                                                  statementType = 'statement-a'; // fallback
-                                                }
-                                                
-                                                statementComponentRef.current?.handleEditStatement(
-                                                  block.block_id, 
-                                                  statementType, 
-                                                  block.details?.content || block.content || '', 
-                                                  block.html_css || ''
-                                                );
-                                                break;
-                                              default:
-                                                handleEditBlock(block.block_id);
-                                            }
-                                          }}
-                                          className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm"
-                                          title="Edit"
-                                        >
-                                          <Pencil className="h-4 w-4 text-blue-600" />
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            const updatedContent = lessonContent.data.content.filter(
-                                              b => b.block_id !== block.block_id
-                                            );
-                                            setLessonContent({
-                                              ...lessonContent,
-                                              data: {
-                                                ...lessonContent.data,
-                                                content: updatedContent
-                                              }
-                                            });
-                                            setContentBlocks(prevBlocks =>
-                                              prevBlocks.filter(b => b.id !== block.block_id)
-                                            );
-                                          }}
-                                          className="p-2 bg-white hover:bg-red-50 rounded-full shadow-sm"
-                                          title="Delete"
-                                        >
-                                          <Trash2 className="h-4 w-4 text-red-500" />
-                                        </button>
-                                        <div
-                                          className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm cursor-move"
-                                          title="Drag to reorder"
-                                        >
-                                          <GripVertical className="h-4 w-4 text-gray-500" />
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="p-0">
-                                      {block.html_css ? (
-                                        <div dangerouslySetInnerHTML={{ __html: block.html_css }} />
-                                      ) : (
-                                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                      )}
-                                      {block.script && (
-                                        <script dangerouslySetInnerHTML={{ __html: block.script }} />
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="max-w-2xl mx-auto text-center py-12">
-                              <div className="mb-8">
-                                <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                                  No Content Available
-                                </h3>
-                                <p className="text-gray-500 mb-6">
-                                  This lesson doesn't have any content yet. Start building your lesson by adding content blocks from the Content Library.
-                                </p>
-                              </div>
-                             
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                                <h4 className="text-sm font-medium text-blue-800 mb-2">
-                                  💡 Getting Started
-                                </h4>
-                                <p className="text-sm text-blue-700 mb-4">
-                                  Use the <strong>Content Library</strong> on the left to add text, images, videos, and other interactive elements to your lesson.
-                                </p>
-                                <div className="flex flex-wrap gap-2 justify-center">
-                                  <Button
-                                    onClick={() => setShowTextTypeSidebar(true)}
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Text
-                                  </Button>
-                                  <Button
-                                    onClick={() => setShowImageTemplateSidebar(true)}
-                                    size="sm"
-                                    variant="outline"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Image
-                                  </Button>
-                                  <Button
-                                    onClick={() => setShowVideoDialog(true)}
-                                    size="sm"
-                                    variant="outline"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Video
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                  {/* Always show edit interface since View mode is replaced by Modern Preview */}
+                  {contentBlocks.length === 0 ? (
+                    <div className="max-w-2xl mx-auto text-center py-12">
+                      <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                          No Content Available
+                        </h3>
+                        <p className="text-gray-500 mb-6">
+                          Start building your lesson by selecting content blocks from the sidebar.
+                        </p>
                       </div>
                     </div>
                   ) : (
@@ -4957,29 +4330,26 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   />
                                 ) : (
                                   <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                    <div className="pl-4">
-                                      <blockquote className="text-lg italic text-gray-700 mb-3">
-                                        "{(() => {
-                                          try {
-                                            const content = JSON.parse(block.content || '{}');
-                                            return content.quote || 'Sample quote text';
-                                          } catch {
-                                            return 'Sample quote text';
-                                          }
-                                        })()}"
-                                      </blockquote>
-                                      <cite className="text-sm font-medium text-gray-500">
-                                        — {(() => {
-                                          try {
-                                            const content = JSON.parse(block.content || '{}');
-                                            return content.author || 'Author Name';
-                                          } catch {
-                                            return 'Author Name';
-                                          }
-                                        })()}
-                                      </cite>
-                                    </div>
+                                    <blockquote className="text-lg italic text-gray-700 mb-3">
+                                      "{(() => {
+                                        try {
+                                          const content = JSON.parse(block.content || '{}');
+                                          return content.quote || 'Sample quote text';
+                                        } catch {
+                                          return 'Sample quote text';
+                                        }
+                                      })()}"
+                                    </blockquote>
+                                    <cite className="text-sm font-medium text-gray-500">
+                                      — {(() => {
+                                        try {
+                                          const content = JSON.parse(block.content || '{}');
+                                          return content.author || 'Author Name';
+                                        } catch {
+                                          return 'Author Name';
+                                        }
+                                      })()}
+                                    </cite>
                                   </div>
                                 )}
                               </div>
@@ -5001,10 +4371,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                   />
                                 ) : (
                                   <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                    <div className="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-pink-500 to-orange-500 rounded-l-2xl"></div>
-                                    <div className="pl-4">
-                                      <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                    </div>
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                   </div>
                                 )}
                               </div>
@@ -6658,6 +6025,15 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+
+      {/* Modern Lesson Preview Modal */}
+      {showUnifiedPreview && (
+        <ModernLessonPreview
+          lesson={convertToModernFormat()}
+          isOpen={showUnifiedPreview}
+          onClose={() => setShowUnifiedPreview(false)}
+        />
+      )}
 
     </>
   );

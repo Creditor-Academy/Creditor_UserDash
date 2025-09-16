@@ -169,9 +169,14 @@ const LessonContentView = () => {
     
     if (!content) return null;
     
-    // If content is a string, return it directly
+    // If content is a string (likely HTML from AI-generated lessons), return it directly
     if (typeof content === 'string') {
-      return content;
+      // Check if it's HTML content (contains HTML tags)
+      if (content.includes('<') && content.includes('>')) {
+        return content;
+      }
+      // If it's plain text, wrap it in a paragraph
+      return `<p class="mb-6 text-slate-700 leading-relaxed text-base">${content}</p>`;
     }
     
     // If content is an array of objects, process each block
@@ -180,10 +185,18 @@ const LessonContentView = () => {
         console.log(`Processing block ${index}:`, block);
         
         if (typeof block === 'string') {
-          return block;
+          return block.includes('<') && block.includes('>') ? block : `<p class="mb-6 text-slate-700 leading-relaxed text-base">${block}</p>`;
         }
         
         if (typeof block === 'object' && block !== null) {
+          // Handle AI-generated lesson structure
+          if (block.type === 'point' && block.title && block.description) {
+            return `<div class="bg-gray-50 border border-gray-200 p-4 mb-4 rounded-lg">
+                      <h4 class="text-lg font-semibold text-gray-800 mb-2">${block.title}</h4>
+                      <p class="text-gray-700">${block.description}</p>
+                    </div>`;
+          }
+          
           // First priority: Check for html_css content (the actual rendered HTML)
           if (block.html_css && typeof block.html_css === 'string') {
             return block.html_css;
@@ -204,7 +217,7 @@ const LessonContentView = () => {
             return block.text;
           }
           
-          // Handle specific block types only if no direct HTML is available
+          // Handle specific block types
           if (block.type === 'heading') {
             const headingText = block.heading || block.title || '';
             const level = block.level || 2;
@@ -220,76 +233,36 @@ const LessonContentView = () => {
             }
           }
           
-          if (block.type === 'text') {
-            const textContent = block.value || '';
-            if (textContent) {
-              return `<div class="mb-6 text-slate-700 leading-relaxed text-base">${textContent}</div>`;
-            }
-          }
-          
-          if (block.type === 'heading-paragraph') {
-            const heading = block.heading || '';
-            const content = block.paragraph || '';
-            if (heading || content) {
-              return `${heading ? `<h3 class="text-xl font-bold text-slate-800 mb-3">${heading}</h3>` : ''}
-                      ${content ? `<p class="mb-6 text-slate-700 leading-relaxed text-base">${content}</p>` : ''}`;
-            }
-          }
-          
-          if (block.type === 'subheading-paragraph') {
-            const subheading = block.subheading || '';
-            const content = block.paragraph || '';
-            if (subheading || content) {
-              return `${subheading ? `<h4 class="text-lg font-semibold text-slate-800 mb-3">${subheading}</h4>` : ''}
-                      ${content ? `<p class="mb-6 text-slate-700 leading-relaxed text-base">${content}</p>` : ''}`;
-            }
-          }
-          
-          if (block.type === 'list' && block.items) {
-            const listItems = Array.isArray(block.items) 
-              ? block.items.map(item => `<li class="mb-2 text-slate-700">${item}</li>`).join('')
-              : `<li class="mb-2 text-slate-700">${block.items}</li>`;
-            return `<ul class="list-disc list-inside mb-6 space-y-2 pl-4">${listItems}</ul>`;
-          }
-          
-          if (block.type === 'code') {
-            const codeContent = block.code || '';
-            if (codeContent) {
-              return `<pre class="bg-slate-50 border border-slate-200 p-4 rounded-lg mb-6 overflow-x-auto"><code class="text-sm font-mono text-slate-800">${codeContent}</code></pre>`;
-            }
-          }
-          
           if (block.type === 'image' && block.src) {
             const alt = block.alt || 'Image';
             const caption = block.caption ? `<p class="text-sm text-slate-600 text-center mt-3 italic">${block.caption}</p>` : '';
             return `<div class="mb-8 text-center">
-                      <img src="${block.src}" alt="${alt}" class="w-full max-w-3xl mx-auto rounded-lg shadow-sm border border-slate-200" />
+                      <img src="${block.src}" alt="${alt}" class="w-full max-w-2xl mx-auto rounded-lg shadow-md" />
                       ${caption}
                     </div>`;
+          }
+          
+          // If no specific handling, try to extract any text content
+          const extractedText = block.text || block.content || block.value || '';
+          if (extractedText) {
+            return `<div class="mb-6 text-slate-700 leading-relaxed text-base">${extractedText}</div>`;
           }
         }
         
         return '';
-      }).join('');
+      }).filter(Boolean).join('\n\n');
     }
     
     // If content is an object, try to extract meaningful content
     if (typeof content === 'object' && content !== null) {
-      // Check for html_css first
-      if (content.html_css) return content.html_css;
-      // Check for common content properties
-      if (content.html) return content.html;
-      if (content.content) return content.content;
-      if (content.text) return content.text;
-      if (content.body) return content.body;
-      
       // If it's an object with blocks or sections, process recursively
       if (content.blocks || content.sections) {
         return processLessonContent(content.blocks || content.sections);
       }
     }
     
-    return null;
+    // Fallback: convert to string
+    return String(content);
   };
 
   if (loading) {
