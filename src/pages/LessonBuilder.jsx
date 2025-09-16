@@ -29,6 +29,7 @@ import {
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
 import TableComponent from '@/components/TableComponent';
+import ListComponent from '@/components/ListComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -360,6 +361,9 @@ function LessonBuilder() {
   const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
   const [showQuoteEditDialog, setShowQuoteEditDialog] = useState(false);
   const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
+  const [showListTemplateSidebar, setShowListTemplateSidebar] = useState(false);
+  const [showListEditDialog, setShowListEditDialog] = useState(false);
+  const [editingListBlock, setEditingListBlock] = useState(null);
   const [showTableComponent, setShowTableComponent] = useState(false);
   const [editingTableBlock, setEditingTableBlock] = useState(null);
 
@@ -471,6 +475,11 @@ function LessonBuilder() {
       icon: <FileTextIcon className="h-5 w-5" />
     },
     {
+      id: 'list',
+      title: 'List',
+      icon: <List className="h-5 w-5" />
+    },
+    {
       id: 'tables',
       title: 'Tables',
       icon: <Table className="h-5 w-5" />
@@ -564,6 +573,8 @@ function LessonBuilder() {
 
   const blockRefs = React.useRef({});
   const statementComponentRef = React.useRef();
+  const listComponentRef = React.useRef();
+  const quoteComponentRef = React.useRef();
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
@@ -572,6 +583,8 @@ function LessonBuilder() {
       setShowStatementSidebar(true);
     } else if (blockType.id === 'quote') {
       setShowQuoteTemplateSidebar(true);
+    } else if (blockType.id === 'list') {
+      setShowListTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
     } else if (blockType.id === 'image') {
@@ -765,15 +778,116 @@ function LessonBuilder() {
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
   };
 
-  const handleTableUpdate = (blockId, content, htmlContent, tableType = null) => {
-    // Parse content to extract table type if not provided
-    let extractedTableType = tableType;
-    if (!extractedTableType && content) {
+  // List component callbacks
+  const handleListTemplateSelect = (newBlock) => {
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  const handleListUpdate = (blockId, content, updatedHtml = null) => {
+    // Use provided HTML if available, otherwise regenerate
+    let htmlContent = updatedHtml || '';
+    let extractedListType = 'bulleted';
+    
+    if (content && !updatedHtml) {
       try {
         const parsedContent = JSON.parse(content);
-        extractedTableType = parsedContent.templateId || parsedContent.tableType || 'two_columns';
+        extractedListType = parsedContent.listType || 'bulleted';
+        const items = parsedContent.items || [];
+        const checkedItems = parsedContent.checkedItems || {};
+        const numberingStyle = parsedContent.numberingStyle || 'decimal';
+
+        // Helper function to get numbering based on style (same as ListComponent)
+        const getNumbering = (index, style) => {
+          const num = index + 1;
+          switch (style) {
+            case 'upper-roman':
+              return toRoman(num).toUpperCase();
+            case 'lower-roman':
+              return toRoman(num).toLowerCase();
+            case 'upper-alpha':
+              return String.fromCharCode(64 + num); // A, B, C...
+            case 'lower-alpha':
+              return String.fromCharCode(96 + num); // a, b, c...
+            case 'decimal':
+            default:
+              return num.toString();
+          }
+        };
+
+        // Convert number to Roman numerals
+        const toRoman = (num) => {
+          const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+          const symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+          let result = '';
+          
+          for (let i = 0; i < values.length; i++) {
+            while (num >= values[i]) {
+              result += symbols[i];
+              num -= values[i];
+            }
+          }
+          return result;
+        };
+
+        // Generate HTML based on list type with original styled format
+        if (extractedListType === 'numbered') {
+          htmlContent = `
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
+              <ol class="space-y-4 list-none">
+                ${items.map((item, index) => `
+                  <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-orange-300/50 hover:shadow-md transition-all duration-200">
+                    <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                      ${getNumbering(index, numberingStyle)}
+                    </div>
+                    <div class="flex-1 text-gray-800 leading-relaxed">
+                      ${item}
+                    </div>
+                  </li>
+                `).join('')}
+              </ol>
+            </div>`;
+        } else if (extractedListType === 'checkbox') {
+          htmlContent = `
+            <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
+              <div class="space-y-4">
+                ${items.map((item, index) => `
+                  <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+                    <div class="flex-shrink-0 mt-1">
+                      <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                        <input type="checkbox" ${checkedItems[index] ? 'checked' : ''} class="hidden checkbox-item" data-index="${index}" />
+                        <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
+                      </div>
+                    </div>
+                    <div class="flex-1 text-gray-800 leading-relaxed ${checkedItems[index] ? 'line-through text-gray-500' : ''}">
+                      ${item}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
+        } else {
+          // bulleted list
+          htmlContent = `
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+              <ul class="space-y-4 list-none">
+                ${items.map((item) => `
+                  <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-blue-300/50 hover:shadow-md transition-all duration-200">
+                    <div class="flex-shrink-0 mt-2">
+                      <div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
+                    </div>
+                    <div class="flex-1 text-gray-800 leading-relaxed">
+                      ${item}
+                    </div>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>`;
+        }
       } catch (e) {
-        extractedTableType = 'two_columns'; // fallback
+        console.error('Error parsing list content:', e);
+        extractedListType = 'bulleted';
+        htmlContent = `<div class="list-block"><ul class="list-disc list-inside"><li>Error loading list</li></ul></div>`;
       }
     }
 
@@ -784,8 +898,7 @@ function LessonBuilder() {
           ...block,
           content,
           html_css: htmlContent,
-          tableType: extractedTableType,
-          templateId: extractedTableType,
+          listType: extractedListType,
           updatedAt: new Date().toISOString()
         } : block
       )
@@ -802,13 +915,12 @@ function LessonBuilder() {
               ...block,
               content,
               html_css: htmlContent,
-              tableType: extractedTableType,
-              templateId: extractedTableType,
+              listType: extractedListType,
               // Also update details if they exist
               details: {
                 ...block.details,
-                table_type: extractedTableType,
-                templateId: extractedTableType
+                list_type: extractedListType,
+                listType: extractedListType
               },
               updatedAt: new Date().toISOString()
             } : block
@@ -817,8 +929,8 @@ function LessonBuilder() {
       }));
     }
     
-    setEditingTableBlock(null);
-    setShowTableComponent(false);
+    setEditingListBlock(null);
+    setShowListEditDialog(false);
   };
 
   const handleQuoteUpdate = (blockId, updatedContentString) => {
@@ -1049,6 +1161,51 @@ function LessonBuilder() {
 
     // Reset editing state
     setEditingQuoteBlock(null);
+  };
+
+  const handleTableUpdate = (blockId, content, htmlContent, templateId) => {
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          content,
+          html_css: htmlContent,
+          templateId: templateId,
+          tableType: templateId,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              content,
+              html_css: htmlContent,
+              templateId: templateId,
+              tableType: templateId,
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                templateId: templateId,
+                tableType: templateId
+              },
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+    
+    setEditingTableBlock(null);
+    setShowTableComponent(false);
   };
 
   const removeContentBlock = (blockId) => {
@@ -1300,6 +1457,163 @@ function LessonBuilder() {
       statementComponentRef.current?.handleEditStatement(blockId, statementType, content, htmlCss);
       return;
     }
+
+    // Enhanced list block detection - check content structure and HTML patterns
+    const isListBlock = block.type === 'list' || 
+                       (block.details?.list_type) ||
+                       (block.details?.listType) ||
+                       // Check if content has list structure (JSON with items array)
+                       (() => {
+                         try {
+                           const content = JSON.parse(block.content || '{}');
+                           return content.items && Array.isArray(content.items);
+                         } catch {
+                           return false;
+                         }
+                       })() ||
+                       // Check HTML patterns for list blocks
+                       (block.html_css && (
+                         block.html_css.includes('bg-gradient-to-br from-orange-50 to-red-50') ||
+                         block.html_css.includes('bg-gradient-to-br from-pink-50 to-rose-50') ||
+                         block.html_css.includes('bg-gradient-to-br from-blue-50 to-indigo-50') ||
+                         block.html_css.includes('checkbox-item') ||
+                         block.html_css.includes('list-none') ||
+                         (block.html_css.includes('<ol') && block.html_css.includes('space-y-4')) ||
+                         (block.html_css.includes('<ul') && block.html_css.includes('space-y-4'))
+                       ));
+
+    if (isListBlock) {
+      // Handle list block editing with proper type detection
+      // For fetched content, detect listType from HTML content if not available
+      let listType = block.listType || block.details?.list_type || block.details?.listType;
+      
+      // Override block type to ensure it's treated as a list
+      block = { ...block, type: 'list' };
+      
+      // If listType is not available, detect it from HTML content
+      if (!listType && block.html_css) {
+        const htmlContent = block.html_css;
+        
+        // Numbered list - has numbered items with gradient orange background
+        if (htmlContent.includes('bg-gradient-to-br from-orange-50 to-red-50') || 
+            htmlContent.includes('from-orange-500 to-red-500') ||
+            htmlContent.includes('<ol')) {
+          listType = 'numbered';
+        }
+        // Checkbox list - has checkbox items with pink background
+        else if (htmlContent.includes('bg-gradient-to-br from-pink-50 to-rose-50') || 
+                 htmlContent.includes('checkbox-item') ||
+                 htmlContent.includes('border-pink-400')) {
+          listType = 'checkbox';
+        }
+        // Bulleted list - has bullet points with blue background
+        else if (htmlContent.includes('bg-gradient-to-br from-blue-50 to-indigo-50') || 
+                 htmlContent.includes('from-blue-500 to-indigo-500') ||
+                 htmlContent.includes('rounded-full shadow-sm')) {
+          listType = 'bulleted';
+        }
+        // Fallback detection based on HTML structure
+        else if (htmlContent.includes('<ol')) {
+          listType = 'numbered';
+        } else if (htmlContent.includes('checkbox') || htmlContent.includes('input type="checkbox"')) {
+          listType = 'checkbox';
+        } else {
+          listType = 'bulleted'; // default fallback
+        }
+      } else if (!listType) {
+        listType = 'bulleted'; // fallback
+      }
+      
+      // Debug logging to verify list type detection
+      console.log('List block detected:', {
+        originalType: block.type,
+        detectedListType: listType,
+        hasHtmlCss: !!block.html_css,
+        blockContent: block.content,
+        htmlPreview: block.html_css ? block.html_css.substring(0, 200) + '...' : 'No HTML'
+      });
+      
+      // Parse and prepare list content for the editor
+      let listContent = {};
+      try {
+        if (block.content) {
+          listContent = JSON.parse(block.content);
+        }
+      } catch (e) {
+        console.log('Could not parse list content as JSON, extracting from HTML');
+        // Extract list items from HTML if JSON parsing fails
+        if (block.html_css) {
+          const htmlContent = block.html_css;
+          const items = [];
+          
+          // Extract items from different list types
+          if (listType === 'numbered') {
+            const matches = htmlContent.match(/<li[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/li>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          } else if (listType === 'checkbox') {
+            const matches = htmlContent.match(/<div[^>]*class="flex items-start space-x-4[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/div>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          } else {
+            // Bulleted list
+            const matches = htmlContent.match(/<li[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/li>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          }
+          
+          listContent = {
+            items: items.length > 0 ? items : [''],
+            listType: listType,
+            checkedItems: {}
+          };
+        } else {
+          listContent = {
+            items: [''],
+            listType: listType,
+            checkedItems: {}
+          };
+        }
+      }
+      
+      // Set the listType to ensure proper editor opens
+      const blockWithType = { 
+        ...block, 
+        type: 'list', 
+        listType: listType,
+        content: JSON.stringify(listContent)
+      };
+      setEditingListBlock(blockWithType);
+      
+      // Initialize list component state
+      if (listComponentRef.current) {
+        listComponentRef.current.setListItems(listContent.items || ['']);
+        listComponentRef.current.setListType(listType);
+        listComponentRef.current.setCheckedItems(listContent.checkedItems || {});
+        listComponentRef.current.setNumberingStyle(listContent.numberingStyle || 'decimal');
+      }
+      
+      setShowListEditDialog(true);
+      return;
+    }
    
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
@@ -1388,6 +1702,46 @@ function LessonBuilder() {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
+    } else if (block.type === 'list') {
+      // Handle list block editing - open edit dialog directly
+      console.log('List block detected for editing:', block);
+      
+      // Detect list type from existing block data
+      let listType = block.listType || block.details?.list_type || block.details?.listType;
+      
+      // If list type is not available, try to detect from content or HTML
+      if (!listType && block.content) {
+        try {
+          const parsedContent = JSON.parse(block.content);
+          listType = parsedContent.listType || 'bulleted';
+        } catch (e) {
+          // If content is not JSON, try to detect from HTML
+          if (block.html_css) {
+            const htmlContent = block.html_css;
+            if (htmlContent.includes('<ol') || htmlContent.includes('list-decimal')) {
+              listType = 'numbered';
+            } else if (htmlContent.includes('type="checkbox"') || htmlContent.includes('input[type="checkbox"]')) {
+              listType = 'checkbox';
+            } else {
+              listType = 'bulleted';
+            }
+          } else {
+            listType = 'bulleted'; // fallback
+          }
+        }
+      } else if (!listType) {
+        listType = 'bulleted'; // fallback
+      }
+      
+      // Ensure the block has the list type information
+      const blockWithType = {
+        ...block,
+        listType: listType
+      };
+      
+      // Set the editing list block and show the list edit dialog
+      setEditingListBlock(blockWithType);
+      setShowListEditDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -1824,6 +2178,52 @@ function LessonBuilder() {
                   <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                 </div>
               `;
+          }
+        }
+      } else if (block.type === 'list') {
+        // Prefer saved html_css if available (preserves exact styling)
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from list content
+          try {
+            const listContent = JSON.parse(block.content || '{}');
+            const listType = listContent.listType || block.listType || 'bulleted';
+            const items = listContent.items || [];
+            const checkedItems = listContent.checkedItems || {};
+
+            if (listType === 'numbered') {
+              html = `
+                <div class="list-block numbered-list">
+                  <ol class="list-decimal list-inside space-y-2 text-gray-800">
+                    ${items.map(item => `<li class="leading-relaxed">${item}</li>`).join('')}
+                  </ol>
+                </div>`;
+            } else if (listType === 'checkbox') {
+              html = `
+                <div class="list-block checkbox-list">
+                  <div class="space-y-3">
+                    ${items.map((item, index) => `
+                      <label class="flex items-start space-x-3 cursor-pointer group">
+                        <input type="checkbox" ${checkedItems[index] ? 'checked' : ''} 
+                               class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <span class="text-gray-800 leading-relaxed ${checkedItems[index] ? 'line-through text-gray-500' : ''}">${item}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>`;
+            } else {
+              // bulleted list
+              html = `
+                <div class="list-block bulleted-list">
+                  <ul class="list-disc list-inside space-y-2 text-gray-800">
+                    ${items.map(item => `<li class="leading-relaxed">${item}</li>`).join('')}
+                  </ul>
+                </div>`;
+            }
+          } catch (e) {
+            console.error('Error parsing list content:', e);
+            html = `<div class="list-block"><ul class="list-disc list-inside"><li>Error loading list</li></ul></div>`;
           }
         }
       } else if (block.type === 'pdf') {
@@ -4377,6 +4777,28 @@ function LessonBuilder() {
                               </div>
                             )}
 
+                            {block.type === 'list' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'List'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    List
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
@@ -5259,6 +5681,18 @@ function LessonBuilder() {
           onTableUpdate={handleTableUpdate}
         />
       )}
+
+      {/* List Component */}
+      <ListComponent
+        ref={listComponentRef}
+        showListTemplateSidebar={showListTemplateSidebar}
+        setShowListTemplateSidebar={setShowListTemplateSidebar}
+        showListEditDialog={showListEditDialog}
+        setShowListEditDialog={setShowListEditDialog}
+        onListTemplateSelect={handleListTemplateSelect}
+        onListUpdate={handleListUpdate}
+        editingListBlock={editingListBlock}
+      />
 
       {/* Text Type Sidebar */}
       {showTextTypeSidebar && (
