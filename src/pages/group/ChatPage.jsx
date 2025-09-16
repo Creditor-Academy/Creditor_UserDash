@@ -11,7 +11,7 @@ import { ChatMessagesList } from "@/components/group/ChatMessagesList";
 import { ChatInput } from "@/components/group/ChatInput";
 import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage, editGroupMessage } from "@/services/groupService";
+import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage, editGroupMessage, createGroupPoll, voteGroupPoll, getGroupPoll, pinGroupMessage } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 
 const initialMessages = [
@@ -153,6 +153,7 @@ export function ChatPage() {
           if (payload?.id && prev.some(m => m.id === payload.id)) return prev;
 
           const isImage = (payload?.mime_type || payload?.mimeType || '').startsWith('image/');
+          const isPoll = (payload?.type || '').toLowerCase() === 'poll' || Boolean(payload?.poll_question || payload?.poll);
           const derivedImageUrl = (payload?.media_url || payload?.image_url || payload?.imageUrl || (isImage ? payload?.content : undefined));
           
           // Check if this is a duplicate of a pending image we just sent
@@ -168,11 +169,21 @@ export function ChatPage() {
             senderId: payload.sender_id,
             senderName: payload.sender?.first_name || 'Member',
             senderAvatar: payload.sender?.image || '',
-            content: isImage ? '' : payload.content,
+            content: (isImage || isPoll) ? '' : payload.content,
             imageUrl: derivedImageUrl,
             timestamp: payload.timeStamp ? new Date(payload.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            type: (payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
-                  (isImage ? 'image' : (payload.mime_type ? 'file' : 'text')),
+            type: isPoll ? 'poll' : ((payload.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
+                  (isImage ? 'image' : (payload.mime_type ? 'file' : 'text'))),
+            poll: isPoll ? (payload.poll || {
+              question: payload.poll_question || payload.question,
+              options: (payload.poll_options || payload.options || []).map(o => (o.option_text || o.text || o)),
+              optionIds: (payload.poll_options || []).map(o => (o.id || o.option_id || null)),
+              allowMultiple: Boolean(payload.poll_allow_multiple || payload.allowMultiple),
+              votes: payload.votes || {},
+              closesAt: payload.poll_expires_at || payload.closesAt,
+              closedAt: payload.closedAt,
+            }) : undefined,
+            isPinned: Boolean(payload.is_pinned || payload.isPinned),
           };
 
           // Try to replace a matching optimistic message
@@ -199,6 +210,93 @@ export function ChatPage() {
       }
     };
     socket.on('newGroupMessage', onNewMessage);
+
+    // Backend-specific poll events
+    const onPollCreatedSocket = (payload) => {
+      try {
+        const poll = payload?.poll || payload?.data || payload;
+        if (!poll || String(poll.group_id) !== String(groupId)) return;
+        setMessages(prev => {
+          if (prev.some(m => m.id === poll.id)) return prev;
+          const normalized = {
+            id: poll.id,
+            senderId: poll.sender_id,
+            senderName: poll.sender?.first_name || 'Member',
+            senderAvatar: poll.sender?.image || '',
+            content: '',
+            imageUrl: undefined,
+            timestamp: poll.timeStamp ? new Date(poll.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            type: 'poll',
+            poll: {
+              question: poll.poll_question || poll.content || '',
+              options: (poll.poll_options || []).map(o => o.option_text),
+              optionIds: (poll.poll_options || []).map(o => o.id),
+              allowMultiple: Boolean(poll.poll_allow_multiple),
+              votes: (() => {
+                const v = {};
+                (poll.poll_options || []).forEach((o, idx) => {
+                  v[idx] = (o.votes || []).map(x => x.user_id);
+                });
+                return v;
+              })(),
+              closesAt: poll.poll_expires_at || null,
+              closedAt: null,
+            },
+            isPinned: Boolean(poll.is_pinned),
+          };
+          return [...prev, normalized];
+        });
+      } catch {}
+    };
+    socket.on('pollCreated', onPollCreatedSocket);
+
+    const onPollUpdatedSocket = (evt) => {
+      try {
+        const pollId = evt?.pollId || evt?.id;
+        if (!pollId) return;
+        setMessages(prev => prev.map(m => {
+          if (m.id !== pollId) return m;
+          const options = (evt?.updated?.poll_options || []).map(o => o.option_text);
+          const optionIds = (evt?.updated?.poll_options || []).map(o => o.id);
+          const votes = {};
+          (evt?.updated?.poll_options || []).forEach((o, idx) => { votes[idx] = (o.votes || []).map(v => v.user_id); });
+          return {
+            ...m,
+            poll: {
+              ...m.poll,
+              options: options.length ? options : m.poll?.options,
+              optionIds: optionIds.length ? optionIds : m.poll?.optionIds,
+              votes: Object.keys(votes).length ? votes : m.poll?.votes,
+            }
+          };
+        }));
+      } catch {}
+    };
+    socket.on('pollUpdated', onPollUpdatedSocket);
+
+    const onPollUpdated = (evt) => {
+      if (!sameGroup(evt?.group_id)) return;
+      setMessages(prev => prev.map(m => {
+        if (m.id !== (evt.message_id || evt.id)) return m;
+        return {
+          ...m,
+          poll: {
+            ...(m.poll || {}),
+            ...(evt.poll || {}),
+            votes: evt.votes || evt.poll?.votes || m.poll?.votes || {},
+            closedAt: evt.closedAt || evt.poll?.closedAt || m.poll?.closedAt,
+            closesAt: evt.closesAt || evt.poll?.closesAt || m.poll?.closesAt,
+          }
+        };
+      }));
+    };
+    socket.on('groupPollUpdated', onPollUpdated);
+
+    const onMessagePinned = (evt) => {
+      if (!sameGroup(evt?.group_id)) return;
+      setMessages(prev => prev.map(m => m.id === (evt.message_id || evt.id) ? { ...m, isPinned: Boolean(evt.isPinned ?? evt.pinned ?? true) } : m));
+    };
+    socket.on('groupMessagePinned', onMessagePinned);
 
     // Listen for user join/leave notifications
     const onUserJoined = (data) => {
@@ -348,6 +446,10 @@ export function ChatPage() {
       socket.off('groupMessageUpdated', onMessageEdited);
       socket.off('messageEdited', onMessageEdited);
       socket.off('groupMessageDeleted', onMessageDeleted);
+      socket.off('pollCreated', onPollCreatedSocket);
+      socket.off('pollUpdated', onPollUpdatedSocket);
+      socket.off('groupPollUpdated', onPollUpdated);
+      socket.off('groupMessagePinned', onMessagePinned);
     };
   }, [groupId, currentUserId]);
 
@@ -355,18 +457,51 @@ export function ChatPage() {
     try {
       const res = await getGroupMessages(groupId, 1, 100);
       const list = res?.data?.messages || res?.messages || [];
-      const normalized = list.map(m => ({
-        id: m.id,
-        senderId: m.sender_id || m.senderId,
-        senderName: m.sender?.first_name || m.sender?.name || 'Member',
-        senderAvatar: m.sender?.image || '',
-        content: (m?.mime_type || '').startsWith('image/') ? '' : m.content,
-        imageUrl: (m.media_url || m.image_url || m.imageUrl || ((m?.mime_type || '').startsWith('image/') ? m.content : undefined)),
-        timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-        type: (m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
-              ((m?.mime_type || '').startsWith('image/') ? 'image' : (m.mime_type ? 'file' : 'text')),
-      }));
+      const normalized = list.map(m => {
+        const isImage = (m?.mime_type || '').startsWith('image/');
+        const isPoll = (m?.type || '').toLowerCase() === 'poll' || Boolean(m?.poll_question || m?.poll);
+        return ({
+          id: m.id,
+          senderId: m.sender_id || m.senderId,
+          senderName: m.sender?.first_name || m.sender?.name || 'Member',
+          senderAvatar: m.sender?.image || '',
+          content: (isImage || isPoll) ? '' : m.content,
+          imageUrl: (m.media_url || m.image_url || m.imageUrl || (isImage ? m.content : undefined)),
+          timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          type: isPoll ? 'poll' : ((m.type || 'TEXT').toLowerCase() === 'voice' ? 'voice' : 
+                (isImage ? 'image' : (m.mime_type ? 'file' : 'text'))),
+          poll: isPoll ? (m.poll || {
+            question: m.poll_question || m.question || m.content,
+            options: (m.poll_options || m.options || []).map(o => (o.option_text || o.text || o)),
+            optionIds: (m.poll_options || []).map(o => (o.id || o.option_id || null)),
+            allowMultiple: Boolean(m.poll_allow_multiple || m.allowMultiple),
+            votes: m.votes || {},
+            closesAt: m.poll_expires_at || m.closesAt,
+            closedAt: m.closedAt,
+          }) : undefined,
+          isPinned: Boolean(m.is_pinned || m.isPinned),
+        });
+      });
       setMessages(normalized);
+
+      // Background refresh for polls missing optionIds (receiver side)
+      const pollsNeedingDetails = normalized.filter(x => x.type === 'poll' && (!x.poll?.optionIds || x.poll.optionIds.length === 0));
+      for (const p of pollsNeedingDetails) {
+        try {
+          const res = await getGroupPoll(groupId, p.id);
+          const data = res?.data || res;
+          if (data?.id) {
+            setMessages(prev => prev.map(m => {
+              if (m.id !== p.id) return m;
+              const options = (data.poll_options || []).map(o => o.option_text);
+              const optionIds = (data.poll_options || []).map(o => o.id);
+              const votes = {};
+              (data.poll_options || []).forEach((o, idx) => { votes[idx] = (o.votes || []).map(v => v.user_id); });
+              return { ...m, poll: { ...m.poll, options, optionIds, votes, allowMultiple: Boolean(data.poll_allow_multiple), closesAt: data.poll_expires_at || m.poll?.closesAt } };
+            }));
+          }
+        } catch {}
+      }
     } catch (e) {
       console.warn('Failed to load messages', e);
     }
@@ -665,6 +800,137 @@ export function ChatPage() {
     }
   };
 
+  const handleCreatePoll = async (poll) => {
+    try {
+      const tempId = `tmp-poll-${Date.now()}`;
+      const optimistic = {
+        id: tempId,
+        senderId: currentUserId,
+        senderName: "You",
+        senderAvatar: "",
+        content: '',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'poll',
+        poll: { ...poll, votes: {} },
+      };
+      setMessages(prev => [...prev, optimistic]);
+
+      const res = await createGroupPoll(groupId, poll);
+      const m = res?.data || res;
+      if (m?.id) {
+        setMessages(prev => prev.map(x => x.id === tempId ? {
+          id: m.id,
+          senderId: m.sender_id || currentUserId,
+          senderName: m.sender?.first_name || 'You',
+          senderAvatar: m.sender?.image || '',
+          content: '',
+          timestamp: m.timeStamp ? new Date(m.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : optimistic.timestamp,
+          type: 'poll',
+          poll: {
+            question: m.poll_question || m.content || '',
+            options: (m.poll_options || []).map(o => (o.option_text || o.text || o)),
+            optionIds: (m.poll_options || []).map(o => (o.id || o.option_id || null)),
+            allowMultiple: Boolean(m.poll_allow_multiple),
+            votes: {},
+            closesAt: m.poll_expires_at || null,
+            closedAt: null,
+          },
+          isPinned: Boolean(m.is_pinned || m.isPinned),
+        } : x));
+
+        // Hint backend to broadcast in real-time (mirrors text flow)
+        try {
+          const socket = getSocket();
+          if (socket?.connected && !socket._authErrorShown) {
+            socket.emit('sendGroupMessage', { groupId, userId: currentUserId, type: 'POLL', messageId: m.id });
+          }
+        } catch {}
+      }
+    } catch (e) {
+      const status = e?.response?.status;
+      const msg = e?.response?.data?.message || e?.message || 'Failed to create poll';
+      console.error('Failed to create poll:', status, msg);
+      toast({ title: `Create poll failed${status ? ` (${status})` : ''}`, description: msg, variant: 'destructive' });
+      setMessages(prev => prev.filter(m => !String(m.id).startsWith('tmp-poll-')));
+    }
+  };
+
+  const handleVotePoll = async (messageId, optionIndex, multiple) => {
+    try {
+      const optionId = mOptionId(messageId, optionIndex);
+      if (!optionId) {
+        toast({ title: 'Please wait', description: 'Poll is still loading. Try again in a moment.', variant: 'default' });
+        return;
+      }
+      setMessages(prev => prev.map(m => {
+        if (m.id !== messageId) return m;
+        const votes = { ...(m.poll?.votes || {}) };
+        if (multiple) {
+          const set = new Set(votes[optionIndex] || []);
+          if (set.has(currentUserId)) set.delete(currentUserId); else set.add(currentUserId);
+          votes[optionIndex] = Array.from(set);
+          return { ...m, poll: { ...m.poll, votes } };
+        } else {
+          const cleared = {};
+          Object.keys(votes).forEach(k => { cleared[k] = (votes[k] || []).filter(uid => String(uid) !== String(currentUserId)); });
+          cleared[optionIndex] = [ ...(cleared[optionIndex] || []), currentUserId ];
+          return { ...m, poll: { ...m.poll, votes: cleared } };
+        }
+      }));
+      // Map option index to backend option_id
+      const pollId = messageId;
+      await voteGroupPoll(groupId, pollId, { messageId, optionId });
+      // Optional refresh via GET poll for authoritative counts
+      try {
+        const res = await getGroupPoll(groupId, pollId);
+        const data = res?.data || res;
+        if (data?.id) {
+          setMessages(prev => prev.map(m => {
+            if (m.id !== messageId) return m;
+            const options = (data.poll_options || []).map(o => o.option_text);
+            const optionIds = (data.poll_options || []).map(o => o.id);
+            const votes = {};
+            (data.poll_options || []).forEach((o, idx) => { votes[idx] = (o.votes || []).map(v => v.user_id); });
+            return {
+              ...m,
+              poll: {
+                ...m.poll,
+                options,
+                optionIds,
+                allowMultiple: Boolean(data.poll_allow_multiple),
+                closesAt: data.poll_expires_at || null,
+                votes,
+              }
+            };
+          }));
+        }
+      } catch {}
+    } catch (e) {
+      const status = e?.response?.status;
+      const msg = e?.response?.data?.message || e?.message || 'Vote failed';
+      console.error('Failed to vote:', status, msg);
+      toast({ title: `Vote failed${status ? ` (${status})` : ''}`, description: msg, variant: 'destructive' });
+    }
+  };
+
+  const mOptionId = (messageId, idx) => {
+    try {
+      const msg = messages.find(x => x.id === messageId);
+      return msg?.poll?.optionIds?.[idx] || null;
+    } catch { return null; }
+  };
+
+  const handlePinToggle = async (messageId, pinned) => {
+    try {
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isPinned: pinned } : m));
+      await pinGroupMessage(groupId, messageId, pinned);
+    } catch (e) {
+      console.error('Failed to pin message:', e);
+      toast({ title: 'Error', description: 'Pin update failed', variant: 'destructive' });
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isPinned: !pinned } : m));
+    }
+  };
+
   const getGroupName = () => {
     if (loadingGroup) {
       return "Loading...";
@@ -820,6 +1086,8 @@ export function ChatPage() {
             currentUserId={currentUserId}
             onEditMessage={handleEditMessage}
             onDeleteMessage={handleDeleteMessage}
+            onVotePoll={handleVotePoll}
+            onPinToggle={handlePinToggle}
             isAdmin={isCurrentUserAdmin()}
           />
 
@@ -829,6 +1097,7 @@ export function ChatPage() {
             onSendMessage={handleSendMessage}
             onFileSelect={handleFileSelect}
             onImageSelect={handleImageSelect}
+            onCreatePoll={handleCreatePoll}
             selectedImage={selectedImage}
             isSending={isSending || isSendingImage}
           />
