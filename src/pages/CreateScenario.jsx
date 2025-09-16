@@ -25,12 +25,12 @@ import { toast } from "sonner";
 
 
 const AVATAR_OPTIONS = [
-  { id: 'default', name: 'Default Avatar', image: '/default-avatar.png', description: 'Generic professional avatar' },
   { id: 'business-woman', name: 'Business Woman', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_women.png', description: 'Professional female executive' },
   { id: 'business-man', name: 'Business Man', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_man.png', description: 'Professional male executive' },
-  { id: 'student', name: 'Student', image: '/avatars/student.png', description: 'Young learner avatar' },
-  { id: 'teacher', name: 'Teacher', image: '/avatars/teacher.png', description: 'Educational instructor' },
-  { id: 'manager', name: 'Manager', image: '/avatars/manager.png', description: 'Team leader avatar' },
+  { id: 'teacher-male', name: 'Teacher Male', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Teacher+male.png', description: 'Educational instructor (male)' },
+  { id: 'teacher', name: 'Teacher Female', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Teacher.png', description: 'Educational instructor (female)' },
+  { id: 'manager-male', name: 'Manager Male', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Manager+male.png', description: 'Team leader avatar (male)' },
+  { id: 'manager', name: 'Manager Female', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Manager.png', description: 'Team leader avatar (female)' },
 ];
 
 const BACKGROUND_OPTIONS = [
@@ -50,7 +50,7 @@ const CreateScenario = () => {
   const [form, setForm] = useState({
     title: '',
     description: '',
-    avatar: 'default',
+    avatar: 'business-woman',
     background: 'default',
     totalAttempts: 3,
   });
@@ -93,7 +93,7 @@ const CreateScenario = () => {
       setForm({
         title: editingScenario.title || '',
         description: editingScenario.description || '',
-        avatar: editingScenario.avatar || 'default',
+        avatar: editingScenario.avatar || 'business-woman',
         background: editingScenario.background || 'default',
         totalAttempts: editingScenario.totalAttempts || 3,
       });
@@ -109,62 +109,29 @@ const CreateScenario = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAvatarUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setForm(prev => ({ ...prev, avatar: e.target.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleBackgroundUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setForm(prev => ({ ...prev, background: e.target.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const handlePreview = () => {
     setShowPreview(true);
   };
 
   const getAvatarImage = (avatarId) => {
-    if (avatarId === 'default') {
-      return '/default-avatar.png';
-    }
-    // If it's a base64 string, full URL, or direct local path under /avatars, return it as-is
-    if (
-      typeof avatarId === 'string' &&
-      (avatarId.startsWith('data:') || avatarId.startsWith('http') || avatarId.startsWith('/avatars/'))
-    ) {
-      return avatarId;
-    }
-    // Try to resolve from predefined options (supports mapping ids to external URLs)
+    // Find the avatar from predefined AWS options
     const preset = AVATAR_OPTIONS.find((opt) => opt.id === avatarId);
     if (preset && typeof preset.image === 'string') {
       return preset.image;
     }
-    // Fallback to conventional local path
-    return `/avatars/${avatarId}.png`;
+    // Fallback to first avatar if not found
+    return AVATAR_OPTIONS[0].image;
   };
 
   const getBackgroundImage = (backgroundId) => {
-    if (backgroundId === 'default') {
-      return '/backgrounds/default.jpg';
+    // Find the background from predefined options
+    const preset = BACKGROUND_OPTIONS.find((opt) => opt.id === backgroundId);
+    if (preset && typeof preset.image === 'string') {
+      return preset.image;
     }
-    // If it's a base64 string (uploaded image), return it directly
-    if (backgroundId.startsWith('data:')) {
-      return backgroundId;
-    }
-    // Otherwise, return the predefined background path
-    return `/backgrounds/${backgroundId}.jpg`;
+    // Fallback to default background if not found
+    return '/backgrounds/default.jpg';
   };
 
   const handleNext = async () => {
@@ -1014,32 +981,12 @@ const CreateScenario = () => {
                     </h3>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-3">
-                    {/* Upload Button */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="hidden"
-                        id="avatar-upload-grid"
-                      />
-                      <label
-                        htmlFor="avatar-upload-grid"
-                        className="flex flex-col items-center cursor-pointer"
-                      >
-                        <div className="w-12 h-16 bg-gray-100 rounded mb-2 flex items-center justify-center">
-                          <Plus className="w-6 h-6 text-gray-500" />
-                        </div>
-                        <span className="text-xs text-center text-gray-600">Upload Avatar</span>
-                      </label>
-                    </div>
-
-                    {/* Predefined Avatars */}
-                    {AVATAR_OPTIONS.filter(avatar => avatar.id !== 'default').map(avatar => (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* AWS Avatars */}
+                    {AVATAR_OPTIONS.map(avatar => (
                       <div
                         key={avatar.id}
-                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                           form.avatar === avatar.id 
                             ? 'border-purple-500 bg-purple-50' 
                             : 'border-gray-200 hover:border-gray-300'
@@ -1047,7 +994,7 @@ const CreateScenario = () => {
                         onClick={() => setForm(prev => ({ ...prev, avatar: avatar.id }))}
                       >
                         <div className="flex flex-col items-center">
-                          <div className="w-12 h-16 bg-gray-200 rounded mb-2 flex items-center justify-center overflow-hidden">
+                          <div className="w-16 h-20 bg-gray-200 rounded mb-3 flex items-center justify-center overflow-hidden">
                             <img
                               src={avatar.image}
                               alt={avatar.name}
@@ -1057,26 +1004,11 @@ const CreateScenario = () => {
                               }}
                             />
                           </div>
-                          <span className="text-xs text-center text-gray-600">{avatar.name}</span>
+                          <h4 className="text-sm font-medium text-gray-900 text-center mb-1">{avatar.name}</h4>
+                          <p className="text-xs text-gray-600 text-center leading-tight">{avatar.description}</p>
                         </div>
                       </div>
                     ))}
-
-                    {/* Uploaded Avatar Display */}
-                    {form.avatar.startsWith('data:') && (
-                      <div className="border-2 border-purple-500 bg-purple-50 rounded-lg p-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-12 h-16 rounded mb-2 overflow-hidden">
-                            <img 
-                              src={form.avatar} 
-                              alt="Uploaded avatar" 
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                          <span className="text-xs text-center text-gray-600">Your Avatar</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
                 
@@ -1089,32 +1021,12 @@ const CreateScenario = () => {
                     </h3>
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-3">
-                    {/* Upload Button */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 cursor-pointer transition-all hover:border-purple-400 hover:bg-purple-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBackgroundUpload}
-                        className="hidden"
-                        id="background-upload-grid"
-                      />
-                      <label
-                        htmlFor="background-upload-grid"
-                        className="flex flex-col items-center cursor-pointer"
-                      >
-                        <div className="w-12 h-12 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                          <Plus className="w-6 h-6 text-gray-500" />
-                        </div>
-                        <span className="text-xs text-center text-gray-600">Upload Background</span>
-                      </label>
-                    </div>
-
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {/* Predefined Backgrounds */}
-                    {BACKGROUND_OPTIONS.filter(background => background.id !== 'default').map(background => (
+                    {BACKGROUND_OPTIONS.map(background => (
                       <div
                         key={background.id}
-                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                        className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
                           form.background === background.id 
                             ? 'border-purple-500 bg-purple-50' 
                             : 'border-gray-200 hover:border-gray-300'
@@ -1122,29 +1034,14 @@ const CreateScenario = () => {
                         onClick={() => setForm(prev => ({ ...prev, background: background.id }))}
                       >
                         <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 bg-gray-200 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                          <div className="w-16 h-12 bg-gray-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                             <Image className="w-6 h-6 text-gray-500" />
                           </div>
-                          <span className="text-xs text-center text-gray-600">{background.name}</span>
+                          <h4 className="text-sm font-medium text-gray-900 text-center mb-1">{background.name}</h4>
+                          <p className="text-xs text-gray-600 text-center leading-tight">{background.description}</p>
                         </div>
                       </div>
                     ))}
-
-                    {/* Uploaded Background Display */}
-                    {form.background.startsWith('data:') && (
-                      <div className="border-2 border-purple-500 bg-purple-50 rounded-lg p-3">
-                        <div className="flex flex-col items-center">
-                          <div className="w-12 h-12 rounded-lg mb-2 overflow-hidden">
-                            <img 
-                              src={form.background} 
-                              alt="Uploaded background" 
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <span className="text-xs text-center text-gray-600">Your Background</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1190,7 +1087,7 @@ const CreateScenario = () => {
                   <div className="flex items-start space-x-6 w-full">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <div className="w-32 h-120">
+                      <div className="w-32 h-56">
                         <img 
                           src={getAvatarImage(form.avatar)} 
                           alt="Avatar" 
