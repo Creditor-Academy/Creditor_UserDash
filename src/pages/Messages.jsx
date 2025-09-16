@@ -68,6 +68,20 @@ function Messages() {
     }
   }, [location.pathname]);
 
+  // Cleanup: Leave room when component unmounts or when leaving messages page
+  useEffect(() => {
+    return () => {
+      if (roomId) {
+        try {
+          const socket = getSocket();
+          socket.emit('leaveRoom', roomId);
+        } catch (error) {
+          console.warn('Failed to leave room on cleanup:', error);
+        }
+      }
+    };
+  }, [roomId]);
+
   // Load conversations for current user on entry; also load all users for starting new chat
   // Ensure socket connects when Messages section is opened
   useEffect(() => {
@@ -122,7 +136,7 @@ function Messages() {
       })();
     };
 
-    const onReceiveMessage = ({ from, message, image, messageid, conversationid }) => {
+    const onReceiveMessage = ({ from, message, image, messageid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
       setMessages(prev => [
@@ -142,13 +156,9 @@ function Messages() {
 
       // If the incoming message is from someone else and we're inside this conversation, mark it read
       try {
-        console.log("conversation id:", conversationid);
-        
-        if (!isSelf && conversationid && messageid) {
+        if (!isSelf && conversationId && messageid) {
           const s = getSocket();
-          s.emit('messageSeenByReceiver', { messageid, conversationid: conversationid });
-          console.log("message seen by receiver", messageid, conversationid);
-          
+          s.emit('messageSeenByReceiver', { messageid, conversationid: conversationId });
         }
       } catch {}
     };
@@ -547,7 +557,18 @@ function Messages() {
                 {/* Chat Header */}
                 <div className="p-4 border-b bg-muted/30 sticky top-0 z-10">
                   <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="mr-1" onClick={() => setSelectedFriend(null)} title="Back to chats">
+                    <Button variant="ghost" size="icon" className="mr-1" onClick={() => {
+                      // Leave the room when going back to chat list
+                      if (roomId) {
+                        try {
+                          const socket = getSocket();
+                          socket.emit('leaveRoom', roomId);
+                        } catch (error) {
+                          console.warn('Failed to leave room:', error);
+                        }
+                      }
+                      setSelectedFriend(null);
+                    }} title="Back to chats">
                       ←
                     </Button>
                     <Avatar>
