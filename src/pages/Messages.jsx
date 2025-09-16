@@ -3,11 +3,12 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
-import { VoiceMessage } from "@/components/messages/VoiceMessage";
+// Voice recording components - commented out
+// import { VoiceRecorder } from "@/components/messages/VoiceRecorder";
+// import { VoiceMessage } from "@/components/messages/VoiceMessage";
 import EmojiPicker from "emoji-picker-react";
 import {
   Dialog,
@@ -30,9 +31,65 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
 import { getAllConversations, loadPreviousConversation } from "@/services/messageService";
 import getSocket from "@/services/socketClient";
+import api from "@/services/apiClient";
 
 // Will be loaded from backend
 const initialAllUsers = [];
+
+function getHostname(url) {
+  try { return new URL(url).hostname; } catch { return null; }
+}
+
+function extractUrls(text) {
+  if (!text || typeof text !== 'string') return [];
+  const regex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+  const matches = text.match(regex) || [];
+  return matches.map(u => (u.startsWith('http') ? u : `https://${u}`));
+}
+
+function LinkCard({ url }) {
+  const host = getHostname(url);
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="block mt-2">
+      <div className="rounded-2xl border border-muted/30 shadow-sm bg-white text-foreground overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-2">
+            <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`} alt="" className="h-4 w-4" />
+            <span className="font-semibold text-sm truncate max-w-[220px]">{host || url}</span>
+          </div>
+          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground border-t border-muted/20">
+          <Globe className="h-4 w-4" />
+          <span className="truncate">{host}</span>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+function renderRichText(text, isOnDark = false) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return (
+    <span>
+      {parts.map((part, idx) => {
+        if (urlRegex.test(part)) {
+          const host = getHostname(part);
+          return (
+            <a key={idx} href={part} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-1 ${isOnDark ? 'text-white underline' : 'text-primary hover:underline'}`}>
+              {host && (
+                <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=16`} alt="" className={`h-4 w-4 ${isOnDark ? 'brightness-200' : ''}`} />
+              )}
+              {part}
+            </a>
+          );
+        }
+        return <span key={idx}>{part}</span>;
+      })}
+    </span>
+  );
+}
 
 function Messages() {
   // conversations shown in the left list (starts empty like Google Chat)
@@ -43,18 +100,22 @@ function Messages() {
   const [convosLoaded, setConvosLoaded] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  // Voice recording state - commented out
+  // const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
   const [roomId, setRoomId] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [newChatUsers, setNewChatUsers] = useState([]);
   const [newChatSearch, setNewChatSearch] = useState("");
+  const [startingUserId, setStartingUserId] = useState(null);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const location = useLocation();
+  const [pendingImage, setPendingImage] = useState(null);
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
   useEffect(() => {
@@ -92,9 +153,14 @@ function Messages() {
     };
     const onDisconnect = (reason) => console.log('[Messages] socket disconnected', reason);
     const onRoomIdForSender = ({ conversationid, roomId: serverRoomId, to }) => {
+      // Clear in-flight blocker once backend responds
+      setStartingUserId(null);
       setRoomId(serverRoomId);
       setConversationId(conversationid);
       setSelectedFriend(String(conversationid));
+      // Clear old chat and show loading while fetching history
+      setMessages([]);
+      setChatLoading(true);
       console.log('room id at sender side', serverRoomId);
       // join room immediately
       try {
@@ -111,6 +177,9 @@ function Messages() {
             avatar: c.image || '/placeholder.svg',
             lastMessage: c.lastMessage || '',
             room: c.room,
+            conversationId: c.id,
+            isRead: c.isRead,
+            lastMessageFrom: c.lastMessageFrom,
           }));
           setFriends(normalizedFriends);
           setConvosLoaded(true);
@@ -125,34 +194,87 @@ function Messages() {
             id: m.id,
             senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
             senderImage: m?.sender?.image || null,
-            text: m.content,
+            text: m.type === 'IMAGE' ? null : m.content,
             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: 'text',
+            type: m.type === 'IMAGE' ? 'image' : 'text',
+            file: m.type === 'IMAGE' ? m.content : null,
+            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
           }));
           setMessages(mapped);
+          setChatLoading(false);
         } catch (e) {
           console.warn('Failed to load previous messages (new)', e);
+          setChatLoading(false);
         }
       })();
     };
 
-    const onReceiveMessage = ({ from, message, image, messageid, conversationid }) => {
+    const onReceiveMessage = ({ from, message, image, messageid, type }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now() + Math.random(),
-          senderId: isSelf ? 0 : String(from),
-          text: message,
-          senderImage: image || null,
-          timestamp: new Date().toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          type: 'text',
-        },
-      ]);
+      
+      if (isSelf) {
+        // This is our own message coming back from server - replace optimistic message
+        setMessages(prev => {
+          // Find the most recent optimistic message with 'sending' status
+          const optimisticIndex = prev.findLastIndex(msg => 
+            msg.senderId === 0 && msg.status === 'sending' && (
+              (type === 'IMAGE' && msg.type === 'image') || (type !== 'IMAGE' && msg.text === message)
+            )
+          );
+          
+          if (optimisticIndex !== -1) {
+            // Replace optimistic message with real one
+            const updated = [...prev];
+            updated[optimisticIndex] = {
+              ...updated[optimisticIndex],
+              id: messageid,
+              status: 'sent', // Message sent successfully
+              senderImage: image || null,
+              type: type === 'IMAGE' ? 'image' : 'text',
+              file: type === 'IMAGE' ? message : null,
+              text: type === 'IMAGE' ? null : message,
+            };
+            return updated;
+          } else {
+            // Fallback: add as new message if optimistic message not found
+            return [
+              ...prev,
+              {
+                id: messageid,
+                senderId: 0,
+                text: type === 'IMAGE' ? null : message,
+                senderImage: image || null,
+                timestamp: new Date().toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                }),
+                type: type === 'IMAGE' ? 'image' : 'text',
+                file: type === 'IMAGE' ? message : null,
+                status: 'sent',
+              },
+            ];
+          }
+        });
+      } else {
+        // Message from someone else - add as new message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: messageid,
+            senderId: String(from),
+            text: type === 'IMAGE' ? null : message,
+            senderImage: image || null,
+            timestamp: new Date().toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            type: type === 'IMAGE' ? 'image' : 'text',
+            file: type === 'IMAGE' ? message : null,
+            status: 'delivered', // Messages from others are considered delivered
+          },
+        ]);
+      }
 
       // If the incoming message is from someone else and we're inside this conversation, mark it read
       try {
@@ -166,7 +288,6 @@ function Messages() {
         }
       } catch {}
     };
-
     const onConversationUpdated = (updatePayload) => {
       console.log('Conversation updated:', updatePayload);
       setFriends(prev => {
@@ -201,7 +322,7 @@ function Messages() {
       if (!readConvId) return;
       setFriends(prev => prev.map(f => (
         String(f.conversationId || f.id) === String(readConvId)
-          ? { ...f, isRead: true }
+          ? { ...f, isRead: true } // This will remove bold styling since isRead is now true
           : f
       )));
     };
@@ -272,61 +393,105 @@ function Messages() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() && !pendingImage) return;
     if (!roomId || !conversationId) {
       console.warn('Messages: cannot send, missing roomId or conversationId');
       return;
     }
-    try {
-      const socket = getSocket();
-      socket.emit('sendMessage', { conversationid: conversationId, roomId, message: newMessage });
-      setNewMessage("");
-    } catch (error) {
-      console.warn('Messages: failed to send message', error);
-    }
-  };
-
-  const handleSendVoiceMessage = (audioBlob, duration) => {
-    setMessages([
-      ...messages,
-      {
-        id: messages.length + 1,
-        senderId: 0,
-        audioBlob,
-        audioDuration: duration,
-        timestamp: new Date().toLocaleTimeString([], { 
-          hour: '2-digit', 
-          minute: '2-digit' 
-        }),
-        type: 'voice',
-      },
-    ]);
-    setShowVoiceRecorder(false);
-  };
-
-  const handleSendAttachment = (file) => {
-    if (!file) return;
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setMessages([
-        ...messages,
+    // If there is a pending image, send as attachment-like message first
+    if (pendingImage) {
+      const tempId = `img_${Date.now()}_${Math.random()}`;
+      setMessages(prev => [
+        ...prev,
         {
-          id: messages.length + 1,
+          id: tempId,
           senderId: 0,
-          file: e.target.result,
-          fileName: file.name,
-          fileType: file.type.startsWith('image/') ? 'image' : 'video',
+          file: pendingImage.previewUrl,
+          fileName: pendingImage.name,
+          fileType: 'image',
           timestamp: new Date().toLocaleTimeString([], { 
             hour: '2-digit', 
             minute: '2-digit' 
           }),
-          type: 'attachment',
+          type: 'image',
+          status: 'sending',
         },
       ]);
-    };
-    
-    reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append('media', pendingImage.file);
+      formData.append('conversation_id', conversationId);
+      formData.append('roomId', roomId);
+      setPendingImage(null);
+      (async () => {
+        try {
+          await api.post('/api/private-messaging/sendimage', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            withCredentials: true,
+          });
+        } catch (e) {
+          setMessages(prev => prev.map(m => (m.id === tempId ? { ...m, status: 'failed' } : m)));
+        }
+      })();
+    }
+
+    if (newMessage.trim()) {
+      const messageText = newMessage.trim();
+      const tempId = `temp_${Date.now()}_${Math.random()}`;
+      // Add optimistic message with sending status
+      setMessages(prev => [
+        ...prev,
+        {
+          id: tempId,
+        senderId: 0,
+          text: messageText,
+          senderImage: null,
+        timestamp: new Date().toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+          type: 'text',
+          status: 'sending', // sending, sent, delivered
+          tempId: tempId
+      },
+    ]);
+      setNewMessage("");
+      try {
+        const socket = getSocket();
+        socket.emit('sendMessage', { conversationid: conversationId, roomId, message: messageText });
+      } catch (error) {
+        console.warn('Messages: failed to send message', error);
+        setMessages(prev => prev.map(msg => 
+          msg.tempId === tempId ? { ...msg, status: 'failed' } : msg
+        ));
+      }
+    }
+  };
+
+  // Voice message handler - commented out
+  // const handleSendVoiceMessage = (audioBlob, duration) => {
+  //   setMessages([
+  //     ...messages,
+  //     {
+  //       id: messages.length + 1,
+  //       senderId: 0,
+  //       audioBlob,
+  //       audioDuration: duration,
+  //       timestamp: new Date().toLocaleTimeString([], { 
+  //         hour: '2-digit', 
+  //         minute: '2-digit' 
+  //       }),
+  //       type: 'voice',
+  //     },
+  //   ]);
+  //   setShowVoiceRecorder(false);
+  // };
+
+  const handleSendAttachment = (file) => {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) return; // images only
+    const previewUrl = URL.createObjectURL(file);
+    setPendingImage({ name: file.name, file, previewUrl });
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -335,7 +500,7 @@ function Messages() {
   };
 
   const handleAttachmentClick = () => {
-    fileInputRef.current.click();
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const handleFileChange = (e) => {
@@ -417,19 +582,21 @@ function Messages() {
     );
     return (allUsers || []).filter(user => {
       const inSearch = (user.name || '').toLowerCase().includes((newChatSearch || '').toLowerCase());
-      return inSearch && !engagedUserIds.has(String(user.id));
+      // Exclude current user and users already in conversations
+      const isSelf = String(user.id) === currentUserId;
+      return inSearch && !isSelf && !engagedUserIds.has(String(user.id));
     });
   })();
 
   return (
     <div className="container py-4">
       <div className="rounded-lg border bg-card shadow-sm">
-        <div className="h-[calc(100vh-160px)]">
+        <div className="h-[calc(100vh-120px)]">
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
           <div className="w-full flex flex-col h-full">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Messages</h2>
+            <div className="p-3 border-b flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Messages</h2>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8" title="New Chat">
@@ -445,7 +612,7 @@ function Messages() {
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search users..."
-                        className="pl-8"
+                        className="pl-8 h-9 text-sm"
                         value={newChatSearch}
                         onChange={(e) => setNewChatSearch(e.target.value)}
                       />
@@ -455,9 +622,10 @@ function Messages() {
                         {filteredNewChatUsers.map((user) => (
                           <div 
                             key={user.id}
-                            className="flex items-center gap-3 p-2 hover:bg-accent rounded cursor-pointer"
+                            className={`flex items-center gap-3 p-2 rounded cursor-pointer ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent'}`}
                             onClick={() => {
-                              // Do not optimistically mutate list; rely on backend fetch
+                              if (startingUserId) return; // block double clicks globally until response
+                              setStartingUserId(user.id);
                               const socket = getSocket();
                               socket.emit("startConversation", { to: user.id });
                             }}
@@ -466,7 +634,7 @@ function Messages() {
                               <AvatarImage src={user.avatar} />
                               <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium">{user.name}</span>
+                            <span className="font-medium text-sm">{user.name}</span>
                           </div>
                         ))}
                       </div>
@@ -475,19 +643,26 @@ function Messages() {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="p-4 border-b">
+            <div className="p-3 border-b">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search contacts..."
-                  className="pl-8"
+                  className="pl-8 h-9 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
             </div>
             <ScrollArea className="flex-1">
-              {filteredFriends.map((friend) => (
+              {!convosLoaded ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading conversations...</span>
+                  </div>
+                </div>
+              ) : filteredFriends.map((friend) => (
                 <div
                   key={friend.id}
                   onClick={() => {
@@ -497,6 +672,9 @@ function Messages() {
                       const convId = friend.conversationId || friend.id;
                       setRoomId(friend.room);
                       setConversationId(convId);
+                      // Reset and show loading while fetching previous messages for this conversation
+                      setMessages([]);
+                      setChatLoading(true);
                       socket.emit('joinRoom', friend.room, convId);
                       // Load previous messages for this conversation
                       (async () => {
@@ -510,26 +688,37 @@ function Messages() {
                             text: m.content,
                             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                             type: 'text',
+                            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
                           }));
                           setMessages(mapped);
+                          setChatLoading(false);
                         } catch (e) {
                           console.warn('Failed to load previous messages', e);
+                          setChatLoading(false);
                         }
                       })();
                     }
                     setSelectedFriend(friend.id);
                   }}
-                  className={`p-4 flex items-center gap-3 hover:bg-accent cursor-pointer transition-colors border-b ${
+                  className={`p-3 flex items-center gap-2 hover:bg-accent/60 cursor-pointer transition-colors border-b ${
                     selectedFriend === friend.id ? "bg-accent" : ""
                   }`}
                 >
-                  <Avatar>
+                  <Avatar className="h-10 w-10">
                     <AvatarImage src={friend.avatar} />
-                    <AvatarFallback>{friend.name?.[0] || 'U'}</AvatarFallback>
+                    <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
-                   <div className="flex-1 min-w-0">
-                     <div className="flex justify-between items-center">
-                       <p className="font-medium">{friend.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center">
+                       <p className={`font-medium text-[15px] ${(() => {
+                         const currentUserId = localStorage.getItem('userId');
+                         const isUnread = friend.isRead === false && 
+                                         friend.lastMessageFrom && 
+                                         String(friend.lastMessageFrom) !== String(currentUserId);
+                         return isUnread ? 'font-bold' : '';
+                       })()}`}>
+                         {friend.name}
+                       </p>
                        {(() => {
                          const currentUserId = localStorage.getItem('userId');
                          const isUnread = friend.isRead === false && 
@@ -539,14 +728,35 @@ function Messages() {
                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                          ) : null;
                        })()}
-                     </div>
-                     <p className="text-sm text-muted-foreground truncate">
-                       {friend.lastMessage || 'Start a conversation'}
-                     </p>
-                   </div>
+                    </div>
+                     <p className={`text-xs truncate ${(() => {
+                       const currentUserId = localStorage.getItem('userId');
+                       const isUnread = friend.isRead === false && 
+                                       friend.lastMessageFrom && 
+                                       String(friend.lastMessageFrom) !== String(currentUserId);
+                       return isUnread ? 'font-bold text-foreground' : 'text-muted-foreground';
+                     })()}`}>
+                       {(() => {
+                         const currentUserId = localStorage.getItem('userId');
+                         const isSentByMe = friend.lastMessageFrom && 
+                                           String(friend.lastMessageFrom) === String(currentUserId);
+                         
+                         if (isSentByMe && friend.lastMessage) {
+                           return (
+                             <span className="flex items-center gap-1.5">
+                               <span>You:</span>
+                               <Check className="h-3 w-3 text-green-500" />
+                               <span>{friend.lastMessage}</span>
+                             </span>
+                           );
+                         }
+                         return friend.lastMessage || 'Start a conversation';
+                       })()}
+                    </p>
+                  </div>
                 </div>
               ))}
-              {filteredFriends.length === 0 && (
+              {convosLoaded && filteredFriends.length === 0 && (
                 <div className="p-6 text-sm text-muted-foreground">
                   No conversations yet. Click the + icon to start a chat.
                 </div>
@@ -579,9 +789,9 @@ function Messages() {
                       {convosLoaded && (
                         <>
                           <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                          <AvatarFallback>
+                      <AvatarFallback>
                             {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
-                          </AvatarFallback>
+                      </AvatarFallback>
                         </>
                       )}
                     </Avatar>
@@ -594,9 +804,17 @@ function Messages() {
                 </div>
 
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 px-4 py-6 overflow-y-auto">
+                <ScrollArea className="flex-1 px-4 py-4 overflow-y-auto">
                   <div className="space-y-5">
-                    {messages.map((message) => (
+                    {chatLoading && (
+                      <div className="h-full w-full flex items-center justify-center py-10">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Loading conversation...</span>
+                        </div>
+                      </div>
+                    )}
+                    {!chatLoading && messages.map((message) => (
                       <div
                         key={message.id}
                         className={`flex items-end gap-2 ${
@@ -612,7 +830,8 @@ function Messages() {
                           </Avatar>
                         )}
                         
-                        {message.type === 'voice' && message.audioBlob ? (
+                        {/* Voice message rendering - commented out */}
+                        {/* {message.type === 'voice' && message.audioBlob ? (
                           <div className="max-w-[68%]">
                             <VoiceMessage 
                               audioBlob={message.audioBlob} 
@@ -623,26 +842,19 @@ function Messages() {
                               {message.timestamp}
                             </p>
                           </div>
-                        ) : message.type === 'attachment' ? (
+                        ) : */} 
+                        {message.type === 'image' ? (
                           <div className="max-w-[68%]">
                             <div className={`rounded-xl overflow-hidden shadow-sm ${
                               message.senderId === 0 
                                 ? "border border-primary/20" 
                                 : "border border-muted"
                             }`}>
-                              {message.fileType === 'image' ? (
-                                <img 
-                                  src={message.file} 
-                                  alt={message.fileName} 
-                                  className="max-h-64 object-cover"
-                                />
-                              ) : (
-                                <video 
-                                  src={message.file} 
-                                  controls 
-                                  className="max-h-64"
-                                />
-                              )}
+                              <img 
+                                src={message.file} 
+                                alt={message.fileName || 'image'} 
+                                className="max-h-64 object-cover"
+                              />
                             </div>
                             <p className="text-xs mt-1 opacity-70 text-right">
                               {message.timestamp}
@@ -652,21 +864,49 @@ function Messages() {
                           <div
                             className={`max-w-[68%] group relative ${
                               message.senderId === 0 ? "bg-gradient-to-tr from-purple-500 to-purple-600 text-white" : "bg-white border border-muted/60"
-                            } rounded-2xl px-4 py-3 shadow-sm`}
+                            } rounded-2xl px-3 py-2 shadow-sm`}
                           >
-                            <p className="leading-relaxed">{message.text}</p>
-                            <div className="flex justify-between items-center mt-1 gap-3">
-                              <p className={`text-[11px] ${message.senderId === 0 ? "text-white/80" : "text-muted-foreground"}`}>
-                                {message.timestamp}
-                              </p>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ${message.senderId === 0 ? "hover:bg-white/15 text-white" : "hover:bg-destructive hover:text-destructive-foreground"}`}
-                                onClick={() => handleDeleteMessage(message.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                            <p className="leading-relaxed text-[13px]">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            {message.text && extractUrls(message.text).length > 0 && (
+                              <div className="mt-2">
+                                {extractUrls(message.text).map((u, i) => (
+                                  <LinkCard key={`${message.id}-link-${i}`} url={u} />
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center mt-1 gap-2">
+                              <p className={`text-[10px] ${message.senderId === 0 ? "text-white/80" : "text-muted-foreground"}`}>
+                              {message.timestamp}
+                            </p>
+                              <div className="flex items-center gap-1">
+                                {/* Message Status Icons */}
+                                {message.senderId === 0 && (
+                                  <div className="flex items-center">
+                                    {message.status === 'sending' && (
+                                      <Clock className="h-3 w-3 text-white/60" />
+                                    )}
+                                    {message.status === 'sent' && (
+                                      <Check className="h-3 w-3 text-white/60" />
+                                    )}
+                                    {message.status === 'delivered' && (
+                                      <CheckCheck className="h-3 w-3 text-white/60" />
+                                    )}
+                                    {message.status === 'failed' && (
+                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center">
+                                        <span className="text-white text-[8px]">!</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ${message.senderId === 0 ? "hover:bg-white/15 text-white" : "hover:bg-destructive hover:text-destructive-foreground"}`}
+                                  onClick={() => handleDeleteMessage(message.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -689,16 +929,28 @@ function Messages() {
                     type="file" 
                     ref={fileInputRef} 
                     onChange={handleFileChange}
-                    accept="image/*, video/*"
+                    accept="image/*"
                     className="hidden"
                   />
+                  {pendingImage && (
+                    <div className="mb-3 flex items-center gap-3 p-2 rounded-md border bg-muted/40 max-w-xs">
+                      <img src={pendingImage.previewUrl} alt={pendingImage.name} className="h-10 w-10 object-cover rounded" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{pendingImage.name}</p>
+                        <p className="text-[11px] text-muted-foreground">Will send when you press Send</p>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setPendingImage(null)}>Remove</Button>
+                    </div>
+                  )}
                   
-                  {showVoiceRecorder ? (
+                  {/* Voice recorder - commented out */}
+                  {/* {showVoiceRecorder ? (
                     <VoiceRecorder 
                       onSendVoiceMessage={handleSendVoiceMessage}
                       onCancel={() => setShowVoiceRecorder(false)}
                     />
-                  ) : (
+                  ) : ( */}
+                  {true && (
                     <div className="relative">
                       {showEmojiPicker && (
                         <div className="absolute bottom-16 left-0 z-10">
@@ -739,29 +991,30 @@ function Messages() {
                                 handleSendMessage();
                               }
                             }}
-                            className="rounded-full pl-4 pr-20 h-12 text-base bg-gray-100 border-gray-200 focus:bg-white"
+                            className="rounded-full pl-4 pr-16 h-12 text-base bg-gray-100 border-gray-200 focus:bg-white"
                           />
                         </div>
                         
-                        <div className="flex gap-2">
-                          <Button 
+                        <div className="flex gap-3">
+                          {/* Voice recording button - commented out */}
+                          {/* <Button 
                             onClick={() => setShowVoiceRecorder(true)} 
                             variant="ghost"
                             size="icon"
                             className="h-12 w-12 rounded-full"
                           >
                             <Mic className="h-5 w-5" />
-                          </Button>
+                          </Button> */}
                           
                           <Button 
                             onClick={handleSendMessage} 
                             className={`rounded-full h-12 w-12 transition-all ${
-                              newMessage.trim() 
+                              newMessage.trim() || pendingImage 
                                 ? "bg-purple-500 hover:bg-purple-600 text-white" 
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                             size="icon"
-                            disabled={!newMessage.trim()}
+                            disabled={!newMessage.trim() && !pendingImage}
                           >
                             <Send className="h-5 w-5" />
                           </Button>
