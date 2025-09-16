@@ -164,6 +164,17 @@ export function ChatPage() {
             return prev;
           }
           
+          // Build votes map if provided
+          const votesMap = (() => {
+            try {
+              const options = payload?.poll_options || [];
+              const v = {};
+              options.forEach((o, idx) => { v[idx] = (o?.votes || []).map(x => x.user_id); });
+              return v;
+            } catch { return {}; }
+          })();
+
+          const hasVotesMap = Object.values(votesMap || {}).some(arr => (arr || []).length > 0);
           const normalized = {
             id: payload.id,
             senderId: payload.sender_id,
@@ -179,7 +190,7 @@ export function ChatPage() {
               options: (payload.poll_options || payload.options || []).map(o => (o.option_text || o.text || o)),
               optionIds: (payload.poll_options || []).map(o => (o.id || o.option_id || null)),
               allowMultiple: Boolean(payload.poll_allow_multiple || payload.allowMultiple),
-              votes: payload.votes || {},
+              votes: hasVotesMap ? votesMap : (payload.votes || {}),
               closesAt: payload.poll_expires_at || payload.closesAt,
               closedAt: payload.closedAt,
             }) : undefined,
@@ -879,11 +890,10 @@ export function ChatPage() {
       }));
       // Map option index to backend option_id
       const pollId = messageId;
-      await voteGroupPoll(groupId, pollId, { messageId, optionId });
-      // Optional refresh via GET poll for authoritative counts
+      const voteRes = await voteGroupPoll(groupId, pollId, { messageId, optionId });
+      // Prefer immediate merge from vote API response (it returns poll_options with votes)
       try {
-        const res = await getGroupPoll(groupId, pollId);
-        const data = res?.data || res;
+        const data = voteRes?.data || voteRes;
         if (data?.id) {
           setMessages(prev => prev.map(m => {
             if (m.id !== messageId) return m;
@@ -891,15 +901,27 @@ export function ChatPage() {
             const optionIds = (data.poll_options || []).map(o => o.id);
             const votes = {};
             (data.poll_options || []).forEach((o, idx) => { votes[idx] = (o.votes || []).map(v => v.user_id); });
+            if ((data.poll_votes || []).length && optionIds.length) {
+              const byOptionId = {};
+              optionIds.forEach((id, idx) => { byOptionId[id] = idx; });
+              (data.poll_votes || []).forEach(v => {
+                const idx = byOptionId[v.option_id];
+                if (idx !== undefined) {
+                  votes[idx] = votes[idx] || [];
+                  votes[idx] = Array.from(new Set([...(votes[idx] || []), v.user_id]));
+                }
+              });
+            }
+            const hasVotes = Object.values(votes).some(arr => (arr || []).length > 0);
             return {
               ...m,
               poll: {
                 ...m.poll,
-                options,
-                optionIds,
-                allowMultiple: Boolean(data.poll_allow_multiple),
-                closesAt: data.poll_expires_at || null,
-                votes,
+                options: options.length ? options : (m.poll?.options || []),
+                optionIds: optionIds.length ? optionIds : (m.poll?.optionIds || []),
+                allowMultiple: data.poll_allow_multiple ?? m.poll?.allowMultiple,
+                closesAt: data.poll_expires_at || m.poll?.closesAt || null,
+                votes: hasVotes ? votes : (m.poll?.votes || {}),
               }
             };
           }));
