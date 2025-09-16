@@ -34,12 +34,12 @@ const AVATAR_OPTIONS = [
 ];
 
 const BACKGROUND_OPTIONS = [
-  { id: 'default', name: 'Default Background', image: '/backgrounds/default.jpg', description: 'Clean neutral background' },
-  { id: 'office', name: 'Office', image: '/backgrounds/office.jpg', description: 'Professional office environment' },
-  { id: 'classroom', name: 'Classroom', image: '/backgrounds/classroom.jpg', description: 'Educational classroom setting' },
-  { id: 'meeting-room', name: 'Meeting Room', image: '/backgrounds/meeting-room.jpg', description: 'Conference room environment' },
-  { id: 'library', name: 'Library', image: '/backgrounds/library.jpg', description: 'Quiet study environment' },
-  { id: 'outdoor', name: 'Outdoor', image: '/backgrounds/outdoor.jpg', description: 'Natural outdoor setting' },
+  { id: 'workspace', name: 'Workspace', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Workspace.jpg', description: 'Modern workspace environment' },
+  { id: 'empty-room', name: 'Empty Room', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Empty+room.jpg', description: 'Minimal empty room setting' },
+  { id: 'library', name: 'Library', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Library.jpg', description: 'Quiet study environment' },
+  { id: 'meeting', name: 'Meeting Room', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Meeting.jpg', description: 'Professional meeting space' },
+  { id: 'office-blue', name: 'Office (Blue)', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Office_blue.jpg', description: 'Blue-themed office environment' },
+  { id: 'office', name: 'Office', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Office.jpg', description: 'Professional office environment' },
 ];
 
 const CreateScenario = () => {
@@ -51,7 +51,7 @@ const CreateScenario = () => {
     title: '',
     description: '',
     avatar: 'business-woman',
-    background: 'default',
+    background: 'workspace',
     totalAttempts: 3,
   });
   
@@ -130,8 +130,8 @@ const CreateScenario = () => {
     if (preset && typeof preset.image === 'string') {
       return preset.image;
     }
-    // Fallback to default background if not found
-    return '/backgrounds/default.jpg';
+    // Fallback to first available option if not found
+    return BACKGROUND_OPTIONS[0]?.image || '';
   };
 
   const handleNext = async () => {
@@ -1035,7 +1035,14 @@ const CreateScenario = () => {
                       >
                         <div className="flex flex-col items-center">
                           <div className="w-16 h-12 bg-gray-200 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                            <Image className="w-6 h-6 text-gray-500" />
+                            <img
+                              src={background.image}
+                              alt={background.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
                           </div>
                           <h4 className="text-sm font-medium text-gray-900 text-center mb-1">{background.name}</h4>
                           <p className="text-xs text-gray-600 text-center leading-tight">{background.description}</p>
