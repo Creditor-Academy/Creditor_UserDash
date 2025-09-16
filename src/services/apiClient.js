@@ -117,8 +117,12 @@ api.interceptors.response.use(
 		}
 
 		// If refresh failed due to refresh token expired (e.g., 401/403/419 with a specific code), perform logout
-		if (status === 401 || status === 403 || status === 419) {
-			console.warn('[Auth] Authorization failed after refresh. Forcing logout.');
+		// Only force logout for specific endpoints or after multiple failed attempts
+		// Don't force logout for group operations as they might have different permission requirements
+		if ((status === 401 || status === 403 || status === 419) && 
+			(original.url?.includes('/auth/') || original.url?.includes('/user/') || original.url?.includes('/profile')) &&
+			!original.url?.includes('/groups/')) {
+			console.warn('[Auth] Authorization failed after refresh for auth endpoint. Forcing logout.');
 			try {
 				const { clearAccessToken } = await import('./tokenService');
 				clearAccessToken();
@@ -129,6 +133,8 @@ api.interceptors.response.use(
 					setTimeout(() => { window.location.href = '/login'; }, 0);
 				}
 			} catch {}
+		} else if ((status === 401 || status === 403 || status === 419) && original.url?.includes('/groups/')) {
+			console.warn('[Auth] Authorization failed for group operation. Not forcing logout, letting component handle error.');
 		}
 
 		return Promise.reject(error);

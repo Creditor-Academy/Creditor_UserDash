@@ -105,17 +105,29 @@ export const assetService = {
       formData.append('title', assetData.title);
       formData.append('description', assetData.description || '');
       formData.append('category_id', assetData.category_id);
-      
+
       // Add file_type if provided
       if (assetData.file_type) {
         formData.append('file_type', assetData.file_type);
       }
-      
-      // Note: organization_id is not sent to backend as per controller requirements
-      
+
+      // Handle file upload
       if (assetData.file) {
-        // The backend middleware expects the field name to be 'assetfile'
-        formData.append('assetfile', assetData.file, assetData.file.name);
+        let fileToUpload = assetData.file;
+
+        // If the file is a web URL, fetch it and convert to Blob
+        if (fileToUpload.url && !(fileToUpload instanceof File)) {
+          const response = await fetch(fileToUpload.url);
+          const blob = await response.blob();
+          fileToUpload = new File(
+            [blob],
+            fileToUpload.name || 'image.jpg',
+            { type: blob.type || 'image/jpeg' }
+          );
+        }
+
+        // Append the file (now guaranteed to be a Blob/File)
+        formData.append('assetfile', fileToUpload, fileToUpload.name);
       }
 
       // Debug: Log what we're sending
@@ -127,7 +139,7 @@ export const assetService = {
         fileName: assetData.file?.name,
         fileSize: assetData.file?.size,
         fileType: assetData.file?.type,
-        fieldName: 'assetfile' // The field name expected by backend middleware
+        fieldName: 'assetfile',
       });
 
       const response = await api.post(`${API_BASE}/api/assets/create-asset`, formData);
@@ -138,7 +150,7 @@ export const assetService = {
         console.error('Upload error details:', {
           status: error.response.status,
           data: error.response.data,
-          headers: error.response.headers
+          headers: error.response.headers,
         });
       }
       throw error;

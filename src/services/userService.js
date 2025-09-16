@@ -93,6 +93,26 @@ export async function fetchUserProfile() {
   }
 }
 
+export async function fetchAllUsers() {
+  try {
+    console.log("📤 userService: Fetching all users");
+    const response = await api.get('/api/user/all', {
+      withCredentials: true,
+    });
+    
+    if (response.data && response.data.code === 200) {
+      const users = response.data.data || [];
+      console.log("✅ userService: Users fetched successfully:", users.length);
+      return users;
+    } else {
+      throw new Error('Failed to fetch users');
+    }
+  } catch (error) {
+    console.error("❌ userService: Error fetching users:", error);
+    throw error;
+  }
+}
+
 export async function updateUserProfile(profileData) {
   try {
     console.log("📤 userService: Updating profile to:", `/api/user/updateUserProfile`);

@@ -26,7 +26,6 @@ import EssayResultsPage from "@/pages/EssayResultsPage";
 import  Groups  from "@/pages/Groups";
 import Catalog from "@/pages/Catalog";
 import CatelogCourses from "@/pages/CatelogCourses";
-import Home from "@/pages/home.jsx";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
@@ -37,9 +36,10 @@ import ModuleLessonsView from "@/pages/ModuleLessonsView";
 import ModuleAssessmentsView from "@/pages/ModuleAssessmentsView";
 import CourseEnrollment from "@/pages/CourseEnrollment";
 import GroupLayout from "@/layouts/GroupLayout";
+import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
-import GroupCalendarPage from "@/pages/group/CalendarPage";
-import AnnouncementPage from "@/pages/group/AnnouncementPage";
+
+import AnnouncementsPage from "@/pages/group/AnnouncementsPage";
 import ChatPage from "@/pages/group/ChatPage";
 import  SpeechifyReaderView  from "@/pages/SpeechifyReaderView";
 import AvatarPickerPage from "@/pages/AvatarPickerPage";
@@ -75,6 +75,7 @@ import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import LessonBuilder from "./pages/LessonBuilder";
 import LandingPage from "@/pages/LandingPage";
+import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -98,6 +99,7 @@ import ContactSection from "@/components/ContactSection";
 import AddUsersPage from "@/pages/AddUsersPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
      
 
@@ -113,6 +115,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <UserProvider>
+          <CreditsProvider>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -246,9 +249,9 @@ function App() {
               <Route index element={<Groups />} />
               <Route path=":groupId/*" element={<GroupLayout />}>
                 <Route path="news" element={<NewsPage />} />
+                <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
-                <Route path="calendar" element={<GroupCalendarPage />} />
-                <Route path="announcements" element={<AnnouncementPage />} />
+                <Route path="announcements" element={<AnnouncementsPage />} />
                 <Route path="*" element={<NewsPage />} />
               </Route>
             </Route>
@@ -325,6 +328,7 @@ function App() {
           <Route path="/games" element={<Games />} />
           </Routes>
           <Toaster />
+          </CreditsProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>
