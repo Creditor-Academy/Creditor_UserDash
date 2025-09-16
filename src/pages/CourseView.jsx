@@ -268,7 +268,7 @@ export function CourseView() {
                 
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+                    {/* <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full"> */}
                     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                       <div className="aspect-video relative overflow-hidden">
                         <img 

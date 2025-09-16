@@ -39,7 +39,8 @@ export function DashboardLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-gray-50 to-white">
+    <SidebarContext.Provider value={{ sidebarCollapsed, setSidebarCollapsed }}>
+      <div className="flex min-h-screen w-full min-w-0 overflow-x-hidden bg-gradient-to-br from-gray-50 to-white">
       {/* Sidebar - mobile drawer and desktop fixed */}
       <div
         className={
@@ -89,6 +90,7 @@ export function DashboardLayout() {
             </motion.main>
           </div>
         </div>
+      </div>
       </div>
     </SidebarContext.Provider>
   );

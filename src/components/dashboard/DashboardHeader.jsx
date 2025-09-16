@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User, Menu as MenuIcon } from "lucide-react";
+import { Search, Calendar, Mail, BellDot, BookOpen, Loader2, Lock, AlertCircle, Users, User, Menu, Menu as MenuIcon } from "lucide-react";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
@@ -798,7 +798,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="space-y-2">
                       {searchResults.results.users.map((user, index) => {
                         const userRole = user.user_roles?.[0]?.role || 'user';
-                        const roleColor = userRole === 'admin' ; 'bg-red-100 text-red-800' ; 
+                        const roleColor = userRole === 'admin' ? 'bg-red-100 text-red-800' : 
                                         userRole === 'instructor' ? 'bg-blue-100 text-blue-800' : 
                                         'bg-gray-100 text-gray-600';
                         const isSelected = selectedResultIndex === searchResults.results.courses.length + index;
