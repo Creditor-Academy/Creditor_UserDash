@@ -685,9 +685,10 @@ function Messages() {
                             id: m.id,
                             senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
                             senderImage: m?.sender?.image || null,
-                            text: m.content,
+                            text: m.type === 'IMAGE' ? null : m.content,
                             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            type: 'text',
+                            type: m.type === 'IMAGE' ? 'image' : 'text',
+                            file: m.type === 'IMAGE' ? m.content : null,
                             status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
                           }));
                           setMessages(mapped);
