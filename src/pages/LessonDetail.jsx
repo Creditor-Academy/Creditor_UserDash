@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import ModernLessonPreview from "@/components/courses/ModernLessonPreview";
+import LessonView from "@/components/courses/LessonView";
 import { LessonContent } from "@/components/courses/LessonContent";
 import { unitLessons, unitQuizzes, unitAssignments } from "@/data/unitData";
 import { 
@@ -110,7 +110,7 @@ function LessonDetail() {
         <span className="font-medium">Time spent in this course:</span>
         <span className="font-mono text-lg">{formatTime(timeSpent)}</span>
       </div>
-      <ModernLessonPreview
+      <LessonView
         isOpen={true}
         onClose={() => navigate(`/courses/module/${moduleId}`)}
         showHeader={true}

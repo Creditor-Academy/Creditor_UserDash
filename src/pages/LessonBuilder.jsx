@@ -9,7 +9,7 @@ import { uploadVideo as uploadVideoResource } from '@/services/videoUploadServic
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import ModernLessonPreview from '@/components/courses/ModernLessonPreview';
+import LessonView from '@/components/courses/LessonView';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
@@ -6028,7 +6028,7 @@ function LessonBuilder() {
 
       {/* Modern Lesson Preview Modal */}
       {showUnifiedPreview && (
-        <ModernLessonPreview
+        <LessonView
           lesson={convertToModernFormat()}
           isOpen={showUnifiedPreview}
           onClose={() => setShowUnifiedPreview(false)}

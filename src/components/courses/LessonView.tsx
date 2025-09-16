@@ -15,8 +15,6 @@ import {
   VolumeX,
   Image as ImageIcon,
   Video,
-  Quote,
-  List,
   Target,
   Award,
   Lightbulb,
@@ -29,7 +27,7 @@ interface LessonSection {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
-  content: unknown; // Allow any content type for flexibility
+  content: unknown;
 }
 
 interface LessonData {
@@ -66,22 +64,24 @@ interface LessonData {
   };
 }
 
-interface ModernLessonPreviewProps {
+interface LessonViewProps {
   lesson: LessonData;
   isOpen: boolean;
   onClose: () => void;
   isAILesson?: boolean;
   onSectionComplete?: (sectionId: string) => void;
   completedSections?: Set<string>;
+  onSave?: (updatedLesson: LessonData) => void;
 }
 
-const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
+const LessonView: React.FC<LessonViewProps> = ({
   lesson,
   isOpen,
   onClose,
   isAILesson = false,
   onSectionComplete,
-  completedSections = new Set()
+  completedSections = new Set(),
+  onSave
 }) => {
   const [activeSection, setActiveSection] = useState<string>('introduction');
   const [localCompletedSections, setLocalCompletedSections] = useState<Set<string>>(completedSections);
@@ -114,7 +114,6 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
         
         if (inView.size > 0) {
           setSectionsInView(prev => new Set([...prev, ...inView]));
-          // Update active section to the first visible one
           const firstVisible = Array.from(inView)[0];
           if (firstVisible) {
             setActiveSection(firstVisible);
@@ -128,7 +127,6 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
       }
     );
 
-    // Observe all section elements
     Object.values(sectionRefs.current).forEach((el) => {
       if (el) observerRef.current?.observe(el);
     });
@@ -143,7 +141,7 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
     const element = sectionRefs.current[sectionId];
     if (element && contentRef.current) {
       const container = contentRef.current;
-      const offsetTop = element.offsetTop - container.offsetTop - 80; // Account for header
+      const offsetTop = element.offsetTop - container.offsetTop - 80;
       
       container.scrollTo({
         top: offsetTop,
@@ -226,58 +224,10 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
       color: 'emerald',
       content: lesson.content?.summary
     }
-  ].filter(section => section.content); // Only include sections with content
+  ].filter(section => section.content);
 
   const getProgressPercentage = () => {
     return Math.round((localCompletedSections.size / sections.length) * 100);
-  };
-
-  const getSectionColorClasses = (color: string, isActive: boolean = false) => {
-    const colors: Record<string, { bg: string; text: string; border: string; indicator: string }> = {
-      blue: { 
-        bg: isActive ? 'bg-blue-50' : 'bg-white', 
-        text: isActive ? 'text-blue-700' : 'text-gray-600',
-        border: isActive ? 'border-blue-300' : 'border-gray-200',
-        indicator: 'bg-blue-500'
-      },
-      purple: { 
-        bg: isActive ? 'bg-purple-50' : 'bg-white', 
-        text: isActive ? 'text-purple-700' : 'text-gray-600',
-        border: isActive ? 'border-purple-300' : 'border-gray-200',
-        indicator: 'bg-purple-500'
-      },
-      indigo: { 
-        bg: isActive ? 'bg-indigo-50' : 'bg-white', 
-        text: isActive ? 'text-indigo-700' : 'text-gray-600',
-        border: isActive ? 'border-indigo-300' : 'border-gray-200',
-        indicator: 'bg-indigo-500'
-      },
-      green: { 
-        bg: isActive ? 'bg-green-50' : 'bg-white', 
-        text: isActive ? 'text-green-700' : 'text-gray-600',
-        border: isActive ? 'border-green-300' : 'border-gray-200',
-        indicator: 'bg-green-500'
-      },
-      orange: { 
-        bg: isActive ? 'bg-orange-50' : 'bg-white', 
-        text: isActive ? 'text-orange-700' : 'text-gray-600',
-        border: isActive ? 'border-orange-300' : 'border-gray-200',
-        indicator: 'bg-orange-500'
-      },
-      yellow: { 
-        bg: isActive ? 'bg-yellow-50' : 'bg-white', 
-        text: isActive ? 'text-yellow-700' : 'text-gray-600',
-        border: isActive ? 'border-yellow-300' : 'border-gray-200',
-        indicator: 'bg-yellow-500'
-      },
-      emerald: { 
-        bg: isActive ? 'bg-emerald-50' : 'bg-white', 
-        text: isActive ? 'text-emerald-700' : 'text-gray-600',
-        border: isActive ? 'border-emerald-300' : 'border-gray-200',
-        indicator: 'bg-emerald-500'
-      }
-    };
-    return colors[color] || colors.blue;
   };
 
   return (
@@ -299,9 +249,15 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
           {/* Left Navigation Panel */}
           <div className="w-80 bg-gray-50 border-r border-gray-200 flex flex-col">
             {/* Navigation Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">Lesson Progress</h3>
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="group cursor-pointer">
+                  <h3 className="text-xl font-semibold text-gray-800 group-hover:text-blue-600 transition-colors duration-200 flex items-center space-x-2">
+                    <BookOpen className="w-5 h-5" />
+                    <span>Lesson Progress</span>
+                  </h3>
+                  <div className="w-0 group-hover:w-full h-0.5 bg-blue-500 transition-all duration-300"></div>
+                </div>
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
@@ -337,53 +293,35 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                   const Icon = section.icon;
                   const isActive = activeSection === section.id;
                   const isCompleted = localCompletedSections.has(section.id);
-                  const isInView = sectionsInView.has(section.id);
-                  const colors = getSectionColorClasses(section.color, isActive);
                   
                   return (
                     <motion.button
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 group ${colors.bg} ${colors.border} hover:shadow-md`}
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-200 group ${
+                        isActive ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-200 hover:shadow-md'
+                      }`}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="flex items-center space-x-4">
-                        {/* Section Indicator */}
-                        <div className="relative">
-                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-                            isCompleted 
-                              ? 'bg-green-500 border-green-500' 
-                              : isInView 
-                                ? `${colors.indicator} border-transparent` 
-                                : 'bg-white border-gray-300'
-                          }`}>
-                            {isCompleted ? (
-                              <CheckCircle className="w-5 h-5 text-white" />
-                            ) : isInView ? (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="w-3 h-3 bg-white rounded-full"
-                              />
-                            ) : (
-                              <div className="w-3 h-3 bg-gray-400 rounded-full" />
-                            )}
-                          </div>
-                          
-                          {/* Connecting Line */}
-                          {index < sections.length - 1 && (
-                            <div className={`absolute top-8 left-1/2 transform -translate-x-1/2 w-0.5 h-6 transition-colors duration-300 ${
-                              localCompletedSections.has(section.id) ? 'bg-green-500' : 'bg-gray-300'
-                            }`} />
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                          isCompleted 
+                            ? 'bg-green-500 border-green-500' 
+                            : isActive 
+                              ? 'bg-blue-500 border-blue-500' 
+                              : 'bg-white border-gray-300'
+                        }`}>
+                          {isCompleted ? (
+                            <CheckCircle className="w-4 h-4 text-white" />
+                          ) : (
+                            <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-400'}`} />
                           )}
                         </div>
                         
-                        {/* Section Info */}
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <Icon className={`w-5 h-5 ${colors.text}`} />
-                            <span className={`font-medium ${colors.text}`}>
+                            <span className={`font-medium text-sm ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
                               {section.title}
                             </span>
                           </div>
@@ -392,15 +330,8 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                           </div>
                         </div>
                         
-                        {/* Arrow indicator for active section */}
                         {isActive && (
-                          <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                          >
-                            <ChevronRight className={`w-5 h-5 ${colors.text}`} />
-                          </motion.div>
+                          <ChevronRight className="w-4 h-4 text-blue-600" />
                         )}
                       </div>
                     </motion.button>
@@ -432,40 +363,43 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
 
           {/* Right Content Area */}
           <div className="flex-1 flex flex-col">
-            {/* Content Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8">
-              <div className="max-w-4xl mx-auto">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <h1 className="text-4xl font-bold mb-4">{lesson.title}</h1>
-                  {lesson.description && (
-                    <p className="text-blue-100 text-lg mb-4">{lesson.description}</p>
+            {/* Content Header - Compact Bar Style */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <h1 className="text-xl font-semibold">{lesson.title}</h1>
+                  {lesson.duration && (
+                    <div className="flex items-center space-x-1 bg-white/20 px-2 py-1 rounded-full text-sm">
+                      <Clock className="w-3 h-3" />
+                      <span>{lesson.duration}</span>
+                    </div>
                   )}
-                  
-                  <div className="flex items-center space-x-6 text-blue-100">
-                    {lesson.instructor && (
-                      <div className="flex items-center space-x-2">
-                        <User className="w-5 h-5" />
-                        <span>{lesson.instructor}</span>
-                      </div>
-                    )}
-                    {lesson.createdAt && (
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-5 h-5" />
-                        <span>{new Date(lesson.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    {isAILesson && (
-                      <div className="flex items-center space-x-2 bg-purple-500 bg-opacity-30 px-3 py-1 rounded-full">
-                        <Lightbulb className="w-4 h-4" />
-                        <span className="text-sm">AI Generated</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
+                </div>
+                
+                <div className="flex items-center space-x-4 text-sm text-blue-100">
+                  {lesson.instructor && (
+                    <div className="flex items-center space-x-1">
+                      <User className="w-3 h-3" />
+                      <span>{lesson.instructor}</span>
+                    </div>
+                  )}
+                  {lesson.createdAt && (
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>{new Date(lesson.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}</span>
+                    </div>
+                  )}
+                  {isAILesson && (
+                    <div className="flex items-center space-x-1 bg-purple-500/30 px-2 py-1 rounded-full text-xs">
+                      <Lightbulb className="w-3 h-3" />
+                      <span>AI</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -475,7 +409,7 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
               className="flex-1 overflow-y-auto scroll-smooth"
               style={{ scrollBehavior: 'smooth' }}
             >
-              <div className="max-w-4xl mx-auto p-8 space-y-12">
+              <div className="w-full p-3 space-y-3">
                 {sections.map((section, index) => (
                   <motion.div
                     key={section.id}
@@ -484,9 +418,8 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="min-h-[400px]"
+                    className="min-h-[250px]"
                   >
-                    {/* Section content will be rendered here */}
                     <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                       <div className={`p-6 border-b border-gray-100 bg-gradient-to-r ${
                         section.color === 'blue' ? 'from-blue-50 to-blue-100' :
@@ -499,8 +432,8 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                       }`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <div className={`p-3 rounded-xl ${getSectionColorClasses(section.color).indicator} bg-opacity-10`}>
-                              <section.icon className={`w-6 h-6 ${getSectionColorClasses(section.color).indicator.replace('bg-', 'text-')}`} />
+                            <div className="p-3 rounded-xl bg-opacity-10">
+                              <section.icon className="w-6 h-6 text-gray-700" />
                             </div>
                             <div>
                               <h2 className="text-2xl font-bold text-gray-800">{section.title}</h2>
@@ -519,26 +452,26 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                         </div>
                       </div>
                       
-                      <div className="p-8">
+                      <div className="p-4">
                         {/* Render section-specific content */}
                         {section.id === 'introduction' && lesson.content?.introduction && (
                           <div className="prose prose-lg max-w-none">
-                            <p className="text-gray-700 leading-relaxed text-lg">
+                            <p className="text-gray-700 leading-relaxed text-base mb-0">
                               {lesson.content.introduction}
                             </p>
                           </div>
                         )}
                         
                         {section.id === 'objectives' && lesson.content?.objectives && (
-                          <div className="space-y-4">
-                            <p className="text-gray-600 mb-6">By the end of this lesson, you will be able to:</p>
-                            <div className="grid gap-4">
+                          <div className="space-y-3">
+                            <p className="text-gray-600 mb-4">By the end of this lesson, you will be able to:</p>
+                            <div className="grid gap-3">
                               {lesson.content.objectives.map((objective, idx) => (
-                                <div key={idx} className="flex items-start space-x-3 p-4 bg-purple-50 rounded-lg border border-purple-100">
+                                <div key={idx} className="flex items-start space-x-3 p-3 bg-purple-50 rounded-lg border border-purple-100">
                                   <div className="flex-shrink-0 w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-semibold">
                                     {idx + 1}
                                   </div>
-                                  <p className="text-gray-700 leading-relaxed">{objective}</p>
+                                  <p className="text-gray-700 leading-relaxed text-sm">{objective}</p>
                                 </div>
                               ))}
                             </div>
@@ -546,24 +479,24 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                         )}
                         
                         {section.id === 'content' && lesson.content?.mainContent && (
-                          <div className="space-y-8">
+                          <div className="space-y-6">
                             {lesson.content.mainContent.map((item, idx) => (
-                              <div key={idx} className="border-l-4 border-indigo-400 pl-6 py-4">
-                                <h3 className="text-xl font-semibold text-gray-800 mb-3">{item.point}</h3>
-                                <p className="text-gray-700 leading-relaxed mb-4">{item.description}</p>
+                              <div key={idx} className="border-l-4 border-indigo-400 pl-4 py-3">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">{item.point}</h3>
+                                <p className="text-gray-700 leading-relaxed mb-3 text-sm">{item.description}</p>
                                 {item.example && (
-                                  <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-lg">
-                                    <p className="text-sm font-medium text-indigo-800 mb-2">Example:</p>
-                                    <p className="text-indigo-700">{item.example}</p>
+                                  <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-lg">
+                                    <p className="text-sm font-medium text-indigo-800 mb-1">Example:</p>
+                                    <p className="text-indigo-700 text-sm">{item.example}</p>
                                   </div>
                                 )}
                               </div>
                             ))}
                           </div>
                         )}
+                        
                         {section.id === 'multimedia' && lesson.content?.multimedia && (
                           <div className="space-y-6">
-                            {/* Image Section */}
                             {lesson.content.multimedia.image && (
                               <div className="space-y-4">
                                 <h3 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
@@ -591,7 +524,6 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                               </div>
                             )}
                             
-                            {/* Video Section */}
                             {lesson.content.multimedia.video && (
                               <div className="space-y-4">
                                 <h3 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
@@ -713,7 +645,6 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                               </p>
                             </div>
                             
-                            {/* Completion celebration */}
                             <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-6 text-center">
                               <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500 text-white rounded-full mb-4">
                                 <Award className="w-8 h-8" />
@@ -722,7 +653,6 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
                               <p className="text-emerald-700">You've completed this lesson. You now have the knowledge to apply these concepts effectively.</p>
                             </div>
                             
-                            {/* Lesson metadata for AI generated content */}
                             {isAILesson && lesson.metadata && (
                               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                 <h4 className="font-medium text-gray-800 mb-3 flex items-center space-x-2">
@@ -761,4 +691,4 @@ const ModernLessonPreview: React.FC<ModernLessonPreviewProps> = ({
   );
 };
 
-export default ModernLessonPreview;
+export default LessonView;

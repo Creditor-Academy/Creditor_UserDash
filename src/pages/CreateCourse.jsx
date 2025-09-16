@@ -11,6 +11,7 @@ import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import CreateCourseOptions from "../components/courses/CreateCourseOptions";
 import AICourseWorkspace from "../components/courses/AICourseWorkspace";
 import AICourseSuccessModal from "../components/courses/AICourseSuccessModal";
+import AICourseOutlineModal from "../components/courses/AICourseOutlineModal";
 
 const CreateCourse = ({ onCourseCreated }) => {
   const {
@@ -40,6 +41,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAIWorkspace, setShowAIWorkspace] = useState(false);
   const [showAISuccessModal, setShowAISuccessModal] = useState(false);
+  const [showAIOutlineModal, setShowAIOutlineModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -61,12 +63,29 @@ const CreateCourse = ({ onCourseCreated }) => {
 
   // Handle create course option selection
   const handleCreateOptionSelect = (option) => {
+    console.log('Course option selected:', option);
+    
+    // Immediately close the options modal and clear all states
     setShowCreateOptions(false);
-    if (option === 'ai') {
-      setShowAIWorkspace(true);
-    } else {
-      setShowCreateModal(true);
-    }
+    setShowAIOutlineModal(false);
+    setShowCreateModal(false);
+    setShowAIWorkspace(false);
+    setShowEditModal(false);
+    setShowUsersModal(false);
+    
+    // Use a more reliable approach with multiple RAF calls
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        console.log('Opening modal for option:', option);
+        if (option === 'ai') {
+          setShowAIOutlineModal(true);
+        } else if (option === 'blank') {
+          setShowCreateModal(true);
+        } else if (option === 'template') {
+          alert('Course templates will be available soon!');
+        }
+      });
+    });
   };
 
   const handleAICourseCreated = (courseData) => {
@@ -75,6 +94,18 @@ const CreateCourse = ({ onCourseCreated }) => {
     setCreatedAICourse(courseData);
     setShowAIWorkspace(false);
     setShowAISuccessModal(true);
+  };
+
+  // Handle AI outline generation
+  const handleGenerateOutline = async (outlineData) => {
+    console.log('Generating AI course outline with data:', outlineData);
+    
+    // Close the outline modal and open the workspace with pre-filled data
+    setShowAIOutlineModal(false);
+    setShowAIWorkspace(true);
+    
+    // The AICourseWorkspace will handle the actual AI generation
+    // We're just passing the form data to it
   };
 
   // Handle course edit
@@ -288,6 +319,12 @@ const CreateCourse = ({ onCourseCreated }) => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onCourseCreated={handleCourseCreated}
+      />
+
+      <AICourseOutlineModal
+        isOpen={showAIOutlineModal}
+        onClose={() => setShowAIOutlineModal(false)}
+        onGenerateOutline={handleGenerateOutline}
       />
 
       <AICourseWorkspace

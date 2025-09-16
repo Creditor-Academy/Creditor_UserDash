@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ModernLessonPreview from '../components/courses/ModernLessonPreview';
+import LessonView from '../components/courses/LessonView';
 import { BookOpen, Play, Eye, Sparkles } from 'lucide-react';
 
 const ModernLessonDemo = () => {
@@ -196,7 +196,7 @@ const ModernLessonDemo = () => {
       </div>
 
       {/* Modern Lesson Preview Modal */}
-      <ModernLessonPreview
+      <LessonView
         lesson={sampleLesson}
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
