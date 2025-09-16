@@ -209,7 +209,7 @@ function Messages() {
       })();
     };
 
-    const onReceiveMessage = ({ from, message, image, messageid, type }) => {
+    const onReceiveMessage = ({ from, message, image, messageid, type, conversationid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
       
