@@ -33,7 +33,7 @@ import AISummarizationTool from './AISummarizationTool';
 import AIQuestionAnswering from './AIQuestionAnswering';
 import { AIFeatureAccessProvider } from './AIFeatureAccess';
 import LoadingBuffer from '../LoadingBuffer';
-import ModernLessonPreview from './ModernLessonPreview';
+import LessonView from './LessonView';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import { generateCourseImage } from '@/services/aiCourseService';
 import { createModule, createLesson, createAICourse, createAIModulesAndLessons } from '@/services/courseService';
@@ -2906,7 +2906,7 @@ Return JSON with this complete educational structure:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
@@ -3156,7 +3156,7 @@ Return JSON with this complete educational structure:
 
       {/* Modern Lesson Preview Modal */}
       {previewLesson && (
-        <ModernLessonPreview
+        <LessonView
           lesson={convertToModernLessonFormat(previewLesson, [], true)}
           isOpen={showLessonPreview}
           onClose={() => {

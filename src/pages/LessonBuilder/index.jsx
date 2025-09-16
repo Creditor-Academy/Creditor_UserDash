@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { SidebarContext } from '@/layouts/DashboardLayout';
-import ModernLessonPreview from '@/components/courses/ModernLessonPreview';
+import LessonView from '@/components/courses/LessonView';
 
 // Import refactored components
 import LessonHeader from '@/components/LessonBuilder/LessonHeader';
@@ -223,7 +223,7 @@ function LessonBuilder() {
       />
 
       {/* Modern Lesson Preview Modal */}
-      <ModernLessonPreview
+      <LessonView
         lesson={{
           id: lessonData?.id || 'demo',
           title: lessonData?.title || 'Demo Lesson',
