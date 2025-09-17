@@ -564,7 +564,7 @@ function Messages() {
       await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
       // Notify success
       try {
-        toast({ title: 'Message Deleted Successfully' });
+        toast({ title: 'Message Deleted Successfully', duration: 1500, className: 'text-xs py-1 px-2' });
       } catch {}
       // Delay removal slightly to allow animation
       setTimeout(() => {
@@ -755,11 +755,11 @@ function Messages() {
                     }
                     setSelectedFriend(friend.id);
                   }}
-                  className={`p-3 flex items-center gap-2 hover:bg-accent/60 cursor-pointer transition-colors border-b ${
-                    selectedFriend === friend.id ? "bg-accent" : ""
+                  className={`p-3 mx-1 my-1 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
+                    selectedFriend === friend.id ? "bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md" : ""
                   }`}
                 >
-                  <Avatar className="h-10 w-10">
+                  <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
                     <AvatarImage src={friend.avatar} />
                     <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
@@ -774,20 +774,22 @@ function Messages() {
                        })()}`}>
                          {friend.name}
                        </p>
-                       <div className="flex flex-col items-end gap-1">
-                         <span className="text-[11px] text-muted-foreground">{formatChatTime(friend.lastMessageAt)}</span>
+                       <div className="flex flex-col items-end gap-1 min-w-[42px]">
+                         <span className="text-[11px] text-muted-foreground tabular-nums">
+                           {formatChatTime(friend.lastMessageAt)}
+                         </span>
                          {(() => {
                            const currentUserId = localStorage.getItem('userId');
                            const isUnread = friend.isRead === false && 
                                            friend.lastMessageFrom && 
                                            String(friend.lastMessageFrom) !== String(currentUserId);
                            return isUnread ? (
-                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                             <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
                            ) : null;
                          })()}
                     </div>
                     </div>
-                     <p className={`text-xs truncate ${(() => {
+                     <p className={`text-[12px] truncate ${(() => {
                        const currentUserId = localStorage.getItem('userId');
                        const isUnread = friend.isRead === false && 
                                        friend.lastMessageFrom && 
@@ -872,8 +874,8 @@ function Messages() {
                 </div>
 
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 px-4 py-4 overflow-y-auto">
-                  <div className="space-y-5 relative">
+                <ScrollArea className="flex-1 px-3 py-3 overflow-y-auto">
+                  <div className="space-y-2 relative">
                     <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,_#8b5cf6_0,_transparent_40%),_radial-gradient(circle_at_80%_10%,_#a78bfa_0,_transparent_35%),_radial-gradient(circle_at_10%_80%,_#6d28d9_0,_transparent_35%),_radial-gradient(circle_at_90%_85%,_#c4b5fd_0,_transparent_40%)]" />
                     {chatLoading && (
                       <div className="h-full w-full flex items-center justify-center py-10">
@@ -886,7 +888,7 @@ function Messages() {
                     {!chatLoading && messages.map((message, index) => (
                       <div
                         key={message.id}
-                        className={`flex items-end gap-2 animate-in slide-in-from-bottom-2 duration-300 ${
+                        className={`flex items-end gap-2 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${
                           message.senderId === 0 ? "justify-end" : "justify-start"
                         }`}
                         style={{ animationDelay: `${index * 50}ms` }}
@@ -915,15 +917,15 @@ function Messages() {
                         ) : */} 
                         {message.type === 'image' ? (
                           <div className={`max-w-[68%] group`}>
-                            <div className={`relative rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.02] ${
+                            <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
                               message.senderId === 0 
-                                ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/20" 
-                                : "border border-gray-200/80 shadow-md shadow-gray-200/50"
+                                ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/25" 
+                                : "border border-gray-200/80 shadow-md shadow-gray-200/60"
                             }`}>
                                 <img 
                                   src={message.file} 
                                 alt={message.fileName || 'image'} 
-                                className="max-h-64 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                                 className="max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
                                 onClick={() => setImagePreview({ open: true, url: message.file })}
                               />
                               {deletingMessageId === message.id && (
@@ -933,7 +935,7 @@ function Messages() {
                                 </div>
                               )}
                             </div>
-                            <div className="flex justify-between items-center mt-2 gap-2">
+                             <div className="flex justify-between items-center mt-1 gap-2">
                               <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
@@ -973,13 +975,13 @@ function Messages() {
                           </div>
                         ) : (
                           <div
-                            className={`max-w-[68%] group relative transition-all duration-200 hover:scale-[1.02] ${
+                            className={`max-w-[68%] group relative transition-all duration-300 hover:scale-[1.02] ${
                               message.senderId === 0
-                                ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25" 
-                                : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/50"
-                            } rounded-2xl px-4 py-3 shadow-sm backdrop-blur-sm`}
+                                ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40" 
+                                : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
+                            } rounded-2xl px-3 py-2.5 shadow-sm backdrop-blur-sm`}
                           >
-                            <p className="leading-relaxed text-[14px] font-medium">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            <p className="leading-snug text-[13px] font-medium">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
                             {message.text && extractUrls(message.text).length > 0 && (
                               <div className="mt-3">
                                 {extractUrls(message.text).map((u, i) => (
@@ -987,9 +989,9 @@ function Messages() {
                                 ))}
                               </div>
                             )}
-                            {/* No deleting overlay for text messages */}
-                            <div className="flex justify-between items-center mt-2 gap-2">
-                              <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
+                            {/* Deleting overlay only for images. None for text messages. */}
+                            <div className="flex justify-between items-center mt-1 gap-2">
+                              <p className={`text-[10px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
                               <div className="flex items-center gap-1">
