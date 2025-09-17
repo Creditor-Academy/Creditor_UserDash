@@ -142,6 +142,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const isActive = (path) => {
     if (path === "/dashboard") {
@@ -307,6 +308,8 @@ export function Sidebar({ collapsed, setCollapsed }) {
           initial="hidden"
           animate="show"
         >
+          {!moreOpen && (
+          <>
           <motion.div variants={itemVariants}>
             <SidebarItem
               icon={Home}
@@ -350,17 +353,58 @@ export function Sidebar({ collapsed, setCollapsed }) {
               onNavigate={handleNavigate}
             />
           </motion.div>
+          </>
+          )}
 
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Bot}
-              label="Credit chatbot"
-              href="/dashboard/chatbot"
-              active={isActive("/dashboard/chatbot")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
+          {/* More section toggle */}
+          {!collapsed && (
+            <motion.div variants={itemVariants}>
+              <div className="px-4 pt-1">
+                <button
+                  onClick={() => setMoreOpen((v) => !v)}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-blue-700 underline decoration-dotted underline-offset-4 transition-colors",
+                    moreOpen ? "text-blue-700" : ""
+                  )}
+                >
+                  <span>{moreOpen ? "Less" : "More"}</span>
+                  <ChevronDown size={12} className={cn("transition-transform", moreOpen ? "-rotate-180" : "rotate-0")} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Collapsible More items – when open, hide others */}
+          {moreOpen && (
+            <motion.div
+              key="more-open"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="mt-1"
+            >
+              <div className="space-y-2">
+                <SidebarItem
+                  icon={Bot}
+                  label="Credit chatbot"
+                  href="/dashboard/chatbot"
+                  active={isActive("/dashboard/chatbot")}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+                <SidebarItem
+                  icon={Gamepad2}
+                  label="Games"
+                  href="https://game-open-scene.vercel.app/"
+                  active={false}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                  external={true}
+                />
+                {/* Less control now unified with the More link above; hide duplicate */}
+              </div>
+            </motion.div>
+          )}
 
           {/* <motion.div variants={itemVariants}>
             <SidebarItem
@@ -384,20 +428,10 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div> */}
 
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Gamepad2}
-              label="Games"
-              href="https://game-open-scene.vercel.app/"
-              active={false}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-              external={true}
-            />
-          </motion.div>
+          
 
           {/* Instructor Portal - only for admin or instructor */}
-          {isInstructorOrAdmin() && (
+          {!moreOpen && isInstructorOrAdmin() && (
             <motion.div variants={itemVariants}>
               <SidebarItem
                 icon={GraduationCap}
