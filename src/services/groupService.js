@@ -167,7 +167,7 @@ export const sendGroupMessage = async (groupId, payload, isMultipart = false) =>
   }
 };
 
-// POLLS
+// POLLSssssss
 export const createGroupPoll = async (groupId, poll) => {
   try {
     // Backend expects poll_question, poll_expires_at, poll_allow_multiple, poll_is_anonymous, options: string[]
