@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { SidebarContext } from '@/layouts/DashboardLayout';
-import LessonView from '@/components/courses/LessonView';
 
 // Import refactored components
 import LessonHeader from '@/components/LessonBuilder/LessonHeader';
@@ -222,35 +221,21 @@ function LessonBuilder() {
         contentBlocks={contentBlocks}
       />
 
-      {/* Modern Lesson Preview Modal */}
-      <LessonView
-        lesson={{
-          id: lessonData?.id || 'demo',
-          title: lessonData?.title || 'Demo Lesson',
-          description: lessonData?.description || 'A demonstration of the modern lesson preview system',
-          duration: '15 min',
-          content: {
-            introduction: 'Welcome to this comprehensive lesson. In this session, we\'ll explore the fundamental concepts and practical applications.',
-            objectives: [
-              'Understand core principles and foundational concepts',
-              'Explore real-world applications and practical examples',
-              'Learn best practices and implementation strategies'
-            ],
-            mainContent: contentBlocks?.map((block, index) => ({
-              point: `Learning Point ${index + 1}`,
-              description: block.html_css?.replace(/<[^>]*>/g, '') || 'Content block description',
-              example: `Practical example for concept ${index + 1}`
-            })) || [],
-            summary: 'Congratulations! You\'ve successfully completed this lesson and gained valuable knowledge.'
-          }
-        }}
-        isOpen={showUnifiedPreview}
-        onClose={() => setShowUnifiedPreview(false)}
-        isAILesson={false}
-        onSectionComplete={(sectionId) => {
-          console.log('Section completed:', sectionId);
-        }}
-      />
+      {/* Modern Lesson Preview Modal - Disabled */}
+      {showUnifiedPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Lesson Preview Disabled</h3>
+            <p className="text-gray-600 mb-4">Modern lesson preview functionality has been removed.</p>
+            <button 
+              onClick={() => setShowUnifiedPreview(false)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Existing components that need to be refactored later */}
       <QuoteComponent

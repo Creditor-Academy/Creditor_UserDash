@@ -33,7 +33,6 @@ import AISummarizationTool from './AISummarizationTool';
 import AIQuestionAnswering from './AIQuestionAnswering';
 import { AIFeatureAccessProvider } from './AIFeatureAccess';
 import LoadingBuffer from '../LoadingBuffer';
-import LessonView from './LessonView';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import { generateCourseImage } from '@/services/aiCourseService';
 import { createModule, createLesson, createAICourse, createAIModulesAndLessons } from '@/services/courseService';
@@ -3154,16 +3153,23 @@ Return JSON with this complete educational structure:
         </div>
       )}
 
-      {/* Modern Lesson Preview Modal */}
-      {previewLesson && (
-        <LessonView
-          lesson={convertToModernLessonFormat(previewLesson, [], true)}
-          isOpen={showLessonPreview}
-          onClose={() => {
-            setShowLessonPreview(false);
-            setPreviewLesson(null);
-          }}
-        />
+      {/* Modern Lesson Preview Modal - Disabled */}
+      {previewLesson && showLessonPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Lesson Preview Disabled</h3>
+            <p className="text-gray-600 mb-4">Lesson preview functionality has been removed.</p>
+            <button 
+              onClick={() => {
+                setShowLessonPreview(false);
+                setPreviewLesson(null);
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

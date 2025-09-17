@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import LessonView from '../components/courses/LessonView';
 import { BookOpen, Play, Eye, Sparkles } from 'lucide-react';
 
 const ModernLessonDemo = () => {
@@ -195,15 +194,21 @@ const ModernLessonDemo = () => {
         </div>
       </div>
 
-      {/* Modern Lesson Preview Modal */}
-      <LessonView
-        lesson={sampleLesson}
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        onSectionComplete={handleSectionComplete}
-        completedSections={completedSections}
-        isAILesson={false}
-      />
+      {/* Modern Lesson Preview Modal - Disabled */}
+      {isPreviewOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Lesson Preview Disabled</h3>
+            <p className="text-gray-600 mb-4">Modern lesson preview functionality has been removed.</p>
+            <button 
+              onClick={() => setIsPreviewOpen(false)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
