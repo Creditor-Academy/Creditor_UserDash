@@ -843,7 +843,13 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setContentBlocks(prevBlocks =>
       prevBlocks.map(block =>
         block.id === blockId
-          ? { ...block, content: updatedContent.content, html_css: updatedContent.html_css }
+          ? { 
+              ...block, 
+              type: 'interactive', // Ensure type remains interactive
+              subtype: updatedContent.subtype || block.subtype || 'accordion', // Preserve subtype
+              content: updatedContent.content, 
+              html_css: updatedContent.html_css 
+            }
           : block
       )
     );
@@ -1386,6 +1392,43 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       return;
     }
    
+    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
+    const isInteractiveBlock = block.type === 'interactive' || 
+                              // Check subtype for accordion or tabs
+                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs')) ||
+                              // Check if content has interactive structure (JSON with template)
+                              (() => {
+                                try {
+                                  const content = JSON.parse(block.content || '{}');
+                                  return content.template && (content.tabsData || content.accordionData);
+                                } catch {
+                                  return false;
+                                }
+                              })() ||
+                              // Check HTML patterns for interactive blocks
+                              (block.html_css && (
+                                block.html_css.includes('interactive-tabs') ||
+                                block.html_css.includes('interactive-accordion') ||
+                                block.html_css.includes('accordion-content') ||
+                                block.html_css.includes('tab-button') ||
+                                block.html_css.includes('accordion-header') ||
+                                block.html_css.includes('data-template="tabs"') ||
+                                block.html_css.includes('data-template="accordion"')
+                              ));
+
+    if (isInteractiveBlock) {
+      // Handle interactive block editing
+      console.log('Interactive block detected for editing:', block);
+      
+      // Override block type to ensure it's treated as interactive
+      block = { ...block, type: 'interactive' };
+      
+      // Set the editing interactive block and show the interactive edit dialog
+      setEditingInteractiveBlock(block);
+      setShowInteractiveEditDialog(true);
+      return;
+    }
+   
     if (block.type === 'text') {
       setCurrentTextBlockId(blockId);
       setCurrentTextType(block.textType);
@@ -1473,34 +1516,29 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
-    } else if (block.type === 'interactive') {
-      // Handle interactive block editing
-      console.log('Interactive block detected for editing:', block);
-      
-      // Set the editing interactive block and show the interactive edit dialog
-      setEditingInteractiveBlock(block);
-      setShowInteractiveEditDialog(true);
+      return;
+    }
+    
+    // Fallback to text editing for other block types
+    setCurrentBlock(block);
+    setEditModalOpen(true);
+   
+    // Reset editors
+    setEditorHeading('');
+    setEditorSubheading('');
+    setEditorContent('');
+   
+    // Set content based on block type
+    if (block.textType === 'heading_paragraph') {
+      const parts = block.content ? block.content.split('|||') : ['', ''];
+      setEditorHeading(parts[0] || '');
+      setEditorContent(parts[1] || '');
+    } else if (block.textType === 'subheading_paragraph') {
+      const parts = block.content ? block.content.split('|||') : ['', ''];
+      setEditorSubheading(parts[0] || '');
+      setEditorContent(parts[1] || '');
     } else {
-      setCurrentBlock(block);
-      setEditModalOpen(true);
-     
-      // Reset editors
-      setEditorHeading('');
-      setEditorSubheading('');
-      setEditorContent('');
-     
-      // Set content based on block type
-      if (block.textType === 'heading_paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorHeading(parts[0] || '');
-        setEditorContent(parts[1] || '');
-      } else if (block.textType === 'subheading_paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorSubheading(parts[0] || '');
-        setEditorContent(parts[1] || '');
-      } else {
-        setEditorContent(block.content || '');
-      }
+      setEditorContent(block.content || '');
     }
   };
 
@@ -4026,6 +4064,45 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                       textType: b.details?.quote_type || b.details?.quoteType || b.textType || 'quote_a',
                       quoteType: b.details?.quote_type || b.details?.quoteType || b.textType || 'quote_a',
                       content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'interactive') {
+                    // Detect interactive template type from subtype, content, or HTML patterns
+                    let template = b.subtype || b.details?.template;
+                    
+                    // If no template found, try parsing content
+                    if (!template && b.content) {
+                      try {
+                        const content = JSON.parse(b.content);
+                        template = content.template;
+                      } catch (error) {
+                        console.log('Could not parse interactive content as JSON');
+                      }
+                    }
+                    
+                    // If still no template, detect from HTML patterns
+                    if (!template && b.html_css) {
+                      const htmlContent = b.html_css;
+                      if (htmlContent.includes('data-template="accordion"') || 
+                          htmlContent.includes('accordion-header') || 
+                          htmlContent.includes('accordion-content') ||
+                          htmlContent.includes('interactive-accordion')) {
+                        template = 'accordion';
+                      } else if (htmlContent.includes('data-template="tabs"') || 
+                                 htmlContent.includes('tab-button') ||
+                                 htmlContent.includes('interactive-tabs')) {
+                        template = 'tabs';
+                      }
+                    }
+                    
+                    return {
+                      ...base,
+                      type: 'interactive',
+                      title: b.details?.title || 'Interactive Content',
+                      subtype: template || 'accordion',
+                      template: template || 'accordion',
+                      content: b.content || '',
                       html_css: b.html_css || ''
                     };
                   }
