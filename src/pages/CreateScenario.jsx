@@ -382,12 +382,15 @@ const CreateScenario = () => {
   const renderFlowchart = () => {
     const mainDecisions = decisions.filter(d => d.level === 1);
     const { levelConnections } = analyzeBranchStructure();
+    // Track which levels have already rendered a node. If a subsequent branch
+    // tries to render the same level, show a reference arrow instead.
+    const renderedLevels = new Set();
     
     return (
       <div className="flowchart">
         {mainDecisions.map(decision => (
           <div key={decision.id} className="flowchart-branch">
-            {renderFlowchartNode(decision, levelConnections)}
+            {renderFlowchartNode(decision, levelConnections, renderedLevels)}
           </div>
         ))}
       </div>
@@ -395,7 +398,7 @@ const CreateScenario = () => {
   };
 
   // Enhanced function to render choices with branch structure awareness
-  const renderChoicesHorizontally = (choices, level, branchStructure, parentDecisionId = null) => {
+  const renderChoicesHorizontally = (choices, level, branchStructure, parentDecisionId = null, renderedLevels) => {
     return (
       <div className="flowchart-choices-horizontal" data-level={level}>
         {choices.map((choice, cIdx) => (
@@ -429,10 +432,13 @@ const CreateScenario = () => {
                       nextDecision, 
                       choice.branchType, 
                       branchStructure, 
-                      parentDecisionId
+                      parentDecisionId,
+                      renderedLevels
                     );
                     
                     if (shouldRenderDecision.shouldRender) {
+                      // Mark level as rendered
+                      renderedLevels.add(nextDecision.level);
                       return (
                         <div className="flowchart-node-container" data-level={nextDecision.level}>
                           {/* Decision Node */}
@@ -447,7 +453,7 @@ const CreateScenario = () => {
                           <div className="flowchart-decision-connector"></div>
                           
                           {/* Choices Container - Horizontal Layout */}
-                          {renderChoicesHorizontally(nextDecision.choices, nextDecision.level, branchStructure, nextDecision.id)}
+                          {renderChoicesHorizontally(nextDecision.choices, nextDecision.level, branchStructure, nextDecision.id, renderedLevels)}
                         </div>
                       );
                     } else if (shouldRenderDecision.showArrow) {
@@ -456,9 +462,7 @@ const CreateScenario = () => {
                         <div className="flowchart-reference-arrow">
                           <div className="flowchart-arrow-to-existing">
                             <div className="flowchart-arrow-line">↗</div>
-                            <div className="flowchart-arrow-label">
-                              → L{nextDecision.level}: {nextDecision.title}
-                            </div>
+                            <div className="flowchart-arrow-label">→ L{nextDecision.level}: {nextDecision.title}</div>
                           </div>
                         </div>
                       );
@@ -482,7 +486,7 @@ const CreateScenario = () => {
   };
 
   // Function to determine if a decision node should be rendered or referenced
-  const shouldRenderDecisionNode = (decision, branchType, branchStructure, parentDecisionId) => {
+  const shouldRenderDecisionNode = (decision, branchType, branchStructure, parentDecisionId, renderedLevels) => {
     if (!decision || !branchStructure) {
       return { shouldRender: true, showArrow: false };
     }
@@ -492,6 +496,11 @@ const CreateScenario = () => {
       return { shouldRender: true, showArrow: false };
     }
     
+    // If this level has already been rendered in this flow, show arrow instead
+    if (renderedLevels && renderedLevels.has(decision.level)) {
+      return { shouldRender: false, showArrow: true };
+    }
+
     // Get the paths leading to this decision
     const decisionPaths = levelData.paths.get(decision.id);
     if (!decisionPaths) {
@@ -526,7 +535,21 @@ const CreateScenario = () => {
     return { shouldRender: true, showArrow: false };
   };
 
-  const renderFlowchartNode = (decision, branchStructure) => {
+  const renderFlowchartNode = (decision, branchStructure, renderedLevels) => {
+    // If this level already appeared earlier in the tree, show a reference arrow
+    if (renderedLevels.has(decision.level)) {
+      return (
+        <div className="flowchart-reference-arrow">
+          <div className="flowchart-arrow-to-existing">
+            <div className="flowchart-arrow-line">↗</div>
+            <div className="flowchart-arrow-label">→ L{decision.level}: {decision.title}</div>
+          </div>
+        </div>
+      );
+    }
+
+    // Mark this level as rendered for subsequent references
+    renderedLevels.add(decision.level);
     return (
       <div className="flowchart-node-container" data-level={decision.level}>
         {/* Decision Node */}
@@ -541,7 +564,7 @@ const CreateScenario = () => {
         <div className="flowchart-decision-connector"></div>
         
         {/* Choices Container - Horizontal Layout for ALL levels */}
-        {renderChoicesHorizontally(decision.choices, decision.level, branchStructure, decision.id)}
+        {renderChoicesHorizontally(decision.choices, decision.level, branchStructure, decision.id, renderedLevels)}
       </div>
     );
   };
@@ -1603,16 +1626,17 @@ const flowchartStyles = `
   }
   
   /* Reference arrow styles for connecting to existing decisions */
+  /* Reference arrow should not look like a separate box */
   .flowchart-reference-arrow {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 20px;
-    padding: 12px 16px;
-    background: #fef3c7;
-    border: 2px dashed #f59e0b;
-    border-radius: 12px;
-    min-width: 200px;
+    margin-top: 8px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    min-width: 0;
     position: relative;
   }
   
@@ -1624,20 +1648,20 @@ const flowchartStyles = `
   }
   
   .flowchart-arrow-line {
-    font-size: 24px;
-    color: #f59e0b;
+    font-size: 18px;
+    color: #6b7280;
     font-weight: bold;
     animation: pulse 2s infinite;
   }
   
   .flowchart-arrow-label {
     font-size: 12px;
-    color: #92400e;
+    color: #374151;
     font-weight: 600;
     text-align: center;
-    background: rgba(245, 158, 11, 0.1);
-    padding: 4px 8px;
-    border-radius: 6px;
+    background: transparent;
+    padding: 0 4px;
+    border-radius: 4px;
   }
   
   @keyframes pulse {
