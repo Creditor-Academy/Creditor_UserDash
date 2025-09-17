@@ -921,35 +921,35 @@ function LessonBuilder() {
   };
 
   // Interactive component callbacks
-  const handleInteractiveTemplateSelect = (newBlock) => {
-    const interactiveBlock = {
-      id: `block_${Date.now()}`,
-      block_id: `block_${Date.now()}`,
-      type: 'interactive',
-      title: 'Interactive',
-      content: newBlock.content,
-      html_css: newBlock.html_css,
-      order: contentBlocks.length + 1
-    };
-    setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
-  };
+  // const handleInteractiveTemplateSelect = (newBlock) => {
+  //   const interactiveBlock = {
+  //     id: `block_${Date.now()}`,
+  //     block_id: `block_${Date.now()}`,
+  //     type: 'interactive',
+  //     title: 'Interactive',
+  //     content: newBlock.content,
+  //     html_css: newBlock.html_css,
+  //     order: contentBlocks.length + 1
+  //   };
+  //   setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+  // };
 
-  const handleInteractiveUpdate = (blockId, updatedContent) => {
-    setContentBlocks(prevBlocks =>
-      prevBlocks.map(block =>
-        block.id === blockId
-          ? { 
-              ...block, 
-              type: 'interactive', // Ensure type remains interactive
-              subtype: updatedContent.subtype || block.subtype || 'accordion', // Preserve subtype
-              content: updatedContent.content, 
-              html_css: updatedContent.html_css 
-            }
-          : block
-      )
-    );
-    setEditingInteractiveBlock(null);
-  };
+  // const handleInteractiveUpdate = (blockId, updatedContent) => {
+  //   setContentBlocks(prevBlocks =>
+  //     prevBlocks.map(block =>
+  //       block.id === blockId
+  //         ? { 
+  //             ...block, 
+  //             type: 'interactive', // Ensure type remains interactive
+  //             subtype: updatedContent.subtype || block.subtype || 'accordion', // Preserve subtype
+  //             content: updatedContent.content, 
+  //             html_css: updatedContent.html_css 
+  //           }
+  //         : block
+  //     )
+  //   );
+  //   setEditingInteractiveBlock(null);
+  // };
 
   // Interactive component callbacks
   const handleInteractiveTemplateSelect = (newBlock) => {
