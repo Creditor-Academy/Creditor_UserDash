@@ -239,6 +239,64 @@ export const pinGroupMessage = async (groupId, messageId, pinned) => {
   }
 };
 
+// PIN POLL
+export const pinGroupPoll = async (groupId, pollId) => {
+  // Try backend route without prefix first, then fall back to /groups prefix if needed
+  const primaryUrl = `/${groupId}/polls/${pollId}/pin`;
+  const fallbackUrl = `/groups/${groupId}/polls/${pollId}/pin`;
+  console.log('Pinning poll:', { groupId, pollId });
+
+  // Optional sanity check: ensure poll exists (non-blocking)
+  try {
+    const testResponse = await api.get(`/groups/${groupId}/polls/${pollId}`);
+    console.log('Poll exists:', testResponse.data);
+  } catch (testError) {
+    console.log('Poll test failed:', testError.response?.status);
+  }
+
+  try {
+    console.log('Attempt primary URL:', `${api.defaults.baseURL}${primaryUrl}`);
+    const response = await api.post(primaryUrl);
+    console.log('Poll pin response (primary):', response.data);
+    return response.data;
+  } catch (err1) {
+    const status = err1?.response?.status;
+    if (status === 404) {
+      try {
+        console.warn('Primary pin route 404, trying fallback URL:', `${api.defaults.baseURL}${fallbackUrl}`);
+        const response = await api.post(fallbackUrl);
+        console.log('Poll pin response (fallback):', response.data);
+        return response.data;
+      } catch (err2) {
+        console.error('Fallback pin route failed:', {
+          message: err2.message,
+          status: err2.response?.status,
+          data: err2.response?.data,
+        });
+        throw err2;
+      }
+    }
+    console.error('Primary pin route failed (non-404):', {
+      message: err1.message,
+      status: err1.response?.status,
+      data: err1.response?.data,
+    });
+    throw err1;
+  }
+};
+
+// GET PINNED POLLS
+export const getPinnedPolls = async (groupId) => {
+  try {
+    // Backend route is "/:groupId/polls/pinned" (no /groups prefix)
+    const response = await api.get(`/${groupId}/polls/pinned`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching pinned polls:', error);
+    throw error;
+  }
+};
+
 /**
  * Create a post inside a group
  * @param {Object|FormData} postData - Post payload (Object for JSON, FormData for file upload)

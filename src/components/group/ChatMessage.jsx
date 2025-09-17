@@ -6,7 +6,7 @@ import { Download, Pencil, Trash2, Check, X } from "lucide-react";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
 import { renderTextWithLinks } from "@/utils/linkUtils.jsx";
 
-export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, onVotePoll, onPinToggle, isAdmin = false }) {
+export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, onVotePoll, onPinToggle, onPollPinToggle, isAdmin = false, groupId }) {
   const isUser = String(message.senderId) === String(currentUserId);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
@@ -74,7 +74,8 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
             message={message}
             currentUserId={currentUserId}
             onVote={onVotePoll}
-            onPinToggle={onPinToggle}
+            onPinToggle={isAdmin ? onPollPinToggle : undefined}
+            groupId={groupId}
           />
         ) : message.type === 'voice' && message.audioBlob && message.duration ? (
           <VoiceMessage 

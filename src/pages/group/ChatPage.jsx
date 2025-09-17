@@ -8,10 +8,11 @@ import { professionalAvatars } from "@/lib/avatar-utils";
 import getSocket, { reconnectSocket } from "@/services/socketClient";
 
 import { ChatMessagesList } from "@/components/group/ChatMessagesList";
+import { ChatMessage } from "@/components/group/ChatMessage";
 import { ChatInput } from "@/components/group/ChatInput";
 import { Users, X, Loader2, Search, Shield, GraduationCap, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage, editGroupMessage, createGroupPoll, voteGroupPoll, getGroupPoll, pinGroupMessage } from "@/services/groupService";
+import { getGroupById, getGroupMembers, getGroupMessages, sendGroupMessage, deleteGroupMessage, editGroupMessage, createGroupPoll, voteGroupPoll, getGroupPoll, pinGroupMessage, pinGroupPoll, getPinnedPolls } from "@/services/groupService";
 import { useUser } from "@/contexts/UserContext";
 
 const initialMessages = [
@@ -322,6 +323,30 @@ export function ChatPage() {
     };
     socket.on('groupMessagePinned', onMessagePinned);
 
+    const onPollPinned = (evt) => {
+      try {
+        const pollId = evt?.pollId || evt?.id;
+        if (!pollId) return;
+        setMessages(prev => prev.map(m => {
+          if (m.id !== pollId) return m;
+          return {
+            ...m,
+            isPinned: Boolean(evt.isPinned ?? evt.pinned ?? true),
+            poll: {
+              ...m.poll,
+              isPinned: Boolean(evt.isPinned ?? evt.pinned ?? true)
+            }
+          };
+        }));
+        // Sync local persisted set with server event
+        const set = getLocalPinnedSet();
+        const isPinnedNow = Boolean(evt.isPinned ?? evt.pinned ?? true);
+        if (isPinnedNow) set.add(pollId); else set.delete(pollId);
+        saveLocalPinnedSet(set);
+      } catch {}
+    };
+    socket.on('pollPinned', onPollPinned);
+
     // Listen for user join/leave notifications
     const onUserJoined = (data) => {
       console.log('[socket][on] userJoinedGroup', data);
@@ -474,6 +499,7 @@ export function ChatPage() {
       socket.off('pollUpdated', onPollUpdatedSocket);
       socket.off('groupPollUpdated', onPollUpdated);
       socket.off('groupMessagePinned', onMessagePinned);
+      socket.off('pollPinned', onPollPinned);
     };
   }, [groupId, currentUserId]);
 
@@ -528,6 +554,46 @@ export function ChatPage() {
           }
         } catch {}
       }
+      // Merge pinned polls from server so pinned state persists across reloads
+      try {
+        const pinnedRes = await getPinnedPolls(groupId);
+        const pinned = pinnedRes?.data || pinnedRes || [];
+        const pinnedIds = new Set((pinned || []).map(p => p.id || p.message_id));
+        // Merge local pending pins
+        const localPinned = getLocalPinnedSet();
+        localPinned.forEach(id => pinnedIds.add(id));
+        if (pinnedIds.size > 0) {
+          setMessages(prev => prev.map(m => pinnedIds.has(m.id) ? { ...m, isPinned: true, poll: { ...(m.poll || {}), isPinned: true } } : m));
+          // For any pinned poll not in the list, append a normalized version
+          const missing = (pinned || []).filter(p => !normalized.some(m => m.id === p.id));
+          if (missing.length) {
+            setMessages(prev => ([
+              ...prev,
+              ...missing.map(p => ({
+                id: p.id,
+                senderId: p.sender_id,
+                senderName: (p.sender?.first_name || 'Member'),
+                senderAvatar: p.sender?.image || '',
+                content: '',
+                imageUrl: undefined,
+                timestamp: p.timeStamp ? new Date(p.timeStamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+                type: 'poll',
+                poll: {
+                  question: p.poll_question || p.content || '',
+                  options: (p.poll_options || []).map(o => o.option_text),
+                  optionIds: (p.poll_options || []).map(o => o.id),
+                  allowMultiple: Boolean(p.poll_allow_multiple),
+                  votes: (() => { const v = {}; (p.poll_options || []).forEach((o, idx) => { v[idx] = (o.votes || []).map(x => x.user_id); }); return v; })(),
+                  closesAt: p.poll_expires_at || null,
+                  closedAt: null,
+                  isPinned: true,
+                },
+                isPinned: true,
+              }))
+            ]));
+          }
+        }
+      } catch {}
     } catch (e) {
       console.warn('Failed to load messages', e);
     }
@@ -967,10 +1033,62 @@ export function ChatPage() {
     try {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isPinned: pinned } : m));
       await pinGroupMessage(groupId, messageId, pinned);
+      
+      // Emit socket event to notify other users in real-time
+      try {
+        const socket = getSocket();
+        if (socket?.connected && !socket._authErrorShown) {
+          socket.emit('pinGroupMessage', { groupId, messageId, pinned });
+        }
+      } catch (socketError) {
+        console.warn('Socket emit failed for pin toggle:', socketError);
+      }
     } catch (e) {
       console.error('Failed to pin message:', e);
       toast({ title: 'Error', description: 'Pin update failed', variant: 'destructive' });
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, isPinned: !pinned } : m));
+    }
+  };
+
+  const handlePollPinToggle = async (pollId, pinned) => {
+    try {
+      console.log('handlePollPinToggle called:', { pollId, pinned, groupId });
+      
+      setMessages(prev => prev.map(m => {
+        if (m.id !== pollId) return m;
+        return {
+          ...m,
+          isPinned: pinned,
+          poll: {
+            ...m.poll,
+            isPinned: pinned
+          }
+        };
+      }));
+      // Persist locally so it stays pinned until explicit unpin
+      const set = getLocalPinnedSet();
+      if (pinned) set.add(pollId); else set.delete(pollId);
+      saveLocalPinnedSet(set);
+      
+      await pinGroupPoll(groupId, pollId);
+      
+      // Emit socket event to notify other users in real-time
+      try {
+        const socket = getSocket();
+        if (socket?.connected && !socket._authErrorShown) {
+          socket.emit('pinPoll', { groupId, pollId, pinned });
+        }
+      } catch (socketError) {
+        console.warn('Socket emit failed for poll pin toggle:', socketError);
+      }
+    } catch (e) {
+      console.error('Failed to pin poll:', e);
+      toast({ 
+        title: 'Error', 
+        description: `Poll pin update failed: ${e.response?.data?.message || e.message}`, 
+        variant: 'destructive' 
+      });
+      // Keep local pin state; do not roll back UI to avoid auto-unpin
     }
   };
 
@@ -1082,6 +1200,25 @@ export function ChatPage() {
     other: groupMembers.filter(m => !["ADMIN", "INSTRUCTOR", "LEARNER"].includes(m.role)).length
   };
 
+  // Local pinned polls persistence (to keep pin until explicit unpin)
+  const localPinnedKey = React.useMemo(() => `group:${groupId}:localPinnedPolls`, [groupId]);
+  const getLocalPinnedSet = React.useCallback(() => {
+    try {
+      const raw = localStorage.getItem(localPinnedKey);
+      const arr = raw ? JSON.parse(raw) : [];
+      return new Set(arr);
+    } catch { return new Set(); }
+  }, [localPinnedKey]);
+  const saveLocalPinnedSet = React.useCallback((set) => {
+    try {
+      localStorage.setItem(localPinnedKey, JSON.stringify(Array.from(set || [])));
+    } catch {}
+  }, [localPinnedKey]);
+
+  // Derive pinned polls and remaining messages for display
+  const pinnedPolls = React.useMemo(() => (messages || []).filter(m => m.type === 'poll' && m.isPinned), [messages]);
+  const nonPinnedMessages = React.useMemo(() => (messages || []).filter(m => !(m.type === 'poll' && m.isPinned)), [messages]);
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       <Card className="shadow-lg border-0 bg-white h-[700px] flex flex-col">
@@ -1124,14 +1261,38 @@ export function ChatPage() {
             </div>
           </div>
 
+          {/* Pinned polls section */}
+          {pinnedPolls.length > 0 && (
+            <div className="bg-indigo-50/50 border-b border-indigo-100 px-6 py-3">
+              <div className="text-xs font-medium text-indigo-700">Pinned polls</div>
+              <div className="mt-2 space-y-3">
+                {pinnedPolls.map(pm => (
+                  <ChatMessage
+                    key={`pinned-${pm.id}`}
+                    message={pm}
+                    currentUserId={currentUserId}
+                    onEditMessage={handleEditMessage}
+                    onDeleteMessage={handleDeleteMessage}
+                    onVotePoll={handleVotePoll}
+                    onPollPinToggle={handlePollPinToggle}
+                    isAdmin={isCurrentUserAdmin()}
+                    groupId={groupId}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <ChatMessagesList 
-            messages={messages} 
+            messages={nonPinnedMessages} 
             currentUserId={currentUserId}
             onEditMessage={handleEditMessage}
             onDeleteMessage={handleDeleteMessage}
             onVotePoll={handleVotePoll}
             onPinToggle={handlePinToggle}
+            onPollPinToggle={handlePollPinToggle}
             isAdmin={isCurrentUserAdmin()}
+            groupId={groupId}
           />
 
           <ChatInput
