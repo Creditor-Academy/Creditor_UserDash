@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations, loadPreviousConversation } from "@/services/messageService";
+import { getAllConversations, loadPreviousConversation, deleteConversationMessage } from "@/services/messageService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 
@@ -116,6 +116,7 @@ function Messages() {
   const messagesEndRef = useRef(null);
   const location = useLocation();
   const [pendingImage, setPendingImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState({ open: false, url: null });
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
   useEffect(() => {
@@ -327,6 +328,14 @@ function Messages() {
       )));
     };
     socket.on('messagesRead', onMessagesRead);
+    const onDeleteMessage = ({ messageid, conversation_id }) => {
+      if (!messageid) return;
+      // Only act if we're on the same conversation or if unknown treat as current
+      if (!conversationId || String(conversationId) === String(conversation_id)) {
+        setMessages(prev => prev.filter(m => String(m.id) !== String(messageid)));
+      }
+    };
+    socket.on('deleteMessage', onDeleteMessage);
     socket.on('conversationUpdated', onConversationUpdated);
     return () => {
       socket.off('connect', onConnect);
@@ -334,6 +343,7 @@ function Messages() {
       socket.off('roomidforsender', onRoomIdForSender);
       socket.off('receiveMessage', onReceiveMessage);
       socket.off('messagesRead', onMessagesRead);
+      socket.off('deleteMessage', onDeleteMessage);
       socket.off('conversationUpdated', onConversationUpdated);
     };
   }, []);
@@ -516,14 +526,22 @@ function Messages() {
     setShowDeleteDialog(true);
   };
 
-  const confirmDeleteMessage = () => {
-    if (deleteMessageId) {
-      setMessages(prev => prev.filter(msg => msg.id !== deleteMessageId));
-      // TODO: Emit socket event to delete message on backend
-      // socket.emit('deleteMessage', { messageId: deleteMessageId, conversationId, roomId });
+  const confirmDeleteMessage = async () => {
+    if (!deleteMessageId || !conversationId || !roomId) {
+      setShowDeleteDialog(false);
+      setDeleteMessageId(null);
+      return;
     }
-    setShowDeleteDialog(false);
-    setDeleteMessageId(null);
+    try {
+      await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
+      // Optimistically remove; server will also broadcast deleteMessage
+      setMessages(prev => prev.filter(msg => msg.id !== deleteMessageId));
+    } catch (err) {
+      console.warn('Failed to delete message', err);
+    } finally {
+      setShowDeleteDialog(false);
+      setDeleteMessageId(null);
+    }
   };
 
   const cancelDeleteMessage = () => {
@@ -770,7 +788,7 @@ function Messages() {
           {selectedFriend && (
           <div className="w-full h-full flex flex-col">
                 {/* Chat Header */}
-                <div className="p-4 border-b bg-muted/30 sticky top-0 z-10">
+                <div className="p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
                   <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="mr-1" onClick={() => {
                       // Leave the room when going back to chat list
@@ -806,7 +824,8 @@ function Messages() {
 
                 {/* Messages Area */}
                 <ScrollArea className="flex-1 px-4 py-4 overflow-y-auto">
-                  <div className="space-y-5">
+                  <div className="space-y-5 relative">
+                    <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,_#8b5cf6_0,_transparent_40%),_radial-gradient(circle_at_80%_10%,_#a78bfa_0,_transparent_35%),_radial-gradient(circle_at_10%_80%,_#6d28d9_0,_transparent_35%),_radial-gradient(circle_at_90%_85%,_#c4b5fd_0,_transparent_40%)]" />
                     {chatLoading && (
                       <div className="h-full w-full flex items-center justify-center py-10">
                         <div className="flex items-center gap-2 text-muted-foreground">
@@ -815,17 +834,18 @@ function Messages() {
                         </div>
                       </div>
                     )}
-                    {!chatLoading && messages.map((message) => (
+                    {!chatLoading && messages.map((message, index) => (
                       <div
                         key={message.id}
-                        className={`flex items-end gap-2 ${
+                        className={`flex items-end gap-2 animate-in slide-in-from-bottom-2 duration-300 ${
                           message.senderId === 0 ? "justify-end" : "justify-start"
                         }`}
+                        style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {message.senderId !== 0 && (
-                          <Avatar className="h-8 w-8 mt-1">
+                          <Avatar className="h-8 w-8 mt-1 ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110">
                             <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
-                            <AvatarFallback>
+                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold">
                               {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
@@ -845,38 +865,75 @@ function Messages() {
                           </div>
                         ) : */} 
                         {message.type === 'image' ? (
-                          <div className="max-w-[68%]">
-                            <div className={`rounded-xl overflow-hidden shadow-sm ${
+                          <div className="max-w-[68%] group">
+                            <div className={`rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.02] ${
                               message.senderId === 0 
-                                ? "border border-primary/20" 
-                                : "border border-muted"
+                                ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/20" 
+                                : "border border-gray-200/80 shadow-md shadow-gray-200/50"
                             }`}>
-                              <img 
-                                src={message.file} 
+                                <img 
+                                  src={message.file} 
                                 alt={message.fileName || 'image'} 
-                                className="max-h-64 object-cover"
+                                className="max-h-64 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                                onClick={() => setImagePreview({ open: true, url: message.file })}
                               />
                             </div>
-                            <p className="text-xs mt-1 opacity-70 text-right">
+                            <div className="flex justify-between items-center mt-2 gap-2">
+                              <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
+                              <div className="flex items-center gap-1">
+                                {/* Message Status Icons for images */}
+                                {message.senderId === 0 && (
+                                  <div className="flex items-center">
+                                    {message.status === 'sending' && (
+                                      <Clock className="h-3 w-3 text-purple-500 animate-pulse" />
+                                    )}
+                                    {message.status === 'sent' && (
+                                      <Check className="h-3 w-3 text-purple-500" />
+                                    )}
+                                    {message.status === 'delivered' && (
+                                      <CheckCheck className="h-3 w-3 text-purple-500" />
+                                    )}
+                                    {message.status === 'failed' && (
+                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                        <span className="text-white text-[8px] font-bold">!</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Delete button for images - only show for own messages */}
+                                {message.senderId === 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-6 w-6 p-0 hover:bg-red-100 text-red-500 hover:scale-110"
+                                    onClick={() => handleDeleteMessage(message.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         ) : (
                           <div
-                            className={`max-w-[68%] group relative ${
-                              message.senderId === 0 ? "bg-gradient-to-tr from-purple-500 to-purple-600 text-white" : "bg-white border border-muted/60"
-                            } rounded-2xl px-3 py-2 shadow-sm`}
+                            className={`max-w-[68%] group relative transition-all duration-200 hover:scale-[1.02] ${
+                              message.senderId === 0
+                                ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/25" 
+                                : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/50"
+                            } rounded-2xl px-4 py-3 shadow-sm backdrop-blur-sm`}
                           >
-                            <p className="leading-relaxed text-[13px]">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            <p className="leading-relaxed text-[14px] font-medium">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
                             {message.text && extractUrls(message.text).length > 0 && (
-                              <div className="mt-2">
+                              <div className="mt-3">
                                 {extractUrls(message.text).map((u, i) => (
                                   <LinkCard key={`${message.id}-link-${i}`} url={u} />
                                 ))}
                               </div>
                             )}
-                            <div className="flex justify-between items-center mt-1 gap-2">
-                              <p className={`text-[10px] ${message.senderId === 0 ? "text-white/80" : "text-muted-foreground"}`}>
+                            <div className="flex justify-between items-center mt-2 gap-2">
+                              <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
                               <div className="flex items-center gap-1">
@@ -884,38 +941,41 @@ function Messages() {
                                 {message.senderId === 0 && (
                                   <div className="flex items-center">
                                     {message.status === 'sending' && (
-                                      <Clock className="h-3 w-3 text-white/60" />
+                                      <Clock className="h-3 w-3 text-white/70 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                      <Check className="h-3 w-3 text-white/60" />
+                                      <Check className="h-3 w-3 text-white/70" />
                                     )}
                                     {message.status === 'delivered' && (
-                                      <CheckCheck className="h-3 w-3 text-white/60" />
+                                      <CheckCheck className="h-3 w-3 text-white/70" />
                                     )}
                                     {message.status === 'failed' && (
-                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center">
-                                        <span className="text-white text-[8px]">!</span>
+                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                        <span className="text-white text-[8px] font-bold">!</span>
                                       </div>
                                     )}
                                   </div>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className={`opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 ${message.senderId === 0 ? "hover:bg-white/15 text-white" : "hover:bg-destructive hover:text-destructive-foreground"}`}
-                                  onClick={() => handleDeleteMessage(message.id)}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
+                                {/* Delete button - only show for own messages */}
+                                {message.senderId === 0 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-6 w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                    onClick={() => handleDeleteMessage(message.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </div>
                         )}
                         
                         {message.senderId === 0 && (
-                          <Avatar className="h-8 w-8 mt-1">
+                          <Avatar className="h-8 w-8 mt-1 ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110">
                             <AvatarImage src={message.senderImage || undefined} />
-                            <AvatarFallback>Y</AvatarFallback>
+                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold">Y</AvatarFallback>
                           </Avatar>
                         )}
                       </div>
@@ -925,7 +985,7 @@ function Messages() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t bg-background">
+                <div className="p-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
                   <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -1028,6 +1088,19 @@ function Messages() {
           )}
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      <Dialog open={imagePreview.open} onOpenChange={(o) => setImagePreview(prev => ({ ...prev, open: o }))}>
+        <DialogContent className="p-0 bg-white w-auto max-w-none rounded-xl shadow-2xl">
+          {imagePreview.url && (
+            <img 
+              src={imagePreview.url} 
+              alt="preview" 
+              className="block h-auto w-auto max-w-[95vw] max-h-[90vh] object-contain" 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Message Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
