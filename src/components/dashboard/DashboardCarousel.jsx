@@ -10,23 +10,31 @@ import {
 const carouselItems = [
   {
     id: 1,
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/Become+%2B+SOV.png",
-    link: "/banner1"
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/OP.png",
+    title: "Operate Private",
+    course: "Operate Private",
+    link: "/upcoming"
   },
   {
     id: 2,
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/Private+business.png",
-    link: "/banner2"
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/RemedyNow.png",
+    title: "I Want Remedy Now",
+    course: "I Want Remedy Now",
+    link: "/upcoming"
   },
   {
     id: 3,
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/masterclass.jpg",
-    link: "/banner3"
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/BP.png",
+    title: "Become Private",
+    course: "Become Private",
+    link: "/upcoming"
   },
   {
     id: 4,
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/Operate+Private.png",
-    link: "/banner4"
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/PM.png",
+    title: "Private Merchant",
+    course: "Private Merchant",
+    link: "/upcoming"
   }
 ];
 
@@ -50,42 +58,41 @@ export function DashboardCarousel() {
 
   return (
     <div className="group relative w-full max-w-4xl mx-auto">
-      {/* Subtle decorative border */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-emerald-500/10 p-[2px] pointer-events-none">
-        <div className="w-full h-full rounded-2xl bg-white"></div>
+      {/* Section header */}
+      <div className="mb-4 px-1">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Featured</span>
+          <span className="text-[11px] text-gray-400">|</span>
+          <span className="text-[11px] text-gray-500">Upcoming</span>
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Upcoming Lessons</h2>
+        <p className="text-gray-500 text-sm sm:text-base">Discover what’s releasing next across our private education tracks</p>
       </div>
+      {/* Removed outer decorative border to match banner bounds */}
       
       <Carousel
         opts={{
           align: "center",
           loop: true
         }}
-        className="w-full relative z-10"
+        className="w-full relative z-10 px-1"
         onSlideChange={handleSlideChange}
       >
         <CarouselContent>
           {carouselItems.map((item, index) => (
             <CarouselItem key={item.id} className="md:basis-full">
-              <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-100">
-                <div className="block w-full cursor-pointer select-none transform transition-all duration-500 hover:scale-[1.02]">
-                  <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px]">
-                    <img
-                      src={item.image}
-                      alt={`Banner ${item.id}`}
-                      loading="lazy"
-                      draggable={false}
-                      className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 select-none ${
-                        item.id === 1 ? 'object-top' : 'object-center'
-                      }`}
-                    />
-                    {/* Subtle overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/5 via-transparent to-transparent pointer-events-none" />
-                    
-                    {/* Subtle corner accent */}
-                    <div className="absolute top-4 right-4 w-2 h-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full opacity-60"></div>
-                  </div>
+              <a href={item.link} className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100 block">
+                <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px]">
+                  <img
+                    src={item.image}
+                    alt={`${item.title} – ${item.course}`}
+                    loading="lazy"
+                    draggable={false}
+                    className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 select-none"
+                  />
+                  {/* No text overlays to avoid clashing with banner text */}
                 </div>
-              </div>
+              </a>
             </CarouselItem>
           ))}
         </CarouselContent>

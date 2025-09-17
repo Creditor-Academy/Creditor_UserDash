@@ -132,6 +132,7 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [animateCard, setAnimateCard] = useState(false);
+  const [animateImage, setAnimateImage] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const navigate = useNavigate();
@@ -140,6 +141,9 @@ export function Login() {
   useEffect(() => {
     // Trigger card animation on mount
     setAnimateCard(true);
+    // Staggered image entrance
+    const t = setTimeout(() => setAnimateImage(true), 50);
+    return () => clearTimeout(t);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -238,7 +242,8 @@ export function Login() {
           <img
             src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/login.PNG"
             alt="Login illustration"
-            className="max-w-[420px] w-[80%] h-auto object-contain"
+            className={`max-w-[420px] w-[80%] h-auto object-contain transition-all duration-700 ease-out will-change-transform 
+              ${animateImage ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
             loading="eager"
           />
         </div>

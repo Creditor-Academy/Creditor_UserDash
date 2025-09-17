@@ -25,7 +25,7 @@ function AthenaUpcomingEvent() {
           {/* Banner Image - Always visible, fades on hover */}
           <div className="absolute inset-0 transition-opacity duration-500 group-hover:opacity-20">
             <img 
-              src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/Private_messages.jpeg"
+              src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/P_banner.jpg"
               alt="Private Messages Feature"
               className="w-full h-full object-cover"
             />
@@ -49,7 +49,7 @@ function AthenaUpcomingEvent() {
           </div>
           
           {/* Default overlay with title */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-500 group-hover:opacity-0">
             <h3 className="text-white font-bold text-xl mb-1">Private Messaging</h3>
             <p className="text-gray-300 text-sm">One-on-one secure conversations</p>
           </div>
@@ -87,11 +87,9 @@ function AthenaUpcomingEvent() {
           </div>
           
           {/* Default overlay with title */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
-            <h3 className="text-white font-bold text-xl mb-1">Advanced Assessments</h3>
-            <div className="mt-2 inline-flex items-center text-amber-200 text-xs font-semibold bg-amber-500/20 px-2 py-1 rounded">
-              Decision Tree-based assessment launching soon
-            </div>
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-500 group-hover:opacity-0">
+            <h3 className="text-white font-bold text-xl mb-1">Decision Tree-based Assessment</h3>
+            <p className="text-gray-300 text-sm">User advance interaction with flow chart learning</p>
           </div>
           
           {/* Status indicator */}
@@ -105,8 +103,8 @@ function AthenaUpcomingEvent() {
           {/* Banner Image - Always visible, fades on hover */}
           <div className="absolute inset-0 transition-opacity duration-500 group-hover:opacity-20">
             <img 
-              src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/Group_messages.jpeg"
-              alt="Group Messages Feature"
+              src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/G_Banner.jpg"
+              alt="Games Feature"
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
@@ -120,23 +118,23 @@ function AthenaUpcomingEvent() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Group Messaging</h3>
+              <h3 className="text-2xl font-bold text-white mb-4">Games</h3>
               <p className="text-gray-200 text-base leading-relaxed mb-6">
-                Live now: collaborate with multiple users in a single conversation—ideal for team projects and study groups.
+                Coming soon: interactive games for lesson understanding and user interaction.
               </p>
               
             </div>
           </div>
           
           {/* Default overlay with title */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
-            <h3 className="text-white font-bold text-xl mb-1">Group Messaging</h3>
-            <p className="text-gray-300 text-sm">Collaborate with multiple users</p>
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent transition-opacity duration-500 group-hover:opacity-0">
+            <h3 className="text-white font-bold text-xl mb-1">Games</h3>
+            <p className="text-gray-300 text-sm">Interactive learning and engagement</p>
           </div>
           
           {/* Status indicator */}
           <div className="absolute top-4 right-4 bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
-            Launched
+            Coming Soon
           </div>
         </div>
 
