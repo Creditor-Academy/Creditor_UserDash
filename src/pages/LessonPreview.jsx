@@ -22,6 +22,50 @@ const LessonPreview = () => {
     fetchLessonContent();
   }, [lessonId]);
 
+  // Scroll spy to update current section based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!lessonData?.headingSections || lessonData.headingSections.length === 0) return;
+      
+      const headerOffset = 150;
+      let currentSectionId = null;
+      
+      // Find the section that's currently in view
+      for (const section of lessonData.headingSections) {
+        const element = document.getElementById(`section-${section.id}`);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= headerOffset && rect.bottom > headerOffset) {
+            currentSectionId = section.id;
+            break;
+          }
+        }
+      }
+      
+      // If no section is in the header area, find the closest one above
+      if (!currentSectionId) {
+        for (let i = lessonData.headingSections.length - 1; i >= 0; i--) {
+          const section = lessonData.headingSections[i];
+          const element = document.getElementById(`section-${section.id}`);
+          if (element) {
+            const rect = element.getBoundingClientRect();
+            if (rect.top <= headerOffset) {
+              currentSectionId = section.id;
+              break;
+            }
+          }
+        }
+      }
+      
+      if (currentSectionId && currentSectionId !== currentSection) {
+        setCurrentSection(currentSectionId);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lessonData, currentSection]);
+
   const fetchLessonContent = async () => {
     try {
       setLoading(true);
@@ -108,16 +152,38 @@ const LessonPreview = () => {
       if (block.type === 'text') {
         // Check if it's a heading type
         const textType = block.textType || block.text_type;
-        const content = block.details?.content || block.content || '';
+        // Extract content from multiple possible locations
+        const content = block.details?.content || 
+                       block.content || 
+                       block.details?.text || 
+                       block.text || 
+                       block.details?.title || 
+                       block.title || 
+                       '';
         
         // Only show master_heading in sidebar
         if (textType === 'master_heading') {
-          // Extract heading text for sidebar
-          let headingText = content || `Section ${index + 1}`;
+          // Extract heading text from html_css field for master headings
+          let headingText = '';
+          
+          // First try to get text from html_css field (where master heading content is stored)
+          if (block.html_css) {
+            headingText = block.html_css.replace(/<[^>]*>/g, '').trim();
+          }
+          
+          // Fallback to content field if html_css doesn't have text
+          if (!headingText && content) {
+            headingText = content.replace(/<[^>]*>/g, '').trim();
+          }
+          
+          // Final fallback to section number
+          if (!headingText || headingText === '') {
+            headingText = `Section ${index + 1}`;
+          }
           
           headingSections.push({
             ...blockData,
-            title: headingText.replace(/<[^>]*>/g, ''), // Remove HTML tags
+            title: headingText,
             type: 'heading',
           });
         }
@@ -237,6 +303,20 @@ const LessonPreview = () => {
   const handleSectionClick = (sectionId) => {
     setCurrentSection(sectionId);
     setSidebarOpen(false);
+    
+    // Scroll to the section
+    const sectionElement = document.getElementById(`section-${sectionId}`);
+    if (sectionElement) {
+      // Scroll with offset to account for fixed header
+      const headerOffset = 100; // Adjust based on your header height
+      const elementPosition = sectionElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const markSectionComplete = (sectionId) => {
@@ -418,7 +498,11 @@ const LessonPreview = () => {
                 lessonData.allContent.map((block, index) => {
                   console.log(`Rendering block ${index}:`, block);
                   return (
-                  <div key={block.id || index} className={`transition-all duration-300 ${sidebarVisible ? 'mb-6' : 'mb-8'}`}>
+                  <div 
+                    key={block.id || index} 
+                    id={block.textType === 'master_heading' ? `section-${block.id}` : undefined}
+                    className={`transition-all duration-300 ${sidebarVisible ? 'mb-6' : 'mb-8'}`}
+                  >
                     {/* Statement Content - Use HTML/CSS from API */}
                     {block.type === 'statement' && (
                       <>
