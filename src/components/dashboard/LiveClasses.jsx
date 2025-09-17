@@ -5,7 +5,6 @@ import { ExternalLink, Play, Video, Clock, Calendar, Users, FileVideo } from "lu
 import { AttendanceViewerModal } from "./AttendanceViewerModal";
 import ClassRecording from "./ClassRecording";
 import { getAuthHeader } from '../../services/authHeader'; // adjust path as needed
-// Empty array - no recordings exist yet
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
@@ -338,9 +337,9 @@ export function LiveClasses() {
                           : 'border-blue-200 bg-blue-50 shadow-sm'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                             <div className={`w-3 h-3 rounded-full ${
                               isLive ? 'bg-purple-500 animate-pulse' : 'bg-blue-500'
                             }`}></div>
@@ -362,7 +361,7 @@ export function LiveClasses() {
                               {event.courseName || courses.find(c => c.id === (event.courseId || event.course_id))?.title || (event.courseId || event.course_id)}
                             </span>
                           )}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
                               <span>
@@ -377,12 +376,12 @@ export function LiveClasses() {
                             )}
                           </div>
                           {event.description && (
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2 break-words">
                               {event.description}
                             </p>
                           )}
                         </div>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-shrink-0">
                           <Button
                             onClick={() => handleJoinClass(event)}
                             disabled={!isLive}
@@ -390,7 +389,7 @@ export function LiveClasses() {
                               isLive 
                                 ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 animate-pulse' 
                                 : 'bg-blue-600 hover:bg-blue-700'
-                            } text-white transition-all duration-300`}
+                            } text-white transition-all duration-300 w-full sm:w-auto`}
                             size="sm"
                           >
                             <Video className="w-4 h-4 mr-2" />
@@ -503,7 +502,7 @@ export function LiveClasses() {
             
             {cancelledEvent.reason && (
               <div className="mt-3 p-3 bg-red-50 rounded-md text-sm text-red-700">
-                <div className="font-medium">Cancellation reason:</div>
+                <div className="font-medium">Cancellation Reason:</div>
                 <div>{cancelledEvent.reason}</div>
               </div>
             )}

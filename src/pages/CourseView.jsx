@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, CircleDollarSign, Lock } from "lucide-react";
-import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
+import { fetchCourseModules, fetchCourseById, fetchUserCourses } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import api from "@/services/apiClient";
 
@@ -14,8 +14,8 @@ import api from "@/services/apiClient";
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
-  const hasAccess = location.state?.isAccessible ?? true;
-  const { balance, spendCredits, unlockContent, userProfile } = useCredits();
+  const hasAccessFromState = location.state?.isAccessible ?? true;
+  const { userProfile } = useCredits();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -24,8 +24,7 @@ export function CourseView() {
   const [error, setError] = useState("");
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const [userLessonAccess, setUserLessonAccess] = useState([]);
-  const [confirm, setConfirm] = useState({ open: false, module: null, reason: '' });
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,8 +48,7 @@ export function CourseView() {
         }, 0);
         setTotalDuration(total);
         
-        // Fetch user's lesson access
-        await fetchUserLessonAccess();
+        // Removed lesson access fetch since we're not using locked state anymore
         
       } catch (err) {
         setError("Failed to load course data");
@@ -61,46 +59,33 @@ export function CourseView() {
     if (courseId) fetchData();
   }, [courseId]);
 
-  // Fetch user's individual lesson access
-  const fetchUserLessonAccess = async () => {
-    console.log(`[CourseView] fetchUserLessonAccess called`);
-    console.log(`[CourseView] userProfile:`, userProfile);
-    console.log(`[CourseView] userProfile?.id:`, userProfile?.id);
-    
-    if (!userProfile?.id) {
-      console.log(`[CourseView] No userProfile.id available, skipping fetch`);
+  // Check if user is enrolled in the current course
+  const checkEnrollmentStatus = async () => {
+    if (!userProfile?.id || !courseId) {
+      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
       return;
     }
     
     try {
-      console.log(`[CourseView] Fetching user lesson access for user: ${userProfile?.id}`);
-      console.log(`[CourseView] Making API call to: /api/modules/getUserModulesByUserId`);
-      console.log(`[CourseView] Request body:`, { userId: userProfile?.id.toString() });
+      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
+      // Use the same method as Courses.jsx - fetchUserCourses from courseService
+      const userCourses = await fetchUserCourses();
+      console.log(`[CourseView] User courses:`, userCourses);
       
-      const response = await api.post(`/api/modules/getUserModulesByUserId`, {
-        userId: userProfile?.id.toString()
-      }, {
-        withCredentials: true
+      // Check if current course is in user's enrolled courses
+      const enrolled = userCourses.some(course => {
+        const courseIdStr = course.id?.toString();
+        const currentCourseIdStr = courseId?.toString();
+        const match = courseIdStr === currentCourseIdStr;
+        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
+        return match;
       });
       
-      console.log(`[CourseView] Full API response:`, response);
-      console.log(`[CourseView] Response data:`, response?.data);
-      console.log(`[CourseView] Response status:`, response?.status);
-      
-      const unlockedModules = response?.data?.data || response?.data || [];
-      console.log(`[CourseView] Raw unlocked modules:`, unlockedModules);
-      
-      const lessonIds = unlockedModules.map(moduleAccess => {
-        console.log(`[CourseView] Processing module access:`, moduleAccess);
-        return moduleAccess.module.id;
-      });
-      
-      console.log(`[CourseView] Found ${lessonIds.length} unlocked lessons:`, lessonIds);
-      setUserLessonAccess(lessonIds);
+      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
+      setIsEnrolled(enrolled);
     } catch (error) {
-      console.error('Failed to fetch user lesson access:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      setUserLessonAccess([]);
+      console.error('Failed to check enrollment status:', error);
+      setIsEnrolled(false);
     }
   };
 
@@ -116,28 +101,12 @@ export function CourseView() {
     }
   }, [searchQuery, modules]);
 
-  // Fetch user access when component mounts or userProfile changes
+  // Check enrollment status when component mounts or userProfile/courseId changes
   useEffect(() => {
-    console.log(`[CourseView] useEffect triggered - userProfile:`, userProfile);
-    console.log(`[CourseView] userProfile?.id:`, userProfile?.id);
-    if (userProfile?.id) {
-      console.log(`[CourseView] UserProfile changed, fetching lesson access for: ${userProfile.id}`);
-      fetchUserLessonAccess();
-    } else {
-      console.log(`[CourseView] No userProfile.id, skipping fetch`);
+    if (userProfile?.id && courseId) {
+      checkEnrollmentStatus();
     }
-  }, [userProfile?.id]);
-
-  // Refresh user access periodically to ensure real-time data
-  useEffect(() => {
-    if (!userProfile?.id) return;
-    
-    const interval = setInterval(() => {
-      fetchUserLessonAccess();
-    }, 10000); // Refresh every 10 seconds
-    
-    return () => clearInterval(interval);
-  }, [userProfile?.id]);
+  }, [userProfile?.id, courseId]);
 
 
   if (isLoading) {
@@ -189,64 +158,9 @@ export function CourseView() {
     return `${hours} hr ${remainingMinutes} min`;
   };
 
-  const handleUnlockClick = (module) => {
-    const moduleOrder = module.order || 0;
-    const previousModule = modules.find(m => (m.order || 0) === moduleOrder - 1);
-    const isUnlocked = userLessonAccess.includes(module.id);
-    const isContentAvailable = module.resource_url;
-    const isUpcoming = !isContentAvailable;
-    const isLocked = !isUnlocked && isContentAvailable;
-    
-    if (isUnlocked || !isLocked) return;
-    
-    // Check if modules are unlocked in order
-    const canUnlockByOrder = !previousModule || userLessonAccess.includes(previousModule.id);
-    
-    if (!canUnlockByOrder) {
-      setConfirm({ open: true, module, reason: 'order' });
-      return;
-    }
-    
-    const modulePrice = module.price || 10; // Use module's price or default to 10
-    if (balance < modulePrice) {
-      setConfirm({ open: true, module, reason: 'insufficient' });
-      return;
-    }
-    
-    setConfirm({ open: true, module, reason: 'confirm' });
-  };
+  // Removed handleUnlockClick since we're not using locked state anymore
 
-  const confirmUnlock = async () => {
-    if (!confirm.module) return;
-    
-    try {
-      const modulePrice = confirm.module.price || 10; // Use module's price or default to 10
-      
-      // Call backend unlock API
-      await unlockContent('LESSON', confirm.module.id, modulePrice);
-      
-      // Refresh user lesson access from backend to get real-time data
-      await fetchUserLessonAccess();
-      
-      // Add local transaction record
-      spendCredits(modulePrice, {
-        type: 'Module Unlock',
-        moduleTitle: confirm.module.title,
-        courseTitle: courseDetails?.title,
-        courseId: courseId
-      });
-      
-      setConfirm({ open: false, module: null, reason: '' });
-    } catch (error) {
-      console.error('Failed to unlock lesson:', error);
-      // You might want to show an error message to the user here
-    }
-  };
-
-  const openCreditsModal = () => {
-    window.dispatchEvent(new CustomEvent('open-credits-modal'));
-    setConfirm({ open: false, module: null, reason: '' });
-  };
+  // Removed unlock-related functions since we're not using locked state anymore
 
 
   return (
@@ -321,15 +235,17 @@ export function CourseView() {
               <span className="font-medium">Total Modules:</span>
               <span className="font-mono text-lg">{modules.length}</span>
             </div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search modules..."
-                className="pl-8 w-[250px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search modules..."
+                  className="pl-8 w-[250px]"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -344,41 +260,22 @@ export function CourseView() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {filteredModules.map((module) => {
-                 const isUnlocked = userLessonAccess.includes(module.id);
-                 const isContentAvailable = !!module.resource_url;
-                 const isUpcoming = !isContentAvailable;
-                 const isLocked = !isUnlocked && isContentAvailable;
-                 const previousModule = modules.find(m => (m.order || 0) === (module.order || 0) - 1);
-                 const canUnlockByOrder = !previousModule || userLessonAccess.includes(previousModule?.id);
+                const isContentAvailable = !!module.resource_url;
+                // User has access if they came from catalog with access OR if they are enrolled
+                const hasAccess = hasAccessFromState || isEnrolled;
+                const isUpcoming = !isContentAvailable || !hasAccess;
                  
-                 // Debug logging
-                 console.log(`[CourseView] Module ${module.id} (${module.title}):`, {
-                   isUnlocked,
-                   userLessonAccess,
-                   isContentAvailable,
-                   isUpcoming,
-                   isLocked,
-                   hasAccess
-                 });
                 
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(isLocked && !isUnlocked) ? 'opacity-75' : ''}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                       <div className="aspect-video relative overflow-hidden">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Lock overlay for locked modules */}
-                        {isLocked && !isUnlocked && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/95 rounded-full p-4 shadow-xl">
-                              <Lock className="w-8 h-8 text-gray-700" />
-                            </div>
-                          </div>
-                        )}
-                        {/* Clock overlay for upcoming modules */}
+                        {/* Clock overlay for upcoming modules only */}
                         {isUpcoming && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="bg-white/95 rounded-full p-4 shadow-xl">
@@ -409,7 +306,7 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                           {(isUnlocked || !isLocked) && isContentAvailable ? (
+                           {isContentAvailable && hasAccess ? (
                             <>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
                                 <Button className="w-full">
@@ -424,19 +321,11 @@ export function CourseView() {
                                 </Button> 
                               </Link>
                             </>
-                          ) : isUpcoming ? (
+                          ) : (
                             <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
                               <Clock size={16} className="mr-2" />
                               <span className="font-medium">Upcoming Module</span>
                             </Button>
-                          ) : (
-                             <Button 
-                               className="w-full bg-gray-200 border-gray-300 text-gray-700 hover:bg-gray-200 hover:border-gray-300 transition-colors duration-200"
-                               disabled
-                             >
-                               <Lock size={16} className="mr-2" />
-                               <span className="font-medium">Locked</span>
-                             </Button>
                           )}
                         </CardFooter>
                       </div>
@@ -449,57 +338,7 @@ export function CourseView() {
         </div>
       </main>
 
-      {/* Confirmation Modal */}
-      {confirm.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
-            <div className="mb-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                {confirm.reason === 'order' && 'Unlock in Order'}
-                {confirm.reason === 'insufficient' && 'Not Enough Credits'}
-                {confirm.reason === 'confirm' && 'Confirm Unlock'}
-              </h4>
-               <p className="text-sm text-gray-700">
-                 {confirm.reason === 'order' && 'Please unlock modules in order. Unlock the previous module first.'}
-                 {confirm.reason === 'insufficient' && `You need ${confirm.module?.price || 10} credits to unlock this module. You currently have ${balance} credits.`}
-                 {confirm.reason === 'confirm' && `Unlock "${confirm.module?.title}" for ${confirm.module?.price || 10} credits?`}
-               </p>
-              {confirm.reason === 'confirm' && confirm.module && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-600">
-                    <div className="font-medium mb-1">Module Details:</div>
-                    <div>• Duration: {confirm.module.estimated_duration || 0} minutes</div>
-                    <div>• Order: {confirm.module.order || 'N/A'}</div>
-                     <div className="mt-2">
-                       <div className="font-medium">Current Credits: {balance}</div>
-                       <div className="font-medium">Cost: {confirm.module?.price || 10} credits</div>
-                       <div className="font-medium">Remaining: {balance - (confirm.module?.price || 10)} credits</div>
-                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setConfirm({ open: false, module: null, reason: '' })}
-              >
-                Cancel
-              </Button>
-              {confirm.reason === 'insufficient' ? (
-                <Button onClick={openCreditsModal} className="bg-blue-600 hover:bg-blue-700">
-                  Buy Credits
-                </Button>
-              ) : confirm.reason === 'confirm' ? (
-                <Button onClick={confirmUnlock} className="bg-purple-600 hover:bg-purple-700">
-                  Confirm Unlock
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Removed confirmation modal since we're not using locked state anymore */}
     </div>
   );
 }

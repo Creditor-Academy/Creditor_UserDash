@@ -3,46 +3,76 @@ import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from "lucide-react";
 
 const UPCOMING_COURSES = [
   {
-    id: "become-private-acts-of-expatriation",
-    title: "Acts of Expatriation (Multiple Name Variants)",
+    id: "iwrn-preparing-for-private-wealth-building",
+    title: "Preparing for Private Wealth Building",
+    course: "I Want Remedy Now",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+14.png",
+  },
+  {
+    id: "iwrn-booking-your-private-credit-session",
+    title: "Booking Your Private Credit Session",
+    course: "I Want Remedy Now",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+15.png",
+  },
+  {
+    id: "iwrn-full-credit-dispute-identity-theft-remedy-kit",
+    title: "Full Credit Dispute & Identity Theft Remedy Kit",
+    course: "I Want Remedy Now",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+16.png",
+  },
+  {
+    id: "become-private-part-11-common-carry-declaration",
+    title: "Become Private - Part 11 ( Common Carry Declaration)",
     course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/become-private/Lesson+8.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Become-private-Recreated/LESSON+12.png",
   },
   {
-    id: "sovereignty-101-commerce-banking-control",
-    title: "Commerce, Banking, and Control",
-    course: "Sovereignty 101",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/Lesson+5.png",
+    id: "become-private-part-12-public-proof-of-identification",
+    title: "Become Private - Part 12 (Public Proof of Identification ( Patrick Devine Study))",
+    course: "Become Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/become-private/Lesson+13.png",
   },
   {
-    id: "operate-private-business-trust-expenses-b",
-    title: "Business Trust Expenses - Part B",
+    id: "become-private-part-13-overview-of-contract-law-implied-study",
+    title: "Become Private - Part 13 (Overview of contract law  & Implied Study)",
+    course: "Become Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/become-private/Lesson+14.png",
+  },
+  {
+    id: "operate-private-business-trust-part-11-dont-of-the-business-trust",
+    title: "Business Trust Part 11 ( Dont of the Business Trust)",
     course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+7.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+11.png",
   },
   {
-    id: "business-credit-ecredable-business-lift",
-    title: "ECREDABLE Business Lift: Sign Up Here",
-    course: "Business Credit",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+6.png",
+    id: "operate-private-business-trust-part-12-business-trust-sample-minutes",
+    title: "Business Trust Part 12 ( Business Trust Sample Minutes)",
+    course: "Operate Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+12.png",
   },
   {
-    id: "iwrn-collections-chargeoffs-negative",
-    title: "Collections, Charge-Offs, and Negative Accounts",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+6.png",
+    id: "operate-private-business-trust-part-13-business-trust-terms-part-a",
+    title: "Business Trust Part 13 ( Business Trust Terms - Part A)",
+    course: "Operate Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+13.png",
   },
   {
-    id: "iwrn-credit-utilization-payment-history",
-    title: "Credit Utilization and Payment History",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+7.png",
+    id: "private-merchant-avoiding-chargebacks-and-censorship-in-private-systems",
+    title: "Avoiding Chargebacks and Censorship in Private Systems",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Private-Merchant/Lesson+8.png",
   },
   {
-    id: "iwrn-credit-denials-real-world-impact",
-    title: "Credit Denials: The Real-World Impact",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+8.png",
+    id: "private-merchant-understanding-irs-monitoring-of-public-merchant-accounts",
+    title: "Understanding IRS Monitoring of Public Merchant Accounts",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Private-Merchant/Lesson+9.png",
+  },
+  {
+    id: "private-merchant-exploring-private-payment-options",
+    title: "Exploring Private Payment Options",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Private-Merchant/Lesson+10.png",
   },
 ];
 
@@ -50,6 +80,16 @@ function UpcomingCourses() {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState("All");
+
+  const courseFilters = [
+    "All",
+    ...Array.from(new Set(UPCOMING_COURSES.map((c) => c.course))),
+  ];
+
+  const visibleCourses = selectedCourse === "All"
+    ? UPCOMING_COURSES
+    : UPCOMING_COURSES.filter((c) => c.course === selectedCourse);
 
   const updateScrollButtons = () => {
     const el = scrollRef.current;
@@ -82,10 +122,28 @@ function UpcomingCourses() {
   return (
     <div className="mb-16 relative max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 px-1">
+      <div className="flex flex-wrap items-center justify-between mb-8 px-1 gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Upcoming This Week</h2>
           <p className="text-gray-500">New content launching soon</p>
+        </div>
+        {/* Course filters (no layout change) */}
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 mt-3 sm:mt-0 ml-0 sm:ml-6">
+          {courseFilters.map((course) => (
+            <button
+              key={course}
+              onClick={() => setSelectedCourse(course)}
+              className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 
+                ${selectedCourse === course
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md ring-1 ring-blue-500/40 hover:shadow-lg hover:brightness-105'
+                  : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-blue-200 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'}
+              `}
+              aria-pressed={selectedCourse === course}
+            >
+              {course}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -114,7 +172,7 @@ function UpcomingCourses() {
         ref={scrollRef}
         className="flex space-x-6 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar pb-6 px-1"
       >
-        {UPCOMING_COURSES.map((item, index) => (
+        {visibleCourses.map((item, index) => (
           <div
             key={item.id}
             className={`flex-shrink-0 w-80 rounded-xl border border-white/20 overflow-hidden snap-start 
