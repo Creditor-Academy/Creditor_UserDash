@@ -373,16 +373,16 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div> */}
 
-          {/* <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants}>
             <SidebarItem
               icon={MessageSquare}
               label="Messages"
-              href="/messages"
-              active={isActive("/messages")}
+              href="/dashboard/messages"
+              active={isActive("/dashboard/messages")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
-          </motion.div> */}
+          </motion.div>
 
           <motion.div variants={itemVariants}>
             <SidebarItem
