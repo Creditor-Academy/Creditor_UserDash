@@ -67,6 +67,7 @@ export function DashboardCarousel() {
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Upcoming Lessons</h2>
         <p className="text-gray-500 text-sm sm:text-base">Discover what’s releasing next across our private education tracks</p>
+        <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40" />
       </div>
       {/* Removed outer decorative border to match banner bounds */}
       
@@ -75,20 +76,20 @@ export function DashboardCarousel() {
           align: "center",
           loop: true
         }}
-        className="w-full relative z-10 px-1"
+         className="w-full relative z-10 px-1"
         onSlideChange={handleSlideChange}
       >
         <CarouselContent>
           {carouselItems.map((item, index) => (
             <CarouselItem key={item.id} className="md:basis-full">
               <a href={item.link} className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100 block">
-                <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px]">
+                <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] bg-white flex items-center justify-center p-2 sm:p-3">
                   <img
                     src={item.image}
                     alt={`${item.title} – ${item.course}`}
                     loading="lazy"
                     draggable={false}
-                    className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 select-none"
+                    className="max-w-full max-h-full object-contain transition-all duration-700 select-none"
                   />
                   {/* No text overlays to avoid clashing with banner text */}
                 </div>
@@ -113,8 +114,8 @@ export function DashboardCarousel() {
               key={index}
               className={`w-3 h-3 rounded-full transition-all duration-300 ${
                 index === currentSlide
-                  ? 'bg-white shadow-lg scale-125'
-                  : 'bg-white/50 hover:bg-white/75'
+                  ? 'bg-blue-600 shadow-lg scale-125'
+                  : 'bg-blue-300 hover:bg-blue-400'
               }`}
               onClick={() => {
                 // This would need to be connected to the carousel API
@@ -124,11 +125,7 @@ export function DashboardCarousel() {
           ))}
         </div>
 
-        {/* Subtle gradient overlays for better text readability */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/10 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/10 to-transparent" />
-        </div>
+        {/* Removed dark overlays to avoid any grayish background tint */}
       </Carousel>
       
       {/* Subtle bottom accent line */}
