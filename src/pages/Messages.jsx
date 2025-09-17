@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -32,6 +32,7 @@ import { fetchAllUsers } from "@/services/userService";
 import { getAllConversations, loadPreviousConversation, deleteConversationMessage } from "@/services/messageService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Will be loaded from backend
 const initialAllUsers = [];
@@ -117,6 +118,19 @@ function Messages() {
   const location = useLocation();
   const [pendingImage, setPendingImage] = useState(null);
   const [imagePreview, setImagePreview] = useState({ open: false, url: null });
+  const [deletingMessageId, setDeletingMessageId] = useState(null);
+  const { toast } = useToast();
+
+  const formatChatTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const now = new Date();
+    const isSameDay = d.toDateString() === now.toDateString();
+    if (isSameDay) {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
   useEffect(() => {
@@ -177,10 +191,12 @@ function Messages() {
             name: c.title || 'User',
             avatar: c.image || '/placeholder.svg',
             lastMessage: c.lastMessage || '',
+            lastMessageType: c.lastMessageType || null,
             room: c.room,
             conversationId: c.id,
             isRead: c.isRead,
             lastMessageFrom: c.lastMessageFrom,
+            lastMessageAt: c.lastMessageAt,
           }));
           setFriends(normalizedFriends);
           setConvosLoaded(true);
@@ -293,15 +309,20 @@ function Messages() {
       console.log('Conversation updated:', updatePayload);
       setFriends(prev => {
         const existingIndex = prev.findIndex(f => f.id === updatePayload.id);
+        const isOpen = String(updatePayload.id) === String(conversationId);
+
         const updatedFriend = {
           id: String(updatePayload.id),
           name: updatePayload.title || 'User',
           avatar: updatePayload.image || '/placeholder.svg',
           lastMessage: updatePayload.lastMessage || '',
+          lastMessageType: updatePayload.lastMessageType || null,
           room: updatePayload.room,
           conversationId: updatePayload.id,
-          isRead: updatePayload.isRead,
+          // If conversation is open, force read; otherwise use server flag
+          isRead: isOpen ? true : updatePayload.isRead,
           lastMessageFrom: updatePayload.lastMessageFrom,
+          lastMessageAt: updatePayload.lastMessageAt,
         };
         
         if (existingIndex >= 0) {
@@ -332,7 +353,11 @@ function Messages() {
       if (!messageid) return;
       // Only act if we're on the same conversation or if unknown treat as current
       if (!conversationId || String(conversationId) === String(conversation_id)) {
-        setMessages(prev => prev.filter(m => String(m.id) !== String(messageid)));
+        setDeletingMessageId(messageid);
+        setTimeout(() => {
+          setMessages(prev => prev.filter(m => String(m.id) !== String(messageid)));
+          setDeletingMessageId(null);
+        }, 220);
       }
     };
     socket.on('deleteMessage', onDeleteMessage);
@@ -371,10 +396,12 @@ function Messages() {
           name: c.title || 'User',
           avatar: c.image || '/placeholder.svg',
           lastMessage: c.lastMessage || '',
+          lastMessageType: c.lastMessageType || null,
           room: c.room,
           conversationId: c.id,
           isRead: c.isRead,
           lastMessageFrom: c.lastMessageFrom,
+          lastMessageAt: c.lastMessageAt,
         }));
         setFriends(normalizedFriends);
         }
@@ -533,11 +560,20 @@ function Messages() {
       return;
     }
     try {
+      setDeletingMessageId(deleteMessageId);
       await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
-      // Optimistically remove; server will also broadcast deleteMessage
-      setMessages(prev => prev.filter(msg => msg.id !== deleteMessageId));
+      // Notify success
+      try {
+        toast({ title: 'Message Deleted Successfully' });
+      } catch {}
+      // Delay removal slightly to allow animation
+      setTimeout(() => {
+        setMessages(prev => prev.filter(msg => String(msg.id) !== String(deleteMessageId)));
+        setDeletingMessageId(null);
+      }, 220);
     } catch (err) {
       console.warn('Failed to delete message', err);
+      setDeletingMessageId(null);
     } finally {
       setShowDeleteDialog(false);
       setDeleteMessageId(null);
@@ -728,7 +764,7 @@ function Messages() {
                     <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start">
                        <p className={`font-medium text-[15px] ${(() => {
                          const currentUserId = localStorage.getItem('userId');
                          const isUnread = friend.isRead === false && 
@@ -738,15 +774,18 @@ function Messages() {
                        })()}`}>
                          {friend.name}
                        </p>
-                       {(() => {
-                         const currentUserId = localStorage.getItem('userId');
-                         const isUnread = friend.isRead === false && 
-                                         friend.lastMessageFrom && 
-                                         String(friend.lastMessageFrom) !== String(currentUserId);
-                         return isUnread ? (
-                           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                         ) : null;
-                       })()}
+                       <div className="flex flex-col items-end gap-1">
+                         <span className="text-[11px] text-muted-foreground">{formatChatTime(friend.lastMessageAt)}</span>
+                         {(() => {
+                           const currentUserId = localStorage.getItem('userId');
+                           const isUnread = friend.isRead === false && 
+                                           friend.lastMessageFrom && 
+                                           String(friend.lastMessageFrom) !== String(currentUserId);
+                           return isUnread ? (
+                             <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                           ) : null;
+                         })()}
+                    </div>
                     </div>
                      <p className={`text-xs truncate ${(() => {
                        const currentUserId = localStorage.getItem('userId');
@@ -760,6 +799,16 @@ function Messages() {
                          const isSentByMe = friend.lastMessageFrom && 
                                            String(friend.lastMessageFrom) === String(currentUserId);
                          
+                         // If last message is an image, show icon + Image label
+                         if (friend.lastMessageType === 'IMAGE') {
+                           return (
+                             <span className="flex items-center gap-1.5">
+                               <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                               <span>Image</span>
+                             </span>
+                           );
+                         }
+
                          if (isSentByMe && friend.lastMessage) {
                            return (
                              <span className="flex items-center gap-1.5">
@@ -865,8 +914,8 @@ function Messages() {
                           </div>
                         ) : */} 
                         {message.type === 'image' ? (
-                          <div className="max-w-[68%] group">
-                            <div className={`rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.02] ${
+                          <div className={`max-w-[68%] group`}>
+                            <div className={`relative rounded-2xl overflow-hidden transition-all duration-200 hover:scale-[1.02] ${
                               message.senderId === 0 
                                 ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/20" 
                                 : "border border-gray-200/80 shadow-md shadow-gray-200/50"
@@ -877,6 +926,12 @@ function Messages() {
                                 className="max-h-64 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
                                 onClick={() => setImagePreview({ open: true, url: message.file })}
                               />
+                              {deletingMessageId === message.id && (
+                                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                                  <span className="text-sm text-foreground">Deleting...</span>
+                                </div>
+                              )}
                             </div>
                             <div className="flex justify-between items-center mt-2 gap-2">
                               <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
@@ -932,6 +987,7 @@ function Messages() {
                                 ))}
                               </div>
                             )}
+                            {/* No deleting overlay for text messages */}
                             <div className="flex justify-between items-center mt-2 gap-2">
                               <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
                               {message.timestamp}
