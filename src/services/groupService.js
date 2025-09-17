@@ -167,6 +167,140 @@ export const sendGroupMessage = async (groupId, payload, isMultipart = false) =>
   }
 };
 
+// POLLSssssss
+export const createGroupPoll = async (groupId, poll) => {
+  try {
+    // Backend expects poll_question, poll_expires_at, poll_allow_multiple, poll_is_anonymous, options: string[]
+    const pollExpiresAt = poll.durationMinutes && Number(poll.durationMinutes) > 0
+      ? new Date(Date.now() + Number(poll.durationMinutes) * 60 * 1000).toISOString()
+      : undefined;
+
+    const payload = {
+      poll_question: poll.question,
+      poll_expires_at: pollExpiresAt,
+      poll_allow_multiple: !!poll.allowMultiple,
+      poll_is_anonymous: !!poll.isAnonymous,
+      options: (poll.options || []).map(String),
+    };
+
+    // Prefer /groups prefix, fallback to no prefix
+    try {
+      const response = await api.post(`/groups/${groupId}/polls`, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.post(`/${groupId}/polls`, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+    console.error('Error creating poll:', status, msg);
+    // Fallback: some backends accept polls as a message with type POLL
+    if (status === 404) {
+      try {
+        const body = { type: 'POLL', poll: payload };
+        const response = await api.post(`/groups/${groupId}/messages`, body, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return response.data;
+      } catch (fallbackErr) {
+        console.error('Fallback create poll via messages failed:', fallbackErr?.response?.status, fallbackErr?.response?.data?.message || fallbackErr?.message);
+        throw fallbackErr;
+      }
+    }
+    throw error;
+  }
+};
+
+export const voteGroupPoll = async (groupId, pollId, { messageId, optionId }) => {
+  try {
+    try {
+      const response = await api.post(`/groups/${groupId}/polls/${pollId}/vote`, { message_id: messageId, option_id: optionId });
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.post(`/${groupId}/polls/${pollId}/vote`, { message_id: messageId, option_id: optionId });
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    console.error('Error voting poll:', error);
+    throw error;
+  }
+};
+
+export const getGroupPoll = async (groupId, pollId) => {
+  try {
+    try {
+      const response = await api.get(`/groups/${groupId}/polls/${pollId}`);
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.get(`/${groupId}/polls/${pollId}`);
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    console.error('Error fetching poll:', error);
+    throw error;
+  }
+};
+
+// PIN
+export const pinGroupMessage = async (groupId, messageId, pinned) => {
+  try {
+    const response = await api.post(`/groups/${groupId}/messages/${messageId}/pin`, { pinned });
+    return response.data;
+  } catch (error) {
+    console.error('Error pinning message:', error);
+    throw error;
+  }
+};
+
+// PIN POLL
+export const pinGroupPoll = async (groupId, pollId) => {
+  // Prefer /groups prefix (observed 200), fallback to no prefix
+  try {
+    const response = await api.post(`/groups/${groupId}/polls/${pollId}/pin`);
+    return response.data;
+  } catch (err1) {
+    if (err1?.response?.status === 404) {
+      const response = await api.post(`/${groupId}/polls/${pollId}/pin`);
+      return response.data;
+    }
+    throw err1;
+  }
+};
+
+// GET PINNED POLLS
+export const getPinnedPolls = async (groupId) => {
+  try {
+    // Prefer /groups prefix, fallback to no prefix
+    try {
+      const response = await api.get(`/groups/${groupId}/polls/pinned`);
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.get(`/${groupId}/polls/pinned`);
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    console.error('Error fetching pinned polls:', error);
+    throw error;
+  }
+};
+
 /**
  * Create a post inside a group
  * @param {Object|FormData} postData - Post payload (Object for JSON, FormData for file upload)
