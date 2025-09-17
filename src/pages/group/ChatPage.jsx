@@ -178,7 +178,9 @@ export function ChatPage() {
           const normalized = {
             id: payload.id,
             senderId: payload.sender_id,
-            senderName: payload.sender?.first_name || 'Member',
+            senderName: String(payload.sender_id) === String(currentUserId)
+              ? 'You'
+              : (payload.sender?.first_name || 'Member'),
             senderAvatar: payload.sender?.image || '',
             content: (isImage || isPoll) ? '' : payload.content,
             imageUrl: derivedImageUrl,
@@ -228,11 +230,15 @@ export function ChatPage() {
         const poll = payload?.poll || payload?.data || payload;
         if (!poll || String(poll.group_id) !== String(groupId)) return;
         setMessages(prev => {
+          // If a message with the real id already exists, do nothing
           if (prev.some(m => m.id === poll.id)) return prev;
+
           const normalized = {
             id: poll.id,
             senderId: poll.sender_id,
-            senderName: poll.sender?.first_name || 'Member',
+            senderName: String(poll.sender_id) === String(currentUserId)
+              ? 'You'
+              : (poll.sender?.first_name || 'Member'),
             senderAvatar: poll.sender?.image || '',
             content: '',
             imageUrl: undefined,
@@ -255,6 +261,13 @@ export function ChatPage() {
             },
             isPinned: Boolean(poll.is_pinned),
           };
+          // Try to replace a matching optimistic temp poll from the same sender
+          const tmpIdx = prev.findIndex(m => String(m.id).startsWith('tmp-poll-') && m.type === 'poll' && m.senderId === poll.sender_id);
+          if (tmpIdx !== -1) {
+            const clone = [...prev];
+            clone[tmpIdx] = normalized;
+            return clone;
+          }
           return [...prev, normalized];
         });
       } catch {}
@@ -474,7 +487,9 @@ export function ChatPage() {
         return ({
           id: m.id,
           senderId: m.sender_id || m.senderId,
-          senderName: m.sender?.first_name || m.sender?.name || 'Member',
+          senderName: String(m.sender_id || m.senderId) === String(currentUserId)
+            ? 'You'
+            : (m.sender?.first_name || m.sender?.name || 'Member'),
           senderAvatar: m.sender?.image || '',
           content: (isImage || isPoll) ? '' : m.content,
           imageUrl: (m.media_url || m.image_url || m.imageUrl || (isImage ? m.content : undefined)),
@@ -829,7 +844,12 @@ export function ChatPage() {
       const res = await createGroupPoll(groupId, poll);
       const m = res?.data || res;
       if (m?.id) {
-        setMessages(prev => prev.map(x => x.id === tempId ? {
+        setMessages(prev => {
+          // If socket already added the poll with the real id, just drop the temp
+          if (prev.some(x => x.id === m.id)) {
+            return prev.filter(x => x.id === m.id || !String(x.id).startsWith('tmp-poll-'));
+          }
+          return prev.map(x => x.id === tempId ? {
           id: m.id,
           senderId: m.sender_id || currentUserId,
           senderName: m.sender?.first_name || 'You',
@@ -847,7 +867,8 @@ export function ChatPage() {
             closedAt: null,
           },
           isPinned: Boolean(m.is_pinned || m.isPinned),
-        } : x));
+        } : x);
+        });
 
         // Hint backend to broadcast in real-time (mirrors text flow)
         try {
