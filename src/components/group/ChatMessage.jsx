@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VoiceMessage } from "@/components/messages/VoiceMessage";
+import PollMessage from "./PollMessage";
 import { Download, Pencil, Trash2, Check, X } from "lucide-react";
 import ConfirmationDialog from "@/components/ui/ConfirmationDialog";
+import { renderTextWithLinks } from "@/utils/linkUtils.jsx";
 
-export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, isAdmin = false }) {
+export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMessage, onVotePoll, onPinToggle, isAdmin = false }) {
   const isUser = String(message.senderId) === String(currentUserId);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(message.content || "");
@@ -67,7 +69,14 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
           </div>
         )}
 
-        {message.type === 'voice' && message.audioBlob && message.duration ? (
+        {message.type === 'poll' && message.poll ? (
+          <PollMessage
+            message={message}
+            currentUserId={currentUserId}
+            onVote={onVotePoll}
+            onPinToggle={onPinToggle}
+          />
+        ) : message.type === 'voice' && message.audioBlob && message.duration ? (
           <VoiceMessage 
             audioBlob={message.audioBlob}
             duration={message.duration}
@@ -87,9 +96,9 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
                   ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white"
                   : "bg-gray-100 text-gray-800"
               }`}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {message.content}
-                </p>
+                <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {renderTextWithLinks(message.content)}
+                </div>
               </div>
             )}
           </div>
@@ -145,7 +154,9 @@ export function ChatMessage({ message, currentUserId, onEditMessage, onDeleteMes
                 </button>
               </div>
             ) : (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+              <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                {renderTextWithLinks(message.content)}
+              </div>
             )}
           </div>
         )}
