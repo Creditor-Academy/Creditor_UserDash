@@ -1189,9 +1189,8 @@ export function ChatPage() {
 
   // Removed local pinned persistence; server is the source of truth via API + sockets
 
-  // Derive pinned polls and remaining messages for display
+  // Derive pinned polls for top bar (keep polls also in the chat list)
   const pinnedPolls = React.useMemo(() => (messages || []).filter(m => m.type === 'poll' && m.isPinned), [messages]);
-  const nonPinnedMessages = React.useMemo(() => (messages || []).filter(m => !(m.type === 'poll' && m.isPinned)), [messages]);
   const [activePinnedPoll, setActivePinnedPoll] = React.useState(null);
 
   return (
@@ -1264,7 +1263,7 @@ export function ChatPage() {
           )}
 
           <ChatMessagesList 
-            messages={nonPinnedMessages} 
+            messages={messages} 
             currentUserId={currentUserId}
             onEditMessage={handleEditMessage}
             onDeleteMessage={handleDeleteMessage}
