@@ -37,11 +37,9 @@ export async function loadPreviousConversation(conversationId) {
 export async function deleteConversationMessage(params) {
   try {
     const { messageid, conversation_id, roomId } = params;
-    const response = await api.post('/api/private-messaging/message/delete', {
-      messageid,
-      conversation_id,
-      roomId,
-    }, {
+
+    const response = await api.delete('/api/private-messaging/message/delete', {
+      data: { messageid, conversation_id, roomId }, 
       withCredentials: true,
     });
     return response.data;
