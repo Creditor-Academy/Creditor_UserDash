@@ -22,7 +22,8 @@ export function CreateModuleDialog({
     order: 1,
     estimated_duration: 60,
     module_status: "DRAFT",
-    thumbnail: ""
+    thumbnail: "",
+    price: 0
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,7 +36,8 @@ export function CreateModuleDialog({
         order: initialData.order || 1,
         estimated_duration: initialData.estimated_duration || 60,
         module_status: initialData.module_status || "DRAFT",
-        thumbnail: initialData.thumbnail || ""
+        thumbnail: initialData.thumbnail || "",
+        price: initialData.price || 0
       });
     } else if (mode === "create") {
       setForm({
@@ -44,7 +46,8 @@ export function CreateModuleDialog({
         order: existingModules.length + 1,
         estimated_duration: 60,
         module_status: "DRAFT",
-        thumbnail: ""
+        thumbnail: "",
+        price: 0
       });
     }
   }, [initialData, mode, existingModules.length, isOpen]);
@@ -81,7 +84,8 @@ export function CreateModuleDialog({
         order: parseInt(form.order) || (existingModules.length + 1),
         estimated_duration: parseInt(form.estimated_duration) || 60,
         module_status: form.module_status || "DRAFT",
-        thumbnail: form.thumbnail.trim() || "test thumbnail"
+        thumbnail: form.thumbnail.trim() || "test thumbnail",
+        price: parseInt(form.price) || 0
       };
       await onSave(moduleData);
       setForm({
@@ -90,7 +94,8 @@ export function CreateModuleDialog({
         order: existingModules.length + 2,
         estimated_duration: 60,
         module_status: "DRAFT",
-        thumbnail: ""
+        thumbnail: "",
+        price: 0
       });
       onClose();
     } catch (err) {
@@ -107,7 +112,8 @@ export function CreateModuleDialog({
       order: existingModules.length + 1,
       estimated_duration: 60,
       module_status: "DRAFT",
-      thumbnail: ""
+      thumbnail: "",
+      price: 0
     });
     setError("");
     onClose();
@@ -179,6 +185,20 @@ export function CreateModuleDialog({
                 className="mt-1"
               />
             </div>
+          </div>
+          <div>
+            <Label htmlFor="price">Price (Credits)</Label>
+            <Input
+              id="price"
+              name="price"
+              type="number"
+              value={form.price}
+              onChange={handleInputChange}
+              placeholder="0"
+              min="0"
+              className="mt-1"
+            />
+            <p className="text-sm text-gray-500 mt-1">Number of credits required to unlock this module</p>
           </div>
           <div>
             <Label htmlFor="module_status">Module Status</Label>

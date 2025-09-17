@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock, ArrowLeft, Loader2, Lock } from "lucide-react";
 import { getCatalogCourses, testIndividualCourseAPI } from "@/services/instructorCatalogService";
@@ -11,6 +11,7 @@ import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
 const CatelogCourses = () => {
   const { catalogId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [catalog, setCatalog] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -213,6 +214,7 @@ const CatelogCourses = () => {
 
   // Use the fetched courses directly since they're already filtered by catalog
   const filteredCourses = courses || [];
+
   
   const handleCourseClick = (course) => {
     // Find the user's course data to check trial status
@@ -576,6 +578,7 @@ const CatelogCourses = () => {
         onClose={handleCloseTrialDialog}
         course={selectedExpiredCourse}
       />
+
     </div>
   );
 };

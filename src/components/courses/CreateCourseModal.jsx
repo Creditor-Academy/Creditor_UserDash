@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createCourse } from '../../services/courseService';
+import { createCourse, createAIModulesAndLessons } from '../../services/courseService';
 import { createCourseNotification } from '@/services/notificationService';
 
 const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
@@ -17,6 +17,8 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
   });
   const [formError, setFormError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [useAI, setUseAI] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -26,6 +28,113 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
       setForm((prev) => ({ ...prev, [name]: checked }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  // Generate AI modules and lessons
+  const generateAIContent = async (courseId) => {
+    setAiGenerating(true);
+    try {
+      // Call backend AI service to generate course structure
+      const response = await fetch('https://creditor-backend-ceds.onrender.com/api/ai/create-course', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: form.title,
+          subject: 'General',
+          description: form.description,
+          targetAudience: 'General audience',
+          difficulty: 'intermediate',
+          duration: form.estimated_duration
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          // Transform AI response to match existing module/lesson structure
+          const aiOutlines = [{
+            modules: result.data.modules.map(module => ({
+              id: module.id,
+              title: module.title,
+              description: module.description,
+              lessons: module.lessons.map(lesson => ({
+                id: lesson.id,
+                title: lesson.title,
+                description: lesson.intro || lesson.description,
+                content: `${lesson.intro || ''}\n\nKey Topics:\n${(lesson.subtopics || []).map(topic => `• ${topic}`).join('\n')}\n\n${lesson.summary || ''}`,
+                duration: lesson.duration
+              }))
+            }))
+          }];
+
+          // Create modules and lessons using existing service
+          await createAIModulesAndLessons(courseId, aiOutlines);
+          console.log('✅ AI modules and lessons created successfully');
+        }
+      } else {
+        // Fallback: create basic structure
+        const fallbackOutlines = [{
+          modules: [
+            {
+              id: 1,
+              title: `${form.title} - Module 1`,
+              description: `Introduction to ${form.title}`,
+              lessons: [{
+                id: 1,
+                title: `Getting Started with ${form.title}`,
+                description: `Learn the fundamentals of ${form.title}`,
+                content: `Welcome to ${form.title}!\n\nIn this lesson, you'll learn:\n• Core concepts\n• Basic principles\n• Practical applications\n• Next steps\n\nThis provides a solid foundation for your learning journey.`,
+                duration: '20 min'
+              }]
+            },
+            {
+              id: 2,
+              title: `${form.title} - Module 2`,
+              description: `Advanced concepts in ${form.title}`,
+              lessons: [{
+                id: 1,
+                title: `Advanced ${form.title} Techniques`,
+                description: `Master advanced techniques and best practices`,
+                content: `Advanced ${form.title} Concepts\n\nKey areas covered:\n• Advanced techniques\n• Best practices\n• Real-world applications\n• Expert tips\n\nApply these concepts to enhance your expertise.`,
+                duration: '25 min'
+              }]
+            }
+          ]
+        }];
+        
+        await createAIModulesAndLessons(courseId, fallbackOutlines);
+        console.log('✅ Fallback modules and lessons created');
+      }
+    } catch (error) {
+      console.error('AI content generation failed:', error);
+      // Still create basic fallback structure
+      const basicOutlines = [{
+        modules: [{
+          id: 1,
+          title: `${form.title} - Introduction`,
+          description: `Introduction to ${form.title}`,
+          lessons: [{
+            id: 1,
+            title: `${form.title} Overview`,
+            description: `Overview of ${form.title}`,
+            content: `Welcome to ${form.title}!\n\nThis course will cover the essential concepts and practical applications.`,
+            duration: '15 min'
+          }]
+        }]
+      }];
+      
+      try {
+        await createAIModulesAndLessons(courseId, basicOutlines);
+        console.log('✅ Basic structure created as fallback');
+      } catch (fallbackError) {
+        console.error('Even fallback creation failed:', fallbackError);
+      }
+    } finally {
+      setAiGenerating(false);
     }
   };
 
@@ -62,10 +171,16 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
       const response = await createCourse(payload);
       
       if (response.success) {
+        const courseId = response.data.id;
+        
+        // Generate AI content if requested
+        if (useAI) {
+          await generateAIContent(courseId);
+        }
+        
         onCourseCreated(response.data);
         
         // Send notification to all users about new course
-        const courseId = response.data.id;
         try {
           console.log('Sending course notification for course ID:', courseId);
           const notificationResponse = await createCourseNotification(courseId);
@@ -77,8 +192,8 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           const localNotification = {
             id: `local-course-${courseId}-${now.getTime()}`,
             type: 'course',
-            title: 'Course Created',
-            message: `"${form.title}" has been created successfully`,
+            title: useAI ? 'AI Course Created' : 'Course Created',
+            message: `"${form.title}" has been created successfully${useAI ? ' with AI-generated content' : ''}`,
             created_at: now.toISOString(),
             read: false,
             courseId: courseId,
@@ -103,6 +218,7 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
           requireFinalQuiz: true,
           thumbnail: ""
         });
+        setUseAI(false);
       } else {
         setFormError(response.message || "Failed to create course");
       }
@@ -237,6 +353,14 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
               />
               <span className="text-sm">Require Final Quiz</span>
             </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useAI}
+                onChange={(e) => setUseAI(e.target.checked)}
+              />
+              <span className="text-sm text-blue-600 font-medium">🤖 Generate with AI</span>
+            </label>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image URL</label>
@@ -263,10 +387,12 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || aiGenerating}
               className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              {loading ? 'Creating...' : 'Create Course'}
+              {loading ? (useAI ? 'Creating with AI...' : 'Creating...') : 
+               aiGenerating ? 'Generating AI Content...' : 
+               (useAI ? '🤖 Create with AI' : 'Create Course')}
             </button>
           </div>
         </form>

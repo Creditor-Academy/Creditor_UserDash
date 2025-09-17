@@ -430,7 +430,13 @@ const StatementComponent = React.forwardRef(({
       {/* Statement Type Sidebar */}
       {showStatementSidebar && (
         <div className="fixed inset-0 z-[9999] flex">
-          <div className="w-[480px] bg-white shadow-2xl animate-slide-in-left">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 ease-out"
+            onClick={() => setShowStatementSidebar(false)}
+          />
+          {/* Sidebar */}
+          <div className="relative w-[480px] bg-white shadow-2xl transform transition-transform duration-300 ease-out animate-slide-in-left">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
@@ -464,7 +470,6 @@ const StatementComponent = React.forwardRef(({
               ))}
             </div>
           </div>
-          <div className="flex-1 bg-black bg-opacity-50" onClick={() => setShowStatementSidebar(false)} />
         </div>
       )}
 

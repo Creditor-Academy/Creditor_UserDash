@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
@@ -8,6 +9,7 @@ import { uploadVideo as uploadVideoResource } from '@/services/videoUploadServic
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
   Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
@@ -27,6 +29,7 @@ import {
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
 import TableComponent from '@/components/TableComponent';
+import ListComponent from '@/components/ListComponent';
 import InteractiveComponent from '@/components/InteractiveComponent';
 import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
@@ -327,8 +330,89 @@ const getToolbarModules = (type = 'full') => {
   };
 };
 
-function LessonBuilder({ viewMode: initialViewMode = false }) {
-  const { sidebarCollapsed, setSidebarCollapsed } = useOutletContext();
+// Interactive List Renderer Component
+const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
+  const containerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    console.log('InteractiveListRenderer useEffect triggered for block:', block.id);
+    if (!containerRef.current) {
+      console.log('No containerRef.current found');
+      return;
+    }
+
+    const handleCheckboxClick = (e) => {
+      console.log('Checkbox click detected:', e.target);
+      const checkboxContainer = e.target.closest('.checkbox-container');
+      if (!checkboxContainer) {
+        console.log('No checkbox-container found');
+        return;
+      }
+
+      const itemIndex = parseInt(checkboxContainer.dataset.index);
+      const hiddenCheckbox = checkboxContainer.querySelector('.checkbox-item');
+      const visualCheckbox = checkboxContainer.querySelector('.checkbox-visual');
+
+      console.log('Checkbox elements found:', {
+        itemIndex,
+        hiddenCheckbox: !!hiddenCheckbox,
+        visualCheckbox: !!visualCheckbox
+      });
+
+      if (hiddenCheckbox && visualCheckbox) {
+        const newChecked = !hiddenCheckbox.checked;
+        hiddenCheckbox.checked = newChecked;
+        
+        // Update visual state immediately for better UX
+        if (newChecked) {
+          visualCheckbox.classList.remove('opacity-0');
+          visualCheckbox.classList.add('opacity-100');
+        } else {
+          visualCheckbox.classList.remove('opacity-100');
+          visualCheckbox.classList.add('opacity-0');
+        }
+
+        console.log('Calling onCheckboxToggle:', {
+          blockId: block.id || block.block_id,
+          itemIndex,
+          newChecked
+        });
+
+        // Call the callback to update the block state
+        onCheckboxToggle(block.id || block.block_id, itemIndex, newChecked);
+      }
+    };
+
+    // Add click event listeners to all checkbox containers
+    const checkboxContainers = containerRef.current.querySelectorAll('.checkbox-container');
+    console.log('Found checkbox containers:', checkboxContainers.length);
+    
+    checkboxContainers.forEach((container, index) => {
+      console.log(`Adding listener to container ${index}:`, container);
+      container.addEventListener('click', handleCheckboxClick);
+    });
+
+    // Cleanup
+    return () => {
+      checkboxContainers.forEach(container => {
+        container.removeEventListener('click', handleCheckboxClick);
+      });
+    };
+  }, [block.html_css, onCheckboxToggle, block.id, block.block_id]);
+
+  console.log('InteractiveListRenderer rendering with HTML:', block.html_css?.substring(0, 200));
+
+  return (
+    <div 
+      ref={containerRef}
+      className="max-w-none"
+      dangerouslySetInnerHTML={{ __html: block.html_css }}
+    />
+  );
+};
+
+function LessonBuilder() {
+  const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
   const { courseId, moduleId, lessonId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -340,7 +424,6 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [mainImageUploading, setMainImageUploading] = useState(false);
   const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
-  const [isViewMode, setIsViewMode] = useState(initialViewMode);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -410,6 +493,9 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
   const [showQuoteEditDialog, setShowQuoteEditDialog] = useState(false);
   const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
+  const [showListTemplateSidebar, setShowListTemplateSidebar] = useState(false);
+  const [showListEditDialog, setShowListEditDialog] = useState(false);
+  const [editingListBlock, setEditingListBlock] = useState(null);
   const [showTableComponent, setShowTableComponent] = useState(false);
   const [editingTableBlock, setEditingTableBlock] = useState(null);
   const [showInteractiveTemplateSidebar, setShowInteractiveTemplateSidebar] = useState(false);
@@ -524,6 +610,11 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       icon: <FileTextIcon className="h-5 w-5" />
     },
     {
+      id: 'list',
+      title: 'List',
+      icon: <List className="h-5 w-5" />
+    },
+    {
       id: 'tables',
       title: 'Tables',
       icon: <Table className="h-5 w-5" />
@@ -622,6 +713,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
   const blockRefs = React.useRef({});
   const statementComponentRef = React.useRef();
+  const listComponentRef = React.useRef();
+  const quoteComponentRef = React.useRef();
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
@@ -630,6 +723,8 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       setShowStatementSidebar(true);
     } else if (blockType.id === 'quote') {
       setShowQuoteTemplateSidebar(true);
+    } else if (blockType.id === 'list') {
+      setShowListTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
     } else if (blockType.id === 'image') {
@@ -856,15 +951,147 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     setEditingInteractiveBlock(null);
   };
 
-  const handleTableUpdate = (blockId, content, htmlContent, tableType = null) => {
-    // Parse content to extract table type if not provided
-    let extractedTableType = tableType;
-    if (!extractedTableType && content) {
+  // Interactive component callbacks
+  const handleInteractiveTemplateSelect = (newBlock) => {
+    const interactiveBlock = {
+      id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
+      type: 'interactive',
+      title: 'Interactive',
+      content: newBlock.content,
+      html_css: newBlock.html_css,
+      order: contentBlocks.length + 1
+    };
+    setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+  };
+
+  const handleInteractiveUpdate = (blockId, updatedContent) => {
+    setContentBlocks(prevBlocks =>
+      prevBlocks.map(block =>
+        block.id === blockId
+          ? { 
+              ...block, 
+              type: 'interactive', // Ensure type remains interactive
+              subtype: updatedContent.subtype || block.subtype || 'accordion', // Preserve subtype
+              content: updatedContent.content, 
+              html_css: updatedContent.html_css 
+            }
+          : block
+      )
+    );
+    setEditingInteractiveBlock(null);
+  };
+
+  // List component callbacks
+  const handleListTemplateSelect = (newBlock) => {
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  };
+
+  const handleListUpdate = (blockId, content, updatedHtml = null) => {
+    // Use provided HTML if available, otherwise regenerate
+    let htmlContent = updatedHtml || '';
+    let extractedListType = 'bulleted';
+    
+    if (content && !updatedHtml) {
       try {
         const parsedContent = JSON.parse(content);
-        extractedTableType = parsedContent.templateId || parsedContent.tableType || 'two_columns';
+        extractedListType = parsedContent.listType || 'bulleted';
+        const items = parsedContent.items || [];
+        const checkedItems = parsedContent.checkedItems || {};
+        const numberingStyle = parsedContent.numberingStyle || 'decimal';
+
+        // Helper function to get numbering based on style (same as ListComponent)
+        const getNumbering = (index, style) => {
+          const num = index + 1;
+          switch (style) {
+            case 'upper-roman':
+              return toRoman(num).toUpperCase();
+            case 'lower-roman':
+              return toRoman(num).toLowerCase();
+            case 'upper-alpha':
+              return String.fromCharCode(64 + num); // A, B, C...
+            case 'lower-alpha':
+              return String.fromCharCode(96 + num); // a, b, c...
+            case 'decimal':
+            default:
+              return num.toString();
+          }
+        };
+
+        // Convert number to Roman numerals
+        const toRoman = (num) => {
+          const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+          const symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+          let result = '';
+          
+          for (let i = 0; i < values.length; i++) {
+            while (num >= values[i]) {
+              result += symbols[i];
+              num -= values[i];
+            }
+          }
+          return result;
+        };
+
+        // Generate HTML based on list type with original styled format
+        if (extractedListType === 'numbered') {
+          htmlContent = `
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200">
+              <ol class="space-y-4 list-none">
+                ${items.map((item, index) => `
+                  <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-orange-300/50 hover:shadow-md transition-all duration-200">
+                    <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                      ${getNumbering(index, numberingStyle)}
+                    </div>
+                    <div class="flex-1 text-gray-800 leading-relaxed">
+                      ${item}
+                    </div>
+                  </li>
+                `).join('')}
+              </ol>
+            </div>`;
+        } else if (extractedListType === 'checkbox') {
+          htmlContent = `
+            <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
+              <div class="space-y-4">
+                ${items.map((item, index) => `
+                  <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+                    <div class="flex-shrink-0 mt-1">
+                      <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                        <input type="checkbox" ${checkedItems[index] ? 'checked' : ''} class="hidden checkbox-item" data-index="${index}" />
+                        <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
+                      </div>
+                    </div>
+                    <div class="flex-1 text-gray-800 leading-relaxed ${checkedItems[index] ? 'line-through text-gray-500' : ''}">
+                      ${item}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
+        } else {
+          // bulleted list
+          htmlContent = `
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+              <ul class="space-y-4 list-none">
+                ${items.map((item) => `
+                  <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-blue-300/50 hover:shadow-md transition-all duration-200">
+                    <div class="flex-shrink-0 mt-2">
+                      <div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
+                    </div>
+                    <div class="flex-1 text-gray-800 leading-relaxed">
+                      ${item}
+                    </div>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>`;
+        }
       } catch (e) {
-        extractedTableType = 'two_columns'; // fallback
+        console.error('Error parsing list content:', e);
+        extractedListType = 'bulleted';
+        htmlContent = `<div class="list-block"><ul class="list-disc list-inside"><li>Error loading list</li></ul></div>`;
       }
     }
 
@@ -875,8 +1102,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           ...block,
           content,
           html_css: htmlContent,
-          tableType: extractedTableType,
-          templateId: extractedTableType,
+          listType: extractedListType,
           updatedAt: new Date().toISOString()
         } : block
       )
@@ -893,13 +1119,12 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               ...block,
               content,
               html_css: htmlContent,
-              tableType: extractedTableType,
-              templateId: extractedTableType,
+              listType: extractedListType,
               // Also update details if they exist
               details: {
                 ...block.details,
-                table_type: extractedTableType,
-                templateId: extractedTableType
+                list_type: extractedListType,
+                listType: extractedListType
               },
               updatedAt: new Date().toISOString()
             } : block
@@ -908,8 +1133,126 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       }));
     }
     
-    setEditingTableBlock(null);
-    setShowTableComponent(false);
+    setEditingListBlock(null);
+    setShowListEditDialog(false);
+  };
+
+  // Handle checkbox toggle for interactive lists
+  const handleCheckboxToggle = async (blockId, itemIndex, checked) => {
+    console.log('handleCheckboxToggle called:', { blockId, itemIndex, checked });
+    
+    try {
+      // Find the block in contentBlocks or lessonContent
+      let targetBlock = contentBlocks.find(block => block.id === blockId || block.block_id === blockId);
+      if (!targetBlock && lessonContent?.data?.content) {
+        targetBlock = lessonContent.data.content.find(block => block.id === blockId || block.block_id === blockId);
+      }
+      
+      if (!targetBlock) {
+        console.error('Block not found for checkbox toggle:', blockId);
+        return;
+      }
+      
+      console.log('Found target block:', targetBlock);
+      
+      // Parse the current HTML to update checkbox state
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(targetBlock.html_css, 'text/html');
+      const checkboxContainers = doc.querySelectorAll('.checkbox-container');
+      
+      if (checkboxContainers[itemIndex]) {
+        const container = checkboxContainers[itemIndex];
+        const hiddenCheckbox = container.querySelector('.checkbox-item');
+        const visualCheckbox = container.querySelector('.checkbox-visual');
+        
+        if (hiddenCheckbox && visualCheckbox) {
+          // Update the hidden checkbox
+          hiddenCheckbox.checked = checked;
+          if (checked) {
+            hiddenCheckbox.setAttribute('checked', 'checked');
+          } else {
+            hiddenCheckbox.removeAttribute('checked');
+          }
+          
+          // Update the visual checkbox
+          if (checked) {
+            visualCheckbox.classList.remove('opacity-0');
+            visualCheckbox.classList.add('opacity-100');
+          } else {
+            visualCheckbox.classList.remove('opacity-100');
+            visualCheckbox.classList.add('opacity-0');
+          }
+          
+          console.log('Updated checkbox state in DOM');
+        }
+      }
+      
+      // Get the updated HTML
+      const updatedHtml = doc.body.innerHTML;
+      console.log('Updated HTML:', updatedHtml.substring(0, 200));
+      
+      // Update the block in state
+      const updatedBlock = {
+        ...targetBlock,
+        html_css: updatedHtml,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update contentBlocks if the block exists there
+      if (contentBlocks.find(block => block.id === blockId || block.block_id === blockId)) {
+        setContentBlocks(prevBlocks => 
+          prevBlocks.map(block => 
+            (block.id === blockId || block.block_id === blockId) ? updatedBlock : block
+          )
+        );
+      }
+      
+      // Update lessonContent if the block exists there
+      if (lessonContent?.data?.content?.find(block => block.id === blockId || block.block_id === blockId)) {
+        setLessonContent(prevContent => ({
+          ...prevContent,
+          data: {
+            ...prevContent.data,
+            content: prevContent.data.content.map(block =>
+              (block.id === blockId || block.block_id === blockId) ? updatedBlock : block
+            )
+          }
+        }));
+      }
+      
+      // Save to server
+      console.log('Saving checkbox state to server...');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessons/${lessonId}/blocks/${blockId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          html_css: updatedHtml,
+          content: targetBlock.content,
+          type: targetBlock.type,
+          listType: targetBlock.listType || targetBlock.details?.listType || 'checkbox',
+          details: {
+            ...targetBlock.details,
+            listType: 'checkbox',
+            list_type: 'checkbox'
+          }
+        })
+      });
+      
+      if (response.ok) {
+        console.log('Checkbox state saved successfully');
+        toast.success('Checkbox state saved');
+      } else {
+        console.error('Failed to save checkbox state:', response.status);
+        toast.error('Failed to save checkbox state');
+      }
+      
+    } catch (error) {
+      console.error('Error in handleCheckboxToggle:', error);
+      toast.error('Error updating checkbox');
+    }
   };
 
   const handleQuoteUpdate = (blockId, updatedContentString) => {
@@ -1140,6 +1483,51 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
 
     // Reset editing state
     setEditingQuoteBlock(null);
+  };
+
+  const handleTableUpdate = (blockId, content, htmlContent, templateId) => {
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          content,
+          html_css: htmlContent,
+          templateId: templateId,
+          tableType: templateId,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              content,
+              html_css: htmlContent,
+              templateId: templateId,
+              tableType: templateId,
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                templateId: templateId,
+                tableType: templateId
+              },
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+    
+    setEditingTableBlock(null);
+    setShowTableComponent(false);
   };
 
   const removeContentBlock = (blockId) => {
@@ -1391,6 +1779,163 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       statementComponentRef.current?.handleEditStatement(blockId, statementType, content, htmlCss);
       return;
     }
+
+    // Enhanced list block detection - check content structure and HTML patterns
+    const isListBlock = block.type === 'list' || 
+                       (block.details?.list_type) ||
+                       (block.details?.listType) ||
+                       // Check if content has list structure (JSON with items array)
+                       (() => {
+                         try {
+                           const content = JSON.parse(block.content || '{}');
+                           return content.items && Array.isArray(content.items);
+                         } catch {
+                           return false;
+                         }
+                       })() ||
+                       // Check HTML patterns for list blocks
+                       (block.html_css && (
+                         block.html_css.includes('bg-gradient-to-br from-orange-50 to-red-50') ||
+                         block.html_css.includes('bg-gradient-to-br from-pink-50 to-rose-50') ||
+                         block.html_css.includes('bg-gradient-to-br from-blue-50 to-indigo-50') ||
+                         block.html_css.includes('checkbox-item') ||
+                         block.html_css.includes('list-none') ||
+                         (block.html_css.includes('<ol') && block.html_css.includes('space-y-4')) ||
+                         (block.html_css.includes('<ul') && block.html_css.includes('space-y-4'))
+                       ));
+
+    if (isListBlock) {
+      // Handle list block editing with proper type detection
+      // For fetched content, detect listType from HTML content if not available
+      let listType = block.listType || block.details?.list_type || block.details?.listType;
+      
+      // Override block type to ensure it's treated as a list
+      block = { ...block, type: 'list' };
+      
+      // If listType is not available, detect it from HTML content
+      if (!listType && block.html_css) {
+        const htmlContent = block.html_css;
+        
+        // Numbered list - has numbered items with gradient orange background
+        if (htmlContent.includes('bg-gradient-to-br from-orange-50 to-red-50') || 
+            htmlContent.includes('from-orange-500 to-red-500') ||
+            htmlContent.includes('<ol')) {
+          listType = 'numbered';
+        }
+        // Checkbox list - has checkbox items with pink background
+        else if (htmlContent.includes('bg-gradient-to-br from-pink-50 to-rose-50') || 
+                 htmlContent.includes('checkbox-item') ||
+                 htmlContent.includes('border-pink-400')) {
+          listType = 'checkbox';
+        }
+        // Bulleted list - has bullet points with blue background
+        else if (htmlContent.includes('bg-gradient-to-br from-blue-50 to-indigo-50') || 
+                 htmlContent.includes('from-blue-500 to-indigo-500') ||
+                 htmlContent.includes('rounded-full shadow-sm')) {
+          listType = 'bulleted';
+        }
+        // Fallback detection based on HTML structure
+        else if (htmlContent.includes('<ol')) {
+          listType = 'numbered';
+        } else if (htmlContent.includes('checkbox') || htmlContent.includes('input type="checkbox"')) {
+          listType = 'checkbox';
+        } else {
+          listType = 'bulleted'; // default fallback
+        }
+      } else if (!listType) {
+        listType = 'bulleted'; // fallback
+      }
+      
+      // Debug logging to verify list type detection
+      console.log('List block detected:', {
+        originalType: block.type,
+        detectedListType: listType,
+        hasHtmlCss: !!block.html_css,
+        blockContent: block.content,
+        htmlPreview: block.html_css ? block.html_css.substring(0, 200) + '...' : 'No HTML'
+      });
+      
+      // Parse and prepare list content for the editor
+      let listContent = {};
+      try {
+        if (block.content) {
+          listContent = JSON.parse(block.content);
+        }
+      } catch (e) {
+        console.log('Could not parse list content as JSON, extracting from HTML');
+        // Extract list items from HTML if JSON parsing fails
+        if (block.html_css) {
+          const htmlContent = block.html_css;
+          const items = [];
+          
+          // Extract items from different list types
+          if (listType === 'numbered') {
+            const matches = htmlContent.match(/<li[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/li>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          } else if (listType === 'checkbox') {
+            const matches = htmlContent.match(/<div[^>]*class="flex items-start space-x-4[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/div>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          } else {
+            // Bulleted list
+            const matches = htmlContent.match(/<li[^>]*>.*?<div[^>]*class="flex-1[^>]*>(.*?)<\/div>.*?<\/li>/gs);
+            if (matches) {
+              matches.forEach(match => {
+                const textMatch = match.match(/<div[^>]*class="flex-1[^>]*>(.*?)<\/div>/s);
+                if (textMatch) {
+                  items.push(textMatch[1].trim());
+                }
+              });
+            }
+          }
+          
+          listContent = {
+            items: items.length > 0 ? items : [''],
+            listType: listType,
+            checkedItems: {}
+          };
+        } else {
+          listContent = {
+            items: [''],
+            listType: listType,
+            checkedItems: {}
+          };
+        }
+      }
+      
+      // Set the listType to ensure proper editor opens
+      const blockWithType = { 
+        ...block, 
+        type: 'list', 
+        listType: listType,
+        content: JSON.stringify(listContent)
+      };
+      setEditingListBlock(blockWithType);
+      
+      // Initialize list component state
+      if (listComponentRef.current) {
+        listComponentRef.current.setListItems(listContent.items || ['']);
+        listComponentRef.current.setListType(listType);
+        listComponentRef.current.setCheckedItems(listContent.checkedItems || {});
+        listComponentRef.current.setNumberingStyle(listContent.numberingStyle || 'decimal');
+      }
+      
+      setShowListEditDialog(true);
+      return;
+    }
    
     // Enhanced interactive block detection - check subtype, content structure and HTML patterns
     const isInteractiveBlock = block.type === 'interactive' || 
@@ -1516,29 +2061,67 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
-      return;
-    }
-    
-    // Fallback to text editing for other block types
-    setCurrentBlock(block);
-    setEditModalOpen(true);
-   
-    // Reset editors
-    setEditorHeading('');
-    setEditorSubheading('');
-    setEditorContent('');
-   
-    // Set content based on block type
-    if (block.textType === 'heading_paragraph') {
-      const parts = block.content ? block.content.split('|||') : ['', ''];
-      setEditorHeading(parts[0] || '');
-      setEditorContent(parts[1] || '');
-    } else if (block.textType === 'subheading_paragraph') {
-      const parts = block.content ? block.content.split('|||') : ['', ''];
-      setEditorSubheading(parts[0] || '');
-      setEditorContent(parts[1] || '');
+    } else if (block.type === 'list') {
+      // Handle list block editing - open edit dialog directly
+      console.log('List block detected for editing:', block);
+      
+      // Detect list type from existing block data
+      let listType = block.listType || block.details?.list_type || block.details?.listType;
+      
+      // If list type is not available, try to detect from content or HTML
+      if (!listType && block.content) {
+        try {
+          const parsedContent = JSON.parse(block.content);
+          listType = parsedContent.listType || 'bulleted';
+        } catch (e) {
+          // If content is not JSON, try to detect from HTML
+          if (block.html_css) {
+            const htmlContent = block.html_css;
+            if (htmlContent.includes('<ol') || htmlContent.includes('list-decimal')) {
+              listType = 'numbered';
+            } else if (htmlContent.includes('type="checkbox"') || htmlContent.includes('input[type="checkbox"]')) {
+              listType = 'checkbox';
+            } else {
+              listType = 'bulleted';
+            }
+          } else {
+            listType = 'bulleted'; // fallback
+          }
+        }
+      } else if (!listType) {
+        listType = 'bulleted'; // fallback
+      }
+      
+      // Ensure the block has the list type information
+      const blockWithType = {
+        ...block,
+        listType: listType
+      };
+      
+      // Set the editing list block and show the list edit dialog
+      setEditingListBlock(blockWithType);
+      setShowListEditDialog(true);
     } else {
-      setEditorContent(block.content || '');
+      setCurrentBlock(block);
+      setEditModalOpen(true);
+     
+      // Reset editors
+      setEditorHeading('');
+      setEditorSubheading('');
+      setEditorContent('');
+     
+      // Set content based on block type
+      if (block.textType === 'heading_paragraph') {
+        const parts = block.content ? block.content.split('|||') : ['', ''];
+        setEditorHeading(parts[0] || '');
+        setEditorContent(parts[1] || '');
+      } else if (block.textType === 'subheading_paragraph') {
+        const parts = block.content ? block.content.split('|||') : ['', ''];
+        setEditorSubheading(parts[0] || '');
+        setEditorContent(parts[1] || '');
+      } else {
+        setEditorContent(block.content || '');
+      }
     }
   };
 
@@ -1666,9 +2249,61 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
     }
   };
 
+
   const handlePreview = () => {
-    console.log('Previewing lesson:', { lessonTitle, contentBlocks });
-    alert('Preview functionality coming soon!');
+    // Navigate to the new lesson preview page
+    navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/preview`);
+  };
+
+  // Convert LessonBuilder content blocks to Modern format
+  const convertToModernFormat = () => {
+    // Create lesson data object
+    const currentLessonData = {
+      id: lessonId || Math.random().toString(36).substr(2, 9),
+      title: lessonTitle || 'Untitled Lesson',
+      description: lessonData?.description || 'No description available',
+      duration: '30 min',
+      author: 'Course Creator',
+      difficulty: 'Intermediate'
+    };
+
+    // Use contentBlocks if available, otherwise fall back to lessonContent
+    const sourceBlocks = (contentBlocks && contentBlocks.length > 0) 
+      ? contentBlocks 
+      : (lessonContent?.data?.content || []);
+
+    return convertToModernLessonFormat(currentLessonData, sourceBlocks, false);
+  };
+
+  // Handle block updates from the unified preview
+  const handleBlockUpdate = (blockId, updatedBlock) => {
+    console.log('Updating block:', blockId, updatedBlock);
+    
+    // Update contentBlocks if they exist
+    if (contentBlocks && contentBlocks.length > 0) {
+      setContentBlocks(prevBlocks => 
+        prevBlocks.map(block => 
+          (block.id || block.block_id) === blockId 
+            ? { ...block, ...updatedBlock }
+            : block
+        )
+      );
+    }
+    
+    // Also update lessonContent if it exists
+    if (lessonContent?.data?.content) {
+      setLessonContent(prev => ({
+        ...prev,
+        data: {
+          ...prev.data,
+          content: prev.data.content.map(block => 
+            (block.id || block.block_id) === blockId 
+              ? { ...block, ...updatedBlock }
+              : block
+          )
+        }
+      }));
+    }
   };
 
   // Convert blocks to HTML/CSS format
@@ -1901,6 +2536,52 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                   <cite class="text-sm font-medium text-gray-500">— ${quoteContent.author || ''}</cite>
                 </div>
               `;
+          }
+        }
+      } else if (block.type === 'list') {
+        // Prefer saved html_css if available (preserves exact styling)
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from list content
+          try {
+            const listContent = JSON.parse(block.content || '{}');
+            const listType = listContent.listType || block.listType || 'bulleted';
+            const items = listContent.items || [];
+            const checkedItems = listContent.checkedItems || {};
+
+            if (listType === 'numbered') {
+              html = `
+                <div class="list-block numbered-list">
+                  <ol class="list-decimal list-inside space-y-2 text-gray-800">
+                    ${items.map(item => `<li class="leading-relaxed">${item}</li>`).join('')}
+                  </ol>
+                </div>`;
+            } else if (listType === 'checkbox') {
+              html = `
+                <div class="list-block checkbox-list">
+                  <div class="space-y-3">
+                    ${items.map((item, index) => `
+                      <label class="flex items-start space-x-3 cursor-pointer group">
+                        <input type="checkbox" ${checkedItems[index] ? 'checked' : ''} 
+                               class="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                        <span class="text-gray-800 leading-relaxed ${checkedItems[index] ? 'line-through text-gray-500' : ''}">${item}</span>
+                      </label>
+                    `).join('')}
+                  </div>
+                </div>`;
+            } else {
+              // bulleted list
+              html = `
+                <div class="list-block bulleted-list">
+                  <ul class="list-disc list-inside space-y-2 text-gray-800">
+                    ${items.map(item => `<li class="leading-relaxed">${item}</li>`).join('')}
+                  </ul>
+                </div>`;
+            }
+          } catch (e) {
+            console.error('Error parsing list content:', e);
+            html = `<div class="list-block"><ul class="list-disc list-inside"><li>Error loading list</li></ul></div>`;
           }
         }
       } else if (block.type === 'pdf') {
@@ -2395,7 +3076,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   };
 
   const toggleViewMode = () => {
-    setIsViewMode(!isViewMode);
+    // View mode functionality removed - now using Modern Preview only
   };
 
   const handleVideoDialogClose = () => {
@@ -4228,18 +4909,16 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
   return (
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
-        {/* Content Blocks Sidebar - Only show in edit mode */}
-        {!isViewMode && (
-          <div
-            className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
-            style={{
-              left: sidebarCollapsed ? "4.5rem" : "17rem"
-            }}
+        {/* Content Blocks Sidebar */}
+        <div
+          className="fixed top-16 h-[calc(100vh-4rem)] z-40 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
+          style={{
+            left: sidebarCollapsed ? "4.5rem" : "17rem"
+          }}
           >
             <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-full">
-              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="sticky top-0 z-10 p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <h2 className="text-lg font-bold text-gray-800 flex items-center">
-                 
                   Content Library
                 </h2>
                 <p className="text-xs text-gray-500 mt-1">
@@ -4247,7 +4926,7 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                 </p>
               </div>
              
-              <div className="p-4">
+              <div className="overflow-y-auto flex-1 p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {contentBlockTypes.map((blockType) => (
                     <Card
@@ -4279,839 +4958,146 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
               </div> */}
             </div>
           </div>
-        )}
 
         {/* Main Content */}
         <div
           className={`flex-1 transition-all duration-300 relative ${
-            isViewMode
-              ? 'ml-0'
-              : sidebarCollapsed
-                ? 'ml-[calc(4.5rem+16rem)]'
-                : 'ml-[calc(17rem+16rem)]'
+            sidebarCollapsed
+              ? 'ml-[calc(4.5rem+16rem)]'
+              : 'ml-[calc(17rem+16rem)]'
           }`}
         >
-          <div className="w-full h-full bg-[#fafafa]">
-            {/* Lesson Builder Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
-              <div className="max-w-[800px] mx-auto flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {!isViewMode && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => navigate(-1)}
-                      className="flex items-center space-x-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      <span>Back</span>
-                    </Button>
-                  )}
-                  <h1 className="text-lg font-bold">{lessonData?.title || lessonTitle || 'Untitled Lesson'}</h1>
-                </div>
+          {/* Fixed Header */}
+          <div className="fixed top-16 left-0 right-0 bg-white border-b border-gray-200 px-6 py-4 z-30"
+               style={{
+                 left: sidebarCollapsed ? "calc(4.5rem + 16rem)" : "calc(17rem + 16rem)"
+               }}>
+            <div className="max-w-[800px] mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(-1)}
+                  className="flex items-center space-x-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back</span>
+                </Button>
+                <h1 className="text-lg font-bold">{lessonData?.title || lessonTitle || 'Untitled Lesson'}</h1>
+              </div>
+             
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreview}
+                  className="flex items-center gap-1"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  Preview
+                </Button>
                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleViewMode}
-                    className="flex items-center gap-1"
-                  >
-                    {isViewMode ? (
-                      <>
-                        <Pencil className="h-4 w-4 mr-1" />
-                        Edit
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 mr-1" />
-                        Preview
-                      </>
-                    )}
-                  </Button>
-                 
-                  {!isViewMode && (
+                
+                <Button
+                  size="sm"
+                  onClick={handleUpdate}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
                     <>
-                      <Button variant="outline" size="sm" onClick={handleSave}>
-                        Save as Draft
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={handleUpdate}
-                        disabled={isUploading}
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Updating...
-                          </>
-                        ) : (
-                          'Update'
-                        )}
-                      </Button>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Updating...
                     </>
+                  ) : (
+                    'Update'
                   )}
-                </div>
+                </Button>
               </div>
             </div>
+          </div>
 
-            {/* Main Content Canvas */}
+          {/* Main Content Canvas with top padding for fixed header */}
+          <div className="w-full h-full bg-[#fafafa] pt-20">
             <div className="py-4">
                 <div>
-                  {isViewMode ? (
-                        <div className="min-h-screen bg-white overflow-hidden relative">
-                          {/* Course Header with Gradient */}
-                          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-8 text-white relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black opacity-10"></div>
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-16 -mt-16"></div>
-                            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white opacity-5 rounded-full -ml-12 -mb-12"></div>
-                            <div className="relative z-10 text-center">
-                              <h1 className="text-4xl font-bold mb-3">
-                                {lessonData?.title || lessonTitle || 'Untitled Lesson'}
-                              </h1>
-                              <div className="w-32 h-1 bg-white bg-opacity-30 mx-auto rounded-full"></div>
+                  {/* Always show edit interface since View mode is replaced by Modern Preview */}
+                  {contentBlocks.length === 0 ? (
+                    <div className="min-h-[60vh] flex items-center justify-center">
+                      <div className="max-w-2xl mx-auto text-center">
+                        {/* Beautiful gradient background */}
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-purple-50 to-pink-100 rounded-3xl transform rotate-1"></div>
+                          <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 p-12">
+                            {/* Animated icon */}
+                            <div className="mb-8 relative">
+                              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                              </div>
+                              {/* Floating elements */}
+                              <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-bounce"></div>
+                              <div className="absolute -bottom-1 -left-3 w-4 h-4 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.5s'}}></div>
                             </div>
-                          </div>
 
-                          {/* Course Content - All in one flowing container */}
-                          <div className="p-8 bg-gradient-to-b from-gray-50 to-white">
-                            {(() => {
-                              // Use a single source to avoid duplicate rendering
-                              // Prefer edit-mode contentBlocks when present; otherwise fall back to fetched lesson content
-                              const allBlocks = (contentBlocks && contentBlocks.length > 0)
-                                ? [...contentBlocks]
-                                : (lessonContent?.data?.content ? [...lessonContent.data.content] : []);
-                              // Sort by order if available
-                              allBlocks.sort((a, b) => (a.order || 0) - (b.order || 0));
-                             
-                              if (allBlocks.length === 0) {
-                                return (
-                                  <div className="text-center py-16">
-                                    <BookOpen className="h-20 w-20 text-gray-300 mx-auto mb-6" />
-                                    <h3 className="text-2xl font-semibold text-gray-700 mb-3">
-                                      No Content Available
-                                    </h3>
-                                    <p className="text-gray-500 text-lg">
-                                      This lesson doesn't have any content yet. Switch to edit mode to start adding content.
-                                    </p>
-                                  </div>
-                                );
-                              }
-                             
-                              return (
-                                <div className="prose prose-xl max-w-none space-y-8">
-                                  {allBlocks.map((block, index) => {
-                                    const blockId = block.id || block.block_id;
-                                   
-                                    return (
-                                      <div key={blockId} className="relative">
-                                        {/* Text Content */}
-                                        {block.type === 'text' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.content }}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Statement Content */}
-                                        {block.type === 'statement' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.content }}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Image Content */}
-                                        {block.type === 'image' && (
-                                          <div className="mb-8">
-                                            {(block.html_css || block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url) && (
-                                              <div>
-                                                {block.html_css && block.html_css.trim() ? (
-                                                  <div
-                                                    className="prose max-w-none"
-                                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                                  />
-                                                ) : ((block.layout || block.details?.layout) === 'side-by-side' ? (
-                                                  <div className="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                                                    <div>
-                                                      <img
-                                                        src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                        alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                        className="w-full max-h-[28rem] object-contain rounded-lg shadow-lg"
-                                                      />
-                                                    </div>
-                                                    <div>
-                                                      <p className="text-gray-700 text-lg leading-relaxed">
-                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                      </p>
-                                                    </div>
-                                                  </div>
-                                                ) : ((block.layout || block.details?.layout) === 'overlay') ? (
-                                                  <div className="relative rounded-xl overflow-hidden">
-                                                    <img
-                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="w-full h-96 object-cover"
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end">
-                                                      <div className="text-white p-8 w-full">
-                                                        <p className="text-xl font-medium leading-relaxed">
-                                                          {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                        </p>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                ) : ((block.layout || block.details?.layout) === 'centered') ? (
-                                                  <div className="text-center">
-                                                    <img
-                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="mx-auto w-full max-w-[720px] max-h-[28rem] object-contain rounded-xl shadow-lg"
-                                                    />
-                                                    {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
-                                                      <p className="text-gray-600 mt-3 italic text-base">
-                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                ) : ((block.layout || block.details?.layout) === 'full-width') ? (
-                                                  <div className="w-full">
-                                                    <img
-                                                      src={block.imageUrl || block.defaultContent?.imageUrl || block.details?.image_url}
-                                                      alt={block.imageTitle || block.defaultContent?.text || block.details?.caption || 'Image'}
-                                                      className="w-full max-h-[28rem] object-contain rounded-xl shadow-lg"
-                                                    />
-                                                    {(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption) && (
-                                                      <p className="text-gray-700 mt-4 text-lg">
-                                                        {getPlainText(block.text || block.defaultContent?.text || block.imageDescription || block.details?.caption || '')}
-                                                      </p>
-                                                    )}
-                                                  </div>
-                                                ) : null)}
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Video Content */}
-                                        {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-gray-900 rounded-xl p-6">
-                                              <video
-                                                src={block.videoUrl || block.details?.video_url}
-                                                controls
-                                                className="w-full h-96 rounded-lg"
-                                              >
-                                                Your browser does not support the video tag.
-                                              </video>
-                                              {(block.videoTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-white mt-4 mb-2">
-                                                  {block.videoTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.videoDescription || block.details?.description) && (
-                                                <p className="text-gray-300 text-lg">
-                                                  {block.videoDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* YouTube Content */}
-                                        {block.type === 'youtube' && (block.youtubeId || block.youtubeUrl || block.details?.url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-red-50 rounded-xl p-6 border border-red-100">
-                                              <iframe
-                                                src={`https://www.youtube.com/embed/${block.youtubeId || (block.youtubeUrl || block.details?.url)?.split('v=')[1]?.split('&')[0]}`}
-                                                title={block.youtubeTitle || block.details?.caption || 'YouTube video'}
-                                                allowFullScreen
-                                                className="w-full h-96 rounded-lg"
-                                              />
-                                              {(block.youtubeTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mt-4 mb-2">
-                                                  {block.youtubeTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.youtubeDescription || block.details?.description) && (
-                                                <p className="text-gray-700 text-lg">
-                                                  {block.youtubeDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* Quote Content */}
-                                        {block.type === 'quote' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="prose max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <blockquote className="text-lg italic text-gray-700 mb-3">
-                                                  "{JSON.parse(block.content || '{}').quote || 'Sample quote text'}"
-                                                </blockquote>
-                                                <cite className="text-sm font-medium text-gray-500">
-                                                  — {JSON.parse(block.content || '{}').author || 'Author Name'}
-                                                </cite>
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Table Content */}
-                                        {block.type === 'table' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="prose max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
-                                       
-                                        {/* Audio Content */}
-                                        {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-green-50 rounded-xl p-6 border border-green-100">
-                                              <audio
-                                                src={block.audioUrl || block.details?.audio_url}
-                                                controls
-                                                className="w-full mb-4"
-                                              >
-                                                Your browser does not support the audio tag.
-                                              </audio>
-                                              {(block.audioTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                                                  {block.audioTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.audioDescription || block.details?.description) && (
-                                                <p className="text-gray-700 text-lg">
-                                                  {block.audioDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* Link Content */}
-                                        {block.type === 'link' && (block.linkUrl || block.details?.url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-blue-50 rounded-xl p-6 text-center border border-blue-100">
-                                              {(block.linkTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                                  {block.linkTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.linkDescription || block.details?.description) && (
-                                                <p className="text-gray-700 mb-6 text-lg">
-                                                  {block.linkDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                              <a
-                                                href={block.linkUrl || block.details?.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`inline-flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 ${
-                                                  block.linkButtonStyle === 'secondary'
-                                                    ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-lg'
-                                                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg'
-                                                }`}
-                                              >
-                                                <Link2 className="h-5 w-5 mr-3" />
-                                                {block.linkButtonText || 'Visit Link'}
-                                              </a>
-                                            </div>
-                                          </div>
-                                        )}
-                                       
-                                        {/* PDF Content */}
-                                        {block.type === 'pdf' && (block.pdfUrl || block.details?.pdf_url) && (
-                                          <div className="mb-8">
-                                            <div className="bg-orange-50 rounded-xl p-6 border border-orange-100">
-                                              {(block.pdfTitle || block.details?.caption) && (
-                                                <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                                                  {block.pdfTitle || block.details?.caption}
-                                                </h3>
-                                              )}
-                                              {(block.pdfDescription || block.details?.description) && (
-                                                <p className="text-gray-700 mb-4 text-lg">
-                                                  {block.pdfDescription || block.details?.description}
-                                                </p>
-                                              )}
-                                              <div className="w-full rounded-xl overflow-hidden border border-orange-200 bg-white">
-                                                <iframe
-                                                  src={block.pdfUrl || block.details?.pdf_url}
-                                                  className="w-full h-[600px]"
-                                                  title={block.pdfTitle || 'PDF Document'}
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        )}
+                            {/* Main heading */}
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-4">
+                              Ready to Create Something Amazing?
+                            </h2>
+                            
+                            {/* Subtitle */}
+                            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                              Your lesson canvas is waiting! Start building engaging content by adding blocks from the sidebar.
+                            </p>
 
-                                        {/* Interactive Content */}
-                                        {block.type === 'interactive' && (
-                                          <div className="mb-8">
-                                            {block.html_css ? (
-                                              <div
-                                                className="max-w-none"
-                                                dangerouslySetInnerHTML={{ __html: block.html_css }}
-                                              />
-                                            ) : (
-                                              <div
-                                                className="max-w-none text-gray-800 leading-relaxed"
-                                                dangerouslySetInnerHTML={{ __html: block.content }}
-                                              />
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
+                            {/* Feature highlights */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                              <div className="flex flex-col items-center p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                  </svg>
                                 </div>
-                              );
-                            })()}
-                          </div>
-                         
-                          {/* Course Footer */}
-                          <div className="bg-gradient-to-r from-gray-100 to-gray-50 p-6 text-center border-t">
-                            <div className="flex items-center justify-center space-x-3">
-                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                              <span className="text-gray-600 font-medium">Lesson Complete</span>
-                              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                            </div>
-                          </div>
-                        </div>
-                  ) : contentBlocks.length === 0 ? (
-                    <div>
-                      <div >
-                        <div>
-                          <h2 className="text-xl font-bold text-gray-900 mb-2">
-                            {fetchingContent ? "Loading Lesson Content..." : lessonContent ? "" : ""}
-                          </h2>
-                          {fetchingContent ? (
-                            <div >
-                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                          ) : lessonContent?.data?.content && lessonContent.data.content.length > 0 ? (
-                            <div >
-                              <div >
-                                {lessonContent.data.content.map((block, index) => (
-                                  <div
-                                    key={block.block_id}
-                                    className="relative w-full  mb-4 group"
-                                    draggable="true"
-                                    data-block-id={block.block_id}
-                                    onDragStart={(e) => handleDragStart(e, block.block_id)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, block.block_id)}
-                                    onDragEnd={handleDragEnd}
-                                  >
-                                    {/* Edit/Delete Controls */}
-                                    {!isViewMode && (
-                                      <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                        <button
-                                          onClick={() => {
-                                            const blockType = block.type || 'text';
-                                            switch(blockType) {
-                                              case 'text':
-                                                // Detect textType from HTML content structure
-                                                let detectedTextType = 'paragraph'; // default
-                                                const htmlContent = block.html_css || '';
-                                               
-                                                // Check for master heading first (has gradient background)
-                                                if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
-                                                  detectedTextType = 'master_heading';
-                                                } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
-                                                  detectedTextType = 'heading_paragraph';
-                                                } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
-                                                  detectedTextType = 'subheading_paragraph';
-                                                } else if (htmlContent.includes('<h1')) {
-                                                  detectedTextType = 'heading';
-                                                } else if (htmlContent.includes('<h2')) {
-                                                  detectedTextType = 'subheading';
-                                                } else if (htmlContent.includes('<table') || htmlContent.includes('grid')) {
-                                                  detectedTextType = 'table';
-                                                }
-                                               
-                                                // Set the appropriate editor state based on detected type
-                                                setCurrentTextBlockId(block.block_id);
-                                               
-                                                // Reset all editor states first
-                                                setEditorHtml('');
-                                                setEditorHeading('');
-                                                setEditorSubheading('');
-                                                setEditorContent('');
-                                               
-                                                // Set content based on detected type
-                                                if (detectedTextType === 'heading_paragraph') {
-                                                  // Extract heading and paragraph content
-                                                  const tempDiv = document.createElement('div');
-                                                  tempDiv.innerHTML = htmlContent;
-                                                 
-                                                  // Try multiple selectors for heading
-                                                  const h1 = tempDiv.querySelector('h1') || tempDiv.querySelector('[class*="heading"]') || tempDiv.querySelector('h2, h3, h4, h5, h6');
-                                                  // Try multiple selectors for paragraph - look for p tags or div with paragraph content
-                                                  const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
-                                                 
-                                                  // Extract text content, preserving rich text formatting
-                                                  let headingContent = '';
-                                                  let paragraphContent = '';
-                                                 
-                                                  if (h1) {
-                                                    headingContent = h1.innerHTML || '';
-                                                  }
-                                                 
-                                                  if (p) {
-                                                    paragraphContent = p.innerHTML || '';
-                                                  }
-                                                 
-                                                  // If we couldn't find structured content, try to parse manually while preserving HTML
-                                                  if (!headingContent && !paragraphContent) {
-                                                    const fullHTML = tempDiv.innerHTML || '';
-                                                   
-                                                    // Try to find heading and paragraph content in the HTML
-                                                    // Look for heading patterns first
-                                                    const headingMatch = fullHTML.match(/<(h[1-6])[^>]*>(.*?)<\/h[1-6]>/i);
-                                                    if (headingMatch) {
-                                                      headingContent = headingMatch[2] || '';
-                                                      // Remove the heading from HTML and get remaining content
-                                                      const remainingHTML = fullHTML.replace(headingMatch[0], '').trim();
-                                                      if (remainingHTML) {
-                                                        // Clean up remaining content - remove wrapper divs but keep inner formatting
-                                                        const cleanedContent = remainingHTML
-                                                          .replace(/^<div[^>]*>/, '')
-                                                          .replace(/<\/div>$/, '')
-                                                          .trim();
-                                                        paragraphContent = cleanedContent || remainingHTML;
-                                                      }
-                                                    } else {
-                                                      // Look for strong/bold text as potential heading
-                                                      const boldMatch = fullHTML.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/i);
-                                                      if (boldMatch) {
-                                                        headingContent = boldMatch[2] || '';
-                                                        // Get content after the bold text
-                                                        const afterBold = fullHTML.substring(fullHTML.indexOf(boldMatch[0]) + boldMatch[0].length).trim();
-                                                        if (afterBold) {
-                                                          paragraphContent = afterBold;
-                                                        }
-                                                      } else {
-                                                        // Last resort: try to split by line breaks or common patterns
-                                                        const textContent = tempDiv.textContent || '';
-                                                        const htmlContent = tempDiv.innerHTML || '';
-                                                       
-                                                        // If there's formatted content, try to detect heading vs paragraph
-                                                        if (htmlContent.includes('<') && textContent) {
-                                                          // Split by common separators and take first part as heading
-                                                          const parts = textContent.split(/[\n\r]+/).filter(part => part.trim());
-                                                          if (parts.length >= 2) {
-                                                            headingContent = parts[0].trim();
-                                                            paragraphContent = parts.slice(1).join(' ').trim();
-                                                          } else {
-                                                            headingContent = htmlContent;
-                                                          }
-                                                        } else {
-                                                          headingContent = htmlContent || textContent;
-                                                        }
-                                                      }
-                                                    }
-                                                  }
-                                                 
-                                                  setEditorHeading(headingContent);
-                                                  setEditorContent(paragraphContent);
-                                                } else if (detectedTextType === 'subheading_paragraph') {
-                                                  // Extract subheading and paragraph content
-                                                  const tempDiv = document.createElement('div');
-                                                  tempDiv.innerHTML = htmlContent;
-                                                 
-                                                  // Try multiple selectors for subheading
-                                                  const h2 = tempDiv.querySelector('h2') || tempDiv.querySelector('[class*="subheading"]') || tempDiv.querySelector('h3, h4, h5, h6, h1');
-                                                  // Try multiple selectors for paragraph
-                                                  const p = tempDiv.querySelector('p') || tempDiv.querySelector('div:not([class*="content-block"]):not([class*="prose"])') || tempDiv.querySelector('[class*="paragraph"]');
-                                                 
-                                                  // Extract text content, preserving rich text formatting
-                                                  let subheadingContent = '';
-                                                  let paragraphContent = '';
-                                                 
-                                                  if (h2) {
-                                                    subheadingContent = h2.innerHTML || '';
-                                                  }
-                                                 
-                                                  if (p) {
-                                                    paragraphContent = p.innerHTML || '';
-                                                  }
-                                                 
-                                                  // If we couldn't find structured content, try to parse manually while preserving HTML
-                                                  if (!subheadingContent && !paragraphContent) {
-                                                    const fullHTML = tempDiv.innerHTML || '';
-                                                   
-                                                    // Try to find subheading and paragraph content in the HTML
-                                                    // Look for subheading patterns first
-                                                    const subheadingMatch = fullHTML.match(/<(h[2-6])[^>]*>(.*?)<\/h[2-6]>/i);
-                                                    if (subheadingMatch) {
-                                                      subheadingContent = subheadingMatch[2] || '';
-                                                      // Remove the subheading from HTML and get remaining content
-                                                      const remainingHTML = fullHTML.replace(subheadingMatch[0], '').trim();
-                                                      if (remainingHTML) {
-                                                        // Clean up remaining content - remove wrapper divs but keep inner formatting
-                                                        const cleanedContent = remainingHTML
-                                                          .replace(/^<div[^>]*>/, '')
-                                                          .replace(/<\/div>$/, '')
-                                                          .trim();
-                                                        paragraphContent = cleanedContent || remainingHTML;
-                                                      }
-                                                    } else {
-                                                      // Look for strong/bold text as potential subheading
-                                                      const boldMatch = fullHTML.match(/<(strong|b)[^>]*>(.*?)<\/(strong|b)>/i);
-                                                      if (boldMatch) {
-                                                        subheadingContent = boldMatch[2] || '';
-                                                        // Get content after the bold text
-                                                        const afterBold = fullHTML.substring(fullHTML.indexOf(boldMatch[0]) + boldMatch[0].length).trim();
-                                                        if (afterBold) {
-                                                          paragraphContent = afterBold;
-                                                        }
-                                                      } else {
-                                                        // Last resort: try to split by line breaks or common patterns
-                                                        const textContent = tempDiv.textContent || '';
-                                                        const htmlContent = tempDiv.innerHTML || '';
-                                                       
-                                                        // If there's formatted content, try to detect subheading vs paragraph
-                                                        if (htmlContent.includes('<') && textContent) {
-                                                          // Split by common separators and take first part as subheading
-                                                          const parts = textContent.split(/[\n\r]+/).filter(part => part.trim());
-                                                          if (parts.length >= 2) {
-                                                            subheadingContent = parts[0].trim();
-                                                            paragraphContent = parts.slice(1).join(' ').trim();
-                                                          } else {
-                                                            subheadingContent = htmlContent;
-                                                          }
-                                                        } else {
-                                                          subheadingContent = htmlContent || textContent;
-                                                        }
-                                                      }
-                                                    }
-                                                  }
-                                                 
-                                                  setEditorSubheading(subheadingContent);
-                                                  setEditorContent(paragraphContent);
-                                                } else {
-                                                  // For single content blocks, extract the inner content
-                                                  const tempDiv = document.createElement('div');
-                                                  tempDiv.innerHTML = htmlContent;
-                                                  
-                                                  // Special handling for master heading to preserve text content only
-                                                  if (detectedTextType === 'master_heading') {
-                                                    const h1Element = tempDiv.querySelector('h1');
-                                                    if (h1Element) {
-                                                      // Extract only the text content, not the styling
-                                                      setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
-                                                    } else {
-                                                      setEditorHtml('Master Heading');
-                                                    }
-                                                  } else {
-                                                    const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p') || tempDiv;
-                                                    setEditorHtml(contentElement.innerHTML || htmlContent);
-                                                  }
-                                                }
-                                              
-                                                // Store the detected textType for the save function
-                                                const blockWithTextType = { ...block, textType: detectedTextType };
-                                                setCurrentBlock(blockWithTextType);
-                                                setCurrentTextType(detectedTextType);
-                                                setCurrentTextBlockId(block.block_id);
-                                               
-                                                setShowTextEditorDialog(true);
-                                                break;
-                                              case 'image':
-                                                // Open image dialog in edit mode with existing data populated
-                                                setCurrentBlock({
-                                                  id: block.block_id,
-                                                  layout: block.layout || block.details?.layout,
-                                                  templateType: block.templateType || block.details?.template
-                                                });
-                                                setImageTitle(block.details?.alt_text || block.imageTitle || '');
-                                                setImageDescription(block.details?.caption || block.imageDescription || '');
-                                                setImageFile(null);
-                                                setImagePreview(block.details?.image_url || '');
-                                                setImageTemplateText(block.text || block.details?.caption || '');
-                                                setShowImageDialog(true);
-                                                break;
-                                              case 'video':
-                                                setCurrentBlock({
-                                                  id: block.block_id,
-                                                  videoUrl: block.details?.video_url,
-                                                  videoTitle: block.details?.caption
-                                                });
-                                                setShowVideoDialog(true);
-                                                break;
-                                              case 'youtube':
-                                                setCurrentYoutubeBlock({
-                                                  id: block.block_id,
-                                                  youtubeUrl: block.details?.url,
-                                                  youtubeTitle: block.details?.caption
-                                                });
-                                                setShowYoutubeDialog(true);
-                                                break;
-                                              case 'statement':
-                                                // For statement blocks, detect statementType from HTML content if not available
-                                                let statementType = block.details?.statement_type || block.details?.statementType || block.statementType;
-                                                
-                                                // If statementType is not available, detect it from HTML content
-                                                if (!statementType && block.html_css) {
-                                                  const htmlContent = block.html_css;
-                                                  if (htmlContent.includes('border-t border-b border-gray-800')) {
-                                                    statementType = 'statement-a';
-                                                  } else if (htmlContent.includes('absolute top-0 left-1/2') && htmlContent.includes('bg-gradient-to-r from-orange-400 to-orange-600')) {
-                                                    statementType = 'statement-b';
-                                                  } else if (htmlContent.includes('bg-gradient-to-r from-gray-50 to-gray-100') && htmlContent.includes('border-l-4 border-orange-500')) {
-                                                    statementType = 'statement-c';
-                                                  } else if (htmlContent.includes('absolute top-0 left-0 w-16 h-1')) {
-                                                    statementType = 'statement-d';
-                                                  } else if (htmlContent.includes('border-orange-300 bg-orange-50')) {
-                                                    statementType = 'note';
-                                                  } else {
-                                                    statementType = 'statement-a'; // fallback
-                                                  }
-                                                } else if (!statementType) {
-                                                  statementType = 'statement-a'; // fallback
-                                                }
-                                                
-                                                statementComponentRef.current?.handleEditStatement(
-                                                  block.block_id, 
-                                                  statementType, 
-                                                  block.details?.content || block.content || '', 
-                                                  block.html_css || ''
-                                                );
-                                                break;
-                                              default:
-                                                handleEditBlock(block.block_id);
-                                            }
-                                          }}
-                                          className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm"
-                                          title="Edit"
-                                        >
-                                          <Pencil className="h-4 w-4 text-blue-600" />
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            const updatedContent = lessonContent.data.content.filter(
-                                              b => b.block_id !== block.block_id
-                                            );
-                                            setLessonContent({
-                                              ...lessonContent,
-                                              data: {
-                                                ...lessonContent.data,
-                                                content: updatedContent
-                                              }
-                                            });
-                                            setContentBlocks(prevBlocks =>
-                                              prevBlocks.filter(b => b.id !== block.block_id)
-                                            );
-                                          }}
-                                          className="p-2 bg-white hover:bg-red-50 rounded-full shadow-sm"
-                                          title="Delete"
-                                        >
-                                          <Trash2 className="h-4 w-4 text-red-500" />
-                                        </button>
-                                        <div
-                                          className="p-2 bg-white hover:bg-gray-100 rounded-full shadow-sm cursor-move"
-                                          title="Drag to reorder"
-                                        >
-                                          <GripVertical className="h-4 w-4 text-gray-500" />
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="p-0">
-                                      {block.html_css ? (
-                                        <div dangerouslySetInnerHTML={{ __html: block.html_css }} />
-                                      ) : (
-                                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
-                                      )}
-                                      {block.script && (
-                                        <script dangerouslySetInnerHTML={{ __html: block.script }} />
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
+                                <h4 className="font-semibold text-gray-800 mb-1">Rich Content</h4>
+                                <p className="text-sm text-gray-600 text-center">Add text, images, videos & more</p>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="max-w-2xl mx-auto text-center py-12">
-                              <div className="mb-8">
-                                <BookOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold text-gray-700 mb-2">
-                                  No Content Available
-                                </h3>
-                                <p className="text-gray-500 mb-6">
-                                  This lesson doesn't have any content yet. Start building your lesson by adding content blocks from the Content Library.
-                                </p>
-                              </div>
-                             
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                                <h4 className="text-sm font-medium text-blue-800 mb-2">
-                                  💡 Getting Started
-                                </h4>
-                                <p className="text-sm text-blue-700 mb-4">
-                                  Use the <strong>Content Library</strong> on the left to add text, images, videos, and other interactive elements to your lesson.
-                                </p>
-                                <div className="flex flex-wrap gap-2 justify-center">
-                                  <Button
-                                    onClick={() => setShowTextTypeSidebar(true)}
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Text
-                                  </Button>
-                                  <Button
-                                    onClick={() => setShowImageTemplateSidebar(true)}
-                                    size="sm"
-                                    variant="outline"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Image
-                                  </Button>
-                                  <Button
-                                    onClick={() => setShowVideoDialog(true)}
-                                    size="sm"
-                                    variant="outline"
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Video
-                                  </Button>
+                              
+                              <div className="flex flex-col items-center p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-3">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+                                  </svg>
                                 </div>
+                                <h4 className="font-semibold text-gray-800 mb-1">Interactive</h4>
+                                <p className="text-sm text-gray-600 text-center">Drag & drop to organize</p>
+                              </div>
+                              
+                              <div className="flex flex-col items-center p-4 bg-pink-50 rounded-xl border border-pink-100">
+                                <div className="w-10 h-10 bg-pink-500 rounded-lg flex items-center justify-center mb-3">
+                                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                  </svg>
+                                </div>
+                                <h4 className="font-semibold text-gray-800 mb-1">Fast & Easy</h4>
+                                <p className="text-sm text-gray-600 text-center">Build lessons in minutes</p>
                               </div>
                             </div>
-                          )}
+
+                            {/* Call to action */}
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                              <div className="flex items-center text-sm text-gray-500">
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                                </svg>
+                                Choose a content block from the sidebar to get started
+                              </div>
+                            </div>
+
+                            {/* Decorative elements */}
+                            <div className="absolute top-4 left-4 w-2 h-2 bg-blue-400 rounded-full opacity-60"></div>
+                            <div className="absolute top-8 right-6 w-1 h-1 bg-purple-400 rounded-full opacity-60"></div>
+                            <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-pink-400 rounded-full opacity-60"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -5349,6 +5335,57 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
                                     <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                   </div>
                                 )}
+                              </div>
+                            )}
+
+                            {block.type === 'list' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'List'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    List
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  // Check if this is a checkbox list
+                                  const isCheckboxList = block.listType === 'checkbox' || 
+                                    (block.details && block.details.listType === 'checkbox') ||
+                                    (block.details && block.details.list_type === 'checkbox') ||
+                                    (block.html_css && block.html_css.includes('checkbox-container'));
+                                  
+                                  console.log('List block debug:', {
+                                    blockId: block.id,
+                                    listType: block.listType,
+                                    details: block.details,
+                                    hasHtmlCss: !!block.html_css,
+                                    isCheckboxList,
+                                    htmlCssSnippet: block.html_css ? block.html_css.substring(0, 100) : 'none'
+                                  });
+                                  
+                                  if (isCheckboxList && block.html_css) {
+                                    console.log('Using InteractiveListRenderer for block:', block.id);
+                                    return (
+                                      <InteractiveListRenderer 
+                                        block={block}
+                                        onCheckboxToggle={(blockId, itemIndex, checked) => handleCheckboxToggle(blockId, itemIndex, checked)}
+                                      />
+                                    );
+                                  } else if (block.html_css) {
+                                    return (
+                                      <div
+                                        className="max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                      />
+                                    );
+                                  } else {
+                                    return (
+                                      <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+                                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                      </div>
+                                    );
+                                  }
+                                })()}
                               </div>
                             )}
 
@@ -6234,6 +6271,18 @@ function LessonBuilder({ viewMode: initialViewMode = false }) {
           onTableUpdate={handleTableUpdate}
         />
       )}
+
+      {/* List Component */}
+      <ListComponent
+        ref={listComponentRef}
+        showListTemplateSidebar={showListTemplateSidebar}
+        setShowListTemplateSidebar={setShowListTemplateSidebar}
+        showListEditDialog={showListEditDialog}
+        setShowListEditDialog={setShowListEditDialog}
+        onListTemplateSelect={handleListTemplateSelect}
+        onListUpdate={handleListUpdate}
+        editingListBlock={editingListBlock}
+      />
 
       {/* Text Type Sidebar */}
       {showTextTypeSidebar && (

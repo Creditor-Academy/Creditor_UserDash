@@ -10,8 +10,6 @@ import  Courses  from "@/pages/Courses";
 import  ModulesList  from "@/pages/ModulesList";
 import  ModuleDetail  from "@/pages/ModuleDetail";
 import  LessonDetail  from "@/pages/LessonDetail";
-import LessonView from "@/pages/LessonView";
-import LessonContentView from "@/pages/LessonContentView";
 import  QuizView  from "@/pages/QuizView";
 import QuizTypePage from "@/pages/QuizTypePage";
 import QuizInstructionPage from "@/pages/QuizInstructionPage";
@@ -23,10 +21,10 @@ import AssignmentResultsPage from "@/pages/AssignmentResultsPage";
 import EssayInstructionPage from "@/pages/EssayInstructionPage";
 import EssayTakePage from "@/pages/EssayTakePage";
 import EssayResultsPage from "@/pages/EssayResultsPage";
-import  Groups  from "@/pages/Groups";
+import ModernLessonDemo from "@/pages/ModernLessonDemo";
+import Groups from "@/pages/Groups";
 import Catalog from "@/pages/Catalog";
 import CatelogCourses from "@/pages/CatelogCourses";
-import Home from "@/pages/home.jsx";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
@@ -37,9 +35,10 @@ import ModuleLessonsView from "@/pages/ModuleLessonsView";
 import ModuleAssessmentsView from "@/pages/ModuleAssessmentsView";
 import CourseEnrollment from "@/pages/CourseEnrollment";
 import GroupLayout from "@/layouts/GroupLayout";
+import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
-import GroupCalendarPage from "@/pages/group/CalendarPage";
-import AnnouncementPage from "@/pages/group/AnnouncementPage";
+
+import AnnouncementsPage from "@/pages/group/AnnouncementsPage";
 import ChatPage from "@/pages/group/ChatPage";
 import  SpeechifyReaderView  from "@/pages/SpeechifyReaderView";
 import AvatarPickerPage from "@/pages/AvatarPickerPage";
@@ -74,7 +73,9 @@ import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import LessonBuilder from "./pages/LessonBuilder";
+import LessonPreview from "./pages/LessonPreview";
 import LandingPage from "@/pages/LandingPage";
+import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -98,7 +99,9 @@ import ContactSection from "@/components/ContactSection";
 import AddUsersPage from "@/pages/AddUsersPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
+import LessonView from "./pages/LessonView";
      
 
 function ProtectedScormRoute() {
@@ -113,6 +116,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <UserProvider>
+          <CreditsProvider>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
@@ -151,6 +155,14 @@ function App() {
                 <LessonBuilder />
               </DashboardLayout>
             } 
+          />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview" 
+            element={<LessonPreview />} 
+          />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons" 
+            element={<LessonView />} 
           />
           <Route
             path="/instructor/add-users"
@@ -192,7 +204,6 @@ function App() {
                 <Route path="modules" element={<ModulesList />} />
                 <Route path="modules/:moduleId/view" element={<ModuleView />} />
                 <Route path="modules/:moduleId/lessons" element={<LessonView />} />
-                <Route path="modules/:moduleId/lesson/:lessonId/content" element={<LessonContentView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />
@@ -200,7 +211,7 @@ function App() {
                   <Route path="assessments" element={<ModuleAssessmentsView />} />
                   <Route path="lesson/:lessonId">
                     <Route index element={<LessonView />} />
-                    <Route path="view" element={<LessonBuilder viewMode={true} />} />
+                    <Route path="view" element={<LessonBuilder />} />
                     <Route path="detail" element={<LessonDetail />} />
                     <Route path="builder" element={<LessonBuilder />} />
                   </Route>
@@ -246,9 +257,9 @@ function App() {
               <Route index element={<Groups />} />
               <Route path=":groupId/*" element={<GroupLayout />}>
                 <Route path="news" element={<NewsPage />} />
+                <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
-                <Route path="calendar" element={<GroupCalendarPage />} />
-                <Route path="announcements" element={<AnnouncementPage />} />
+                <Route path="announcements" element={<AnnouncementsPage />} />
                 <Route path="*" element={<NewsPage />} />
               </Route>
             </Route>
@@ -322,9 +333,11 @@ function App() {
           <Route path="*" element={<NotFound />} />
           <Route path="/scorm/:courseId" element={<Scrompack />} />
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
+          <Route path="/modern-lesson-demo" element={<ModernLessonDemo />} />
           <Route path="/games" element={<Games />} />
           </Routes>
           <Toaster />
+          </CreditsProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>

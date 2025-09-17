@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCourseUsers, unenrollUser } from '../../services/courseService';
-import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown } from 'lucide-react';
+import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus } from 'lucide-react';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
+import AddToGroupModal from './AddToGroupModal';
 
 const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [courseUsers, setCourseUsers] = useState([]);
@@ -11,6 +12,8 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
   const [userToUnenroll, setUserToUnenroll] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showAddToGroupModal, setShowAddToGroupModal] = useState(false);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -39,6 +42,9 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   useEffect(() => {
     if (isOpen && courseId) {
       fetchUsers();
+    } else if (!isOpen) {
+      // Clear selected users when modal is closed
+      setSelectedUsers([]);
     }
   }, [isOpen, courseId]);
 
@@ -88,6 +94,50 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const cancelUnenroll = () => {
     setShowUnenrollConfirm(false);
     setUserToUnenroll(null);
+  };
+
+  // Handle individual user selection
+  const handleUserSelection = (userId) => {
+    setSelectedUsers(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
+
+  // Handle select all users
+  const handleSelectAll = () => {
+    const allUserIds = filteredUsers.map(user => user.user_id);
+    const allSelected = allUserIds.every(id => selectedUsers.includes(id));
+    
+    if (allSelected) {
+      // If all are selected, deselect all
+      setSelectedUsers([]);
+    } else {
+      // If not all are selected, select all
+      setSelectedUsers(allUserIds);
+    }
+  };
+
+  // Check if all filtered users are selected
+  const isAllSelected = () => {
+    if (filteredUsers.length === 0) return false;
+    const allUserIds = filteredUsers.map(user => user.user_id);
+    return allUserIds.every(id => selectedUsers.includes(id));
+  };
+
+  // Check if some users are selected
+  const isSomeSelected = () => {
+    return selectedUsers.length > 0;
+  };
+
+  // Handle successful group addition
+  const handleGroupAdditionSuccess = () => {
+    // Clear selected users after successful addition
+    setSelectedUsers([]);
+    // Optionally refresh the users list or show a success message
   };
 
   // Filter users based on search term
@@ -161,6 +211,40 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
+          
+          {/* Selection Controls */}
+          {filteredUsers.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  {isAllSelected() ? (
+                    <CheckSquare className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <Square className="w-4 h-4 text-gray-400" />
+                  )}
+                  {isAllSelected() ? 'Deselect All' : 'Select All'}
+                </button>
+                {isSomeSelected() && (
+                  <span className="text-sm text-gray-600">
+                    {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+                  </span>
+                )}
+              </div>
+              
+              {isSomeSelected() && (
+                <button
+                  onClick={() => setShowAddToGroupModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add to Group
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -184,10 +268,25 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               {filteredUsers.map((userData, index) => (
                 <div 
                   key={userData.user_id} 
-                  className="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200"
+                  className={`group bg-white border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${
+                    selectedUsers.includes(userData.user_id) 
+                      ? 'border-blue-300 bg-blue-50' 
+                      : 'border-gray-200 hover:border-blue-200'
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
+                      {/* Selection Checkbox */}
+                      <button
+                        onClick={() => handleUserSelection(userData.user_id)}
+                        className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors duration-200"
+                      >
+                        {selectedUsers.includes(userData.user_id) ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-400" />
+                        )}
+                      </button>
                       {/* Avatar */}
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-lg">
@@ -316,6 +415,15 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
           type="danger"
         />
       )}
+
+      {/* Add to Group Modal */}
+      <AddToGroupModal
+        isOpen={showAddToGroupModal}
+        onClose={() => setShowAddToGroupModal(false)}
+        selectedUsers={selectedUsers}
+        courseId={courseId}
+        onSuccess={handleGroupAdditionSuccess}
+      />
     </div>
   );
 };

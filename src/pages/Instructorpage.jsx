@@ -8,8 +8,10 @@ import AddCatelog from "./AddCatelog";
 import AddUsersForm from "./AddUsersPage";
 import ManageUsers from "./ManageUsers";
 import AddQuiz from "./AddQuiz";
+import AddGroups from "./AddGroups";
 import SupportTickets from "./Support";
 import Resources from "@/components/Resources";
+import AdminPayments from "@/components/credits/AdminPayments";
 import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,7 +26,8 @@ import {
   FaExclamationTriangle,
   FaArrowLeft,
   FaFileAlt,
-  FaImages
+  FaImages,
+  FaCreditCard
 } from "react-icons/fa";
 
 const InstructorPage = () => {
@@ -137,7 +140,7 @@ const InstructorPage = () => {
           >
             <FaEdit /> Create Quiz
           </button>
-          <button 
+          {/* <button 
             onClick={() => setActiveTab("scorm")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "scorm" 
@@ -146,7 +149,7 @@ const InstructorPage = () => {
             }`}
           >
             <FaFolder /> SCORM Content
-          </button>
+          </button> */}
           <button 
             onClick={() => setActiveTab("lessons")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -156,6 +159,16 @@ const InstructorPage = () => {
             }`}
           >
             <FaFileAlt /> Course Lessons
+          </button>
+          <button 
+            onClick={() => setActiveTab("groups")} 
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === "groups" 
+                ? "bg-blue-100 text-blue-700 font-semibold" 
+                : "hover:bg-gray-100 text-gray-700"
+            }`}
+          >
+            <FaUsers /> Group Management
           </button>
           <button 
             onClick={() => setActiveTab("events")} 
@@ -186,6 +199,16 @@ const InstructorPage = () => {
             }`}
           >
             <FaImages /> Assets
+          </button>
+          <button 
+            onClick={() => setActiveTab("payments")} 
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === "payments" 
+                ? "bg-blue-100 text-blue-700 font-semibold" 
+                : "hover:bg-gray-100 text-gray-700"
+            }`}
+          >
+            <FaCreditCard /> Payments
           </button>
         </div>
       </div>
@@ -268,15 +291,21 @@ const InstructorPage = () => {
               </section>
             )}
 
-            {activeTab === "scorm" && (
+            {/* {activeTab === "scorm" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <ScormPage />
               </section>
-            )}
+            )} */}
 
             {activeTab === "lessons" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CourseLessonsPage />
+              </section>
+            )}
+
+            {activeTab === "groups" && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <AddGroups />
               </section>
             )}
 
@@ -293,6 +322,11 @@ const InstructorPage = () => {
             {activeTab === "resources" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <Resources />
+              </section>
+            )}
+            {activeTab === "payments" && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <AdminPayments />
               </section>
             )}
           </div>
