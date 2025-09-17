@@ -305,22 +305,97 @@ const CreateScenario = () => {
     }
   };
 
+  // Enhanced flowchart logic to handle branch tracking and duplicate prevention
+  const analyzeBranchStructure = () => {
+    const levelConnections = new Map(); // level -> { success: Set, neutral: Set, all: Set }
+    const decisionMap = new Map(); // decisionId -> decision
+    const visitedDecisions = new Set();
+    const decisionPaths = new Map(); // decisionId -> Set of paths leading to it
+    
+    // Build decision map
+    decisions.forEach(decision => {
+      decisionMap.set(decision.id, decision);
+      decisionPaths.set(decision.id, new Set());
+    });
+    
+    // Recursive function to analyze connections
+    const analyzeDecision = (decisionId, currentPath = [], branchType = 'neutral') => {
+      if (visitedDecisions.has(decisionId) || currentPath.includes(decisionId)) {
+        return; // Prevent infinite loops
+      }
+      
+      visitedDecisions.add(decisionId);
+      const decision = decisionMap.get(decisionId);
+      if (!decision) return;
+      
+      // Track the path that led to this decision
+      const pathKey = `${currentPath.join('->')}->${decisionId}`;
+      decisionPaths.get(decisionId).add(pathKey);
+      
+      // Initialize level tracking if not exists
+      if (!levelConnections.has(decision.level)) {
+        levelConnections.set(decision.level, {
+          success: new Set(),
+          neutral: new Set(),
+          all: new Set(),
+          paths: new Map() // decisionId -> Set of branch types leading to it
+        });
+      }
+      
+      const levelData = levelConnections.get(decision.level);
+      levelData.all.add(decisionId);
+      
+      // Track which branch types lead to this decision
+      if (!levelData.paths.has(decisionId)) {
+        levelData.paths.set(decisionId, new Set());
+      }
+      levelData.paths.get(decisionId).add(branchType);
+      
+      // Analyze each choice
+      decision.choices.forEach(choice => {
+        if (choice.nextDecisionId) {
+          const nextDecision = decisionMap.get(choice.nextDecisionId);
+          if (nextDecision) {
+            // Track which branch type leads to this level
+            if (choice.branchType === 'success') {
+              levelData.success.add(nextDecision.id);
+            } else if (choice.branchType === 'neutral') {
+              levelData.neutral.add(nextDecision.id);
+            }
+            
+            // Recursively analyze next decision
+            analyzeDecision(choice.nextDecisionId, [...currentPath, decisionId], choice.branchType);
+          }
+        }
+      });
+    };
+    
+    // Start analysis from level 1 decisions
+    const mainDecisions = decisions.filter(d => d.level === 1);
+    mainDecisions.forEach(decision => {
+      analyzeDecision(decision.id, [], 'neutral'); // Level 1 starts as neutral
+    });
+    
+    return { levelConnections, decisionPaths };
+  };
+
   const renderFlowchart = () => {
     const mainDecisions = decisions.filter(d => d.level === 1);
+    const { levelConnections } = analyzeBranchStructure();
     
     return (
       <div className="flowchart">
         {mainDecisions.map(decision => (
           <div key={decision.id} className="flowchart-branch">
-            {renderFlowchartNode(decision)}
+            {renderFlowchartNode(decision, levelConnections)}
           </div>
         ))}
       </div>
     );
   };
 
-  // New function to render all choices horizontally at the same level
-  const renderChoicesHorizontally = (choices, level) => {
+  // Enhanced function to render choices with branch structure awareness
+  const renderChoicesHorizontally = (choices, level, branchStructure, parentDecisionId = null) => {
     return (
       <div className="flowchart-choices-horizontal" data-level={level}>
         {choices.map((choice, cIdx) => (
@@ -350,23 +425,45 @@ const CreateScenario = () => {
                 {decisions.find(d => d.id === choice.nextDecisionId) && (
                   (() => {
                     const nextDecision = decisions.find(d => d.id === choice.nextDecisionId);
-                    return (
-                      <div className="flowchart-node-container" data-level={nextDecision.level}>
-                        {/* Decision Node */}
-                        <div className="flowchart-decision-node">
-                          <div className="flowchart-decision-title">
-                            <div className="flowchart-level-badge">L{nextDecision.level}</div>
-                            <div className="flowchart-decision-text">{nextDecision.title}</div>
+                    const shouldRenderDecision = shouldRenderDecisionNode(
+                      nextDecision, 
+                      choice.branchType, 
+                      branchStructure, 
+                      parentDecisionId
+                    );
+                    
+                    if (shouldRenderDecision.shouldRender) {
+                      return (
+                        <div className="flowchart-node-container" data-level={nextDecision.level}>
+                          {/* Decision Node */}
+                          <div className="flowchart-decision-node">
+                            <div className="flowchart-decision-title">
+                              <div className="flowchart-level-badge">L{nextDecision.level}</div>
+                              <div className="flowchart-decision-text">{nextDecision.title}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Connection line from decision to choices */}
+                          <div className="flowchart-decision-connector"></div>
+                          
+                          {/* Choices Container - Horizontal Layout */}
+                          {renderChoicesHorizontally(nextDecision.choices, nextDecision.level, branchStructure, nextDecision.id)}
+                        </div>
+                      );
+                    } else if (shouldRenderDecision.showArrow) {
+                      // Show arrow to existing decision on success branch
+                      return (
+                        <div className="flowchart-reference-arrow">
+                          <div className="flowchart-arrow-to-existing">
+                            <div className="flowchart-arrow-line">↗</div>
+                            <div className="flowchart-arrow-label">
+                              → L{nextDecision.level}: {nextDecision.title}
+                            </div>
                           </div>
                         </div>
-                        
-                        {/* Connection line from decision to choices */}
-                        <div className="flowchart-decision-connector"></div>
-                        
-                        {/* Choices Container - Horizontal Layout */}
-                        {renderChoicesHorizontally(nextDecision.choices, nextDecision.level)}
-                      </div>
-                    );
+                      );
+                    }
+                    return null;
                   })()
                 )}
               </div>
@@ -384,7 +481,52 @@ const CreateScenario = () => {
     );
   };
 
-  const renderFlowchartNode = (decision) => {
+  // Function to determine if a decision node should be rendered or referenced
+  const shouldRenderDecisionNode = (decision, branchType, branchStructure, parentDecisionId) => {
+    if (!decision || !branchStructure) {
+      return { shouldRender: true, showArrow: false };
+    }
+    
+    const levelData = branchStructure.get(decision.level);
+    if (!levelData) {
+      return { shouldRender: true, showArrow: false };
+    }
+    
+    // Get the paths leading to this decision
+    const decisionPaths = levelData.paths.get(decision.id);
+    if (!decisionPaths) {
+      return { shouldRender: true, showArrow: false };
+    }
+    
+    // Check if this decision is already connected to a success branch
+    const hasSuccessPath = levelData.success.has(decision.id);
+    const hasNeutralPath = levelData.neutral.has(decision.id);
+    
+    // If this is a neutral branch and the decision is already connected to a success branch
+    if (branchType === 'neutral' && hasSuccessPath) {
+      return { shouldRender: false, showArrow: true };
+    }
+    
+    // If this is a neutral branch and the decision is only connected to neutral branches
+    if (branchType === 'neutral' && !hasSuccessPath && hasNeutralPath) {
+      return { shouldRender: true, showArrow: false };
+    }
+    
+    // If this is a success branch, always render
+    if (branchType === 'success') {
+      return { shouldRender: true, showArrow: false };
+    }
+    
+    // If this is a failure branch, always render
+    if (branchType === 'failure') {
+      return { shouldRender: true, showArrow: false };
+    }
+    
+    // Default: render the decision
+    return { shouldRender: true, showArrow: false };
+  };
+
+  const renderFlowchartNode = (decision, branchStructure) => {
     return (
       <div className="flowchart-node-container" data-level={decision.level}>
         {/* Decision Node */}
@@ -399,7 +541,7 @@ const CreateScenario = () => {
         <div className="flowchart-decision-connector"></div>
         
         {/* Choices Container - Horizontal Layout for ALL levels */}
-        {renderChoicesHorizontally(decision.choices, decision.level)}
+        {renderChoicesHorizontally(decision.choices, decision.level, branchStructure, decision.id)}
       </div>
     );
   };
@@ -699,14 +841,47 @@ const CreateScenario = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Brain className="w-5 h-5 mr-2 text-purple-600" />
-                  Decision Tree Flowchart
+                  Enhanced Decision Tree Flowchart
                 </CardTitle>
-                <p className="text-sm text-gray-600">Visual representation of your branching scenario</p>
+                <p className="text-sm text-gray-600">
+                  Visual representation with smart branch management - neutral branches that connect to existing success levels show as reference arrows
+                </p>
               </CardHeader>
               <CardContent>
                 <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
                   <div className="flowchart-container">
                     {renderFlowchart()}
+                  </div>
+                </div>
+                
+                {/* Enhanced Legend */}
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2">Enhanced Flowchart Features:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-700">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center">
+                        <span className="text-xs">↗</span>
+                      </div>
+                      <span><strong>Reference Arrow:</strong> Neutral branch connecting to existing success level</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-green-200 border border-green-400 rounded flex items-center justify-center">
+                        <span className="text-xs">✅</span>
+                      </div>
+                      <span><strong>Success Path:</strong> Always renders decision nodes</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center">
+                        <span className="text-xs">⚠️</span>
+                      </div>
+                      <span><strong>Neutral Path:</strong> Renders if not connected to success</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-red-200 border border-red-400 rounded flex items-center justify-center">
+                        <span className="text-xs">❌</span>
+                      </div>
+                      <span><strong>Failure Path:</strong> Always renders decision nodes</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -1093,15 +1268,14 @@ const CreateScenario = () => {
                 <div className="relative z-10 h-full flex items-center p-8">
                   <div className="flex items-start space-x-6 w-full">
                     {/* Avatar */}
-                    <div className="flex-shrink-0">
-                      <div className="w-32 h-56">
-                        <img 
-                          src={getAvatarImage(form.avatar)} 
-                          alt="Avatar" 
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
+                    <div className="w-48 h-[28rem]">
+                      <img 
+                        src={getAvatarImage(form.avatar)} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
+
                     
                     {/* Chat-like Content Box */}
                     <div className="flex-1">
@@ -1426,6 +1600,49 @@ const flowchartStyles = `
     border-radius: 6px;
     font-size: 12px;
     font-weight: bold;
+  }
+  
+  /* Reference arrow styles for connecting to existing decisions */
+  .flowchart-reference-arrow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    padding: 12px 16px;
+    background: #fef3c7;
+    border: 2px dashed #f59e0b;
+    border-radius: 12px;
+    min-width: 200px;
+    position: relative;
+  }
+  
+  .flowchart-arrow-to-existing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .flowchart-arrow-line {
+    font-size: 24px;
+    color: #f59e0b;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+  }
+  
+  .flowchart-arrow-label {
+    font-size: 12px;
+    color: #92400e;
+    font-weight: 600;
+    text-align: center;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
   
   /* Add visual indicators for decision level depth */
