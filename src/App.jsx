@@ -10,8 +10,6 @@ import  Courses  from "@/pages/Courses";
 import  ModulesList  from "@/pages/ModulesList";
 import  ModuleDetail  from "@/pages/ModuleDetail";
 import  LessonDetail  from "@/pages/LessonDetail";
-import LessonView from "@/pages/LessonView";
-import LessonContentView from "@/pages/LessonContentView";
 import  QuizView  from "@/pages/QuizView";
 import QuizTypePage from "@/pages/QuizTypePage";
 import QuizInstructionPage from "@/pages/QuizInstructionPage";
@@ -75,6 +73,7 @@ import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import LessonBuilder from "./pages/LessonBuilder";
+import LessonPreview from "./pages/LessonPreview";
 import LandingPage from "@/pages/LandingPage";
 import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
@@ -102,6 +101,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
+import LessonView from "./pages/LessonView";
      
 
 function ProtectedScormRoute() {
@@ -156,6 +156,14 @@ function App() {
               </DashboardLayout>
             } 
           />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview" 
+            element={<LessonPreview />} 
+          />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons" 
+            element={<LessonView />} 
+          />
           <Route
             path="/instructor/add-users"
             element={
@@ -196,7 +204,6 @@ function App() {
                 <Route path="modules" element={<ModulesList />} />
                 <Route path="modules/:moduleId/view" element={<ModuleView />} />
                 <Route path="modules/:moduleId/lessons" element={<LessonView />} />
-                <Route path="modules/:moduleId/lesson/:lessonId/content" element={<LessonContentView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />

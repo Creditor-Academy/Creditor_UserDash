@@ -18,13 +18,15 @@ const ListComponent = forwardRef(({
   const [listType, setListType] = useState('bulleted');
   const [checkedItems, setCheckedItems] = useState({});
   const [numberingStyle, setNumberingStyle] = useState('decimal'); // decimal, upper-roman, lower-roman, upper-alpha, lower-alpha
+  const [bulletStyle, setBulletStyle] = useState('circle'); // circle, square, disc, arrow, star, diamond
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     setListItems,
     setListType,
     setCheckedItems,
-    setNumberingStyle
+    setNumberingStyle,
+    setBulletStyle
   }));
 
   // Numbering style options
@@ -34,6 +36,16 @@ const ListComponent = forwardRef(({
     { value: 'lower-roman', label: 'i, ii, iii', example: 'i' },
     { value: 'upper-alpha', label: 'A, B, C', example: 'A' },
     { value: 'lower-alpha', label: 'a, b, c', example: 'a' }
+  ];
+
+  // Bullet style options
+  const bulletStyles = [
+    { value: 'circle', label: 'Circle', icon: '●' },
+    { value: 'square', label: 'Square', icon: '■' },
+    { value: 'disc', label: 'Disc', icon: '⬤' },
+    { value: 'arrow', label: 'Arrow', icon: '▶' },
+    { value: 'star', label: 'Star', icon: '★' },
+    { value: 'diamond', label: 'Diamond', icon: '◆' }
   ];
 
   // Function to get numbering based on style
@@ -67,6 +79,50 @@ const ListComponent = forwardRef(({
       }
     }
     return result;
+  };
+
+  // Function to get bullet style component
+  const getBulletComponent = (style) => {
+    const baseClasses = "flex-shrink-0 mt-2 flex items-center justify-center";
+    
+    switch (style) {
+      case 'circle':
+        return `<div class="${baseClasses}"><div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div></div>`;
+      case 'square':
+        return `<div class="${baseClasses}"><div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 shadow-sm"></div></div>`;
+      case 'disc':
+        return `<div class="${baseClasses}"><div class="w-3 h-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div></div>`;
+      case 'arrow':
+        return `<div class="${baseClasses}"><div class="text-blue-500 font-bold text-sm">▶</div></div>`;
+      case 'star':
+        return `<div class="${baseClasses}"><div class="text-blue-500 font-bold text-sm">★</div></div>`;
+      case 'diamond':
+        return `<div class="${baseClasses}"><div class="text-blue-500 font-bold text-sm">◆</div></div>`;
+      default:
+        return `<div class="${baseClasses}"><div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div></div>`;
+    }
+  };
+
+  // Function to render bullet in React component
+  const renderBullet = (style) => {
+    const baseClasses = "flex-shrink-0 mt-2 flex items-center justify-center";
+    
+    switch (style) {
+      case 'circle':
+        return <div className={baseClasses}><div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div></div>;
+      case 'square':
+        return <div className={baseClasses}><div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 shadow-sm"></div></div>;
+      case 'disc':
+        return <div className={baseClasses}><div className="w-3 h-3 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div></div>;
+      case 'arrow':
+        return <div className={baseClasses}><div className="text-blue-500 font-bold text-sm">▶</div></div>;
+      case 'star':
+        return <div className={baseClasses}><div className="text-blue-500 font-bold text-sm">★</div></div>;
+      case 'diamond':
+        return <div className={baseClasses}><div className="text-blue-500 font-bold text-sm">◆</div></div>;
+      default:
+        return <div className={baseClasses}><div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div></div>;
+    }
   };
 
   // List templates with beautiful previews
@@ -159,17 +215,13 @@ const ListComponent = forwardRef(({
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
           <div className="space-y-4">
             <div className="flex items-start space-x-4">
-              <div className="mt-2">
-                <div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
-              </div>
+              {renderBullet('circle')}
               <div className="flex-1 text-gray-800 text-sm leading-relaxed">
                 First item - Add your content here. You can include text, images, or key opportunities working for you.
               </div>
             </div>
             <div className="flex items-start space-x-4">
-              <div className="mt-2">
-                <div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
-              </div>
+              {renderBullet('circle')}
               <div className="flex-1 text-gray-800 text-sm leading-relaxed">
                 List of essentials. You can also add or delete items as needed.
               </div>
@@ -183,7 +235,8 @@ const ListComponent = forwardRef(({
           'List of essentials. You can also add or delete items as needed. Next, let\'s focus on how you can build better habits.',
           'Without distractions. The most rewarding adventures often start and end with meaningful connections and shared experiences.'
         ],
-        listType: 'bulleted'
+        listType: 'bulleted',
+        bulletStyle: 'circle'
       }
     }
   ];
@@ -197,12 +250,14 @@ const ListComponent = forwardRef(({
         setListType(listContent.listType || 'bulleted');
         setCheckedItems(listContent.checkedItems || {});
         setNumberingStyle(listContent.numberingStyle || 'decimal');
+        setBulletStyle(listContent.bulletStyle || 'circle');
       } catch (e) {
         console.error('Error parsing list content:', e);
         setListItems(['']);
         setListType('bulleted');
         setCheckedItems({});
         setNumberingStyle('decimal');
+        setBulletStyle('circle');
       }
     }
   }, [showListEditDialog, editingListBlock]);
@@ -223,7 +278,7 @@ const ListComponent = forwardRef(({
               ${content.items.map((item, index) => `
                 <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
                   <div class="flex-shrink-0 mt-1">
-                    <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                    <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors checkbox-container" data-index="${index}">
                       <input type="checkbox" class="hidden checkbox-item" data-index="${index}" />
                       <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm opacity-0 transition-opacity"></div>
                     </div>
@@ -244,9 +299,7 @@ const ListComponent = forwardRef(({
             <ul class="space-y-4 list-none">
               ${content.items.map((item) => `
                 <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-blue-300/50 hover:shadow-md transition-all duration-200">
-                  <div class="flex-shrink-0 mt-2">
-                    <div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
-                  </div>
+                  ${getBulletComponent(content.bulletStyle || 'circle')}
                   <div class="flex-1 text-gray-800 leading-relaxed">
                     ${item}
                   </div>
@@ -313,7 +366,8 @@ const ListComponent = forwardRef(({
       items: listItems,
       listType: listType,
       checkedItems: listType === 'checkbox' ? checkedItems : {},
-      numberingStyle: listType === 'numbered' ? numberingStyle : 'decimal'
+      numberingStyle: listType === 'numbered' ? numberingStyle : 'decimal',
+      bulletStyle: listType === 'bulleted' ? bulletStyle : 'circle'
     };
     
     // Generate updated HTML with current numbering style
@@ -327,7 +381,7 @@ const ListComponent = forwardRef(({
             ${listItems.map((item, index) => `
               <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
                 <div class="flex-shrink-0 mt-1">
-                  <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                  <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors checkbox-container" data-index="${index}">
                     <input type="checkbox" class="hidden checkbox-item" data-index="${index}" ${checkedItems[index] ? 'checked' : ''} />
                     <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
                   </div>
@@ -347,9 +401,7 @@ const ListComponent = forwardRef(({
           <ul class="space-y-4 list-none">
             ${listItems.map((item) => `
               <li class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-blue-300/50 hover:shadow-md transition-all duration-200">
-                <div class="flex-shrink-0 mt-2">
-                  <div class="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full shadow-sm"></div>
-                </div>
+                ${getBulletComponent(bulletStyle)}
                 <div class="flex-1 text-gray-800 leading-relaxed">
                   ${item}
                 </div>
@@ -550,6 +602,35 @@ const ListComponent = forwardRef(({
               </div>
             )}
 
+            {/* Bullet Style Selector (only for bulleted lists) */}
+            {listType === 'bulleted' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Bullet Style</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {bulletStyles.map((style) => (
+                    <div
+                      key={style.value}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 ${
+                        bulletStyle === style.value
+                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => setBulletStyle(style.value)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 flex items-center justify-center">
+                          <span className="text-blue-500 font-bold text-lg">{style.icon}</span>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{style.label}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* List Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -585,7 +666,7 @@ const ListComponent = forwardRef(({
                     )}
                     {listType === 'bulleted' && (
                       <div className="mt-4">
-                        <div className="w-2 h-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full"></div>
+                        {renderBullet(bulletStyle)}
                       </div>
                     )}
                     <div className="flex-1">

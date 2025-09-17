@@ -160,8 +160,8 @@ const LessonView = () => {
     if (setSidebarCollapsed) {
       setSidebarCollapsed(true);
     }
-    // Navigate to individual lesson content view
-    navigate(`/dashboard/courses/${courseId}/modules/${moduleId}/lesson/${lesson.id}/content`);
+    // Navigate to lesson preview
+    navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`);
   };
 
   const getStatusColor = (status) => {
