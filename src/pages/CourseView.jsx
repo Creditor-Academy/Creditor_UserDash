@@ -4,13 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, ChevronLeft, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
-import { fetchCourseModules, fetchCourseById } from "@/services/courseService";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
+import { fetchCourseModules, fetchCourseById, fetchUserCourses } from "@/services/courseService";
+import { useCredits } from "@/contexts/CreditsContext";
+import api from "@/services/apiClient";
+
+// MODULE_UNLOCK_COST will be fetched from backend per module
 
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
-  const hasAccess = location.state?.isAccessible ?? true;
+  const hasAccessFromState = location.state?.isAccessible ?? true;
+  const { userProfile } = useCredits();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -19,6 +24,7 @@ export function CourseView() {
   const [error, setError] = useState("");
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,6 +47,9 @@ export function CourseView() {
           return sum + duration;
         }, 0);
         setTotalDuration(total);
+        
+        // Removed lesson access fetch since we're not using locked state anymore
+        
       } catch (err) {
         setError("Failed to load course data");
       } finally {
@@ -49,6 +58,36 @@ export function CourseView() {
     };
     if (courseId) fetchData();
   }, [courseId]);
+
+  // Check if user is enrolled in the current course
+  const checkEnrollmentStatus = async () => {
+    if (!userProfile?.id || !courseId) {
+      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
+      return;
+    }
+    
+    try {
+      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
+      // Use the same method as Courses.jsx - fetchUserCourses from courseService
+      const userCourses = await fetchUserCourses();
+      console.log(`[CourseView] User courses:`, userCourses);
+      
+      // Check if current course is in user's enrolled courses
+      const enrolled = userCourses.some(course => {
+        const courseIdStr = course.id?.toString();
+        const currentCourseIdStr = courseId?.toString();
+        const match = courseIdStr === currentCourseIdStr;
+        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
+        return match;
+      });
+      
+      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
+      setIsEnrolled(enrolled);
+    } catch (error) {
+      console.error('Failed to check enrollment status:', error);
+      setIsEnrolled(false);
+    }
+  };
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -61,6 +100,14 @@ export function CourseView() {
       setFilteredModules(filtered);
     }
   }, [searchQuery, modules]);
+
+  // Check enrollment status when component mounts or userProfile/courseId changes
+  useEffect(() => {
+    if (userProfile?.id && courseId) {
+      checkEnrollmentStatus();
+    }
+  }, [userProfile?.id, courseId]);
+
 
   if (isLoading) {
     return (
@@ -111,18 +158,15 @@ export function CourseView() {
     return `${hours} hr ${remainingMinutes} min`;
   };
 
+  // Removed handleUnlockClick since we're not using locked state anymore
+
+  // Removed unlock-related functions since we're not using locked state anymore
+
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <main className="flex-1">
         <div className="container py-8 max-w-7xl">
-          <div className="flex items-center gap-2 mb-6">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard/courses">
-                <ChevronLeft size={16} />
-                Back to courses
-              </Link>
-            </Button>
-          </div>
 
           {/* Course Details Section */}
           {courseDetails && (
@@ -191,15 +235,17 @@ export function CourseView() {
               <span className="font-medium">Total Modules:</span>
               <span className="font-mono text-lg">{modules.length}</span>
             </div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search modules..."
-                className="pl-8 w-[250px]"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search modules..."
+                  className="pl-8 w-[250px]"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -213,23 +259,27 @@ export function CourseView() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredModules.map((module) => {
+               {filteredModules.map((module) => {
+                const isContentAvailable = !!module.resource_url;
+                // User has access if they came from catalog with access OR if they are enrolled
+                const hasAccess = hasAccessFromState || isEnrolled;
+                const isUpcoming = !isContentAvailable || !hasAccess;
+                 
+                
                 return (
                   <div key={module.id} className="module-card h-full">
-                    <Card className={`overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full ${(!hasAccess || !module.resource_url) ? 'opacity-75' : ''}`}>
+                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                       <div className="aspect-video relative overflow-hidden">
                         <img 
                           src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Lock overlay for locked modules (non-enrolled or no content) */}
-                        {((!hasAccess) || !module.resource_url) && (
+                        {/* Clock overlay for upcoming modules only */}
+                        {isUpcoming && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                             <div className="bg-white/95 rounded-full p-4 shadow-xl">
-                              <svg className="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
+                              <Clock className="w-8 h-8 text-gray-700" />
                             </div>
                           </div>
                         )}
@@ -256,7 +306,7 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          {hasAccess && module.resource_url ? (
+                           {isContentAvailable && hasAccess ? (
                             <>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
                                 <Button className="w-full">
@@ -265,18 +315,16 @@ export function CourseView() {
                                 </Button>
                               </Link>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                                {/* <Button variant="outline" className="w-full">
+                               <Button variant="outline" className="w-full">
                                   <FileText size={16} className="mr-2" />
                                   Start Assessment
-                                </Button> */}
+                                </Button> 
                               </Link>
                             </>
                           ) : (
-                            <Button className="w-full" variant="outline" disabled>
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                              </svg>
-                              Locked Module
+                            <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
+                              <Clock size={16} className="mr-2" />
+                              <span className="font-medium">Upcoming Module</span>
                             </Button>
                           )}
                         </CardFooter>
@@ -289,6 +337,8 @@ export function CourseView() {
           )}
         </div>
       </main>
+
+      {/* Removed confirmation modal since we're not using locked state anymore */}
     </div>
   );
 }

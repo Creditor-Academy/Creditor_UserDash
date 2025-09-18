@@ -19,7 +19,8 @@ import {
   Gamepad2,
   GraduationCap,
   Library,
-  School
+  School,
+  Bot
 } from "lucide-react";
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
@@ -39,8 +40,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
 
-const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownContent, onNavigate }) => {
+const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownContent, onNavigate, external }) => {
   const handleClick = () => {
+    if (external) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+      return;
+    }
     if (onNavigate) {
       onNavigate(href);
     }
@@ -48,11 +53,10 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
 
   if (dropdownContent) {
     return (
-      <Link
-        to={href}
+      <button
         onClick={handleClick}
         className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200",
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 w-full text-left",
           active
             ? "bg-blue-50 text-blue-600 border-l-4 border-blue-500 shadow-sm font-medium"
             : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
@@ -60,7 +64,7 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
       >
         <Icon size={collapsed ? 24 : 20} />
         {!collapsed && <span className="font-medium">{label}</span>}
-      </Link>
+      </button>
     );
   }
 
@@ -69,30 +73,56 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
       <Tooltip>
         <TooltipTrigger asChild>
           <motion.div whileTap={{ scale: 0.98 }}>
-            <Link
-              to={href}
-              onClick={handleClick}
-              className={cn(
-                "flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group",
-                collapsed ? "justify-center px-2" : "",
-                active
-                  ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm"
-              )}
-            >
-              <Icon size={collapsed ? 24 : 20} className={cn(
-                "transition-all duration-200",
-                active ? "text-blue-700" : "text-gray-500 group-hover:text-gray-700"
-              )} />
-              {!collapsed && (
-                <span className={cn(
-                  "transition-colors duration-200",
-                  active ? "font-semibold text-blue-700" : "text-gray-700 group-hover:text-gray-900"
-                )}>
-                  {label}
-                </span>
-              )}
-            </Link>
+            {external ? (
+              <button
+                onClick={handleClick}
+                className={cn(
+                  "flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group w-full text-left",
+                  collapsed ? "justify-center px-2" : "",
+                  active
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm"
+                )}
+              >
+                <Icon size={collapsed ? 24 : 20} className={cn(
+                  "transition-all duration-200",
+                  active ? "text-blue-700" : "text-gray-500 group-hover:text-gray-700"
+                )} />
+                {!collapsed && (
+                  <span className={cn(
+                    "transition-colors duration-200",
+                    active ? "font-semibold text-blue-700" : "text-gray-700 group-hover:text-gray-900"
+                  )}>
+                    {label}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <Link
+                to={href}
+                onClick={handleClick}
+                className={cn(
+                  "flex items-center gap-4 px-4 py-3 mx-2 rounded-xl transition-all duration-200 relative group",
+                  collapsed ? "justify-center px-2" : "",
+                  active
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 shadow-md border-l-4 border-blue-600 font-semibold"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:shadow-sm"
+                )}
+              >
+                <Icon size={collapsed ? 24 : 20} className={cn(
+                  "transition-all duration-200",
+                  active ? "text-blue-700" : "text-gray-500 group-hover:text-gray-700"
+                )} />
+                {!collapsed && (
+                  <span className={cn(
+                    "transition-colors duration-200",
+                    active ? "font-semibold text-blue-700" : "text-gray-700 group-hover:text-gray-900"
+                  )}>
+                    {label}
+                  </span>
+                )}
+              </Link>
+            )}
           </motion.div>
         </TooltipTrigger>
         {collapsed && (
@@ -299,16 +329,16 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div>
 
-          {/* <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants}>
             <SidebarItem
               icon={Users}
               label="Study Groups"
-              href="/groups"
-              active={isActive("/groups")}
+              href="/dashboard/groups"
+              active={isActive("/dashboard/groups")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
-          </motion.div> */}
+          </motion.div>
 
           <motion.div variants={itemVariants}>
             <SidebarItem
@@ -316,6 +346,17 @@ export function Sidebar({ collapsed, setCollapsed }) {
               label="Course Catalog"
               href="/dashboard/catalog"
               active={isActive("/dashboard/catalog")}
+              collapsed={collapsed}
+              onNavigate={handleNavigate}
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={Bot}
+              label="Credit chatbot"
+              href="/dashboard/chatbot"
+              active={isActive("/dashboard/chatbot")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
@@ -343,16 +384,17 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div> */}
 
-          {/* <motion.div variants={itemVariants}>
+          <motion.div variants={itemVariants}>
             <SidebarItem
               icon={Gamepad2}
               label="Games"
-              href="/games"
-              active={isActive("/games")}
+              href="https://game-open-scene.vercel.app/"
+              active={false}
               collapsed={collapsed}
               onNavigate={handleNavigate}
+              external={true}
             />
-          </motion.div> */}
+          </motion.div>
 
           {/* Instructor Portal - only for admin or instructor */}
           {isInstructorOrAdmin() && (

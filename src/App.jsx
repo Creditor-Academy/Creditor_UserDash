@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 import DashboardLayout from "@/layouts/DashboardLayout";
 import  Dashboard  from "@/pages/Dashboard";
+import UpcomingCourses from "@/pages/UpcomingCourses";
 import  Courses  from "@/pages/Courses";
 import  ModulesList  from "@/pages/ModulesList";
 import  ModuleDetail  from "@/pages/ModuleDetail";
@@ -34,9 +35,10 @@ import ModuleLessonsView from "@/pages/ModuleLessonsView";
 import ModuleAssessmentsView from "@/pages/ModuleAssessmentsView";
 import CourseEnrollment from "@/pages/CourseEnrollment";
 import GroupLayout from "@/layouts/GroupLayout";
+import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
-import GroupCalendarPage from "@/pages/group/CalendarPage";
-import AnnouncementPage from "@/pages/group/AnnouncementPage";
+
+import AnnouncementsPage from "@/pages/group/AnnouncementsPage";
 import ChatPage from "@/pages/group/ChatPage";
 import  SpeechifyReaderView  from "@/pages/SpeechifyReaderView";
 import AvatarPickerPage from "@/pages/AvatarPickerPage";
@@ -60,6 +62,7 @@ import CertificatePage from "../src/pages/CertificatePage";
 import SurveyInstructionPage from "@/pages/SurveyInstructionPage";
 import DebateInstructionPage from "@/pages/DebateInstructionPage";
 import DebateTakePage from "@/pages/DebateTakePage";
+import Chatbot from "@/pages/Chatbot";
 import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
@@ -69,7 +72,7 @@ import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
-import LandingPage from "@/pages/LandingPage";
+import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -93,6 +96,7 @@ import ContactSection from "@/components/ContactSection";
 import AddUsersPage from "@/pages/AddUsersPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
+import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
      
 
@@ -108,11 +112,12 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <UserProvider>
+          <CreditsProvider>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Home />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -165,6 +170,7 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="upcoming-courses" element={<UpcomingCourses />} />
             
             {/* Course related routes */}
             <Route path="courses">
@@ -228,9 +234,9 @@ function App() {
               <Route index element={<Groups />} />
               <Route path=":groupId/*" element={<GroupLayout />}>
                 <Route path="news" element={<NewsPage />} />
+                <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
-                <Route path="calendar" element={<GroupCalendarPage />} />
-                <Route path="announcements" element={<AnnouncementPage />} />
+                <Route path="announcements" element={<AnnouncementsPage />} />
                 <Route path="*" element={<NewsPage />} />
               </Route>
             </Route>
@@ -257,6 +263,7 @@ function App() {
             <Route path="announcements" element={<Announcements />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="todo" element={<TodoPage />} />
+            <Route path="chatbot" element={<Chatbot />} />
             <Route path="faqs" element={<FAQs />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="guides" element={<Guides />} />
@@ -306,6 +313,7 @@ function App() {
           <Route path="/games" element={<Games />} />
           </Routes>
           <Toaster />
+          </CreditsProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>

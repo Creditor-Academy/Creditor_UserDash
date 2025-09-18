@@ -3,14 +3,16 @@ import { getAuthHeader } from './authHeader';
 // Catalog Service for handling catalog-related API calls
 
 // Helper function to get auth headers
-const getAuthHeaders = () => {
-  // Backend handles authentication via cookies
-  return {
-    'Content-Type': 'application/json',
-    ...getAuthHeader(),
-  };
-};
+const getAuthHeaders = () => ({
+  'Content-Type': 'application/json',
+  ...getAuthHeader(),
+});
 
+/**
+ * Fetches all catalogs with optional query parameters
+ * @param {Object} params - Query parameters for filtering/sorting
+ * @returns {Promise<Array>} - Array of catalog objects
+ */
 export async function fetchAllCatalogs(params = {}) {
   try {
     const query = new URLSearchParams(params).toString();
@@ -25,14 +27,35 @@ export async function fetchAllCatalogs(params = {}) {
     }
 
     const data = await response.json();
-    // Handle the nested structure: data.data.catalogs
-    return data.data?.catalogs || data.data || [];
+   
+    
+    // Handle the nested structure and add course count
+    const catalogs = data.data?.catalogs || data.data || [];
+    
+    return catalogs.map(catalog => {
+      // Log the catalog object to see its structure
+  
+      
+      // Get course count from _count.catalog_courses if available
+      const courseCount = catalog._count?.catalog_courses || 0;
+      
+      return {
+        ...catalog,
+        catalog_courseCount: courseCount,
+        courseCount: courseCount // Keep both for backward compatibility
+      };
+    });
   } catch (error) {
     console.error('Error fetching catalogs:', error);
     throw error;
   }
 }
 
+/**
+ * Fetches a single catalog by ID
+ * @param {string} catalogId - ID of the catalog to fetch
+ * @returns {Promise<Object|null>} Catalog object or null if not found
+ */
 export async function fetchCatalogById(catalogId) {
   try {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/catalog/${catalogId}`, {
@@ -53,6 +76,11 @@ export async function fetchCatalogById(catalogId) {
   }
 }
 
+/**
+ * Fetches courses for a specific catalog
+ * @param {string} catalogId - ID of the catalog
+ * @returns {Promise<Array>} Array of course objects
+ */
 export async function fetchCatalogCourses(catalogId) {
   try {
     const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/catalog/${catalogId}/courses`, {
@@ -63,14 +91,14 @@ export async function fetchCatalogCourses(catalogId) {
 
     if (!response.ok) {
       if (response.status === 404) {
-        return []; // Return empty array for 404 (no courses)
+        return []; // No courses found for this catalog
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
     
-    // Handle different possible data structures
+    // Handle different response formats
     let courses = [];
     if (data.data) {
       courses = Array.isArray(data.data) ? data.data : (data.data.courses || []);
@@ -80,113 +108,27 @@ export async function fetchCatalogCourses(catalogId) {
       courses = data.courses;
     }
     
-    // Check if courses have full details or just IDs
-    if (courses.length > 0 && courses[0]) {
-      const firstCourse = courses[0];
-      
-      // Check if we have minimal course data (only id and title)
-      const hasMinimalData = firstCourse.id && firstCourse.title && 
-        !firstCourse.description && !firstCourse.price && !firstCourse.estimated_duration;
-      
-      // Check if we have junction table data (course_id field)
-      const hasJunctionData = firstCourse.course_id || (firstCourse.course && firstCourse.course.id);
-      
-      if (hasMinimalData || hasJunctionData) {
-        
-        // Extract course IDs
-        const courseIds = courses.map(item => {
-          if (item.course_id) return item.course_id;
-          if (item.course && item.course.id) return item.course.id;
-          if (item.id) return item.id;
-          return null;
-        }).filter(id => id !== null);
-        
-        // Fetch all courses and filter for published ones
-        try {
-                     const allCoursesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getAllCourses`, {
-             method: 'GET',
-             headers: getAuthHeaders(),
-             credentials: 'include',
-           });
-          
-          if (allCoursesResponse.ok) {
-            const allCoursesData = await allCoursesResponse.json();
-            const allCourses = allCoursesData.data || [];
-            
-            // Filter only published courses
-            const publishedCourses = allCourses.filter(course => 
-              course.course_status === 'PUBLISHED' || 
-              course.status === 'PUBLISHED' ||
-              course.published === true
-            );
-            
-            // Find matching courses from published courses only
-            const fullCourses = courseIds.map(courseId => {
-              const foundCourse = publishedCourses.find(c => c.id === courseId);
-              if (foundCourse) {
-                return foundCourse;
-              } else {
-                return null;
-              }
-            }).filter(course => course !== null);
-            
-            // Temporary fallback for debugging - if no published courses found, return all courses
-            if (fullCourses.length === 0 && courseIds.length > 0) {
-              const allCoursesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getAllCourses`, {
-                method: 'GET',
-                headers: getAuthHeaders(),
-                credentials: 'include',
-              });
-              
-              if (allCoursesResponse.ok) {
-                const allCoursesData = await allCoursesResponse.json();
-                const allCourses = allCoursesData.data || [];
-                
-                const fallbackCourses = courseIds.map(courseId => {
-                  const foundCourse = allCourses.find(c => c.id === courseId);
-                  return foundCourse || null;
-                }).filter(course => course !== null);
-                
-                return fallbackCourses;
-              }
-            }
-            
-            return fullCourses;
-          } else {
-            return [];
-          }
-        } catch (fallbackError) {
-          console.error('Error in fallback course fetching:', fallbackError);
-          return [];
-        }
-      } else {
-        // If courses already have full details, filter them directly for published status
-        
-        const publishedCourses = courses.filter(course => {
-          // Check multiple possible status field names and values
-          const status = course.course_status || course.status || course.published || course.isPublished || course.publishStatus;
-          const isPublished = status === 'PUBLISHED' || status === 'published' || status === true || status === 'true';
-          
-          return isPublished;
-        });
-        
-        // If no published courses found, log all courses for debugging
-        if (publishedCourses.length === 0 && courses.length > 0) {
-          // Temporary fallback for debugging - return all courses if no published ones found
-          return courses;
-        }
-        
-        return publishedCourses;
-      }
-    }
-    
-    return courses;
+    // Normalize the course data structure
+    return courses.map(item => ({
+      id: item.id || item.course_id || (item.course ? item.course.id : null),
+      title: item.title || (item.course ? item.course.title : `Course ${item.id || item.course_id}`),
+      ...(item.thumbnail && { thumbnail: item.thumbnail }),
+      ...(item.image && { image: item.image }),
+      ...(item.course && item.course.thumbnail && { thumbnail: item.course.thumbnail }),
+      ...(item.course && item.course.image && { image: item.course.image })
+    })).filter(item => item.id !== null);
   } catch (error) {
     console.error('Error fetching catalog courses:', error);
-    return []; // Return empty array on any error
+    throw error;
   }
 }
 
+/**
+ * Searches catalogs with optional filters
+ * @param {string} searchTerm - Search term for catalog name/description
+ * @param {Object} filters - Additional filters (e.g., category)
+ * @returns {Promise<Array>} Filtered array of catalogs
+ */
 export async function searchCatalogs(searchTerm, filters = {}) {
   try {
     const params = new URLSearchParams();
@@ -235,56 +177,143 @@ export async function searchCatalogs(searchTerm, filters = {}) {
   }
 }
 
-// Test function to check API endpoints
-export async function testCatalogAPI() {
+/**
+ * Test if the unlock endpoint exists
+ * @param {string} userId - ID of the user
+ * @returns {Promise<boolean>} True if endpoint exists
+ */
+export async function testUnlockEndpoint(userId) {
   try {
-    
-    // Test fetchAllCatalogs
-    const catalogs = await fetchAllCatalogs();
-    
-    if (catalogs.length > 0) {
-      const firstCatalog = catalogs[0];
-      
-      const courses = await fetchCatalogCourses(firstCatalog.id);
-    }
-    
-    return { success: true };
+    console.log('🧪 [CatalogService] Testing unlock endpoint...');
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payment-order/unlock`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({
+        userId: userId, // Keep as string
+        credits_spent: 1,
+        unlock_type: 'TEST',
+        unlock_id: 'test'
+      }),
+    });
+    console.log('🧪 [CatalogService] Test response status:', response.status);
+    return response.status !== 404;
   } catch (error) {
-    console.error('Catalog API test failed:', error);
-    return { success: false, error: error.message };
+    console.log('🧪 [CatalogService] Test endpoint error:', error);
+    return false;
   }
 }
 
-// Legacy function for backward compatibility - now fetches catalogs instead of courses
-export async function fetchCatalogCoursesLegacy(params = {}) {
-  console.warn('fetchCatalogCoursesLegacy is deprecated. Use fetchAllCatalogs instead.');
-  return await fetchAllCatalogs(params);
-}
-
-// Legacy function for backward compatibility
-export async function fetchCoursesByCategory(category) {
-  console.warn('fetchCoursesByCategory is deprecated. Use fetchCatalogCourses(catalogId) instead.');
+/**
+ * Unlocks a catalog using credits
+ * @param {string} catalogId - ID of the catalog to unlock
+ * @param {number} creditsSpent - Number of credits to spend
+ * @param {string} userId - ID of the user unlocking the catalog
+ * @returns {Promise<Object>} Unlock response data
+ */
+export async function unlockCatalog(catalogId, creditsSpent, userId) {
   try {
-    const catalogs = await fetchAllCatalogs();
-    const catalog = catalogs.find(cat => cat.name === category || cat.category === category);
-    if (catalog) {
-      return await fetchCatalogCourses(catalog.id);
+    const unlockData = {
+      userId: userId, // Keep as string - don't parse to int
+      credits_spent: creditsSpent,
+      unlock_type: 'CATALOG',
+      unlock_id: catalogId
+    };
+
+    console.log('🚀 [CatalogService] STARTING UNLOCK PROCESS');
+    console.log('[CatalogService] Unlocking catalog:', unlockData);
+    console.log('[CatalogService] API Base URL:', import.meta.env.VITE_API_BASE_URL);
+    console.log('[CatalogService] Full URL:', `${import.meta.env.VITE_API_BASE_URL}/payment-order/unlock`);
+    console.log("Unlock body", { userId, creditsSpent, unlock_type: 'CATALOG', unlock_id: catalogId });
+
+    // Test if the endpoint exists first
+    const endpointExists = await testUnlockEndpoint(userId);
+    console.log('🧪 [CatalogService] Endpoint exists:', endpointExists);
+
+    // First, let's test if the endpoint exists by making a simple request
+    try {
+      const testResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payment-order/credits/balance/${userId}`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+      console.log('[CatalogService] Test endpoint status:', testResponse.status);
+      if (testResponse.ok) {
+        const testData = await testResponse.json();
+        console.log('[CatalogService] Test endpoint response:', testData);
+      }
+    } catch (testError) {
+      console.log('[CatalogService] Test endpoint error:', testError);
     }
-    return [];
+
+    // Try using the API client first (same as CreditsContext)
+    try {
+      console.log('🔄 [CatalogService] Trying with API client...');
+      const { default: api } = await import('@/services/apiClient');
+      const response = await api.post('/payment-order/unlock', unlockData, { withCredentials: true });
+      console.log('✅ [CatalogService] API client SUCCESS:', response.data);
+      return response.data;
+    } catch (apiError) {
+      console.log('❌ [CatalogService] API client FAILED:', apiError);
+      console.log('🔄 [CatalogService] Trying fetch as fallback...');
+      
+      // Fallback to fetch if API client fails
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/payment-order/unlock`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(unlockData),
+      });
+
+      console.log('[CatalogService] Fetch response status:', response.status);
+      console.log('[CatalogService] Fetch response ok:', response.ok);
+      console.log('[CatalogService] Fetch response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        let errorMessage = 'Unknown error';
+        try {
+          const errorData = await response.json();
+          console.log('[CatalogService] Error response data:', errorData);
+          errorMessage = errorData.message || errorData.error || `HTTP ${response.status}`;
+        } catch (parseError) {
+          console.log('[CatalogService] Could not parse error response:', parseError);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('[CatalogService] Fetch unlock response:', data);
+      return data;
+    }
   } catch (error) {
-    console.error('Error fetching courses by category:', error);
+    console.error('[CatalogService] Error unlocking catalog:', error);
     throw error;
   }
 }
 
-// Legacy function for backward compatibility
-export async function fetchCourseCategories() {
-  console.warn('fetchCourseCategories is deprecated. Use fetchAllCatalogs instead.');
+/**
+ * Fetches user's unlocked catalogs
+ * @param {string} userId - ID of the user
+ * @returns {Promise<Array>} Array of unlocked catalog objects
+ */
+export async function fetchUserUnlockedCatalogs(userId) {
   try {
-    const catalogs = await fetchAllCatalogs();
-    return catalogs.map(catalog => catalog.name || catalog.category || "General");
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/catalog/getUserCatalogsByUserId`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data || [];
   } catch (error) {
-    console.error('Error fetching course categories:', error);
+    console.error('Error fetching user unlocked catalogs:', error);
     throw error;
   }
 }

@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Clock, ArrowLeft, Loader2, Lock } from "lucide-react";
 import { getCatalogCourses, testIndividualCourseAPI } from "@/services/instructorCatalogService";
 import { fetchUserCourses, fetchCourseModules } from "@/services/courseService";
+import { getCourseTrialStatus } from '../utils/trialUtils';
+import TrialBadge from '../components/ui/TrialBadge';
+import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
 
 const CatelogCourses = () => {
   const { catalogId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [catalog, setCatalog] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +22,9 @@ const CatelogCourses = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [accessibleCourseIds, setAccessibleCourseIds] = useState([]);
   const [courseModuleCounts, setCourseModuleCounts] = useState({});
+  const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
+  const [showTrialDialog, setShowTrialDialog] = useState(false);
+  const [userCoursesWithTrial, setUserCoursesWithTrial] = useState([]);
 
   // Helper function to format course level
   const formatCourseLevel = (level) => {
@@ -146,8 +153,10 @@ const CatelogCourses = () => {
       try {
         const userCourses = await fetchUserCourses();
         setAccessibleCourseIds(userCourses.map(c => c.id));
+        setUserCoursesWithTrial(userCourses);
       } catch (e) {
         setAccessibleCourseIds([]);
+        setUserCoursesWithTrial([]);
       }
     };
     fetchAccessible();
@@ -205,6 +214,27 @@ const CatelogCourses = () => {
 
   // Use the fetched courses directly since they're already filtered by catalog
   const filteredCourses = courses || [];
+
+  
+  const handleCourseClick = (course) => {
+    // Find the user's course data to check trial status
+    const userCourse = userCoursesWithTrial.find(uc => uc.id === course.id);
+    if (userCourse) {
+      const trialStatus = getCourseTrialStatus(userCourse);
+      if (trialStatus.isInTrial && trialStatus.isExpired) {
+        setSelectedExpiredCourse({ ...course, ...userCourse });
+        setShowTrialDialog(true);
+        return;
+      }
+    }
+    // Navigate to course normally
+    window.location.href = `/dashboard/courses/${course.id}`;
+  };
+  
+  const handleCloseTrialDialog = () => {
+    setShowTrialDialog(false);
+    setSelectedExpiredCourse(null);
+  };
 
   if (loading) {
     return (
@@ -372,6 +402,22 @@ const CatelogCourses = () => {
                         </Badge>
                       </div> */}
                       
+                      {/* Trial Badge */}
+                      {(() => {
+                        const userCourse = userCoursesWithTrial.find(uc => uc.id === course.id);
+                        if (userCourse) {
+                          const trialStatus = getCourseTrialStatus(userCourse);
+                          if (trialStatus.isInTrial) {
+                            return (
+                              <div className="absolute top-3 left-3">
+                                <TrialBadge timeRemaining={trialStatus.timeRemaining} />
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
+                      
                       {/* Category Badge */}
                       {course.category && (
                         <div className="absolute top-3 right-3">
@@ -380,6 +426,25 @@ const CatelogCourses = () => {
                           </Badge>
                         </div>
                       )}
+                      
+                      {/* Lock Overlay for Expired Trials */}
+                      {(() => {
+                        const userCourse = userCoursesWithTrial.find(uc => uc.id === course.id);
+                        if (userCourse) {
+                          const trialStatus = getCourseTrialStatus(userCourse);
+                          if (trialStatus.isInTrial && trialStatus.isExpired) {
+                            return (
+                              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                <div className="text-white text-center">
+                                  <Lock className="w-8 h-8 mx-auto mb-2" />
+                                  <p className="text-sm font-medium">Trial Expired</p>
+                                </div>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
                       
                       {/* Hover Overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -486,6 +551,18 @@ const CatelogCourses = () => {
                      </div>
                    </div>
                  );
+                 
+                 const userCourse = userCoursesWithTrial.find(uc => uc.id === course.id);
+                 const trialStatus = userCourse ? getCourseTrialStatus(userCourse) : { isInTrial: false, isExpired: false };
+                 
+                 if (trialStatus.isInTrial && trialStatus.isExpired) {
+                   return (
+                     <div key={course.id || idx} className="relative cursor-pointer" onClick={() => handleCourseClick(course)}>
+                       {cardContent}
+                     </div>
+                   );
+                 }
+                 
                  return (
                    <Link to={`/dashboard/courses/${course.id}`} state={{ isAccessible }} key={course.id || idx} className="relative">{cardContent}</Link>
                  );
@@ -494,6 +571,14 @@ const CatelogCourses = () => {
           )}
         </div>
       </main>
+      
+      {/* Trial Expired Dialog */}
+      <TrialExpiredDialog 
+        isOpen={showTrialDialog}
+        onClose={handleCloseTrialDialog}
+        course={selectedExpiredCourse}
+      />
+
     </div>
   );
 };

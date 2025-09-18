@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import NotificationPreferences from "@/components/profile/NotificationPreferences";
 import ProfileSecurity from "@/components/profile/ProfileSecurity";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Bell, Shield, Camera } from "lucide-react";
 import { getUserAvatarUrl, getUserAvatarUrlSync, refreshAvatarFromBackend } from "@/lib/avatar-utils";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
@@ -24,16 +25,20 @@ function Profile() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentAvatar, setCurrentAvatar] = useState(getUserAvatarUrlSync());
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
 
   const form = useForm({
     defaultValues: {
       fullName: "",
       email: "",
-      bio: "Learning enthusiast and software developer",
-      title: "Software Developer",
-      phone: "+1 (555) 123-4567",
+      bio: "",
+      title: "",
+      phone: "",
       location: "San Francisco, CA",
-      timezone: "America/New_York" // Default to EST
+      timezone: "America/New_York", // Default to EST
+      gender: "",
+      linkedin: "",
+      facebook: ""
     }
   });
 
@@ -76,6 +81,9 @@ function Profile() {
         phone: userProfile.phone || '',
         location: userProfile.location || '',
         timezone: userTimezone,
+        gender: userProfile.gender || '',
+        linkedin: userProfile.social_handles?.linkedin || '',
+        facebook: userProfile.social_handles?.facebook || ''
       };
       
       form.reset(formData);
@@ -129,6 +137,9 @@ function Profile() {
         phone: values.phone,
         location: values.location,
         timezone: values.timezone,
+        gender: values.gender,
+        facebook: values.facebook || '',
+        linkedin: values.linkedin || ''
       };
       
       const response = await updateUserProfile(updateData);
@@ -146,6 +157,12 @@ function Profile() {
         phone: values.phone,
         location: values.location,
         timezone: values.timezone,
+        gender: values.gender,
+        social_handles: {
+          ...(userProfile?.social_handles || {}),
+          linkedin: values.linkedin || '',
+          facebook: values.facebook || ''
+        }
       };
       
       // Update the global user profile context
@@ -178,7 +195,7 @@ function Profile() {
       <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
         <div className="flex items-center gap-6">
           <div className="relative group">
-            <Avatar className="w-24 h-24 border-4 border-primary/20">
+            <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
               <AvatarImage src={currentAvatar} alt="Profile avatar" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
                 {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
@@ -206,7 +223,7 @@ function Profile() {
     <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
       <div className="flex items-center gap-6">
         <div className="relative group">
-          <Avatar className="w-24 h-24 border-4 border-primary/20">
+          <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
             <AvatarImage src={currentAvatar} alt="Profile avatar" />
             <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
               {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
@@ -293,6 +310,34 @@ function Profile() {
                       )}
                     />
 
+                    <FormField
+                      control={form.control}
+                      name="linkedin"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">LinkedIn Profile URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="url" placeholder="https://www.linkedin.com/in/username" className="h-11 rounded-lg" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="facebook"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Facebook Profile URL</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="url" placeholder="https://www.facebook.com/username" className="h-11 rounded-lg" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     {/* <FormField
                       control={form.control}
                       name="title"
@@ -322,6 +367,45 @@ function Profile() {
                     /> */}
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Phone</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="tel" placeholder="Enter phone number" className="h-11 rounded-lg" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-700 mb-2">Gender</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={(value) => field.onChange(value)}>
+                              <SelectTrigger className="h-11 rounded-lg border-gray-200">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   {/* <FormField
                     control={form.control}
                     name="location"
@@ -336,19 +420,19 @@ function Profile() {
                     )}
                   /> */}
 
-                  {/* <FormField
+                  <FormField
                     control={form.control}
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bio</FormLabel>
+                        <FormLabel className="text-sm font-medium text-gray-700 mb-2">About Me</FormLabel>
                         <FormControl>
-                          <Textarea {...field} rows={4} />
+                          <Textarea {...field} rows={4} placeholder="Tell us about yourself..." className="rounded-lg" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
-                  /> */}
+                  />
 
                   {/* Timezone selection */}
                   <FormField
@@ -370,6 +454,7 @@ function Profile() {
                               <SelectItem value="America/New_York">EST (Eastern Time US & Canada)</SelectItem>
                               <SelectItem value="Europe/London">GMT/BST (Greenwich Mean Time)</SelectItem>
                               <SelectItem value="America/Chicago">CT (Central Time)</SelectItem>
+                              <SelectItem value="Asia/Kolkata">IST (Indian Standard Time)</SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
@@ -406,6 +491,15 @@ function Profile() {
           <ProfileSecurity />
         </TabsContent> */}
       {/* </Tabs> */}
+      <Dialog open={isAvatarPreviewOpen} onOpenChange={setIsAvatarPreviewOpen}>
+        <DialogContent className="sm:max-w-3xl p-0 bg-transparent border-none shadow-none">
+          <img
+            src={currentAvatar}
+            alt="Profile avatar preview"
+            className="max-h-[80vh] w-auto mx-auto rounded-lg shadow-2xl"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
