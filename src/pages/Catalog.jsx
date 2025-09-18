@@ -6,8 +6,11 @@ import { Link } from "react-router-dom";
 import { fetchAllCatalogs as fetchAllCatalogsPrimary } from "@/services/catalogService";
 import { fetchUserCourses } from "@/services/courseService";
 import { getCatalogCourses, fetchAllCatalogs as fetchAllCatalogsFallback } from "@/services/instructorCatalogService";
+import { getUnlockedModulesByUser } from "@/services/modulesService";
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import { useCredits } from '@/contexts/CreditsContext';
+import { useUser } from '@/contexts/UserContext';
+import api from '@/services/apiClient';
 
 export function CatalogPage() {
   const [catalogs, setCatalogs] = useState([]);
@@ -23,6 +26,8 @@ export function CatalogPage() {
   const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
   const [purchaseNotice, setPurchaseNotice] = useState("");
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [unlockedModules, setUnlockedModules] = useState([]);
+  const { userProfile } = useUser();
   const { balance: creditsBalance, credits: creditsAlt, unlockContent, refreshBalance } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
 
   useEffect(() => {
@@ -86,6 +91,27 @@ export function CatalogPage() {
     fetchUserCoursesData();
   }, []);
 
+
+  // Fetch unlocked modules to check for individual lesson purchases
+  useEffect(() => {
+    const fetchUnlockedModules = async () => {
+      if (!userProfile?.id) return;
+      
+      try {
+        // Fetch unlocked modules (same API as My Lessons page)
+        const modules = await getUnlockedModulesByUser(userProfile.id);
+        console.log(`[DEBUG] Fetched unlocked modules:`, modules);
+        console.log(`[DEBUG] First module structure:`, modules[0]);
+        setUnlockedModules(modules || []);
+      } catch (err) {
+        console.error('Error fetching unlocked modules:', err);
+        setUnlockedModules([]);
+      }
+    };
+
+    fetchUnlockedModules();
+  }, [userProfile?.id]);
+
   const categories = Array.from(new Set((catalogs || []).map(catalog => catalog.category || "General")));
 
   const filteredCatalogs = (catalogs || []).filter(catalog => {
@@ -97,18 +123,51 @@ export function CatalogPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // Helper function to check if user is enrolled in catalog
+  // Helper function to check if user is enrolled in catalog or has purchased any lessons
   const isEnrolledInCatalog = (catalog) => {
-    // Buy should appear only if user is enrolled in NONE of the courses in this catalog
+    console.log(`[DEBUG] Checking enrollment for catalog: ${catalog.name} (ID: ${catalog.id})`);
+    
+    // Check if user is enrolled in any course in this catalog
     const userCourseIds = new Set((userCourses || []).map(c => c?.id || c?._id || c?.courseId || c?.course_id).filter(Boolean));
     const catalogCourseIds = catalogCourseIdsMap[catalog.id] || new Set();
+    
+    console.log(`[DEBUG] User course IDs:`, Array.from(userCourseIds));
+    console.log(`[DEBUG] Catalog course IDs:`, Array.from(catalogCourseIds));
+    
+    // Check for course enrollment
     for (const id of catalogCourseIds) {
       if (userCourseIds.has(id)) {
-        // User has at least one course → do NOT show buy
+        console.log(`[DEBUG] User is enrolled in course ${id} - hiding buy button`);
         return true;
       }
     }
-    // No overlap → user not enrolled in any course of this catalog
+    
+    // Check for individual lesson purchases from courses in this catalog
+    console.log(`[DEBUG] Unlocked modules count:`, unlockedModules.length);
+    console.log(`[DEBUG] First module structure:`, unlockedModules[0]);
+    
+    const catalogCourseIdsList = Array.from(catalogCourseIds);
+    const hasLessonPurchasesFromCatalog = unlockedModules.some(module => {
+      // Get course_id from the module data
+      const courseId = module.course_id || module.courseId;
+      console.log(`[DEBUG] Module ${module.module_id} -> Course ${courseId}`);
+      
+      const belongsToCatalog = courseId && catalogCourseIdsList.includes(courseId);
+      if (belongsToCatalog) {
+        console.log(`[DEBUG] Module ${module.module_id} belongs to catalog course ${courseId}`);
+      }
+      
+      return belongsToCatalog;
+    });
+    
+    console.log(`[DEBUG] Has lesson purchases from catalog:`, hasLessonPurchasesFromCatalog);
+    
+    if (hasLessonPurchasesFromCatalog) {
+      console.log(`[DEBUG] User has purchased lessons from this catalog - hiding buy button`);
+      return true;
+    }
+    
+    console.log(`[DEBUG] No enrollment or lesson purchases - showing buy button`);
     return false;
   };
 
@@ -540,6 +599,16 @@ export function CatalogPage() {
                       setUserCourses(updatedCourses || []);
                     } catch (err) {
                       console.error('Error refreshing user courses after purchase:', err);
+                    }
+                    
+                    // Refresh unlocked modules
+                    try {
+                      if (userProfile?.id) {
+                        const modules = await getUnlockedModulesByUser(userProfile.id);
+                        setUnlockedModules(modules || []);
+                      }
+                    } catch (err) {
+                      console.error('Error refreshing unlocked modules after purchase:', err);
                     }
                     
                     // Show success notice
