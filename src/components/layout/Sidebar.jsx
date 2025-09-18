@@ -359,17 +359,21 @@ export function Sidebar({ collapsed, setCollapsed }) {
           {/* More section toggle */}
           {!collapsed && (
             <motion.div variants={itemVariants}>
-              <div className="px-4 pt-1">
-                <button
+              <div className="px-3 pt-2">
+                <motion.button
                   onClick={() => setMoreOpen((v) => !v)}
+                  aria-label={moreOpen ? "Show less options" : "Show more options"}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-blue-700 underline decoration-dotted underline-offset-4 transition-colors",
-                    moreOpen ? "text-blue-700" : ""
+                    "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium border transition-colors",
+                    moreOpen
+                      ? "bg-blue-50 text-blue-700 border-blue-200"
+                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
                   )}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <span>{moreOpen ? "Less" : "More"}</span>
-                  <ChevronDown size={12} className={cn("transition-transform", moreOpen ? "-rotate-180" : "rotate-0")} />
-                </button>
+                  <ChevronDown size={14} className={cn("transition-transform", moreOpen ? "-rotate-180" : "rotate-0")} />
+                </motion.button>
               </div>
             </motion.div>
           )}
