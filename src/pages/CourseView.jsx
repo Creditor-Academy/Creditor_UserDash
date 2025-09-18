@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, Lock, Unlock } from "lucide-react";
 import { fetchCourseModules, fetchCourseById, fetchUserCourses } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
+import { useUser } from "@/contexts/UserContext";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
+import { getUnlockedModulesByUser } from "@/services/modulesService";
 import api from "@/services/apiClient";
 
 // MODULE_UNLOCK_COST will be fetched from backend per module
@@ -14,8 +17,8 @@ import api from "@/services/apiClient";
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
-  const hasAccessFromState = location.state?.isAccessible ?? true;
-  const { userProfile } = useCredits();
+  const hasAccessFromState = location.state?.isAccessible ?? false;
+  const { userProfile } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [courseDetails, setCourseDetails] = useState(null);
@@ -25,6 +28,38 @@ export function CourseView() {
   const [totalDuration, setTotalDuration] = useState(0);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [unlockingId, setUnlockingId] = useState(null);
+  const [unlockedIds, setUnlockedIds] = useState(new Set());
+  const [confirmUnlock, setConfirmUnlock] = useState({ open: false, module: null });
+  const [creditsModalOpen, setCreditsModalOpen] = useState(false);
+  const { balance, unlockContent, refreshBalance } = useCredits();
+
+  // Initialize unlocked modules from backend for this user
+  useEffect(() => {
+    const initUnlocked = async () => {
+      try {
+        if (!userProfile?.id) return;
+        console.log('[UI] Fetch unlocked IDs for CourseView', userProfile.id);
+        const data = await getUnlockedModulesByUser(userProfile.id);
+        console.log('[UI] Unlocked IDs count', Array.isArray(data) ? data.length : 'not-array');
+        const ids = new Set((data || []).map((d) => String(d.module_id)));
+        setUnlockedIds(ids);
+      } catch (e) {
+        console.error('[UI] Fetch unlocked IDs error', e);
+      }
+    };
+    initUnlocked();
+  }, [userProfile?.id]);
+
+  const getStableRandomPrice = (moduleObj) => {
+    const input = String(moduleObj?.id || "");
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+    }
+    const baseOptions = [100, 150, 200, 250];
+    return baseOptions[hash % baseOptions.length];
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -261,9 +296,28 @@ export function CourseView() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                {filteredModules.map((module) => {
                 const isContentAvailable = !!module.resource_url;
-                // User has access if they came from catalog with access OR if they are enrolled
-                const hasAccess = hasAccessFromState || isEnrolled;
-                const isUpcoming = !isContentAvailable || !hasAccess;
+                const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
+                const isLocked = !hasAccess;
+                const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
+
+                // Sequential unlock: allow only the first module or next after highest unlocked
+                let canUnlockInOrder = false;
+                if (isLocked) {
+                  const allOrders = modules.map((m) => Number(m.order) || 0).filter((n) => n > 0);
+                  const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
+                  const unlockedOrders = new Set(
+                    modules
+                      .filter((m) => unlockedIds.has(m.id))
+                      .map((m) => Number(m.order) || 0)
+                  );
+                  const highestUnlocked = unlockedOrders.size ? Math.max(...Array.from(unlockedOrders)) : null;
+                  const currentOrder = Number(module.order) || 0;
+                  if (highestUnlocked == null) {
+                    canUnlockInOrder = currentOrder === minOrder;
+                  } else {
+                    canUnlockInOrder = currentOrder === highestUnlocked + 1;
+                  }
+                }
                  
                 
                 return (
@@ -275,11 +329,12 @@ export function CourseView() {
                           alt={module.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Clock overlay for upcoming modules only */}
-                        {isUpcoming && (
+                        {/* Lock overlay for locked modules */}
+                        {isLocked && (
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/95 rounded-full p-4 shadow-xl">
-                              <Clock className="w-8 h-8 text-gray-700" />
+                            <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
+                              <Lock className="w-5 h-5 text-gray-700" />
+                              <span className="text-sm font-medium text-gray-800">Locked</span>
                             </div>
                           </div>
                         )}
@@ -321,12 +376,49 @@ export function CourseView() {
                                 </Button> 
                               </Link>
                             </>
-                          ) : (
-                            <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                              <Clock size={16} className="mr-2" />
-                              <span className="font-medium">Upcoming Module</span>
-                            </Button>
-                          )}
+                           ) : !isContentAvailable ? (
+                             <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
+                               <Clock size={16} className="mr-2" />
+                               <span className="font-medium">Upcoming Module</span>
+                             </Button>
+                           ) : (
+                             <div className="w-full flex flex-col gap-2">
+                               <Button 
+                                 className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
+                                 onClick={() => {
+                                   if (!modulePrice || modulePrice <= 0) return;
+                                   if (!canUnlockInOrder) return;
+                                   if (balance < modulePrice) {
+                                     setCreditsModalOpen(true);
+                                     return;
+                                   }
+                                   setConfirmUnlock({ open: true, module });
+                                 }}
+                                 disabled={!modulePrice || unlockingId === module.id || !canUnlockInOrder}
+                               >
+                                 {unlockingId === module.id ? (
+                                   <>
+                                     <Clock size={16} className="mr-2 animate-spin" />
+                                     Processing...
+                                   </>
+                                 ) : (
+                                   <>
+                                     <Unlock size={16} className="mr-2" />
+                                     Unlock for {modulePrice} credits
+                                   </>
+                                 )}
+                               </Button>
+                               {(balance < modulePrice || !canUnlockInOrder) && (
+                                 <Button 
+                                   variant="outline"
+                                   className="w-full"
+                                   onClick={() => setCreditsModalOpen(true)}
+                                 >
+                                   {canUnlockInOrder ? 'Buy credits' : 'Unlock previous lesson first'}
+                                 </Button>
+                               )}
+                             </div>
+                           )}
                         </CardFooter>
                       </div>
                     </Card>
@@ -337,8 +429,52 @@ export function CourseView() {
           )}
         </div>
       </main>
+      {/* Confirm Unlock Dialog */}
+      {confirmUnlock.open && confirmUnlock.module && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmUnlock({ open: false, module: null })} />
+          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
+            <h4 className="text-lg font-semibold mb-2">Unlock Module</h4>
+            <p className="text-sm text-gray-700 mb-4">Unlock "{confirmUnlock.module.title}" for {Number(confirmUnlock.module.price) || 0} credits?</p>
+            <div className="flex justify-end gap-2">
+              <button className="px-4 py-2 rounded-md border hover:bg-gray-50" onClick={() => setConfirmUnlock({ open: false, module: null })}>Cancel</button>
+              <button 
+                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={async () => {
+                  const m = confirmUnlock.module;
+                  const cost = Number(m.price) || 0;
+                  setUnlockingId(m.id);
+                  try {
+                    await unlockContent('LESSON', m.id, cost);
+                    await refreshBalance?.();
+                    // Re-fetch unlocked list from backend to reflect source of truth
+                    try {
+                      if (userProfile?.id) {
+                        console.log('[UI] Refresh unlocked IDs after unlock for', userProfile.id);
+                        const fresh = await getUnlockedModulesByUser(userProfile.id);
+                        console.log('[UI] Refreshed unlocked count', Array.isArray(fresh) ? fresh.length : 'not-array');
+                        setUnlockedIds(new Set((fresh || []).map(d => String(d.module_id))));
+                      }
+                    } catch (err) {
+                      console.error('[UI] Refresh unlocked IDs failed', err);
+                    }
+                  } catch (e) {
+                    console.error('Failed to unlock lesson', e);
+                  } finally {
+                    setUnlockingId(null);
+                    setConfirmUnlock({ open: false, module: null });
+                  }
+                }}
+              >
+                Confirm Unlock
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* Removed confirmation modal since we're not using locked state anymore */}
+      {/* Credits Modal */}
+      <CreditPurchaseModal open={creditsModalOpen} onClose={() => setCreditsModalOpen(false)} />
     </div>
   );
 }
