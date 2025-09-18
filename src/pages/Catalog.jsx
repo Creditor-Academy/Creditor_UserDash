@@ -534,6 +534,14 @@ export function CatalogPage() {
                       await refreshBalance();
                     }
                     
+                    // Refresh user courses to update enrollment status
+                    try {
+                      const updatedCourses = await fetchUserCourses();
+                      setUserCourses(updatedCourses || []);
+                    } catch (err) {
+                      console.error('Error refreshing user courses after purchase:', err);
+                    }
+                    
                     // Show success notice
                     setPurchaseNotice(`Successfully purchased catalog: ${selectedCatalogToBuy.name}. All included courses are now unlocked.`);
                     closeAllModals();
