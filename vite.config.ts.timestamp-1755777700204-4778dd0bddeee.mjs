@@ -20,7 +20,7 @@ var vite_config_default = defineConfig(({ mode }) => ({
     }
   },
   define: {
-    "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://sharebackend-sdkp.onrender.com")
+    "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://creditor-backend-ceds.onrender.com")
   }
 }));
 export {

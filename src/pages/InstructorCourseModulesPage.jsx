@@ -106,7 +106,7 @@ const InstructorCourseModulesPage = () => {
           setLessonsLoading(false);
           return;
         }
-        const apiUrl = `https://sharebackend-sdkp.onrender.com/api/course/${courseId}/modules/${module.id}/lesson/all-lessons`;
+        const apiUrl = `https://creditor-backend-ceds.onrender.com/api/course/${courseId}/modules/${module.id}/lesson/all-lessons`;
         console.log("Fetching lessons from:", apiUrl);
 
         const response = await axios.get(apiUrl, {
