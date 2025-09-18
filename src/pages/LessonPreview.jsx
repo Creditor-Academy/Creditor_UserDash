@@ -765,43 +765,48 @@ const LessonPreview = () => {
                 })
               ) : (
                 <div className="flex items-center justify-center min-h-[60vh]">
-                  <div className="text-center max-w-md mx-auto">
-                    {/* Clean Coming Soon Card */}
-                    <div className="bg-white rounded-xl shadow-lg p-10 border border-gray-200">
-                      {/* Simple icon */}
-                      <div className="mb-6">
-                        <div className="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
-                          <Clock className="h-8 w-8 text-blue-600" />
+                  <div className="w-full max-w-xl mx-auto">
+                    {/* Refined Coming Soon Card (concise + animated) */}
+                    <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white/90 shadow-lg transition-all duration-300 hover:shadow-xl">
+                      {/* Animated top bar */}
+                      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-500 animate-pulse"></div>
+
+                      {/* Soft gradient backdrop */}
+                      <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-100 opacity-40 blur-3xl"></div>
+
+                      <div className="relative p-8">
+                        <div className="flex flex-col items-center text-center">
+                          {/* Icon */}
+                          <div className="relative mb-6">
+                            <span className="absolute inset-0 m-auto h-16 w-16 rounded-full bg-blue-100 animate-ping opacity-30"></span>
+                            <div className="relative z-10 w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center ring-8 ring-blue-50">
+                              <Clock className="h-8 w-8 text-blue-600" />
+                            </div>
+                          </div>
+
+                          <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-2">Coming Soon</h1>
+                          <p className="text-gray-600 mb-6 leading-relaxed max-w-md">
+                            This lesson is being prepared. Thank you for your patience while the material is finalized.
+                          </p>
+
+                          {/* Status + ETA */}
+                          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+                            <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-sm text-blue-700">
+                              <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                              In Development
+                            </span>
+                            <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
+                              <Calendar className="h-4 w-4 text-gray-500" />
+                              Estimated duration: {lessonData.duration || '30 min'}
+                            </span>
+                          </div>
+
+                          <Button onClick={() => navigate(-1)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                            <ChevronLeft className="h-4 w-4 mr-2" />
+                            Back to Course
+                          </Button>
                         </div>
                       </div>
-                      
-                      {/* Main heading */}
-                      <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                        Coming Soon
-                      </h1>
-                      
-                      {/* Description */}
-                      <p className="text-gray-600 mb-6 leading-relaxed">
-                        This lesson content is currently being prepared. 
-                        Please check back soon for updates.
-                      </p>
-                      
-                      {/* Status indicator */}
-                      <div className="flex items-center justify-center mb-6">
-                        <div className="flex items-center space-x-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          <span className="text-sm text-blue-700">In Development</span>
-                        </div>
-                      </div>
-                      
-                      {/* Action button */}
-                      <Button 
-                        onClick={() => navigate(-1)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-colors"
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-2" />
-                        Back to Course
-                      </Button>
                     </div>
                   </div>
                 </div>

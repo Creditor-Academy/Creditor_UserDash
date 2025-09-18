@@ -4819,6 +4819,30 @@ function LessonBuilder() {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'divider') {
+                    // Determine divider subtype from details, subtype, or HTML
+                    let dividerSubtype = b.details?.divider_type || b.subtype;
+                    if (!dividerSubtype && typeof b.html_css === 'string') {
+                      const html = b.html_css;
+                      if ((html.includes('cursor-pointer') || html.includes('letter-spacing')) && (html.includes('background-color') || html.includes('bg-blue'))) {
+                        dividerSubtype = 'continue';
+                      } else if ((html.includes('rounded-full') || html.includes('border-radius: 50%')) && (html.includes('<hr') || html.includes('border-top'))) {
+                        dividerSubtype = 'numbered_divider';
+                      } else if (html.includes('<hr')) {
+                        dividerSubtype = 'divider';
+                      } else {
+                        dividerSubtype = 'continue';
+                      }
+                    }
+                    return {
+                      ...base,
+                      type: 'divider',
+                      title: 'Divider',
+                      subtype: dividerSubtype || 'continue',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   if (b.type === 'interactive') {
                     // Detect interactive template type from subtype, content, or HTML patterns
                     let template = b.subtype || b.details?.template;
