@@ -24,7 +24,8 @@ import {
   Loader2,
   MessageSquare,
   Quote,
-  Layers
+  Layers,
+  Minus
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
@@ -35,6 +36,7 @@ import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
+import DividerComponent from '@/components/DividerComponent';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -501,6 +503,7 @@ function LessonBuilder() {
   const [showInteractiveTemplateSidebar, setShowInteractiveTemplateSidebar] = useState(false);
   const [showInteractiveEditDialog, setShowInteractiveEditDialog] = useState(false);
   const [editingInteractiveBlock, setEditingInteractiveBlock] = useState(null);
+  const [showDividerTemplateSidebar, setShowDividerTemplateSidebar] = useState(false);
 
   // Image block templates
   const imageTemplates = [
@@ -628,10 +631,15 @@ function LessonBuilder() {
       id: 'interactive',
       title: 'Interactive',
       icon: <Layers className="h-5 w-5" />
+    },
+    {
+      id: 'divider',
+      title: 'Divider',
+      icon: <Minus className="h-5 w-5" />
     }
   ];
 
-  // Modify the text types array to include specific styles
+
   const textTypes = [
     {
       id: 'heading',
@@ -715,6 +723,7 @@ function LessonBuilder() {
   const statementComponentRef = React.useRef();
   const listComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
+  const dividerComponentRef = React.useRef();
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
@@ -741,6 +750,8 @@ function LessonBuilder() {
       setShowPdfDialog(true);
     } else if (blockType.id === 'interactive') {
       setShowInteractiveTemplateSidebar(true);
+    } else if (blockType.id === 'divider') {
+      setShowDividerTemplateSidebar(true);
     } else {
       addContentBlock(blockType);
     }
@@ -980,6 +991,49 @@ function LessonBuilder() {
       )
     );
     setEditingInteractiveBlock(null);
+  };
+
+  // Divider component callbacks
+  const handleDividerTemplateSelect = (newBlock) => {
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    setShowDividerTemplateSidebar(false);
+  };
+
+  const handleDividerUpdate = (blockId, updatedContent) => {
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          ...updatedContent,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              ...updatedContent,
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                divider_type: updatedContent.subtype || block.subtype || 'continue',
+                content: updatedContent.content || ''
+              },
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
   };
 
   // List component callbacks
@@ -2101,6 +2155,14 @@ function LessonBuilder() {
       // Set the editing list block and show the list edit dialog
       setEditingListBlock(blockWithType);
       setShowListEditDialog(true);
+    } else if (block.type === 'divider') {
+      // Handle divider block editing - only for continue and numbered_divider types
+      if (block.subtype === 'continue' || block.subtype === 'numbered_divider') {
+        // Use the divider component ref to trigger edit functionality
+        if (dividerComponentRef.current) {
+          dividerComponentRef.current.editDivider(block);
+        }
+      }
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -2748,12 +2810,12 @@ function LessonBuilder() {
             };
           }
           
-          // For quote blocks, include explicit quote type metadata
-          if (block.type === 'quote') {
-            blockData.quoteType = block.textType || block.quoteType || 'quote_a';
+          // For divider blocks, include explicit divider type metadata
+          if (block.type === 'divider') {
+            blockData.dividerType = block.subtype || 'continue';
             blockData.details = {
               ...blockData.details,
-              quote_type: block.textType || block.quoteType || 'quote_a',
+              divider_type: block.subtype || 'continue',
               content: block.content || ''
             };
           }
@@ -2898,6 +2960,15 @@ function LessonBuilder() {
             // For statement blocks, include explicit type metadata
             details = {
               statement_type: block.statementType || 'statement-a',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'divider':
+            // For divider blocks, include explicit type metadata
+            details = {
+              divider_type: block.subtype || 'continue',
               content: blockContent
             };
             htmlContent = block.html_css || blockContent;
@@ -5634,6 +5705,30 @@ function LessonBuilder() {
                                 )}
                               </>
                             )}
+
+                            {/* Divider Content */}
+                            {block.type === 'divider' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">Divider</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {block.subtype || 'Divider'}
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -6364,6 +6459,16 @@ function LessonBuilder() {
         onInteractiveTemplateSelect={handleInteractiveTemplateSelect}
         onInteractiveUpdate={handleInteractiveUpdate}
         editingInteractiveBlock={editingInteractiveBlock}
+      />
+
+      {/* Divider Component */}
+      <DividerComponent
+        ref={dividerComponentRef}
+        showDividerTemplateSidebar={showDividerTemplateSidebar}
+        setShowDividerTemplateSidebar={setShowDividerTemplateSidebar}
+        onDividerTemplateSelect={handleDividerTemplateSelect}
+        editingDividerBlock={null}
+        onDividerUpdate={handleDividerUpdate}
       />
 
       {/* Image Dialog */}

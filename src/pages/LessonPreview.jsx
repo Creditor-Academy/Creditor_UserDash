@@ -281,6 +281,14 @@ const LessonPreview = () => {
           embedCode: block.embedCode || block.embed_code || block.details?.embedCode || block.content || '',
           htmlCss: block.html_css || '',
         });
+      } else if (block.type === 'divider') {
+        allContent.push({
+          ...blockData,
+          type: 'divider',
+          subtype: block.subtype || block.details?.subtype || 'divider',
+          content: block.content || '',
+          htmlCss: block.html_css || '',
+        });
       } else {
         // Handle other block types - add all blocks to content
         allContent.push({
@@ -729,8 +737,19 @@ const LessonPreview = () => {
                       </>
                     )}
 
+                    {/* Divider Content */}
+                    {block.type === 'divider' && (
+                      <>
+                        {block.htmlCss ? (
+                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                        ) : (
+                          <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                        )}
+                      </>
+                    )}
+
                     {/* Other Content Types - Fallback for any unhandled block types */}
-                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'audio', 'embed'].includes(block.type) && (
+                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'audio', 'embed', 'divider'].includes(block.type) && (
                       <>
                         {block.htmlCss ? (
                           <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
