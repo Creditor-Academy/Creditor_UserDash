@@ -25,24 +25,16 @@ export function getSocket() {
   if (!socket) {
     const token = getTokenFromStorage();
     console.log('token from localStorage', token);
-<<<<<<< HEAD
-    
     if (!token) {
       console.warn('[socket] No token found, creating unauthenticated socket');
     }
-    
+
     socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       auth: { token: token || null },
       timeout: 20000,
       forceNew: true
-=======
-    socket = io(socketOrigin, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-      auth: { token }
->>>>>>> 6169eec7b0084597c11cc8f817b6951704bae9e6
     });
 
     // Helpful diagnostics in dev

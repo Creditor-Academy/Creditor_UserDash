@@ -49,3 +49,17 @@ export async function deleteConversationMessage(params) {
   }
 }
 
+
+// Delete an entire conversation
+export async function deleteConversation(conversationId) {
+  try {
+    const response = await api.delete('/api/private-messaging/conversation/delete', {
+      data: { conversation_id: conversationId },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('messageService.deleteConversation error:', error);
+    throw error;
+  }
+}
