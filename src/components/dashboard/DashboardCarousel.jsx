@@ -10,7 +10,7 @@ import {
 const carouselItems = [
   {
     id: 1,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/website+event.png",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/website_sat.png",
     title: "Operate Private",
     course: "Operate Private",
     link: "/upcoming"
@@ -65,8 +65,8 @@ export function DashboardCarousel() {
           <span className="text-[11px] text-gray-400">|</span>
           <span className="text-[11px] text-gray-500">Upcoming</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Upcoming Lessons</h2>
-        <p className="text-gray-500 text-sm sm:text-base">Discover what’s releasing next across our private education tracks</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">Upcoming Events</h2>
+        <p className="text-gray-500 text-sm sm:text-base">Discover what’s events upcoming for you</p>
         <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-blue-500/40 via-purple-500/40 to-emerald-500/40" />
       </div>
       {/* Removed outer decorative border to match banner bounds */}

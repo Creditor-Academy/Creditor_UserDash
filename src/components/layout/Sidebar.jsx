@@ -364,10 +364,10 @@ export function Sidebar({ collapsed, setCollapsed }) {
                   onClick={() => setMoreOpen((v) => !v)}
                   aria-label={moreOpen ? "Show less options" : "Show more options"}
                   className={cn(
-                    "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium border transition-colors",
+                    "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors",
                     moreOpen
-                      ? "bg-blue-50 text-blue-700 border-blue-200"
-                      : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
                   )}
                   whileTap={{ scale: 0.98 }}
                 >
