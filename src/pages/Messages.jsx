@@ -29,10 +29,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations, loadPreviousConversation, deleteConversationMessage } from "@/services/messageService";
+import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation } from "@/services/messageService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 // Will be loaded from backend
 const initialAllUsers = [];
@@ -119,6 +120,8 @@ function Messages() {
   const [pendingImage, setPendingImage] = useState(null);
   const [imagePreview, setImagePreview] = useState({ open: false, url: null });
   const [deletingMessageId, setDeletingMessageId] = useState(null);
+  const [deleteConversationId, setDeleteConversationId] = useState(null);
+  const [showDeleteConversationDialog, setShowDeleteConversationDialog] = useState(false);
   const { toast } = useToast();
 
   const formatChatTime = (iso) => {
@@ -362,6 +365,13 @@ function Messages() {
     };
     socket.on('deleteMessage', onDeleteMessage);
     socket.on('conversationUpdated', onConversationUpdated);
+    const onConversationDeleted = (deletedConversationId) => {
+      if (!deletedConversationId) return;
+      setFriends(prev => prev.filter(f => String(f.conversationId || f.id) !== String(deletedConversationId)));
+      // If the open chat is deleted, navigate back to list
+      setSelectedFriend(prevSel => (String(prevSel) === String(deletedConversationId) ? null : prevSel));
+    };
+    socket.on('conversationdeleted', onConversationDeleted);
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
@@ -370,6 +380,7 @@ function Messages() {
       socket.off('messagesRead', onMessagesRead);
       socket.off('deleteMessage', onDeleteMessage);
       socket.off('conversationUpdated', onConversationUpdated);
+      socket.off('conversationdeleted', onConversationDeleted);
     };
   }, []);
 
@@ -755,7 +766,7 @@ function Messages() {
                     }
                     setSelectedFriend(friend.id);
                   }}
-                  className={`p-3 mx-1 my-1 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
+                  className={`group p-3 mx-1 my-1 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
                     selectedFriend === friend.id ? "bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md" : ""
                   }`}
                 >
@@ -774,20 +785,42 @@ function Messages() {
                        })()}`}>
                          {friend.name}
                        </p>
-                       <div className="flex flex-col items-end gap-1 min-w-[42px]">
-                         <span className="text-[11px] text-muted-foreground tabular-nums">
-                           {formatChatTime(friend.lastMessageAt)}
-                         </span>
-                         {(() => {
-                           const currentUserId = localStorage.getItem('userId');
-                           const isUnread = friend.isRead === false && 
-                                           friend.lastMessageFrom && 
-                                           String(friend.lastMessageFrom) !== String(currentUserId);
-                           return isUnread ? (
-                             <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
-                           ) : null;
-                         })()}
-                    </div>
+                       <div className="flex items-start gap-2">
+                         <div className="flex flex-col items-end gap-1 min-w-[42px]">
+                           <span className="text-[11px] text-muted-foreground tabular-nums">
+                             {formatChatTime(friend.lastMessageAt)}
+                           </span>
+                           {(() => {
+                             const currentUserId = localStorage.getItem('userId');
+                             const isUnread = friend.isRead === false && 
+                                             friend.lastMessageFrom && 
+                                             String(friend.lastMessageFrom) !== String(currentUserId);
+                             return isUnread ? (
+                               <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
+                             ) : null;
+                           })()}
+                         </div>
+                         <TooltipProvider>
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Button
+                                 variant="ghost"
+                                 size="icon"
+                                 className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
+                                 title="Delete conversation"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setDeleteConversationId(friend.conversationId || friend.id);
+                                   setShowDeleteConversationDialog(true);
+                                 }}
+                               >
+                                 <Trash2 className="h-3.5 w-3.5" />
+                               </Button>
+                             </TooltipTrigger>
+                             <TooltipContent>Delete conversation</TooltipContent>
+                           </Tooltip>
+                         </TooltipProvider>
+                       </div>
                     </div>
                      <p className={`text-[12px] truncate ${(() => {
                        const currentUserId = localStorage.getItem('userId');
@@ -882,6 +915,13 @@ function Messages() {
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span>Loading conversation...</span>
+                        </div>
+                      </div>
+                    )}
+                    {!chatLoading && (
+                      <div className="w-full flex justify-center py-2">
+                        <div className="px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                          Chats before 7 days will be deleted automatically
                         </div>
                       </div>
                     )}
@@ -1176,6 +1216,43 @@ function Messages() {
             <AlertDialogAction 
               onClick={confirmDeleteMessage}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Conversation Confirmation Dialog */}
+      <AlertDialog open={showDeleteConversationDialog} onOpenChange={setShowDeleteConversationDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this entire conversation, including images. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowDeleteConversationDialog(false); setDeleteConversationId(null); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deleteConversationId) return;
+                try {
+                  await deleteConversation(deleteConversationId);
+                  // Optimistically remove from UI; backend socket will also send confirmation
+                  setFriends(prev => prev.filter(f => String(f.conversationId || f.id) !== String(deleteConversationId)));
+                  if (String(selectedFriend) === String(deleteConversationId)) {
+                    setSelectedFriend(null);
+                  }
+                  try { toast({ title: 'Conversation deleted', duration: 1400, className: 'text-xs py-1 px-2' }); } catch {}
+                } catch (err) {
+                  try { toast({ title: 'Failed to delete conversation', duration: 1600, className: 'text-xs py-1 px-2' }); } catch {}
+                } finally {
+                  setShowDeleteConversationDialog(false);
+                  setDeleteConversationId(null);
+                }
+              }}
             >
               Delete
             </AlertDialogAction>
