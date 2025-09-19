@@ -353,6 +353,18 @@ export function Sidebar({ collapsed, setCollapsed }) {
               onNavigate={handleNavigate}
             />
           </motion.div>
+          
+          {/* Messages moved above More toggle */}
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={MessageSquare}
+              label="Messages"
+              href="/dashboard/messages"
+              active={isActive("/dashboard/messages")}
+              collapsed={collapsed}
+              onNavigate={handleNavigate}
+            />
+          </motion.div>
           </>
           )}
 
@@ -421,19 +433,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div> */}
 
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={MessageSquare}
-              label="Messages"
-              href="/dashboard/messages"
-              active={isActive("/dashboard/messages")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div>
-
           
-
           {/* Instructor Portal - only for admin or instructor */}
           {!moreOpen && isInstructorOrAdmin() && (
             <motion.div variants={itemVariants}>
