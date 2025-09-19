@@ -145,6 +145,7 @@ const CreateScenario = () => {
         const backgroundUrl = getBackgroundImage(form.background);
         
         const scenarioPayload = {
+          moduleId: moduleId,
           title: form.title,
           description: form.description,
           max_attempts: form.totalAttempts,

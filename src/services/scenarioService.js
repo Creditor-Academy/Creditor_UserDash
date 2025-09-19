@@ -15,6 +15,7 @@ const getAuthHeaders = () => {
 /**
  * Create a new scenario
  * @param {Object} scenarioData - The scenario data to create
+ * @param {string} scenarioData.moduleId - Module ID to associate scenario with
  * @param {string} scenarioData.title - Scenario title
  * @param {string} scenarioData.description - Scenario description
  * @param {number} scenarioData.max_attempts - Maximum attempts allowed
@@ -187,26 +188,49 @@ export async function createDecisionChoices(decisionId, choicesPayload) {
  */
 export async function getModuleScenarios(moduleId) {
   try {
-    const response = await fetch(`${API_BASE}/api/scenario/modules/${moduleId}/scenarios`, {
+    // Try preferred endpoint shape: /api/scenario/{moduleId}/allscenarios
+    let url = `${API_BASE}/api/scenario/${moduleId}/allscenarios`;
+    let response = await fetch(url, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
     });
 
+    // If not found, try prefixed variant: /api/scenario/module-{moduleId}/allscenarios
+    if (response.status === 404) {
+      if (!String(moduleId).startsWith('module-')) {
+        url = `${API_BASE}/api/scenario/module-${moduleId}/allscenarios`;
+        response = await fetch(url, {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+        });
+      }
+    }
+
+    // If still not found, fall back to older shape: /api/scenario/modules/{moduleId}/scenarios
+    if (response.status === 404) {
+      url = `${API_BASE}/api/scenario/modules/${moduleId}/scenarios`;
+      response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+    }
+
     if (!response.ok) {
+      // If still 404, treat as no scenarios rather than hard error
+      if (response.status === 404) {
+        return [];
+      }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `Failed to fetch module scenarios: ${response.status}`);
     }
 
     const data = await response.json();
-    // Support both { data: [...] } and direct array
-    if (data && data.data && Array.isArray(data.data)) {
-      return data.data;
-    } else if (Array.isArray(data)) {
-      return data;
-    } else {
-      return [];
-    }
+    if (data && data.data && Array.isArray(data.data)) return data.data;
+    if (Array.isArray(data)) return data;
+    return [];
   } catch (error) {
     console.error('Error fetching module scenarios:', error);
     throw error;
