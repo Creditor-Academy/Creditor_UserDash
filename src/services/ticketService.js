@@ -25,10 +25,11 @@ export const getAllTickets = async () => {
 // Add a new support ticket
 export const createSupportTicket = async (ticketData) => {
   return axios.post(
-    joinUrl(baseUrl, 'api/support-tickets/create'),
+    joinUrl(baseUrl, 'api/support-tickets/'),
     ticketData,
     {
       headers: {
+        'Content-Type': 'application/json',
         ...getAuthHeader(),
       },
       withCredentials: true
@@ -99,7 +100,7 @@ export const getTicketById = async (ticketId) => {
 // Update ticket status
 export const updateTicketStatus = async (ticketId, status) => {
   return axios.patch(
-    joinUrl(baseUrl, `api/support-tickets/status/${ticketId}`),
+    joinUrl(baseUrl, `api/support-tickets/${ticketId}/status`),
     { status },
     {
       headers: {

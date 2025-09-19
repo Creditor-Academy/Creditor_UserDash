@@ -292,7 +292,8 @@ function App() {
           <Route path="payment-success/:courseId" element={<PaymentSuccess />} />
           <Route path="payment-failed/:courseId" element={<PaymentFailed />} />
           <Route path="progress" element={<Progress />} />
-          <Route path="messages" element={<Messages />} />
+          {/* Duplicate top-level messages route removed to keep messages inside dashboard layout */}
+           
           <Route path="profile" element={<Profile />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="avatar-picker" element={<AvatarPickerPage />} />
