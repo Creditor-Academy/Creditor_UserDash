@@ -19,7 +19,7 @@ export async function getAllConversations() {
 // Load previous messages for a specific conversation
 export async function loadPreviousConversation(conversationId) {
   try {
-    const response = await api.post('/api/private-messaging/PreviousConversation', {
+    const response = await api.post('/api/private-messaging/conversation/messages', {
       conversationid: conversationId,
     }, {
       withCredentials: true,
