@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, Loader2, FolderOpen, Star, Gem, Video, Award, ShoppingCart } from "lucide-react";
+import { BookOpen, Search, Loader2, FolderOpen, Star, Gem, Video, Award, ShoppingCart, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { fetchAllCatalogs as fetchAllCatalogsPrimary } from "@/services/catalogService";
 import { fetchUserCourses } from "@/services/courseService";
@@ -122,6 +122,21 @@ export function CatalogPage() {
     
     return matchesSearch && matchesCategory;
   });
+
+  // Helper function to check if user has purchased the entire catalog (enrolled in ALL courses)
+  const hasPurchasedEntireCatalog = (catalog) => {
+    const userCourseIds = new Set((userCourses || []).map(c => c?.id || c?._id || c?.courseId || c?.course_id).filter(Boolean));
+    const catalogCourseIds = catalogCourseIdsMap[catalog.id] || new Set();
+    
+    // Check if user is enrolled in ALL courses within this catalog
+    const catalogCourseIdsList = Array.from(catalogCourseIds);
+    const enrolledCoursesInCatalog = catalogCourseIdsList.filter(courseId => userCourseIds.has(courseId));
+    
+    console.log(`[DEBUG] Catalog ${catalog.name}: ${enrolledCoursesInCatalog.length}/${catalogCourseIdsList.length} courses enrolled`);
+    
+    // User has purchased entire catalog if enrolled in all courses
+    return catalogCourseIdsList.length > 0 && enrolledCoursesInCatalog.length === catalogCourseIdsList.length;
+  };
 
   // Helper function to check if user is enrolled in catalog or has purchased any lessons
   const isEnrolledInCatalog = (catalog) => {
@@ -312,6 +327,7 @@ export function CatalogPage() {
 
   const CatalogCard = ({ catalog, badgeColor, badgeText, gradientFrom, gradientTo, buttonClass }) => {
     const isEnrolled = isEnrolledInCatalog(catalog);
+    const hasPurchasedEntire = hasPurchasedEntireCatalog(catalog);
     const catalogPrice = getCatalogPriceCredits(catalog);
     const currentBalance = Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0);
     const canAfford = currentBalance >= catalogPrice && catalogPrice > 0;
@@ -364,7 +380,7 @@ export function CatalogPage() {
 
           <div className="flex gap-2">
             <Button 
-              className={`flex-1 h-11 ${buttonClass}`}
+              className={`flex-1 h-11 ${buttonClass} ${hasPurchasedEntire ? 'ring-2 ring-offset-2 ring-emerald-400' : ''}`}
               asChild
             >
               <Link 
@@ -372,7 +388,14 @@ export function CatalogPage() {
                 state={{ catalog: catalog }}
                 className="flex items-center justify-center"
               >
-                Explore Catalog
+                {hasPurchasedEntire ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Open Catalog
+                  </>
+                ) : (
+                  "Explore Catalog"
+                )}
               </Link>
             </Button>
             

@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, Lock, Unlock } from "lucide-react";
-import { fetchCourseModules, fetchCourseById, fetchUserCourses } from "@/services/courseService";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, Lock, Unlock, ShoppingCart } from "lucide-react";
+import { fetchCourseModules, fetchCourseById, fetchUserCourses, fetchCoursePrice } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import { useUser } from "@/contexts/UserContext";
 import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
@@ -13,6 +13,54 @@ import { getUnlockedModulesByUser } from "@/services/modulesService";
 import api from "@/services/apiClient";
 
 // MODULE_UNLOCK_COST will be fetched from backend per module
+
+// Component to display course price
+const CoursePriceDisplay = ({ course }) => {
+  const [price, setPrice] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const backendPrice = await fetchCoursePrice(course.id);
+        if (backendPrice && Number(backendPrice) > 0) {
+          setPrice(Number(backendPrice));
+        } else if (course.price && Number(course.price) > 0) {
+          setPrice(Number(course.price));
+        } else {
+          // Generate stable random price based on course ID
+          const input = String(course?.id || "");
+          let hash = 0;
+          for (let i = 0; i < input.length; i++) {
+            hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+          }
+          const baseOptions = [500, 750, 1000, 1250, 1500];
+          setPrice(baseOptions[hash % baseOptions.length]);
+        }
+      } catch (error) {
+        console.log('Backend price not available, using fallback pricing');
+        // Use fallback pricing
+        const input = String(course?.id || "");
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+          hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+        }
+        const baseOptions = [500, 750, 1000, 1250, 1500];
+        setPrice(baseOptions[hash % baseOptions.length]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrice();
+  }, [course.id, course.price]);
+
+  if (loading) {
+    return <span>Loading...</span>;
+  }
+
+  return <span>{price} credits</span>;
+};
 
 export function CourseView() {
   const { courseId } = useParams();
@@ -33,6 +81,20 @@ export function CourseView() {
   const [confirmUnlock, setConfirmUnlock] = useState({ open: false, module: null });
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const { balance, unlockContent, refreshBalance } = useCredits();
+  
+  // Course purchase states
+  const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState(false);
+  const [selectedCourseToBuy, setSelectedCourseToBuy] = useState(null);
+  const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
+  const [purchaseNotice, setPurchaseNotice] = useState("");
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  
+  // Unlocked modules state for checking individual lesson purchases
+  const [unlockedModules, setUnlockedModules] = useState([]);
+  
+  // Sequential unlock modal state
+  const [showSequentialModal, setShowSequentialModal] = useState(false);
+  const [selectedModuleForSequential, setSelectedModuleForSequential] = useState(null);
 
   // Initialize unlocked modules from backend for this user
   useEffect(() => {
@@ -44,6 +106,7 @@ export function CourseView() {
         console.log('[UI] Unlocked IDs count', Array.isArray(data) ? data.length : 'not-array');
         const ids = new Set((data || []).map((d) => String(d.module_id)));
         setUnlockedIds(ids);
+        setUnlockedModules(data || []);
       } catch (e) {
         console.error('[UI] Fetch unlocked IDs error', e);
       }
@@ -59,6 +122,86 @@ export function CourseView() {
     }
     const baseOptions = [100, 150, 200, 250];
     return baseOptions[hash % baseOptions.length];
+  };
+
+  // Helper function to get course price in credits
+  const getCoursePriceCredits = async (course) => {
+    // First try to fetch price from backend
+    try {
+      const backendPrice = await fetchCoursePrice(course.id);
+      if (backendPrice && Number(backendPrice) > 0) {
+        return Number(backendPrice);
+      }
+    } catch (error) {
+      console.log('Backend price not available, using fallback pricing');
+    }
+    
+    // Check if course has a price field from backend
+    if (course?.price && Number(course.price) > 0) {
+      return Number(course.price);
+    }
+    
+    // Generate stable random price based on course ID
+    const input = String(course?.id || "");
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
+    }
+    const baseOptions = [500, 750, 1000, 1250, 1500];
+    return baseOptions[hash % baseOptions.length];
+  };
+
+  // Handle buy course click
+  const handleBuyCourseClick = async (course) => {
+    const price = await getCoursePriceCredits(course);
+    const currentBalance = Number(balance) || 0;
+    
+    setSelectedCourseToBuy({ ...course, priceCredits: price });
+    
+    if (currentBalance >= price && price > 0) {
+      // User has enough credits - show purchase confirmation
+      setBuyDetailsOpen(true);
+    } else {
+      // User doesn't have enough credits - show insufficient credits modal
+      setShowInsufficientCreditsModal(true);
+    }
+  };
+
+  const closeAllModals = () => {
+    setBuyDetailsOpen(false);
+    setCreditsModalOpen(false);
+    setShowInsufficientCreditsModal(false);
+    setSelectedCourseToBuy(null);
+    setIsPurchasing(false);
+    setShowSequentialModal(false);
+    setSelectedModuleForSequential(null);
+  };
+
+  // Helper function to check if user can buy a course
+  const canBuyCourse = (course) => {
+    // If user is already enrolled in the course, they can't buy it
+    if (isEnrolled) {
+      return false;
+    }
+    
+    // Check if user has purchased any individual lessons from this course
+    const hasLessonPurchasesFromCourse = unlockedModules.some(module => {
+      const courseId = module.course_id || module.courseId;
+      return courseId && courseId === course.id;
+    });
+    
+    // If user has bought individual lessons, they can't buy the whole course
+    if (hasLessonPurchasesFromCourse) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Handle sequential unlock click
+  const handleSequentialUnlockClick = (module) => {
+    setSelectedModuleForSequential(module);
+    setShowSequentialModal(true);
   };
 
   useEffect(() => {
@@ -258,6 +401,49 @@ export function CourseView() {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Course Purchase Section */}
+                    {!isEnrolled && canBuyCourse(courseDetails) && (
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                              <ShoppingCart className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">Course Price</p>
+                              <p className="text-lg font-bold text-green-600"><CoursePriceDisplay course={courseDetails} /></p>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => handleBuyCourseClick(courseDetails)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+                          >
+                            <Unlock className="h-4 w-4 mr-2" />
+                            Buy Course
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Buying this course will unlock all {modules.length} modules at once.</p>
+                      </div>
+                    )}
+                    
+                    {/* Course Not Available Message */}
+                    {!isEnrolled && !canBuyCourse(courseDetails) && (
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                          <div className="p-2 bg-orange-500 rounded-lg shadow-md">
+                            <BookOpen className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-orange-800">Individual Lessons Only</p>
+                            <p className="text-xs text-orange-600 mt-1">
+                              You bought individual lessons from this course. 
+                              You can only buy more individual lessons, not the whole course.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -387,14 +573,17 @@ export function CourseView() {
                                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
                                  onClick={() => {
                                    if (!modulePrice || modulePrice <= 0) return;
-                                   if (!canUnlockInOrder) return;
+                                   if (!canUnlockInOrder) {
+                                     handleSequentialUnlockClick(module);
+                                     return;
+                                   }
                                    if (balance < modulePrice) {
                                      setCreditsModalOpen(true);
                                      return;
                                    }
                                    setConfirmUnlock({ open: true, module });
                                  }}
-                                 disabled={!modulePrice || unlockingId === module.id || !canUnlockInOrder}
+                                 disabled={!modulePrice || unlockingId === module.id}
                                >
                                  {unlockingId === module.id ? (
                                    <>
@@ -408,13 +597,13 @@ export function CourseView() {
                                    </>
                                  )}
                                </Button>
-                               {(balance < modulePrice || !canUnlockInOrder) && (
+                               {balance < modulePrice && canUnlockInOrder && (
                                  <Button 
                                    variant="outline"
                                    className="w-full"
                                    onClick={() => setCreditsModalOpen(true)}
                                  >
-                                   {canUnlockInOrder ? 'Buy credits' : 'Unlock previous lesson first'}
+                                   Buy credits
                                  </Button>
                                )}
                              </div>
@@ -475,6 +664,183 @@ export function CourseView() {
 
       {/* Credits Modal */}
       <CreditPurchaseModal open={creditsModalOpen} onClose={() => setCreditsModalOpen(false)} />
+
+      {/* Buy details modal when user has enough credits */}
+      {buyDetailsOpen && selectedCourseToBuy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeAllModals} />
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-5">
+            <div className="mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Course Purchase</h3>
+            </div>
+            <div className="text-sm text-gray-700 mb-4">
+              <div className="mb-1"><span className="font-medium">Course:</span> {selectedCourseToBuy.title}</div>
+              <div className="mb-1"><span className="font-medium">Price:</span> {selectedCourseToBuy.priceCredits || 0} credits</div>
+              <div className="mb-1"><span className="font-medium">Your balance:</span> {Number(balance) || 0}</div>
+              <div className="mb-1"><span className="font-medium">Modules included:</span> {modules.length} modules</div>
+              <p className="mt-3 text-xs text-gray-600">Buying the course will unlock all modules in this course at once.</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button onClick={closeAllModals} className="px-4 py-2 rounded-md border hover:bg-gray-50 text-sm">Cancel</button>
+              <button
+                disabled={isPurchasing}
+                onClick={async () => { 
+                  if (isPurchasing) return; // Prevent multiple clicks
+                  
+                  try {
+                    setIsPurchasing(true);
+                    
+                    // Call unlock API for course
+                    await unlockContent('COURSE', selectedCourseToBuy.id, selectedCourseToBuy.priceCredits);
+                    
+                    // Refresh balance to show updated credits
+                    if (refreshBalance) {
+                      await refreshBalance();
+                    }
+                    
+                    // Refresh enrollment status
+                    await checkEnrollmentStatus();
+                    
+                    // Show success notice
+                    setPurchaseNotice(`Successfully purchased course: ${selectedCourseToBuy.title}. All modules are now unlocked.`);
+                    closeAllModals();
+                    setTimeout(() => setPurchaseNotice(""), 4000);
+                  } catch (error) {
+                    console.error('Failed to purchase course:', error);
+                    setPurchaseNotice(`Failed to purchase course: ${error.message}`);
+                    setTimeout(() => setPurchaseNotice(""), 4000);
+                  } finally {
+                    setIsPurchasing(false);
+                  }
+                }}
+                className={`px-4 py-2 rounded-md text-white text-sm ${
+                  isPurchasing 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {isPurchasing ? 'Processing...' : 'Confirm & Purchase'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Insufficient credits modal */}
+      {showInsufficientCreditsModal && selectedCourseToBuy && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeAllModals} />
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-6">
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <div className="bg-orange-100 p-2 rounded-full mr-3">
+                  <ShoppingCart className="h-5 w-5 text-orange-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Insufficient Credits</h3>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-700 mb-6 space-y-2">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="font-medium text-gray-900 mb-2">Purchase Details:</div>
+                <div><span className="font-medium">Course:</span> {selectedCourseToBuy.title}</div>
+                <div><span className="font-medium">Price:</span> {selectedCourseToBuy.priceCredits || 0} credits</div>
+                <div><span className="font-medium">Your balance:</span> {Number(balance) || 0} credits</div>
+                <div><span className="font-medium">Modules included:</span> {modules.length} modules</div>
+              </div>
+              
+              <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
+                <div className="flex items-center mb-1">
+                  <div className="bg-orange-100 p-1 rounded-full mr-2">
+                    <svg className="h-3 w-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-orange-800">You need more credits</span>
+                </div>
+                <p className="text-orange-700 text-xs">
+                  You need {(selectedCourseToBuy.priceCredits || 0) - (Number(balance) || 0)} more credits to purchase this course.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={closeAllModals} 
+                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Close insufficient credits modal and open credit purchase modal
+                  setShowInsufficientCreditsModal(false);
+                  setCreditsModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+              >
+                Buy Credits
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sequential unlock modal */}
+      {showSequentialModal && selectedModuleForSequential && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeAllModals} />
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-6">
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <div className="bg-orange-100 p-2 rounded-full mr-3">
+                  <Lock className="h-5 w-5 text-orange-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">Lessons Must Be Unlocked in Order</h3>
+              </div>
+            </div>
+            
+            <div className="text-sm text-gray-700 mb-6 space-y-2">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="font-medium text-gray-900 mb-2">Current Lesson:</div>
+                <div><span className="font-medium">Title:</span> {selectedModuleForSequential.title}</div>
+                <div><span className="font-medium">Order:</span> {selectedModuleForSequential.order}</div>
+                <div><span className="font-medium">Price:</span> {Number(selectedModuleForSequential.price) || 0} credits</div>
+              </div>
+              
+              <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
+                <div className="flex items-center mb-1">
+                  <div className="bg-orange-100 p-1 rounded-full mr-2">
+                    <svg className="h-3 w-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="font-medium text-orange-800">Unlock Previous Lessons First</span>
+                </div>
+                <p className="text-orange-700 text-xs">
+                  You need to unlock and complete the previous lessons in order before you can access this lesson.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={closeAllModals} 
+                className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase notice */}
+      {purchaseNotice && (
+        <div className="fixed top-4 right-4 z-50 bg-green-50 border border-green-200 text-green-800 px-4 py-2 text-sm rounded-lg shadow-lg">
+          {purchaseNotice}
+        </div>
+      )}
     </div>
   );
 }
