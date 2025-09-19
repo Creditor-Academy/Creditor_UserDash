@@ -219,7 +219,9 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     >
                       Buy credits
                     </button>
-                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
+                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-600 flex-wrap">
+                      <span className="px-2 py-1 rounded border">250 credits for $50</span>
+                      <span className="px-2 py-1 rounded border">500 credits for $100</span>
                       <span className="px-2 py-1 rounded border">2,500 credits for $500</span>
                       <span className="px-2 py-1 rounded border">14,000 credits for $2,800</span>
                     </div>

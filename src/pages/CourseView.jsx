@@ -430,15 +430,15 @@ export function CourseView() {
                     {/* Course Not Available Message */}
                     {!isEnrolled && !canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
-                        <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                          <div className="p-2 bg-orange-500 rounded-lg shadow-md">
+                        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="p-2 bg-green-500 rounded-lg shadow-md">
                             <BookOpen className="h-5 w-5 text-white" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-orange-800">Individual Lessons Only</p>
-                            <p className="text-xs text-orange-600 mt-1">
-                              You bought individual lessons from this course. 
-                              You can only buy more individual lessons, not the whole course.
+                            <p className="text-sm font-medium text-green-800">Continue Your Learning Journey</p>
+                            <p className="text-xs text-green-600 mt-1">
+                              You've already started this course with individual lessons! 
+                              Keep building your knowledge by purchasing more lessons.
                             </p>
                           </div>
                         </div>
@@ -622,14 +622,78 @@ export function CourseView() {
       {confirmUnlock.open && confirmUnlock.module && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmUnlock({ open: false, module: null })} />
-          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
-            <h4 className="text-lg font-semibold mb-2">Unlock Module</h4>
-            <p className="text-sm text-gray-700 mb-4">Unlock "{confirmUnlock.module.title}" for {Number(confirmUnlock.module.price) || 0} credits?</p>
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg p-6">
+            <div className="mb-4">
+              <div className="flex items-center mb-3">
+                <div className="bg-purple-100 p-2 rounded-full mr-3">
+                  <Unlock className="h-5 w-5 text-purple-600" />
+                </div>
+                <h4 className="text-xl font-semibold text-gray-900">Unlock Lesson</h4>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="text-lg font-semibold text-gray-900 mb-2">{confirmUnlock.module.title}</div>
+              <div className="text-sm text-gray-600 mb-3">{confirmUnlock.module.description || "Individual lesson from this course"}</div>
+              
+              {/* Lesson Details */}
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-500 mb-1">Duration</div>
+                  <div className="text-sm font-semibold text-gray-900">{confirmUnlock.module.duration || "Self-paced"}</div>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-500 mb-1">Type</div>
+                  <div className="text-sm font-semibold text-gray-900">Individual Lesson</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-purple-50 rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Lesson Cost:</span>
+                <span className="text-lg font-bold text-purple-600">{Number(confirmUnlock.module.price) || 0} credits</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Your Balance:</span>
+                <span className="text-sm font-semibold text-gray-900">{Number(balance) || 0} credits</span>
+              </div>
+              <div className="border-t border-purple-200 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">After Purchase:</span>
+                  <span className="text-sm font-bold text-green-600">
+                    {(Number(balance) || 0) - (Number(confirmUnlock.module.price) || 0)} credits
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-4 w-4 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-2">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Note:</strong> This will unlock only this individual lesson. You can continue buying other lessons separately or purchase the entire course for better value.
+                  </p>
+                </div>
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
               <button className="px-4 py-2 rounded-md border hover:bg-gray-50" onClick={() => setConfirmUnlock({ open: false, module: null })}>Cancel</button>
               <button 
-                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={unlockingId === confirmUnlock.module?.id}
+                className={`px-4 py-2 rounded-md text-white ${
+                  unlockingId === confirmUnlock.module?.id 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
                 onClick={async () => {
+                  if (unlockingId === confirmUnlock.module?.id) return; // Prevent double clicks
+                  
                   const m = confirmUnlock.module;
                   const cost = Number(m.price) || 0;
                   setUnlockingId(m.id);
@@ -655,7 +719,7 @@ export function CourseView() {
                   }
                 }}
               >
-                Confirm Unlock
+                {unlockingId === confirmUnlock.module?.id ? 'Processing...' : 'Confirm Unlock'}
               </button>
             </div>
           </div>
@@ -669,16 +733,65 @@ export function CourseView() {
       {buyDetailsOpen && selectedCourseToBuy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={closeAllModals} />
-          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-5">
-            <div className="mb-2">
-              <h3 className="text-lg font-semibold text-gray-900">Confirm Course Purchase</h3>
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg p-6">
+            <div className="mb-4">
+              <div className="flex items-center mb-3">
+                <div className="bg-blue-100 p-2 rounded-full mr-3">
+                  <BookOpen className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Confirm Course Purchase</h3>
+              </div>
             </div>
-            <div className="text-sm text-gray-700 mb-4">
-              <div className="mb-1"><span className="font-medium">Course:</span> {selectedCourseToBuy.title}</div>
-              <div className="mb-1"><span className="font-medium">Price:</span> {selectedCourseToBuy.priceCredits || 0} credits</div>
-              <div className="mb-1"><span className="font-medium">Your balance:</span> {Number(balance) || 0}</div>
-              <div className="mb-1"><span className="font-medium">Modules included:</span> {modules.length} modules</div>
-              <p className="mt-3 text-xs text-gray-600">Buying the course will unlock all modules in this course at once.</p>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="text-lg font-semibold text-gray-900 mb-2">{selectedCourseToBuy.title}</div>
+              <div className="text-sm text-gray-600 mb-3">{selectedCourseToBuy.description || "Complete course with multiple modules"}</div>
+              
+              {/* Course Details */}
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-500 mb-1">Duration</div>
+                  <div className="text-sm font-semibold text-gray-900">{selectedCourseToBuy.duration || "Self-paced"}</div>
+                </div>
+                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                  <div className="text-xs text-gray-500 mb-1">Modules</div>
+                  <div className="text-sm font-semibold text-gray-900">{modules.length} modules</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Total Cost:</span>
+                <span className="text-lg font-bold text-blue-600">{selectedCourseToBuy.priceCredits || 0} credits</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Your Balance:</span>
+                <span className="text-sm font-semibold text-gray-900">{Number(balance) || 0} credits</span>
+              </div>
+              <div className="border-t border-blue-200 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">After Purchase:</span>
+                  <span className="text-sm font-bold text-green-600">
+                    {(Number(balance) || 0) - (selectedCourseToBuy.priceCredits || 0)} credits
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-4 w-4 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-2">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Note:</strong> Buying this course will unlock all {modules.length} modules at once. You'll have immediate access to all content.
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={closeAllModals} className="px-4 py-2 rounded-md border hover:bg-gray-50 text-sm">Cancel</button>
