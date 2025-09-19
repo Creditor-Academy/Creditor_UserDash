@@ -254,6 +254,63 @@ if (typeof window !== 'undefined') {
       icon.classList.remove('rotate-180');
     }
   };
+
+  // Labeled Graphic functions
+  window.toggleHotspotContent = function(containerId, hotspotId) {
+    // Hide all other content overlays in this container
+    const container = document.getElementById(containerId);
+    if (container) {
+      const allContents = container.querySelectorAll('.hotspot-content');
+      allContents.forEach(content => {
+        if (content.id !== 'content-' + containerId + '-' + hotspotId) {
+          content.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Toggle the clicked hotspot content
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      if (contentElement.classList.contains('hidden')) {
+        contentElement.classList.remove('hidden');
+        // Add fade-in animation
+        contentElement.style.opacity = '0';
+        contentElement.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          contentElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          contentElement.style.opacity = '1';
+          contentElement.style.transform = 'scale(1)';
+        }, 10);
+      } else {
+        contentElement.classList.add('hidden');
+      }
+    }
+  };
+  
+  window.hideHotspotContent = function(containerId, hotspotId) {
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      contentElement.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      contentElement.style.opacity = '0';
+      contentElement.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        contentElement.classList.add('hidden');
+      }, 200);
+    }
+  };
+  
+  // Close hotspot content when clicking outside (only add once)
+  if (!window.labeledGraphicClickHandler) {
+    window.labeledGraphicClickHandler = function(event) {
+      if (!event.target.closest('.hotspot') && !event.target.closest('.hotspot-content')) {
+        const allContents = document.querySelectorAll('.hotspot-content');
+        allContents.forEach(content => {
+          content.classList.add('hidden');
+        });
+      }
+    };
+    document.addEventListener('click', window.labeledGraphicClickHandler);
+  }
 }
 
 // Register font families with proper display names
@@ -2063,12 +2120,12 @@ function LessonBuilder() {
     // Enhanced interactive block detection - check subtype, content structure and HTML patterns
     const isInteractiveBlock = block.type === 'interactive' || 
                               // Check subtype for accordion or tabs
-                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs')) ||
+                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs' || block.subtype === 'labeled-graphic')) ||
                               // Check if content has interactive structure (JSON with template)
                               (() => {
                                 try {
                                   const content = JSON.parse(block.content || '{}');
-                                  return content.template && (content.tabsData || content.accordionData);
+                                  return content.template && (content.tabsData || content.accordionData || content.labeledGraphicData);
                                 } catch {
                                   return false;
                                 }
@@ -2081,7 +2138,9 @@ function LessonBuilder() {
                                 block.html_css.includes('tab-button') ||
                                 block.html_css.includes('accordion-header') ||
                                 block.html_css.includes('data-template="tabs"') ||
-                                block.html_css.includes('data-template="accordion"')
+                                block.html_css.includes('data-template="accordion"') ||
+                                block.html_css.includes('data-template="labeled-graphic"') ||
+                                block.html_css.includes('labeled-graphic-container')
                               ));
 
     if (isInteractiveBlock) {
@@ -4938,6 +4997,9 @@ function LessonBuilder() {
                                  htmlContent.includes('tab-button') ||
                                  htmlContent.includes('interactive-tabs')) {
                         template = 'tabs';
+                      } else if (htmlContent.includes('data-template="labeled-graphic"') || 
+                                 htmlContent.includes('labeled-graphic-container')) {
+                        template = 'labeled-graphic';
                       }
                     }
                     
@@ -5154,7 +5216,7 @@ function LessonBuilder() {
                 <Button
                   variant="outline"
                   size="sm"
-                  // onClick={handlePreview}
+                  onClick={handlePreview}
                   className="flex items-center gap-1"
                 >
                   <Eye className="h-4 w-4 mr-1" />
