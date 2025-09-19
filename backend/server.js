@@ -13,15 +13,19 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// Import course routes
+const courseRoutes = require('./routes/courseRoutes');
+app.use('/api/course', courseRoutes.router || courseRoutes);
+
 // Import the AI proxy routes
 const aiProxyRoutes = require('./routes/aiProxyRoutes');
-
 // Use the AI proxy routes
 app.use('/api/ai-proxy', aiProxyRoutes);
 
 // Your existing routes...
 const aiCourseRoutes = require('./routes/aiCourseRoutes');
 app.use('/api/ai', aiCourseRoutes);
+console.log('AI course routes registered at /api/ai');
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -47,6 +51,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log(`📚 Course API: http://localhost:${PORT}/api/course`);
   console.log(`🤖 AI API: http://localhost:${PORT}/api/ai`);
 });
 

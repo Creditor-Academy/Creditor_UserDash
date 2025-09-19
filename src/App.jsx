@@ -102,7 +102,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
 import LessonView from "./pages/LessonView";
-     
+import AICourseCreator from "@/pages/AICourseCreator";
 
 function ProtectedScormRoute() {
   if (!allowedScormUserIds.includes(currentUserId)) {
@@ -330,6 +330,10 @@ function App() {
           <Route path="scorm" element={<ProtectedScormRoute />} />
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
+          
+          {/* AI Course Creator Route - Fullscreen */}
+          <Route path="/ai-course-creator" element={<ProtectedRoute><AICourseCreator /></ProtectedRoute>} />
+          
           <Route path="*" element={<NotFound />} />
           <Route path="/scorm/:courseId" element={<Scrompack />} />
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />

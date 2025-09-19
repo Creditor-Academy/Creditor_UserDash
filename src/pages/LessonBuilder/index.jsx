@@ -6,6 +6,7 @@ import LessonHeader from '@/components/LessonBuilder/LessonHeader';
 import ContentLibrary from '@/components/LessonBuilder/ContentBlocks/ContentLibrary';
 import TextTypeSidebar from '@/components/LessonBuilder/Sidebars/TextTypeSidebar';
 import TextEditor from '@/components/LessonBuilder/ContentBlocks/TextBlocks/TextEditor';
+import AIEnhancementPanel from '@/components/LessonBuilder/AIEnhancementPanel';
 
 // Import hooks and utilities
 import { useLessonBuilder } from './hooks/useLessonBuilder';
@@ -35,6 +36,8 @@ function LessonBuilder() {
     setShowTextTypeSidebar,
     showTextEditorDialog,
     setShowTextEditorDialog,
+    showAIEnhancementPanel,
+    setShowAIEnhancementPanel,
     showUnifiedPreview,
     setShowUnifiedPreview,
     
@@ -99,6 +102,17 @@ function LessonBuilder() {
     // TODO: Implement update functionality
   };
 
+  const handleAIEnhance = () => {
+    setShowAIEnhancementPanel(true);
+  };
+
+  const handleAIContentGenerated = (content) => {
+    console.log('AI generated content:', content);
+    // TODO: Implement content insertion logic
+    // For now, just close the panel
+    setShowAIEnhancementPanel(false);
+  };
+
   const handleTextEditorSave = () => {
     console.log('Save text editor');
     // TODO: Implement text editor save functionality
@@ -142,6 +156,7 @@ function LessonBuilder() {
               onSave={handleSave}
               onUpdate={handleUpdate}
               isUploading={isUploading}
+              onAIEnhance={handleAIEnhance}
             />
 
             {/* Main Content Canvas */}
@@ -253,6 +268,14 @@ function LessonBuilder() {
         ref={statementComponentRef}
         onStatementSelect={() => {}}
         setSidebarCollapsed={setSidebarCollapsed}
+      />
+
+      {/* AI Enhancement Panel */}
+      <AIEnhancementPanel
+        lessonData={lessonData}
+        onContentGenerated={handleAIContentGenerated}
+        isOpen={showAIEnhancementPanel}
+        onClose={() => setShowAIEnhancementPanel(false)}
       />
     </>
   );

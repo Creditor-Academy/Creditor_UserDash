@@ -2,6 +2,9 @@
 const express = require('express');
 const router = express.Router();
 
+// Import the actual course routes to access the database functions
+const courseRoutesModule = require('./courseRoutes');
+
 // Use Bytez SDK for AI generation
 const Bytez = require('bytez.js');
 
@@ -172,7 +175,7 @@ Output JSON format:
 // POST /api/ai/create-course - Generate initial course modules and lessons
 router.post('/create-course', async (req, res) => {
   try {
-    const { title, subject, description, targetAudience, difficulty, duration } = req.body;
+    const { title, subject, description, targetAudience, difficulty, duration, learningObjectives } = req.body;
     
     console.log('🤖 Generating AI course:', title);
     
@@ -185,13 +188,14 @@ Course Details:
 - Target Audience: ${targetAudience}
 - Difficulty: ${difficulty}
 - Duration: ${duration}
+- Learning Objectives: ${learningObjectives}
 
-Generate a JSON structure with exactly 2 modules, each containing exactly 1 lesson.
+Generate a JSON structure with exactly 4 modules, each containing 3-5 lessons.
 Each module should have:
 - id (number)
 - title (string)
 - description (string)  
-- lessons (array with 1 lesson object)
+- lessons (array with 3-5 lesson objects)
 
 Each lesson should have:
 - id (number)
@@ -218,14 +222,22 @@ Return only valid JSON without any markdown formatting.`;
 Generate content in JSON format only, no extra text. 
 
 Requirements:
-1. Create a course outline with 2 modules. 
-2. Each module should contain 1 lesson. 
+1. Create a course outline with 4 modules. 
+2. Each module should contain 3-5 lessons. 
 3. Each lesson must include:
    - "lesson_title"
    - "lesson_intro" (short introduction paragraph)
    - "lesson_content" (array of subtopics, each with "subtopic" and "content")
    - "examples" (array of 1–2 short examples, if relevant)
    - "summary" (a short recap)
+
+Course Details:
+- Title: ${title}
+- Subject: ${subject || 'General'}
+- Description: ${description || 'No description provided'}
+- Target Audience: ${targetAudience || 'General learners'}
+- Difficulty: ${difficulty || 'intermediate'}
+- Learning Objectives: ${learningObjectives || 'Not specified'}
 
 Output JSON format:
 {
@@ -246,29 +258,13 @@ Output JSON format:
           "summary": "Key takeaways"
         }
       ]
-    },
-    {
-      "module_title": "Module 2 Title",
-      "module_description": "Brief description",
-      "lessons": [
-        {
-          "lesson_title": "Lesson Title",
-          "lesson_intro": "Introduction text",
-          "lesson_content": [
-            {"subtopic": "Subtopic 1", "content": "Details"},
-            {"subtopic": "Subtopic 2", "content": "Details"}
-          ],
-          "examples": ["Example 1", "Example 2"],
-          "summary": "Key takeaways"
-        }
-      ]
     }
   ]
 }`;
 
         const { error, output } = await model.run(aiPrompt, {
-          max_new_tokens: 300,
-          min_new_tokens: 100,
+          max_new_tokens: 1000,
+          min_new_tokens: 200,
           temperature: 0.7
         });
         
@@ -362,19 +358,17 @@ router.post('/generate-image', auth, async (req, res) => {
     
     for (const modelId of imageModels) {
       try {
-        const bytezImage = new ChatBytez({
-          apiKey: process.env.BYTEZ_API_KEY,
-          model: modelId
-        });
+        const model = bytezSDK.model(modelId);
+        await model.create();
         
         const stylePrompt = `${prompt}, ${style} style, high quality, detailed`;
-        const response = await bytezImage.call(stylePrompt, {
+        const { error, output } = await model.run(stylePrompt, {
           max_tokens: 1,
           temperature: 0.7
         });
         
-        if (response && response.content) {
-          imageUrl = response.content;
+        if (!error && output) {
+          imageUrl = output;
           usedModel = modelId;
           break;
         }
@@ -434,16 +428,20 @@ ${content}
 
 Focus on key learning points and actionable insights that would be valuable for course content.`;
 
-    const response = await bytezChat.call([
-      {
-        role: 'system',
-        content: 'You are an expert content summarizer. Create clear, concise summaries that highlight key learning points.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]);
+    // Use Bytez SDK for summarization
+    const model = bytezSDK.model('facebook/bart-large-cnn');
+    await model.create();
+    
+    const { error, output } = await model.run(prompt, {
+      max_new_tokens: 300,
+      temperature: 0.3
+    });
+    
+    if (error) {
+      throw new Error(error);
+    }
+    
+    const response = { content: output };
     
     res.json({
       success: true,
@@ -466,6 +464,64 @@ Focus on key learning points and actionable insights that would be valuable for 
   }
 });
 
+// POST /api/ai/lessons - Save AI-generated lessons to actual course database
+router.post('/lessons', async (req, res) => {
+  try {
+    // This route is now deprecated - we're creating lessons directly through the course routes
+    res.json({
+      success: true,
+      message: 'Lessons should be created through the course creation process',
+      data: {}
+    });
+  } catch (error) {
+    console.error('❌ Failed to save AI lessons:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save lessons'
+    });
+  }
+});
+
+// GET /api/ai/lessons/:courseId - Get lessons for a course (placeholder)
+router.get('/lessons/:courseId', async (req, res) => {
+  try {
+    // This route is now deprecated - we're getting lessons through the course routes
+    res.json({
+      success: true,
+      data: {
+        lessonsCount: 0,
+        lessons: []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to retrieve lessons:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve lessons'
+    });
+  }
+});
+
+// GET /api/ai/courses - Get all courses (placeholder)
+router.get('/courses', async (req, res) => {
+  try {
+    // This route is now deprecated - we're getting courses through the course routes
+    res.json({
+      success: true,
+      data: {
+        coursesCount: 0,
+        courses: []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to retrieve courses:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve courses'
+    });
+  }
+});
+
 // POST /api/ai/search - Content Q&A search
 router.post('/search', auth, async (req, res) => {
   try {
@@ -474,19 +530,27 @@ router.post('/search', auth, async (req, res) => {
     console.log('🔍 Answering question:', question);
     
     const prompt = context 
-      ? `Context: ${context}\n\nQuestion: ${question}\n\nProvide a comprehensive, educational answer that can be used directly in course content.`
+      ? `Context: ${context}
+
+Question: ${question}
+
+Provide a comprehensive, educational answer that can be used directly in course content.`
       : `Question: ${question}\n\nProvide a comprehensive, educational answer that can be used directly in course content.`;
     
-    const response = await bytezChat.call([
-      {
-        role: 'system',
-        content: 'You are an expert educator. Provide clear, comprehensive answers that are suitable for course content.'
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]);
+    // Use Bytez SDK for Q&A
+    const model = bytezSDK.model('deepset/roberta-base-squad2');
+    await model.create();
+    
+    const { error, output } = await model.run(prompt, {
+      max_new_tokens: 500,
+      temperature: 0.5
+    });
+    
+    if (error) {
+      throw new Error(error);
+    }
+    
+    const response = { content: output };
     
     // Determine content type and difficulty based on question
     const contentType = determineContentType(question);
@@ -513,19 +577,129 @@ router.post('/search', auth, async (req, res) => {
   }
 });
 
-// POST /api/ai/courses - Save AI-generated course
-router.post('/courses', auth, async (req, res) => {
+// POST /api/ai/courses - Save AI-generated course and integrate with actual course database
+router.post('/courses', async (req, res) => {
+  console.log('AI courses route hit with body:', req.body);
   try {
-    const courseData = {
-      ...req.body,
-      instructor: req.user.id,
-      isAIGenerated: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    const courseData = req.body;
+    console.log('💾 Saving AI-generated course:', courseData.title);
+    
+    // Create the course using the same pattern as manual course creation
+    const newCourseData = {
+      title: courseData.title,
+      description: courseData.description,
+      subject: courseData.subject,
+      targetAudience: courseData.targetAudience,
+      estimated_duration: courseData.duration || '4 weeks',
+      course_level: (courseData.difficulty || 'intermediate').toUpperCase(),
+      courseType: 'OPEN',
+      lockModules: 'UNLOCKED',
+      price: '0', // Default price for AI courses
+      requireFinalQuiz: true,
+      thumbnail: courseData.thumbnail || null,
+      learning_objectives: courseData.objectives ? courseData.objectives.split('\n').filter(Boolean) : [],
+      isHidden: false,
+      course_status: 'DRAFT'
     };
     
-    const course = new Course(courseData);
-    await course.save();
+    // Initialize storage if needed
+    if (!courseRoutesModule.courses) {
+      console.log('Initializing courses array');
+      courseRoutesModule.courses = [];
+    }
+    if (!courseRoutesModule.nextCourseId) {
+      console.log('Initializing nextCourseId');
+      courseRoutesModule.nextCourseId = 1;
+    }
+    
+    const course = {
+      id: courseRoutesModule.nextCourseId++,
+      ...newCourseData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    courseRoutesModule.courses.push(course);
+    console.log('✅ Course created successfully with ID:', course.id);
+    const courseId = course.id;
+    
+    // If we have AI-generated modules, create them using the same pattern as manual module creation
+    if (courseData.modules && courseData.modules.length > 0) {
+      console.log('Creating modules for course:', courseId);
+      
+      // Initialize storage if needed
+      if (!courseRoutesModule.modules) {
+        console.log('Initializing modules array');
+        courseRoutesModule.modules = [];
+      }
+      if (!courseRoutesModule.nextModuleId) {
+        console.log('Initializing nextModuleId');
+        courseRoutesModule.nextModuleId = 1;
+      }
+      
+      // Initialize lesson storage if needed
+      if (!courseRoutesModule.lessons) {
+        console.log('Initializing lessons array');
+        courseRoutesModule.lessons = [];
+      }
+      if (!courseRoutesModule.nextLessonId) {
+        console.log('Initializing nextLessonId');
+        courseRoutesModule.nextLessonId = 1;
+      }
+      
+      // Create each module using the same pattern as manual module creation
+      for (let i = 0; i < courseData.modules.length; i++) {
+        const moduleData = courseData.modules[i];
+        
+        const newModuleData = {
+          courseId: courseId,
+          title: moduleData.title,
+          description: moduleData.description,
+          order: i + 1,
+          estimated_duration: 60,
+          module_status: 'PUBLISHED',
+          thumbnail: 'AI generated module thumbnail',
+          price: '0'
+        };
+        
+        const module = {
+          id: courseRoutesModule.nextModuleId++,
+          ...newModuleData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        courseRoutesModule.modules.push(module);
+        console.log('✅ Module created:', module.title);
+        const moduleId = module.id;
+        
+        // Create lessons for this module using the same pattern as manual lesson creation
+        if (moduleData.lessons && moduleData.lessons.length > 0) {
+          for (let j = 0; j < moduleData.lessons.length; j++) {
+            const lessonData = moduleData.lessons[j];
+            
+            const newLessonData = {
+              title: lessonData.title,
+              description: lessonData.intro || 'AI generated lesson',
+              order: j + 1,
+              status: 'PUBLISHED'
+            };
+            
+            const lesson = {
+              id: courseRoutesModule.nextLessonId++,
+              moduleId: moduleId,
+              courseId: courseId,
+              ...newLessonData,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            
+            courseRoutesModule.lessons.push(lesson);
+            console.log('✅ Lesson created:', lesson.title);
+          }
+        }
+      }
+    }
     
     res.status(201).json({
       success: true,
@@ -536,7 +710,7 @@ router.post('/courses', auth, async (req, res) => {
     console.error('❌ Failed to save AI course:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save course'
+      error: 'Failed to save course: ' + error.message
     });
   }
 });
@@ -552,7 +726,7 @@ function generateFallbackStructure(title, subject, difficulty) {
         lessons: [
           {
             id: 1,
-            title: `Getting Started with ${subject}`,
+            title: `What is ${subject}?`,
             intro: `Welcome to your ${subject} learning journey. This lesson covers the essential basics you need to know.`,
             subtopics: [
               `What is ${subject} and why is it important?`,
@@ -562,6 +736,19 @@ function generateFallbackStructure(title, subject, difficulty) {
             ],
             summary: `You now have a solid foundation in ${subject} basics and are ready to dive deeper into the fundamentals.`,
             duration: '15 min'
+          },
+          {
+            id: 2,
+            title: `Why Learn ${subject}?`,
+            intro: `Understanding the value and opportunities in learning ${subject}.`,
+            subtopics: [
+              'Career opportunities and growth potential',
+              'Real-world applications and use cases',
+              'Skills development and personal growth',
+              'Industry demand and future trends'
+            ],
+            summary: `You now understand the importance and opportunities in ${subject}.`,
+            duration: '10 min'
           }
         ]
       },
@@ -571,7 +758,7 @@ function generateFallbackStructure(title, subject, difficulty) {
         description: 'Core principles and practical application',
         lessons: [
           {
-            id: 2,
+            id: 3,
             title: `Core ${subject} Concepts`,
             intro: `Now that you understand the basics, let's explore the fundamental concepts that form the backbone of ${subject}.`,
             subtopics: [
@@ -582,6 +769,59 @@ function generateFallbackStructure(title, subject, difficulty) {
             ],
             summary: `You've mastered the core concepts of ${subject} and can now apply these principles in practical scenarios.`,
             duration: '20 min'
+          },
+          {
+            id: 4,
+            title: `Essential ${subject} Skills`,
+            intro: `Developing the key skills needed to work effectively with ${subject}.`,
+            subtopics: [
+              'Technical skills and tools',
+              'Problem-solving approaches',
+              'Critical thinking techniques',
+              'Communication and collaboration'
+            ],
+            summary: `You've developed essential skills for working with ${subject}.`,
+            duration: '25 min'
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: `Practical ${subject}`,
+        description: 'Hands-on experience and real-world applications',
+        lessons: [
+          {
+            id: 5,
+            title: `Real-World ${subject} Projects`,
+            intro: `Applying ${subject} concepts to practical projects and scenarios.`,
+            subtopics: [
+              'Project planning and setup',
+              'Implementation strategies',
+              'Testing and validation',
+              'Documentation and presentation'
+            ],
+            summary: `You've applied ${subject} concepts to real-world projects.`,
+            duration: '30 min'
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: `Advanced ${subject}`,
+        description: 'Expert-level concepts and advanced techniques',
+        lessons: [
+          {
+            id: 6,
+            title: `Advanced ${subject} Techniques`,
+            intro: `Exploring expert-level concepts and advanced techniques in ${subject}.`,
+            subtopics: [
+              'Advanced methodologies',
+              'Optimization strategies',
+              'Performance tuning',
+              'Security considerations'
+            ],
+            summary: `You've mastered advanced techniques in ${subject}.`,
+            duration: '35 min'
           }
         ]
       }

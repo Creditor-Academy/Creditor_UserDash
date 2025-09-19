@@ -9,9 +9,9 @@ import CourseModulesSection from "../components/courses/CourseModulesSection";
 import ConfirmationDialog from "../components/ui/ConfirmationDialog";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import CreateCourseOptions from "../components/courses/CreateCourseOptions";
-import AICourseWorkspace from "../components/courses/AICourseWorkspace";
 import AICourseSuccessModal from "../components/courses/AICourseSuccessModal";
 import AICourseOutlineModal from "../components/courses/AICourseOutlineModal";
+import AICourseCreationPanel from "../components/courses/AICourseCreationPanel";
 
 const CreateCourse = ({ onCourseCreated }) => {
   const {
@@ -39,9 +39,9 @@ const CreateCourse = ({ onCourseCreated }) => {
   // Modal states
   const [showCreateOptions, setShowCreateOptions] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAIWorkspace, setShowAIWorkspace] = useState(false);
   const [showAISuccessModal, setShowAISuccessModal] = useState(false);
   const [showAIOutlineModal, setShowAIOutlineModal] = useState(false);
+  const [showAICoursePanel, setShowAICoursePanel] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -69,7 +69,6 @@ const CreateCourse = ({ onCourseCreated }) => {
     setShowCreateOptions(false);
     setShowAIOutlineModal(false);
     setShowCreateModal(false);
-    setShowAIWorkspace(false);
     setShowEditModal(false);
     setShowUsersModal(false);
     
@@ -78,7 +77,7 @@ const CreateCourse = ({ onCourseCreated }) => {
       requestAnimationFrame(() => {
         console.log('Opening modal for option:', option);
         if (option === 'ai') {
-          setShowAIOutlineModal(true);
+          setShowAICoursePanel(true); // Open the AI course creation panel
         } else if (option === 'blank') {
           setShowCreateModal(true);
         } else if (option === 'template') {
@@ -92,7 +91,7 @@ const CreateCourse = ({ onCourseCreated }) => {
     // Refresh the courses list to show the new AI-generated course
     handleCourseCreated(courseData);
     setCreatedAICourse(courseData);
-    setShowAIWorkspace(false);
+    setShowAICoursePanel(false);
     setShowAISuccessModal(true);
   };
 
@@ -100,12 +99,11 @@ const CreateCourse = ({ onCourseCreated }) => {
   const handleGenerateOutline = async (outlineData) => {
     console.log('Generating AI course outline with data:', outlineData);
     
-    // Close the outline modal and open the workspace with pre-filled data
+    // Close the outline modal
     setShowAIOutlineModal(false);
-    setShowAIWorkspace(true);
     
-    // The AICourseWorkspace will handle the actual AI generation
-    // We're just passing the form data to it
+    // Open the AI assisted course modal with the outline data
+    setShowAIAssistedModal(true);
   };
 
   // Handle course edit
@@ -327,11 +325,10 @@ const CreateCourse = ({ onCourseCreated }) => {
         onGenerateOutline={handleGenerateOutline}
       />
 
-      <AICourseWorkspace
-        isOpen={showAIWorkspace}
-        onClose={() => setShowAIWorkspace(false)}
-        courseData={{}}
-        onSave={handleAICourseCreated}
+      <AICourseCreationPanel
+        isOpen={showAICoursePanel}
+        onClose={() => setShowAICoursePanel(false)}
+        onCourseCreated={handleAICourseCreated}
       />
 
       <EditCourseModal

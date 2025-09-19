@@ -73,7 +73,13 @@ class AIService {
           if (modelId === aiConfig.models.questionAnswering.primary) {
             result = await model.run({ question, context });
           } else {
-            const prompt = context ? `Context: ${context}\n\nQuestion: ${question}\n\nAnswer:` : `Question: ${question}\n\nAnswer:`;
+            const prompt = context ? `Context: ${context}
+
+Question: ${question}
+
+Answer:` : `Question: ${question}
+
+Answer:`;
             result = await model.run(prompt, { max_tokens: 200, temperature: 0.3 });
           }
           
@@ -146,6 +152,7 @@ class AIService {
       Target Audience: ${options.targetAudience || 'General learners'}
       Difficulty: ${options.difficulty || 'Intermediate'}
       Duration: ${options.duration || '4'} weeks
+      Learning Objectives: ${options.learningObjectives || 'Not specified'}
       
       Generate 4-6 modules with 3-5 lessons each. Focus on practical, actionable content.
       
@@ -309,7 +316,7 @@ router.post('/summarize', async (req, res) => {
 // POST /api/ai-proxy/generate-outline
 router.post('/generate-outline', async (req, res) => {
   try {
-    const { title, subject, description, targetAudience, difficulty, duration } = req.body;
+    const { title, subject, description, targetAudience, difficulty, duration, learningObjectives } = req.body;
     
     const result = await aiService.generateCourseOutline({
       title,
@@ -317,12 +324,33 @@ router.post('/generate-outline', async (req, res) => {
       description,
       targetAudience,
       difficulty,
-      duration
+      duration,
+      learningObjectives
     });
     
     res.json({
       success: true,
-      generated_text: result.generated_text || `Course: ${title}\n\nModule 1: Introduction to ${subject}\n- Overview and fundamentals\n- Key concepts\n- Getting started\n\nModule 2: ${subject} Fundamentals\n- Core principles\n- Essential techniques\n- Best practices\n\nModule 3: Practical ${subject}\n- Hands-on examples\n- Real-world applications\n- Project work\n\nModule 4: Advanced ${subject}\n- Expert techniques\n- Optimization\n- Industry standards`,
+      generated_text: result.generated_text || `Course: ${title}
+
+Module 1: Introduction to ${subject}
+- Overview and fundamentals
+- Key concepts
+- Getting started
+
+Module 2: ${subject} Fundamentals
+- Core principles
+- Essential techniques
+- Best practices
+
+Module 3: Practical ${subject}
+- Hands-on examples
+- Real-world applications
+- Project work
+
+Module 4: Advanced ${subject}
+- Expert techniques
+- Optimization
+- Industry standards`,
       modules: result.modules || [
         {
           id: 1,

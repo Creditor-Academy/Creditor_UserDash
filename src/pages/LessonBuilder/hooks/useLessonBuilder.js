@@ -34,6 +34,7 @@ export const useLessonBuilder = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
   const [showAiImageDialog, setShowAiImageDialog] = useState(false);
+  const [showAIEnhancementPanel, setShowAIEnhancementPanel] = useState(false);
   const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
 
   // Sidebar states
@@ -307,6 +308,8 @@ export const useLessonBuilder = () => {
     setShowPdfDialog,
     showAiImageDialog,
     setShowAiImageDialog,
+    showAIEnhancementPanel,
+    setShowAIEnhancementPanel,
     showUnifiedPreview,
     setShowUnifiedPreview,
 

@@ -54,6 +54,10 @@ export async function fetchUserCourses(withModules = false) {
 }
 
 export async function createCourse(courseData) {
+  const cleanTitle = (courseData.title || '').trim();
+  const cleanDescription = (courseData.description || '').trim() || (cleanTitle ? `Comprehensive course on ${cleanTitle}.` : 'Course description to be updated.');
+  const payload = { ...courseData, title: cleanTitle, description: cleanDescription };
+
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/createCourse`, {
     method: 'POST',
     headers: {
@@ -61,12 +65,12 @@ export async function createCourse(courseData) {
       ...getAuthHeader(),
     },
     credentials: 'include',
-    body: JSON.stringify(courseData),
+    body: JSON.stringify(payload),
   });
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-    throw new Error(errorData.message || `Failed to create course (${response.status})`);
+    throw new Error(errorData.errorMessage || errorData.message || `Failed to create course (${response.status})`);
   }
   
   const data = await response.json();
@@ -77,9 +81,18 @@ export async function createAICourse(courseData) {
   console.log('createAICourse called with:', courseData);
   
   // Use EXACT same structure as working CreateCourseModal - no extra fields
+  const cleanTitle = (courseData.title || '').trim();
+  let cleanDescription = (courseData.description || '').trim();
+  // Backend validation requires description to be non-empty
+  if (!cleanDescription) {
+    cleanDescription = cleanTitle
+      ? `Comprehensive course on ${cleanTitle}.`
+      : 'Course description to be updated.';
+  }
+
   const aiCourseData = {
-    title: courseData.title || '',
-    description: courseData.description || '',
+    title: cleanTitle,
+    description: cleanDescription,
     learning_objectives: courseData.objectives ? courseData.objectives.split('\n').map(s => s.trim()).filter(Boolean) : [],
     isHidden: false,
     course_status: 'DRAFT',
@@ -122,7 +135,8 @@ export async function createAICourse(courseData) {
       errorData = { message: errorText || 'Unknown error' };
     }
     
-    throw new Error(errorData.message || errorText || `Failed to create AI course (${response.status})`);
+    const backendMessage = errorData.errorMessage || errorData.message;
+    throw new Error(backendMessage || errorText || `Failed to create AI course (${response.status})`);
   }
   
   const data = await response.json();
@@ -254,11 +268,11 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         title: (moduleData.title || `Module ${i + 1}`).length > 150 ? 
                (moduleData.title || `Module ${i + 1}`).substring(0, 147) + '...' : 
                (moduleData.title || `Module ${i + 1}`),
-        description: moduleData.description || 'test description',
+        description: moduleData.description || 'AI generated module description',
         order: i + 1,
         estimated_duration: 60,
         module_status: 'PUBLISHED',
-        thumbnail: 'test thumbnail',
+        thumbnail: 'AI generated module thumbnail',
         price: '0'
       };
       
@@ -290,7 +304,7 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             lessonContent = lessonData.richContent;
             console.log('Using rich content from contentBlocks for lesson:', lessonData.title);
           }
-          // Second priority: Handle new AI-generated lesson structure
+          // Second priority: Handle new AI-generated lesson structure or generate via prompt
           else if (lessonData.heading || lessonData.introduction || lessonData.content || lessonData.summary) {
             // Build structured HTML content for AI lessons
             if (lessonData.heading) {
@@ -352,6 +366,25 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             }
           }
 
+          // If lesson lacks structured content, attempt prompt-to-lesson generation
+          try {
+            if (!lessonData.introduction && !lessonData.content && !lessonData.summary) {
+              const { generateLessonFromPrompt } = await import('./aiCourseService');
+              const gen = await generateLessonFromPrompt(lessonData.title, { context: moduleData.title });
+              if (gen?.success) {
+                lessonData.content = {
+                  introduction: gen.data.introduction,
+                  mainContent: gen.data.mainContent,
+                  examples: gen.data.examples,
+                  keyTakeaways: gen.data.keyTakeaways,
+                  summary: gen.data.summary
+                };
+              }
+            }
+          } catch (genErr) {
+            console.warn('Prompt-to-lesson generation skipped:', genErr?.message || genErr);
+          }
+
           // Generate AI-powered lesson description
           let cleanDescription = lessonData.introduction || lessonData.content?.introduction;
           
@@ -393,6 +426,28 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             }
           }
 
+          // Auto-generate Q&A pairs and an illustrative image for the lesson
+          let qaPairs = [];
+          try {
+            const { generateQAPairs } = await import('./aiCourseService');
+            const qaRes = await generateQAPairs(lessonData.title, 3, lessonData.introduction || moduleData.title || '');
+            qaPairs = qaRes?.data?.qa || [];
+          } catch (qaError) {
+            console.warn('QA generation skipped:', qaError?.message || qaError);
+          }
+
+          let illustrativeImage = null;
+          try {
+            if (!(lessonData.content?.multimedia?.image)) {
+              const { generateCourseImage } = await import('./aiCourseService');
+              const imgPrompt = `Educational illustration for lesson "${lessonData.title}"`;
+              const imgRes = await generateCourseImage(imgPrompt, { style: 'illustration', size: '1024x1024' });
+              illustrativeImage = imgRes?.data?.url || null;
+            }
+          } catch (imgError) {
+            console.warn('Image generation skipped:', imgError?.message || imgError);
+          }
+
           const lessonPayload = {
             title: lessonData.title,
             description: cleanDescription,
@@ -403,8 +458,12 @@ export async function createAIModulesAndLessons(courseId, outlines) {
           console.log('Lesson payload being sent:', lessonPayload);
           
           try {
-            const moduleId = createdModules[createdModules.length - 1]?.id || createdModules[createdModules.length - 1]?._id;
+            const moduleId = createdModules[createdModules.length - 1]?.data?.id || createdModules[createdModules.length - 1]?.id;
             console.log('Using module ID for lesson creation:', moduleId);
+            
+            if (!moduleId) {
+              throw new Error('Module ID is missing');
+            }
             
             const createdLesson = await createLesson(courseId, moduleId, lessonPayload);
             createdLessons.push(createdLesson);
@@ -493,8 +552,9 @@ export async function createAIModulesAndLessons(courseId, outlines) {
                   });
                 }
 
-                // Add Multimedia Block if available
-                if (lessonData.content?.multimedia?.image || lessonData.content?.multimedia?.video) {
+                // Add Multimedia Block (use generated image if original missing)
+                const imageToUse = lessonData.content?.multimedia?.image || illustrativeImage;
+                if (imageToUse || lessonData.content?.multimedia?.video) {
                   contentBlocks.push({
                     type: "text",
                     script: "",
@@ -504,9 +564,9 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-red-500 to-orange-500 rounded-l-2xl"></div>
         <div class="pl-4">
           <h2 class="text-xl font-semibold text-gray-800 mb-4">Visual Learning</h2>
-          ${lessonData.content?.multimedia?.image ? 
+          ${imageToUse ? 
             `<div class="mb-4 text-center">
-              <img src="${lessonData.content.multimedia.image}" alt="Lesson illustration" class="max-w-full h-auto rounded-lg shadow-md" />
+              <img src="${imageToUse}" alt="Lesson illustration" class="max-w-full h-auto rounded-lg shadow-md" />
             </div>` : ''
           }
           ${lessonData.content?.multimedia?.video ? 
@@ -516,6 +576,29 @@ export async function createAIModulesAndLessons(courseId, outlines) {
               </video>
             </div>` : ''
           }
+        </div>
+      </div>
+    `
+                  });
+                }
+
+                // Add Generated Q&A Block (always if we have generated pairs)
+                if (qaPairs.length > 0) {
+                  contentBlocks.push({
+                    type: "text",
+                    script: "",
+                    block_id: `block_${baseId}_qa_pairs`,
+                    html_css: `
+      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+        <div class="absolute top-0 left-0 h-full w-2 bg-gradient-to-b from-cyan-500 to-blue-500 rounded-l-2xl"></div>
+        <div class="pl-4">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Practice Q&A</h2>
+          ${qaPairs.map((qa, idx) => `
+            <div class="mb-4 p-4 bg-cyan-50 rounded-lg border">
+              <p class="font-semibold text-cyan-800">Q${idx + 1}. ${qa.question}</p>
+              <p class="text-gray-700 mt-1"><span class="font-medium">Answer:</span> ${qa.answer}</p>
+            </div>
+          `).join('')}
         </div>
       </div>
     `
@@ -623,6 +706,34 @@ export async function createAIModulesAndLessons(courseId, outlines) {
       } else {
         console.log(`No lessons found for module ${i + 1}`);
       }
+    }
+
+    // After creating lessons, auto-generate a module quiz using generated content
+    try {
+      const createdModuleId = createdModules[createdModules.length - 1]?.data?.id || createdModules[createdModules.length - 1]?.id;
+      if (createdModuleId) {
+        const { createQuiz, bulkUploadQuestions } = await import('./quizServices');
+        const { generateAssessmentQuestions } = await import('./aiCourseService');
+        const quizTitle = `${moduleData.title} - Knowledge Check`;
+        const quizCreateRes = await createQuiz({
+          title: quizTitle,
+          module_id: createdModuleId,
+          max_attempts: 3,
+          min_score: 60,
+          total_score: 100
+        });
+        const quizId = quizCreateRes?.data?.id || quizCreateRes?.id;
+        if (quizId) {
+          const assess = await generateAssessmentQuestions(moduleData.title, 5);
+          const questionsPayload = { questions: assess?.data?.questions || [] };
+          if (questionsPayload.questions.length > 0) {
+            await bulkUploadQuestions(quizId, questionsPayload);
+            console.log('✅ Auto-generated assessment uploaded for module:', moduleData.title);
+          }
+        }
+      }
+    } catch (quizErr) {
+      console.warn('Auto-quiz generation skipped:', quizErr?.message || quizErr);
     }
     
     console.log(`Successfully created ${createdModules.length} modules and ${createdLessons.length} lessons`);

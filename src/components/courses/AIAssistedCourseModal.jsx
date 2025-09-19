@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles } from 'lucide-react';
-import AICourseWorkspace from './AICourseWorkspace';
 import Bytez from 'bytez.js'; // ✅ Import Bytez SDK
 
 const AIAssistedCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
@@ -90,7 +89,7 @@ Do not add explanations. Do not wrap in markdown. Only return the JSON object.
         throw new Error("Invalid AI response format");
       }
 
-      // ✅ Inject AI outline into formData for workspace
+      // ✅ Inject AI outline into formData
       const enrichedFormData = {
         ...formData,
         outlines: aiOutline.modules.map(m => ({
@@ -100,7 +99,14 @@ Do not add explanations. Do not wrap in markdown. Only return the JSON object.
       };
 
       setFormData(enrichedFormData);
-      setShowWorkspace(true);
+      
+      // Instead of opening a separate AI workspace, we'll generate AI content directly
+      // in the lesson builder. For now, we'll show an alert that this functionality
+      // has been moved to the lesson editor.
+      alert('AI course creation has been integrated directly into the lesson editor. Create a course and then use the AI Enhance button in the lesson builder.');
+      
+      // Close the modal
+      onClose();
 
     } catch (err) {
       console.error("AI Generation failed:", err);
@@ -172,7 +178,6 @@ Do not add explanations. Do not wrap in markdown. Only return the JSON object.
         onCourseCreated(courseWithAI);
       }
 
-      setShowWorkspace(false);
       onClose();
     } catch (error) {
       console.error('Failed to create course:', error);
@@ -183,14 +188,11 @@ Do not add explanations. Do not wrap in markdown. Only return the JSON object.
   if (!isOpen) return null;
 
   if (showWorkspace) {
-    return (
-      <AICourseWorkspace
-        isOpen={showWorkspace}
-        onClose={handleCloseWorkspace}
-        courseData={formData}
-        onSave={handleSaveCourse}
-      />
-    );
+    // Instead of opening a separate AI workspace, we'll generate AI content directly
+    // in the lesson builder. For now, we'll show an alert that this functionality
+    // has been moved to the lesson editor.
+    alert('AI course creation has been integrated directly into the lesson editor. Create a course and then use the AI Enhance button in the lesson builder.');
+    return null;
   }
 
   return (

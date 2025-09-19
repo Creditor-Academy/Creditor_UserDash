@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, Loader2, Sparkles } from 'lucide-react';
 
 const LessonHeader = ({ 
   lessonTitle,
@@ -9,7 +9,8 @@ const LessonHeader = ({
   onView,
   onSave,
   onUpdate,
-  isUploading
+  isUploading,
+  onAIEnhance
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
@@ -30,6 +31,15 @@ const LessonHeader = ({
         </div>
        
         <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAIEnhance}
+            className="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+          >
+            <Sparkles className="h-4 w-4" />
+            AI Enhance
+          </Button>
           <Button
             variant="outline"
             size="sm"

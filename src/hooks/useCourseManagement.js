@@ -189,10 +189,12 @@ export const useCourseManagement = () => {
   };
 
   // Filter and paginate courses
-  const filteredCourses = courses.filter(course =>
-    course.title.toLowerCase().includes(search.toLowerCase()) ||
-    (course.description || "").toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredCourses = courses.filter(course => {
+    const title = (course?.title || "").toString();
+    const description = (course?.description || "").toString();
+    const q = (search || "").toString();
+    return title.toLowerCase().includes(q.toLowerCase()) || description.toLowerCase().includes(q.toLowerCase());
+  });
   
   const paginatedCourses = filteredCourses.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const hasPrev = page > 0;
