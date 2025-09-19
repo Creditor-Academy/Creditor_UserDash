@@ -738,7 +738,7 @@ export function CourseView() {
               <div className="flex items-center mb-3">
                 <div className="bg-blue-100 p-2 rounded-full mr-3">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-                </div>
+            </div>
                 <h3 className="text-xl font-semibold text-gray-900">Confirm Course Purchase</h3>
               </div>
             </div>

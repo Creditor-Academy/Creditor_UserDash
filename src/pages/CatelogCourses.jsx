@@ -787,25 +787,25 @@ const CatelogCourses = () => {
                              </Link>
                            </Button>
                            
-                           <Button
-                             onClick={(e) => {
-                               e.preventDefault();
-                               e.stopPropagation();
-                               handleBuyCourseClick(course);
-                             }}
+                         <Button
+                           onClick={(e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                             handleBuyCourseClick(course);
+                           }}
                              className="h-11 px-4 rounded-lg text-sm font-semibold shadow-sm border transition-all duration-200 bg-white text-green-700 border-green-300 hover:bg-green-50"
-                           >
-                             <Unlock size={16} className="mr-2" />
+                         >
+                           <Unlock size={16} className="mr-2" />
                              Buy Course
-                           </Button>
+                         </Button>
                          </div>
                        ) : (
                          <div className="w-full">
                            <Link to={`/dashboard/courses/${course.id}`} className="w-full">
                              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                               <BookOpen size={16} className="mr-2" />
-                               View Course
-                             </Button>
+                             <BookOpen size={16} className="mr-2" />
+                             View Course
+                           </Button>
                            </Link>
                            <p className="text-xs text-gray-500 mt-2 text-center">
                              You bought individual lessons - continue buying lessons only
@@ -852,7 +852,7 @@ const CatelogCourses = () => {
               <div className="flex items-center mb-3">
                 <div className="bg-blue-100 p-2 rounded-full mr-3">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-                </div>
+            </div>
                 <h3 className="text-xl font-semibold text-gray-900">Confirm Course Purchase</h3>
               </div>
             </div>

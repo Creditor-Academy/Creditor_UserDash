@@ -351,12 +351,12 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
                       <p className="text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* $50 Pack */}
-                      <label className={`group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 ${
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack50" 
-                          ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg" 
-                          : "hover:shadow-md hover:scale-[1.02]"
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
+                          : "hover:shadow-lg"
                       }`}>
                         <input 
                           type="radio" 
@@ -365,42 +365,38 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           checked={packType === "pack50"} 
                           onChange={()=>setPackType("pack50")} 
                         />
-                        <div className={`relative p-3 ${packType === "pack50" ? "bg-gradient-to-br from-blue-50 to-blue-100" : "bg-white border border-gray-200"}`}>
-                          <div className="text-center">
-                            <div className={`relative w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center shadow-sm ${
-                              packType === "pack50" 
-                                ? "bg-gradient-to-br from-blue-500 to-blue-600" 
-                                : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200"
-                            }`}>
-                              <span className={`font-bold text-xs ${
-                                packType === "pack50" ? "text-white" : "text-gray-600 group-hover:text-blue-600"
-                              }`}>$50</span>
-                            </div>
-                            <h3 className={`font-bold text-base mb-1 ${
-                              packType === "pack50" ? "text-blue-900" : "text-gray-900"
-                            }`}>250 Credits</h3>
-                            <p className={`text-xs mb-2 ${
-                              packType === "pack50" ? "text-blue-700" : "text-gray-500"
-                            }`}>Perfect for trying out</p>
-                            <div className={`text-lg font-bold ${
-                              packType === "pack50" ? "text-blue-900" : "text-gray-900"
-                            }`}>$50</div>
-                            {packType === "pack50" && (
-                              <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
-                                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack50" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$50</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">250 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                                Perfect for trying out
                               </div>
-                            )}
+                            </div>
                           </div>
+                          {packType === "pack50" && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
                       </label>
 
                       {/* $100 Pack */}
-                      <label className={`group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 ${
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack100" 
-                          ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg" 
-                          : "hover:shadow-md hover:scale-[1.02]"
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
+                          : "hover:shadow-lg"
                       }`}>
                         <input 
                           type="radio" 
@@ -409,42 +405,38 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           checked={packType === "pack100"} 
                           onChange={()=>setPackType("pack100")} 
                         />
-                        <div className={`relative p-3 ${packType === "pack100" ? "bg-gradient-to-br from-blue-50 to-blue-100" : "bg-white border border-gray-200"}`}>
-                          <div className="text-center">
-                            <div className={`relative w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center shadow-sm ${
-                              packType === "pack100" 
-                                ? "bg-gradient-to-br from-blue-500 to-blue-600" 
-                                : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200"
-                            }`}>
-                              <span className={`font-bold text-xs ${
-                                packType === "pack100" ? "text-white" : "text-gray-600 group-hover:text-blue-600"
-                              }`}>$100</span>
-                            </div>
-                            <h3 className={`font-bold text-base mb-1 ${
-                              packType === "pack100" ? "text-blue-900" : "text-gray-900"
-                            }`}>500 Credits</h3>
-                            <p className={`text-xs mb-2 ${
-                              packType === "pack100" ? "text-blue-700" : "text-gray-500"
-                            }`}>Great for regular use</p>
-                            <div className={`text-lg font-bold ${
-                              packType === "pack100" ? "text-blue-900" : "text-gray-900"
-                            }`}>$100</div>
-                            {packType === "pack100" && (
-                              <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
-                                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack100" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$100</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">500 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                                Great for regular use
                               </div>
-                            )}
+                            </div>
                           </div>
+                          {packType === "pack100" && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
                       </label>
 
                       {/* $500 Pack */}
-                      <label className={`group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 ${
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack500" 
-                          ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg" 
-                          : "hover:shadow-md hover:scale-[1.02]"
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
+                          : "hover:shadow-lg"
                       }`}>
                         <input 
                           type="radio" 
@@ -453,42 +445,38 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           checked={packType === "pack500"} 
                           onChange={()=>setPackType("pack500")} 
                         />
-                        <div className={`relative p-3 ${packType === "pack500" ? "bg-gradient-to-br from-blue-50 to-blue-100" : "bg-white border border-gray-200"}`}>
-                        <div className="text-center">
-                            <div className={`relative w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center shadow-sm ${
-                              packType === "pack500" 
-                                ? "bg-gradient-to-br from-blue-500 to-blue-600" 
-                                : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-blue-100 group-hover:to-blue-200"
-                            }`}>
-                              <span className={`font-bold text-xs ${
-                                packType === "pack500" ? "text-white" : "text-gray-600 group-hover:text-blue-600"
-                              }`}>$500</span>
-                          </div>
-                            <h3 className={`font-bold text-base mb-1 ${
-                              packType === "pack500" ? "text-blue-900" : "text-gray-900"
-                            }`}>2,500 Credits</h3>
-                            <p className={`text-xs mb-2 ${
-                              packType === "pack500" ? "text-blue-700" : "text-gray-500"
-                            }`}>For serious learners</p>
-                            <div className={`text-lg font-bold ${
-                              packType === "pack500" ? "text-blue-900" : "text-gray-900"
-                            }`}>$500</div>
-                          {packType === "pack500" && (
-                              <div className="absolute top-2 right-2 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
-                                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack500" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$500</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">2,500 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                                For serious learners
+                              </div>
+                            </div>
+                          </div>
+                          {packType === "pack500" && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </div>
                           )}
-                          </div>
                         </div>
                       </label>
 
                       {/* $2,800 Pack */}
-                      <label className={`group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 ${
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack2800" 
-                          ? "ring-2 ring-emerald-500 ring-offset-2 shadow-lg" 
-                          : "hover:shadow-md hover:scale-[1.02]"
+                          ? "ring-2 ring-emerald-500 ring-offset-2" 
+                          : "hover:shadow-lg"
                       }`}>
                         <input 
                           type="radio" 
@@ -497,39 +485,35 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           checked={packType === "pack2800"} 
                           onChange={()=>setPackType("pack2800")} 
                         />
-                        <div className={`relative p-3 ${packType === "pack2800" ? "bg-gradient-to-br from-emerald-50 to-emerald-100" : "bg-white border border-gray-200"}`}>
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack2800" 
+                            ? "border-emerald-500 bg-emerald-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
                           <div className="absolute top-2 right-2">
-                            <span className="px-2 py-1 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-sm">
-                              ⭐ BEST VALUE
+                            <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded">
+                              BEST VALUE
                             </span>
                           </div>
-                        <div className="text-center">
-                            <div className={`relative w-8 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center shadow-sm ${
-                              packType === "pack2800" 
-                                ? "bg-gradient-to-br from-emerald-500 to-emerald-600" 
-                                : "bg-gradient-to-br from-gray-100 to-gray-200 group-hover:from-emerald-100 group-hover:to-emerald-200"
-                            }`}>
-                              <span className={`font-bold text-xs ${
-                                packType === "pack2800" ? "text-white" : "text-gray-600 group-hover:text-emerald-600"
-                              }`}>$2.8K</span>
-                          </div>
-                            <h3 className={`font-bold text-base mb-1 ${
-                              packType === "pack2800" ? "text-emerald-900" : "text-gray-900"
-                            }`}>14,000 Credits</h3>
-                            <p className={`text-xs mb-2 ${
-                              packType === "pack2800" ? "text-emerald-700" : "text-gray-500"
-                            }`}>Maximum value & savings</p>
-                            <div className={`text-lg font-bold ${
-                              packType === "pack2800" ? "text-emerald-900" : "text-gray-900"
-                            }`}>$2,800</div>
-                          {packType === "pack2800" && (
-                              <div className="absolute top-2 left-2 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
-                                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$2,800</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">14,000 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                                Maximum value & savings
+                              </div>
+                            </div>
+                          </div>
+                          {packType === "pack2800" && (
+                            <div className="absolute top-2 left-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </div>
                           )}
-                          </div>
                         </div>
                       </label>
                     </div>
@@ -601,5 +585,9 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
 };
 
 export default CreditPurchaseModal;
+
+
+
+
 
 
