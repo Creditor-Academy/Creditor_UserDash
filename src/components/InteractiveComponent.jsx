@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target } from 'lucide-react';
+import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
@@ -33,6 +33,7 @@ const InteractiveComponent = forwardRef(({
   });
   const [editingHotspot, setEditingHotspot] = useState(null);
   const [showHotspotDialog, setShowHotspotDialog] = useState(false);
+  const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] = useState(false);
    
   // Helper function to extract accordion data from HTML
   const extractAccordionFromHTML = (htmlContent) => {
@@ -73,6 +74,81 @@ const InteractiveComponent = forwardRef(({
       console.error('Error extracting accordion data from HTML:', error);
     }
     
+    return extractedData;
+  };
+
+  // Helper function to extract labeled graphic data from HTML
+  const extractLabeledGraphicFromHTML = (htmlContent) => {
+    console.log('Extracting labeled graphic from HTML:', htmlContent.substring(0, 500) + '...');
+    const extractedData = {
+      image: null,
+      hotspots: []
+    };
+    
+    try {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      // Extract image from the labeled graphic container
+      const imageElement = tempDiv.querySelector('.labeled-graphic-container img');
+      if (imageElement) {
+        extractedData.image = {
+          src: imageElement.src,
+          name: imageElement.alt || 'Labeled graphic image',
+          size: 0 // Size not available from HTML
+        };
+      }
+      
+      // Extract hotspots
+      const hotspotElements = tempDiv.querySelectorAll('.hotspot');
+      console.log('Found hotspot elements:', hotspotElements.length);
+      hotspotElements.forEach((hotspot, index) => {
+        const hotspotId = hotspot.getAttribute('data-hotspot-id') || (index + 1).toString();
+        const style = hotspot.getAttribute('style') || '';
+        
+        // Extract position from style attribute
+        const leftMatch = style.match(/left:\s*([0-9.]+)%/);
+        const topMatch = style.match(/top:\s*([0-9.]+)%/);
+        
+        if (leftMatch && topMatch) {
+          // Try to find corresponding content overlay using more flexible selector
+          let contentElement = tempDiv.querySelector(`[id*="content-"][id*="-${hotspotId}"]`);
+          let label = 'Hotspot';
+          let description = 'Click to edit description';
+          
+          if (contentElement) {
+            const labelElement = contentElement.querySelector('h3');
+            const descElement = contentElement.querySelector('p');
+            if (labelElement) label = labelElement.textContent.trim();
+            if (descElement) description = descElement.textContent.trim();
+          } else {
+            // Fallback: try to find content by index if ID-based search fails
+            const allContentElements = tempDiv.querySelectorAll('.hotspot-content');
+            if (allContentElements[index]) {
+              const labelElement = allContentElements[index].querySelector('h3');
+              const descElement = allContentElements[index].querySelector('p');
+              if (labelElement) label = labelElement.textContent.trim();
+              if (descElement) description = descElement.textContent.trim();
+            }
+          }
+          
+          const hotspotData = {
+            id: hotspotId,
+            x: parseFloat(leftMatch[1]),
+            y: parseFloat(topMatch[1]),
+            label: label,
+            description: description
+          };
+          console.log('Extracted hotspot:', hotspotData);
+          extractedData.hotspots.push(hotspotData);
+        }
+      });
+    } catch (error) {
+      console.error('Error extracting labeled graphic data from HTML:', error);
+    }
+    
+    console.log('Final extracted data:', extractedData);
     return extractedData;
   };
 
@@ -181,20 +257,30 @@ const InteractiveComponent = forwardRef(({
         // Load existing data
         try {
           if (editingInteractiveBlock.content) {
+            console.log('Raw content from database:', editingInteractiveBlock.content);
             const content = JSON.parse(editingInteractiveBlock.content);
+            console.log('Parsed content:', content);
             if (template === 'tabs' && content.tabsData) {
               setTabsData(content.tabsData);
             } else if (template === 'accordion' && content.accordionData) {
               setAccordionData(content.accordionData);
             } else if (template === 'labeled-graphic' && content.labeledGraphicData) {
+              console.log('Loading labeled graphic data:', content.labeledGraphicData);
               setLabeledGraphicData(content.labeledGraphicData);
             }
           } else {
+            console.log('No JSON content found, trying to extract from HTML');
             // If no structured content, try to extract from HTML
             if (template === 'accordion' && editingInteractiveBlock.html_css) {
               const extractedData = extractAccordionFromHTML(editingInteractiveBlock.html_css);
               if (extractedData.length > 0) {
                 setAccordionData(extractedData);
+              }
+            } else if (template === 'labeled-graphic' && editingInteractiveBlock.html_css) {
+              const extractedData = extractLabeledGraphicFromHTML(editingInteractiveBlock.html_css);
+              if (extractedData.image) {
+                console.log('Extracted labeled graphic data from HTML:', extractedData);
+                setLabeledGraphicData(extractedData);
               }
             }
           }
@@ -573,6 +659,8 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
+      setLabeledGraphicImageUploading(true);
+      
       try {
         // Upload image to cloud API
         const uploadResult = await uploadImage(file, {
@@ -612,6 +700,8 @@ const InteractiveComponent = forwardRef(({
           }));
         };
         reader.readAsDataURL(file);
+      } finally {
+        setLabeledGraphicImageUploading(false);
       }
     }
   };
@@ -1360,6 +1450,20 @@ const InteractiveComponent = forwardRef(({
                           {labeledGraphicData.image.name} ({Math.round(labeledGraphicData.image.size / 1024)} KB)
                         </p>
                       </div>
+                    ) : labeledGraphicImageUploading ? (
+                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
+                        <div className="flex flex-col items-center space-y-3">
+                          <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+                          <div className="text-center">
+                            <span className="text-lg font-medium text-blue-600">
+                              Uploading Image...
+                            </span>
+                            <p className="text-sm text-blue-500 mt-1">
+                              Please wait while we upload your image
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
                         <input
@@ -1368,10 +1472,11 @@ const InteractiveComponent = forwardRef(({
                           onChange={handleLabeledGraphicImageUpload}
                           className="hidden"
                           id="labeled-graphic-image-upload"
+                          disabled={labeledGraphicImageUploading}
                         />
                         <label
                           htmlFor="labeled-graphic-image-upload"
-                          className="cursor-pointer flex flex-col items-center space-y-3"
+                          className={`cursor-pointer flex flex-col items-center space-y-3 ${labeledGraphicImageUploading ? 'pointer-events-none opacity-50' : ''}`}
                         >
                           <Target className="h-12 w-12 text-gray-400" />
                           <div className="text-center">
