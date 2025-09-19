@@ -773,26 +773,40 @@ const CatelogCourses = () => {
                            </Button>
                          </Link>
                        ) : canBuyCourse(course) ? (
-                         <Button
-                           onClick={(e) => {
-                             e.preventDefault();
-                             e.stopPropagation();
-                             handleBuyCourseClick(course);
-                           }}
-                           className="w-full bg-green-600 hover:bg-green-700 text-white"
-                         >
-                           <Unlock size={16} className="mr-2" />
-                           <BuyCourseButton course={course} />
-                         </Button>
+                         <div className="flex gap-2">
+                           <Button 
+                             className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white"
+                             asChild
+                           >
+                             <Link 
+                               to={`/dashboard/courses/${course.id}`}
+                               className="flex items-center justify-center"
+                             >
+                               <BookOpen size={16} className="mr-2" />
+                               View Course
+                             </Link>
+                           </Button>
+                           
+                           <Button
+                             onClick={(e) => {
+                               e.preventDefault();
+                               e.stopPropagation();
+                               handleBuyCourseClick(course);
+                             }}
+                             className="h-11 px-4 rounded-lg text-sm font-semibold shadow-sm border transition-all duration-200 bg-white text-green-700 border-green-300 hover:bg-green-50"
+                           >
+                             <Unlock size={16} className="mr-2" />
+                             Buy Course
+                           </Button>
+                         </div>
                        ) : (
                          <div className="w-full">
-                           <Button 
-                             className="w-full bg-gray-400 text-white cursor-not-allowed" 
-                             disabled
-                           >
-                             <BookOpen size={16} className="mr-2" />
-                             View Course
-                           </Button>
+                           <Link to={`/dashboard/courses/${course.id}`} className="w-full">
+                             <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                               <BookOpen size={16} className="mr-2" />
+                               View Course
+                             </Button>
+                           </Link>
                            <p className="text-xs text-gray-500 mt-2 text-center">
                              You bought individual lessons - continue buying lessons only
                            </p>

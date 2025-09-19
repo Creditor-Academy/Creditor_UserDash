@@ -190,7 +190,20 @@ export function CatalogPage() {
   const getCatalogPriceCredits = (catalog) => {
     // Free catalogs should never show a price or buy button
     if (isFreeCourse(catalog)) return 0;
-    // Flat price per catalog
+    
+    const catalogName = (catalog.name || "").toLowerCase();
+    
+    // Specific pricing for premium catalogs
+    if (catalogName.includes("become private") && catalogName.includes("sov 101")) {
+      return 28000; // Become Private + SOV 101
+    } else if (catalogName.includes("operate private")) {
+      return 14000; // Operate Private
+    } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
+               (catalogName.includes("remedy") || catalogName.includes("private merchant"))) {
+      return 17990; // Business credit + I want Remedy Now + Private Merchant
+    }
+    
+    // Default price for all other catalogs
     return 2800;
   };
 
