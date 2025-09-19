@@ -11,31 +11,17 @@ const carouselItems = [
   {
     id: 1,
     image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/website_sat.png",
-    title: "Operate Private",
-    course: "Operate Private",
-    link: "/upcoming"
+    title: "Website Building Event",
+    course: "20th Sep",
+   
   },
   {
     id: 2,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/RemedyNow.png",
-    title: "I Want Remedy Now",
-    course: "I Want Remedy Now",
-    link: "/upcoming"
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/PMP+event.png",
+    title: "Private Merchant Processing Event",
+    course: "20th Sep",
+    
   },
-  {
-    id: 3,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/BP.png",
-    title: "Become Private",
-    course: "Become Private",
-    link: "/upcoming"
-  },
-  {
-    id: 4,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/PM.png",
-    title: "Private Merchant",
-    course: "Private Merchant",
-    link: "/upcoming"
-  }
 ];
 
 export function DashboardCarousel() {
