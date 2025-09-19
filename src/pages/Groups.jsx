@@ -88,24 +88,35 @@ export function Groups() {
       
       if (response.success && response.data) {
         // Transform API data to match our component's expected format
-        const transformedGroups = response.data.map(group => ({
-          id: group.id,
-          name: group.name,
-          description: group.description,
-          members: group.members ? group.members.length : 0,
-          active: true, // Default to active since API doesn't have this field
-          featured: false, // Default to false since API doesn't have this field
-          lastActivity: "Recently", // Default since API doesn't have this field
-          type: group.course_id ? "course" : "common", // Determine type based on course_id
-          courseName: group.course_name || "", // API doesn't have course name
-          courseId: group.course_id || null,
-          createdAt: group.createdAt,
-          createdBy: group.created_by,
-          membersList: group.members || [],
-          isMember: group.members ? group.members.some(member => 
-            member.user_id === userProfile?.id || member.id === userProfile?.id
-          ) : false
-        }));
+        const transformedGroups = response.data.map(group => {
+          // Debug logging to check thumbnail data
+          console.log('Group data:', {
+            id: group.id,
+            name: group.name,
+            thumbnail: group.thumbnail || group.banner || group.banner_url || group.bannerUrl || group.image || group.image_url || group.imageUrl || group.group_image,
+            hasThumbnail: !!(group.thumbnail || group.banner || group.banner_url || group.bannerUrl || group.image || group.image_url || group.imageUrl || group.group_image)
+          });
+          
+          return {
+            id: group.id,
+            name: group.name,
+            description: group.description,
+            members: group.members ? group.members.length : 0,
+            active: true, // Default to active since API doesn't have this field
+            featured: false, // Default to false since API doesn't have this field
+            lastActivity: "Recently", // Default since API doesn't have this field
+            type: group.course_id ? "course" : "common", // Determine type based on course_id
+            courseName: group.course_name || "", // API doesn't have course name
+            courseId: group.course_id || null,
+            createdAt: group.createdAt,
+            createdBy: group.created_by,
+            membersList: group.members || [],
+            isMember: group.members ? group.members.some(member => 
+              member.user_id === userProfile?.id || member.id === userProfile?.id
+            ) : false,
+            thumbnail: group.thumbnail || group.banner || group.banner_url || group.bannerUrl || group.image || group.image_url || group.imageUrl || group.group_image || ""
+          };
+        });
         
                  // Sort groups by creation date (latest first)
          const sortedGroups = transformedGroups.sort((a, b) => 
@@ -396,25 +407,56 @@ export function Groups() {
                     group.type === "course" ? "bg-purple-500" : "bg-blue-500"
                   }`} />
                   
-                  {/* Course tag for course groups */}
-                  {group.type === "course" && group.courseName && (
-                    <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
-                        {group.courseName}
-                      </span>
+                  {/* Group Banner - Always show placeholder */}
+                  <div className="h-32 w-full overflow-hidden relative bg-gray-100">
+                    {group.thumbnail ? (
+                      <img
+                        src={group.thumbnail}
+                        alt={`${group.name} banner`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.log('Banner image failed to load:', group.thumbnail);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                        onLoad={() => {
+                          console.log('Banner image loaded successfully:', group.thumbnail);
+                        }}
+                      />
+                    ) : null}
+                    
+                    {/* Placeholder when no thumbnail */}
+                    <div className={`w-full h-full flex items-center justify-center ${group.thumbnail ? 'hidden' : 'flex'}`}>
+                      <div className="text-center text-gray-400">
+                        <Users className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-xs">No banner image</p>
+                      </div>
                     </div>
-                  )}
+                    
+                    {/* Course tag for course groups - positioned over banner */}
+                    {group.type === "course" && group.courseName && (
+                      <div className="absolute top-2 right-2">
+                        <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700 shadow-sm">
+                          {group.courseName}
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
                   <CardHeader className="pb-3">
-                    <CardTitle className={`text-lg font-semibold text-gray-800 group-hover:${
-                      group.type === "course" ? "text-purple-600" : "text-blue-600"
-                    } transition-colors`}>
-                        {group.name}
-                      </CardTitle>
-                      <CardDescription className="mt-1 line-clamp-2 text-gray-600">
-                        {group.description}
-                      </CardDescription>
-                    </CardHeader>
+                    <div className="flex items-start">
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className={`text-lg font-semibold text-gray-800 group-hover:${
+                          group.type === "course" ? "text-purple-600" : "text-blue-600"
+                        } transition-colors`}>
+                          {group.name}
+                        </CardTitle>
+                        <CardDescription className="mt-1 line-clamp-2 text-gray-600">
+                          {group.description}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
                     
                     <CardContent className="pb-3 pt-0">
                       <div className="flex flex-wrap gap-2 mb-3">
