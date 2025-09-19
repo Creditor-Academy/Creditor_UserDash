@@ -1,28 +1,34 @@
-// Service to handle scenario-related API calls
+// Scenario Service for handling scenario-related API calls
 import { getAuthHeader } from './authHeader';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
-  const headers = {
+  // Backend handles authentication via cookies
+  return {
     'Content-Type': 'application/json',
     ...getAuthHeader(),
   };
-  console.log('Auth headers being sent:', headers);
-  return headers;
 };
 
 /**
  * Create a new scenario
  * @param {Object} scenarioData - The scenario data to create
- * @returns {Promise<Object>} The created scenario
+ * @param {string} scenarioData.title - Scenario title
+ * @param {string} scenarioData.description - Scenario description
+ * @param {number} scenarioData.max_attempts - Maximum attempts allowed
+ * @param {string} scenarioData.avatar_url - Avatar image URL
+ * @param {string} scenarioData.background_url - Background image URL
+ * @returns {Promise<Object>} Created scenario data
  */
 export async function createScenario(scenarioData) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario`, {
+    const response = await fetch(`${API_BASE}/api/scenario/createscenario`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
-      body: JSON.stringify(scenarioData),
+      body: JSON.stringify(scenarioData)
     });
 
     if (!response.ok) {
@@ -42,15 +48,15 @@ export async function createScenario(scenarioData) {
  * Update an existing scenario
  * @param {string} scenarioId - The ID of the scenario to update
  * @param {Object} scenarioData - The updated scenario data
- * @returns {Promise<Object>} The updated scenario
+ * @returns {Promise<Object>} Updated scenario data
  */
 export async function updateScenario(scenarioId, scenarioData) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/${scenarioId}`, {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       credentials: 'include',
-      body: JSON.stringify(scenarioData),
+      body: JSON.stringify(scenarioData)
     });
 
     if (!response.ok) {
@@ -67,109 +73,13 @@ export async function updateScenario(scenarioId, scenarioData) {
 }
 
 /**
- * Delete a scenario
- * @param {string} scenarioId - The ID of the scenario to delete
- * @returns {Promise<void>}
- */
-export async function deleteScenario(scenarioId) {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/${scenarioId}`, {
-      method: 'DELETE',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to delete scenario: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('Error deleting scenario:', error);
-    throw error;
-  }
-}
-
-/**
- * Fetches all scenarios for a specific module
- * @param {string} moduleId - The ID of the module to fetch scenarios for
- * @returns {Promise<Array>} Array of scenario objects
- * @throws {Error} If the request fails or returns an error
- */
-export async function fetchScenariosByModule(moduleId) {
-  if (!moduleId) {
-    throw new Error('Module ID is required to fetch scenarios');
-  }
-
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL}/api/scenario/modules/${moduleId}/scenarios`,
-      {
-        method: 'GET',
-        headers: getAuthHeaders(),
-        credentials: 'include',
-      }
-    );
-
-    const responseData = await response.json().catch(() => ({}));
-    
-    if (!response.ok) {
-      const errorMessage = responseData.message || `Failed to fetch scenarios for module (${response.status})`;
-      console.error('Error fetching scenarios:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: responseData
-      });
-      throw new Error(errorMessage);
-    }
-
-    // Normalize to consistent shape with id and module_id
-    if (Array.isArray(responseData.data)) {
-      return responseData.data.map((s) => ({
-        ...s,
-        id: s.id || s.scenarioId,
-        scenarioId: s.scenarioId || s.id,
-        module_id: moduleId,
-      }));
-    }
-    return [];
-  } catch (error) {
-    console.error('Error in fetchScenariosByModule:', error);
-    throw error;
-  }
-}
-
-/**
- * Fetches all scenarios
- * @returns {Promise<Array>} Array of all scenario objects
- */
-export async function fetchAllScenarios() {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/scenarios`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch all scenarios');
-    }
-    
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching all scenarios:', error);
-    throw error;
-  }
-}
-
-/**
- * Get scenario details by ID
+ * Get scenario by ID
  * @param {string} scenarioId - The ID of the scenario
- * @returns {Promise<Object>} Scenario details
+ * @returns {Promise<Object>} Scenario data
  */
 export async function getScenarioById(scenarioId) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/${scenarioId}`, {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}`, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -183,33 +93,7 @@ export async function getScenarioById(scenarioId) {
     const data = await response.json();
     return data.data || data;
   } catch (error) {
-    console.error('Error fetching scenario by id:', error);
-    throw error;
-  }
-}
-
-/**
- * Get scenario decisions by scenario ID
- * @param {string} scenarioId - The ID of the scenario
- * @returns {Promise<Array>} Array of scenario decisions
- */
-export async function getScenarioDecisions(scenarioId) {
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/${scenarioId}/decisions`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to fetch scenario decisions: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data || data;
-  } catch (error) {
-    console.error('Error fetching scenario decisions:', error);
+    console.error('Error fetching scenario:', error);
     throw error;
   }
 }
@@ -217,16 +101,16 @@ export async function getScenarioDecisions(scenarioId) {
 /**
  * Save scenario decisions
  * @param {string} scenarioId - The ID of the scenario
- * @param {Object} decisionsData - The decisions data to save
- * @returns {Promise<Object>} The saved decisions
+ * @param {Array} decisions - Array of decision objects
+ * @returns {Promise<Object>} Response indicating success
  */
-export async function saveScenarioDecisions(scenarioId, decisionsData) {
+export async function saveScenarioDecisions(scenarioId, decisions) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/${scenarioId}/decisions`, {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/decisions`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
-      body: JSON.stringify(decisionsData),
+      body: JSON.stringify({ decisions })
     });
 
     if (!response.ok) {
@@ -243,29 +127,114 @@ export async function saveScenarioDecisions(scenarioId, decisionsData) {
 }
 
 /**
- * Submit scenario response
- * @param {string} scenarioId - The ID of the scenario
- * @param {Object} responses - The user's responses to the scenario
- * @returns {Promise<Object>} The submission result
+ * Bulk create decisions for a scenario
+ * POST /api/scenario/{scenarioId}/createdecisions
+ * Body: { decisions: [{ description, decisionOrder }] }
  */
-export async function submitScenario(scenarioId, responses = {}) {
+export async function createDecisionsBulk(scenarioId, decisionsPayload) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scenario/${scenarioId}/submit`, {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/createdecisions`, {
       method: 'POST',
       headers: getAuthHeaders(),
       credentials: 'include',
-      body: JSON.stringify({ responses }),
+      body: JSON.stringify({ decisions: decisionsPayload })
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to submit scenario: ${response.status}`);
+      throw new Error(errorData.message || `Failed to create decisions: ${response.status}`);
     }
 
     const data = await response.json();
     return data.data || data;
   } catch (error) {
-    console.error('Error submitting scenario:', error);
+    console.error('Error creating decisions in bulk:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create choices for a decision (and link to next decisions when provided)
+ * POST /api/scenario/admin/decisions/{decisionId}/choices
+ * Body: { choices: [{ text, outcomeType, feedback, nextAction, nextDecisionId, points }] }
+ */
+export async function createDecisionChoices(decisionId, choicesPayload) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/admin/decisions/${decisionId}/choices`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ choices: choicesPayload })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to create decision choices: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error creating decision choices:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all scenarios for a module
+ * @param {string} moduleId - The ID of the module
+ * @returns {Promise<Array>} Array of scenario objects
+ */
+export async function getModuleScenarios(moduleId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/modules/${moduleId}/scenarios`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch module scenarios: ${response.status}`);
+    }
+
+    const data = await response.json();
+    // Support both { data: [...] } and direct array
+    if (data && data.data && Array.isArray(data.data)) {
+      return data.data;
+    } else if (Array.isArray(data)) {
+      return data;
+    } else {
+      return [];
+    }
+  } catch (error) {
+    console.error('Error fetching module scenarios:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a scenario
+ * @param {string} scenarioId - The ID of the scenario to delete
+ * @returns {Promise<Object>} Response indicating success
+ */
+export async function deleteScenario(scenarioId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to delete scenario: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error deleting scenario:', error);
     throw error;
   }
 }

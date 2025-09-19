@@ -95,6 +95,7 @@ import MembershipTnC from "@/pages/MembershipTnC";
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
 import CreateScenario from "@/pages/CreateScenario";
+import PreviewScenario from "@/pages/PreviewScenario";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
@@ -166,6 +167,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CreateScenario />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/preview-scenario"
+            element={
+              <ProtectedRoute>
+                <PreviewScenario />
               </ProtectedRoute>
             }
           />

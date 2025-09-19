@@ -14,7 +14,7 @@ import QuizScoresModal from '@/components/courses/QuizScoresModal';
 import EditQuestionModal from '@/components/courses/EditQuestionModal';
 import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
 import { getQuizQuestions } from '@/services/quizService';
-import { fetchScenariosByModule, deleteScenario } from '@/services/scenarioService';
+import { getModuleScenarios, deleteScenario } from '@/services/scenarioService';
 import { getAuthHeader } from '@/services/authHeader';
 import { toast } from "sonner";
 
@@ -79,7 +79,7 @@ const CreateQuizPage = () => {
     
     try {
       // TODO: Replace with actual scenario API call
-      const scenarios = await fetchScenariosByModule(moduleId);
+      const scenarios = await getModuleScenarios(moduleId);
       setModuleScenarios(prev => ({ ...prev, [moduleId]: scenarios }));
     } catch (err) {
       console.error(`Error fetching scenarios for module ${moduleId}:`, err);
