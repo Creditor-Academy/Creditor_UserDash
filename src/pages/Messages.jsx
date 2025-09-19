@@ -372,6 +372,20 @@ function Messages() {
       setSelectedFriend(prevSel => (String(prevSel) === String(deletedConversationId) ? null : prevSel));
     };
     socket.on('conversationdeleted', onConversationDeleted);
+    
+    // Handle error events from backend
+    const onError = ({ message }) => {
+      if (message) {
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+          duration: 4000,
+        });
+      }
+    };
+    socket.on('error', onError);
+    
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
@@ -381,6 +395,7 @@ function Messages() {
       socket.off('deleteMessage', onDeleteMessage);
       socket.off('conversationUpdated', onConversationUpdated);
       socket.off('conversationdeleted', onConversationDeleted);
+      socket.off('error', onError);
     };
   }, []);
 
