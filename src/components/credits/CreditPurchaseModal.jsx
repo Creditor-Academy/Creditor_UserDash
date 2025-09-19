@@ -299,8 +299,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     <tr>
                       <th className="text-left py-1 pr-2">Date</th>
                       <th className="text-left py-1 pr-2">Type</th>
-                      <th className="text-left py-1 pr-2">Reference</th>
                       <th className="text-left py-1 pr-2">Credits</th>
+                      <th className="text-left py-1 pr-2">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -321,8 +321,27 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                               {u.type}
                             </span>
                           </td>
-                          <td className="py-2 pr-2 font-medium">{u.ref}</td>
                           <td className="py-2 pr-2 font-medium text-red-600">-{u.credits}</td>
+                          <td className="py-2 pr-2">
+                            <button
+                              onClick={() => {
+                                // Navigate based on purchase type
+                                if (u.type === 'Catalog Purchase') {
+                                  window.location.href = `/dashboard/catalog/${u.ref}`;
+                                } else if (u.type === 'Lesson Purchase') {
+                                  // For lessons, we need to find the course first
+                                  // For now, redirect to courses page
+                                  window.location.href = '/dashboard/courses';
+                                } else {
+                                  // For courses
+                                  window.location.href = `/dashboard/courses/${u.ref}`;
+                                }
+                              }}
+                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                            >
+                              View
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
