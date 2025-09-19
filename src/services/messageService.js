@@ -6,9 +6,12 @@ export async function getAllConversations() {
     const response = await api.get('/api/private-messaging/getAllConversation', {
       withCredentials: true,
     });
-    // Backend returns { allConversationIds: [...] }
-    if (Array.isArray(response.data)) return response.data;
-    return response.data?.allConversationIds || response.data?.data || [];
+    // New unified shape: { code, data, success, message }
+    // Fallback to older shapes just in case
+    const payload = response?.data?.data
+      ?? response?.data?.allConversationIds
+      ?? (Array.isArray(response?.data) ? response.data : []);
+    return payload || [];
   } catch (error) {
     console.error('messageService.getAllConversations error:', error);
     throw error;
@@ -24,8 +27,9 @@ export async function loadPreviousConversation(conversationId) {
     }, {
       withCredentials: true,
     });
-    // Response shape: { messages: { id, roomid, cov_messages: [ ... ] } }
-    return response.data?.messages || null;
+    // New unified shape: { code, data, success, message }
+    // Previously: { messages: {...} }
+    return response?.data?.data || response?.data?.messages || null;
   } catch (error) {
     console.error('messageService.loadPreviousConversation error:', error);
     throw error;
@@ -42,7 +46,11 @@ export async function deleteConversationMessage(params) {
       data: { messageid, conversation_id, roomId }, 
       withCredentials: true,
     });
-    return response.data;
+    return {
+      data: response?.data?.data ?? null,
+      message: response?.data?.message,
+      success: Boolean(response?.data?.success),
+    };
   } catch (error) {
     console.error('messageService.deleteConversationMessage error:', error);
     throw error;
@@ -57,7 +65,11 @@ export async function deleteConversation(conversationId) {
       data: { conversation_id: conversationId },
       withCredentials: true,
     });
-    return response.data;
+    return {
+      data: response?.data?.data ?? null,
+      message: response?.data?.message,
+      success: Boolean(response?.data?.success),
+    };
   } catch (error) {
     console.error('messageService.deleteConversation error:', error);
     throw error;
