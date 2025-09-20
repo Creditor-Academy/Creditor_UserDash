@@ -241,6 +241,25 @@ const CatelogCourses = () => {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
+    // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
+    const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
+    const isFreeCatalog = freeCourseNames.some(name => 
+      (catalog?.name || "").trim().toLowerCase() === name.toLowerCase()
+    );
+    
+    // Check if this course belongs to a class recording catalog
+    const isClassRecordingCatalog = (catalog?.name || "").toLowerCase().includes("class recording") || 
+      (catalog?.name || "").toLowerCase().includes("class recordings") ||
+      (catalog?.name || "").toLowerCase().includes("course recording") ||
+      (catalog?.name || "").toLowerCase().includes("course recordings") ||
+      (catalog?.name || "").toLowerCase().includes("recordings") ||
+      (catalog?.name || "").toLowerCase().includes("recording");
+    
+    // If this is a free catalog or class recording catalog, users cannot buy courses from it
+    if (isFreeCatalog || isClassRecordingCatalog) {
+      return false;
+    }
+    
     // If user is already enrolled in the course, they can't buy it
     if (accessibleCourseIds.includes(course.id)) {
       return false;
@@ -807,9 +826,32 @@ const CatelogCourses = () => {
                              View Course
                            </Button>
                            </Link>
-                           <p className="text-xs text-gray-500 mt-2 text-center">
-                             You bought individual lessons - continue buying lessons only
-                           </p>
+                           {/* Only show the message for non-free and non-recording catalog courses */}
+                           {(() => {
+                             // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
+                             const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
+                             const isFreeCatalog = freeCourseNames.some(name =>
+                               (catalog?.name || "").trim().toLowerCase() === name.toLowerCase()
+                             );
+
+                             // Check if this course belongs to a class recording catalog
+                             const isClassRecordingCatalog = (catalog?.name || "").toLowerCase().includes("class recording") ||
+                               (catalog?.name || "").toLowerCase().includes("class recordings") ||
+                               (catalog?.name || "").toLowerCase().includes("course recording") ||
+                               (catalog?.name || "").toLowerCase().includes("course recordings") ||
+                               (catalog?.name || "").toLowerCase().includes("recordings") ||
+                               (catalog?.name || "").toLowerCase().includes("recording");
+
+                             // Only show the message if it's NOT a free catalog and NOT a class recording catalog
+                             if (!isFreeCatalog && !isClassRecordingCatalog) {
+                               return (
+                                 <p className="text-xs text-gray-500 mt-2 text-center">
+                                   You bought individual lessons - continue buying lessons only
+                                 </p>
+                               );
+                             }
+                             return null;
+                           })()}
                          </div>
                        )}
                      </div>

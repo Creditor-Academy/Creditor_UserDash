@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, Lock, Unlock, ShoppingCart } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, Lock, Unlock, ShoppingCart, ArrowLeft } from "lucide-react";
 import { fetchCourseModules, fetchCourseById, fetchUserCourses, fetchCoursePrice } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import { useUser } from "@/contexts/UserContext";
@@ -65,6 +65,7 @@ const CoursePriceDisplay = ({ course }) => {
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasAccessFromState = location.state?.isAccessible ?? false;
   const { userProfile } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,10 +176,28 @@ export function CourseView() {
     setIsPurchasing(false);
     setShowSequentialModal(false);
     setSelectedModuleForSequential(null);
+    setIsDescriptionExpanded(false);
   };
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
+    // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
+    // or class recording catalog
+    const freeCatalogKeywords = ["roadmap", "passive income"];
+    const classRecordingKeywords = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"];
+    const courseTitle = (course?.title || "").toLowerCase();
+    const isFromFreeCatalog = freeCatalogKeywords.some(keyword => 
+      courseTitle.includes(keyword)
+    );
+    const isFromClassRecording = classRecordingKeywords.some(keyword => 
+      courseTitle.includes(keyword)
+    );
+    
+    // If this course is from a free catalog or class recording, users cannot buy it
+    if (isFromFreeCatalog || isFromClassRecording) {
+      return false;
+    }
+    
     // If user is already enrolled in the course, they can't buy it
     if (isEnrolled) {
       return false;
@@ -196,6 +215,15 @@ export function CourseView() {
     }
     
     return true;
+  };
+
+  // Helper function to check if course is from a free catalog or class recording
+  const isFromFreeCatalog = (course) => {
+    const freeCatalogKeywords = ["roadmap", "passive income"];
+    const classRecordingKeywords = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"];
+    const courseTitle = (course?.title || "").toLowerCase();
+    return freeCatalogKeywords.some(keyword => courseTitle.includes(keyword)) ||
+           classRecordingKeywords.some(keyword => courseTitle.includes(keyword));
   };
 
   // Handle sequential unlock click
@@ -353,6 +381,17 @@ export function CourseView() {
                 {/* Course Title and Description at the top */}
                 <CardContent className="p-6">
                   <div className="max-w-4xl">
+                    {/* Back Button */}
+                    <div className="mb-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => navigate(-1)}
+                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </Button>
+                    </div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{courseDetails.title}</h1>
                     <p className={`text-gray-600 text-md leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}>
                       {courseDetails.description}
@@ -430,18 +469,48 @@ export function CourseView() {
                     {/* Course Not Available Message */}
                     {!isEnrolled && !canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
-                        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="p-2 bg-green-500 rounded-lg shadow-md">
-                            <BookOpen className="h-5 w-5 text-white" />
+                        {isFromFreeCatalog(courseDetails) ? (
+                          <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="p-2 bg-blue-500 rounded-lg shadow-md">
+                              <BookOpen className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-blue-800">
+                                {(() => {
+                                  const courseTitle = (courseDetails?.title || "").toLowerCase();
+                                  const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
+                                    courseTitle.includes(keyword)
+                                  );
+                                  return isClassRecording ? "Class Recording - Instructor Enrollment" : "Free Course - Instructor Enrollment";
+                                })()}
+                              </p>
+                              <p className="text-xs text-blue-600 mt-1">
+                                {(() => {
+                                  const courseTitle = (courseDetails?.title || "").toLowerCase();
+                                  const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
+                                    courseTitle.includes(keyword)
+                                  );
+                                  return isClassRecording 
+                                    ? "This is a class recording. Your instructor will enroll you in this course."
+                                    : "This is a free course. Your instructor will enroll you in this course.";
+                                })()}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-green-800">Continue Your Learning Journey</p>
-                            <p className="text-xs text-green-600 mt-1">
-                              You've already started this course with individual lessons! 
-                              Keep building your knowledge by purchasing more lessons.
-                            </p>
+                        ) : (
+                          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="p-2 bg-green-500 rounded-lg shadow-md">
+                              <BookOpen className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-green-800">Continue Your Learning Journey</p>
+                              <p className="text-xs text-green-600 mt-1">
+                                You've already started this course with individual lessons! 
+                                Keep building your knowledge by purchasing more lessons.
+                              </p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -567,6 +636,19 @@ export function CourseView() {
                                <Clock size={16} className="mr-2" />
                                <span className="font-medium">Upcoming Module</span>
                              </Button>
+                           ) : isFromFreeCatalog(courseDetails) ? (
+                             <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
+                               <Clock size={16} className="mr-2" />
+                               <span className="font-medium">
+                                 {(() => {
+                                   const courseTitle = (courseDetails?.title || "").toLowerCase();
+                                   const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
+                                     courseTitle.includes(keyword)
+                                   );
+                                   return isClassRecording ? "Upcoming Recording" : "Upcoming Course";
+                                 })()}
+                               </span>
+                             </Button>
                            ) : (
                              <div className="w-full flex flex-col gap-2">
                                <Button 
@@ -621,7 +703,10 @@ export function CourseView() {
       {/* Confirm Unlock Dialog */}
       {confirmUnlock.open && confirmUnlock.module && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmUnlock({ open: false, module: null })} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => {
+            setConfirmUnlock({ open: false, module: null });
+            setIsDescriptionExpanded(false);
+          }} />
           <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg p-6">
             <div className="mb-4">
               <div className="flex items-center mb-3">
@@ -634,7 +719,28 @@ export function CourseView() {
             
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="text-lg font-semibold text-gray-900 mb-2">{confirmUnlock.module.title}</div>
-              <div className="text-sm text-gray-600 mb-3">{confirmUnlock.module.description || "Individual lesson from this course"}</div>
+              <div className="text-sm text-gray-600 mb-3">
+                {(() => {
+                  const description = confirmUnlock.module.description || "Individual lesson from this course";
+                  const maxLength = 200; // Character limit for truncated description
+                  
+                  if (description.length <= maxLength) {
+                    return description;
+                  }
+                  
+                  return (
+                    <div>
+                      {isDescriptionExpanded ? description : `${description.substring(0, maxLength)}...`}
+                      <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
+                      >
+                        {isDescriptionExpanded ? 'View Less' : 'View More'}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
               
               {/* Lesson Details */}
               <div className="grid grid-cols-2 gap-4 mb-3">
@@ -683,7 +789,10 @@ export function CourseView() {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button className="px-4 py-2 rounded-md border hover:bg-gray-50" onClick={() => setConfirmUnlock({ open: false, module: null })}>Cancel</button>
+              <button className="px-4 py-2 rounded-md border hover:bg-gray-50" onClick={() => {
+                setConfirmUnlock({ open: false, module: null });
+                setIsDescriptionExpanded(false);
+              }}>Cancel</button>
               <button 
                 disabled={unlockingId === confirmUnlock.module?.id}
                 className={`px-4 py-2 rounded-md text-white ${
@@ -745,7 +854,28 @@ export function CourseView() {
             
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="text-lg font-semibold text-gray-900 mb-2">{selectedCourseToBuy.title}</div>
-              <div className="text-sm text-gray-600 mb-3">{selectedCourseToBuy.description || "Complete course with multiple modules"}</div>
+              <div className="text-sm text-gray-600 mb-3">
+                {(() => {
+                  const description = selectedCourseToBuy.description || "Complete course with multiple modules";
+                  const maxLength = 200; // Character limit for truncated description
+                  
+                  if (description.length <= maxLength) {
+                    return description;
+                  }
+                  
+                  return (
+                    <div>
+                      {isDescriptionExpanded ? description : `${description.substring(0, maxLength)}...`}
+                      <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
+                      >
+                        {isDescriptionExpanded ? 'View Less' : 'View More'}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
               
               {/* Course Details */}
               <div className="grid grid-cols-2 gap-4 mb-3">

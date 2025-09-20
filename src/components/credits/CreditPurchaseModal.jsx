@@ -300,14 +300,13 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       <th className="text-left py-1 pr-2">Date</th>
                       <th className="text-left py-1 pr-2">Type</th>
                       <th className="text-left py-1 pr-2">Credits</th>
-                      <th className="text-left py-1 pr-2">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingHistory ? (
-                      <tr><td className="py-4 text-gray-500 text-center" colSpan="4">Loading usage history...</td></tr>
+                      <tr><td className="py-4 text-gray-500 text-center" colSpan="3">Loading usage history...</td></tr>
                     ) : usages.length === 0 ? (
-                      <tr><td className="py-4 text-gray-500 text-center" colSpan="4">No credit usage yet</td></tr>
+                      <tr><td className="py-4 text-gray-500 text-center" colSpan="3">No credit usage yet</td></tr>
                     ) : (
                       usages.map((u, i) => (
                         <tr key={i} className="border-t hover:bg-gray-50">
@@ -322,26 +321,6 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                             </span>
                           </td>
                           <td className="py-2 pr-2 font-medium text-red-600">-{u.credits}</td>
-                          <td className="py-2 pr-2">
-                            <button
-                              onClick={() => {
-                                // Navigate based on purchase type
-                                if (u.type === 'Catalog Purchase') {
-                                  window.location.href = `/dashboard/catalog/${u.ref}`;
-                                } else if (u.type === 'Lesson Purchase') {
-                                  // For lessons, we need to find the course first
-                                  // For now, redirect to courses page
-                                  window.location.href = '/dashboard/courses';
-                                } else {
-                                  // For courses
-                                  window.location.href = `/dashboard/courses/${u.ref}`;
-                                }
-                              }}
-                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-                            >
-                              View
-                            </button>
-                          </td>
                         </tr>
                       ))
                     )}

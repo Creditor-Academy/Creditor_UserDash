@@ -27,6 +27,7 @@ export function CatalogPage() {
   const [purchaseNotice, setPurchaseNotice] = useState("");
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [unlockedModules, setUnlockedModules] = useState([]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { userProfile } = useUser();
   const { balance: creditsBalance, credits: creditsAlt, unlockContent, refreshBalance } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
 
@@ -188,8 +189,8 @@ export function CatalogPage() {
 
   // Helper function to calculate catalog price in credits
   const getCatalogPriceCredits = (catalog) => {
-    // Free catalogs should never show a price or buy button
-    if (isFreeCourse(catalog)) return 0;
+    // Free catalogs and class recordings should never show a price or buy button
+    if (isFreeCourse(catalog) || isClassRecording(catalog)) return 0;
     
     const catalogName = (catalog.name || "").toLowerCase();
     
@@ -201,6 +202,8 @@ export function CatalogPage() {
     } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
                (catalogName.includes("remedy") || catalogName.includes("private merchant"))) {
       return 17990; // Business credit + I want Remedy Now + Private Merchant
+    } else if (catalogName.includes("master class")) {
+      return 69; // Master Class
     }
     
     // Default price for all other catalogs
@@ -231,6 +234,7 @@ export function CatalogPage() {
     setShowInsufficientCreditsModal(false);
     setSelectedCatalogToBuy(null);
     setIsPurchasing(false);
+    setIsDescriptionExpanded(false);
   };
 
   // 1. Free Courses
@@ -280,7 +284,9 @@ export function CatalogPage() {
     (catalog.name || "").toLowerCase().includes("class recording") || 
     (catalog.name || "").toLowerCase().includes("class recordings") ||
     (catalog.name || "").toLowerCase().includes("course recording") ||
-    (catalog.name || "").toLowerCase().includes("course recordings");
+    (catalog.name || "").toLowerCase().includes("course recordings") ||
+    (catalog.name || "").toLowerCase().includes("recordings") ||
+    (catalog.name || "").toLowerCase().includes("recording");
   const classRecordings = filteredCatalogs.filter(catalog => 
     isClassRecording(catalog) && 
     !isFreeCourse(catalog) && 
@@ -612,7 +618,28 @@ export function CatalogPage() {
             
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="text-lg font-semibold text-gray-900 mb-2">{selectedCatalogToBuy.name}</div>
-              <div className="text-sm text-gray-600 mb-3">{selectedCatalogToBuy.description || "Complete catalog with multiple courses"}</div>
+              <div className="text-sm text-gray-600 mb-3">
+                {(() => {
+                  const description = selectedCatalogToBuy.description || "Complete catalog with multiple courses";
+                  const maxLength = 200; // Character limit for truncated description
+                  
+                  if (description.length <= maxLength) {
+                    return description;
+                  }
+                  
+                  return (
+                    <div>
+                      {isDescriptionExpanded ? description : `${description.substring(0, maxLength)}...`}
+                      <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
+                      >
+                        {isDescriptionExpanded ? 'View Less' : 'View More'}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
               
               {/* Courses List */}
               <div className="mb-3">
