@@ -308,15 +308,29 @@ export function Courses() {
           </div>
 
           <div className="mb-6">
-            <div className="inline-flex rounded-lg border bg-white p-1">
+            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
               <button
-                className={`px-4 py-2 text-sm rounded-md ${activeTab==='courses' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50'}`}
+                className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  activeTab === 'courses' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
                 onClick={() => setActiveTab('courses')}
               >
-                Courses
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Courses
+                </div>
+                {activeTab === 'courses' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                )}
               </button>
               <button
-                className={`px-4 py-2 text-sm rounded-md ${activeTab==='lessons' ? 'bg-blue-600 text-white' : 'hover:bg-gray-50'}`}
+                className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  activeTab === 'lessons' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
                 onClick={async () => {
                   setActiveTab('lessons');
                   if (!userProfile?.id) return;
@@ -334,7 +348,16 @@ export function Courses() {
                   }
                 }}
               >
-                My Lessons
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4" />
+                  My Lessons
+                  {loadingLessons && (
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                </div>
+                {activeTab === 'lessons' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                )}
               </button>
             </div>
           </div>
