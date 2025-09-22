@@ -2364,28 +2364,42 @@ function LessonBuilder() {
     e.preventDefault();
     if (draggedBlockId === null || draggedBlockId === targetBlockId) return;
 
-    // Update lesson content order
-    const content = lessonContent.data.content;
-    const sourceIndex = content.findIndex(b => b.block_id === draggedBlockId);
-    const targetIndex = content.findIndex(b => b.block_id === targetBlockId);
+    // Update lesson content order - handle both lessonContent and contentBlocks
+    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+      const content = lessonContent.data.content;
+      const sourceIndex = content.findIndex(b => (b.block_id || b.id) === draggedBlockId);
+      const targetIndex = content.findIndex(b => (b.block_id || b.id) === targetBlockId);
    
-    if (sourceIndex === -1 || targetIndex === -1) return;
-   
-    const updatedContent = [...content];
-    const [moved] = updatedContent.splice(sourceIndex, 1);
-    updatedContent.splice(targetIndex, 0, moved);
-   
-    // Update the state with new order
-    setLessonContent({
-      ...lessonContent,
-      data: {
-        ...lessonContent.data,
-        content: updatedContent.map((block, index) => ({
-          ...block,
-          order: index + 1
-        }))
-      }
-    });
+      if (sourceIndex === -1 || targetIndex === -1) return;
+     
+      const updatedContent = [...content];
+      const [moved] = updatedContent.splice(sourceIndex, 1);
+      updatedContent.splice(targetIndex, 0, moved);
+     
+      // Update the state with new order
+      setLessonContent({
+        ...lessonContent,
+        data: {
+          ...lessonContent.data,
+          content: updatedContent.map((block, index) => ({
+            ...block,
+            order: index + 1
+          }))
+        }
+      });
+    } else {
+      // Handle contentBlocks drag and drop
+      const sourceIndex = contentBlocks.findIndex(b => (b.id || b.block_id) === draggedBlockId);
+      const targetIndex = contentBlocks.findIndex(b => (b.id || b.block_id) === targetBlockId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return;
+      
+      const updatedBlocks = [...contentBlocks];
+      const [moved] = updatedBlocks.splice(sourceIndex, 1);
+      updatedBlocks.splice(targetIndex, 0, moved);
+      
+      setContentBlocks(updatedBlocks);
+    }
 
     // Reset drag state
     setDraggedBlockId(null);
@@ -5408,12 +5422,15 @@ function LessonBuilder() {
                           blockIds: blocksToRender.map(b => b.id || b.block_id)
                         });
                         
-                        return blocksToRender.map((block, index) => (
+                        return blocksToRender.map((block, index) => {
+                          const blockId = block.id || block.block_id;
+                          return (
                         <div
-                          key={block.id}
+                          key={blockId}
+                          data-block-id={blockId}
                           className="relative group bg-white rounded-lg"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, block.id)}
+                          onDrop={(e) => handleDrop(e, blockId)}
                         >
                           <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             {!block.isEditing && (
@@ -5446,7 +5463,8 @@ function LessonBuilder() {
                             <div
                               className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
                               draggable
-                              onDragStart={(e) => handleDragStart(e, block.id)}
+                              onDragStart={(e) => handleDragStart(e, blockId)}
+                              onDragEnd={handleDragEnd}
                             >
                               <GripVertical className="h-4 w-4" />
                             </div>
@@ -5788,7 +5806,7 @@ function LessonBuilder() {
                                             alt="Preview"
                                             className="mt-2 max-h-48 w-auto rounded-md border border-gray-300"
                                           />
-                                          </div>
+                                        </div>
                                         )}
                                       </div>
                                     </div>
@@ -5920,7 +5938,8 @@ function LessonBuilder() {
                             )}
                           </div>
                         </div>
-                        ));
+                        );
+                        })
                       })()}
                     </div>
                   )}
