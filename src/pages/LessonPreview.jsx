@@ -1102,8 +1102,21 @@ const LessonPreview = () => {
                       </>
                     )}
 
+                    {/* Audio Content */}
+                    {block.type === 'audio' && (
+                      <>
+                        {block.htmlCss ? (
+                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                        ) : (
+                          <div className="prose prose-lg max-w-none">
+                            <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                          </div>
+                        )}
+                      </>
+                    )}
+
                     {/* Other Content Types - Fallback for any unhandled block types */}
-                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider'].includes(block.type) && (
+                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider', 'youtube', 'audio'].includes(block.type) && (
                       <>
                         {block.htmlCss ? (
                           <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />

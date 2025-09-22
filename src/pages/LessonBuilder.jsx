@@ -24,7 +24,9 @@ import {
   MessageSquare,
   Quote,
   Layers,
-  Minus
+  Minus,
+  Volume2,
+  Youtube
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
@@ -36,7 +38,8 @@ import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
-
+import AudioComponent from '@/components/AudioComponent';
+import YouTubeComponent from '@/components/YouTubeComponent';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -583,6 +586,13 @@ function LessonBuilder() {
   const [showInteractiveEditDialog, setShowInteractiveEditDialog] = useState(false);
   const [editingInteractiveBlock, setEditingInteractiveBlock] = useState(null);
   const [showDividerTemplateSidebar, setShowDividerTemplateSidebar] = useState(false);
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [editingAudioBlock, setEditingAudioBlock] = useState(null);
+  const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
+  const [youTubeUrl, setYouTubeUrl] = useState('');
+  const [youTubeTitle, setYouTubeTitle] = useState('');
+  const [youTubeDescription, setYouTubeDescription] = useState('');
+  const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
   
 
 
@@ -669,12 +679,20 @@ function LessonBuilder() {
       icon: <Image className="h-5 w-5" />
     },
     {
+      id: 'youtube',
+      title: 'YouTube',
+      icon: <Youtube className="h-5 w-5" />
+    },
+    {
       id: 'video',
       title: 'Video',
       icon: <Video className="h-5 w-5" />
     },
-
-    
+    {
+      id: 'audio',
+      title: 'Audio',
+      icon: <Volume2 className="h-5 w-5" />
+    },
     {
       id: 'link',
       title: 'Link',
@@ -810,7 +828,10 @@ function LessonBuilder() {
       setShowListTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
-
+    } else if (blockType.id === 'youtube') {
+      setShowYouTubeDialog(true);
+    } else if (blockType.id === 'audio') {
+      setShowAudioDialog(true);
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'tables') {
@@ -1646,6 +1667,82 @@ function LessonBuilder() {
     setEditingQuoteBlock(null);
   };
 
+  const handleAudioUpdate = (audioBlock) => {
+    if (editingAudioBlock) {
+      // Update existing audio block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingAudioBlock.id ? {
+            ...block,
+            ...audioBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingAudioBlock.id || block.id === editingAudioBlock.id) ? {
+                ...block,
+                ...audioBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Add new audio block - only add to contentBlocks like other block handlers
+      setContentBlocks(prevBlocks => [...prevBlocks, audioBlock]);
+    }
+
+    // Reset editing state
+    setEditingAudioBlock(null);
+  };
+
+  const handleYouTubeUpdate = (youTubeBlock) => {
+    if (editingYouTubeBlock) {
+      // Update existing YouTube block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingYouTubeBlock.id ? {
+            ...block,
+            ...youTubeBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingYouTubeBlock.id || block.id === editingYouTubeBlock.id) ? {
+                ...block,
+                ...youTubeBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Add new YouTube block - only add to contentBlocks like other block handlers
+      setContentBlocks(prevBlocks => [...prevBlocks, youTubeBlock]);
+    }
+
+    // Reset editing state
+    setEditingYouTubeBlock(null);
+  };
+
   const handleTableUpdate = (blockId, content, htmlContent, templateId) => {
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
@@ -1692,7 +1789,21 @@ function LessonBuilder() {
   };
 
   const removeContentBlock = (blockId) => {
+    // Remove from contentBlocks
     setContentBlocks(contentBlocks.filter(block => block.id !== blockId));
+    
+    // Also remove from lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.filter(block => 
+            block.block_id !== blockId && block.id !== blockId
+          )
+        }
+      }));
+    }
   };
 
   const updateBlockContent = (blockId, content, heading = null, subheading = null) => {
@@ -2267,14 +2378,16 @@ function LessonBuilder() {
       // Set the editing list block and show the list edit dialog
       setEditingListBlock(blockWithType);
       setShowListEditDialog(true);
-    } else if (block.type === 'divider') {
-      // Handle divider block editing - only for continue and numbered_divider types
-      if (block.subtype === 'continue' || block.subtype === 'numbered_divider') {
-        // Use the divider component ref to trigger edit functionality
-        if (dividerComponentRef.current) {
-          dividerComponentRef.current.editDivider(block);
-        }
-      }
+    } else if (block.type === 'audio') {
+      // Handle audio block editing
+      console.log('Audio block detected for editing:', block);
+      setEditingAudioBlock(block);
+      setShowAudioDialog(true);
+    } else if (block.type === 'youtube') {
+      // Handle YouTube block editing
+      console.log('YouTube block detected for editing:', block);
+      setEditingYouTubeBlock(block);
+      setShowYouTubeDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -2846,6 +2959,61 @@ function LessonBuilder() {
             html = '<div class="text-red-500">Error loading interactive content</div>';
           }
         }
+      } else if (block.type === 'audio') {
+        // For audio blocks, use the saved html_css content if available
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from audio content
+          try {
+            const audioContent = JSON.parse(block.content || '{}');
+            html = `
+              <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 12a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1v2a1 1 0 01-1 1H9z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="mb-3">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-1">${audioContent.title || 'Audio'}</h3>
+                      ${audioContent.description ? `<p class="text-sm text-gray-600">${audioContent.description}</p>` : ''}
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                      <audio controls class="w-full" preload="metadata">
+                        <source src="${audioContent.url}" type="audio/mpeg">
+                        <source src="${audioContent.url}" type="audio/wav">
+                        <source src="${audioContent.url}" type="audio/ogg">
+                        Your browser does not support the audio element.
+                      </audio>
+                      ${audioContent.uploadedData ? `
+                        <div class="mt-2 text-xs text-gray-500">
+                          <span class="inline-flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            ${audioContent.uploadedData.fileName}
+                          </span>
+                          <span class="ml-2">${(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          } catch (error) {
+            console.error('Error parsing audio content:', error);
+            html = '<div class="text-red-500">Error loading audio content</div>';
+          }
+        }
+      } else if (block.type === 'youtube') {
+        // Skip YouTube blocks in convertBlocksToHtml to prevent duplication
+        // YouTube blocks are handled by their own custom rendering logic
+        html = '';
       }
 
       return { html, css, js };
@@ -2853,6 +3021,7 @@ function LessonBuilder() {
   };
 
   const handleUpdate = async () => {
+    // ... (rest of the code remains the same)
     if (!lessonId) {
       toast.error('No lesson ID found. Please save the lesson first.');
       return;
@@ -3122,6 +3291,62 @@ function LessonBuilder() {
               divider_type: block.subtype || 'continue',
               content: blockContent
             };
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'audio':
+            // For audio blocks, extract details from content JSON
+            try {
+              const audioContent = JSON.parse(blockContent || '{}');
+              details = {
+                audioTitle: audioContent.title || 'Audio',
+                audioDescription: audioContent.description || '',
+                audioUrl: audioContent.url || '',
+                audio_url: audioContent.url || '', // Alternative field name
+                uploadMethod: audioContent.uploadMethod || 'url',
+                uploadedData: audioContent.uploadedData || null,
+                title: audioContent.title || 'Audio'
+              };
+            } catch (e) {
+              console.warn('Could not parse audio content for saving:', e);
+              details = {
+                audioTitle: 'Audio',
+                audioDescription: '',
+                audioUrl: '',
+                audio_url: '',
+                uploadMethod: 'url',
+                uploadedData: null,
+                title: 'Audio'
+              };
+            }
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'youtube':
+            // For YouTube blocks, extract details from content JSON
+            try {
+              const youTubeContent = JSON.parse(blockContent || '{}');
+              details = {
+                youTubeTitle: youTubeContent.title || 'YouTube Video',
+                youTubeDescription: youTubeContent.description || '',
+                youTubeUrl: youTubeContent.url || '',
+                youtube_url: youTubeContent.url || '', // Alternative field name
+                videoId: youTubeContent.videoId || '',
+                embedUrl: youTubeContent.embedUrl || '',
+                title: youTubeContent.title || 'YouTube Video'
+              };
+            } catch (e) {
+              console.warn('Could not parse YouTube content for saving:', e);
+              details = {
+                youTubeTitle: 'YouTube Video',
+                youTubeDescription: '',
+                youTubeUrl: '',
+                youtube_url: '',
+                videoId: '',
+                embedUrl: '',
+                title: 'YouTube Video'
+              };
+            }
             htmlContent = block.html_css || blockContent;
             break;
 
@@ -4943,6 +5168,106 @@ function LessonBuilder() {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'audio') {
+                    // Reconstruct audio content JSON from database fields
+                    let audioContent = {};
+                    
+                    // Try to parse existing content first
+                    if (b.content) {
+                      try {
+                        audioContent = JSON.parse(b.content);
+                      } catch (e) {
+                        console.log('Could not parse existing audio content, reconstructing from details');
+                      }
+                    }
+                    
+                    // If content is empty or parsing failed, reconstruct from details
+                    if (!audioContent.title && !audioContent.url) {
+                      audioContent = {
+                        title: b.details?.audioTitle || b.details?.title || b.title || 'Audio',
+                        description: b.details?.audioDescription || b.details?.description || '',
+                        uploadMethod: b.details?.uploadMethod || 'url',
+                        url: b.details?.audioUrl || b.details?.audio_url || '',
+                        uploadedData: b.details?.uploadedData || null,
+                        createdAt: b.createdAt || new Date().toISOString()
+                      };
+                    }
+                    
+                    return {
+                      ...base,
+                      type: 'audio',
+                      title: audioContent.title || 'Audio',
+                      content: JSON.stringify(audioContent),
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'youtube') {
+                    // Reconstruct YouTube content JSON from database fields
+                    let youTubeContent = {};
+                    
+                    // Try to parse existing content first
+                    if (b.content) {
+                      try {
+                        youTubeContent = JSON.parse(b.content);
+                      } catch (e) {
+                        console.log('Could not parse existing YouTube content, reconstructing from details');
+                      }
+                    }
+                    
+                    // If content is empty or parsing failed, reconstruct from details
+                    if (!youTubeContent.url || youTubeContent.url.trim() === '') {
+                      console.log('Reconstructing YouTube content from details:', b.details);
+                      console.log('Available block data:', {
+                        details: b.details,
+                        content: b.content,
+                        html_css: b.html_css ? 'Present' : 'Missing'
+                      });
+                      
+                      youTubeContent = {
+                        title: b.details?.youTubeTitle || b.details?.title || b.title || 'YouTube Video',
+                        description: b.details?.youTubeDescription || b.details?.description || '',
+                        url: b.details?.youTubeUrl || b.details?.youtube_url || '',
+                        videoId: b.details?.videoId || '',
+                        embedUrl: b.details?.embedUrl || '',
+                        createdAt: b.createdAt || new Date().toISOString()
+                      };
+                      
+                      // If still no URL found, try to extract from html_css as last resort
+                      if (!youTubeContent.url && b.html_css) {
+                        const srcMatch = b.html_css.match(/src="([^"]*youtube\.com\/embed\/[^"]*)"/) || 
+                                        b.html_css.match(/src="([^"]*youtu\.be\/[^"]*)"/) ||
+                                        b.html_css.match(/src="([^"]*youtube\.com\/watch\?v=[^"]*)"/) ;
+                        if (srcMatch) {
+                          const extractedUrl = srcMatch[1];
+                          console.log('Extracted URL from html_css:', extractedUrl);
+                          
+                          // Convert embed URL back to watch URL if needed
+                          let watchUrl = extractedUrl;
+                          if (extractedUrl.includes('/embed/')) {
+                            const videoId = extractedUrl.split('/embed/')[1].split('?')[0];
+                            watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                            youTubeContent.videoId = videoId;
+                            youTubeContent.embedUrl = extractedUrl;
+                          }
+                          youTubeContent.url = watchUrl;
+                        }
+                      }
+                    }
+                    
+                    console.log('YouTube block loading result:', {
+                      blockId: b.id,
+                      finalContent: youTubeContent,
+                      hasUrl: !!youTubeContent.url
+                    });
+                    
+                    return {
+                      ...base,
+                      type: 'youtube',
+                      title: youTubeContent.title || 'YouTube Video',
+                      content: JSON.stringify(youTubeContent),
+                      html_css: b.html_css || ''
+                    };
+                  }
                   // Default map to text block with preserved HTML
                   {
                     const html = b.html_css || '';
@@ -4970,14 +5295,8 @@ function LessonBuilder() {
                 });
                 if (mappedEditBlocks.length > 0) {
                   setContentBlocks(mappedEditBlocks);
-                  // Clear lessonContent to prevent duplicate rendering in edit mode
-                  setLessonContent(prev => ({
-                    ...prev,
-                    data: {
-                      ...prev.data,
-                      content: []
-                    }
-                  }));
+                  // Clear lessonContent completely to prevent duplicate rendering in edit mode
+                  setLessonContent(null);
                 }
               } catch (e) {
                 console.warn('Failed to map fetched content to edit blocks:', e);
@@ -5451,6 +5770,161 @@ function LessonBuilder() {
                             )}
 
 
+                            {block.type === 'audio' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Audio'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Audio
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  try {
+                                    const audioContent = JSON.parse(block.content || '{}');
+                                    console.log('Audio block edit rendering:', {
+                                      blockId: block.id,
+                                      audioContent,
+                                      hasUrl: !!audioContent.url,
+                                      url: audioContent.url
+                                    });
+                                    
+                                    // Check if we have a valid audio URL
+                                    if (audioContent.url && audioContent.url.trim()) {
+                                      return (
+                                        <>
+                                          {audioContent.description && (
+                                            <p className="text-sm text-gray-600 mb-3">{audioContent.description}</p>
+                                          )}
+                                          
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <audio controls className="w-full" preload="metadata">
+                                              <source src={audioContent.url} type="audio/mpeg" />
+                                              <source src={audioContent.url} type="audio/wav" />
+                                              <source src={audioContent.url} type="audio/ogg" />
+                                              Your browser does not support the audio element.
+                                            </audio>
+                                            
+                                            {audioContent.uploadedData && (
+                                              <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                                <Volume2 className="h-3 w-3 mr-1" />
+                                                <span>{audioContent.uploadedData.fileName}</span>
+                                                <span className="ml-2">({(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB)</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // Fallback: Use html_css if JSON doesn't have URL
+                                      console.log('No URL in audio content, falling back to html_css');
+                                      if (block.html_css && block.html_css.trim()) {
+                                        return (
+                                          <div
+                                            className="max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                          />
+                                        );
+                                      } else {
+                                        return (
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <p className="text-sm text-gray-500">Audio URL not found</p>
+                                            <p className="text-xs text-gray-400 mt-1">Content: {JSON.stringify(audioContent)}</p>
+                                          </div>
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing audio content in edit mode:', e);
+                                    // Fallback: Use html_css if JSON parsing fails
+                                    if (block.html_css && block.html_css.trim()) {
+                                      return (
+                                        <div
+                                          className="max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">Audio content could not be loaded</p>
+                                          <p className="text-xs text-gray-400 mt-1">Error: {e.message}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                })()}
+                              </div>
+                            )}
+
+                            {block.type === 'youtube' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'YouTube Video'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    YouTube
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  try {
+                                    const youTubeContent = JSON.parse(block.content || '{}');
+                                    console.log('YouTube block edit rendering:', {
+                                      blockId: block.id,
+                                      youTubeContent,
+                                      hasUrl: !!youTubeContent.url,
+                                      url: youTubeContent.url
+                                    });
+                                    
+                                    // Check if we have a valid YouTube URL
+                                    if (youTubeContent.url && youTubeContent.url.trim()) {
+                                      return (
+                                        <>
+                                          {youTubeContent.description && (
+                                            <p className="text-sm text-gray-600 mb-3">{youTubeContent.description}</p>
+                                          )}
+                                          
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
+                                              <iframe
+                                                className="absolute top-0 left-0 w-full h-full"
+                                                src={youTubeContent.embedUrl || youTubeContent.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                                title={youTubeContent.title || 'YouTube Video'}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                              />
+                                            </div>
+                                            
+                                            <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                              <Youtube className="h-3 w-3 mr-1 text-red-600" />
+                                              <span>YouTube Video</span>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // No fallback to html_css to prevent duplication
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">YouTube URL not found</p>
+                                          <p className="text-xs text-gray-400 mt-1">Content: {JSON.stringify(youTubeContent)}</p>
+                                        </div>
+                                      );
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing YouTube content in edit mode:', e);
+                                    // No fallback to html_css to prevent duplication
+                                    return (
+                                      <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">YouTube content could not be loaded</p>
+                                        <p className="text-xs text-gray-400 mt-1">Error: {e.message}</p>
+                                      </div>
+                                    );
+                                  }
+                                })()}
+                              </div>
+                            )}
 
                             {block.type === 'quote' && (
                               <div className="space-y-3">
@@ -6498,7 +6972,6 @@ function LessonBuilder() {
         </div>
       )}
 
-
       {/* Quote Component */}
       <QuoteComponent
         showQuoteTemplateSidebar={showQuoteTemplateSidebar}
@@ -6508,6 +6981,22 @@ function LessonBuilder() {
         onQuoteTemplateSelect={handleQuoteTemplateSelect}
         onQuoteUpdate={handleQuoteUpdate}
         editingQuoteBlock={editingQuoteBlock}
+      />
+
+      {/* Audio Component */}
+      <AudioComponent
+        showAudioDialog={showAudioDialog}
+        setShowAudioDialog={setShowAudioDialog}
+        onAudioUpdate={handleAudioUpdate}
+        editingAudioBlock={editingAudioBlock}
+      />
+
+      {/* YouTube Component */}
+      <YouTubeComponent
+        showYouTubeDialog={showYouTubeDialog}
+        setShowYouTubeDialog={setShowYouTubeDialog}
+        onYouTubeUpdate={handleYouTubeUpdate}
+        editingYouTubeBlock={editingYouTubeBlock}
       />
 
       {/* Interactive Component */}
