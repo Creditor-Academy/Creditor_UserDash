@@ -17,6 +17,8 @@ const LessonPreview = () => {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [currentSection, setCurrentSection] = useState(null);
   const [completedSections, setCompletedSections] = useState(new Set());
+  const [pages, setPages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
     fetchLessonContent();
@@ -96,20 +98,25 @@ const LessonPreview = () => {
       // Transform the data to match our component structure
       const transformedData = {
         id: data.id || lessonId,
-        title: data.title || data.lesson_title || 'Untitled Lesson',
+        title: data.lesson?.title || data.title || data.lesson_title || 'Untitled Lesson',
         description: data.description || data.lesson_description || '',
-        duration: data.duration || data.estimated_duration || '30 min',
-        difficulty: data.difficulty || data.level || 'Intermediate',
-        instructor: data.instructor || data.author || data.created_by || 'Course Instructor',
+        // duration: data.duration || data.estimated_duration || '30 min',
+        // difficulty: data.difficulty || data.level || 'Intermediate',
+        // instructor: data.instructor || data.author || data.created_by || 'Course Instructor',
         progress: data.progress || 0,
         headingSections: parsedContent.headingSections || [],
         allContent: parsedContent.allContent || [],
         objectives: data.objectives || data.learning_objectives || [],
         introduction: data.introduction || data.lesson_introduction || '',
         summary: data.summary || data.lesson_summary || '',
+        lessonOrder: data.lesson?.order || data.order || 1,
+        totalLessons: 9, // This could be passed from parent or calculated
       };
 
       setLessonData(transformedData);
+      // Build pagination pages using master headings and 'continue' dividers
+      const computedPages = computePages(transformedData.allContent);
+      setPages(computedPages);
       
       // Set initial current section to the first heading section if available
       if (parsedContent.headingSections && parsedContent.headingSections.length > 0) {
@@ -129,21 +136,80 @@ const LessonPreview = () => {
   };
 
   const parseLessonContent = (content) => {
-    console.log('Parsing lesson content:', content);
-    
+    const allContent = [];
+    const headingSections = [];
+
     if (!content || !Array.isArray(content)) {
       console.log('Content is not an array or is empty:', content);
-      return { headingSections: [], allContent: [] };
+      console.log('Final parsed content result:', {
+        totalAllContent: allContent.length,
+        youtubeInAllContent: allContent.filter(block => block.type === 'youtube').length,
+        allContentYoutubeIds: allContent.filter(block => block.type === 'youtube').map(block => block.id),
+        headingSections: headingSections.length
+      });
+      return { allContent, headingSections };
+    }
+
+    console.log('Parsing lesson content:', {
+      totalBlocks: content.length,
+      blockTypes: content.map(block => ({ id: block.id || block.block_id, type: block.type })),
+      youtubeBlocks: content.filter(block => block.type === 'youtube').length,
+      youtubeBlockDetails: content.filter(block => block.type === 'youtube').map(block => ({
+        id: block.id || block.block_id,
+        hasHtmlCss: !!block.html_css,
+        videoTitle: block.videoTitle || block.video_title || block.details?.videoTitle
+      })),
+      duplicateIds: content.map(block => block.id || block.block_id).filter((id, index, arr) => arr.indexOf(id) !== index)
+    });
+
+    // Check for duplicate blocks
+    const seenIds = new Set();
+    const duplicateBlocks = [];
+    content.forEach((block, index) => {
+      const blockId = block.id || block.block_id;
+      if (seenIds.has(blockId)) {
+        duplicateBlocks.push({ index, id: blockId, type: block.type });
+      }
+      seenIds.add(blockId);
+    });
+    
+    if (duplicateBlocks.length > 0) {
+      console.warn('Found duplicate blocks:', duplicateBlocks);
+    }
+
+    
+    // Filter out duplicate blocks based on ID
+    const uniqueContent = content.filter((block, index) => {
+      const blockId = block.id || block.block_id;
+      const firstIndex = content.findIndex(b => (b.id || b.block_id) === blockId);
+      const isDuplicate = firstIndex !== index;
+      
+      if (isDuplicate) {
+        console.warn('Found duplicate block:', {
+          blockId,
+          type: block.type,
+          index,
+          firstIndex
+        });
+      }
+      
+      return firstIndex === index;
+    });
+    
+    if (uniqueContent.length !== content.length) {
+      console.warn(`Filtered out ${content.length - uniqueContent.length} duplicate blocks`);
     }
     
-    const headingSections = []; // Only for sidebar navigation
-    const allContent = []; // All content for main display
+    // Track processed block IDs to prevent duplicates in allContent
+    const processedIds = new Set();
     
-    content.forEach((block, index) => {
+    uniqueContent.forEach((block, index) => {
       console.log(`Processing block ${index}:`, block);
       
+      const blockId = block.block_id || block.id || `section-${index}`;
+      
       const blockData = {
-        id: block.block_id || block.id || `section-${index}`,
+        id: blockId,
         originalBlock: block,
         completed: false,
       };
@@ -188,15 +254,20 @@ const LessonPreview = () => {
           });
         }
         
-        // Add to all content
-        allContent.push({
-          ...blockData,
-          type: block.type,
-          textType: textType,
-          content: content,
-          htmlCss: block.html_css || '',
-          style: block.style || {},
-        });
+        // Add to all content (check for duplicates)
+        if (!processedIds.has(blockId)) {
+          allContent.push({
+            ...blockData,
+            type: block.type,
+            textType: textType,
+            content: content,
+            htmlCss: block.html_css || '',
+            style: block.style || {},
+          });
+          processedIds.add(blockId);
+        } else {
+          console.warn('Skipping duplicate text block:', blockId);
+        }
       } else if (block.type === 'statement') {
         // Handle statement blocks
         const content = block.details?.content || block.content || '';
@@ -231,11 +302,52 @@ const LessonPreview = () => {
           htmlCss: block.html_css || '',
         });
       } else if (block.type === 'quote') {
+        // Detect quote type from HTML content if not available
+        let quoteType = block.quoteType || block.quote_type || block.details?.quoteType;
+        
+        if (!quoteType && block.html_css) {
+          const htmlContent = block.html_css;
+          
+          // Quote Carousel - has carousel controls and multiple quotes
+          if (htmlContent.includes('quote-carousel') || 
+              htmlContent.includes('carousel-dot') || 
+              htmlContent.includes('carousel-prev') || 
+              htmlContent.includes('carousel-next')) {
+            quoteType = 'quote_carousel';
+          }
+          // Quote on Image - has background image with overlay
+          else if (htmlContent.includes('background-image:') || 
+                   (htmlContent.includes('bg-gradient-to-t from-black') && htmlContent.includes('absolute inset-0'))) {
+            quoteType = 'quote_on_image';
+          }
+          // Quote C - has author image with horizontal layout
+          else if (htmlContent.includes('flex items-center space-x-8') || 
+                   (htmlContent.includes('rounded-full object-cover') && htmlContent.includes('w-16 h-16'))) {
+            quoteType = 'quote_c';
+          }
+          // Quote D - has specific styling with slate background
+          else if (htmlContent.includes('text-left max-w-3xl') || 
+                   htmlContent.includes('bg-gradient-to-br from-slate-50')) {
+            quoteType = 'quote_d';
+          }
+          // Quote B - has large text and thin font
+          else if (htmlContent.includes('text-3xl md:text-4xl') || 
+                   htmlContent.includes('font-thin')) {
+            quoteType = 'quote_b';
+          }
+          // Quote A - default style
+          else {
+            quoteType = 'quote_a';
+          }
+        } else if (!quoteType) {
+          quoteType = 'quote_a'; // fallback
+        }
+        
         allContent.push({
           ...blockData,
           type: 'quote',
           content: block.content || block.details?.content || '',
-          quoteType: block.quoteType || block.quote_type || block.details?.quoteType || 'quote_a',
+          quoteType: quoteType,
           htmlCss: block.html_css || '',
         });
       } else if (block.type === 'list') {
@@ -263,15 +375,7 @@ const LessonPreview = () => {
           tableData: block.tableData || block.table_data || block.details?.tableData || '',
           htmlCss: block.html_css || '',
         });
-      } else if (block.type === 'audio') {
-        allContent.push({
-          ...blockData,
-          type: 'audio',
-          audioTitle: block.audioTitle || block.audio_title || block.details?.audioTitle || '',
-          audioDescription: block.audioDescription || block.audio_description || block.details?.audioDescription || '',
-          audioUrl: block.audioUrl || block.audio_url || block.details?.audioUrl || block.url || '',
-          htmlCss: block.html_css || '',
-        });
+      
       } else if (block.type === 'embed') {
         allContent.push({
           ...blockData,
@@ -282,10 +386,18 @@ const LessonPreview = () => {
           htmlCss: block.html_css || '',
         });
       } else if (block.type === 'divider') {
+        const normalizedSubtype =
+          block.subtype ||
+          block.details?.subtype ||
+          block.details?.divider_type ||
+          block.dividerType ||
+          block.divider_type ||
+          block.details?.dividerType ||
+          'divider';
         allContent.push({
           ...blockData,
           type: 'divider',
-          subtype: block.subtype || block.details?.subtype || 'divider',
+          subtype: normalizedSubtype,
           content: block.content || '',
           htmlCss: block.html_css || '',
         });
@@ -301,29 +413,93 @@ const LessonPreview = () => {
       }
     });
 
-    console.log('Parsed content result:', { headingSections, allContent });
+    console.log('Final parsed content result:', {
+      totalAllContent: allContent.length,
+      youtubeInAllContent: allContent.filter(block => block.type === 'youtube').length,
+      allContentYoutubeIds: allContent.filter(block => block.type === 'youtube').map(block => block.id),
+      headingSections: headingSections.length,
+      allContentTypes: allContent.map(block => ({ id: block.id, type: block.type }))
+    });
+    
     return {
       headingSections,
       allContent
     };
   };
 
+  // Build pages based on master headings and continue dividers
+  const computePages = (allContent) => {
+    if (!Array.isArray(allContent) || allContent.length === 0) return [];
+    const pages = [];
+    const headingIndices = allContent
+      .map((b, idx) => ({ b, idx }))
+      .filter(({ b }) => b.type === 'text' && (b.textType === 'master_heading'))
+      .map(({ idx }) => idx);
+
+    if (headingIndices.length === 0) {
+      const continueIdx = allContent.findIndex(b => b.type === 'divider' && (b.subtype === 'continue'));
+      const endExclusive = continueIdx >= 0 ? continueIdx + 1 : allContent.length;
+      pages.push({ start: 0, endExclusive });
+      return pages;
+    }
+
+    for (let h = 0; h < headingIndices.length; h++) {
+      const start = headingIndices[h];
+      const nextHeadingStart = headingIndices[h + 1] ?? allContent.length;
+      let endExclusive = nextHeadingStart;
+      for (let i = start; i < nextHeadingStart; i++) {
+        const block = allContent[i];
+        if (block && block.type === 'divider' && (String(block.subtype).toLowerCase() === 'continue')) {
+          endExclusive = i + 1;
+          break;
+        }
+      }
+      pages.push({ start, endExclusive });
+    }
+    return pages;
+  };
+
   const handleSectionClick = (sectionId) => {
     setCurrentSection(sectionId);
     setSidebarOpen(false);
-    
-    // Scroll to the section
+    // Find the page that contains this section
+    const targetIndex = lessonData?.headingSections?.findIndex(s => s.id === sectionId) ?? -1;
+    if (targetIndex > -1) {
+      setCurrentPage(targetIndex);
+    }
     const sectionElement = document.getElementById(`section-${sectionId}`);
     if (sectionElement) {
-      // Scroll with offset to account for fixed header
-      const headerOffset = 100; // Adjust based on your header height
+      const headerOffset = 100;
       const elementPosition = sectionElement.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+    }
+  };
+
+  const handleContinue = () => {
+    setCompletedSections(prev => {
+      const done = new Set(prev);
+      const currentHeading = lessonData?.headingSections?.[currentPage]?.id;
+      if (currentHeading) done.add(currentHeading);
+      return done;
+    });
+    const nextPage = pages.length > 0 ? (currentPage + 1) % pages.length : 0;
+    setCurrentPage(nextPage);
+    const nextHeadingId = lessonData?.headingSections?.[nextPage]?.id;
+    if (nextHeadingId) {
+      setCurrentSection(nextHeadingId);
+      // Defer scroll until DOM updates
+      setTimeout(() => {
+        const el = document.getElementById(`section-${nextHeadingId}`);
+        if (el) {
+          const headerOffset = 100;
+          const elementPosition = el.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+          window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 0);
     }
   };
 
@@ -334,6 +510,115 @@ const LessonPreview = () => {
   const handleBackToBuilder = () => {
     navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/builder`);
   };
+
+  // Setup carousel functionality for quote carousels
+  useEffect(() => {
+    // Global carousel navigation functions
+    window.carouselPrev = (button) => {
+      console.log('Carousel Prev clicked');
+      const carousel = button.closest('[class*="quote-carousel"]');
+      if (!carousel) {
+        console.log('No carousel found for prev button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.quote-slide');
+      const dots = carousel.querySelectorAll('.carousel-dot');
+      let currentIndex = parseInt(carousel.dataset.current || '0');
+      
+      console.log('Carousel prev - current index:', currentIndex, 'total slides:', slides.length);
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
+      showCarouselSlide(carousel, slides, dots, newIndex);
+    };
+
+    window.carouselNext = (button) => {
+      console.log('Carousel Next clicked');
+      const carousel = button.closest('[class*="quote-carousel"]');
+      if (!carousel) {
+        console.log('No carousel found for next button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.quote-slide');
+      const dots = carousel.querySelectorAll('.carousel-dot');
+      let currentIndex = parseInt(carousel.dataset.current || '0');
+      
+      console.log('Carousel next - current index:', currentIndex, 'total slides:', slides.length);
+      const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
+      showCarouselSlide(carousel, slides, dots, newIndex);
+    };
+
+    window.carouselGoTo = (button, index) => {
+      console.log('Carousel GoTo clicked, index:', index);
+      const carousel = button.closest('[class*="quote-carousel"]');
+      if (!carousel) {
+        console.log('No carousel found for goTo button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.quote-slide');
+      const dots = carousel.querySelectorAll('.carousel-dot');
+      
+      console.log('Carousel goTo - target index:', index, 'total slides:', slides.length);
+      showCarouselSlide(carousel, slides, dots, index);
+    };
+
+    const showCarouselSlide = (carousel, slides, dots, index) => {
+      slides.forEach((slide, i) => {
+        if (i === index) {
+          slide.classList.remove('hidden');
+          slide.classList.add('block');
+        } else {
+          slide.classList.remove('block');
+          slide.classList.add('hidden');
+        }
+      });
+      
+      dots.forEach((dot, i) => {
+        // Normalize: remove all known active/inactive styles first
+        dot.classList.remove(
+          // inactive variants
+          'bg-gray-300','hover:bg-gray-400','bg-slate-300','hover:bg-slate-400','hover:scale-105',
+          // active variants
+          'bg-indigo-500','scale-110','shadow-md',
+          'bg-gradient-to-r','from-blue-500','to-purple-500'
+        );
+
+        if (i === index) {
+          // Active state: support both simple indigo and gradient style
+          // Prefer the gradient look used in generated HTML
+          dot.classList.add('bg-gradient-to-r','from-blue-500','to-purple-500','scale-110','shadow-md');
+        } else {
+          // Inactive state: match the slate gray used in generated HTML
+          dot.classList.add('bg-slate-300','hover:bg-slate-400','hover:scale-105');
+        }
+      });
+      
+      carousel.dataset.current = index.toString();
+    };
+
+    return () => {
+      // Cleanup global functions when component unmounts
+      delete window.carouselPrev;
+      delete window.carouselNext;
+      delete window.carouselGoTo;
+    };
+  }, []);
+
+  // Re-setup carousel functions when content changes
+  useEffect(() => {
+    if (lessonData && lessonData.allContent && lessonData.allContent.length > 0) {
+      // Small delay to ensure DOM is updated
+      const timer = setTimeout(() => {
+        // Re-setup carousel functions for any new carousels
+        if (window.carouselPrev && window.carouselNext && window.carouselGoTo) {
+          console.log('Carousel functions are available');
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [lessonData]);
 
   if (loading) {
     return (
@@ -380,6 +665,11 @@ const LessonPreview = () => {
 
   const currentSectionData = lessonData.headingSections.find(s => s.id === currentSection) || lessonData.headingSections[0];
 
+  // Progress based on completed master headings
+  const totalSections = lessonData.headingSections?.length || 0;
+  const completedCount = Math.min(completedSections.size, totalSections);
+  const derivedProgress = totalSections > 0 ? Math.round((completedCount / totalSections) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       {/* Fixed Sidebar */}
@@ -400,19 +690,19 @@ const LessonPreview = () => {
         <div className="p-6 h-screen flex flex-col overflow-hidden">
           {/* Lesson Header */}
           <div className="mb-6 flex-shrink-0">
-            <div className="text-sm opacity-75 mb-1">Lesson 1 of 9</div>
+            <div className="text-sm opacity-75 mb-1">Lesson {lessonData.lessonOrder} of {lessonData.totalLessons}</div>
             <h1 className="text-xl font-bold leading-tight mb-2">{lessonData.title}</h1>
-            <div className="flex items-center text-sm opacity-75 mb-4">
-              <Clock className="h-4 w-4 mr-1" />
-              {lessonData.duration}
-            </div>
+            {/* <div className="flex items-center text-sm opacity-75 mb-4"> */}
+              {/* <Clock className="h-4 w-4 mr-1" /> */}
+              {/* {lessonData.duration} */}
+            {/* </div> */}
             <div className="bg-blue-700 rounded-full h-2 mb-2">
               <div 
                 className="bg-white rounded-full h-2 transition-all duration-300"
-                style={{ width: `${lessonData.progress}%` }}
+                style={{ width: `${derivedProgress}%` }}
               ></div>
             </div>
-            <div className="text-sm opacity-75">{lessonData.progress}% COMPLETE</div>
+            <div className="text-sm opacity-75">{derivedProgress}% COMPLETE</div>
           </div>
 
           {/* Navigation Menu - Only show master heading sections */}
@@ -491,7 +781,7 @@ const LessonPreview = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                Lesson 1 of 9
+                Lesson {lessonData.lessonOrder} of {lessonData.totalLessons}
               </Badge>
             </div>
           </div>
@@ -500,14 +790,27 @@ const LessonPreview = () => {
         {/* Content Area */}
         <main className={`transition-all duration-300 pt-20 ${sidebarVisible ? 'p-6' : 'px-12 py-8'}`}>
           <div className={`mx-auto transition-all duration-300 ${sidebarVisible ? 'max-w-4xl' : 'max-w-7xl'}`}>
-            {/* Display all lesson content */}
+            {/* Display paginated lesson content */}
             <div className={`transition-all duration-300 ${sidebarVisible ? 'space-y-6' : 'space-y-8'}`}>
               {lessonData.allContent && lessonData.allContent.length > 0 ? (
                 lessonData.allContent.map((block, index) => {
-                  console.log(`Rendering block ${index}:`, block);
+                  if (block.type === 'youtube') {
+                    console.log(`Rendering YouTube block ${index}:`, {
+                      id: block.id,
+                      index,
+                      totalBlocks: lessonData.allContent.length,
+                      youtubeBlocks: lessonData.allContent.filter(b => b.type === 'youtube').length
+                    });
+                  }
+                  const visibleStart = pages.length > 0 ? (pages[currentPage]?.start ?? 0) : 0;
+                  const visibleEnd = pages.length > 0 ? (pages[currentPage]?.endExclusive ?? lessonData.allContent.length) : lessonData.allContent.length;
+                  if (index < visibleStart || index >= visibleEnd) return null;
+                  if (block.type !== 'youtube') {
+                    console.log(`Rendering block ${index}:`, block);
+                  }
                   return (
                   <div 
-                    key={block.id || index} 
+                    key={`${block.id || block.block_id || index}-${block.type}`} 
                     id={block.textType === 'master_heading' ? `section-${block.id}` : undefined}
                     className={`transition-all duration-300 ${sidebarVisible ? 'mb-6' : 'mb-8'}`}
                   >
@@ -626,9 +929,65 @@ const LessonPreview = () => {
                       </div>
                     )}
 
+                    {/* YouTube Content */}
+                    {block.type === 'youtube' && (
+                      <>
+                        {(() => {
+                          console.log('Rendering YouTube block in LessonPreview:', {
+                            id: block.id,
+                            videoTitle: block.videoTitle,
+                            hasHtmlCss: !!block.htmlCss,
+                            embedUrl: block.embedUrl,
+                            htmlCssLength: block.htmlCss ? block.htmlCss.length : 0,
+                            htmlCssPreview: block.htmlCss ? block.htmlCss.substring(0, 100) + '...' : 'None',
+                            renderingMethod: block.htmlCss && block.htmlCss.trim() ? 'html_css' : 'fallback',
+                            willRenderHtml: !!(block.htmlCss && block.htmlCss.trim()),
+                            willRenderFallback: !(block.htmlCss && block.htmlCss.trim())
+                          });
+                          return null;
+                        })()}
+                        {block.htmlCss && block.htmlCss.trim() ? (
+                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                        ) : (
+                          <div className="mb-8">
+                            {block.videoTitle && (
+                              <h3 className="text-lg font-semibold text-gray-800 mb-4">{block.videoTitle}</h3>
+                            )}
+                            {block.embedUrl && (
+                              <div className="relative rounded-lg overflow-hidden shadow-lg mb-4">
+                                <div className="aspect-video">
+                                  <iframe
+                                    src={block.embedUrl}
+                                    title={block.videoTitle || 'YouTube Video'}
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            {block.videoDescription && (
+                              <p className="text-gray-600 text-sm leading-relaxed">{block.videoDescription}</p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
                     {/* Quote Content */}
                     {block.type === 'quote' && (
                       <>
+                        {(() => {
+                          // Debug logging for quote blocks
+                          console.log('Rendering quote block:', {
+                            id: block.id,
+                            quoteType: block.quoteType,
+                            hasHtmlCss: !!block.htmlCss,
+                            htmlPreview: block.htmlCss ? block.htmlCss.substring(0, 100) + '...' : 'No HTML'
+                          });
+                          return null;
+                        })()}
                         {block.htmlCss ? (
                           <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
                         ) : (
@@ -692,29 +1051,7 @@ const LessonPreview = () => {
                       </>
                     )}
 
-                    {/* Audio Content */}
-                    {block.type === 'audio' && (
-                      <>
-                        {block.htmlCss ? (
-                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
-                        ) : (
-                          <div className="bg-white rounded-lg p-6 border text-center">
-                            {block.audioTitle && (
-                              <h3 className="text-lg font-semibold mb-2">{block.audioTitle}</h3>
-                            )}
-                            {block.audioDescription && (
-                              <p className="text-gray-600 mb-4">{block.audioDescription}</p>
-                            )}
-                            {block.audioUrl && (
-                              <audio controls className="w-full max-w-md mx-auto">
-                                <source src={block.audioUrl} type="audio/mpeg" />
-                                Your browser does not support the audio element.
-                              </audio>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
+                    
 
                     {/* Embed Content */}
                     {block.type === 'embed' && (
@@ -740,16 +1077,33 @@ const LessonPreview = () => {
                     {/* Divider Content */}
                     {block.type === 'divider' && (
                       <>
-                        {block.htmlCss ? (
-                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                        {String(block.subtype).toLowerCase() === 'continue' ? (
+                          <div
+                            className="cursor-pointer"
+                            onClick={handleContinue}
+                            role="button"
+                            aria-label="Continue"
+                          >
+                            {block.htmlCss ? (
+                              <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                            ) : (
+                              <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                            )}
+                          </div>
                         ) : (
-                          <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                          <>
+                            {block.htmlCss ? (
+                              <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                            ) : (
+                              <div dangerouslySetInnerHTML={{ __html: block.content }} />
+                            )}
+                          </>
                         )}
                       </>
                     )}
 
                     {/* Other Content Types - Fallback for any unhandled block types */}
-                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'audio', 'embed', 'divider'].includes(block.type) && (
+                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider'].includes(block.type) && (
                       <>
                         {block.htmlCss ? (
                           <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />

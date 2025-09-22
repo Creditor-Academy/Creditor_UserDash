@@ -6,13 +6,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
-import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
-  Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
+  Play, Link2, File, BookOpen, Image, Video,
   HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon,
   Type,
   Heading1,
@@ -38,6 +37,7 @@ import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 
+
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
   @keyframes slide-in-left {
@@ -49,7 +49,7 @@ const slideInLeftStyle = `
       transform: translateX(0);
       opacity: 1;
     }
-  }
+  } 
   .animate-slide-in-left {
     animation: slide-in-left 0.3s ease-out;
   }
@@ -451,19 +451,7 @@ function LessonBuilder() {
   const [imageDescription, setImageDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-  const [showAudioDialog, setShowAudioDialog] = useState(false);
-  const [audioTitle, setAudioTitle] = useState('');
-  const [audioDescription, setAudioDescription] = useState('');
-  const [audioFile, setAudioFile] = useState(null);
-  const [audioPreview, setAudioPreview] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const [audioUploadMethod, setAudioUploadMethod] = useState('file'); // 'file' or 'url'
-  const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
-  const [youtubeTitle, setYoutubeTitle] = useState('');
-  const [youtubeDescription, setYoutubeDescription] = useState('');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [youtubeError, setYoutubeError] = useState('');
-  const [currentYoutubeBlock, setCurrentYoutubeBlock] = useState(null);
+  
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -504,6 +492,8 @@ function LessonBuilder() {
   const [showInteractiveEditDialog, setShowInteractiveEditDialog] = useState(false);
   const [editingInteractiveBlock, setEditingInteractiveBlock] = useState(null);
   const [showDividerTemplateSidebar, setShowDividerTemplateSidebar] = useState(false);
+  
+
 
   // Image block templates
   const imageTemplates = [
@@ -592,16 +582,8 @@ function LessonBuilder() {
       title: 'Video',
       icon: <Video className="h-5 w-5" />
     },
-    {
-      id: 'audio',
-      title: 'Audio',
-      icon: <Volume2 className="h-5 w-5" />
-    },
-    {
-      id: 'youtube',
-      title: 'YouTube',
-      icon: <Youtube className="h-5 w-5" />
-    },
+
+    
     {
       id: 'link',
       title: 'Link',
@@ -725,6 +707,7 @@ function LessonBuilder() {
   const quoteComponentRef = React.useRef();
   const dividerComponentRef = React.useRef();
 
+
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
@@ -736,14 +719,12 @@ function LessonBuilder() {
       setShowListTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
+
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'tables') {
       setShowTableComponent(true);
-    } else if (blockType.id === 'audio') {
-      setShowAudioDialog(true);
-    } else if (blockType.id === 'youtube') {
-      setShowYoutubeDialog(true);
+    
     } else if (blockType.id === 'link') {
       setShowLinkDialog(true);
     } else if (blockType.id === 'pdf') {
@@ -2115,6 +2096,9 @@ function LessonBuilder() {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
+
+      
+
     } else if (block.type === 'list') {
       // Handle list block editing - open edit dialog directly
       console.log('List block detected for editing:', block);
@@ -2754,17 +2738,53 @@ function LessonBuilder() {
       // For new lessons, we use contentBlocks
       let blocksToUpdate = [];
       
+      // Use a single source of truth - prioritize contentBlocks for new content
+      // and merge with existing lessonContent only when necessary
       if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-        // For existing lessons, use lessonContent which contains the updated content
-        blocksToUpdate = lessonContent.data.content;
+        console.log('Existing lesson - merging content');
         
-        // Add any new blocks from contentBlocks that aren't in lessonContent
-        const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
+        // Start with existing lesson content
+        const existingBlocks = lessonContent.data.content;
+        const existingBlockIds = new Set(existingBlocks.map(b => b.block_id || b.id));
+        
+        // Only add truly new blocks from contentBlocks
         const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-        blocksToUpdate = [...blocksToUpdate, ...newBlocks];
+        
+        console.log('Content merge analysis:', {
+          existingBlocks: existingBlocks.length,
+          newBlocks: newBlocks.length,
+          existingIds: Array.from(existingBlockIds),
+          newIds: newBlocks.map(b => b.id),
+
+        });
+        
+        // Combine existing and new blocks
+        blocksToUpdate = [...existingBlocks, ...newBlocks];
       } else {
-        // For new lessons, use contentBlocks
+        // For new lessons, use contentBlocks as the single source
+        console.log('New lesson - using contentBlocks:', {
+          totalBlocks: contentBlocks.length,
+
+        });
         blocksToUpdate = contentBlocks;
+      }
+      
+      // Remove any duplicate blocks based on ID
+      const uniqueBlocks = [];
+      const seenIds = new Set();
+      blocksToUpdate.forEach(block => {
+        const blockId = block.block_id || block.id;
+        if (!seenIds.has(blockId)) {
+          uniqueBlocks.push(block);
+          seenIds.add(blockId);
+        } else {
+          console.warn('Removing duplicate block during update:', blockId, block.type);
+        }
+      });
+      
+      if (uniqueBlocks.length !== blocksToUpdate.length) {
+        console.warn(`Removed ${blocksToUpdate.length - uniqueBlocks.length} duplicate blocks during update`);
+        blocksToUpdate = uniqueBlocks;
       }
 
       // Allow empty content blocks for deletion operations
@@ -2830,6 +2850,9 @@ function LessonBuilder() {
               content: block.content || ''
             };
           }
+          
+
+
           
           return blockData;
         }
@@ -4383,91 +4406,7 @@ function LessonBuilder() {
     }
   };
 
-  const handleAddYoutubeVideo = () => {
-    if (!youtubeTitle || !youtubeUrl) {
-      setYoutubeError('Please fill in all required fields');
-      return;
-    }
-
-    const videoId = extractYoutubeId(youtubeUrl);
-    if (!videoId) {
-      setYoutubeError('Please enter a valid YouTube URL');
-      return;
-    }
-
-    // Generate HTML content for display
-    const htmlContent = `
-      <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 8px;">
-        <iframe
-          src="https://www.youtube.com/embed/${videoId}"
-          title="${youtubeTitle || 'YouTube video'}"
-          allowfullscreen
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-        ></iframe>
-      </div>
-      ${youtubeTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${youtubeTitle}</p>` : ''}
-      ${youtubeDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${youtubeDescription}</p>` : ''}
-    `;
-
-    const newBlock = {
-      id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
-      block_id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
-      type: 'youtube',
-      title: 'YouTube Video',
-      youtubeTitle: youtubeTitle,
-      youtubeDescription: youtubeDescription,
-      youtubeUrl: youtubeUrl,
-      youtubeId: videoId,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentYoutubeBlock) {
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentYoutubeBlock.id ? newBlock : block)
-      );
-    } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
-          }
-        }));
-      } else {
-        setContentBlocks(prev => [...prev, newBlock]);
-      }
-    }
-   
-    handleYoutubeDialogClose();
-  };
-
-  const extractYoutubeId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const handleYoutubeDialogClose = () => {
-    setShowYoutubeDialog(false);
-    setYoutubeTitle('');
-    setYoutubeDescription('');
-    setYoutubeUrl('');
-    setYoutubeError('');
-    setCurrentYoutubeBlock(null);
-  };
-
-  const handleEditYoutubeVideo = (block) => {
-    setCurrentYoutubeBlock(block);
-    setYoutubeTitle(block.youtubeTitle);
-    setYoutubeDescription(block.youtubeDescription || '');
-    setYoutubeUrl(block.youtubeUrl);
-    setShowYoutubeDialog(true);
-  };
+  
 
   const handleLinkDialogClose = () => {
     setShowLinkDialog(false);
@@ -4760,16 +4699,7 @@ function LessonBuilder() {
                       text: b.details?.caption || ''
                     };
                   }
-                  if (b.type === 'audio') {
-                    return {
-                      ...base,
-                      type: 'audio',
-                      title: 'Audio',
-                      audioUrl: b.details?.audio_url || '',
-                      audioTitle: b.details?.caption || 'Audio',
-                      audioDescription: b.details?.description || ''
-                    };
-                  }
+                  
                   if (b.type === 'pdf') {
                     return {
                       ...base,
@@ -5116,7 +5046,13 @@ function LessonBuilder() {
             <div className="py-4">
                 <div>
                   {/* Always show edit interface since View mode is replaced by Modern Preview */}
-                  {contentBlocks.length === 0 ? (
+                  {(() => {
+                    // Get all blocks from single source of truth
+                    const allBlocks = (lessonContent?.data?.content && lessonContent.data.content.length > 0)
+                      ? lessonContent.data.content
+                      : contentBlocks;
+                    return allBlocks.length === 0;
+                  })() ? (
                     <div className="min-h-[60vh] flex items-center justify-center">
                       <div className="max-w-2xl mx-auto text-center">
                         {/* Beautiful gradient background */}
@@ -5198,7 +5134,20 @@ function LessonBuilder() {
                     </div>
                   ) : (
                     <div className="space-y-6 max-w-3xl mx-auto">
-                      {contentBlocks.map((block, index) => (
+                      {(() => {
+                        // Use single source of truth for rendering
+                        const blocksToRender = (lessonContent?.data?.content && lessonContent.data.content.length > 0)
+                          ? lessonContent.data.content
+                          : contentBlocks;
+                        
+                        console.log('Rendering blocks from single source:', {
+                          source: lessonContent?.data?.content?.length > 0 ? 'lessonContent' : 'contentBlocks',
+                          totalBlocks: blocksToRender.length,
+
+                          blockIds: blocksToRender.map(b => b.id || b.block_id)
+                        });
+                        
+                        return blocksToRender.map((block, index) => (
                         <div
                           key={block.id}
                           className="relative group bg-white rounded-lg"
@@ -5370,6 +5319,8 @@ function LessonBuilder() {
                               </div>
                             )}
 
+
+
                             {block.type === 'quote' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
@@ -5484,56 +5435,9 @@ function LessonBuilder() {
                               </div>
                             )}
 
-                            {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.audioTitle || block.details?.caption}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    Audio
-                                  </Badge>
-                                </div>
-                               
-                                {(block.audioDescription || block.details?.description) && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.audioDescription || block.details?.description}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <audio
-                                    src={block.audioUrl || block.details?.audio_url}
-                                    controls
-                                    className="w-full rounded-lg border border-gray-200"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                            
 
-                            {block.type === 'youtube' && (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.youtubeTitle}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    YouTube
-                                  </Badge>
-                                </div>
-                               
-                                {block.youtubeDescription && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.youtubeDescription}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <iframe
-                                      src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
-                                      className="absolute top-0 left-0 w-full h-full"
-                                      frameBorder="0"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                      title={block.youtubeTitle || 'YouTube video player'}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            
 
                             {block.type === 'pdf' && (
                               <div className="space-y-3">
@@ -5755,7 +5659,8 @@ function LessonBuilder() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
@@ -5875,7 +5780,7 @@ function LessonBuilder() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
                 </p>
                 {videoUrl && videoUploadMethod === 'url' && (
                   <div className="mt-4">
@@ -6590,240 +6495,6 @@ function LessonBuilder() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Audio Dialog */}
-      <Dialog open={showAudioDialog} onOpenChange={handleAudioDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Audio</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Audio Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={audioTitle}
-                onChange={handleAudioInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter audio title"
-                required
-              />
-            </div>
-
-            {/* Upload Method Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Method <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="audioUploadMethod"
-                    value="file"
-                    checked={audioUploadMethod === 'file'}
-                    onChange={(e) => setAudioUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Upload File
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="audioUploadMethod"
-                    value="url"
-                    checked={audioUploadMethod === 'url'}
-                    onChange={(e) => setAudioUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Audio URL
-                </label>
-              </div>
-            </div>
-
-            {/* File Upload Section */}
-            {audioUploadMethod === 'file' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Audio File <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          type="file"
-                          name="file"
-                          className="sr-only"
-                          accept="audio/mpeg,audio/wav,audio/ogg"
-                          onChange={handleAudioInputChange}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      MP3, WAV, or OGG up to 20MB
-                    </p>
-                  </div>
-                </div>
-                {audioPreview && audioUploadMethod === 'file' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
-                      src={audioPreview}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* URL Input Section */}
-            {audioUploadMethod === 'url' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Audio URL <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter audio URL (e.g., https://example.com/audio.mp3)"
-                  required
-                />
-                {audioUrl && audioUploadMethod === 'url' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
-                      src={audioUrl}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                      onError={() => console.log('Audio URL may be invalid or not accessible')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                name="description"
-                value={audioDescription}
-                onChange={handleAudioInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your audio (optional)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleAudioDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddAudio}
-              disabled={!audioTitle || (audioUploadMethod === 'file' && !audioFile) || (audioUploadMethod === 'url' && !audioUrl)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Add Audio
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* YouTube Dialog */}
-      <Dialog open={showYoutubeDialog} onOpenChange={handleYoutubeDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add YouTube Video</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Video Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={youtubeTitle}
-                onChange={(e) => setYoutubeTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter video title"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube Video URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="url"
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://www.youtube.com/watch?v=..."
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-              </p>
-              {youtubeError && (
-                <p className="text-sm text-red-500 mt-1">{youtubeError}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={youtubeDescription}
-                onChange={(e) => setYoutubeDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your video (optional)"
-              />
-            </div>
-
-            {youtubeUrl && extractYoutubeId(youtubeUrl) && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-                <div className="aspect-w-16 aspect-h-9">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYoutubeId(youtubeUrl)}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-64 rounded-lg border border-gray-200"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleYoutubeDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddYoutubeVideo}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Add Video
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       
 
       {/* Link Dialog */}
@@ -7189,6 +6860,8 @@ function LessonBuilder() {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+
+
 
     </>
   );
