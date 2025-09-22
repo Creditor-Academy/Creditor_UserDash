@@ -5094,15 +5094,20 @@ function LessonBuilder() {
                     const hasH1 = lowered.includes('<h1');
                     const hasH2 = lowered.includes('<h2');
                     const hasP = lowered.includes('<p');
-                    const detectedType = hasH1 && hasP
-                      ? 'heading_paragraph'
-                      : hasH2 && hasP
-                        ? 'subheading_paragraph'
-                        : hasH1
-                          ? 'heading'
-                          : hasH2
-                            ? 'subheading'
-                            : 'paragraph';
+                    // Check for master heading first (has gradient background)
+                    const isMasterHeading = hasH1 && (lowered.includes('linear-gradient') || lowered.includes('gradient'));
+                    
+                    const detectedType = isMasterHeading
+                      ? 'master_heading'
+                      : hasH1 && hasP
+                        ? 'heading_paragraph'
+                        : hasH2 && hasP
+                          ? 'subheading_paragraph'
+                          : hasH1
+                            ? 'heading'
+                            : hasH2
+                              ? 'subheading'
+                              : 'paragraph';
                     return {
                       ...base,
                       type: 'text',
