@@ -254,6 +254,63 @@ if (typeof window !== 'undefined') {
       icon.classList.remove('rotate-180');
     }
   };
+
+  // Labeled Graphic functions
+  window.toggleHotspotContent = function(containerId, hotspotId) {
+    // Hide all other content overlays in this container
+    const container = document.getElementById(containerId);
+    if (container) {
+      const allContents = container.querySelectorAll('.hotspot-content');
+      allContents.forEach(content => {
+        if (content.id !== 'content-' + containerId + '-' + hotspotId) {
+          content.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Toggle the clicked hotspot content
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      if (contentElement.classList.contains('hidden')) {
+        contentElement.classList.remove('hidden');
+        // Add fade-in animation
+        contentElement.style.opacity = '0';
+        contentElement.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          contentElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          contentElement.style.opacity = '1';
+          contentElement.style.transform = 'scale(1)';
+        }, 10);
+      } else {
+        contentElement.classList.add('hidden');
+      }
+    }
+  };
+  
+  window.hideHotspotContent = function(containerId, hotspotId) {
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      contentElement.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      contentElement.style.opacity = '0';
+      contentElement.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        contentElement.classList.add('hidden');
+      }, 200);
+    }
+  };
+  
+  // Close hotspot content when clicking outside (only add once)
+  if (!window.labeledGraphicClickHandler) {
+    window.labeledGraphicClickHandler = function(event) {
+      if (!event.target.closest('.hotspot') && !event.target.closest('.hotspot-content')) {
+        const allContents = document.querySelectorAll('.hotspot-content');
+        allContents.forEach(content => {
+          content.classList.add('hidden');
+        });
+      }
+    };
+    document.addEventListener('click', window.labeledGraphicClickHandler);
+  }
 }
 
 // Register font families with proper display names
@@ -344,8 +401,22 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
     }
 
     const handleCheckboxClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
       console.log('Checkbox click detected:', e.target);
-      const checkboxContainer = e.target.closest('.checkbox-container');
+      
+      // Find the checkbox container - could be the clicked element or a parent
+      let checkboxContainer = e.target.closest('.checkbox-container');
+      
+      // If not found, try looking for checkbox wrapper or checkbox item
+      if (!checkboxContainer) {
+        const checkboxWrapper = e.target.closest('.checkbox-wrapper');
+        if (checkboxWrapper) {
+          checkboxContainer = checkboxWrapper.closest('.checkbox-container');
+        }
+      }
+      
       if (!checkboxContainer) {
         console.log('No checkbox-container found');
         return;
@@ -354,24 +425,31 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
       const itemIndex = parseInt(checkboxContainer.dataset.index);
       const hiddenCheckbox = checkboxContainer.querySelector('.checkbox-item');
       const visualCheckbox = checkboxContainer.querySelector('.checkbox-visual');
+      const textElement = checkboxContainer.querySelector('.flex-1');
 
       console.log('Checkbox elements found:', {
         itemIndex,
         hiddenCheckbox: !!hiddenCheckbox,
-        visualCheckbox: !!visualCheckbox
+        visualCheckbox: !!visualCheckbox,
+        textElement: !!textElement
       });
 
       if (hiddenCheckbox && visualCheckbox) {
         const newChecked = !hiddenCheckbox.checked;
-        hiddenCheckbox.checked = newChecked;
         
         // Update visual state immediately for better UX
         if (newChecked) {
           visualCheckbox.classList.remove('opacity-0');
           visualCheckbox.classList.add('opacity-100');
+          if (textElement) {
+            textElement.classList.add('line-through', 'text-gray-500');
+          }
         } else {
           visualCheckbox.classList.remove('opacity-100');
           visualCheckbox.classList.add('opacity-0');
+          if (textElement) {
+            textElement.classList.remove('line-through', 'text-gray-500');
+          }
         }
 
         console.log('Calling onCheckboxToggle:', {
@@ -385,19 +463,32 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
       }
     };
 
-    // Add click event listeners to all checkbox containers
+    // Add click event listeners to all checkbox containers and their children
     const checkboxContainers = containerRef.current.querySelectorAll('.checkbox-container');
-    console.log('Found checkbox containers:', checkboxContainers.length);
+    const checkboxWrappers = containerRef.current.querySelectorAll('.checkbox-wrapper');
     
+    console.log('Found checkbox containers:', checkboxContainers.length);
+    console.log('Found checkbox wrappers:', checkboxWrappers.length);
+    
+    // Add listeners to containers
     checkboxContainers.forEach((container, index) => {
       console.log(`Adding listener to container ${index}:`, container);
       container.addEventListener('click', handleCheckboxClick);
+    });
+
+    // Add listeners to wrappers for more precise clicking
+    checkboxWrappers.forEach((wrapper, index) => {
+      console.log(`Adding listener to wrapper ${index}:`, wrapper);
+      wrapper.addEventListener('click', handleCheckboxClick);
     });
 
     // Cleanup
     return () => {
       checkboxContainers.forEach(container => {
         container.removeEventListener('click', handleCheckboxClick);
+      });
+      checkboxWrappers.forEach(wrapper => {
+        wrapper.removeEventListener('click', handleCheckboxClick);
       });
     };
   }, [block.html_css, onCheckboxToggle, block.id, block.block_id]);
@@ -1091,9 +1182,9 @@ function LessonBuilder() {
             <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
               <div class="space-y-4">
                 ${items.map((item, index) => `
-                  <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+                  <div class="checkbox-container flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200 cursor-pointer" data-index="${index}">
                     <div class="flex-shrink-0 mt-1">
-                      <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                      <div class="checkbox-wrapper w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center hover:border-pink-500 transition-colors">
                         <input type="checkbox" ${checkedItems[index] ? 'checked' : ''} class="hidden checkbox-item" data-index="${index}" />
                         <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
                       </div>
@@ -1199,6 +1290,7 @@ function LessonBuilder() {
         const container = checkboxContainers[itemIndex];
         const hiddenCheckbox = container.querySelector('.checkbox-item');
         const visualCheckbox = container.querySelector('.checkbox-visual');
+        const textElement = container.querySelector('.flex-1');
         
         if (hiddenCheckbox && visualCheckbox) {
           // Update the hidden checkbox
@@ -1217,6 +1309,25 @@ function LessonBuilder() {
             visualCheckbox.classList.remove('opacity-100');
             visualCheckbox.classList.add('opacity-0');
           }
+
+          // Update text styling based on checkbox state
+          if (textElement) {
+            if (checked) {
+              // Add line-through and gray text for checked items
+              if (!textElement.classList.contains('line-through')) {
+                textElement.classList.add('line-through', 'text-gray-500');
+              }
+              // Remove normal text color classes
+              textElement.classList.remove('text-gray-800');
+            } else {
+              // Remove line-through and gray text for unchecked items
+              textElement.classList.remove('line-through', 'text-gray-500');
+              // Add back normal text color
+              if (!textElement.classList.contains('text-gray-800')) {
+                textElement.classList.add('text-gray-800');
+              }
+            }
+          }
           
           console.log('Updated checkbox state in DOM');
         }
@@ -1226,9 +1337,24 @@ function LessonBuilder() {
       const updatedHtml = doc.body.innerHTML;
       console.log('Updated HTML:', updatedHtml.substring(0, 200));
       
+      // Update the content JSON to reflect checkbox state changes
+      let updatedContent = targetBlock.content;
+      try {
+        if (targetBlock.content) {
+          const contentObj = JSON.parse(targetBlock.content);
+          if (contentObj.checkedItems) {
+            contentObj.checkedItems[itemIndex] = checked;
+            updatedContent = JSON.stringify(contentObj);
+          }
+        }
+      } catch (e) {
+        console.log('Could not update content JSON:', e);
+      }
+
       // Update the block in state
       const updatedBlock = {
         ...targetBlock,
+        content: updatedContent,
         html_css: updatedHtml,
         updatedAt: new Date().toISOString()
       };
@@ -1265,7 +1391,7 @@ function LessonBuilder() {
         },
         body: JSON.stringify({
           html_css: updatedHtml,
-          content: targetBlock.content,
+          content: updatedContent,
           type: targetBlock.type,
           listType: targetBlock.listType || targetBlock.details?.listType || 'checkbox',
           details: {
@@ -1975,12 +2101,12 @@ function LessonBuilder() {
     // Enhanced interactive block detection - check subtype, content structure and HTML patterns
     const isInteractiveBlock = block.type === 'interactive' || 
                               // Check subtype for accordion or tabs
-                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs')) ||
+                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs' || block.subtype === 'labeled-graphic')) ||
                               // Check if content has interactive structure (JSON with template)
                               (() => {
                                 try {
                                   const content = JSON.parse(block.content || '{}');
-                                  return content.template && (content.tabsData || content.accordionData);
+                                  return content.template && (content.tabsData || content.accordionData || content.labeledGraphicData);
                                 } catch {
                                   return false;
                                 }
@@ -1993,7 +2119,9 @@ function LessonBuilder() {
                                 block.html_css.includes('tab-button') ||
                                 block.html_css.includes('accordion-header') ||
                                 block.html_css.includes('data-template="tabs"') ||
-                                block.html_css.includes('data-template="accordion"')
+                                block.html_css.includes('data-template="accordion"') ||
+                                block.html_css.includes('data-template="labeled-graphic"') ||
+                                block.html_css.includes('labeled-graphic-container')
                               ));
 
     if (isInteractiveBlock) {
@@ -4799,6 +4927,9 @@ function LessonBuilder() {
                                  htmlContent.includes('tab-button') ||
                                  htmlContent.includes('interactive-tabs')) {
                         template = 'tabs';
+                      } else if (htmlContent.includes('data-template="labeled-graphic"') || 
+                                 htmlContent.includes('labeled-graphic-container')) {
+                        template = 'labeled-graphic';
                       }
                     }
                     
