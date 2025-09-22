@@ -3646,6 +3646,9 @@ function LessonBuilder() {
         template: template.id
       }
     };
+
+    // Generate HTML content immediately for the new block
+    newBlock.html_css = generateImageBlockHtml(newBlock);
    
     // Always add to local edit list so it appears immediately in edit mode
     setContentBlocks(prev => [...prev, newBlock]);
@@ -3662,13 +3665,21 @@ function LessonBuilder() {
     );
   };
 
-  const handleImageFileUpload = async (blockId, file) => {
+  const handleImageFileUpload = async (blockId, file, retryCount = 0) => {
     if (!file) return;
 
     // Set loading state for this specific block
     setImageUploading(prev => ({ ...prev, [blockId]: true }));
 
     try {
+      console.log('Attempting to upload image to AWS S3:', {
+        blockId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        retryCount
+      });
+
       // Upload image to API
       const uploadResult = await uploadImage(file, {
         folder: 'lesson-images', // Optional: organize images in a specific folder
@@ -3676,26 +3687,103 @@ function LessonBuilder() {
       });
 
       if (uploadResult.success && uploadResult.imageUrl) {
-        // Update the block with the uploaded image URL
+        // Update the block with the uploaded AWS S3 image URL
         handleImageBlockEdit(blockId, 'imageUrl', uploadResult.imageUrl);
         handleImageBlockEdit(blockId, 'imageFile', file);
         handleImageBlockEdit(blockId, 'uploadedImageData', uploadResult);
         
-        toast.success('Image uploaded successfully!');
+        // Clear any local URL flag
+        handleImageBlockEdit(blockId, 'isUsingLocalUrl', false);
+        
+        console.log('Image uploaded successfully to AWS S3:', {
+          blockId,
+          awsUrl: uploadResult.imageUrl,
+          uploadResult
+        });
+        
+        toast.success('Image uploaded successfully to AWS S3!');
       } else {
         throw new Error('Upload failed - no image URL returned');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image. Please try again.');
+      console.error('Error uploading image to AWS S3:', error);
+      console.error('Upload error details:', {
+        blockId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        error: error.message,
+        retryCount
+      });
       
-      // Fallback to local URL for immediate preview (optional)
+      // Retry up to 2 times for network errors
+      if (retryCount < 2 && (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('fetch'))) {
+        console.log(`Retrying upload (attempt ${retryCount + 1}/2)...`);
+        // Don't clear loading state, keep it active for retry
+        setTimeout(() => {
+          handleImageFileUpload(blockId, file, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // Exponential backoff
+        return; // Exit early, don't execute finally block
+      }
+      
+      toast.error(`Failed to upload image to AWS S3: ${error.message || 'Unknown error'}. Using local preview.`);
+      
+      // Fallback to local URL for immediate preview (but warn user)
       const localImageUrl = URL.createObjectURL(file);
       handleImageBlockEdit(blockId, 'imageUrl', localImageUrl);
       handleImageBlockEdit(blockId, 'imageFile', file);
+      
+      // Mark that this is using local URL so save function can warn
+      handleImageBlockEdit(blockId, 'isUsingLocalUrl', true);
+      
+      console.warn('Using local blob URL as fallback:', localImageUrl);
     } finally {
       // Clear loading state
       setImageUploading(prev => ({ ...prev, [blockId]: false }));
+    }
+  };
+
+  // Generate HTML content for image blocks
+  const generateImageBlockHtml = (block) => {
+    const layout = block.layout || 'centered';
+    const textContent = (block.text || block.imageDescription || '').toString();
+    const imageUrl = block.imageUrl || '';
+    const imageTitle = block.imageTitle || '';
+
+    if (!imageUrl) return '';
+
+    if (layout === 'side-by-side') {
+      return `
+        <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+          <div>
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+          </div>
+          <div>
+            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } else if (layout === 'overlay') {
+      return `
+        <div class="relative rounded-xl overflow-hidden">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+        </div>
+      `;
+    } else if (layout === 'full-width') {
+      return `
+        <div class="space-y-3">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
+          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+        </div>
+      `;
+    } else { // centered or default
+      return `
+        <div class="text-center">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+        </div>
+      `;
     }
   };
 
@@ -3705,16 +3793,58 @@ function LessonBuilder() {
         if (block.id !== blockId) return block;
         if (block.type === 'image') {
           const captionPlainText = getPlainText(block.text || '');
+          
+          // Ensure we're using the uploaded AWS URL, not local URL
+          let finalImageUrl = block.imageUrl || block.details?.image_url || '';
+          
+          // If imageUrl is a local blob URL, try to get the uploaded URL from uploadedImageData
+          if (finalImageUrl.startsWith('blob:') && block.uploadedImageData?.imageUrl) {
+            finalImageUrl = block.uploadedImageData.imageUrl;
+            console.log('Using uploaded AWS URL instead of local blob URL:', finalImageUrl);
+          }
+          
           const updatedDetails = {
             ...(block.details || {}),
-            image_url: block.imageUrl || block.details?.image_url || '',
+            image_url: finalImageUrl,
             caption: (captionPlainText || block.details?.caption || ''),
             alt_text: block.imageTitle || block.details?.alt_text || '',
             layout: block.layout || block.details?.layout,
             template: block.templateType || block.details?.template,
           };
-          // Clear html_css so the save/update pipeline regenerates with the latest URL
-          return { ...block, isEditing: false, html_css: '', imageDescription: captionPlainText, details: updatedDetails };
+          
+          // Create updated block with final image URL for HTML generation
+          const updatedBlock = {
+            ...block,
+            imageUrl: finalImageUrl,
+            details: updatedDetails
+          };
+          
+          // Generate HTML content with the correct AWS URL
+          const htmlContent = generateImageBlockHtml(updatedBlock);
+          
+          console.log('Saving image block:', {
+            blockId,
+            layout: block.layout,
+            originalUrl: block.imageUrl,
+            finalUrl: finalImageUrl,
+            isLocalUrl: finalImageUrl.startsWith('blob:'),
+            hasUploadedData: !!block.uploadedImageData,
+            isUsingLocalUrl: block.isUsingLocalUrl
+          });
+          
+          // Warn if still using local URL
+          if (finalImageUrl.startsWith('blob:') || block.isUsingLocalUrl) {
+            console.warn('WARNING: Image block is using local URL instead of AWS S3 URL');
+            toast.warning('Warning: Image is stored locally and may not be accessible after page refresh. Please re-upload the image.');
+          }
+          
+          return { 
+            ...updatedBlock,
+            isEditing: false, 
+            html_css: htmlContent, 
+            imageDescription: captionPlainText, 
+            details: updatedDetails 
+          };
         }
         return { ...block, isEditing: false };
       })

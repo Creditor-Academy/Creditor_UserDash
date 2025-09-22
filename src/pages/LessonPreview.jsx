@@ -895,21 +895,30 @@ const LessonPreview = () => {
                       </>
                     )}
 
-                    {/* Image Content */}
-                    {block.type === 'image' && block.imageUrl && (
-                      <div className="text-center">
-                        <img
-                          src={block.imageUrl}
-                          alt={block.imageTitle || 'Lesson Image'}
-                          className="max-w-full h-auto rounded-lg shadow-md mx-auto"
-                        />
-                        {block.imageTitle && (
-                          <h3 className="text-lg font-semibold mt-4 text-gray-800">{block.imageTitle}</h3>
+                    {/* Image Content - Use HTML/CSS from API */}
+                    {block.type === 'image' && (
+                      <>
+                        {block.htmlCss ? (
+                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                        ) : (
+                          // Fallback rendering when html_css is not available
+                          block.imageUrl && (
+                            <div className="text-center">
+                              <img
+                                src={block.imageUrl}
+                                alt={block.imageTitle || 'Lesson Image'}
+                                className="max-w-full h-auto rounded-lg shadow-md mx-auto"
+                              />
+                              {block.imageTitle && (
+                                <h3 className="text-lg font-semibold mt-4 text-gray-800">{block.imageTitle}</h3>
+                              )}
+                              {block.imageDescription && (
+                                <p className="text-gray-600 mt-2">{block.imageDescription}</p>
+                              )}
+                            </div>
+                          )
                         )}
-                        {block.imageDescription && (
-                          <p className="text-gray-600 mt-2">{block.imageDescription}</p>
-                        )}
-                      </div>
+                      </>
                     )}
 
                     {/* Video Content */}
