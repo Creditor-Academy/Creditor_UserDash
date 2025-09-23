@@ -11,9 +11,11 @@ import { getCourseTrialStatus } from '../utils/trialUtils';
 import TrialBadge from '../components/ui/TrialBadge';
 import TrialExpiredDialog from '../components/ui/TrialExpiredDialog';
 import { useCredits } from '../contexts/CreditsContext';
+import { useUser } from '../contexts/UserContext';
+import { getUnlockedModulesByUser } from '../services/modulesService';
 
 export function Courses() {
-  const { userProfile } = useCredits();
+  const { userProfile } = useUser();
   const [courses, setCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCourses, setFilteredCourses] = useState([]);
@@ -27,7 +29,9 @@ export function Courses() {
   const [courseModules, setCourseModules] = useState({});
   const [selectedExpiredCourse, setSelectedExpiredCourse] = useState(null);
   const [showTrialDialog, setShowTrialDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState('courses'); // 'courses' only
+  const [activeTab, setActiveTab] = useState('courses');
+  const [myLessons, setMyLessons] = useState([]);
+  const [loadingLessons, setLoadingLessons] = useState(false);
 
   // Helper to format seconds as HH:MM:SS
   function formatTime(secs) {
@@ -91,14 +95,15 @@ export function Courses() {
   }, [location.pathname]);
 
   useEffect(() => {
-    const courseCards = document.querySelectorAll(".course-card");
-    courseCards.forEach((card, index) => {
+    const selector = activeTab === 'courses' ? '.course-card' : '.lesson-card';
+    const cards = document.querySelectorAll(selector);
+    cards.forEach((card, index) => {
       setTimeout(() => {
-        card.classList.add("animate-fade-in");
-        card.classList.remove("opacity-0");
+        card.classList.add('animate-fade-in');
+        card.classList.remove('opacity-0');
       }, 100 * index);
     });
-  }, [filteredCourses]);
+  }, [filteredCourses, myLessons, activeTab]);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -302,6 +307,61 @@ export function Courses() {
             </div>
           </div>
 
+          <div className="mb-6">
+            <div className="inline-flex rounded-xl border border-gray-200 bg-white p-1 shadow-sm">
+              <button
+                className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  activeTab === 'courses' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={() => setActiveTab('courses')}
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Courses
+                </div>
+                {activeTab === 'courses' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                )}
+              </button>
+              <button
+                className={`relative px-6 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  activeTab === 'lessons' 
+                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={async () => {
+                  setActiveTab('lessons');
+                  if (!userProfile?.id) return;
+                  setLoadingLessons(true);
+                  try {
+                    console.log('[UI] Fetch My Lessons for', userProfile.id);
+                    const data = await getUnlockedModulesByUser(userProfile.id);
+                    console.log('[UI] My Lessons count', Array.isArray(data) ? data.length : 'not-array');
+                    setMyLessons(data);
+                  } catch (e) {
+                    console.error('[UI] My Lessons fetch error', e);
+                    setMyLessons([]);
+                  } finally {
+                    setLoadingLessons(false);
+                  }
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4" />
+                  My Lessons
+                  {loadingLessons && (
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                </div>
+                {activeTab === 'lessons' && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
+                )}
+              </button>
+            </div>
+          </div>
+
 
           {/* Filters */}
           {/* {showFilters && (
@@ -339,7 +399,7 @@ export function Courses() {
             </div>
           )} */}
 
-          {/* Course Grid */}
+          {activeTab === 'courses' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredCourses.length > 0 ? (
               filteredCourses.map((course) => (
@@ -429,6 +489,62 @@ export function Courses() {
             </div>
           )}
           </div>
+          )}
+
+          {activeTab === 'lessons' && (
+            <div>
+              {loadingLessons ? (
+                <div className="text-center py-10 text-sm text-gray-600">Loading your lessons...</div>
+              ) : (
+                (() => {
+                  const combined = myLessons;
+                  if (!combined || combined.length === 0) {
+                    return (
+                      <div className="text-center py-10">
+                        <h3 className="text-base sm:text-lg font-medium">No lessons unlocked yet</h3>
+                        <p className="text-muted-foreground text-sm sm:text-base">Unlock lessons from the catalog or course pages.</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                      {combined.map((access) => (
+                        <div key={`${access.user_id}-${access.module_id}`} className="opacity-0 lesson-card">
+                          <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+                            <div className="aspect-video relative overflow-hidden">
+                              <img
+                                src={access.module?.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"}
+                                alt={access.module?.title || 'Lesson'}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base sm:text-lg line-clamp-2">{access.module?.title}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                              <div className="text-sm text-gray-600 line-clamp-3">{access.module?.description}</div>
+                              <div className="text-xs text-gray-500 flex items-center gap-3">
+                                <span>Course: {access.course?.title}</span>
+                                <span>Order: {access.module?.order}</span>
+                              </div>
+                            </CardContent>
+                            <CardFooter className="pt-2 flex gap-2">
+                              <Link to={`/dashboard/courses/${access.module?.course_id}/modules/${access.module?.id}/view`} className="flex-1">
+                                <Button className="w-full">View Lesson</Button>
+                              </Link>
+                              <Link to={`/dashboard/courses/${access.module?.course_id}/modules/${access.module?.id}/assessments`} className="flex-1">
+                                <Button variant="outline" className="w-full">View Assessment</Button>
+                              </Link>
+                            </CardFooter>
+                          </Card>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+          )}
         </div>
       </main>
       
