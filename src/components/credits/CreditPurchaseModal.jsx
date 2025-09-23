@@ -196,38 +196,59 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
 
           {/* Overview */}
           {viewTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Current Balance</div>
-              <div className="text-3xl font-bold text-gray-900">{balance}</div>
-              <div className="text-xs text-gray-500 mt-1">credits available</div>
-               <div className="mt-3 text-xs">
-                 <span className={`px-2 py-1 rounded ${membership.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{membership.isActive ? 'Membership active' : 'Membership inactive'}</span>
-               </div>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-5 flex flex-col justify-between">
-              <div>
-                <div className="font-semibold text-gray-900 mb-1 text-lg">Purchase Credits</div>
-                <div className="text-sm text-gray-600 mb-4">Pick a pack or use custom amount in the next step.</div>
+          <div className="space-y-5">
+            {/* Current Status */}
+            <div className="rounded-xl border border-gray-200 overflow-hidden">
+              <div className="relative bg-gradient-to-br from-[#0f1f3d] to-[#1f3a6d] px-5 py-4 overflow-hidden">
+                {/* Decorative background accents (kept within the same color family) */}
+                <div
+                  className="pointer-events-none absolute -top-16 -right-20 w-72 h-72 rounded-full blur-2xl opacity-25"
+                  style={{ background: 'radial-gradient(closest-side, rgba(59,130,246,0.8), rgba(59,130,246,0))' }}
+                />
+                <div
+                  className="pointer-events-none absolute -bottom-24 -left-10 w-96 h-96 rounded-full blur-3xl opacity-20"
+                  style={{ background: 'radial-gradient(closest-side, rgba(56,189,248,0.7), rgba(56,189,248,0))' }}
+                />
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-10"
+                  style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)', backgroundSize: '12px 12px' }}
+                />
+                <div className="relative z-10">
+                  <div className="text-sm text-white/80 mb-1">Current Status</div>
+                  <div className="text-4xl font-extrabold tracking-tight text-white">{formatNumber(balance)}</div>
+                  <div className="text-xs text-blue-100 mt-1">credits available</div>
+                  <div className="mt-3 text-xs">
+                    <span className={`px-2 py-1 rounded-md font-medium ${membership.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{membership.isActive ? 'Membership active' : 'Membership inactive'}</span>
+                  </div>
+                </div>
               </div>
-              {membership.isActive ? (
-                <div className="space-y-3">
-                  <form onSubmit={handlePurchase} className="flex items-center gap-3 flex-wrap">
+            </div>
+
+            {/* Top Up Credits */}
+            <div className="rounded-xl border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-lg font-semibold text-gray-900">Top Up Credits</div>
+                  <div className="text-sm text-gray-600">Pick a pack below to top up your credits.</div>
+                </div>
+                {membership.isActive && (
+                  <form onSubmit={handlePurchase}>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 rounded-md font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white"
+                      className="px-4 py-2 rounded-md font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white shadow"
                     >
-                      Buy credits
+                      Buy Credits
                     </button>
-                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-600 flex-wrap">
-                      <span className="px-2 py-1 rounded border">250 credits for $50</span>
-                      <span className="px-2 py-1 rounded border">500 credits for $100</span>
-                      <span className="px-2 py-1 rounded border">2,500 credits for $500</span>
-                      <span className="px-2 py-1 rounded border">14,000 credits for $2,800</span>
-                    </div>
                   </form>
-                  
-                  
+                )}
+              </div>
+
+              {membership.isActive ? (
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1.5 rounded-md border text-sm text-gray-700">250 for $50</span>
+                  <span className="px-3 py-1.5 rounded-md border text-sm text-gray-700">500 for $100</span>
+                  <span className="px-3 py-1.5 rounded-md border text-sm text-gray-700">2,500 credits for $500</span>
+                  <span className="px-3 py-1.5 rounded-md border text-sm text-gray-700">14,000 credits for $2,800</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 flex-wrap">
@@ -235,13 +256,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     onClick={() => {
                       window.location.href = "https://quickclick.com/r/m7o5skh90z5o7s6x6bg9yeklf7ql3f";
                     }}
-                    className="px-5 py-2.5 rounded-md font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white"
+                    className="px-4 py-2 rounded-md font-medium transition-colors bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
                     Buy membership ($69)
                   </button>
-                  <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
-                    <span className="px-2 py-1 rounded border">Membership unlocks credits</span>
-                  </div>
+                  <div className="text-xs text-gray-600">Membership unlocks credit purchases</div>
                 </div>
               )}
             </div>
@@ -285,48 +304,37 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
 
           {/* Usage */}
           {viewTab === 'usage' && (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold text-gray-800">Credit Usage</div>
                 {loadingHistory && (
                   <div className="text-xs text-gray-500">Loading...</div>
                 )}
               </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="text-gray-700">
-                    <tr>
-                      <th className="text-left py-1 pr-2">Date</th>
-                      <th className="text-left py-1 pr-2">Type</th>
-                      <th className="text-left py-1 pr-2">Credits</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingHistory ? (
-                      <tr><td className="py-4 text-gray-500 text-center" colSpan="3">Loading usage history...</td></tr>
-                    ) : usages.length === 0 ? (
-                      <tr><td className="py-4 text-gray-500 text-center" colSpan="3">No credit usage yet</td></tr>
-                    ) : (
-                      usages.map((u, i) => (
-                        <tr key={i} className="border-t hover:bg-gray-50">
-                          <td className="py-2 pr-2">{u.date}</td>
-                          <td className="py-2 pr-2">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              u.type === 'Catalog Purchase' ? 'bg-purple-100 text-purple-800' :
-                              u.type === 'Lesson Purchase' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {u.type}
-                            </span>
-                          </td>
-                          <td className="py-2 pr-2 font-medium text-red-600">-{u.credits}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              {loadingHistory ? (
+                <div className="py-4 text-center text-gray-500 text-sm">Loading usage history...</div>
+              ) : usages.length === 0 ? (
+                <div className="py-4 text-center text-gray-500 text-sm">No credit usage yet</div>
+              ) : (
+                <div className="space-y-2">
+                  {usages.map((u, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50">
+                      <div className="flex items-center gap-3">
+                        <div className="text-xs text-gray-500 w-20">{u.date}</div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          u.type === 'Catalog Purchase' ? 'bg-purple-100 text-purple-800' :
+                          u.type === 'Lesson Purchase' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {u.type}
+                        </span>
+                      </div>
+                      <div className="text-sm font-semibold text-red-600">-{u.credits}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           )}
