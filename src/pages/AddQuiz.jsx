@@ -49,6 +49,9 @@ const CreateQuizPage = () => {
   const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
   const [selectedQuestionForEdit, setSelectedQuestionForEdit] = useState(null);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  // Scenario delete confirmation
+  const [showScenarioDeleteConfirm, setShowScenarioDeleteConfirm] = useState(false);
+  const [scenarioToDelete, setScenarioToDelete] = useState(null);
   
   // Scenario-related state
   const [assessmentType, setAssessmentType] = useState('quiz'); // 'quiz' or 'scenario'
@@ -203,21 +206,35 @@ const CreateQuizPage = () => {
     navigate('/create-scenario', { state: { moduleId: scenario.module_id, editingScenario: scenario } });
   };
 
-  const handleDeleteScenario = async (scenario) => {
+  const handleDeleteScenario = (scenario) => {
+    setScenarioToDelete(scenario);
+    setShowScenarioDeleteConfirm(true);
+  };
+
+  const confirmDeleteScenario = async () => {
+    if (!scenarioToDelete) return;
     try {
-      await deleteScenario(scenario.id);
+      await deleteScenario(scenarioToDelete.id);
       setModuleScenarios(prev => {
-        const moduleId = scenario.module_id;
+        const moduleId = scenarioToDelete.module_id;
         return {
           ...prev,
-          [moduleId]: prev[moduleId]?.filter(s => s.id !== scenario.id) || []
+          [moduleId]: prev[moduleId]?.filter(s => s.id !== scenarioToDelete.id) || []
         };
       });
       toast.success('Scenario deleted successfully!');
     } catch (err) {
       console.error('Error deleting scenario:', err);
       toast.error('Failed to delete scenario.');
+    } finally {
+      setShowScenarioDeleteConfirm(false);
+      setScenarioToDelete(null);
     }
+  };
+
+  const cancelDeleteScenario = () => {
+    setShowScenarioDeleteConfirm(false);
+    setScenarioToDelete(null);
   };
 
   const handlePreviewScenario = (scenario) => {
@@ -659,17 +676,7 @@ const CreateQuizPage = () => {
                                             </span>
                                           </div>
                                         </Button>
-                                        <Button
-                                          onClick={() => handleEditScenario(scenario)}
-                                          className="group relative overflow-hidden bg-purple-500 hover:bg-purple-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
-                                        >
-                                          <div className="flex items-center justify-center w-full h-full">
-                                            <Edit className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
-                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
-                                              Edit
-                                            </span>
-                                          </div>
-                                        </Button>
+                                        {/* Edit removed for scenarios as requested */}
                                         <Button
                                           onClick={() => handleDeleteScenario(scenario)}
                                           className="group relative overflow-hidden bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
@@ -934,6 +941,20 @@ const CreateQuizPage = () => {
         quizId={previewQuizData?.id}
         onQuestionUpdated={handleQuestionUpdated}
       />
+
+      {/* Scenario Delete Confirmation Modal */}
+      {showScenarioDeleteConfirm && scenarioToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Scenario</h3>
+            <p className="text-gray-700 mb-4">Are you sure you want to delete the scenario "{scenarioToDelete.title}"? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={cancelDeleteScenario}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmDeleteScenario}>Delete</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

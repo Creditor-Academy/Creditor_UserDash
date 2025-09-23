@@ -299,11 +299,21 @@ export async function getModuleScenariosNew(moduleId) {
  */
 export async function deleteScenario(scenarioId) {
   try {
-    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}`, {
+    // Try new endpoint first
+    let response = await fetch(`${API_BASE}/api/scenario/delete_scenario/${scenarioId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
       credentials: 'include',
     });
+
+    // Fallback to legacy endpoint
+    if (response.status === 404) {
+      response = await fetch(`${API_BASE}/api/scenario/${scenarioId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
