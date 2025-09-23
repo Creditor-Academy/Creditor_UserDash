@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, Users, Crown, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -30,6 +30,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
 import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation } from "@/services/messageService";
+import { createGroup, addGroupMember } from "@/services/groupService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
@@ -122,6 +123,16 @@ function Messages() {
   const [deletingMessageId, setDeletingMessageId] = useState(null);
   const [deleteConversationId, setDeleteConversationId] = useState(null);
   const [showDeleteConversationDialog, setShowDeleteConversationDialog] = useState(false);
+  
+  // Group creation state
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState([]);
+  const [groupSearchQuery, setGroupSearchQuery] = useState("");
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [userHasGroup, setUserHasGroup] = useState(false);
+  
   const { toast } = useToast();
 
   const formatChatTime = (iso) => {
@@ -405,6 +416,10 @@ function Messages() {
       try {
         // Load conversations
         const convos = await getAllConversations();
+        
+        // Check if user already has a group
+        const hasGroup = convos.some(convo => convo.isGroup);
+        setUserHasGroup(hasGroup);
         console.log('getAllConversations ->', convos);
         // If backend returns only IDs, render placeholder items directly
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
@@ -643,6 +658,110 @@ function Messages() {
     setNewChatUsers([]);
   };
 
+  // Group creation handlers
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedGroupMembers.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please provide a group name and select at least one member",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userHasGroup) {
+      toast({
+        title: "Error",
+        description: "You can only create one group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingGroup(true);
+    try {
+      // Create the group
+      const groupData = {
+        name: groupName.trim(),
+        description: groupDescription.trim(),
+        created_by: 0, // Will be set by backend based on auth
+        type: 'messaging', // Custom type for messaging groups
+        is_private: false
+      };
+
+      const response = await createGroup(groupData);
+      
+      if (response.success && response.data) {
+        const groupId = response.data.id;
+        
+        // Add selected members to the group
+        for (const memberId of selectedGroupMembers) {
+          try {
+            await addGroupMember(groupId, memberId);
+          } catch (error) {
+            console.warn(`Failed to add member ${memberId} to group:`, error);
+          }
+        }
+
+        // Add group to friends list
+        const newGroup = {
+          id: `group_${groupId}`,
+          name: groupName.trim(),
+          avatar: '/placeholder.svg',
+          lastMessage: "Group created",
+          lastMessageType: 'system',
+          room: groupId,
+          conversationId: groupId,
+          isRead: true,
+          lastMessageFrom: 'System',
+          lastMessageAt: new Date().toISOString(),
+          isGroup: true,
+          memberCount: selectedGroupMembers.length + 1, // +1 for creator
+          isAdmin: true
+        };
+
+        setFriends(prev => [newGroup, ...prev]);
+        setUserHasGroup(true);
+        
+        toast({
+          title: "Success",
+          description: "Group created successfully!",
+        });
+
+        // Reset form and close modal
+        setGroupName("");
+        setGroupDescription("");
+        setSelectedGroupMembers([]);
+        setGroupSearchQuery("");
+        setShowCreateGroupModal(false);
+      } else {
+        throw new Error(response.message || "Failed to create group");
+      }
+    } catch (error) {
+      console.error("Error creating group:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "Failed to create group",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
+
+  const handleGroupMemberSelect = (userId) => {
+    setSelectedGroupMembers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const filteredUsers = allUsers.filter(user => 
+    user.name.toLowerCase().includes(groupSearchQuery.toLowerCase()) &&
+    !selectedGroupMembers.includes(user.id)
+  );
+
   const filteredFriends = friends.filter(friend => 
     friend.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -677,12 +796,35 @@ function Messages() {
           <div className="w-full flex flex-col h-full">
             <div className="p-3 border-b flex justify-between items-center">
               <h2 className="text-lg font-semibold">Messages</h2>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="New Chat">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </DialogTrigger>
+              <div className="flex items-center gap-2">
+                {/* Create Group Button */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={`h-8 w-8 ${userHasGroup ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title="Create Group"
+                        onClick={() => !userHasGroup && setShowCreateGroupModal(true)}
+                        disabled={userHasGroup}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{userHasGroup ? "You can only create one group" : "Create Group"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                {/* New Chat Button */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="New Chat">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
                     <DialogTitle>Start a new chat</DialogTitle>
@@ -722,6 +864,7 @@ function Messages() {
                   </div>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             <div className="p-3 border-b">
               <div className="relative">
@@ -785,21 +928,42 @@ function Messages() {
                     selectedFriend === friend.id ? "bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md" : ""
                   }`}
                 >
-                  <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
-                    <AvatarImage src={friend.avatar} />
-                    <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
+                      <AvatarImage src={friend.avatar} />
+                      <AvatarFallback className="text-xs">
+                        {friend.isGroup ? (
+                          <Users className="h-5 w-5" />
+                        ) : (
+                          friend.name?.[0] || 'U'
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    {friend.isGroup && friend.isAdmin && (
+                      <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1">
+                        <Crown className="h-3 w-3" />
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                       <p className={`font-medium text-[15px] ${(() => {
-                         const currentUserId = localStorage.getItem('userId');
-                         const isUnread = friend.isRead === false && 
-                                         friend.lastMessageFrom && 
-                                         String(friend.lastMessageFrom) !== String(currentUserId);
-                         return isUnread ? 'font-bold' : '';
-                       })()}`}>
-                         {friend.name}
-                       </p>
+                       <div className="flex items-center gap-2">
+                         <p className={`font-medium text-[15px] ${(() => {
+                           const currentUserId = localStorage.getItem('userId');
+                           const isUnread = friend.isRead === false && 
+                                           friend.lastMessageFrom && 
+                                           String(friend.lastMessageFrom) !== String(currentUserId);
+                           return isUnread ? 'font-bold' : '';
+                         })()}`}>
+                           {friend.name}
+                         </p>
+                         {friend.isGroup && (
+                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                             <Users className="h-3 w-3" />
+                             <span>{friend.memberCount || 0}</span>
+                           </div>
+                         )}
+                       </div>
                        <div className="flex items-start gap-2">
                          <div className="flex flex-col items-end gap-1 min-w-[42px]">
                            <span className="text-[11px] text-muted-foreground tabular-nums">
@@ -822,7 +986,7 @@ function Messages() {
                                  variant="ghost"
                                  size="icon"
                                  className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
-                                 title="Delete conversation"
+                                 title={friend.isGroup ? "Leave group" : "Delete conversation"}
                                  onClick={(e) => {
                                    e.stopPropagation();
                                    setDeleteConversationId(friend.conversationId || friend.id);
@@ -832,7 +996,7 @@ function Messages() {
                                  <Trash2 className="h-3.5 w-3.5" />
                                </Button>
                              </TooltipTrigger>
-                             <TooltipContent>Delete conversation</TooltipContent>
+                             <TooltipContent>{friend.isGroup ? "Leave group" : "Delete conversation"}</TooltipContent>
                            </Tooltip>
                          </TooltipProvider>
                        </div>
@@ -868,6 +1032,15 @@ function Messages() {
                              </span>
                            );
                          }
+                         
+                         // Show group-specific messages
+                         if (friend.isGroup) {
+                           if (friend.lastMessageType === 'system') {
+                             return friend.lastMessage || 'Group created';
+                           }
+                           return friend.lastMessage || 'No messages yet';
+                         }
+                         
                          return friend.lastMessage || 'Start a conversation';
                        })()}
                     </p>
@@ -875,8 +1048,20 @@ function Messages() {
                 </div>
               ))}
               {convosLoaded && filteredFriends.length === 0 && (
-                <div className="p-6 text-sm text-muted-foreground">
-                  No conversations yet. Click the + icon to start a chat.
+                <div className="p-6 text-sm text-muted-foreground text-center">
+                  <div className="space-y-2">
+                    <p>No conversations yet.</p>
+                    <div className="flex items-center justify-center gap-4 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span>Create Group</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Plus className="h-4 w-4" />
+                        <span>Start Chat</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </ScrollArea>
@@ -1212,6 +1397,145 @@ function Messages() {
               className="block h-auto w-auto max-w-[95vw] max-h-[90vh] object-contain" 
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Group Modal */}
+      <Dialog open={showCreateGroupModal} onOpenChange={setShowCreateGroupModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Create New Group
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Group Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Group Name *</label>
+              <Input
+                placeholder="Enter group name..."
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="h-9"
+              />
+            </div>
+
+            {/* Group Description */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description (Optional)</label>
+              <Input
+                placeholder="Enter group description..."
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                className="h-9"
+              />
+            </div>
+
+            {/* Member Search */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Add Members *</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users to add..."
+                  className="pl-8 h-9 text-sm"
+                  value={groupSearchQuery}
+                  onChange={(e) => setGroupSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Selected Members */}
+            {selectedGroupMembers.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Selected Members ({selectedGroupMembers.length})</label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedGroupMembers.map(memberId => {
+                    const member = allUsers.find(u => u.id === memberId);
+                    return member ? (
+                      <div key={memberId} className="flex items-center gap-2 bg-primary/10 text-primary px-2 py-1 rounded-full text-sm">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={member.avatar} />
+                          <AvatarFallback className="text-xs">{member.name?.[0] || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <span>{member.name}</span>
+                        <button
+                          onClick={() => handleGroupMemberSelect(memberId)}
+                          className="text-primary/70 hover:text-primary"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Available Users */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Available Users</label>
+              <ScrollArea className="h-48 border rounded-md">
+                <div className="space-y-1 p-2">
+                  {filteredUsers.map((user) => (
+                    <div 
+                      key={user.id}
+                      className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-accent"
+                      onClick={() => handleGroupMemberSelect(user.id)}
+                    >
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar} />
+                        <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{user.name}</div>
+                        <div className="text-xs text-muted-foreground">{user.role || 'User'}</div>
+                      </div>
+                      <Checkbox 
+                        checked={selectedGroupMembers.includes(user.id)}
+                        onChange={() => handleGroupMemberSelect(user.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowCreateGroupModal(false);
+                  setGroupName("");
+                  setGroupDescription("");
+                  setSelectedGroupMembers([]);
+                  setGroupSearchQuery("");
+                }}
+                disabled={isCreatingGroup}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateGroup}
+                disabled={isCreatingGroup || !groupName.trim() || selectedGroupMembers.length === 0}
+                className="flex items-center gap-2"
+              >
+                {isCreatingGroup ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Users className="h-4 w-4" />
+                    Create Group
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
