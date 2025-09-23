@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -669,40 +669,40 @@ function Messages() {
   })();
 
   return (
-    <div className="container py-4">
-      <div className="rounded-lg border bg-card shadow-sm">
-        <div className="h-[calc(100vh-120px)]">
+    <div className="w-full h-[100svh] min-h-[100svh] overflow-hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="bg-card shadow-sm h-full flex flex-col min-h-0 w-full">
+        <div className="h-full min-h-0 flex flex-col w-full">
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
-          <div className="w-full flex flex-col h-full">
-            <div className="p-3 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Messages</h2>
+          <div className="w-full flex flex-col h-full min-h-0">
+            <div className="px-2 py-2 sm:px-3 sm:py-3 border-b flex justify-between items-center flex-none sticky top-0 z-20 bg-card">
+              <h2 className="text-sm sm:text-base md:text-lg font-semibold truncate">Messages</h2>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="New Chat">
-                    <Plus className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 touch-manipulation flex-shrink-0" title="New Chat">
+                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="w-[95vw] max-w-[425px] max-h-[80vh]">
                   <DialogHeader>
-                    <DialogTitle>Start a new chat</DialogTitle>
+                    <DialogTitle className="text-base sm:text-lg">Start a new chat</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search users..."
-                        className="pl-8 h-9 text-sm"
+                        className="pl-8 h-10 sm:h-9 text-sm touch-manipulation"
                         value={newChatSearch}
                         onChange={(e) => setNewChatSearch(e.target.value)}
                       />
                     </div>
-                    <ScrollArea className="h-64">
-                      <div className="space-y-2">
+                    <ScrollArea className="h-48 sm:h-64">
+                      <div className="space-y-1 sm:space-y-2">
                         {filteredNewChatUsers.map((user) => (
                           <div 
                             key={user.id}
-                            className={`flex items-center gap-3 p-2 rounded cursor-pointer ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent'}`}
+                            className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg cursor-pointer touch-manipulation min-h-[44px] ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent active:bg-accent/80'}`}
                             onClick={() => {
                               if (startingUserId) return; // block double clicks globally until response
                               setStartingUserId(user.id);
@@ -710,11 +710,11 @@ function Messages() {
                               socket.emit("startConversation", { to: user.id });
                             }}
                           >
-                            <Avatar className="h-8 w-8">
+                            <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
                               <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
+                              <AvatarFallback className="text-xs">{user.name?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm">{user.name}</span>
+                            <span className="font-medium text-sm sm:text-base truncate">{user.name}</span>
                           </div>
                         ))}
                       </div>
@@ -723,18 +723,18 @@ function Messages() {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="p-3 border-b">
-              <div className="relative">
+            <div className="px-2 py-2 sm:px-3 sm:py-3 border-b flex-none sticky top-[44px] sm:top-[52px] z-20 bg-card">
+              <div className="relative w-full">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search contacts..."
-                  className="pl-8 h-9 text-sm"
+                  placeholder="Search chats..."
+                  className="pl-8 h-9 sm:h-10 text-sm touch-manipulation w-full"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
             </div>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0 w-full">
               {!convosLoaded ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -781,17 +781,17 @@ function Messages() {
                     }
                     setSelectedFriend(friend.id);
                   }}
-                  className={`group p-3 mx-1 my-1 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
+                  className={`group px-2 py-2 sm:px-3 sm:py-3 mx-0.5 sm:mx-1 my-0.5 sm:my-1 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] touch-manipulation min-h-[56px] sm:min-h-[60px] ${
                     selectedFriend === friend.id ? "bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md" : ""
                   }`}
                 >
-                  <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
-                    <AvatarImage src={friend.avatar} />
+                  <Avatar className="h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110 flex-shrink-0">
+                    <AvatarImage src={friend.avatar} className="w-full h-full object-cover" />
                     <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                       <p className={`font-medium text-[15px] ${(() => {
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex justify-between items-start gap-1">
+                       <p className={`font-medium text-xs sm:text-sm md:text-[15px] truncate ${(() => {
                          const currentUserId = localStorage.getItem('userId');
                          const isUnread = friend.isRead === false && 
                                          friend.lastMessageFrom && 
@@ -800,9 +800,9 @@ function Messages() {
                        })()}`}>
                          {friend.name}
                        </p>
-                       <div className="flex items-start gap-2">
-                         <div className="flex flex-col items-end gap-1 min-w-[42px]">
-                           <span className="text-[11px] text-muted-foreground tabular-nums">
+                       <div className="flex items-start gap-1 flex-shrink-0">
+                         <div className="flex flex-col items-end gap-0.5 min-w-[32px] sm:min-w-[36px] md:min-w-[42px] shrink-0">
+                           <span className="text-[9px] sm:text-[10px] md:text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
                              {formatChatTime(friend.lastMessageAt)}
                            </span>
                            {(() => {
@@ -811,17 +811,17 @@ function Messages() {
                                              friend.lastMessageFrom && 
                                              String(friend.lastMessageFrom) !== String(currentUserId);
                              return isUnread ? (
-                               <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
+                               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
                              ) : null;
                            })()}
-                         </div>
+                    </div>
                          <TooltipProvider>
                            <Tooltip>
                              <TooltipTrigger asChild>
                                <Button
                                  variant="ghost"
                                  size="icon"
-                                 className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
+                                 className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600 touch-manipulation flex-shrink-0"
                                  title="Delete conversation"
                                  onClick={(e) => {
                                    e.stopPropagation();
@@ -829,7 +829,7 @@ function Messages() {
                                    setShowDeleteConversationDialog(true);
                                  }}
                                >
-                                 <Trash2 className="h-3.5 w-3.5" />
+                                 <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
                                </Button>
                              </TooltipTrigger>
                              <TooltipContent>Delete conversation</TooltipContent>
@@ -837,7 +837,7 @@ function Messages() {
                          </TooltipProvider>
                        </div>
                     </div>
-                     <p className={`text-[12px] truncate ${(() => {
+                     <p className={`text-[10px] sm:text-[11px] md:text-[12px] truncate ${(() => {
                        const currentUserId = localStorage.getItem('userId');
                        const isUnread = friend.isRead === false && 
                                        friend.lastMessageFrom && 
@@ -852,23 +852,23 @@ function Messages() {
                          // If last message is an image, show icon + Image label
                          if (friend.lastMessageType === 'IMAGE') {
                            return (
-                             <span className="flex items-center gap-1.5">
-                               <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                               <span>Image</span>
+                             <span className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5">
+                               <ImageIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 text-muted-foreground flex-shrink-0" />
+                               <span className="truncate">Image</span>
                              </span>
                            );
                          }
 
                          if (isSentByMe && friend.lastMessage) {
                            return (
-                             <span className="flex items-center gap-1.5">
-                               <span>You:</span>
-                               <Check className="h-3 w-3 text-green-500" />
-                               <span>{friend.lastMessage}</span>
+                             <span className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5 min-w-0 overflow-hidden">
+                               <span className="flex-shrink-0">You:</span>
+                               <Check className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-green-500 flex-shrink-0" />
+                               <span className="truncate max-w-[55vw] sm:max-w-[240px]">{friend.lastMessage}</span>
                              </span>
                            );
                          }
-                         return friend.lastMessage || 'Start a conversation';
+                         return <span className="truncate max-w-[60vw] sm:max-w-[260px]">{friend.lastMessage || 'Start a conversation'}</span>;
                        })()}
                     </p>
                   </div>
@@ -885,11 +885,11 @@ function Messages() {
 
           {/* Chat Area - takes full width when a chat is open */}
           {selectedFriend && (
-          <div className="w-full h-full flex flex-col">
+          <div className="w-full h-full flex flex-col min-h-0">
                 {/* Chat Header */}
-                <div className="p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
-                  <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="mr-1" onClick={() => {
+                <div className="px-2 py-2 sm:px-3 sm:py-3 md:px-4 md:py-4 border-b bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 flex-none">
+                  <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 w-full">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 touch-manipulation flex-shrink-0" onClick={() => {
                       // Leave the room when going back to chat list
                       if (roomId) {
                         try {
@@ -901,20 +901,22 @@ function Messages() {
                       }
                       setSelectedFriend(null);
                     }} title="Back to chats">
-                      ←
+                      <div className="h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11 rounded-full bg-white/70 border border-purple-200/60 shadow-sm flex items-center justify-center hover:bg-white transition-colors">
+                        <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-purple-600" />
+                      </div>
                     </Button>
-                    <Avatar>
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 flex-shrink-0">
                       {convosLoaded && (
                         <>
-                          <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                      <AvatarFallback>
+                          <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} className="w-full h-full object-cover" />
+                      <AvatarFallback className="text-xs">
                             {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
                       </AvatarFallback>
                         </>
                       )}
                     </Avatar>
-                    <div>
-                      <h3 className="font-semibold">
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <h3 className="font-semibold text-xs sm:text-sm md:text-base truncate">
                         {convosLoaded ? (friends.find((f) => f.id === selectedFriend)?.name || '') : ''}
                       </h3>
                     </div>
@@ -922,20 +924,20 @@ function Messages() {
                 </div>
 
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 px-3 py-3 overflow-y-auto">
-                  <div className="space-y-2 relative">
+                <ScrollArea className="flex-1 px-1 sm:px-2 md:px-3 py-1 sm:py-2 md:py-3 pb-200 sm:pb-10 md:pb-14 overflow-y-auto min-h-0 w-full">
+                  <div className="space-y-1 sm:space-y-1.5 md:space-y-2 relative w-full">
                     <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,_#8b5cf6_0,_transparent_40%),_radial-gradient(circle_at_80%_10%,_#a78bfa_0,_transparent_35%),_radial-gradient(circle_at_10%_80%,_#6d28d9_0,_transparent_35%),_radial-gradient(circle_at_90%_85%,_#c4b5fd_0,_transparent_40%)]" />
                     {chatLoading && (
-                      <div className="h-full w-full flex items-center justify-center py-10">
+                      <div className="h-full w-full flex items-center justify-center py-6 sm:py-8 md:py-10">
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Loading conversation...</span>
+                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                          <span className="text-xs sm:text-sm md:text-base">Loading conversation...</span>
                         </div>
                       </div>
                     )}
                     {!chatLoading && (
-                      <div className="w-full flex justify-center py-2">
-                        <div className="px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                      <div className="w-full flex justify-center py-1 sm:py-1.5 md:py-2">
+                        <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
                           Chats before 7 days will be deleted automatically
                         </div>
                       </div>
@@ -943,15 +945,15 @@ function Messages() {
                     {!chatLoading && messages.map((message, index) => (
                       <div
                         key={message.id}
-                        className={`flex items-end gap-2 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${
+                        className={`flex items-end gap-1 sm:gap-1.5 md:gap-2 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 w-full ${
                           message.senderId === 0 ? "justify-end" : "justify-start"
                         }`}
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {message.senderId !== 0 && (
-                          <Avatar className="h-8 w-8 mt-1 ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110">
-                            <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold">
+                          <Avatar className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mt-1 ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110 flex-shrink-0">
+                            <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} className="w-full h-full object-cover" />
+                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold text-xs">
                               {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
@@ -971,8 +973,8 @@ function Messages() {
                           </div>
                         ) : */} 
                         {message.type === 'image' ? (
-                          <div className={`max-w-[68%] group`}>
-                            <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
+                          <div className={`max-w-[70%] sm:max-w-[65%] md:max-w-[60%] group`}>
+                             <div className={`relative rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.01] sm:hover:scale-[1.02] md:hover:scale-[1.03] hover:shadow-xl ${
                               message.senderId === 0 
                                 ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/25" 
                                 : "border border-gray-200/80 shadow-md shadow-gray-200/60"
@@ -980,36 +982,36 @@ function Messages() {
                                 <img 
                                   src={message.file} 
                                 alt={message.fileName || 'image'} 
-                                 className="max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                                 className="max-h-40 sm:max-h-48 md:max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
                                 onClick={() => setImagePreview({ open: true, url: message.file })}
                               />
                               {deletingMessageId === message.id && (
-                                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                                  <span className="text-sm text-foreground">Deleting...</span>
+                                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center gap-1 sm:gap-2">
+                                  <Loader2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 animate-spin text-purple-600" />
+                                  <span className="text-[10px] sm:text-xs md:text-sm text-foreground">Deleting...</span>
                                 </div>
                               )}
                             </div>
-                             <div className="flex justify-between items-center mt-1 gap-2">
-                              <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
+                             <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
+                              <p className={`text-[9px] sm:text-[10px] md:text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5 sm:gap-1">
                                 {/* Message Status Icons for images */}
                                 {message.senderId === 0 && (
                                   <div className="flex items-center">
                                     {message.status === 'sending' && (
-                                      <Clock className="h-3 w-3 text-purple-500 animate-pulse" />
+                                      <Clock className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-purple-500 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                      <Check className="h-3 w-3 text-purple-500" />
+                                      <Check className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-purple-500" />
                                     )}
                                     {message.status === 'delivered' && (
-                                      <CheckCheck className="h-3 w-3 text-purple-500" />
+                                      <CheckCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-purple-500" />
                                     )}
                                     {message.status === 'failed' && (
-                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                                        <span className="text-white text-[8px] font-bold">!</span>
+                                      <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                        <span className="text-white text-[6px] sm:text-[7px] md:text-[8px] font-bold">!</span>
                                       </div>
                                     )}
                                   </div>
@@ -1019,10 +1021,10 @@ function Messages() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-6 w-6 p-0 hover:bg-red-100 text-red-500 hover:scale-110"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 p-0 hover:bg-red-100 text-red-500 hover:scale-110 touch-manipulation"
                                     onClick={() => handleDeleteMessage(message.id)}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
                                   </Button>
                                 )}
                               </div>
@@ -1030,41 +1032,41 @@ function Messages() {
                           </div>
                         ) : (
                           <div
-                            className={`max-w-[68%] group relative transition-all duration-300 hover:scale-[1.02] ${
+                            className={`max-w-[70%] sm:max-w-[65%] md:max-w-[60%] group relative transition-all duration-300 hover:scale-[1.01] sm:hover:scale-[1.02] ${
                               message.senderId === 0
                                 ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40" 
                                 : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
-                            } rounded-2xl px-3 py-2.5 shadow-sm backdrop-blur-sm`}
+                            } rounded-lg sm:rounded-xl md:rounded-2xl px-2 sm:px-2 md:px-2.5 py-1 sm:py-1.5 md:py-2 shadow-sm backdrop-blur-sm`}
                           >
-                            <p className="leading-snug text-[13px] font-medium">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            <p className="leading-snug text-[11px] sm:text-[12px] md:text-[13px] font-medium break-words">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
                             {message.text && extractUrls(message.text).length > 0 && (
-                              <div className="mt-3">
+                              <div className="mt-1.5 sm:mt-2 md:mt-3">
                                 {extractUrls(message.text).map((u, i) => (
                                   <LinkCard key={`${message.id}-link-${i}`} url={u} />
                                 ))}
                               </div>
                             )}
                             {/* Deleting overlay only for images. None for text messages. */}
-                            <div className="flex justify-between items-center mt-1 gap-2">
-                              <p className={`text-[10px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
+                            <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
+                              <p className={`text-[8px] sm:text-[9px] md:text-[10px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5 sm:gap-1">
                                 {/* Message Status Icons */}
                                 {message.senderId === 0 && (
                                   <div className="flex items-center">
                                     {message.status === 'sending' && (
-                                      <Clock className="h-3 w-3 text-white/70 animate-pulse" />
+                                      <Clock className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-white/70 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                      <Check className="h-3 w-3 text-white/70" />
+                                      <Check className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-white/70" />
                                     )}
                                     {message.status === 'delivered' && (
-                                      <CheckCheck className="h-3 w-3 text-white/70" />
+                                      <CheckCheck className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 text-white/70" />
                                     )}
                                     {message.status === 'failed' && (
-                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                                        <span className="text-white text-[8px] font-bold">!</span>
+                                      <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                        <span className="text-white text-[6px] sm:text-[7px] md:text-[8px] font-bold">!</span>
                                       </div>
                                     )}
                                   </div>
@@ -1074,10 +1076,10 @@ function Messages() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-6 w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 p-0 hover:bg-white/20 text-white hover:scale-110 touch-manipulation"
                                     onClick={() => handleDeleteMessage(message.id)}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
                                   </Button>
                                 )}
                               </div>
@@ -1086,9 +1088,9 @@ function Messages() {
                         )}
                         
                         {message.senderId === 0 && (
-                          <Avatar className="h-8 w-8 mt-1 ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110">
-                            <AvatarImage src={message.senderImage || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold">Y</AvatarFallback>
+                          <Avatar className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 mt-1 ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110 flex-shrink-0">
+                            <AvatarImage src={message.senderImage || undefined} className="w-full h-full object-cover" />
+                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold text-xs">Y</AvatarFallback>
                           </Avatar>
                         )}
                       </div>
@@ -1098,7 +1100,7 @@ function Messages() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+                <div className="px-1 py-1 sm:px-2 sm:py-2 md:px-4 md:py-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 flex-none w-full sticky bottom-0 z-30" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                   <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -1107,13 +1109,15 @@ function Messages() {
                     className="hidden"
                   />
                   {pendingImage && (
-                    <div className="mb-3 flex items-center gap-3 p-2 rounded-md border bg-muted/40 max-w-xs">
-                      <img src={pendingImage.previewUrl} alt={pendingImage.name} className="h-10 w-10 object-cover rounded" />
+                    <div className="mb-1 sm:mb-2 md:mb-3 flex items-center gap-1.5 sm:gap-2 md:gap-3 p-1.5 sm:p-2 rounded-md border bg-muted/40 max-w-xs">
+                      <img src={pendingImage.previewUrl} alt={pendingImage.name} className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 object-cover rounded flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{pendingImage.name}</p>
-                        <p className="text-[11px] text-muted-foreground">Will send when you press Send</p>
+                        <p className="text-[10px] sm:text-xs font-medium truncate">{pendingImage.name}</p>
+                        <p className="text-[9px] sm:text-[10px] md:text-[11px] text-muted-foreground">Will send when you press Send</p>
                       </div>
-                      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setPendingImage(null)}>Remove</Button>
+                      <Button size="sm" variant="ghost" className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 p-0 touch-manipulation flex-shrink-0" onClick={() => setPendingImage(null)}>
+                        <span className="text-[10px] sm:text-xs">×</span>
+                      </Button>
                     </div>
                   )}
                   
@@ -1125,37 +1129,38 @@ function Messages() {
                     />
                   ) : ( */}
                   {true && (
-                    <div className="relative">
+                    <div className="relative w-full">
                       {showEmojiPicker && (
-                        <div className="absolute bottom-16 left-0 z-10">
+                        <div className="absolute bottom-10 sm:bottom-12 md:bottom-16 left-0 z-10">
                           <EmojiPicker 
                             onEmojiClick={handleEmojiClick}
-                            width={300}
-                            height={350}
+                            width={260}
+                            height={280}
+                            className="sm:w-[280px] sm:h-[320px] md:w-[300px] md:h-[350px]"
                           />
                         </div>
                       )}
                       
-                      <div className="flex gap-3 items-center">
+                      <div className="flex gap-1 sm:gap-2 md:gap-3 items-center w-full">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 text-muted-foreground hover:text-foreground touch-manipulation flex-shrink-0"
                           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
-                          <Smile className="h-5 w-5" />
+                          <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                         </Button>
                         
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 text-muted-foreground hover:text-foreground touch-manipulation flex-shrink-0"
                           onClick={handleAttachmentClick}
                         >
-                          <Paperclip className="h-5 w-5" />
+                          <Paperclip className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                         </Button>
                         
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative min-w-0">
                           <Input
                             placeholder="Type a message..."
                             value={newMessage}
@@ -1165,24 +1170,24 @@ function Messages() {
                                 handleSendMessage();
                               }
                             }}
-                            className="rounded-full pl-4 pr-16 h-12 text-base bg-gray-100 border-gray-200 focus:bg-white"
+                            className="rounded-full pl-2 sm:pl-3 md:pl-4 pr-10 sm:pr-12 md:pr-16 h-8 sm:h-9 md:h-12 text-xs sm:text-sm md:text-base bg-gray-100 border-gray-200 focus:bg-white touch-manipulation w-full"
                           />
                         </div>
                         
-                        <div className="flex gap-3">
+                        <div className="flex gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
                           {/* Voice recording button - commented out */}
                           {/* <Button 
                             onClick={() => setShowVoiceRecorder(true)} 
                             variant="ghost"
                             size="icon"
-                            className="h-12 w-12 rounded-full"
+                            className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full touch-manipulation"
                           >
-                            <Mic className="h-5 w-5" />
+                            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                           </Button> */}
                           
                           <Button 
                             onClick={handleSendMessage} 
-                            className={`rounded-full h-12 w-12 transition-all ${
+                            className={`rounded-full h-8 w-8 sm:h-9 sm:w-9 md:h-12 md:w-12 transition-all touch-manipulation flex-shrink-0 ${
                               newMessage.trim() || pendingImage 
                                 ? "bg-purple-500 hover:bg-purple-600 text-white" 
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -1190,7 +1195,7 @@ function Messages() {
                             size="icon"
                             disabled={!newMessage.trim() && !pendingImage}
                           >
-                            <Send className="h-5 w-5" />
+                            <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                           </Button>
                         </div>
                       </div>
