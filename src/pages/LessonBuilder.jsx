@@ -3010,6 +3010,31 @@ function LessonBuilder() {
             html = '<div class="text-red-500">Error loading audio content</div>';
           }
         }
+      } else if (block.type === 'video') {
+        // For video blocks, use the saved html_css content if available
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from video block properties
+          const videoUrl = block.videoUrl || block.details?.video_url || '';
+          const videoTitle = block.videoTitle || block.details?.caption || 'Video';
+          const videoDescription = block.videoDescription || block.details?.description || '';
+          
+          html = `
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+              <div class="space-y-4">
+                ${videoTitle ? `<h3 class="text-lg font-semibold text-gray-900">${videoTitle}</h3>` : ''}
+                ${videoDescription ? `<p class="text-sm text-gray-600">${videoDescription}</p>` : ''}
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <video controls style="width: 100%; height: auto; border-radius: 8px;">
+                    <source src="${videoUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </div>
+          `;
+        }
       } else if (block.type === 'youtube') {
         // Skip YouTube blocks in convertBlocksToHtml to prevent duplication
         // YouTube blocks are handled by their own custom rendering logic
@@ -3350,6 +3375,22 @@ function LessonBuilder() {
             htmlContent = block.html_css || blockContent;
             break;
 
+          case 'video':
+            // For video blocks, extract details from block properties
+            details = {
+              video_url: block.videoUrl || '',
+              caption: block.videoTitle || 'Video',
+              description: block.videoDescription || '',
+              videoTitle: block.videoTitle || 'Video',
+              videoDescription: block.videoDescription || '',
+              videoUrl: block.videoUrl || '',
+              uploadMethod: block.uploadMethod || 'url',
+              originalUrl: block.originalUrl || '',
+              title: block.videoTitle || 'Video'
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
           default:
             htmlContent = block.html_css || block.content || '';
             break;
@@ -3593,7 +3634,7 @@ function LessonBuilder() {
 
     // Generate HTML content for display
     const htmlContent = `
-      <video controls style="width: 100%; max-width: 600px; height: auto; border-radius: 8px;">
+      <video controls style="width: 100%;  height: auto; border-radius: 8px;">
         <source src="${finalVideoUrl}" type="video/mp4">
         Your browser does not support the video tag.
       </video>
@@ -5738,37 +5779,76 @@ function LessonBuilder() {
                                 </div>
                               </div>
                             )}
-                           
-                            {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
+
+                            {block.type === 'video' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle || block.details?.caption}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Video'}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Video
                                   </Badge>
                                 </div>
-                               
-                                {(block.videoDescription || block.details?.description) && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.videoDescription || block.details?.description}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <video
-                                      className="absolute top-0 left-0 w-full h-full"
-                                      controls
-                                      controlsList="nodownload"
-                                      preload="metadata"
-                                      key={block.id}
-                                    >
-                                      <source src={block.videoUrl || block.details?.video_url} type={block.videoFile?.type || 'video/mp4'} />
-                                      Your browser does not support the video tag.
-                                    </video>
-                                  </div>
-                                </div>
+                                
+                                {(() => {
+                                  // First try to get video URL from block properties (for newly created blocks)
+                                  let videoUrl = block.videoUrl || block.details?.video_url || '';
+                                  let videoTitle = block.videoTitle || block.details?.caption || 'Video';
+                                  let videoDescription = block.videoDescription || block.details?.description || '';
+                                  
+                                  console.log('Video block edit rendering:', {
+                                    blockId: block.id,
+                                    videoUrl,
+                                    videoTitle,
+                                    videoDescription,
+                                    blockDetails: block.details,
+                                    hasUrl: !!videoUrl
+                                  });
+                                  
+                                  // Check if we have a valid video URL
+                                  if (videoUrl && videoUrl.trim()) {
+                                    return (
+                                      <>
+                                        {videoDescription && (
+                                          <p className="text-sm text-gray-600 mb-3">{videoDescription}</p>
+                                        )}
+                                        
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <video controls className="w-full max-w-full" style={{ maxHeight: '400px' }} preload="metadata">
+                                            <source src={videoUrl} type="video/mp4" />
+                                            <source src={videoUrl} type="video/webm" />
+                                            <source src={videoUrl} type="video/ogg" />
+                                            Your browser does not support the video element.
+                                          </video>
+                                          
+                                          <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                            <Video className="h-3 w-3 mr-1" />
+                                            <span>{videoTitle}</span>
+                                          </div>
+                                        </div>
+                                      </>
+                                    );
+                                  } else {
+                                    // Fallback: Use html_css if video URL not found
+                                    console.log('No URL in video block, falling back to html_css');
+                                    if (block.html_css && block.html_css.trim()) {
+                                      return (
+                                        <div
+                                          className="max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">Video URL not found</p>
+                                          <p className="text-xs text-gray-400 mt-1">Block details: {JSON.stringify(block.details)}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                })()}
                               </div>
                             )}
-
 
                             {block.type === 'audio' && (
                               <div className="space-y-3">

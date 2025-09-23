@@ -913,20 +913,79 @@ const LessonPreview = () => {
                     )}
 
                     {/* Video Content */}
-                    {block.type === 'video' && block.videoUrl && (
-                      <div className="text-center">
-                        <video
-                          src={block.videoUrl}
-                          controls
-                          className="w-full max-w-3xl rounded-lg shadow-md mx-auto"
-                        />
-                        {block.videoTitle && (
-                          <h3 className="text-lg font-semibold mt-4 text-gray-800">{block.videoTitle}</h3>
+                    {block.type === 'video' && (
+                      <>
+                        {(() => {
+                          console.log('Rendering video block in LessonPreview:', {
+                            id: block.id,
+                            videoUrl: block.videoUrl,
+                            detailsVideoUrl: block.details?.video_url,
+                            videoTitle: block.videoTitle || block.details?.caption,
+                            hasHtmlCss: !!block.htmlCss,
+                            htmlCssLength: block.htmlCss ? block.htmlCss.length : 0,
+                            renderingMethod: block.htmlCss && block.htmlCss.trim() ? 'html_css' : 'fallback'
+                          });
+                          return null;
+                        })()}
+                        {block.htmlCss && block.htmlCss.trim() ? (
+                          <div dangerouslySetInnerHTML={{ 
+                            __html: block.htmlCss.replace(/max-width:\s*600px;?/gi, '').replace(/max-width:\s*\d+px;?/gi, '') 
+                          }} />
+                        ) : (
+                          (() => {
+                            // Get video URL from multiple sources
+                            const videoUrl = block.videoUrl || block.details?.video_url || '';
+                            const videoTitle = block.videoTitle || block.details?.caption || '';
+                            const videoDescription = block.videoDescription || block.details?.description || '';
+                            
+                            if (videoUrl && videoUrl.trim()) {
+                              return (
+                                <div className="mb-8 -mx-4 sm:-mx-6 lg:-mx-8">
+                                  {videoTitle && (
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-4 px-4 sm:px-6 lg:px-8">{videoTitle}</h3>
+                                  )}
+                                  {videoDescription && (
+                                    <p className="text-sm text-gray-600 mb-3 px-4 sm:px-6 lg:px-8">{videoDescription}</p>
+                                  )}
+                                  
+                                  <div className="bg-gray-50 p-4">
+                                    <video 
+                                      controls 
+                                      className="w-full" 
+                                      style={{ 
+                                        maxHeight: '70vh',
+                                        minHeight: '300px'
+                                      }} 
+                                      preload="metadata"
+                                    >
+                                      <source src={videoUrl} type="video/mp4" />
+                                      <source src={videoUrl} type="video/webm" />
+                                      <source src={videoUrl} type="video/ogg" />
+                                      Your browser does not support the video element.
+                                    </video>
+                                    
+                                    <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                      <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                      </svg>
+                                      <span>{videoTitle}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="bg-gray-50 rounded-lg p-6">
+                                  <p className="text-gray-500 text-center">Video content not available</p>
+                                  <p className="text-xs text-gray-400 mt-2 text-center">
+                                    Debug: videoUrl={videoUrl}, details={JSON.stringify(block.details)}
+                                  </p>
+                                </div>
+                              );
+                            }
+                          })()
                         )}
-                        {block.videoDescription && (
-                          <p className="text-gray-600 mt-2">{block.videoDescription}</p>
-                        )}
-                      </div>
+                      </>
                     )}
 
                     {/* YouTube Content */}
