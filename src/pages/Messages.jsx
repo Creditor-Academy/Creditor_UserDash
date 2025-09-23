@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, Users, Crown, X } from "lucide-react";
+import CreateGroupButton from "@/components/messages/CreateGroupButton";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -797,27 +798,12 @@ function Messages() {
             <div className="p-3 border-b flex justify-between items-center">
               <h2 className="text-lg font-semibold">Messages</h2>
               <div className="flex items-center gap-2">
-                {/* Create Group Button */}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={`h-8 w-8 ${userHasGroup ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title="Create Group"
-                        onClick={() => !userHasGroup && setShowCreateGroupModal(true)}
-                        disabled={userHasGroup}
-                      >
-                        <Users className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{userHasGroup ? "You can only create one group" : "Create Group"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
+                {/* Create Group Button - encapsulated component */}
+                <CreateGroupButton
+                  className="h-8 w-8"
+                  onCreated={(group) => setFriends(prev => [group, ...prev])}
+                />
+
                 {/* New Chat Button */}
                 <Dialog>
                   <DialogTrigger asChild>
@@ -1400,144 +1386,7 @@ function Messages() {
         </DialogContent>
       </Dialog>
 
-      {/* Create Group Modal */}
-      <Dialog open={showCreateGroupModal} onOpenChange={setShowCreateGroupModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Create New Group
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Group Name */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Group Name *</label>
-              <Input
-                placeholder="Enter group name..."
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                className="h-9"
-              />
-            </div>
-
-            {/* Group Description */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description (Optional)</label>
-              <Input
-                placeholder="Enter group description..."
-                value={groupDescription}
-                onChange={(e) => setGroupDescription(e.target.value)}
-                className="h-9"
-              />
-            </div>
-
-            {/* Member Search */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Add Members *</label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users to add..."
-                  className="pl-8 h-9 text-sm"
-                  value={groupSearchQuery}
-                  onChange={(e) => setGroupSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Selected Members */}
-            {selectedGroupMembers.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Selected Members ({selectedGroupMembers.length})</label>
-                <div className="flex flex-wrap gap-2">
-                  {selectedGroupMembers.map(memberId => {
-                    const member = allUsers.find(u => u.id === memberId);
-                    return member ? (
-                      <div key={memberId} className="flex items-center gap-2 bg-primary/10 text-primary px-2 py-1 rounded-full text-sm">
-                        <Avatar className="h-5 w-5">
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback className="text-xs">{member.name?.[0] || 'U'}</AvatarFallback>
-                        </Avatar>
-                        <span>{member.name}</span>
-                        <button
-                          onClick={() => handleGroupMemberSelect(memberId)}
-                          className="text-primary/70 hover:text-primary"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Available Users */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Available Users</label>
-              <ScrollArea className="h-48 border rounded-md">
-                <div className="space-y-1 p-2">
-                  {filteredUsers.map((user) => (
-                    <div 
-                      key={user.id}
-                      className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-accent"
-                      onClick={() => handleGroupMemberSelect(user.id)}
-                    >
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{user.name}</div>
-                        <div className="text-xs text-muted-foreground">{user.role || 'User'}</div>
-                      </div>
-                      <Checkbox 
-                        checked={selectedGroupMembers.includes(user.id)}
-                        onChange={() => handleGroupMemberSelect(user.id)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowCreateGroupModal(false);
-                  setGroupName("");
-                  setGroupDescription("");
-                  setSelectedGroupMembers([]);
-                  setGroupSearchQuery("");
-                }}
-                disabled={isCreatingGroup}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateGroup}
-                disabled={isCreatingGroup || !groupName.trim() || selectedGroupMembers.length === 0}
-                className="flex items-center gap-2"
-              >
-                {isCreatingGroup ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Users className="h-4 w-4" />
-                    Create Group
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      
 
       {/* Delete Message Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
