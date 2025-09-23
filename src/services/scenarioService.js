@@ -100,6 +100,32 @@ export async function getScenarioById(scenarioId) {
 }
 
 /**
+ * Get specific scenario with full details including decisions and choices
+ * @param {string} scenarioId - The ID of the scenario
+ * @returns {Promise<Object>} Complete scenario data with decisions
+ */
+export async function getSpecificScenario(scenarioId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/getspecificscenario`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch specific scenario: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error fetching specific scenario:', error);
+    throw error;
+  }
+}
+
+/**
  * Save scenario decisions
  * @param {string} scenarioId - The ID of the scenario
  * @param {Array} decisions - Array of decision objects
@@ -231,6 +257,35 @@ export async function getModuleScenarios(moduleId) {
     if (data && data.data && Array.isArray(data.data)) return data.data;
     if (Array.isArray(data)) return data;
     return [];
+  } catch (error) {
+    console.error('Error fetching module scenarios:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get scenarios for a specific module using the new API endpoint
+ * @param {string} moduleId - The ID of the module
+ * @returns {Promise<Array>} Array of scenario objects
+ */
+export async function getModuleScenariosNew(moduleId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${moduleId}/allscenarios`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch module scenarios: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
   } catch (error) {
     console.error('Error fetching module scenarios:', error);
     throw error;

@@ -5,14 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, Clock, GraduationCap, ChevronDown, BookOpen, Loader2, CheckCircle, XCircle, Award, BarChart2, HelpCircle } from "lucide-react";
+import { ChevronLeft, Clock, GraduationCap, ChevronDown, BookOpen, Loader2, CheckCircle, XCircle, Award, BarChart2, HelpCircle, Play, Users } from "lucide-react";
 import { fetchCourseModules } from "@/services/courseService";
 import { getModuleQuizzes, getQuizRemainingAttempts, getQuizResults, getUserLatestQuizAttempt } from "@/services/quizService";
 import { fetchQuizCorrectAnswers } from "@/services/quizServices";
+import { getModuleScenariosNew } from "@/services/scenarioService";
 import LastAttemptModal from "@/components/LastAttemptModal";
 import QuizCorrectAns from "@/components/QuizCorrectAns";
 
-// Assessment sections - only Quiz for now
+// Assessment sections - Quiz and Scenarios
 const assessmentSections = [
   {
     id: "quiz",
@@ -20,6 +21,13 @@ const assessmentSections = [
     icon: <GraduationCap size={20} className="text-indigo-600" />,
     description: "Test your knowledge with quizzes and track your progress",
     color: "bg-indigo-50 border-indigo-200"
+  },
+  {
+    id: "scenario",
+    title: "Interactive Scenarios",
+    icon: <Users size={20} className="text-emerald-600" />,
+    description: "Practice decision-making with realistic scenarios",
+    color: "bg-emerald-50 border-emerald-200"
   }
 ];
 
@@ -29,10 +37,12 @@ function ModuleAssessmentsView() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Set quiz section to be open by default
-  const [openSections, setOpenSections] = useState({ quiz: true });
+  const [openSections, setOpenSections] = useState({ quiz: true, scenario: true });
   const [module, setModule] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
   const [filteredQuizzes, setFilteredQuizzes] = useState([]);
+  const [scenarios, setScenarios] = useState([]);
+  const [filteredScenarios, setFilteredScenarios] = useState([]);
   const [quizAttempts, setQuizAttempts] = useState({});
   const [error, setError] = useState("");
   const [isLastAttemptOpen, setIsLastAttemptOpen] = useState(false);
@@ -48,14 +58,16 @@ function ModuleAssessmentsView() {
       try {
         console.log("Fetching data for module:", moduleId, "course:", courseId);
         
-        // Fetch both module and quizzes in parallel
-        const [modules, quizzesResponse] = await Promise.all([
+        // Fetch module, quizzes, and scenarios in parallel
+        const [modules, quizzesResponse, scenariosResponse] = await Promise.all([
           fetchCourseModules(courseId),
-          getModuleQuizzes(moduleId)
+          getModuleQuizzes(moduleId),
+          getModuleScenariosNew(moduleId)
         ]);
         
         console.log("Modules response:", modules);
         console.log("Quizzes response:", quizzesResponse);
+        console.log("Scenarios response:", scenariosResponse);
         
         const foundModule = modules.find(m => m.id === moduleId);
         if (foundModule) {
@@ -77,9 +89,18 @@ function ModuleAssessmentsView() {
           setQuizzes([]);
           setFilteredQuizzes([]);
         }
+        
+        // Handle scenarios response
+        if (Array.isArray(scenariosResponse)) {
+          setScenarios(scenariosResponse);
+          setFilteredScenarios(scenariosResponse);
+        } else {
+          setScenarios([]);
+          setFilteredScenarios([]);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
-        setError("Failed to load module and quizzes");
+        setError("Failed to load module, quizzes, and scenarios");
       } finally {
         setIsLoading(false);
       }
@@ -527,6 +548,98 @@ function ModuleAssessmentsView() {
                                   </div>
                                 );
                               })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {section.id === 'scenario' && (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold text-lg text-gray-800">Available Scenarios</h3>
+                          <span className="text-sm text-gray-500">
+                            {filteredScenarios.length} {filteredScenarios.length === 1 ? 'scenario' : 'scenarios'} available
+                          </span>
+                        </div>
+                        
+                        {filteredScenarios.length === 0 ? (
+                          <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
+                            <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium text-gray-700">No scenarios available</h3>
+                            <p className="text-muted-foreground mt-1 max-w-md mx-auto">
+                              Check back later for interactive scenarios or contact your instructor.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                            {filteredScenarios.map((scenario, index) => (
+                              <div key={scenario.id || index} className="block group">
+                                <Card className="h-64 transition-all duration-300 border overflow-hidden border-gray-200 hover:shadow-xl cursor-pointer group hover:border-emerald-400 hover:scale-[1.02]">
+  <CardContent className="p-0 relative h-full">
+    {/* Full Background Image */}
+    <div 
+      className="absolute inset-0 bg-cover bg-center"
+      style={{
+        backgroundImage: `url(${scenario.background_url || 'https://via.placeholder.com/400x200?text=Scenario+Background'})`
+      }}
+    >
+      {/* Darker Overlay for better text readability */}
+      <div className="absolute inset-0 bg-black bg-opacity-30 transition-opacity duration-300 group-hover:bg-opacity-60"></div>
+    </div>
+    
+    {/* Attempts Counter - Top Right */}
+    <div className="absolute top-4 right-4 z-10">
+      <Badge className="bg-white/90 text-gray-800 hover:bg-white border-0 shadow-md">
+        <Award size={12} className="mr-1" />
+        {scenario.max_attempts || 3} attempts
+      </Badge>
+    </div>
+    
+     {/* Content Container */}
+     <div className="relative z-10 h-full flex items-center px-6 pt-10"> 
+      {/* Avatar - Left Side */}
+       <div className="flex-shrink-0 mr-3">
+        <div className="w-44 h-48 relative">
+          <img
+            src={
+              scenario.avatar_url && scenario.avatar_url.trim() !== "" 
+                ? scenario.avatar_url 
+                : "https://placehold.co/120x120/png"
+            } 
+            alt="Scenario Avatar"
+            className="w-full h-full object-contain bg-transparent"
+          />
+        </div>
+      </div>
+
+       {/* Title, Description and Button - Right Side (Speech bubble) */}
+       <div className="flex-1 flex flex-col justify-between h-full">
+         <div className="relative max-w-[80%] md:max-w-[75%]">
+           <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-5">
+             <h4 className="font-bold text-xl mb-1 text-gray-900 line-clamp-2">{scenario.title}</h4>
+             <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">{scenario.description}</p>
+             <div className="absolute -left-2 top-6 w-4 h-4 bg-white/90 rotate-45 shadow-md"></div>
+           </div>
+         </div>
+        
+        {/* Start Button */}
+       
+ <div className="absolute bottom-4 right-4 z-20">
+  <Button
+    className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-110"
+    onClick={() => navigate(`/dashboard/scenario/${scenario.id}?module=${moduleId}`)}
+  >
+    <Play size={18} className="ml-1" /> {/* slight shift so arrow looks centered */}
+  </Button>
+</div>
+
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
