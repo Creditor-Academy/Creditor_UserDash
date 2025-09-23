@@ -113,6 +113,48 @@ export const CreditsProvider = ({ children }) => {
     }
   }, [userProfile?.id]);
 
+  // Auto-enroll/unenroll Master Class courses when membership changes
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!userProfile?.id) return;
+        const { fetchAllCourses, fetchUserCourses, enrollUserInCourse, unenrollUser } = await import('../services/courseService');
+        // Match a few common variants to be resilient to punctuation/casing differences
+        const TARGET_TITLES = [
+          'formation of business',
+          'tier one optimizing',
+          'tier 1 optimizing',
+          'optimizing your business credit profile',
+          'optimizing business credit profile'
+        ];
+        const all = await fetchAllCourses();
+        const mine = await fetchUserCourses();
+        const myIds = new Set((mine || []).map(c => c.id));
+        const normalize = (s) => (s || '').toLowerCase().replace(/[:\-]/g, ' ').replace(/\s+/g, ' ').trim();
+        const targets = (all || []).filter(c => {
+          const t = normalize(c.title || c.name || '');
+          return TARGET_TITLES.some(x => t.includes(normalize(x)));
+        });
+        if (membership?.isActive) {
+          for (const course of targets) {
+            if (!myIds.has(course.id)) {
+              try { await enrollUserInCourse(course.id, userProfile.id); } catch {}
+            }
+          }
+        } else {
+          for (const course of targets) {
+            if (myIds.has(course.id)) {
+              try { await unenrollUser(course.id, userProfile.id); } catch {}
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[CreditsContext] Master Class auto-enrollment sync failed', e);
+      }
+    };
+    run();
+  }, [membership?.isActive, userProfile?.id]);
+
   const addTransaction = (type, amount, metadata = {}) => {
     const transaction = {
       id: Date.now() + Math.random(),

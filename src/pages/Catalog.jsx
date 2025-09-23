@@ -29,7 +29,8 @@ export function CatalogPage() {
   const [unlockedModules, setUnlockedModules] = useState([]);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { userProfile } = useUser();
-  const { balance: creditsBalance, credits: creditsAlt, unlockContent, refreshBalance } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
+  const { balance: creditsBalance, credits: creditsAlt, unlockContent, refreshBalance, membership } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
+  const [showMembershipRequiredModal, setShowMembershipRequiredModal] = useState(false);
 
   useEffect(() => {
     const fetchCatalogs = async () => {
@@ -389,7 +390,7 @@ export function CatalogPage() {
                  catalog.courseCount || 0
                 )} courses</span>
             </span>
-            {catalogPrice > 0 && (
+            {catalogPrice > 0 && !isMasterClass(catalog) && (
               <span className="flex items-center gap-1 text-blue-600 font-medium">
                 <ShoppingCart className="h-4 w-4" />
                 {catalogPrice}
@@ -418,18 +419,38 @@ export function CatalogPage() {
               </Link>
             </Button>
             
-            {catalogPrice > 0 && !isEnrolled && (
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleBuyCatalogClick(catalog);
-                }}
-                className="h-11 px-4 rounded-lg text-sm font-semibold shadow-sm border transition-all duration-200 bg-white text-green-700 border-green-300 hover:bg-green-50"
-              >
-                Buy Catalog
-              </Button>
-            )}
+            {(() => {
+              if (isMasterClass(catalog)) {
+                if (membership?.isActive) return null; // auto-enrolled; hide buy
+                return (
+                  <Button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowMembershipRequiredModal(true);
+                    }}
+                    className="h-11 px-4 rounded-lg text-sm font-semibold shadow-sm border transition-all duration-200 bg-white text-blue-700 border-blue-300 hover:bg-blue-50"
+                  >
+                    Buy Catalog
+                  </Button>
+                );
+              }
+              if (catalogPrice > 0 && !isEnrolled) {
+                return (
+                  <Button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleBuyCatalogClick(catalog);
+                    }}
+                    className="h-11 px-4 rounded-lg text-sm font-semibold shadow-sm border transition-all duration-200 bg-white text-green-700 border-green-300 hover:bg-green-50"
+                  >
+                    Buy Catalog
+                  </Button>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       </div>
@@ -808,6 +829,30 @@ export function CatalogPage() {
           onClose={() => setShowCreditsModal(false)}
           balance={Number.isFinite(creditsBalance) ? creditsBalance : undefined}
         />
+      )}
+
+      {/* Membership required modal for Master Class */}
+      {showMembershipRequiredModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowMembershipRequiredModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-6">
+            <div className="mb-2">
+              <h3 className="text-lg font-semibold text-gray-900">Membership Required</h3>
+            </div>
+            <p className="text-sm text-gray-700 mb-4">
+              To access the Master Class catalog, you need an active membership. With an active membership, this catalog is included at no additional cost.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowMembershipRequiredModal(false)} className="px-4 py-2 rounded-md border hover:bg-gray-50 text-sm">Cancel</button>
+              <button
+                onClick={() => { setShowMembershipRequiredModal(false); setShowCreditsModal(true); }}
+                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              >
+                Buy Membership
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

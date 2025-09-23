@@ -732,7 +732,7 @@ const CatelogCourses = () => {
                           </div>
                           
                           {/* Course Price */}
-                          {!isAccessible && canBuyCourse(course) && (
+                          {!isAccessible && canBuyCourse(course) && (catalog?.name || '').toLowerCase().includes('master class') === false && (
                             <div className="flex items-center justify-between mb-3">
                               <span className="flex items-center gap-1.5 text-sm font-medium text-green-600">
                                 <ShoppingCart size={14} />
@@ -793,7 +793,7 @@ const CatelogCourses = () => {
                              Continue Learning
                            </Button>
                          </Link>
-                       ) : canBuyCourse(course) ? (
+                       ) : (canBuyCourse(course) && (catalog?.name || '').toLowerCase().includes('master class') === false) ? (
                         <div className="flex gap-2 flex-nowrap">
                           <Button 
                             className="flex-1 h-9 px-2 bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap text-[12px]"

@@ -52,6 +52,25 @@ export async function fetchUserCourses(withModules = false) {
   return data.data;
 }
 
+// Enroll a single user into a course
+export async function enrollUserInCourse(courseId, userId) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/addLearnerToCourse`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+    body: JSON.stringify({ course_id: courseId, learnerIds: [userId] }),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+    throw new Error(errorData.message || `Failed to enroll user (${response.status})`);
+  }
+  const data = await response.json();
+  return data;
+}
+
 export async function createCourse(courseData) {
   const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/createCourse`, {
     method: 'POST',

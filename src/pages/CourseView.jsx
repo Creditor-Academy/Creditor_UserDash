@@ -442,7 +442,7 @@ export function CourseView() {
                     </div>
                     
                     {/* Course Purchase Section */}
-                    {!isEnrolled && canBuyCourse(courseDetails) && (
+                      {!isEnrolled && canBuyCourse(courseDetails) && (courseDetails?.catalogName || '').toLowerCase().includes('master class') === false && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
