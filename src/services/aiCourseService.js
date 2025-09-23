@@ -398,7 +398,8 @@ export async function createCompleteAICourse(courseData) {
           description: moduleData.description,
           order: i + 1,
           estimated_duration: 60,
-          module_status: 'PUBLISHED'
+          module_status: 'PUBLISHED',
+          price: 0 // Default price for AI-generated modules
         };
         
         // Retry logic for module creation

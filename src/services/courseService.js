@@ -817,7 +817,7 @@ export async function createModule(courseId, moduleData) {
         errorData = { message: errorText || 'Unknown error' };
       }
       
-      throw new Error(errorData.message || errorText || `Failed to create module (${response.status})`);
+      throw new Error(errorData.errorMessage || errorData.message || errorText || `Failed to create module (${response.status})`);
     }
 
     const data = await response.json();
