@@ -722,23 +722,10 @@ export function CourseView() {
               <div className="text-sm text-gray-600 mb-3">
                 {(() => {
                   const description = confirmUnlock.module.description || "Individual lesson from this course";
-                  const maxLength = 200; // Character limit for truncated description
-                  
-                  if (description.length <= maxLength) {
-                    return description;
-                  }
-                  
-                  return (
-                    <div>
-                      {isDescriptionExpanded ? description : `${description.substring(0, maxLength)}...`}
-                      <button
-                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                        className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
-                      >
-                        {isDescriptionExpanded ? 'View Less' : 'View More'}
-                      </button>
-                    </div>
-                  );
+                  const maxLength = 200;
+                  return description.length <= maxLength
+                    ? description
+                    : `${description.substring(0, maxLength)}.........`;
                 })()}
               </div>
               
@@ -857,23 +844,10 @@ export function CourseView() {
               <div className="text-sm text-gray-600 mb-3">
                 {(() => {
                   const description = selectedCourseToBuy.description || "Complete course with multiple modules";
-                  const maxLength = 200; // Character limit for truncated description
-                  
-                  if (description.length <= maxLength) {
-                    return description;
-                  }
-                  
-                  return (
-                    <div>
-                      {isDescriptionExpanded ? description : `${description.substring(0, maxLength)}...`}
-                      <button
-                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                        className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
-                      >
-                        {isDescriptionExpanded ? 'View Less' : 'View More'}
-                      </button>
-                    </div>
-                  );
+                  const maxLength = 200;
+                  return description.length <= maxLength
+                    ? description
+                    : `${description.substring(0, maxLength)}.........`;
                 })()}
               </div>
               
