@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight, Lock, Sparkles } from "lucide-react";
+import { BookOpen, Clock, Filter, Search, Award, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
 import { getCourseTrialStatus } from '../utils/trialUtils';
@@ -281,13 +281,6 @@ export function Courses() {
             <h1 className="text-2xl sm:text-3xl font-bold">My Learning</h1>
             
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <Link to="/ai-course-creator">
-                <Button variant="default" className="bg-purple-600 hover:bg-purple-700">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Create AI Course
-                </Button>
-              </Link>
-              
               <div className="relative flex-1 sm:flex-none sm:w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input

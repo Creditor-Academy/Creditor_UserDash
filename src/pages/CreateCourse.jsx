@@ -12,6 +12,7 @@ import CreateCourseOptions from "../components/courses/CreateCourseOptions";
 import AICourseSuccessModal from "../components/courses/AICourseSuccessModal";
 import AICourseOutlineModal from "../components/courses/AICourseOutlineModal";
 import AICourseCreationPanel from "../components/courses/AICourseCreationPanel";
+import AICourseSystemTest from "../components/courses/AICourseSystemTest";
 
 const CreateCourse = ({ onCourseCreated }) => {
   const {
@@ -47,6 +48,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
   const [showCreateModuleDialog, setShowCreateModuleDialog] = useState(false);
+  const [showSystemTest, setShowSystemTest] = useState(false);
   const [createdAICourse, setCreatedAICourse] = useState(null);
   
   // Selected items
@@ -228,13 +230,21 @@ const CreateCourse = ({ onCourseCreated }) => {
           <h2 className="text-2xl font-bold text-gray-900">Course Management</h2>
           <p className="text-gray-600 mt-1">Create and manage your courses</p>
         </div>
-        <button
-          onClick={() => setShowCreateOptions(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create Course
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowSystemTest(true)}
+            className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+          >
+            🧪 Test AI System
+          </button>
+          <button
+            onClick={() => setShowCreateOptions(true)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Create Course
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -384,6 +394,28 @@ const CreateCourse = ({ onCourseCreated }) => {
           handleViewModules(course.id);
         }}
       />
+
+      {/* AI System Test Modal */}
+      {showSystemTest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">AI Course System Test Suite</h2>
+              <button
+                onClick={() => setShowSystemTest(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              <AICourseSystemTest />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

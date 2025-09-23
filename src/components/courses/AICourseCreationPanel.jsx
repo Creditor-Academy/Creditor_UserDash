@@ -20,10 +20,13 @@ import {
   Book
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import aiCourseService from '../../services/aiCourseService';
+import { 
+  generateAICourseOutline, 
+  createCompleteAICourse, 
+  generateAndUploadCourseImage 
+} from '../../services/aiCourseService';
 import { uploadImage } from '@/services/imageUploadService';
 import AILessonCreator from './AILessonCreator';
-import { createCourse, createAIModulesAndLessons } from '../../services/courseService';
 
 const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [activeTab, setActiveTab] = useState('outline');
@@ -151,7 +154,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         sourceContent: sourceContent
       };
       
-      const result = await aiCourseService.generateCourseOutline(courseDataWithContent);
+      const result = await generateAICourseOutline(courseDataWithContent);
       if (result.success) {
         setAiOutline(result.data);
         setGeneratedContent(prev => ({
@@ -187,16 +190,16 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       // Create a more descriptive prompt based on course title if no prompt is provided
       const prompt = aiImagePrompt.trim() || `Professional course thumbnail for "${courseData.title}" - educational, modern, clean design`;
       
-      const response = await aiCourseService.generateCourseImage(prompt, {
+      const response = await generateAndUploadCourseImage(prompt, {
         style: 'realistic',
         size: '1024x1024'
       });
 
       if (response.success) {
-        setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
+        setCourseData(prev => ({ ...prev, thumbnail: response.data.s3Url }));
         setAiImageError("");
         // Show success message
-        alert("AI thumbnail generated successfully!");
+        alert("AI thumbnail generated and uploaded to S3 successfully!");
       } else {
         setAiImageError(response.error || "Failed to generate AI image");
       }
@@ -227,64 +230,48 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     }
 
     try {
-      // Use the existing createAICourse function from courseService
-      const { createAICourse, createAIModulesAndLessons } = await import('../../services/courseService');
+      console.log('Creating complete AI course with deployed backend APIs...');
       
-      // Create the course first using the existing AI course creation function
-      const coursePayload = {
+      // Prepare course data for the new backend-integrated service
+      const completeAICourseData = {
         title: courseData.title.trim(),
         description: courseData.description.trim(),
-        objectives: courseData.objectives?.trim() || 'Learn new skills and concepts',
+        subject: courseData.subject?.trim() || courseData.title.trim(),
+        targetAudience: courseData.targetAudience?.trim() || 'General learners',
+        difficulty: courseData.difficulty || 'beginner',
         duration: courseData.duration?.trim() || '4 weeks',
+        learningObjectives: courseData.objectives?.trim() || 'Learn new skills and concepts',
         max_students: 100,
         price: '0',
-        thumbnail: courseData.thumbnail || null,
-        references: uploadedFiles.map(f => ({ name: f.name, url: f.url, type: f.type }))
+        thumbnail: courseData.thumbnail || null
       };
 
-      console.log('Creating AI course with payload:', coursePayload);
+      console.log('Creating AI course with payload:', completeAICourseData);
       
-      // Use the existing createAICourse function
-      const createdCourse = await createAICourse(coursePayload);
+      // Use the new backend-integrated service to create complete course
+      const result = await createCompleteAICourse(completeAICourseData);
       
-      console.log('Course created successfully:', createdCourse);
-      
-      // If we have AI-generated modules, create them using the existing function
-      if (aiOutline && aiOutline.modules && aiOutline.modules.length > 0) {
-        console.log('Creating AI modules and lessons...');
-        
-        // Transform the AI outline to match the expected format
-        const outlines = [{
-          modules: aiOutline.modules.map((module, index) => ({
-            title: module.module_title || module.title || `Module ${index + 1}`,
-            description: module.module_description || module.description || '',
-            lessons: module.lesson ? [{
-              title: module.lesson.lesson_title || 'Lesson',
-              introduction: module.lesson.lesson_intro || '',
-              content: module.lesson.lesson_content || [],
-              examples: module.lesson.examples || [],
-              summary: module.lesson.summary || '',
-              duration: module.lesson.duration || '15 min'
-            }] : (module.lessons || [])
-          }))
-        }];
-        
-        // Create modules and lessons using the existing function
-        const moduleResult = await createAIModulesAndLessons(createdCourse.data.id, outlines);
-        console.log('Modules and lessons created:', moduleResult);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create complete AI course');
       }
       
-      // Notify parent component (pass raw course object for hook consumers)
+      console.log('Complete AI course created successfully:', result.data);
+      
+      // Notify parent component
       if (onCourseCreated) {
-        const courseObj = createdCourse?.data || createdCourse;
+        const courseObj = result.data.course?.data || result.data.course;
         onCourseCreated(courseObj);
       }
       
       // Close the panel
       onClose();
       
-      // Show success message
-      alert(`Course "${courseData.title}" created successfully with ${aiOutline?.modules?.length || 0} modules!`);
+      // Show detailed success message
+      alert(`Course "${courseData.title}" created successfully!\n\n` +
+            `✅ Course: Created\n` +
+            `✅ Modules: ${result.data.totalModules} created\n` +
+            `✅ Lessons: ${result.data.totalLessons} created\n\n` +
+            `All data has been saved to your deployed backend database.`);
     } catch (error) {
       console.error('Failed to save AI course:', error);
       alert('Failed to save course: ' + error.message);

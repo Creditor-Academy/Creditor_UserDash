@@ -13,7 +13,7 @@ import {
   Camera
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import bytezAPI from '../../services/bytezAPI';
+import { generateAndUploadCourseImage } from '../../services/aiCourseService';
 import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
 
 const AIImageGenerator = ({ onFeatureUse, usageInfo }) => {
@@ -54,46 +54,29 @@ const AIImageGenerator = ({ onFeatureUse, usageInfo }) => {
     const requestId = Date.now() + Math.random();
     
     try {
-      // Start the API call without timeout initially
-      const apiCall = bytezAPI.generateImage(prompt, { style, size });
+      // Use the new backend-integrated service for image generation and S3 upload
+      const result = await generateAndUploadCourseImage(prompt, { style, size });
       
-      // Add a longer timeout (60 seconds) but don't reject immediately
-      const timeoutPromise = new Promise((resolve) => 
-        setTimeout(() => {
-          console.log('⏰ Request taking longer than expected, showing placeholder...');
-          resolve({ isTimeout: true });
-        }, 15000) // 15 seconds for initial feedback
-      );
-
-      const result = await Promise.race([apiCall, timeoutPromise]);
-      
-      if (result.isTimeout) {
-        // Show loading state instead of placeholder image
-        const loadingImage = {
+      if (result.success) {
+        console.log('🎉 Image generated and uploaded to S3:', result.data);
+        
+        const newImage = {
           id: requestId,
           prompt,
           style,
           size,
-          url: null, // No URL for loading state
-          createdAt: new Date().toISOString(),
-          isLoading: true
+          url: result.data.s3Url, // Use S3 URL instead of original URL
+          originalUrl: result.data.originalUrl,
+          fileName: result.data.fileName,
+          fileSize: result.data.fileSize,
+          createdAt: result.data.createdAt,
+          isLoading: false
         };
 
-        console.log('🔄 Adding loading state while waiting:', loadingImage);
-        setGeneratedImages(prev => [loadingImage, ...prev]);
-        
-        // Continue waiting for the real result in background
-        apiCall.then(response => {
-          console.log('🎉 Late response received:', response);
-          handleSuccessfulGeneration(response, requestId);
-        }).catch(error => {
-          console.error('❌ Background generation failed:', error);
-        });
-        
+        setGeneratedImages(prev => [newImage, ...prev]);
+        console.log('✅ Image added to gallery:', newImage);
       } else {
-        // Got result within timeout
-        console.log('📸 Bytez API response:', result);
-        handleSuccessfulGeneration(result, requestId);
+        throw new Error(result.error || 'Failed to generate and upload image');
       }
 
     } catch (error) {

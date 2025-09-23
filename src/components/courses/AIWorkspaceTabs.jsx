@@ -13,7 +13,11 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import aiCourseService from '../../services/aiCourseService';
+import { 
+  generateAndUploadCourseImage, 
+  summarizeContent, 
+  searchCourseContent 
+} from '../../services/aiCourseService';
 
 // Images Tab Component
 export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
@@ -26,9 +30,15 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
     
     setIsGenerating(true);
     try {
-      const result = await aiCourseService.generateCourseImage(prompt, { style });
+      const result = await generateAndUploadCourseImage(prompt, { style });
       if (result.success) {
-        setImages(prev => [result.data, ...prev]);
+        const imageData = {
+          ...result.data,
+          url: result.data.s3Url, // Use S3 URL for display
+          prompt: prompt,
+          style: style
+        };
+        setImages(prev => [imageData, ...prev]);
         setPrompt('');
       }
     } catch (error) {

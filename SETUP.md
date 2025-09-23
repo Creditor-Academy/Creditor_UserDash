@@ -28,9 +28,9 @@ FRONTEND_URL=http://localhost:3000
 The application uses a generic AI service interface that can work with multiple providers.
 
 **For Development:**
-- Set `AI_API_KEY` to your AI service key
-- Configure model preferences in `backend/config/aiConfig.js`
-- All AI implementation details are hidden from frontend
+- Set `VITE_BYTEZ_KEY` to your Bytez AI service key in `.env.development`
+- All AI implementation details are handled by the deployed backend
+- Frontend uses deployed backend APIs via `VITE_API_BASE_URL`
 
 **For Production:**
 - Use environment variables for all sensitive configuration
