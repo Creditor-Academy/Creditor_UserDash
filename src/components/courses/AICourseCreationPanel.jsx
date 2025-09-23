@@ -446,12 +446,12 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                           <div className="p-4">
                             <h4 className="font-semibold text-gray-900 mb-3">{aiOutline.course_title}</h4>
                             <div className="space-y-3">
-                              {aiOutline.modules.map((module, index) => (
-                                <div key={`${module.module_title}-${index}`} className="border-l-2 border-purple-500 pl-3">
-                                  <p className="font-medium text-gray-900 text-sm">{module.module_title}</p>
-                                  <p className="text-xs text-gray-600">{module.lesson.lesson_title}</p>
+                              {aiOutline.modules?.map((module, index) => (
+                                <div key={`${module?.module_title || 'module'}-${index}`} className="border-l-2 border-purple-500 pl-3">
+                                  <p className="font-medium text-gray-900 text-sm">{module?.module_title || 'Untitled Module'}</p>
+                                  <p className="text-xs text-gray-600">{module?.lesson?.lesson_title || 'Untitled Lesson'}</p>
                                 </div>
-                              ))}
+                              )) || []}
                             </div>
                           </div>
                         </div>
