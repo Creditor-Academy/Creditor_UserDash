@@ -96,6 +96,7 @@ import ContactSection from "@/components/ContactSection";
 import AddUsersPage from "@/pages/AddUsersPage";
 import CreateScenario from "@/pages/CreateScenario";
 import PreviewScenario from "@/pages/PreviewScenario";
+import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
@@ -228,6 +229,11 @@ function App() {
               <Route path="instruction/:quizId" element={<QuizInstructionPage />} />
               <Route path="take/:quizId" element={<QuizTakePage />} />
               <Route path="results/:quizId" element={<QuizResultsPage />} />
+            </Route>
+
+            {/* Scenario routes */}
+            <Route path="scenario">
+              <Route path="take/:scenarioId" element={<ScenarioTakePage />} />
             </Route>
 
             <Route path="assignment">

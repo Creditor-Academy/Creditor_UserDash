@@ -317,3 +317,57 @@ export async function deleteScenario(scenarioId) {
     throw error;
   }
 }
+
+/**
+ * Start or resume a scenario attempt
+ * POST /api/scenario/{scenarioId}/start
+ * Returns: { attempt, scenario, decisions }
+ */
+export async function startScenarioAttempt(scenarioId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/start`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to start scenario: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error starting scenario:', error);
+    throw error;
+  }
+}
+
+/**
+ * Submit a user's choice for a scenario attempt
+ * POST /api/scenario/submit-response
+ * Body: { attemptId, choiceId }
+ * Returns: { score, nextDecisionId, isScenarioComplete }
+ */
+export async function submitScenarioResponse(attemptId, choiceId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/submit-response`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ attemptId, choiceId })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to submit scenario response: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error submitting scenario response:', error);
+    throw error;
+  }
+}

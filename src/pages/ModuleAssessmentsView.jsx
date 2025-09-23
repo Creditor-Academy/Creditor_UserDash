@@ -575,68 +575,68 @@ function ModuleAssessmentsView() {
                             {filteredScenarios.map((scenario, index) => (
                               <div key={scenario.id || index} className="block group">
                                 <Card className="h-64 transition-all duration-300 border overflow-hidden border-gray-200 hover:shadow-xl cursor-pointer group hover:border-emerald-400 hover:scale-[1.02]">
-  <CardContent className="p-0 relative h-full">
-    {/* Full Background Image */}
-    <div 
-      className="absolute inset-0 bg-cover bg-center"
-      style={{
-        backgroundImage: `url(${scenario.background_url || 'https://via.placeholder.com/400x200?text=Scenario+Background'})`
-      }}
-    >
-      {/* Darker Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-30 transition-opacity duration-300 group-hover:bg-opacity-60"></div>
-    </div>
-    
-    {/* Attempts Counter - Top Right */}
-    <div className="absolute top-4 right-4 z-10">
-      <Badge className="bg-white/90 text-gray-800 hover:bg-white border-0 shadow-md">
-        <Award size={12} className="mr-1" />
-        {scenario.max_attempts || 3} attempts
-      </Badge>
-    </div>
-    
-     {/* Content Container */}
-     <div className="relative z-10 h-full flex items-center px-6 pt-10"> 
-      {/* Avatar - Left Side */}
-       <div className="flex-shrink-0 mr-3">
-        <div className="w-44 h-48 relative">
-          <img
-            src={
-              scenario.avatar_url && scenario.avatar_url.trim() !== "" 
-                ? scenario.avatar_url 
-                : "https://placehold.co/120x120/png"
-            } 
-            alt="Scenario Avatar"
-            className="w-full h-full object-contain bg-transparent"
-          />
-        </div>
-      </div>
+                                  <CardContent className="p-0 relative h-full">
+                                    {/* Full Background Image */}
+                                    <div 
+                                      className="absolute inset-0 bg-cover bg-center"
+                                      style={{
+                                        backgroundImage: `url(${scenario.background_url || 'https://via.placeholder.com/400x200?text=Scenario+Background'})`
+                                      }}
+                                    >
+                                      {/* Darker Overlay for better text readability */}
+                                      <div className="absolute inset-0 bg-black bg-opacity-30 transition-opacity duration-300 group-hover:bg-opacity-60"></div>
+                                    </div>
+                                    
+                                    {/* Attempts Counter - Top Right */}
+                                    <div className="absolute top-4 right-4 z-10">
+                                      <Badge className="bg-white/90 text-gray-800 hover:bg-white border-0 shadow-md">
+                                        <Award size={12} className="mr-1" />
+                                        {scenario.max_attempts || 3} attempts
+                                      </Badge>
+                                    </div>
+                                    
+                                    {/* Content Container */}
+                                    <div className="relative z-10 h-full flex items-center px-6 pt-10"> 
+                                      {/* Avatar - Left Side */}
+                                      <div className="flex-shrink-0 mr-3">
+                                        <div className="w-44 h-48 relative">
+                                          <img
+                                            src={
+                                              scenario.avatar_url && scenario.avatar_url.trim() !== "" 
+                                                ? scenario.avatar_url 
+                                                : "https://placehold.co/120x120/png"
+                                            } 
+                                            alt="Scenario Avatar"
+                                            className="w-full h-full object-contain bg-transparent"
+                                          />
+                                        </div>
+                                      </div>
 
-       {/* Title, Description and Button - Right Side (Speech bubble) */}
-       <div className="flex-1 flex flex-col justify-between h-full">
-         <div className="relative max-w-[80%] md:max-w-[75%]">
-           <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-5">
-             <h4 className="font-bold text-xl mb-1 text-gray-900 line-clamp-2">{scenario.title}</h4>
-             <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">{scenario.description}</p>
-             <div className="absolute -left-2 top-6 w-4 h-4 bg-white/90 rotate-45 shadow-md"></div>
-           </div>
-         </div>
-        
-        {/* Start Button */}
-       
- <div className="absolute bottom-4 right-4 z-20">
-  <Button
-    className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-110"
-    onClick={() => navigate(`/dashboard/scenario/${scenario.id}?module=${moduleId}`)}
-  >
-    <Play size={18} className="ml-1" /> {/* slight shift so arrow looks centered */}
-  </Button>
-</div>
+                                      {/* Title, Description and Button - Right Side (Speech bubble) */}
+                                      <div className="flex-1 flex flex-col justify-between h-full">
+                                        <div className="relative max-w-[80%] md:max-w-[75%]">
+                                          <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-4 md:p-5">
+                                            <h4 className="font-bold text-xl mb-1 text-gray-900 line-clamp-2">{scenario.title}</h4>
+                                            <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">{scenario.description}</p>
+                                            <div className="absolute -left-2 top-6 w-4 h-4 bg-white/90 rotate-45 shadow-md"></div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Start Button */}
+                                      
+                                          <div className="absolute bottom-4 right-4 z-20">
+                                          <Button
+                                            className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-110"
+                                            onClick={() => navigate(`/dashboard/scenario/take/${scenario.id}?module=${moduleId}`)}
+                                          >
+                                            <Play size={18} className="ml-1" /> {/* slight shift so arrow looks centered */}
+                                          </Button>
+                                        </div>
 
-      </div>
-    </div>
-  </CardContent>
-</Card>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
 
                               </div>
                             ))}
