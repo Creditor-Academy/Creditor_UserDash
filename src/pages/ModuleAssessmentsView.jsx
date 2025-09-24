@@ -637,6 +637,8 @@ function ModuleAssessmentsView() {
                                         {(() => {
                                           const a = scenarioAttempts[scenario.id] || {};
                                           const remaining = a.remainingAttempts ?? scenario.max_attempts ?? 0;
+                                          const attemptedCount = a.attempted ?? 0;
+                                          if (attemptedCount <= 0) return 'Not started';
                                           return remaining > 0
                                             ? `${remaining} attempt${remaining === 1 ? '' : 's'} remaining`
                                             : 'No attempts left';
@@ -700,15 +702,22 @@ function ModuleAssessmentsView() {
                                 </Card>
 
                                 {/* Hover/Sticky action below card, bottom-right */}
-                                <div className={`mt-2 flex justify-end transition-all duration-300 ${ (hoveredScenarioId===scenario.id || stickyScenarioId===scenario.id) ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none' }`}>
-                                  <Button
-                                    variant="outline"
-                                    className="h-9 px-3 bg-white border-gray-300 hover:bg-gray-50 shadow"
-                                    onClick={() => { setSelectedScenario(scenario); setLastScenarioOpen(true); }}
-                                  >
-                                    View Last Score
-                                  </Button>
-                                </div>
+                                {(() => {
+                                  const a = scenarioAttempts[scenario.id] || {};
+                                  const attemptedCount = a.attempted ?? 0;
+                                  const show = attemptedCount > 0 && (hoveredScenarioId===scenario.id || stickyScenarioId===scenario.id);
+                                  return (
+                                    <div className={`mt-2 flex justify-end transition-all duration-300 ${ show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none' }`}>
+                                      <Button
+                                        variant="outline"
+                                        className="h-9 px-3 bg-white border-gray-300 hover:bg-gray-50 shadow"
+                                        onClick={() => { setSelectedScenario(scenario); setLastScenarioOpen(true); }}
+                                      >
+                                        View Last Score
+                                      </Button>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             ))}
                           </div>
