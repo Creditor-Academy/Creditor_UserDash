@@ -450,12 +450,29 @@ function Messages() {
 
         // Load directory of all users for the + modal
         const users = await fetchAllUsers();
-        // Normalize to {id, name, avatar}
-        const normalized = (users || []).map(u => ({
-          id: u.id || u._id || u.user_id || u.userId,
-          name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.email || 'User',
-          avatar: u.image || u.avatar || '/placeholder.svg',
-        })).filter(u => u.id);
+        // Normalize to {id, name, avatar, role}
+        const normalized = (users || []).map(u => {
+          // Extract user role from user_roles array
+          let userRole = 'User';
+          if (u.user_roles && Array.isArray(u.user_roles) && u.user_roles.length > 0) {
+            const roles = u.user_roles.map(r => r.role);
+            // Priority order: admin > instructor > user
+            if (roles.includes('admin')) {
+              userRole = 'Admin';
+            } else if (roles.includes('instructor')) {
+              userRole = 'Instructor';
+            } else {
+              userRole = roles[0] || 'User';
+            }
+          }
+          
+          return {
+            id: u.id || u._id || u.user_id || u.userId,
+            name: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.name || u.email || 'User',
+            avatar: u.image || u.avatar || '/placeholder.svg',
+            role: userRole,
+          };
+        }).filter(u => u.id);
         setAllUsers(normalized);
         setConvosLoaded(true);
       } catch (e) {
@@ -842,7 +859,10 @@ function Messages() {
                               <AvatarImage src={user.avatar} />
                               <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm">{user.name}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-sm">{user.name}</span>
+                              <p className="text-xs text-muted-foreground">{user.role}</p>
+                            </div>
                           </div>
                         ))}
                       </div>
