@@ -62,8 +62,8 @@ export function ProfileDropdown() {
       await logoutAuth();
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if there's an error, redirect to home
-      window.location.href = '/';
+      // Even if there's an error, redirect to login page
+      window.location.href = '/login';
     }
   };
 

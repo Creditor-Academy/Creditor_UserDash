@@ -584,10 +584,6 @@ export function Dashboard() {
               {/* Catalog Banner Section */}
           <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Featured Courses</h3>
-              <p className="text-gray-600 text-sm max-w-2xl mx-auto">
-                Discover our comprehensive range of private education courses designed to empower your journey
-              </p>
             </div>
             <DashboardCarousel />
           </div>

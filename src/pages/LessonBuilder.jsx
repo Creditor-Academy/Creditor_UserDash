@@ -6,13 +6,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
-import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
-  Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
+  Play, Link2, File, BookOpen, Image, Video,
   HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon,
   Type,
   Heading1,
@@ -24,7 +23,10 @@ import {
   Loader2,
   MessageSquare,
   Quote,
-  Layers
+  Layers,
+  Minus,
+  Volume2,
+  Youtube
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
@@ -35,6 +37,9 @@ import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
+import DividerComponent from '@/components/DividerComponent';
+import AudioComponent from '@/components/AudioComponent';
+import YouTubeComponent from '@/components/YouTubeComponent';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -47,7 +52,7 @@ const slideInLeftStyle = `
       transform: translateX(0);
       opacity: 1;
     }
-  }
+  } 
   .animate-slide-in-left {
     animation: slide-in-left 0.3s ease-out;
   }
@@ -252,6 +257,63 @@ if (typeof window !== 'undefined') {
       icon.classList.remove('rotate-180');
     }
   };
+
+  // Labeled Graphic functions
+  window.toggleHotspotContent = function(containerId, hotspotId) {
+    // Hide all other content overlays in this container
+    const container = document.getElementById(containerId);
+    if (container) {
+      const allContents = container.querySelectorAll('.hotspot-content');
+      allContents.forEach(content => {
+        if (content.id !== 'content-' + containerId + '-' + hotspotId) {
+          content.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Toggle the clicked hotspot content
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      if (contentElement.classList.contains('hidden')) {
+        contentElement.classList.remove('hidden');
+        // Add fade-in animation
+        contentElement.style.opacity = '0';
+        contentElement.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          contentElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          contentElement.style.opacity = '1';
+          contentElement.style.transform = 'scale(1)';
+        }, 10);
+      } else {
+        contentElement.classList.add('hidden');
+      }
+    }
+  };
+  
+  window.hideHotspotContent = function(containerId, hotspotId) {
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      contentElement.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      contentElement.style.opacity = '0';
+      contentElement.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        contentElement.classList.add('hidden');
+      }, 200);
+    }
+  };
+  
+  // Close hotspot content when clicking outside (only add once)
+  if (!window.labeledGraphicClickHandler) {
+    window.labeledGraphicClickHandler = function(event) {
+      if (!event.target.closest('.hotspot') && !event.target.closest('.hotspot-content')) {
+        const allContents = document.querySelectorAll('.hotspot-content');
+        allContents.forEach(content => {
+          content.classList.add('hidden');
+        });
+      }
+    };
+    document.addEventListener('click', window.labeledGraphicClickHandler);
+  }
 }
 
 // Register font families with proper display names
@@ -483,19 +545,7 @@ function LessonBuilder() {
   const [imageDescription, setImageDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-  const [showAudioDialog, setShowAudioDialog] = useState(false);
-  const [audioTitle, setAudioTitle] = useState('');
-  const [audioDescription, setAudioDescription] = useState('');
-  const [audioFile, setAudioFile] = useState(null);
-  const [audioPreview, setAudioPreview] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const [audioUploadMethod, setAudioUploadMethod] = useState('file'); // 'file' or 'url'
-  const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
-  const [youtubeTitle, setYoutubeTitle] = useState('');
-  const [youtubeDescription, setYoutubeDescription] = useState('');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [youtubeError, setYoutubeError] = useState('');
-  const [currentYoutubeBlock, setCurrentYoutubeBlock] = useState(null);
+  
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -535,6 +585,16 @@ function LessonBuilder() {
   const [showInteractiveTemplateSidebar, setShowInteractiveTemplateSidebar] = useState(false);
   const [showInteractiveEditDialog, setShowInteractiveEditDialog] = useState(false);
   const [editingInteractiveBlock, setEditingInteractiveBlock] = useState(null);
+  const [showDividerTemplateSidebar, setShowDividerTemplateSidebar] = useState(false);
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [editingAudioBlock, setEditingAudioBlock] = useState(null);
+  const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
+  const [youTubeUrl, setYouTubeUrl] = useState('');
+  const [youTubeTitle, setYouTubeTitle] = useState('');
+  const [youTubeDescription, setYouTubeDescription] = useState('');
+  const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
+  
+
 
   // Image block templates
   const imageTemplates = [
@@ -619,6 +679,11 @@ function LessonBuilder() {
       icon: <Image className="h-5 w-5" />
     },
     {
+      id: 'youtube',
+      title: 'YouTube',
+      icon: <Youtube className="h-5 w-5" />
+    },
+    {
       id: 'video',
       title: 'Video',
       icon: <Video className="h-5 w-5" />
@@ -627,11 +692,6 @@ function LessonBuilder() {
       id: 'audio',
       title: 'Audio',
       icon: <Volume2 className="h-5 w-5" />
-    },
-    {
-      id: 'youtube',
-      title: 'YouTube',
-      icon: <Youtube className="h-5 w-5" />
     },
     {
       id: 'link',
@@ -662,10 +722,15 @@ function LessonBuilder() {
       id: 'interactive',
       title: 'Interactive',
       icon: <Layers className="h-5 w-5" />
+    },
+    {
+      id: 'divider',
+      title: 'Divider',
+      icon: <Minus className="h-5 w-5" />
     }
   ];
 
-  // Modify the text types array to include specific styles
+
   const textTypes = [
     {
       id: 'heading',
@@ -749,6 +814,8 @@ function LessonBuilder() {
   const statementComponentRef = React.useRef();
   const listComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
+  const dividerComponentRef = React.useRef();
+
 
   const handleBlockClick = (blockType) => {
     if (blockType.id === 'text') {
@@ -761,20 +828,23 @@ function LessonBuilder() {
       setShowListTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
+    } else if (blockType.id === 'youtube') {
+      setShowYouTubeDialog(true);
+    } else if (blockType.id === 'audio') {
+      setShowAudioDialog(true);
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'tables') {
       setShowTableComponent(true);
-    } else if (blockType.id === 'audio') {
-      setShowAudioDialog(true);
-    } else if (blockType.id === 'youtube') {
-      setShowYoutubeDialog(true);
+    
     } else if (blockType.id === 'link') {
       setShowLinkDialog(true);
     } else if (blockType.id === 'pdf') {
       setShowPdfDialog(true);
     } else if (blockType.id === 'interactive') {
       setShowInteractiveTemplateSidebar(true);
+    } else if (blockType.id === 'divider') {
+      setShowDividerTemplateSidebar(true);
     } else {
       addContentBlock(blockType);
     }
@@ -1014,6 +1084,49 @@ function LessonBuilder() {
       )
     );
     setEditingInteractiveBlock(null);
+  };
+
+  // Divider component callbacks
+  const handleDividerTemplateSelect = (newBlock) => {
+    // Only add to contentBlocks - this is the primary state for managing blocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    setShowDividerTemplateSidebar(false);
+  };
+
+  const handleDividerUpdate = (blockId, updatedContent) => {
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          ...updatedContent,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              ...updatedContent,
+              // Also update details if they exist
+              details: {
+                ...block.details,
+                divider_type: updatedContent.subtype || block.subtype || 'continue',
+                content: updatedContent.content || ''
+              },
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
   };
 
   // List component callbacks
@@ -1554,6 +1667,82 @@ function LessonBuilder() {
     setEditingQuoteBlock(null);
   };
 
+  const handleAudioUpdate = (audioBlock) => {
+    if (editingAudioBlock) {
+      // Update existing audio block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingAudioBlock.id ? {
+            ...block,
+            ...audioBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingAudioBlock.id || block.id === editingAudioBlock.id) ? {
+                ...block,
+                ...audioBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Add new audio block - only add to contentBlocks like other block handlers
+      setContentBlocks(prevBlocks => [...prevBlocks, audioBlock]);
+    }
+
+    // Reset editing state
+    setEditingAudioBlock(null);
+  };
+
+  const handleYouTubeUpdate = (youTubeBlock) => {
+    if (editingYouTubeBlock) {
+      // Update existing YouTube block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingYouTubeBlock.id ? {
+            ...block,
+            ...youTubeBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingYouTubeBlock.id || block.id === editingYouTubeBlock.id) ? {
+                ...block,
+                ...youTubeBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Add new YouTube block - only add to contentBlocks like other block handlers
+      setContentBlocks(prevBlocks => [...prevBlocks, youTubeBlock]);
+    }
+
+    // Reset editing state
+    setEditingYouTubeBlock(null);
+  };
+
   const handleTableUpdate = (blockId, content, htmlContent, templateId) => {
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
@@ -1600,7 +1789,21 @@ function LessonBuilder() {
   };
 
   const removeContentBlock = (blockId) => {
+    // Remove from contentBlocks
     setContentBlocks(contentBlocks.filter(block => block.id !== blockId));
+    
+    // Also remove from lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.filter(block => 
+            block.block_id !== blockId && block.id !== blockId
+          )
+        }
+      }));
+    }
   };
 
   const updateBlockContent = (blockId, content, heading = null, subheading = null) => {
@@ -2009,12 +2212,12 @@ function LessonBuilder() {
     // Enhanced interactive block detection - check subtype, content structure and HTML patterns
     const isInteractiveBlock = block.type === 'interactive' || 
                               // Check subtype for accordion or tabs
-                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs')) ||
+                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs' || block.subtype === 'labeled-graphic')) ||
                               // Check if content has interactive structure (JSON with template)
                               (() => {
                                 try {
                                   const content = JSON.parse(block.content || '{}');
-                                  return content.template && (content.tabsData || content.accordionData);
+                                  return content.template && (content.tabsData || content.accordionData || content.labeledGraphicData);
                                 } catch {
                                   return false;
                                 }
@@ -2027,7 +2230,9 @@ function LessonBuilder() {
                                 block.html_css.includes('tab-button') ||
                                 block.html_css.includes('accordion-header') ||
                                 block.html_css.includes('data-template="tabs"') ||
-                                block.html_css.includes('data-template="accordion"')
+                                block.html_css.includes('data-template="accordion"') ||
+                                block.html_css.includes('data-template="labeled-graphic"') ||
+                                block.html_css.includes('labeled-graphic-container')
                               ));
 
     if (isInteractiveBlock) {
@@ -2130,6 +2335,9 @@ function LessonBuilder() {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
+
+      
+
     } else if (block.type === 'list') {
       // Handle list block editing - open edit dialog directly
       console.log('List block detected for editing:', block);
@@ -2170,6 +2378,16 @@ function LessonBuilder() {
       // Set the editing list block and show the list edit dialog
       setEditingListBlock(blockWithType);
       setShowListEditDialog(true);
+    } else if (block.type === 'audio') {
+      // Handle audio block editing
+      console.log('Audio block detected for editing:', block);
+      setEditingAudioBlock(block);
+      setShowAudioDialog(true);
+    } else if (block.type === 'youtube') {
+      // Handle YouTube block editing
+      console.log('YouTube block detected for editing:', block);
+      setEditingYouTubeBlock(block);
+      setShowYouTubeDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -2741,6 +2959,86 @@ function LessonBuilder() {
             html = '<div class="text-red-500">Error loading interactive content</div>';
           }
         }
+      } else if (block.type === 'audio') {
+        // For audio blocks, use the saved html_css content if available
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from audio content
+          try {
+            const audioContent = JSON.parse(block.content || '{}');
+            html = `
+              <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 12a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1v2a1 1 0 01-1 1H9z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="mb-3">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-1">${audioContent.title || 'Audio'}</h3>
+                      ${audioContent.description ? `<p class="text-sm text-gray-600">${audioContent.description}</p>` : ''}
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                      <audio controls class="w-full" preload="metadata">
+                        <source src="${audioContent.url}" type="audio/mpeg">
+                        <source src="${audioContent.url}" type="audio/wav">
+                        <source src="${audioContent.url}" type="audio/ogg">
+                        Your browser does not support the audio element.
+                      </audio>
+                      ${audioContent.uploadedData ? `
+                        <div class="mt-2 text-xs text-gray-500">
+                          <span class="inline-flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            ${audioContent.uploadedData.fileName}
+                          </span>
+                          <span class="ml-2">${(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          } catch (error) {
+            console.error('Error parsing audio content:', error);
+            html = '<div class="text-red-500">Error loading audio content</div>';
+          }
+        }
+      } else if (block.type === 'video') {
+        // For video blocks, use the saved html_css content if available
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from video block properties
+          const videoUrl = block.videoUrl || block.details?.video_url || '';
+          const videoTitle = block.videoTitle || block.details?.caption || 'Video';
+          const videoDescription = block.videoDescription || block.details?.description || '';
+          
+          html = `
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+              <div class="space-y-4">
+                ${videoTitle ? `<h3 class="text-lg font-semibold text-gray-900">${videoTitle}</h3>` : ''}
+                ${videoDescription ? `<p class="text-sm text-gray-600">${videoDescription}</p>` : ''}
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <video controls style="width: 100%; height: auto; border-radius: 8px;">
+                    <source src="${videoUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } else if (block.type === 'youtube') {
+        // Skip YouTube blocks in convertBlocksToHtml to prevent duplication
+        // YouTube blocks are handled by their own custom rendering logic
+        html = '';
       }
 
       return { html, css, js };
@@ -2748,6 +3046,7 @@ function LessonBuilder() {
   };
 
   const handleUpdate = async () => {
+    // ... (rest of the code remains the same)
     if (!lessonId) {
       toast.error('No lesson ID found. Please save the lesson first.');
       return;
@@ -2761,17 +3060,53 @@ function LessonBuilder() {
       // For new lessons, we use contentBlocks
       let blocksToUpdate = [];
       
+      // Use a single source of truth - prioritize contentBlocks for new content
+      // and merge with existing lessonContent only when necessary
       if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-        // For existing lessons, use lessonContent which contains the updated content
-        blocksToUpdate = lessonContent.data.content;
+        console.log('Existing lesson - merging content');
         
-        // Add any new blocks from contentBlocks that aren't in lessonContent
-        const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
+        // Start with existing lesson content
+        const existingBlocks = lessonContent.data.content;
+        const existingBlockIds = new Set(existingBlocks.map(b => b.block_id || b.id));
+        
+        // Only add truly new blocks from contentBlocks
         const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-        blocksToUpdate = [...blocksToUpdate, ...newBlocks];
+        
+        console.log('Content merge analysis:', {
+          existingBlocks: existingBlocks.length,
+          newBlocks: newBlocks.length,
+          existingIds: Array.from(existingBlockIds),
+          newIds: newBlocks.map(b => b.id),
+
+        });
+        
+        // Combine existing and new blocks
+        blocksToUpdate = [...existingBlocks, ...newBlocks];
       } else {
-        // For new lessons, use contentBlocks
+        // For new lessons, use contentBlocks as the single source
+        console.log('New lesson - using contentBlocks:', {
+          totalBlocks: contentBlocks.length,
+
+        });
         blocksToUpdate = contentBlocks;
+      }
+      
+      // Remove any duplicate blocks based on ID
+      const uniqueBlocks = [];
+      const seenIds = new Set();
+      blocksToUpdate.forEach(block => {
+        const blockId = block.block_id || block.id;
+        if (!seenIds.has(blockId)) {
+          uniqueBlocks.push(block);
+          seenIds.add(blockId);
+        } else {
+          console.warn('Removing duplicate block during update:', blockId, block.type);
+        }
+      });
+      
+      if (uniqueBlocks.length !== blocksToUpdate.length) {
+        console.warn(`Removed ${blocksToUpdate.length - uniqueBlocks.length} duplicate blocks during update`);
+        blocksToUpdate = uniqueBlocks;
       }
 
       // Allow empty content blocks for deletion operations
@@ -2817,12 +3152,12 @@ function LessonBuilder() {
             };
           }
           
-          // For quote blocks, include explicit quote type metadata
-          if (block.type === 'quote') {
-            blockData.quoteType = block.textType || block.quoteType || 'quote_a';
+          // For divider blocks, include explicit divider type metadata
+          if (block.type === 'divider') {
+            blockData.dividerType = block.subtype || 'continue';
             blockData.details = {
               ...blockData.details,
-              quote_type: block.textType || block.quoteType || 'quote_a',
+              divider_type: block.subtype || 'continue',
               content: block.content || ''
             };
           }
@@ -2837,6 +3172,9 @@ function LessonBuilder() {
               content: block.content || ''
             };
           }
+          
+
+
           
           return blockData;
         }
@@ -2968,6 +3306,87 @@ function LessonBuilder() {
             details = {
               statement_type: block.statementType || 'statement-a',
               content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'divider':
+            // For divider blocks, include explicit type metadata
+            details = {
+              divider_type: block.subtype || 'continue',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'audio':
+            // For audio blocks, extract details from content JSON
+            try {
+              const audioContent = JSON.parse(blockContent || '{}');
+              details = {
+                audioTitle: audioContent.title || 'Audio',
+                audioDescription: audioContent.description || '',
+                audioUrl: audioContent.url || '',
+                audio_url: audioContent.url || '', // Alternative field name
+                uploadMethod: audioContent.uploadMethod || 'url',
+                uploadedData: audioContent.uploadedData || null,
+                title: audioContent.title || 'Audio'
+              };
+            } catch (e) {
+              console.warn('Could not parse audio content for saving:', e);
+              details = {
+                audioTitle: 'Audio',
+                audioDescription: '',
+                audioUrl: '',
+                audio_url: '',
+                uploadMethod: 'url',
+                uploadedData: null,
+                title: 'Audio'
+              };
+            }
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'youtube':
+            // For YouTube blocks, extract details from content JSON
+            try {
+              const youTubeContent = JSON.parse(blockContent || '{}');
+              details = {
+                youTubeTitle: youTubeContent.title || 'YouTube Video',
+                youTubeDescription: youTubeContent.description || '',
+                youTubeUrl: youTubeContent.url || '',
+                youtube_url: youTubeContent.url || '', // Alternative field name
+                videoId: youTubeContent.videoId || '',
+                embedUrl: youTubeContent.embedUrl || '',
+                title: youTubeContent.title || 'YouTube Video'
+              };
+            } catch (e) {
+              console.warn('Could not parse YouTube content for saving:', e);
+              details = {
+                youTubeTitle: 'YouTube Video',
+                youTubeDescription: '',
+                youTubeUrl: '',
+                youtube_url: '',
+                videoId: '',
+                embedUrl: '',
+                title: 'YouTube Video'
+              };
+            }
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'video':
+            // For video blocks, extract details from block properties
+            details = {
+              video_url: block.videoUrl || '',
+              caption: block.videoTitle || 'Video',
+              description: block.videoDescription || '',
+              videoTitle: block.videoTitle || 'Video',
+              videoDescription: block.videoDescription || '',
+              videoUrl: block.videoUrl || '',
+              uploadMethod: block.uploadMethod || 'url',
+              originalUrl: block.originalUrl || '',
+              title: block.videoTitle || 'Video'
             };
             htmlContent = block.html_css || blockContent;
             break;
@@ -3215,7 +3634,7 @@ function LessonBuilder() {
 
     // Generate HTML content for display
     const htmlContent = `
-      <video controls style="width: 100%; max-width: 600px; height: auto; border-radius: 8px;">
+      <video controls style="width: 100%;  height: auto; border-radius: 8px;">
         <source src="${finalVideoUrl}" type="video/mp4">
         Your browser does not support the video tag.
       </video>
@@ -4381,91 +4800,7 @@ function LessonBuilder() {
     }
   };
 
-  const handleAddYoutubeVideo = () => {
-    if (!youtubeTitle || !youtubeUrl) {
-      setYoutubeError('Please fill in all required fields');
-      return;
-    }
-
-    const videoId = extractYoutubeId(youtubeUrl);
-    if (!videoId) {
-      setYoutubeError('Please enter a valid YouTube URL');
-      return;
-    }
-
-    // Generate HTML content for display
-    const htmlContent = `
-      <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 8px;">
-        <iframe
-          src="https://www.youtube.com/embed/${videoId}"
-          title="${youtubeTitle || 'YouTube video'}"
-          allowfullscreen
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-        ></iframe>
-      </div>
-      ${youtubeTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${youtubeTitle}</p>` : ''}
-      ${youtubeDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${youtubeDescription}</p>` : ''}
-    `;
-
-    const newBlock = {
-      id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
-      block_id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
-      type: 'youtube',
-      title: 'YouTube Video',
-      youtubeTitle: youtubeTitle,
-      youtubeDescription: youtubeDescription,
-      youtubeUrl: youtubeUrl,
-      youtubeId: videoId,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentYoutubeBlock) {
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentYoutubeBlock.id ? newBlock : block)
-      );
-    } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
-          }
-        }));
-      } else {
-        setContentBlocks(prev => [...prev, newBlock]);
-      }
-    }
-   
-    handleYoutubeDialogClose();
-  };
-
-  const extractYoutubeId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const handleYoutubeDialogClose = () => {
-    setShowYoutubeDialog(false);
-    setYoutubeTitle('');
-    setYoutubeDescription('');
-    setYoutubeUrl('');
-    setYoutubeError('');
-    setCurrentYoutubeBlock(null);
-  };
-
-  const handleEditYoutubeVideo = (block) => {
-    setCurrentYoutubeBlock(block);
-    setYoutubeTitle(block.youtubeTitle);
-    setYoutubeDescription(block.youtubeDescription || '');
-    setYoutubeUrl(block.youtubeUrl);
-    setShowYoutubeDialog(true);
-  };
+  
 
   const handleLinkDialogClose = () => {
     setShowLinkDialog(false);
@@ -4758,16 +5093,7 @@ function LessonBuilder() {
                       text: b.details?.caption || ''
                     };
                   }
-                  if (b.type === 'audio') {
-                    return {
-                      ...base,
-                      type: 'audio',
-                      title: 'Audio',
-                      audioUrl: b.details?.audio_url || '',
-                      audioTitle: b.details?.caption || 'Audio',
-                      audioDescription: b.details?.description || ''
-                    };
-                  }
+                  
                   if (b.type === 'pdf') {
                     return {
                       ...base,
@@ -4817,6 +5143,30 @@ function LessonBuilder() {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'divider') {
+                    // Determine divider subtype from details, subtype, or HTML
+                    let dividerSubtype = b.details?.divider_type || b.subtype;
+                    if (!dividerSubtype && typeof b.html_css === 'string') {
+                      const html = b.html_css;
+                      if ((html.includes('cursor-pointer') || html.includes('letter-spacing')) && (html.includes('background-color') || html.includes('bg-blue'))) {
+                        dividerSubtype = 'continue';
+                      } else if ((html.includes('rounded-full') || html.includes('border-radius: 50%')) && (html.includes('<hr') || html.includes('border-top'))) {
+                        dividerSubtype = 'numbered_divider';
+                      } else if (html.includes('<hr')) {
+                        dividerSubtype = 'divider';
+                      } else {
+                        dividerSubtype = 'continue';
+                      }
+                    }
+                    return {
+                      ...base,
+                      type: 'divider',
+                      title: 'Divider',
+                      subtype: dividerSubtype || 'continue',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   if (b.type === 'interactive') {
                     // Detect interactive template type from subtype, content, or HTML patterns
                     let template = b.subtype || b.details?.template;
@@ -4843,6 +5193,9 @@ function LessonBuilder() {
                                  htmlContent.includes('tab-button') ||
                                  htmlContent.includes('interactive-tabs')) {
                         template = 'tabs';
+                      } else if (htmlContent.includes('data-template="labeled-graphic"') || 
+                                 htmlContent.includes('labeled-graphic-container')) {
+                        template = 'labeled-graphic';
                       }
                     }
                     
@@ -4853,6 +5206,106 @@ function LessonBuilder() {
                       subtype: template || 'accordion',
                       template: template || 'accordion',
                       content: b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'audio') {
+                    // Reconstruct audio content JSON from database fields
+                    let audioContent = {};
+                    
+                    // Try to parse existing content first
+                    if (b.content) {
+                      try {
+                        audioContent = JSON.parse(b.content);
+                      } catch (e) {
+                        console.log('Could not parse existing audio content, reconstructing from details');
+                      }
+                    }
+                    
+                    // If content is empty or parsing failed, reconstruct from details
+                    if (!audioContent.title && !audioContent.url) {
+                      audioContent = {
+                        title: b.details?.audioTitle || b.details?.title || b.title || 'Audio',
+                        description: b.details?.audioDescription || b.details?.description || '',
+                        uploadMethod: b.details?.uploadMethod || 'url',
+                        url: b.details?.audioUrl || b.details?.audio_url || '',
+                        uploadedData: b.details?.uploadedData || null,
+                        createdAt: b.createdAt || new Date().toISOString()
+                      };
+                    }
+                    
+                    return {
+                      ...base,
+                      type: 'audio',
+                      title: audioContent.title || 'Audio',
+                      content: JSON.stringify(audioContent),
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'youtube') {
+                    // Reconstruct YouTube content JSON from database fields
+                    let youTubeContent = {};
+                    
+                    // Try to parse existing content first
+                    if (b.content) {
+                      try {
+                        youTubeContent = JSON.parse(b.content);
+                      } catch (e) {
+                        console.log('Could not parse existing YouTube content, reconstructing from details');
+                      }
+                    }
+                    
+                    // If content is empty or parsing failed, reconstruct from details
+                    if (!youTubeContent.url || youTubeContent.url.trim() === '') {
+                      console.log('Reconstructing YouTube content from details:', b.details);
+                      console.log('Available block data:', {
+                        details: b.details,
+                        content: b.content,
+                        html_css: b.html_css ? 'Present' : 'Missing'
+                      });
+                      
+                      youTubeContent = {
+                        title: b.details?.youTubeTitle || b.details?.title || b.title || 'YouTube Video',
+                        description: b.details?.youTubeDescription || b.details?.description || '',
+                        url: b.details?.youTubeUrl || b.details?.youtube_url || '',
+                        videoId: b.details?.videoId || '',
+                        embedUrl: b.details?.embedUrl || '',
+                        createdAt: b.createdAt || new Date().toISOString()
+                      };
+                      
+                      // If still no URL found, try to extract from html_css as last resort
+                      if (!youTubeContent.url && b.html_css) {
+                        const srcMatch = b.html_css.match(/src="([^"]*youtube\.com\/embed\/[^"]*)"/) || 
+                                        b.html_css.match(/src="([^"]*youtu\.be\/[^"]*)"/) ||
+                                        b.html_css.match(/src="([^"]*youtube\.com\/watch\?v=[^"]*)"/) ;
+                        if (srcMatch) {
+                          const extractedUrl = srcMatch[1];
+                          console.log('Extracted URL from html_css:', extractedUrl);
+                          
+                          // Convert embed URL back to watch URL if needed
+                          let watchUrl = extractedUrl;
+                          if (extractedUrl.includes('/embed/')) {
+                            const videoId = extractedUrl.split('/embed/')[1].split('?')[0];
+                            watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                            youTubeContent.videoId = videoId;
+                            youTubeContent.embedUrl = extractedUrl;
+                          }
+                          youTubeContent.url = watchUrl;
+                        }
+                      }
+                    }
+                    
+                    console.log('YouTube block loading result:', {
+                      blockId: b.id,
+                      finalContent: youTubeContent,
+                      hasUrl: !!youTubeContent.url
+                    });
+                    
+                    return {
+                      ...base,
+                      type: 'youtube',
+                      title: youTubeContent.title || 'YouTube Video',
+                      content: JSON.stringify(youTubeContent),
                       html_css: b.html_css || ''
                     };
                   }
@@ -4883,14 +5336,8 @@ function LessonBuilder() {
                 });
                 if (mappedEditBlocks.length > 0) {
                   setContentBlocks(mappedEditBlocks);
-                  // Clear lessonContent to prevent duplicate rendering in edit mode
-                  setLessonContent(prev => ({
-                    ...prev,
-                    data: {
-                      ...prev.data,
-                      content: []
-                    }
-                  }));
+                  // Clear lessonContent completely to prevent duplicate rendering in edit mode
+                  setLessonContent(null);
                 }
               } catch (e) {
                 console.warn('Failed to map fetched content to edit blocks:', e);
@@ -5059,7 +5506,7 @@ function LessonBuilder() {
                 <Button
                   variant="outline"
                   size="sm"
-                  // onClick={handlePreview}
+                  onClick={handlePreview}
                   className="flex items-center gap-1"
                 >
                   <Eye className="h-4 w-4 mr-1" />
@@ -5090,7 +5537,13 @@ function LessonBuilder() {
             <div className="py-4">
                 <div>
                   {/* Always show edit interface since View mode is replaced by Modern Preview */}
-                  {contentBlocks.length === 0 ? (
+                  {(() => {
+                    // Get all blocks from single source of truth
+                    const allBlocks = (lessonContent?.data?.content && lessonContent.data.content.length > 0)
+                      ? lessonContent.data.content
+                      : contentBlocks;
+                    return allBlocks.length === 0;
+                  })() ? (
                     <div className="min-h-[60vh] flex items-center justify-center">
                       <div className="max-w-2xl mx-auto text-center">
                         {/* Beautiful gradient background */}
@@ -5172,7 +5625,20 @@ function LessonBuilder() {
                     </div>
                   ) : (
                     <div className="space-y-6 max-w-3xl mx-auto">
-                      {contentBlocks.map((block, index) => (
+                      {(() => {
+                        // Use single source of truth for rendering
+                        const blocksToRender = (lessonContent?.data?.content && lessonContent.data.content.length > 0)
+                          ? lessonContent.data.content
+                          : contentBlocks;
+                        
+                        console.log('Rendering blocks from single source:', {
+                          source: lessonContent?.data?.content?.length > 0 ? 'lessonContent' : 'contentBlocks',
+                          totalBlocks: blocksToRender.length,
+
+                          blockIds: blocksToRender.map(b => b.id || b.block_id)
+                        });
+                        
+                        return blocksToRender.map((block, index) => (
                         <div
                           key={block.id}
                           className="relative group bg-white rounded-lg"
@@ -5313,34 +5779,230 @@ function LessonBuilder() {
                                 </div>
                               </div>
                             )}
-                           
-                            {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
+
+                            {block.type === 'video' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle || block.details?.caption}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Video'}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Video
                                   </Badge>
                                 </div>
-                               
-                                {(block.videoDescription || block.details?.description) && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.videoDescription || block.details?.description}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <video
-                                      className="absolute top-0 left-0 w-full h-full"
-                                      controls
-                                      controlsList="nodownload"
-                                      preload="metadata"
-                                      key={block.id}
-                                    >
-                                      <source src={block.videoUrl || block.details?.video_url} type={block.videoFile?.type || 'video/mp4'} />
-                                      Your browser does not support the video tag.
-                                    </video>
-                                  </div>
+                                
+                                {(() => {
+                                  // First try to get video URL from block properties (for newly created blocks)
+                                  let videoUrl = block.videoUrl || block.details?.video_url || '';
+                                  let videoTitle = block.videoTitle || block.details?.caption || 'Video';
+                                  let videoDescription = block.videoDescription || block.details?.description || '';
+                                  
+                                  console.log('Video block edit rendering:', {
+                                    blockId: block.id,
+                                    videoUrl,
+                                    videoTitle,
+                                    videoDescription,
+                                    blockDetails: block.details,
+                                    hasUrl: !!videoUrl
+                                  });
+                                  
+                                  // Check if we have a valid video URL
+                                  if (videoUrl && videoUrl.trim()) {
+                                    return (
+                                      <>
+                                        {videoDescription && (
+                                          <p className="text-sm text-gray-600 mb-3">{videoDescription}</p>
+                                        )}
+                                        
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <video controls className="w-full max-w-full" style={{ maxHeight: '400px' }} preload="metadata">
+                                            <source src={videoUrl} type="video/mp4" />
+                                            <source src={videoUrl} type="video/webm" />
+                                            <source src={videoUrl} type="video/ogg" />
+                                            Your browser does not support the video element.
+                                          </video>
+                                          
+                                          <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                            <Video className="h-3 w-3 mr-1" />
+                                            <span>{videoTitle}</span>
+                                          </div>
+                                        </div>
+                                      </>
+                                    );
+                                  } else {
+                                    // Fallback: Use html_css if video URL not found
+                                    console.log('No URL in video block, falling back to html_css');
+                                    if (block.html_css && block.html_css.trim()) {
+                                      return (
+                                        <div
+                                          className="max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">Video URL not found</p>
+                                          <p className="text-xs text-gray-400 mt-1">Block details: {JSON.stringify(block.details)}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                })()}
+                              </div>
+                            )}
+
+                            {block.type === 'audio' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Audio'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Audio
+                                  </Badge>
                                 </div>
+                                
+                                {(() => {
+                                  try {
+                                    const audioContent = JSON.parse(block.content || '{}');
+                                    console.log('Audio block edit rendering:', {
+                                      blockId: block.id,
+                                      audioContent,
+                                      hasUrl: !!audioContent.url,
+                                      url: audioContent.url
+                                    });
+                                    
+                                    // Check if we have a valid audio URL
+                                    if (audioContent.url && audioContent.url.trim()) {
+                                      return (
+                                        <>
+                                          {audioContent.description && (
+                                            <p className="text-sm text-gray-600 mb-3">{audioContent.description}</p>
+                                          )}
+                                          
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <audio controls className="w-full" preload="metadata">
+                                              <source src={audioContent.url} type="audio/mpeg" />
+                                              <source src={audioContent.url} type="audio/wav" />
+                                              <source src={audioContent.url} type="audio/ogg" />
+                                              Your browser does not support the audio element.
+                                            </audio>
+                                            
+                                            {audioContent.uploadedData && (
+                                              <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                                <Volume2 className="h-3 w-3 mr-1" />
+                                                <span>{audioContent.uploadedData.fileName}</span>
+                                                <span className="ml-2">({(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB)</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // Fallback: Use html_css if JSON doesn't have URL
+                                      console.log('No URL in audio content, falling back to html_css');
+                                      if (block.html_css && block.html_css.trim()) {
+                                        return (
+                                          <div
+                                            className="max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                          />
+                                        );
+                                      } else {
+                                        return (
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <p className="text-sm text-gray-500">Audio URL not found</p>
+                                            <p className="text-xs text-gray-400 mt-1">Content: {JSON.stringify(audioContent)}</p>
+                                          </div>
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing audio content in edit mode:', e);
+                                    // Fallback: Use html_css if JSON parsing fails
+                                    if (block.html_css && block.html_css.trim()) {
+                                      return (
+                                        <div
+                                          className="max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">Audio content could not be loaded</p>
+                                          <p className="text-xs text-gray-400 mt-1">Error: {e.message}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                })()}
+                              </div>
+                            )}
+
+                            {block.type === 'youtube' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'YouTube Video'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    YouTube
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  try {
+                                    const youTubeContent = JSON.parse(block.content || '{}');
+                                    console.log('YouTube block edit rendering:', {
+                                      blockId: block.id,
+                                      youTubeContent,
+                                      hasUrl: !!youTubeContent.url,
+                                      url: youTubeContent.url
+                                    });
+                                    
+                                    // Check if we have a valid YouTube URL
+                                    if (youTubeContent.url && youTubeContent.url.trim()) {
+                                      return (
+                                        <>
+                                          {youTubeContent.description && (
+                                            <p className="text-sm text-gray-600 mb-3">{youTubeContent.description}</p>
+                                          )}
+                                          
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
+                                              <iframe
+                                                className="absolute top-0 left-0 w-full h-full"
+                                                src={youTubeContent.embedUrl || youTubeContent.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                                title={youTubeContent.title || 'YouTube Video'}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                              />
+                                            </div>
+                                            
+                                            <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                              <Youtube className="h-3 w-3 mr-1 text-red-600" />
+                                              <span>YouTube Video</span>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // No fallback to html_css to prevent duplication
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">YouTube URL not found</p>
+                                          <p className="text-xs text-gray-400 mt-1">Content: {JSON.stringify(youTubeContent)}</p>
+                                        </div>
+                                      );
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing YouTube content in edit mode:', e);
+                                    // No fallback to html_css to prevent duplication
+                                    return (
+                                      <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">YouTube content could not be loaded</p>
+                                        <p className="text-xs text-gray-400 mt-1">Error: {e.message}</p>
+                                      </div>
+                                    );
+                                  }
+                                })()}
                               </div>
                             )}
 
@@ -5458,56 +6120,9 @@ function LessonBuilder() {
                               </div>
                             )}
 
-                            {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.audioTitle || block.details?.caption}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    Audio
-                                  </Badge>
-                                </div>
-                               
-                                {(block.audioDescription || block.details?.description) && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.audioDescription || block.details?.description}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <audio
-                                    src={block.audioUrl || block.details?.audio_url}
-                                    controls
-                                    className="w-full rounded-lg border border-gray-200"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                            
 
-                            {block.type === 'youtube' && (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.youtubeTitle}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    YouTube
-                                  </Badge>
-                                </div>
-                               
-                                {block.youtubeDescription && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.youtubeDescription}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <iframe
-                                      src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
-                                      className="absolute top-0 left-0 w-full h-full"
-                                      frameBorder="0"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                      title={block.youtubeTitle || 'YouTube video player'}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            
 
                             {block.type === 'pdf' && (
                               <div className="space-y-3">
@@ -5703,9 +6318,34 @@ function LessonBuilder() {
                                 )}
                               </>
                             )}
+
+                            {/* Divider Content */}
+                            {block.type === 'divider' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">Divider</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {block.subtype || 'Divider'}
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ))}
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
@@ -5825,7 +6465,7 @@ function LessonBuilder() {
                   required
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
                 </p>
                 {videoUrl && videoUploadMethod === 'url' && (
                   <div className="mt-4">
@@ -6412,7 +7052,6 @@ function LessonBuilder() {
         </div>
       )}
 
-
       {/* Quote Component */}
       <QuoteComponent
         showQuoteTemplateSidebar={showQuoteTemplateSidebar}
@@ -6424,6 +7063,22 @@ function LessonBuilder() {
         editingQuoteBlock={editingQuoteBlock}
       />
 
+      {/* Audio Component */}
+      <AudioComponent
+        showAudioDialog={showAudioDialog}
+        setShowAudioDialog={setShowAudioDialog}
+        onAudioUpdate={handleAudioUpdate}
+        editingAudioBlock={editingAudioBlock}
+      />
+
+      {/* YouTube Component */}
+      <YouTubeComponent
+        showYouTubeDialog={showYouTubeDialog}
+        setShowYouTubeDialog={setShowYouTubeDialog}
+        onYouTubeUpdate={handleYouTubeUpdate}
+        editingYouTubeBlock={editingYouTubeBlock}
+      />
+
       {/* Interactive Component */}
       <InteractiveComponent
         showInteractiveTemplateSidebar={showInteractiveTemplateSidebar}
@@ -6433,6 +7088,16 @@ function LessonBuilder() {
         onInteractiveTemplateSelect={handleInteractiveTemplateSelect}
         onInteractiveUpdate={handleInteractiveUpdate}
         editingInteractiveBlock={editingInteractiveBlock}
+      />
+
+      {/* Divider Component */}
+      <DividerComponent
+        ref={dividerComponentRef}
+        showDividerTemplateSidebar={showDividerTemplateSidebar}
+        setShowDividerTemplateSidebar={setShowDividerTemplateSidebar}
+        onDividerTemplateSelect={handleDividerTemplateSelect}
+        editingDividerBlock={null}
+        onDividerUpdate={handleDividerUpdate}
       />
 
       {/* Image Dialog */}
@@ -6530,240 +7195,6 @@ function LessonBuilder() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Audio Dialog */}
-      <Dialog open={showAudioDialog} onOpenChange={handleAudioDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Audio</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Audio Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={audioTitle}
-                onChange={handleAudioInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter audio title"
-                required
-              />
-            </div>
-
-            {/* Upload Method Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Method <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="audioUploadMethod"
-                    value="file"
-                    checked={audioUploadMethod === 'file'}
-                    onChange={(e) => setAudioUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Upload File
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="audioUploadMethod"
-                    value="url"
-                    checked={audioUploadMethod === 'url'}
-                    onChange={(e) => setAudioUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Audio URL
-                </label>
-              </div>
-            </div>
-
-            {/* File Upload Section */}
-            {audioUploadMethod === 'file' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Audio File <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          type="file"
-                          name="file"
-                          className="sr-only"
-                          accept="audio/mpeg,audio/wav,audio/ogg"
-                          onChange={handleAudioInputChange}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      MP3, WAV, or OGG up to 20MB
-                    </p>
-                  </div>
-                </div>
-                {audioPreview && audioUploadMethod === 'file' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
-                      src={audioPreview}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* URL Input Section */}
-            {audioUploadMethod === 'url' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Audio URL <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter audio URL (e.g., https://example.com/audio.mp3)"
-                  required
-                />
-                {audioUrl && audioUploadMethod === 'url' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
-                      src={audioUrl}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                      onError={() => console.log('Audio URL may be invalid or not accessible')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                name="description"
-                value={audioDescription}
-                onChange={handleAudioInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your audio (optional)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleAudioDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddAudio}
-              disabled={!audioTitle || (audioUploadMethod === 'file' && !audioFile) || (audioUploadMethod === 'url' && !audioUrl)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Add Audio
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* YouTube Dialog */}
-      <Dialog open={showYoutubeDialog} onOpenChange={handleYoutubeDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add YouTube Video</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Video Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={youtubeTitle}
-                onChange={(e) => setYoutubeTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter video title"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube Video URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="url"
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://www.youtube.com/watch?v=..."
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-              </p>
-              {youtubeError && (
-                <p className="text-sm text-red-500 mt-1">{youtubeError}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={youtubeDescription}
-                onChange={(e) => setYoutubeDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your video (optional)"
-              />
-            </div>
-
-            {youtubeUrl && extractYoutubeId(youtubeUrl) && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-                <div className="aspect-w-16 aspect-h-9">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYoutubeId(youtubeUrl)}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-64 rounded-lg border border-gray-200"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleYoutubeDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddYoutubeVideo}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Add Video
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       
 
       {/* Link Dialog */}
@@ -7129,6 +7560,8 @@ function LessonBuilder() {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+
+
 
     </>
   );

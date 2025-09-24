@@ -160,12 +160,21 @@ const QuoteComponent = forwardRef(({
       });
       
       dots.forEach((dot, i) => {
+        // Normalize existing styles to avoid conflicts
+        dot.classList.remove(
+          // inactive variants
+          'bg-gray-300','hover:bg-gray-400','bg-slate-300','hover:bg-slate-400','hover:scale-105',
+          // active variants
+          'bg-indigo-500','scale-110','shadow-md',
+          'bg-gradient-to-r','from-blue-500','to-purple-500'
+        );
+
         if (i === index) {
-          dot.classList.remove('bg-gray-300', 'hover:bg-gray-400');
-          dot.classList.add('bg-indigo-500', 'scale-110');
+          // Match active styling used in generated HTML for dots
+          dot.classList.add('bg-gradient-to-r','from-blue-500','to-purple-500','scale-110','shadow-md');
         } else {
-          dot.classList.remove('bg-indigo-500', 'scale-110');
-          dot.classList.add('bg-gray-300', 'hover:bg-gray-400');
+          // Inactive styling
+          dot.classList.add('bg-slate-300','hover:bg-slate-400','hover:scale-105');
         }
       });
       
