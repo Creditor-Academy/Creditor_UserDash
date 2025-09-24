@@ -71,12 +71,29 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       // Heuristic: mark hasGroup if conversation objects include isGroup truthy
       const hasGroup = Array.isArray(convos) && convos.some(c => c?.isGroup);
       setUserHasGroup(Boolean(hasGroup));
-      const normalized = (users || []).map(u => ({
-        id: u.id || u._id || u.user_id || u.userId,
-        name: [u.first_name, u.last_name].filter(Boolean).join(" ") || u.name || u.email || "User",
-        avatar: u.image || u.avatar || "/placeholder.svg",
-        role: u.role || u.userRole || "User",
-      })).filter(u => u.id);
+      const currentUserId = String(localStorage.getItem('userId') || '');
+      const normalized = (users || []).map(u => {
+        // Extract user role from user_roles array
+        let userRole = 'User';
+        if (u.user_roles && Array.isArray(u.user_roles) && u.user_roles.length > 0) {
+          const roles = u.user_roles.map(r => r.role);
+          // Priority order: admin > instructor > user
+          if (roles.includes('admin')) {
+            userRole = 'Admin';
+          } else if (roles.includes('instructor')) {
+            userRole = 'Instructor';
+          } else {
+            userRole = roles[0] || 'User';
+          }
+        }
+        
+        return {
+          id: u.id || u._id || u.user_id || u.userId,
+          name: [u.first_name, u.last_name].filter(Boolean).join(" ") || u.name || u.email || "User",
+          avatar: u.image || u.avatar || "/placeholder.svg",
+          role: userRole,
+        };
+      }).filter(u => u.id && String(u.id) !== currentUserId); // Exclude current user
       setAllUsers(normalized);
     } finally {
       setLoadingInit(false);
