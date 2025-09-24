@@ -2,6 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import ProgressStats from "@/components/dashboard/ProgressStats";
 import CourseCard from "@/components/dashboard/CourseCard";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useCredits } from '@/contexts/CreditsContext';
 import { BookOpen, ChevronRight, GraduationCap, Target, Clock, ChevronLeft, CheckCircle, Search, MonitorPlay, Award, Video } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardCarousel from "@/components/dashboard/DashboardCarousel";
@@ -13,6 +15,7 @@ import DashboardTodo from "@/components/dashboard/DashboardTodo";
 import MonthlyProgress from "@/components/dashboard/MonthlyProgress";
 import DashboardAnnouncements from "@/components/dashboard/DashboardAnnouncements";
 import LiveClasses from "@/components/dashboard/LiveClasses";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 import ComingSoonPopover from "@/components/dashboard/ComingSoonPopover";
 import axios from "axios";
 import { fetchUserCourses } from '../services/courseService';
@@ -22,6 +25,7 @@ import { getCourseTrialStatus } from '../utils/trialUtils';
 
 export function Dashboard() {
   const { userProfile } = useUser();
+  const { balance, membership } = useCredits();
   // Dashboard data structure based on backend getUserOverview endpoint
   // Expected response structure:
   // {
@@ -59,6 +63,16 @@ export function Dashboard() {
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [coursesError, setCoursesError] = useState(null);
   const [userCoursesMap, setUserCoursesMap] = useState({});
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [showConsultInfo, setShowConsultInfo] = useState(false);
+  const [showConsultBooking, setShowConsultBooking] = useState(false);
+  const CONSULT_COST = 1000; // credits for 30 mins
+  const [showWebsiteModal, setShowWebsiteModal] = useState(false);
+  const WEBSITE_PACKS = [
+    { id: 'basic', name: 'Basic website', cost: 750, blurb: 'Single-page presence with essentials' },
+    { id: 'premium', name: 'Premium website', cost: 5000, blurb: 'Multi-page site with advanced sections' }
+  ];
+  const [selectedWebsitePack, setSelectedWebsitePack] = useState(WEBSITE_PACKS[0]);
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-testing-branch.onrender.com";
   // Get userId from localStorage or cookies, or fetch from profile
@@ -602,6 +616,87 @@ export function Dashboard() {
            <div className="mb-8">
             <DashboardGroup />
           </div>
+          {/* Services using credits */}
+          <div className="mb-8">
+            <div className="rounded-2xl shadow-lg border border-gray-200 bg-white p-6 md:p-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Award className="h-6 w-6 text-emerald-600" />
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Services</h2>
+                    <p className="text-sm text-gray-600 mt-0.5">Use credits to book expert consultations and website packs.</p>
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-2">
+                  <span className="text-xs sm:text-sm rounded-full bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1">{balance} credits</span>
+                  <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={()=>setShowCreditsModal(true)}>Top up</Button>
+                </div>
+              </div>
+              <div className="mt-4 mb-6 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Consultation */}
+                <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-emerald-200">
+                  {/* decorative glows */}
+                  <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-emerald-300/30 blur-3xl" />
+                  <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-emerald-200/30 blur-3xl" />
+                  {/* illustration */}
+                  <img
+                    src="https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/consult.png"
+                    alt="consultation"
+                    loading="lazy"
+                    className="pointer-events-none absolute -right-3 bottom-0 w-44 opacity-35 mix-blend-multiply transition-opacity duration-300 group-hover:opacity-50"
+                  />
+                  <div className="relative z-10 flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center shadow text-white ring-4 ring-white/60">
+                      <Video size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0 pr-24 sm:pr-28 md:pr-40">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700 border border-emerald-200">Live guidance</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mt-2">Consultation</h3>
+                      <p className="text-sm text-gray-600 mt-1">Book a live session using your credits and get expert guidance.</p>
+                      <div className="mt-4 flex items-center gap-2">
+                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={()=>setShowConsultBooking(true)}>Book session</Button>
+                        <Button variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={()=>setShowConsultInfo(true)}>Learn more</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Website Services */}
+                <div className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-6 transition-all duration-300 hover:shadow-xl hover:border-blue-200">
+                  {/* decorative glows */}
+                  <div className="pointer-events-none absolute -top-10 -right-10 h-44 w-44 rounded-full bg-blue-300/30 blur-3xl" />
+                  <div className="pointer-events-none absolute -bottom-12 -left-12 h-40 w-40 rounded-full bg-blue-200/30 blur-3xl" />
+                  {/* illustration */}
+                  <img
+                    src="/Creditor_academy.png"
+                    alt="website services"
+                    loading="lazy"
+                    className="pointer-events-none absolute -right-4 bottom-0 w-44 opacity-20 transition-opacity duration-300 group-hover:opacity-30"
+                  />
+                  <div className="relative z-10 flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow text-white ring-4 ring-white/60">
+                      <MonitorPlay size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-200">Digital packs</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mt-2">Website Services</h3>
+                      <p className="text-sm text-gray-600 mt-1">Launch or upgrade your site.<br className="hidden sm:inline" /> Pay with credits for eligible packs.</p>
+                      <div className="mt-4 flex items-center gap-2">
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={()=>setShowWebsiteModal(true)}>Get started</Button>
+                        <Button variant="outline" asChild className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                          <Link to="/website">Learn more</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           {/* How It Works Section */}
           <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8 mb-8">
             <div className="text-center mb-8 sm:mb-10">
@@ -671,6 +766,185 @@ export function Dashboard() {
           <AthenaUpcomingEvent />
         </div>
       </main>
+      {/* Credits Modal (reused for services top-up) */}
+      {showCreditsModal && (
+        <CreditPurchaseModal open={showCreditsModal} onClose={()=>setShowCreditsModal(false)} />
+      )}
+
+      {/* Consultation Info Modal */}
+      <Dialog open={showConsultInfo} onOpenChange={setShowConsultInfo}>
+        <DialogContent className="sm:max-w-md p-5 max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>About Consultations</DialogTitle>
+            <DialogDescription>
+              Book a 1:1 live session with an expert. Use your credits to reserve a time slot and get tailored guidance on your goals.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-gray-700">
+            <div className="rounded-md bg-emerald-50 border border-emerald-200 p-3">
+              <p className="font-medium text-emerald-800">How pricing works</p>
+              <p className="text-emerald-700">Example: 1000 credits for 30 minutes. Longer sessions scale proportionally.</p>
+            </div>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Flexible scheduling based on expert availability</li>
+              <li>Focused help on coursework, projects, or strategy</li>
+              <li>Credits are only deducted when a session is confirmed</li>
+            </ul>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={()=>{setShowConsultInfo(false); setShowCreditsModal(true);}}>Top up credits</Button>
+            <Button variant="outline" onClick={()=>setShowConsultInfo(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Consultation Booking Modal */}
+      <Dialog open={showConsultBooking} onOpenChange={setShowConsultBooking}>
+        <DialogContent className="sm:max-w-lg md:max-w-xl p-6">
+          <DialogHeader>
+            <DialogTitle>Book a Consultation</DialogTitle>
+            <DialogDescription>
+              Review details and confirm your booking. Sessions are 30 minutes and use credits upon confirmation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {/* Status + Session Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Membership</p>
+                <p className={`text-xs inline-flex px-2 py-0.5 rounded-full border mt-1 ${membership?.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{membership?.isActive ? 'Active' : 'Inactive'}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Duration</p>
+                <p className="text-lg font-semibold flex items-center gap-1"><Clock size={16} /> 30 mins</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Cost</p>
+                <p className="text-lg font-semibold">{CONSULT_COST} credits</p>
+              </div>
+            </div>
+
+            {!membership?.isActive && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-800">
+                Membership inactive. Buy membership to enable booking.
+              </div>
+            )}
+            {membership?.isActive && balance < CONSULT_COST && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
+                You do not have enough credits. Required {CONSULT_COST}, available {balance}.
+              </div>
+            )}
+            {/* Credits math */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Current credits</p>
+                <p className="text-lg font-semibold">{balance}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Will be used</p>
+                <p className="text-lg font-semibold">{CONSULT_COST}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Remaining</p>
+                <p className="text-lg font-semibold">{Math.max(0, (balance || 0) - CONSULT_COST)}</p>
+              </div>
+            </div>
+
+            {/* What's included */}
+            <div className="rounded-lg border p-3">
+              <p className="font-medium text-gray-900 mb-2">What you get</p>
+              <ul className="space-y-1 text-sm text-gray-700">
+                <li className="flex items-center gap-2"><CheckCircle size={16} className="text-emerald-600" /> Live 1:1 video call with an expert</li>
+                <li className="flex items-center gap-2"><CheckCircle size={16} className="text-emerald-600" /> Actionable recommendations and next steps</li>
+              </ul>
+            </div>
+
+            {/* How it works */}
+            <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700">
+              <p className="font-medium text-gray-900 mb-1">How booking works</p>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Click Book to request a time. We confirm availability.</li>
+                <li>Credits are held and only deducted when session is confirmed.</li>
+                <li>Reschedule up to 12 hours prior at no extra cost.</li>
+              </ol>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            {!membership?.isActive ? (
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={()=>{ setShowConsultBooking(false); setShowCreditsModal(true); }}>Buy membership</Button>
+            ) : balance < CONSULT_COST ? (
+              <>
+                <Button variant="outline" onClick={()=>{ window.open('https://www.pinterest.com', '_blank'); }}>Add credits</Button>
+                <Button onClick={()=>setShowCreditsModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white">Top up credits</Button>
+                <Button onClick={()=>setShowConsultBooking(false)} variant="ghost">Close</Button>
+              </>
+            ) : (
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={()=>{ window.location.href = '/consult-booking'; }}>Book</Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Website Services Modal */}
+      <Dialog open={showWebsiteModal} onOpenChange={setShowWebsiteModal}>
+        <DialogContent className="sm:max-w-md p-5 max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Choose a Website Pack</DialogTitle>
+            <DialogDescription>
+              Pay with credits for eligible packs. Select a pack to see the credits math.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3">
+              {WEBSITE_PACKS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedWebsitePack(p)}
+                  className={`text-left rounded-lg border p-3 transition ${selectedWebsitePack.id === p.id ? 'border-blue-300 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900">{p.name}</p>
+                      <p className="text-sm text-gray-600">{p.blurb}</p>
+                    </div>
+                    <p className="text-blue-700 font-semibold">{p.cost} credits</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Current credits</p>
+                <p className="text-lg font-semibold">{balance}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Will be used</p>
+                <p className="text-lg font-semibold">{selectedWebsitePack.cost}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-gray-500">Remaining</p>
+                <p className="text-lg font-semibold">{Math.max(0, (balance || 0) - selectedWebsitePack.cost)}</p>
+              </div>
+            </div>
+            {balance < selectedWebsitePack.cost && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
+                Not enough credits for this pack. Add credits to proceed.
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2">
+            {balance < selectedWebsitePack.cost ? (
+              <>
+                <Button variant="outline" onClick={()=>{ window.open('https://www.pinterest.com', '_blank'); }}>Add credits</Button>
+                <Button onClick={()=>setShowCreditsModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white">Top up credits</Button>
+                <Button onClick={()=>setShowWebsiteModal(false)} variant="ghost">Close</Button>
+              </>
+            ) : (
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={()=>{ localStorage.setItem('website_pack', selectedWebsitePack.id); window.location.href = '/website'; }}>Proceed</Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
