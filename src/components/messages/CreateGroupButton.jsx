@@ -41,13 +41,22 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
   const [allUsers, setAllUsers] = useState([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState([]);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all"); // 'all' | 'admin' | 'instructor'
 
   // Derived
   const filteredUsers = useMemo(() => {
     const q = (search || "").toLowerCase();
+    const roleMatches = (u) => {
+      if (roleFilter === "all") return true;
+      const role = String(u.role || "").toLowerCase();
+      if (roleFilter === "admin") return role.includes("admin");
+      if (roleFilter === "instructor") return role.includes("instructor");
+      return true;
+    };
     return (allUsers || [])
+      .filter(u => roleMatches(u))
       .filter(u => (u.name || "").toLowerCase().includes(q) && !selectedMemberIds.includes(u.id));
-  }, [allUsers, search, selectedMemberIds]);
+  }, [allUsers, search, selectedMemberIds, roleFilter]);
 
   // Initialize on first open: fetch conversations + users
   const handleOpen = async (nextOpen) => {
@@ -163,7 +172,7 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       </TooltipProvider>
 
       <Dialog open={open} onOpenChange={handleOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] sm:max-w-[720px] max-w-[95vw] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -252,11 +261,35 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Add Members *</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Add Members *</label>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant={roleFilter === "admin" ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => setRoleFilter(prev => prev === "admin" ? "all" : "admin")}
+                      title="Show only Admins"
+                    >
+                      Admin
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={roleFilter === "instructor" ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => setRoleFilter(prev => prev === "instructor" ? "all" : "instructor")}
+                      title="Show only Instructors"
+                    >
+                      Instructors
+                    </Button>
+                  </div>
+                </div>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search users to add..."
+                    placeholder={roleFilter === "all" ? "Search users to add..." : `Search ${roleFilter}s...`}
                     className="pl-8 h-9 text-sm"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
