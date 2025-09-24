@@ -14,7 +14,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
   const [quantity, setQuantity] = useState(10);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [packType, setPackType] = useState("pack500"); // pack500 | pack2800
+  const [packType, setPackType] = useState("pack50"); // pack50 | pack100 | pack500 | pack2800
   const [paymentMethod, setPaymentMethod] = useState("stripe"); // kept for compatibility, not used
   const [customQty, setCustomQty] = useState(""); // retained for compatibility
   const [checkoutStep, setCheckoutStep] = useState("packs"); // only 'packs'
@@ -96,6 +96,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
   // New rate: 5 credits per $1 (no bonus credits)
   const CREDIT_RATE = 5;
   const derived = useMemo(() => {
+    if (packType === "pack50") return { credits: 250, price: 50 };
+    if (packType === "pack100") return { credits: 500, price: 100 };
     if (packType === "pack500") return { credits: 500 * CREDIT_RATE, price: 500 };
     if (packType === "pack2800") return { credits: 2800 * CREDIT_RATE, price: 2800 };
     return { credits: 0, price: 0 };
@@ -118,7 +120,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       return;
     }
     // reset checkout flow each time
-    setPackType("pack500");
+    setPackType("pack50");
     setCustomQty("");
     setPaymentMethod("stripe");
     setCheckoutStep("packs");
@@ -217,7 +219,9 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     >
                       Buy credits
                     </button>
-                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-600">
+                    <div className="hidden md:flex items-center gap-2 text-xs text-gray-600 flex-wrap">
+                      <span className="px-2 py-1 rounded border">250 credits for $50</span>
+                      <span className="px-2 py-1 rounded border">500 credits for $100</span>
                       <span className="px-2 py-1 rounded border">2,500 credits for $500</span>
                       <span className="px-2 py-1 rounded border">14,000 credits for $2,800</span>
                     </div>
@@ -295,15 +299,14 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     <tr>
                       <th className="text-left py-1 pr-2">Date</th>
                       <th className="text-left py-1 pr-2">Type</th>
-                      <th className="text-left py-1 pr-2">Reference</th>
                       <th className="text-left py-1 pr-2">Credits</th>
                     </tr>
                   </thead>
                   <tbody>
                     {loadingHistory ? (
-                      <tr><td className="py-4 text-gray-500 text-center" colSpan="4">Loading usage history...</td></tr>
+                      <tr><td className="py-4 text-gray-500 text-center" colSpan="3">Loading usage history...</td></tr>
                     ) : usages.length === 0 ? (
-                      <tr><td className="py-4 text-gray-500 text-center" colSpan="4">No credit usage yet</td></tr>
+                      <tr><td className="py-4 text-gray-500 text-center" colSpan="3">No credit usage yet</td></tr>
                     ) : (
                       usages.map((u, i) => (
                         <tr key={i} className="border-t hover:bg-gray-50">
@@ -317,7 +320,6 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                               {u.type}
                             </span>
                           </td>
-                          <td className="py-2 pr-2 font-medium">{u.ref}</td>
                           <td className="py-2 pr-2 font-medium text-red-600">-{u.credits}</td>
                         </tr>
                       ))
@@ -347,12 +349,92 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
                       <p className="text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* $50 Pack */}
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
+                        packType === "pack50" 
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
+                          : "hover:shadow-lg"
+                      }`}>
+                        <input 
+                          type="radio" 
+                          name="pack" 
+                          className="sr-only" 
+                          checked={packType === "pack50"} 
+                          onChange={()=>setPackType("pack50")} 
+                        />
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack50" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$50</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">250 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Perfect for trying out
+                              </div>
+                            </div>
+                          </div>
+                          {packType === "pack50" && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+
+                      {/* $100 Pack */}
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
+                        packType === "pack100" 
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
+                          : "hover:shadow-lg"
+                      }`}>
+                        <input 
+                          type="radio" 
+                          name="pack" 
+                          className="sr-only" 
+                          checked={packType === "pack100"} 
+                          onChange={()=>setPackType("pack100")} 
+                        />
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack100" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$100</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">500 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Great for regular use
+                              </div>
+                            </div>
+                          </div>
+                          {packType === "pack100" && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+
                       {/* $500 Pack */}
-                      <label className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack500" 
-                          ? "border-blue-500 bg-blue-50 shadow-md" 
-                          : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
+                          : "hover:shadow-lg"
                       }`}>
                         <input 
                           type="radio" 
@@ -361,30 +443,38 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           checked={packType === "pack500"} 
                           onChange={()=>setPackType("pack500")} 
                         />
-                        <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full mb-2">
-                            <span className="text-blue-600 font-bold text-xs">$500</span>
-                          </div>
-                          <h4 className="text-2xl font-bold text-gray-900 mb-1">2,500 Credits</h4>
-                          <div className="text-sm font-medium text-gray-600 mb-1">$500</div>
-                          <div className="text-xs text-gray-500">5 credits per $1</div>
-                          {packType === "pack500" && (
-                            <div className="absolute top-2 right-2">
-                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack500" 
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$500</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">2,500 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                                For serious learners
                               </div>
+                            </div>
+                          </div>
+                          {packType === "pack500" && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </div>
                           )}
                         </div>
                       </label>
 
                       {/* $2,800 Pack */}
-                      <label className={`relative border-2 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
+                      <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack2800" 
-                          ? "border-blue-500 bg-blue-50 shadow-md" 
-                          : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                          ? "ring-2 ring-emerald-500 ring-offset-2" 
+                          : "hover:shadow-lg"
                       }`}>
                         <input 
                           type="radio" 
@@ -393,23 +483,33 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                           checked={packType === "pack2800"} 
                           onChange={()=>setPackType("pack2800")} 
                         />
-                        <div className="text-center">
-                          <div className="inline-flex items-center justify-center w-8 h-8 bg-green-100 rounded-full mb-2">
-                            <span className="text-green-600 font-bold text-xs">$2800</span>
+                        <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
+                          packType === "pack2800" 
+                            ? "border-emerald-500 bg-emerald-50" 
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}>
+                          <div className="absolute top-2 right-2">
+                            <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded">
+                              BEST VALUE
+                            </span>
                           </div>
-                          <h4 className="text-2xl font-bold text-gray-900 mb-1">14,000 Credits</h4>
-                          <div className="text-sm font-medium text-gray-600 mb-1">$2800</div>
-                          <div className="text-xs text-gray-500">5 credits per $1</div>
-                          <div className="mt-1 inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                            Most Popular
-                          </div>
-                          {packType === "pack2800" && (
-                            <div className="absolute top-2 right-2">
-                              <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="text-center flex-1 flex flex-col justify-center">
+                            <div className="text-2xl font-bold text-gray-700 mb-2">$2,800</div>
+                            <div className="text-lg font-bold text-gray-900 mb-4">14,000 Credits</div>
+                            <div className="space-y-2 text-xs text-gray-500">
+                              <div className="flex items-center justify-center">
+                                <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                                Maximum value & savings
                               </div>
+                            </div>
+                          </div>
+                          {packType === "pack2800" && (
+                            <div className="absolute top-2 left-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
                             </div>
                           )}
                         </div>
@@ -436,9 +536,18 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       </button>
                       <button 
                         onClick={() => {
+                          const link50 = "https://quickclick.com/r/fi2mzpe8cnq0k90yz6ljw1d12x7pw6";
+                          const link100 = "https://quickclick.com/r/ysml6zlwfwmfluvaep3mxkq7xj8ste";
                           const link500 = "https://quickclick.com/r/o0h2bwvcumvpwgot6qxsm6moukluyn";
                           const link2800 = "https://quickclick.com/r/06k6zonz2prrxt1pqknxgwgi2jsbtr";
-                          const target = packType === 'pack2800' ? link2800 : link500;
+                          
+                          let target;
+                          if (packType === 'pack50') target = link50;
+                          else if (packType === 'pack100') target = link100;
+                          else if (packType === 'pack500') target = link500;
+                          else if (packType === 'pack2800') target = link2800;
+                          else target = link50; // fallback
+                          
                           window.location.href = target;
                         }} 
                         className={`flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg`}
@@ -474,5 +583,9 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
 };
 
 export default CreditPurchaseModal;
+
+
+
+
 
 
