@@ -116,12 +116,32 @@ const InteractiveComponent = forwardRef(({
           let contentElement = tempDiv.querySelector(`[id*="content-"][id*="-${hotspotId}"]`);
           let label = 'Hotspot';
           let description = 'Click to edit description';
+          let audio = null;
           
           if (contentElement) {
             const labelElement = contentElement.querySelector('h3');
             const descElement = contentElement.querySelector('p');
             if (labelElement) label = labelElement.textContent.trim();
             if (descElement) description = descElement.textContent.trim();
+            
+            // Try to extract audio information
+            const audioElement = contentElement.querySelector('audio source');
+            if (audioElement) {
+              const audioSrc = audioElement.getAttribute('src');
+              const audioType = audioElement.getAttribute('type');
+              // Try to get audio name from the file info display
+              const audioNameElement = contentElement.querySelector('.text-xs.font-medium.text-gray-800');
+              const audioSizeElement = contentElement.querySelector('.text-xs.text-gray-500');
+              
+              if (audioSrc) {
+                audio = {
+                  src: audioSrc,
+                  type: audioType || 'audio/mpeg',
+                  name: audioNameElement ? audioNameElement.textContent.trim() : 'Audio file',
+                  size: audioSizeElement ? parseInt(audioSizeElement.textContent.replace(/[^\d]/g, '')) * 1024 : 0
+                };
+              }
+            }
           } else {
             // Fallback: try to find content by index if ID-based search fails
             const allContentElements = tempDiv.querySelectorAll('.hotspot-content');
@@ -130,6 +150,24 @@ const InteractiveComponent = forwardRef(({
               const descElement = allContentElements[index].querySelector('p');
               if (labelElement) label = labelElement.textContent.trim();
               if (descElement) description = descElement.textContent.trim();
+              
+              // Try to extract audio from fallback element
+              const audioElement = allContentElements[index].querySelector('audio source');
+              if (audioElement) {
+                const audioSrc = audioElement.getAttribute('src');
+                const audioType = audioElement.getAttribute('type');
+                const audioNameElement = allContentElements[index].querySelector('.text-xs.font-medium.text-gray-800');
+                const audioSizeElement = allContentElements[index].querySelector('.text-xs.text-gray-500');
+                
+                if (audioSrc) {
+                  audio = {
+                    src: audioSrc,
+                    type: audioType || 'audio/mpeg',
+                    name: audioNameElement ? audioNameElement.textContent.trim() : 'Audio file',
+                    size: audioSizeElement ? parseInt(audioSizeElement.textContent.replace(/[^\d]/g, '')) * 1024 : 0
+                  };
+                }
+              }
             }
           }
           
@@ -138,7 +176,8 @@ const InteractiveComponent = forwardRef(({
             x: parseFloat(leftMatch[1]),
             y: parseFloat(topMatch[1]),
             label: label,
-            description: description
+            description: description,
+            audio: audio
           };
           console.log('Extracted hotspot:', hotspotData);
           extractedData.hotspots.push(hotspotData);
@@ -330,14 +369,16 @@ const InteractiveComponent = forwardRef(({
           x: 25,
           y: 30,
           label: 'Mountain Peak',
-          description: 'The highest point in the landscape'
+          description: 'The highest point in the landscape',
+          audio: null
         },
         {
           id: '2',
           x: 70,
           y: 60,
           label: 'Forest Area',
-          description: 'Dense woodland with various tree species'
+          description: 'Dense woodland with various tree species',
+          audio: null
         }
       ]
     };
@@ -727,7 +768,8 @@ const InteractiveComponent = forwardRef(({
       x: Math.round(x),
       y: Math.round(y),
       label: 'New Hotspot',
-      description: 'Click to edit description'
+      description: 'Click to edit description',
+      audio: null
     };
     
     setLabeledGraphicData(prev => ({
@@ -763,6 +805,76 @@ const InteractiveComponent = forwardRef(({
       hotspots: prev.hotspots.filter(h => h.id !== hotspotId)
     }));
     toast.success('Hotspot removed successfully!');
+  };
+
+  // Hotspot audio handling functions
+  const handleHotspotAudioUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
+        toast.error('Audio file size should be less than 10MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/m4a'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+        return;
+      }
+      
+      try {
+        // Upload audio to cloud API
+        const uploadResult = await uploadAudioResource(file, {
+          folder: 'lesson-audio',
+          public: true,
+          type: 'audio'
+        });
+        
+        if (uploadResult.success && uploadResult.audioUrl) {
+          setEditingHotspot(prev => ({
+            ...prev,
+            audio: {
+              src: uploadResult.audioUrl, // Use cloud URL
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              uploadedData: uploadResult
+            }
+          }));
+          toast.success('Audio uploaded successfully!');
+        } else {
+          throw new Error('Audio upload failed');
+        }
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+        toast.error(error.message || 'Failed to upload audio. Please try again.');
+        
+        // Fallback to local URL for immediate preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setEditingHotspot(prev => ({
+            ...prev,
+            audio: {
+              src: e.target.result,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              isLocal: true
+            }
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const removeHotspotAudio = () => {
+    setEditingHotspot(prev => ({
+      ...prev,
+      audio: null
+    }));
+    toast.success('Audio removed successfully!');
   };
 
   const generateInteractiveHTML = (template, data) => {
@@ -916,7 +1028,26 @@ const InteractiveComponent = forwardRef(({
                     <button onclick="window.hideHotspotContent && window.hideHotspotContent('${labeledGraphicId}', '${hotspot.id}')" 
                             class="text-gray-400 hover:text-gray-600 ml-2 text-lg leading-none">&times;</button>
                   </div>
-                  <p class="text-xs text-gray-600 leading-relaxed">${hotspot.description}</p>
+                  <p class="text-xs text-gray-600 leading-relaxed mb-3">${hotspot.description}</p>
+                  ${hotspot.audio ? `
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                          <svg class="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.814L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.314a1 1 0 011.617.814zM12 8a1 1 0 011.414 0L15 9.586l1.586-1.586A1 1 0 1118 9.414L16.414 11 18 12.586A1 1 0 0116.586 14L15 12.414 13.414 14A1 1 0 0112 12.586L13.586 11 12 9.414A1 1 0 0112 8z" clip-rule="evenodd"></path>
+                          </svg>
+                        </div>
+                        <div class="flex-1">
+                          <p class="text-xs font-medium text-gray-800">${hotspot.audio.name}</p>
+                          <p class="text-xs text-gray-500">${Math.round(hotspot.audio.size / 1024)} KB</p>
+                        </div>
+                      </div>
+                      <audio controls class="w-full" preload="metadata" style="height: 28px;">
+                        <source src="${hotspot.audio.src}" type="${hotspot.audio.type}">
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  ` : ''}
                   <!-- Arrow pointing to hotspot -->
                   <div class="absolute w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-blue-500"
                        style="left: ${Math.max(10, Math.min(hotspot.x - Math.min(hotspot.x + 5, 85), 90))}px; top: 100%;"></div>
@@ -1548,7 +1679,7 @@ const InteractiveComponent = forwardRef(({
 
       {/* Hotspot Edit Dialog */}
       <Dialog open={showHotspotDialog} onOpenChange={setShowHotspotDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Hotspot</DialogTitle>
           </DialogHeader>
@@ -1578,6 +1709,61 @@ const InteractiveComponent = forwardRef(({
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter hotspot description"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hotspot Audio (Optional)
+                </label>
+                {editingHotspot.audio ? (
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Volume2 className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{editingHotspot.audio.name}</p>
+                            <p className="text-xs text-gray-500">{Math.round(editingHotspot.audio.size / 1024)} KB</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeHotspotAudio}
+                          className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <audio controls className="w-full" preload="metadata">
+                        <source src={editingHotspot.audio.src} type={editingHotspot.audio.type} />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleHotspotAudioUpload}
+                      className="hidden"
+                      id="hotspot-audio-upload"
+                    />
+                    <label
+                      htmlFor="hotspot-audio-upload"
+                      className="cursor-pointer flex flex-col items-center space-y-2"
+                    >
+                      <Volume2 className="h-8 w-8 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        Click to upload audio
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        MP3, WAV, OGG up to 10MB
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
