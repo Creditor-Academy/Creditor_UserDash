@@ -11,6 +11,7 @@ import { getModuleQuizzes, getQuizRemainingAttempts, getQuizResults, getUserLate
 import { fetchQuizCorrectAnswers } from "@/services/quizServices";
 import { getModuleScenariosNew, getScenarioRemainingAttempts } from "@/services/scenarioService";
 import ScanerioLastAttempt from "@/pages/ScanerioLastAttempt";
+import FinalScanrioscore from "@/pages/FinalScanrioscore";
 import LastAttemptModal from "@/components/LastAttemptModal";
 import QuizCorrectAns from "@/components/QuizCorrectAns";
 
@@ -57,6 +58,7 @@ function ModuleAssessmentsView() {
   const [hoveredScenarioId, setHoveredScenarioId] = useState(null);
   const [stickyScenarioId, setStickyScenarioId] = useState(null);
   const stickyTimerRef = useRef(null);
+  const [finalScoreOpen, setFinalScoreOpen] = useState(false);
 
   const handleScenarioMouseEnter = (id) => {
     if (stickyTimerRef.current) {
@@ -705,17 +707,41 @@ function ModuleAssessmentsView() {
                                 {(() => {
                                   const a = scenarioAttempts[scenario.id] || {};
                                   const attemptedCount = a.attempted ?? 0;
-                                  const show = attemptedCount > 0 && (hoveredScenarioId===scenario.id || stickyScenarioId===scenario.id);
+                                  const remaining = a.remainingAttempts ?? scenario.max_attempts ?? 0;
+                                  const isLocked = remaining <= 0;
+                                  const baseVisible = hoveredScenarioId===scenario.id || stickyScenarioId===scenario.id;
+                                  // If locked and attempted at least once → show "View Answers"; if attempted and not locked → show "View Last Score"
+                                  if (!baseVisible) return (
+                                    <div className="mt-2 flex justify-end opacity-0 -translate-y-1 pointer-events-none transition-all duration-300" />
+                                  );
+                                  if (attemptedCount > 0 && isLocked) {
+                                    return (
+                                      <div className="mt-2 flex justify-end transition-all duration-300 opacity-100 translate-y-0">
+                                        <Button
+                                          variant="outline"
+                                          className="h-9 px-3 bg-green border-green-300 hover:bg-green-50 shadow"
+                                          onClick={() => { setSelectedScenario(scenario); setFinalScoreOpen(true); }}
+                                        >
+                                          View Answers
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
+                                  if (attemptedCount > 0) {
+                                    return (
+                                      <div className="mt-2 flex justify-end transition-all duration-300 opacity-100 translate-y-0">
+                                        <Button
+                                          variant="outline"
+                                          className="h-9 px-3 bg-white border-gray-300 hover:bg-gray-50 shadow"
+                                          onClick={() => { setSelectedScenario(scenario); setLastScenarioOpen(true); }}
+                                        >
+                                          View Last Score
+                                        </Button>
+                                      </div>
+                                    );
+                                  }
                                   return (
-                                    <div className={`mt-2 flex justify-end transition-all duration-300 ${ show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none' }`}>
-                                      <Button
-                                        variant="outline"
-                                        className="h-9 px-3 bg-white border-gray-300 hover:bg-gray-50 shadow"
-                                        onClick={() => { setSelectedScenario(scenario); setLastScenarioOpen(true); }}
-                                      >
-                                        View Last Score
-                                      </Button>
-                                    </div>
+                                    <div className="mt-2 flex justify-end opacity-0 -translate-y-1 pointer-events-none transition-all duration-300" />
                                   );
                                 })()}
                               </div>
@@ -733,6 +759,7 @@ function ModuleAssessmentsView() {
       </main>
       <LastAttemptModal isOpen={isLastAttemptOpen} onClose={setIsLastAttemptOpen} attempt={lastAttempt} />
       <ScanerioLastAttempt isOpen={lastScenarioOpen} onClose={setLastScenarioOpen} scenario={selectedScenario} />
+      <FinalScanrioscore isOpen={finalScoreOpen} onClose={setFinalScoreOpen} scenarioId={selectedScenario?.id} />
       <QuizCorrectAns 
         isOpen={isCorrectAnswersOpen} 
         onClose={() => setIsCorrectAnswersOpen(false)} 
