@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { startScenarioAttempt, submitScenarioResponse } from "@/services/scenarioService";
+import { startScenarioAttempt, submitScenarioResponse, getScenarioLatestScore } from "@/services/scenarioService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +23,8 @@ export default function ScenarioTakePage() {
   const [selectedChoiceId, setSelectedChoiceId] = useState(null);
   const [pendingNextDecisionId, setPendingNextDecisionId] = useState(null);
   const [pendingIsEnd, setPendingIsEnd] = useState(false);
+  const [showScoreModal, setShowScoreModal] = useState(false);
+  const [latestScore, setLatestScore] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -118,10 +120,44 @@ export default function ScenarioTakePage() {
     navigate(-1);
   };
 
+  const handleViewScore = async () => {
+    // Close feedback modal when opening score modal
+    setFeedback(null);
+    try {
+      const val = await getScenarioLatestScore(scenarioId);
+      setLatestScore(typeof val === 'number' ? val : 0);
+      setShowScoreModal(true);
+    } catch (e) {
+      setLatestScore(0);
+      setShowScoreModal(true);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black/80">
-        <div className="text-white/90">Starting scenario...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="text-center space-y-6 max-w-md mx-auto px-6">
+          {/* Animated loading spinner */}
+          <div className="relative">
+            <div className="w-16 h-16 mx-auto border-4 border-gray-600 border-t-white rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 mx-auto border-4 border-transparent border-r-gray-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          
+          {/* Loading text with subtle animation */}
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-white">Preparing Your Scenario</h2>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              Setting up your interactive learning experience...
+            </p>
+          </div>
+          
+          {/* Progress dots */}
+          <div className="flex justify-center space-x-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -230,8 +266,62 @@ export default function ScenarioTakePage() {
               <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 rounded-full px-4 py-1 font-semibold shadow">
                 <Award className="w-4 h-4" /> +{feedback.points} points
               </div>
-              <div className="mt-6">
-                <Button onClick={proceedNext} className="bg-emerald-600 hover:bg-emerald-700">Continue</Button>
+              <div className="mt-6 flex items-center justify-center gap-3">
+                {pendingIsEnd ? (
+                  <>
+                    <Button onClick={handleViewScore} className="bg-violet-600 hover:bg-violet-700">View score</Button>
+                    <Button onClick={proceedNext} variant="outline">Close</Button>
+                  </>
+                ) : (
+                  <Button onClick={proceedNext} className="bg-emerald-600 hover:bg-emerald-700">Continue</Button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Latest Score Modal - bottom-right white card with animation */}
+      <AnimatePresence>
+        {showScoreModal && (
+          <motion.div
+            className="fixed inset-0 z-30"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowScoreModal(false)} />
+            <motion.div
+              className="absolute bottom-4 right-4 md:bottom-8 md:right-8"
+              initial={{ y: 24, opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 16, opacity: 0, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 240, damping: 22 }}
+            >
+              <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[92vw] max-w-md overflow-hidden">
+                <div
+                  className="h-28 w-full relative"
+                  style={{
+                    backgroundImage: `url(${scenario?.background_url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />
+                  <div className="absolute bottom-2 left-3 right-3">
+                    <div className="text-[10px] uppercase tracking-wide text-white/80">Scenario</div>
+                    <div className="text-white font-semibold text-sm line-clamp-1">{scenario?.title || 'Scenario'}</div>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="text-center">
+                    <div className="text-gray-600 text-sm mb-1">Here is your score</div>
+                    <div className="text-4xl font-extrabold text-violet-700">{latestScore ?? '—'}</div>
+                  </div>
+                  <div className="mt-5 flex justify-center">
+                    <Button onClick={() => { setShowScoreModal(false); navigate(-1); }} className="bg-violet-600 hover:bg-violet-700">Close</Button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -240,5 +330,6 @@ export default function ScenarioTakePage() {
     </div>
   );
 }
+
 
 

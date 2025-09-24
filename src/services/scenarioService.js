@@ -381,3 +381,85 @@ export async function submitScenarioResponse(attemptId, choiceId) {
     throw error;
   }
 }
+
+/**
+ * Get all user attempts and scores for a scenario
+ * GET /api/scenario/{scenarioId}/attempts
+ * Returns: Array of { userId, name, email, totalAttempts, attempts: [{ attemptId, attemptNo, score, completedAt }] }
+ */
+export async function getScenarioAttempts(scenarioId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/attempts`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch scenario attempts: ${response.status}`);
+    }
+
+    const data = await response.json();
+    // Normalize to array
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data)) return data;
+    return [];
+  } catch (error) {
+    console.error('Error fetching scenario attempts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the current user's latest attempt score for a scenario
+ * GET /api/scenario/{scenarioId}/score
+ * Returns: { score: number }
+ */
+export async function getScenarioLatestScore(scenarioId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/score`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch latest scenario score: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const payload = data?.data || data || {};
+    return typeof payload.score === 'number' ? payload.score : 0;
+  } catch (error) {
+    console.error('Error fetching latest scenario score:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get remaining attempts for current user for a scenario
+ * GET /api/scenario/{scenarioId}/remaining-attempts
+ * Returns: { scenarioId, maxAttempts, attempted, remainingAttempts }
+ */
+export async function getScenarioRemainingAttempts(scenarioId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/scenario/${scenarioId}/remaining-attempts`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch remaining attempts: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data?.data || data;
+  } catch (error) {
+    console.error('Error fetching scenario remaining attempts:', error);
+    throw error;
+  }
+}

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import QuizModal from '@/components/courses/QuizModal';
 import QuizScoresModal from '@/components/courses/QuizScoresModal';
 import EditQuestionModal from '@/components/courses/EditQuestionModal';
+import SceanrioScoreCard from '@/pages/SceanrioScoreCard';
 import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
 import { getQuizQuestions } from '@/services/quizService';
 import { getModuleScenarios, deleteScenario, getSpecificScenario } from '@/services/scenarioService';
@@ -41,6 +42,9 @@ const CreateQuizPage = () => {
   const [previewError, setPreviewError] = useState(null);
   const [showScoresModal, setShowScoresModal] = useState(false);
   const [selectedQuizForScores, setSelectedQuizForScores] = useState(null);
+  // Scenario Scores
+  const [showScenarioScoresModal, setShowScenarioScoresModal] = useState(false);
+  const [selectedScenarioForScores, setSelectedScenarioForScores] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -239,6 +243,11 @@ const CreateQuizPage = () => {
 
   const handlePreviewScenario = (scenario) => {
     navigate('/preview-scenario', { state: { scenarioId: scenario.id } });
+  };
+
+  const handleViewScenarioScores = (scenario) => {
+    setSelectedScenarioForScores(scenario);
+    setShowScenarioScoresModal(true);
   };
 
   const handlePreviewQuiz = async (quiz) => {
@@ -666,6 +675,17 @@ const CreateQuizPage = () => {
                                       </div>
                                       <div className="flex gap-2 mt-2 md:mt-0">
                                         <Button
+                                          onClick={() => handleViewScenarioScores(scenario)}
+                                          className="group relative overflow-hidden bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
+                                        >
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Trophy className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Scores
+                                            </span>
+                                          </div>
+                                        </Button>
+                                        <Button
                                           onClick={() => handlePreviewScenario(scenario)}
                                           className="group relative overflow-hidden bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
@@ -870,6 +890,30 @@ const CreateQuizPage = () => {
         quiz={selectedQuizForScores}
         courseId={courses.find(c => c.modules?.some(m => m.id === selectedQuizForScores?.module_id))?.id}
       />
+
+      {/* Scenario Scores Modal */}
+      {showScenarioScoresModal && selectedScenarioForScores && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-5/6 flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h2 className="text-xl font-semibold">Scenario Scores</h2>
+                <p className="text-sm text-gray-600">{selectedScenarioForScores?.title}</p>
+              </div>
+              <Button
+                onClick={() => { setShowScenarioScoresModal(false); setSelectedScenarioForScores(null); }}
+                variant="outline"
+              >
+                Close
+              </Button>
+            </div>
+            <div className="flex-1 p-6 overflow-y-auto">
+              {/** Lazy import to avoid circular issues */}
+              <SceanrioScoreCard scenarioId={selectedScenarioForScores?.id} scenarioTitle={selectedScenarioForScores?.title} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirmation && quizToDelete && (

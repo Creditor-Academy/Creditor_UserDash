@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,8 @@ import { ChevronLeft, Clock, GraduationCap, ChevronDown, BookOpen, Loader2, Chec
 import { fetchCourseModules } from "@/services/courseService";
 import { getModuleQuizzes, getQuizRemainingAttempts, getQuizResults, getUserLatestQuizAttempt } from "@/services/quizService";
 import { fetchQuizCorrectAnswers } from "@/services/quizServices";
-import { getModuleScenariosNew } from "@/services/scenarioService";
+import { getModuleScenariosNew, getScenarioRemainingAttempts } from "@/services/scenarioService";
+import ScanerioLastAttempt from "@/pages/ScanerioLastAttempt";
 import LastAttemptModal from "@/components/LastAttemptModal";
 import QuizCorrectAns from "@/components/QuizCorrectAns";
 
@@ -50,6 +51,30 @@ function ModuleAssessmentsView() {
   const [isCorrectAnswersOpen, setIsCorrectAnswersOpen] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState([]);
   const [loadingCorrectAnswers, setLoadingCorrectAnswers] = useState({});
+  const [scenarioAttempts, setScenarioAttempts] = useState({}); // { [scenarioId]: {remainingAttempts, maxAttempts, attempted} }
+  const [lastScenarioOpen, setLastScenarioOpen] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState(null);
+  const [hoveredScenarioId, setHoveredScenarioId] = useState(null);
+  const [stickyScenarioId, setStickyScenarioId] = useState(null);
+  const stickyTimerRef = useRef(null);
+
+  const handleScenarioMouseEnter = (id) => {
+    if (stickyTimerRef.current) {
+      clearTimeout(stickyTimerRef.current);
+      stickyTimerRef.current = null;
+    }
+    setHoveredScenarioId(id);
+    setStickyScenarioId(null);
+  };
+
+  const handleScenarioMouseLeave = (id) => {
+    setHoveredScenarioId(null);
+    setStickyScenarioId(id);
+    if (stickyTimerRef.current) clearTimeout(stickyTimerRef.current);
+    stickyTimerRef.current = setTimeout(() => {
+      setStickyScenarioId(null);
+    }, 3000);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,6 +119,19 @@ function ModuleAssessmentsView() {
         if (Array.isArray(scenariosResponse)) {
           setScenarios(scenariosResponse);
           setFilteredScenarios(scenariosResponse);
+          // Fetch remaining attempts for each scenario
+          const map = {};
+          await Promise.all(
+            scenariosResponse.map(async (sc) => {
+              try {
+                const r = await getScenarioRemainingAttempts(sc.id);
+                map[sc.id] = r;
+              } catch (e) {
+                map[sc.id] = { remainingAttempts: sc.max_attempts ?? 0, maxAttempts: sc.max_attempts ?? 0, attempted: 0 };
+              }
+            })
+          );
+          setScenarioAttempts(map);
         } else {
           setScenarios([]);
           setFilteredScenarios([]);
@@ -571,9 +609,14 @@ function ModuleAssessmentsView() {
                             </p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                          <div className="grid grid-cols-1 gap-6">
                             {filteredScenarios.map((scenario, index) => (
-                              <div key={scenario.id || index} className="block group">
+                              <div
+                                key={scenario.id || index}
+                                className="block group"
+                                onMouseEnter={() => handleScenarioMouseEnter(scenario.id)}
+                                onMouseLeave={() => handleScenarioMouseLeave(scenario.id)}
+                              >
                                 <Card className="h-64 transition-all duration-300 border overflow-hidden border-gray-200 hover:shadow-xl cursor-pointer group hover:border-emerald-400 hover:scale-[1.02]">
                                   <CardContent className="p-0 relative h-full">
                                     {/* Full Background Image */}
@@ -587,11 +630,17 @@ function ModuleAssessmentsView() {
                                       <div className="absolute inset-0 bg-black bg-opacity-30 transition-opacity duration-300 group-hover:bg-opacity-60"></div>
                                     </div>
                                     
-                                    {/* Attempts Counter - Top Right */}
-                                    <div className="absolute top-4 right-4 z-10">
+                                    {/* Attempts Counter - Top Right (remaining) */}
+                                    <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
                                       <Badge className="bg-white/90 text-gray-800 hover:bg-white border-0 shadow-md">
                                         <Award size={12} className="mr-1" />
-                                        {scenario.max_attempts || 3} attempts
+                                        {(() => {
+                                          const a = scenarioAttempts[scenario.id] || {};
+                                          const remaining = a.remainingAttempts ?? scenario.max_attempts ?? 0;
+                                          return remaining > 0
+                                            ? `${remaining} attempt${remaining === 1 ? '' : 's'} remaining`
+                                            : 'No attempts left';
+                                        })()}
                                       </Badge>
                                     </div>
                                     
@@ -622,22 +671,44 @@ function ModuleAssessmentsView() {
                                           </div>
                                         </div>
                                         
-                                        {/* Start Button */}
+                                        {/* Start Button and Last Score */}
                                       
-                                          <div className="absolute bottom-4 right-4 z-20">
-                                          <Button
-                                            className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/40 transition-all duration-300 transform hover:scale-110"
-                                            onClick={() => navigate(`/dashboard/scenario/take/${scenario.id}?module=${moduleId}`)}
-                                          >
-                                            <Play size={18} className="ml-1" /> {/* slight shift so arrow looks centered */}
-                                          </Button>
-                                        </div>
+                                          {(() => {
+                                            const a = scenarioAttempts[scenario.id] || {};
+                                            const remaining = a.remainingAttempts ?? scenario.max_attempts ?? 0;
+                                            const isLocked = remaining <= 0;
+                                            return (
+                                              <>
+                                                <div className="absolute bottom-4 right-4 z-20">
+                                                  <Button
+                                                    disabled={isLocked}
+                                                    className={`w-12 h-12 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-300 ${isLocked ? 'bg-gray-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 hover:shadow-emerald-500/40 hover:scale-110'}`}
+                                                    onClick={() => navigate(`/dashboard/scenario/take/${scenario.id}?module=${moduleId}`)}
+                                                  >
+                                                    <Play size={18} className="ml-1" />
+                                                  </Button>
+                                                </div>
+                                                {/* Hover/Sticky View Score handled below card */}
+                                              </>
+                                            );
+                                          })()}
+                                          </div>
 
                                       </div>
-                                    </div>
+                                    
                                   </CardContent>
                                 </Card>
 
+                                {/* Hover/Sticky action below card, bottom-right */}
+                                <div className={`mt-2 flex justify-end transition-all duration-300 ${ (hoveredScenarioId===scenario.id || stickyScenarioId===scenario.id) ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1 pointer-events-none' }`}>
+                                  <Button
+                                    variant="outline"
+                                    className="h-9 px-3 bg-white border-gray-300 hover:bg-gray-50 shadow"
+                                    onClick={() => { setSelectedScenario(scenario); setLastScenarioOpen(true); }}
+                                  >
+                                    View Last Score
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -652,6 +723,7 @@ function ModuleAssessmentsView() {
         </div>
       </main>
       <LastAttemptModal isOpen={isLastAttemptOpen} onClose={setIsLastAttemptOpen} attempt={lastAttempt} />
+      <ScanerioLastAttempt isOpen={lastScenarioOpen} onClose={setLastScenarioOpen} scenario={selectedScenario} />
       <QuizCorrectAns 
         isOpen={isCorrectAnswersOpen} 
         onClose={() => setIsCorrectAnswersOpen(false)} 
