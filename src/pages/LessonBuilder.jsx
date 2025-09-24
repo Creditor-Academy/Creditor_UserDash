@@ -5506,7 +5506,7 @@ function LessonBuilder() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handlePreview}
+                 // onClick={handlePreview}
                   className="flex items-center gap-1"
                 >
                   <Eye className="h-4 w-4 mr-1" />
