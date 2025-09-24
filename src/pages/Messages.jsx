@@ -823,6 +823,17 @@ function Messages() {
           <div className="w-full flex flex-col h-full">
             <div className="p-2 sm:p-3 border-b flex justify-between items-center">
               <h2 className="text-base sm:text-lg font-semibold">Messages</h2>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <CreateGroupButton
+                  className="h-7 w-7 sm:h-8 sm:w-8"
+                  onCreated={(created) => {
+                    try { setFriends(prev => [created, ...prev]); } catch {}
+                    try { setUserHasGroup(true); } catch {}
+                    try { setSelectedFriend(created.id); } catch {}
+                    try { setRoomId(created.room); } catch {}
+                    try { setConversationId(created.conversationId); } catch {}
+                  }}
+                />
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" title="New Chat">
@@ -868,6 +879,7 @@ function Messages() {
                   </div>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
             <div className="p-2 sm:p-3 border-b">
               <div className="relative">
