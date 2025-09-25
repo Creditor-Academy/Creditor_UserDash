@@ -45,7 +45,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const navigate = useNavigate();
 
   // Display helper: format credit points using USD-style units (K, M, B, T)
-  // Clamp the numeric part to a maximum of 100 and append '+' if clamped
+  // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
   const formatCreditPoints = (value) => {
     const num = Number(value) || 0;
     const abs = Math.abs(num);
@@ -86,10 +86,18 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       }
     }
 
-    // For small values, clamp raw number to 100 as well
-    const clampedSmall = Math.min(abs, 100);
-    const suffixPlus = abs > 100 ? '+' : '';
-    return `${sign}${clampedSmall}${suffixPlus}`;
+    // For values 100-999, show exact number without clamping
+    if (abs >= 100 && abs < 1000) {
+      return `${sign}${Math.round(abs)}`;
+    }
+
+    // For small values (< 100), show exact number
+    // For large values (>= 1000), clamp to 100 and add +
+    if (abs < 100) {
+      return `${sign}${Math.round(abs)}`;
+    } else {
+      return `${sign}100+`;
+    }
   };
 
   // Listen for a global request to open the credits modal
