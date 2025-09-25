@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
-import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, ArrowLeft, ChevronRight, Lock, Unlock, ShoppingCart, ArrowLeft } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, ArrowLeft, ChevronRight, Lock, Unlock, ShoppingCart } from "lucide-react";
 import { fetchCourseModules, fetchCourseById, fetchUserCourses, fetchCoursePrice } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import { useUser } from "@/contexts/UserContext";
@@ -66,7 +65,6 @@ const CoursePriceDisplay = ({ course }) => {
 export function CourseView() {
   const { courseId } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const navigate = useNavigate();
   const hasAccessFromState = location.state?.isAccessible ?? false;
   const { userProfile } = useUser();
@@ -344,7 +342,7 @@ export function CourseView() {
                 <div className="text-red-500 mb-4">
                   <span className="text-4xl">❌</span>
                 </div>
-                <h3 className="text-lg font-medium mb-2">Failed to load modules</h3>
+                <h3 className="text-lg font-medium">Failed to load modules</h3>
                 <p className="text-muted-foreground mb-4">{error}</p>
                 <Button onClick={() => window.location.reload()}>
                   Try Again
@@ -804,7 +802,7 @@ export function CourseView() {
               <div className="flex items-center mb-3">
                 <div className="bg-blue-100 p-2 rounded-full mr-3">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900">Confirm Course Purchase</h3>
               </div>
             </div>

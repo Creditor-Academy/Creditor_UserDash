@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Clock, User, BookOpen, CheckCircle, Circle, X, Menu, FileText, Plus, Edit3, Hourglass, Star, Sparkles, Calendar } from 'lucide-react';
+import { ChevronLeft, Clock, User, BookOpen, CheckCircle, Circle, X, Menu, FileText, Plus, Edit3, Hourglass, Star, Sparkles, Calendar, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1111,8 +1111,162 @@ const LessonPreview = () => {
                       </>
                     )}
 
+                    {/* SCORM Content */}
+                    {block.type === 'scorm' && (
+                      <>
+                        {/* Always use the new launch button approach for SCORM, ignore old htmlCss */}
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                  <Box className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900">
+                                    {(() => {
+                                      try {
+                                        const content = JSON.parse(block.content || '{}');
+                                        return content.title || block.title || 'SCORM Package';
+                                      } catch {
+                                        return block.title || 'SCORM Package';
+                                      }
+                                    })()}
+                                  </h3>
+                                  <p className="text-xs text-gray-500">
+                                    SCORM Package • {(() => {
+                                      try {
+                                        const content = JSON.parse(block.content || '{}');
+                                        return content.fileSize ? `${(content.fileSize / (1024 * 1024)).toFixed(2)} MB` : '';
+                                      } catch {
+                                        return '';
+                                      }
+                                    })()}
+                                  </p>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    const content = JSON.parse(block.content || '{}');
+                                    let scormUrl = content.scormUrl || 
+                                                   content.uploadResult?.data?.url || 
+                                                   content.uploadResult?.data?.launchUrl ||
+                                                   content.uploadResult?.url ||
+                                                   content.url ||
+                                                   content.launchUrl;
+                                    
+                                    if (!scormUrl && block.htmlCss) {
+                                      const urlMatch = block.htmlCss.match(/https:\/\/[^'"]+\.s3\.[^'"]+/);
+                                      if (urlMatch) {
+                                        scormUrl = urlMatch[0];
+                                      }
+                                    }
+                                     
+                                    if (scormUrl && scormUrl.includes('s3.') && scormUrl.includes('/scorm/')) {
+                                      const urlParts = scormUrl.split('/scorm/');
+                                      if (urlParts.length > 1) {
+                                        const pathParts = urlParts[1].split('/');
+                                        const scormId = pathParts[0];
+                                        const filePath = pathParts.slice(1).join('/');
+                                        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+                                        scormUrl = `${baseUrl}/api/scorm-proxy/${scormId}/${filePath}`;
+                                      }
+                                    }
+                                     
+                                    if (scormUrl) {
+                                      window.open(scormUrl, '_blank');
+                                    } else {
+                                      console.error('SCORM URL not found in any location');
+                                      console.error('Available content keys:', Object.keys(content));
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing SCORM content:', e);
+                                  }
+                                }}
+                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              >
+                                Open Full Screen
+                              </button>
+                            </div>
+                            <div className="relative bg-gray-50 rounded-lg p-8 text-center flex items-center justify-center" style={{ height: '400px' }}>
+                              <div>
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-9-4V8a3 3 0 013-3h6a3 3 0 013 3v2M7 21h10a2 2 0 002-2v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+                                  </svg>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Interactive SCORM Content</h3>
+                                <p className="text-gray-600 mb-4">Click the button below to launch the SCORM package in a new window for the best experience.</p>
+                                <button 
+                                  onClick={async () => {
+                                    // First test if proxy is working
+                                    try {
+                                      const testResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000'}/api/scorm-proxy/test`);
+                                      const testData = await testResponse.json();
+                                      console.log('Proxy test result:', testData);
+                                    } catch (e) {
+                                      console.error('Proxy test failed:', e);
+                                    }
+
+                                    try {
+                                      console.log('Full block data:', block);
+                                      const content = JSON.parse(block.content || '{}');
+                                      console.log('Parsed content:', content);
+                                      
+                                      // Try multiple ways to get the SCORM URL
+                                      let scormUrl = content.scormUrl || 
+                                                     content.uploadResult?.data?.url || 
+                                                     content.uploadResult?.data?.launchUrl ||
+                                                     content.uploadResult?.url ||
+                                                     content.url ||
+                                                     content.launchUrl;
+                                      
+                                      // Also try to extract from htmlCss if URL not found in content
+                                      if (!scormUrl && block.htmlCss) {
+                                        const urlMatch = block.htmlCss.match(/https:\/\/[^'"]+\.s3\.[^'"]+/);
+                                        if (urlMatch) {
+                                          scormUrl = urlMatch[0];
+                                          console.log('Extracted URL from htmlCss:', scormUrl);
+                                        }
+                                      }
+                                      
+                                      console.log('Header button - Original SCORM URL:', scormUrl);
+                                      
+                                      // If it's still a direct S3 URL, try to convert it to proxy URL
+                                      if (scormUrl && scormUrl.includes('s3.') && scormUrl.includes('/scorm/')) {
+                                        const urlParts = scormUrl.split('/scorm/');
+                                        if (urlParts.length > 1) {
+                                          const pathParts = urlParts[1].split('/');
+                                          const scormId = pathParts[0];
+                                          const filePath = pathParts.slice(1).join('/');
+                                          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+                                          scormUrl = `${baseUrl}/api/scorm-proxy/${scormId}/${filePath}`;
+                                          console.log('Header button - Converted to proxy URL:', scormUrl);
+                                        }
+                                      }
+                                      
+                                      if (scormUrl) {
+                                        window.open(scormUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                                      } else {
+                                        console.error('SCORM URL not found in any location');
+                                        console.error('Available content keys:', Object.keys(content));
+                                      }
+                                    } catch (e) {
+                                      console.error('Error parsing SCORM content:', e);
+                                    }
+                                  }}
+                                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                >
+                                  Launch SCORM Content
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                      </>
+                    )}
+
                     {/* Other Content Types - Fallback for any unhandled block types */}
-                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider'].includes(block.type) && (
+                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider', 'scorm'].includes(block.type) && (
                       <>
                         {block.htmlCss ? (
                           <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
