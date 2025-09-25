@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import CreateCourse from "./CreateCourse";
 import ScormPage from "./ScormPage";
 import CourseLessonsPage from "./CourseLessonsPage";
@@ -34,18 +34,53 @@ const InstructorPage = () => {
   const { isInstructorOrAdmin } = useAuth();
   const isAllowed = isInstructorOrAdmin();
   const [collapsed, setCollapsed] = useState(true); // Start with sidebar collapsed
-  const [activeTab, setActiveTab] = useState("course");
   const [userManagementView, setUserManagementView] = useState(() => {
     const saved = localStorage.getItem("userManagementView");
     return saved || "add";
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Determine active tab from URL
+  const getActiveTabFromPath = () => {
+    const path = location.pathname;
+    if (path.includes('/course-management')) return 'course';
+    if (path.includes('/user-management')) return 'users';
+    if (path.includes('/course-catalog')) return 'catalog';
+    if (path.includes('/create-quiz')) return 'quiz';
+    if (path.includes('/course-lessons')) return 'lessons';
+    if (path.includes('/group-management')) return 'groups';
+    if (path.includes('/event-management')) return 'events';
+    if (path.includes('/support-tickets')) return 'tickets';
+    if (path.includes('/assets')) return 'resources';
+    if (path.includes('/payments')) return 'payments';
+    return 'course'; // default
+  };
+  
+  const [activeTab, setActiveTab] = useState(getActiveTabFromPath());
 
   useEffect(() => {
     localStorage.setItem("userManagementView", userManagementView);
   }, [userManagementView]);
-
+  
+  // Update active tab when URL changes
+  useEffect(() => {
+    setActiveTab(getActiveTabFromPath());
+  }, [location.pathname]);
+  
+  // Redirect to default section if on base instructor path
+  useEffect(() => {
+    if (location.pathname === '/instructor') {
+      navigate('/instructor/course-management', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+  
+  // Navigation handlers
+  const handleNavigation = (tab, path) => {
+    setActiveTab(tab);
+    navigate(path);
+  };
   if (!isAllowed) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 px-4">
@@ -101,7 +136,7 @@ const InstructorPage = () => {
         {/* Sub Sidebar Navigation */}
         <div className="flex flex-col p-4 gap-3 text-sm">
           <button 
-            onClick={() => setActiveTab("course")} 
+            onClick={() => handleNavigation("course", "/instructor/course-management")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "course" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -111,7 +146,7 @@ const InstructorPage = () => {
             <FaBook /> Course Management
           </button>
           <button 
-            onClick={() => setActiveTab("users")} 
+            onClick={() => handleNavigation("users", "/instructor/user-management")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "users" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -121,7 +156,7 @@ const InstructorPage = () => {
             <FaUsers /> User Management
           </button>
           <button 
-            onClick={() => setActiveTab("catalog")} 
+            onClick={() => handleNavigation("catalog", "/instructor/course-catalog")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "catalog" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -131,7 +166,7 @@ const InstructorPage = () => {
             <FaBookOpen /> Course Catalog
           </button>
           <button 
-            onClick={() => setActiveTab("quiz")} 
+            onClick={() => handleNavigation("quiz", "/instructor/create-quiz")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "quiz" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -151,7 +186,7 @@ const InstructorPage = () => {
             <FaFolder /> SCORM Content
           </button> */}
           <button 
-            onClick={() => setActiveTab("lessons")} 
+            onClick={() => handleNavigation("lessons", "/instructor/course-lessons")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "lessons" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -161,7 +196,7 @@ const InstructorPage = () => {
             <FaFileAlt /> Course Lessons
           </button>
           <button 
-            onClick={() => setActiveTab("groups")} 
+            onClick={() => handleNavigation("groups", "/instructor/group-management")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "groups" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -171,7 +206,7 @@ const InstructorPage = () => {
             <FaUsers /> Group Management
           </button>
           <button 
-            onClick={() => setActiveTab("events")} 
+            onClick={() => handleNavigation("events", "/instructor/event-management")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "events" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -181,7 +216,7 @@ const InstructorPage = () => {
             <FaCalendarAlt /> Event Management
           </button>
           <button 
-            onClick={() => setActiveTab("tickets")} 
+            onClick={() => handleNavigation("tickets", "/instructor/support-tickets")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "tickets" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -191,7 +226,7 @@ const InstructorPage = () => {
             <FaTicketAlt /> Support Tickets
           </button>
           <button 
-            onClick={() => setActiveTab("resources")} 
+            onClick={() => handleNavigation("resources", "/instructor/assets")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "resources" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 
@@ -201,7 +236,7 @@ const InstructorPage = () => {
             <FaImages /> Assets
           </button>
           <button 
-            onClick={() => setActiveTab("payments")} 
+            onClick={() => handleNavigation("payments", "/instructor/payments")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === "payments" 
                 ? "bg-blue-100 text-blue-700 font-semibold" 

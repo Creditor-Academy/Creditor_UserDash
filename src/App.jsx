@@ -139,7 +139,19 @@ function App() {
                 <Instructorpage />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Instructorpage />} />
+            <Route path="course-management" element={<Instructorpage />} />
+            <Route path="user-management" element={<Instructorpage />} />
+            <Route path="course-catalog" element={<Instructorpage />} />
+            <Route path="create-quiz" element={<Instructorpage />} />
+            <Route path="course-lessons" element={<Instructorpage />} />
+            <Route path="group-management" element={<Instructorpage />} />
+            <Route path="event-management" element={<Instructorpage />} />
+            <Route path="support-tickets" element={<Instructorpage />} />
+            <Route path="assets" element={<Instructorpage />} />
+            <Route path="payments" element={<Instructorpage />} />
+          </Route>
           <Route
             path="/instructor/courses/:courseId/modules"
             element={
