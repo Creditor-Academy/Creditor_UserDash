@@ -1019,10 +1019,49 @@ const InteractiveComponent = forwardRef(({
               `).join('')}
               
               <!-- Content overlays for each hotspot -->
-              ${data.hotspots.map(hotspot => `
+              ${data.hotspots.map(hotspot => {
+                // Smart positioning logic
+                const isLeftSide = hotspot.x < 30;  // Left 30% of image
+                const isRightSide = hotspot.x > 70; // Right 30% of image
+                const isTopSide = hotspot.y < 30;   // Top 30% of image
+                const isBottomSide = hotspot.y > 70; // Bottom 30% of image
+                
+                // Calculate overlay position based on hotspot location
+                let overlayLeft, overlayTop, arrowPosition, arrowDirection;
+                
+                if (isLeftSide) {
+                  // Hotspot on left - show overlay to the right
+                  overlayLeft = Math.min(hotspot.x + 8, 75);
+                  arrowPosition = '15px'; // Arrow on left side of overlay
+                  arrowDirection = 'left';
+                } else if (isRightSide) {
+                  // Hotspot on right - show overlay to the left
+                  overlayLeft = Math.max(hotspot.x - 25, 5);
+                  arrowPosition = 'calc(100% - 35px)'; // Arrow on right side of overlay
+                  arrowDirection = 'right';
+                } else {
+                  // Hotspot in center - default positioning
+                  overlayLeft = Math.min(hotspot.x + 5, 70);
+                  arrowPosition = '25px';
+                  arrowDirection = 'center';
+                }
+                
+                if (isTopSide) {
+                  // Hotspot at top - show overlay below
+                  overlayTop = Math.min(hotspot.y + 8, 85);
+                } else if (isBottomSide) {
+                  // Hotspot at bottom - show overlay above
+                  overlayTop = Math.max(hotspot.y - 25, 5);
+                } else {
+                  // Default vertical positioning
+                  overlayTop = Math.max(hotspot.y - 10, 5);
+                }
+                
+                return `
                 <div id="content-${labeledGraphicId}-${hotspot.id}" 
                      class="hotspot-content absolute bg-white border-2 border-blue-500 rounded-lg shadow-xl p-4 min-w-64 max-w-80 z-20 hidden"
-                     style="left: ${Math.min(hotspot.x + 5, 85)}%; top: ${Math.max(hotspot.y - 10, 5)}%;">
+                     style="left: ${overlayLeft}%; top: ${overlayTop}%;"
+                     data-arrow-direction="${arrowDirection}">
                   <div class="flex items-start justify-between mb-2">
                     <h3 class="font-semibold text-gray-800 text-sm">${hotspot.label}</h3>
                     <button onclick="window.hideHotspotContent && window.hideHotspotContent('${labeledGraphicId}', '${hotspot.id}')" 
@@ -1048,11 +1087,19 @@ const InteractiveComponent = forwardRef(({
                       </audio>
                     </div>
                   ` : ''}
-                  <!-- Arrow pointing to hotspot -->
-                  <div class="absolute w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-blue-500"
-                       style="left: ${Math.max(10, Math.min(hotspot.x - Math.min(hotspot.x + 5, 85), 90))}px; top: 100%;"></div>
-                </div>
-              `).join('')}
+                  <!-- Smart arrow positioning -->
+                  ${arrowDirection === 'left' ? `
+                    <div class="absolute w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-blue-500"
+                         style="left: -8px; top: 20px;"></div>
+                  ` : arrowDirection === 'right' ? `
+                    <div class="absolute w-0 h-0 border-t-8 border-b-8 border-l-8 border-transparent border-l-blue-500"
+                         style="right: -8px; top: 20px;"></div>
+                  ` : `
+                    <div class="absolute w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-blue-500"
+                         style="left: ${arrowPosition}; top: 100%;"></div>
+                  `}
+                </div>`;
+              }).join('')}
             </div>
           </div>
         </div>
@@ -1582,15 +1629,31 @@ const InteractiveComponent = forwardRef(({
                         </p>
                       </div>
                     ) : labeledGraphicImageUploading ? (
-                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-blue-50">
-                        <div className="flex flex-col items-center space-y-3">
-                          <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
-                          <div className="text-center">
-                            <span className="text-lg font-medium text-blue-600">
+                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden">
+                        {/* Animated background pulse */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-transparent opacity-50 animate-pulse"></div>
+                        
+                        <div className="relative flex flex-col items-center space-y-4">
+                          <div className="relative">
+                            <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />
+                            <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-ping"></div>
+                          </div>
+                          
+                          <div className="text-center space-y-2">
+                            <span className="text-xl font-semibold text-blue-700 animate-pulse">
                               Uploading Image...
                             </span>
-                            <p className="text-sm text-blue-500 mt-1">
-                              Please wait while we upload your image
+                            <p className="text-sm text-blue-600">
+                              Please wait while we process your image
+                            </p>
+                            
+                            {/* Progress bar animation */}
+                            <div className="w-48 h-2 bg-blue-200 rounded-full overflow-hidden mt-3">
+                              <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full animate-pulse"></div>
+                            </div>
+                            
+                            <p className="text-xs text-blue-500 mt-2">
+                              This may take a few seconds...
                             </p>
                           </div>
                         </div>
