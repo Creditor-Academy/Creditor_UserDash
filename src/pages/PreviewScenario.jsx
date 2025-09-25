@@ -73,7 +73,7 @@ const PreviewScenario = () => {
         id: choice.id,
         text: choice.text || '',
         branchType: choice.branch_type?.toLowerCase() || 'neutral',
-        outcome: choice.feedback || '',
+       
         feedback: choice.feedback || '',
         nextDecisionId: choice.next_decision_id,
         points: choice.points || 0
@@ -960,9 +960,7 @@ const PreviewScenario = () => {
                               {choice.nextDecisionId ? `→ Decision ${choice.nextDecisionId}` : 'End Scenario'}
                             </div>
                           </div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            <strong>Outcome:</strong> {choice.outcome}
-                          </div>
+                          
                           <div className="text-xs text-gray-600">
                             <strong>Feedback:</strong> {choice.feedback}
                           </div>
