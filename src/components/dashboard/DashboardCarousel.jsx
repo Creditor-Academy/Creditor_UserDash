@@ -10,16 +10,23 @@ import {
 const carouselItems = [
   {
     id: 1,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/website_sat.png",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/Website_event_27.png",
     title: "Website Building Event",
-    course: "20th Sep",
+    course: "27th Sep",
    
   },
   {
     id: 2,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/PMP+event.png",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/PMP_event_27.png",
     title: "Private Merchant Processing Event",
-    course: "20th Sep",
+    course: "27th Sep",
+    
+  },
+  {
+    id: 3,
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/new_member_event_27.png",
+    title: "New Member Event",
+    course: "27th Sep",
     
   },
 ];
