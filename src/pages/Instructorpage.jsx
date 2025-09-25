@@ -266,18 +266,40 @@ const InstructorPage = () => {
           </div>
         </header>
 
+        {/* Fixed Dashboard Header */}
+        <div 
+          className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-10 transition-all duration-300"
+          style={{ 
+            top: '4rem',
+            left: collapsed ? "calc(4.5rem + 13rem)" : "calc(17rem + 13rem)",
+            right: '0'
+          }}
+        >
+          <div className="max-w-7xl mx-auto w-full px-6 py-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <div className="w-11 h-11 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-xl flex items-center justify-center shadow-lg ring-1 ring-blue-600/20">
+                    <FaBook className="text-white text-lg" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900 tracking-tight leading-tight">
+                    Instructor Dashboard
+                  </h1>
+                  <p className="text-sm text-gray-600 leading-tight">
+                    Manage your courses, users, SCORM, lessons, and more.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto pt-16">
+        <div className="flex-1 overflow-y-auto" style={{ paddingTop: '8rem' }}>
           <div className="max-w-7xl mx-auto w-full px-6 pb-14 pt-6">
-            {/* Dashboard Header */}
-            <section className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-6">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Instructor Dashboard
-              </h1>
-              <p className="text-gray-600">
-                Manage your courses, users, SCORM, lessons, and more.
-              </p>
-            </section>
 
             {/* Tabs Content */}
             {activeTab === "course" && (

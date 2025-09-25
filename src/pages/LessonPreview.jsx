@@ -690,12 +690,16 @@ const LessonPreview = () => {
         <div className="p-6 h-screen flex flex-col overflow-hidden">
           {/* Lesson Header */}
           <div className="mb-6 flex-shrink-0">
-            <div className="text-sm opacity-75 mb-1">Lesson {lessonData.lessonOrder} of {lessonData.totalLessons}</div>
-            <h1 className="text-xl font-bold leading-tight mb-2">{lessonData.title}</h1>
-            {/* <div className="flex items-center text-sm opacity-75 mb-4"> */}
-              {/* <Clock className="h-4 w-4 mr-1" /> */}
-              {/* {lessonData.duration} */}
-            {/* </div> */}
+            <div className="text-sm opacity-75 mb-1">Lesson {lessonData.lessonOrder}</div>
+            <h1 className="text-xl font-bold leading-tight mb-3">{lessonData.title}</h1>
+            
+            {/* Section Progress */}
+            {totalSections > 0 && (
+              <div className="text-sm opacity-75 mb-3">
+                Section {Math.max(1, lessonData.headingSections.findIndex(s => s.id === currentSection) + 1)} of {totalSections}
+              </div>
+            )}
+            
             <div className="bg-blue-700 rounded-full h-2 mb-2">
               <div 
                 className="bg-white rounded-full h-2 transition-all duration-300"
@@ -746,43 +750,67 @@ const LessonPreview = () => {
       <div className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'lg:ml-80' : 'lg:ml-0'}`}>
         {/* Fixed Header */}
         <header 
-          className="fixed top-0 right-0 z-40 bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-200 transition-all duration-300" 
+          className="fixed top-0 right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80 transition-all duration-300" 
           style={{ left: sidebarVisible ? '320px' : '0' }}
         >
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Left Section - Navigation */}
+            <div className="flex items-center space-x-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarVisible(!sidebarVisible)}
-                className="h-9 w-9 p-0 rounded-lg hover:bg-gray-100 transition-colors"
+                className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 transition-colors"
                 title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
               >
-                <Menu className="h-5 w-5 text-gray-600" />
+                <Menu className="h-4 w-4 text-gray-600" />
               </Button>
-              <div className="h-6 w-px bg-gray-300"></div>
+              
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden h-9 w-9 p-0 rounded-lg hover:bg-gray-100"
+                className="lg:hidden h-8 w-8 p-0 rounded-md hover:bg-gray-100"
               >
                 <ChevronLeft className="h-4 w-4 text-gray-600" />
               </Button>
+              
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-2 py-1.5 rounded-md transition-colors ml-1"
               >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                <span className="font-medium">Back</span>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span className="text-sm font-medium">Back</span>
               </Button>
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                Lesson {lessonData.lessonOrder} of {lessonData.totalLessons}
+
+            {/* Center Section - Lesson Info */}
+            <div className="hidden md:flex items-center justify-center flex-1 max-w-md mx-8">
+              <div className="text-center">
+                <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                  Lesson {lessonData.lessonOrder}
+                </div>
+                <div className="text-base font-semibold text-gray-900 mt-0.5 truncate">
+                  {lessonData.title}
+                </div>
+              </div>
+            </div>
+            
+            {/* Right Section - Progress Badges */}
+            <div className="flex items-center space-x-3">
+              {/* Mobile lesson badge */}
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 md:hidden text-xs px-2 py-1">
+                Lesson {lessonData.lessonOrder}
               </Badge>
+              
+              {/* Section progress badge */}
+              {totalSections > 0 && (
+                <Badge variant="outline" className="bg-gray-50/80 text-gray-700 border-gray-300 text-xs px-2.5 py-1 font-medium">
+                  Section {Math.max(1, lessonData.headingSections.findIndex(s => s.id === currentSection) + 1)} of {totalSections}
+                </Badge>
+              )}
             </div>
           </div>
         </header>

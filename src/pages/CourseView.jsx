@@ -397,17 +397,7 @@ export function CourseView() {
                 {/* Course Title and Description at the top */}
                 <CardContent className="p-6">
                   <div className="max-w-4xl">
-                    {/* Back Button */}
-                    <div className="mb-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back
-                      </Button>
-                    </div>
+                    
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{courseDetails.title}</h1>
                     <p className={`text-gray-600 text-md leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}>
                       {courseDetails.description}
