@@ -65,15 +65,15 @@ const CreateScenario = () => {
   const [decisions, setDecisions] = useState([
     {
       id: 1,
-      title: 'Decision Point 1',
-      description: 'Enter the opening scenario or first decision point...',
+      title: '',
+      description: '',
       choices: [
         { 
           id: 1, 
-          text: 'Choice 1', 
-          outcome: 'What happens with this choice?', 
-          points: 0,
-          feedback: 'Immediate feedback for this choice',
+          text: '', 
+          outcome: '', 
+          points: '',
+          feedback: '',
           nextDecisionId: null,
           branchType: 'neutral'
         }
@@ -217,7 +217,7 @@ const CreateScenario = () => {
               feedback: c.feedback || '',
               nextAction,
               nextDecisionId: mappedNextDecisionId,
-              points: typeof c.points === 'number' ? c.points : parseInt(c.points || 0, 10)
+              points: typeof c.points === 'number' ? c.points : parseInt(c.points || '0', 10)
             };
           });
 
@@ -294,9 +294,9 @@ const CreateScenario = () => {
       title: `Branch from "${choice.text.substring(0, 30)}..."`,
       description: '',
       choices: [
-        { id: 1, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' },
-        { id: 2, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' },
-        { id: 3, text: '', outcome: '', points: 0, feedback: '', nextDecisionId: null, branchType: 'neutral' }
+        { id: 1, text: '', outcome: '', points: '', feedback: '', nextDecisionId: null, branchType: 'neutral' },
+        { id: 2, text: '', outcome: '', points: '', feedback: '', nextDecisionId: null, branchType: 'neutral' },
+        { id: 3, text: '', outcome: '', points: '', feedback: '', nextDecisionId: null, branchType: 'neutral' }
       ],
       level: parentDecision.level + 1,
       branchPath: newBranchPath,
@@ -328,7 +328,7 @@ const CreateScenario = () => {
             id: newChoiceId, 
             text: '', 
             outcome: '', 
-            points: 0,
+            points: '',
             feedback: '',
             nextDecisionId: null,
             branchType: 'neutral'
@@ -434,6 +434,16 @@ const CreateScenario = () => {
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Decision Title</label>
+            <Input
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:border-purple-500 focus:ring-purple-500"
+              placeholder="Enter decision title..."
+              value={decision.title}
+              onChange={e => handleDecisionChange(decision.id, 'title', e.target.value)}
+            />
+          </div>
+          
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Decision Description</label>
             <textarea
               className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[100px] focus:border-purple-500 focus:ring-purple-500"
@@ -494,7 +504,7 @@ const CreateScenario = () => {
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Choice Text</label>
                       <Input
-                        placeholder="Enter choice text"
+                        placeholder="Enter choice text..."
                         value={choice.text}
                         onChange={e => handleChoiceChange(decision.id, choice.id, 'text', e.target.value)}
                         className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
@@ -559,9 +569,15 @@ const CreateScenario = () => {
                       <label className="block text-xs font-medium text-gray-600 mb-1">Points Awarded</label>
                       <Input
                         type="number"
-                        placeholder="Points"
+                        placeholder="Enter points (numbers only)..."
                         value={choice.points}
-                        onChange={e => handleChoiceChange(decision.id, choice.id, 'points', parseInt(e.target.value) || 0)}
+                        onChange={e => {
+                          const value = e.target.value;
+                          // Only allow numeric input
+                          if (value === '' || /^\d+$/.test(value)) {
+                            handleChoiceChange(decision.id, choice.id, 'points', value);
+                          }
+                        }}
                         className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
                       />
                     </div>
@@ -570,7 +586,7 @@ const CreateScenario = () => {
                   <div className="mt-3">
                     <label className="block text-xs font-medium text-gray-600 mb-1">Immediate Feedback</label>
                     <Input
-                      placeholder="Feedback shown immediately after choice"
+                      placeholder="Enter feedback shown immediately after choice..."
                       value={choice.feedback}
                       onChange={e => handleChoiceChange(decision.id, choice.id, 'feedback', e.target.value)}
                       className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
