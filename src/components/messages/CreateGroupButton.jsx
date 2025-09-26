@@ -36,6 +36,8 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [imageDataUrl, setImageDataUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [useUrl, setUseUrl] = useState(false);
 
   // Directory state
   const [allUsers, setAllUsers] = useState([]);
@@ -113,6 +115,8 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
     setImageFile(null);
     setImagePreviewUrl("");
     setImageDataUrl("");
+    setImageUrl("");
+    setUseUrl(false);
   };
 
   const handleCreate = async () => {
@@ -131,7 +135,8 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         description: groupDescription.trim(),
         type: "messaging",
         is_private: false,
-        ...(imageDataUrl ? { thumbnail: imageDataUrl } : {}),
+        ...(useUrl && imageUrl.trim() ? { thumbnail: imageUrl.trim() } : {}),
+        ...(!useUrl && imageDataUrl ? { thumbnail: imageDataUrl } : {}),
       };
       const res = await createGroup(payload);
       if (!(res?.success && res?.data?.id)) throw new Error(res?.message || "Failed to create group");
@@ -216,55 +221,78 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
               {/* Group Image Upload Section (Always visible) */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Group Image (Optional)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="group-image-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setImageFile(file);
-                      const objectUrl = URL.createObjectURL(file);
-                      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-                      setImagePreviewUrl(objectUrl);
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        try { setImageDataUrl(String(reader.result || "")); } catch {}
-                      };
-                      reader.readAsDataURL(file);
+                
+                {/* Toggle between URL and File Upload */}
+                <div className="flex items-center gap-2 mb-3">
+                  <Button
+                    type="button"
+                    variant={!useUrl ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 px-3"
+                    onClick={() => {
+                      setUseUrl(false);
+                      setImageUrl("");
                     }}
-                  />
+                  >
+                    Choose File
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={useUrl ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 px-3"
+                    onClick={() => {
+                      setUseUrl(true);
+                      // Clear file upload when switching to URL
+                      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+                      setImageFile(null);
+                      setImagePreviewUrl("");
+                      setImageDataUrl("");
+                      const el = document.getElementById("group-image-input");
+                      if (el) { try { el.value = ""; } catch {} }
+                    }}
+                  >
+                    Use URL
+                  </Button>
+                </div>
+
+                <input
+                  id="group-image-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setImageFile(file);
+                    const objectUrl = URL.createObjectURL(file);
+                    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+                    setImagePreviewUrl(objectUrl);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      try { setImageDataUrl(String(reader.result || "")); } catch {}
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+                
+                {!useUrl ? (
                   <Button
                     variant="outline"
                     type="button"
                     onClick={() => document.getElementById("group-image-input")?.click()}
+                    className="w-full"
                   >
-                    Upload Image
+                    Choose File
                   </Button>
-
-                  {imagePreviewUrl && (
-                    <div className="flex items-center gap-2">
-                      <img src={imagePreviewUrl} alt="preview" className="h-10 w-10 rounded object-cover border" />
-                      <Button
-                        variant="ghost"
-                        type="button"
-                        className="h-8 px-2 text-red-600"
-                        onClick={() => {
-                          if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-                          setImageFile(null);
-                          setImagePreviewUrl("");
-                          setImageDataUrl("");
-                          const el = document.getElementById("group-image-input");
-                          if (el) { try { el.value = ""; } catch {} }
-                        }}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <Input
+                    placeholder="Enter image URL (e.g., https://example.com/image.jpg)"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="h-9"
+                  />
+                )}
               </div>
 
               <div className="space-y-2">

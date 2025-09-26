@@ -3,8 +3,9 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft, Users, Crown, X } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft, Users, Crown, X, ChevronRight } from "lucide-react";
 import CreateGroupButton from "@/components/messages/CreateGroupButton";
+import GroupInfoModal from "@/components/messages/GroupInfoModal";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -124,6 +125,9 @@ function Messages() {
   const [deletingMessageId, setDeletingMessageId] = useState(null);
   const [deleteConversationId, setDeleteConversationId] = useState(null);
   const [showDeleteConversationDialog, setShowDeleteConversationDialog] = useState(false);
+  
+  // Group info modal state
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   
   // Group creation state
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
@@ -1071,11 +1075,23 @@ function Messages() {
                         </>
                       )}
                     </Avatar>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-sm sm:text-base">
                         {convosLoaded ? (friends.find((f) => f.id === selectedFriend)?.name || '') : ''}
                       </h3>
                     </div>
+                    {/* Group Info Button - only show for groups */}
+                    {convosLoaded && friends.find((f) => f.id === selectedFriend)?.isGroup && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all"
+                        onClick={() => setShowGroupInfo(true)}
+                        title="Group Info"
+                      >
+                        <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -1434,6 +1450,21 @@ function Messages() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Group Info Modal */}
+      {showGroupInfo && convosLoaded && selectedFriend && (
+        <GroupInfoModal
+          isOpen={showGroupInfo}
+          onClose={() => setShowGroupInfo(false)}
+          groupId={friends.find((f) => f.id === selectedFriend)?.conversationId || friends.find((f) => f.id === selectedFriend)?.room}
+          groupInfo={{
+            name: friends.find((f) => f.id === selectedFriend)?.name,
+            description: friends.find((f) => f.id === selectedFriend)?.description,
+            thumbnail: friends.find((f) => f.id === selectedFriend)?.avatar
+          }}
+          isAdmin={friends.find((f) => f.id === selectedFriend)?.isAdmin || false}
+        />
+      )}
     </div>
   );
 }
