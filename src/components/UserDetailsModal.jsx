@@ -23,12 +23,16 @@ import {
   AlertCircle
 } from "lucide-react";
 import { fetchUserCoursesByUserId } from "@/services/userService";
+import { getUnlockedModulesByUser } from "@/services/modulesService";
+import { fetchCourseModules } from "@/services/courseService";
 
 const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isInstructorOrAdmin = false, viewerTimezone }) => {
   const [courses, setCourses] = React.useState([]);
   const [loadingCourses, setLoadingCourses] = React.useState(false);
   const [coursesError, setCoursesError] = React.useState(null);
   const [bioExpanded, setBioExpanded] = React.useState(false);
+  const [loadingModules, setLoadingModules] = React.useState(false);
+  const [unlockedModulesByCourse, setUnlockedModulesByCourse] = React.useState({});
 
   // Fetch courses for the selected user when modal opens or user changes
   React.useEffect(() => {
@@ -50,6 +54,51 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       setLoadingCourses(false);
     }
   };
+
+  // Fetch unlocked modules for this user and group them by course
+  React.useEffect(() => {
+    const loadUnlockedModules = async () => {
+      if (!isOpen || !user?.id || courses.length === 0) return;
+      setLoadingModules(true);
+      try {
+        const unlocked = await getUnlockedModulesByUser(user.id);
+        // Group unlocked module IDs by courseId
+        const idsByCourse = {};
+        (Array.isArray(unlocked) ? unlocked : []).forEach((row) => {
+          const courseId = String(row.course_id || row.courseId || row.course?.id || "");
+          const moduleId = String(row.module_id || row.moduleId || row.id || "");
+          if (!courseId || !moduleId) return;
+          if (!idsByCourse[courseId]) idsByCourse[courseId] = new Set();
+          idsByCourse[courseId].add(moduleId);
+        });
+
+        // For each enrolled course, fetch its modules and keep only unlocked ones
+        const results = await Promise.all(
+          courses.map(async (c) => {
+            try {
+              const allModules = await fetchCourseModules(c.id);
+              const wanted = idsByCourse[String(c.id)] || new Set();
+              const filtered = (Array.isArray(allModules) ? allModules : []).filter((m) => wanted.has(String(m.id)));
+              return [c.id, filtered];
+            } catch (e) {
+              return [c.id, []];
+            }
+          })
+        );
+
+        const map = {};
+        results.forEach(([cid, arr]) => { map[cid] = arr; });
+        setUnlockedModulesByCourse(map);
+      } catch (e) {
+        // Non-fatal; leave map empty
+        setUnlockedModulesByCourse({});
+      } finally {
+        setLoadingModules(false);
+      }
+    };
+
+    loadUnlockedModules();
+  }, [isOpen, user?.id, courses]);
 
   if (isLoading) {
     return (
@@ -490,14 +539,30 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-40 overflow-y-auto">
-                  {courses.map((course, index) => (
-                    <div key={course.id || index} className="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">
-                        {course.title}
-                      </p>
-                    </div>
-                  ))}
+                <div className="space-y-3 max-h-60 overflow-y-auto">
+                  {courses.map((course, index) => {
+                    const items = unlockedModulesByCourse?.[course.id] || [];
+                    return (
+                      <div key={course.id || index} className="p-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm font-medium text-gray-900">
+                          {course.title}
+                        </p>
+                        <div className="mt-1 pl-2">
+                          {loadingModules ? (
+                            <p className="text-xs text-gray-500">Loading modules...</p>
+                          ) : items.length > 0 ? (
+                            <ul className="list-disc list-inside space-y-1">
+                              {items.map((m) => (
+                                <li key={m.id} className="text-xs text-gray-700">{m.title || `Module #${m.id}`}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-gray-500">No purchased modules for this course</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
