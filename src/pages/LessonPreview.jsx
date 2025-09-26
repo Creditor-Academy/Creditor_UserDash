@@ -152,14 +152,19 @@ const LessonPreview = () => {
 
     console.log('Parsing lesson content:', {
       totalBlocks: content.length,
-      blockTypes: content.map(block => ({ id: block.id || block.block_id, type: block.type })),
-      youtubeBlocks: content.filter(block => block.type === 'youtube').length,
-      youtubeBlockDetails: content.filter(block => block.type === 'youtube').map(block => ({
-        id: block.id || block.block_id,
+      textBlocks: content.filter(block => block.type === 'text').length,
+      masterHeadingBlocks: content.filter(block => block.type === 'text' && block.textType === 'master_heading').length,
+      masterHeadingDetails: content.filter(block => block.type === 'text' && block.textType === 'master_heading').map(block => ({
+        id: block.block_id || block.id,
+        textType: block.textType,
         hasHtmlCss: !!block.html_css,
-        videoTitle: block.videoTitle || block.video_title || block.details?.videoTitle
+        htmlPreview: block.html_css ? block.html_css.substring(0, 50) + '...' : 'None'
       })),
-      duplicateIds: content.map(block => block.id || block.block_id).filter((id, index, arr) => arr.indexOf(id) !== index)
+      allBlockTypes: content.map(block => ({ 
+        id: block.id || block.block_id, 
+        type: block.type,
+        textType: block.textType || block.text_type || 'none'
+      }))
     });
 
     // Check for duplicate blocks
@@ -204,7 +209,13 @@ const LessonPreview = () => {
     const processedIds = new Set();
     
     uniqueContent.forEach((block, index) => {
-      console.log(`Processing block ${index}:`, block);
+      console.log(`Processing block ${index}:`, {
+        type: block.type,
+        textType: block.textType,
+        text_type: block.text_type,
+        blockId: block.block_id || block.id,
+        hasHtmlCss: !!block.html_css
+      });
       
       const blockId = block.block_id || block.id || `section-${index}`;
       
@@ -216,7 +227,7 @@ const LessonPreview = () => {
 
       // Handle different block types based on your API structure
       if (block.type === 'text') {
-        // Check if it's a heading type
+        // Check if it's a heading type - check both textType and text_type fields
         const textType = block.textType || block.text_type;
         // Extract content from multiple possible locations
         const content = block.details?.content || 
@@ -246,6 +257,13 @@ const LessonPreview = () => {
           if (!headingText || headingText === '') {
             headingText = `Section ${index + 1}`;
           }
+          
+          console.log(`Found master heading ${headingSections.length + 1}:`, {
+            blockId: blockId,
+            title: headingText,
+            index: index,
+            textType: textType
+          });
           
           headingSections.push({
             ...blockData,
@@ -415,10 +433,14 @@ const LessonPreview = () => {
 
     console.log('Final parsed content result:', {
       totalAllContent: allContent.length,
-      youtubeInAllContent: allContent.filter(block => block.type === 'youtube').length,
-      allContentYoutubeIds: allContent.filter(block => block.type === 'youtube').map(block => block.id),
-      headingSections: headingSections.length,
-      allContentTypes: allContent.map(block => ({ id: block.id, type: block.type }))
+      totalHeadingSections: headingSections.length,
+      headingSectionTitles: headingSections.map(h => h.title),
+      masterHeadingBlocks: allContent.filter(block => block.type === 'text' && block.textType === 'master_heading'),
+      allTextBlocks: allContent.filter(block => block.type === 'text').map(block => ({
+        id: block.id,
+        textType: block.textType,
+        hasContent: !!block.content
+      }))
     });
     
     return {
