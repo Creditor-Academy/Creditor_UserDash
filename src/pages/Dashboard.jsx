@@ -67,6 +67,7 @@ export function Dashboard() {
   const [showConsultInfo, setShowConsultInfo] = useState(false);
   const [showConsultBooking, setShowConsultBooking] = useState(false);
   const [showConsultConfirmation, setShowConsultConfirmation] = useState(false);
+  const [showConsultForm, setShowConsultForm] = useState(false);
   const [showServiceHistory, setShowServiceHistory] = useState(false);
   const [historyTab, setHistoryTab] = useState('consultations'); // 'consultations' | 'website'
   const CONSULT_COST = 1000; // credits for 30 mins
@@ -91,6 +92,8 @@ export function Dashboard() {
   ];
   const [selectedWebsitePack, setSelectedWebsitePack] = useState(WEBSITE_PACKS[0]);
   const [showWebsiteDetails, setShowWebsiteDetails] = useState(false);
+  const [showWebsiteConfirmation, setShowWebsiteConfirmation] = useState(false);
+  const [showWebsiteForm, setShowWebsiteForm] = useState(false);
 
   // Temporary sample history data (replace with API data when available)
   const consultationHistory = [
@@ -723,19 +726,19 @@ export function Dashboard() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-200">Digital packs</span>
-                            </div>
+                        </div>
                             <h3 className="text-lg font-semibold text-gray-900 mt-2">Website Services</h3>
                             <p className="text-sm text-gray-600 mt-1">Launch or upgrade your site.<br className="hidden sm:inline" /> Pay with credits for eligible packs.</p>
                             <div className="mt-4 flex items-center gap-2">
                               <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={()=>setShowWebsiteModal(true)}>Get started</Button>
                               <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={()=>setShowWebsiteDetails(true)}>Learn more</Button>
                             
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+                        </div>
+                      </div>
                   {/* Panel: History */}
                   <div className="w-1/2 pl-0 md:pl-3">
                     <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5 h-full">
@@ -744,18 +747,18 @@ export function Dashboard() {
                           <h3 className="text-lg font-semibold text-gray-900">History</h3>
                           <p className="text-xs text-gray-600">Consultation and website activity</p>
                         </div>
-                      </div>
+                          </div>
                         <div className="flex items-center gap-2 mb-3">
                         <button onClick={()=>setHistoryTab('consultations')} className={`px-3 py-1.5 rounded-md text-sm border ${historyTab==='consultations' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>Consultations</button>
                         <button onClick={()=>setHistoryTab('website')} className={`px-3 py-1.5 rounded-md text-sm border ${historyTab==='website' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>Website</button>
-                        </div>
+                          </div>
                       <div className="rounded-lg border border-gray-200 overflow-hidden">
                         <div className="grid grid-cols-4 bg-gray-50 text-gray-600 text-xs font-medium">
                           <div className="px-3 py-2">Date</div>
                           <div className="px-3 py-2">Item</div>
                           <div className="px-3 py-2">Credits</div>
                           <div className="px-3 py-2">Status</div>
-                          </div>
+                        </div>
                         <div className="max-h-72 overflow-auto">
                           {(historyTab==='consultations' ? consultationHistory : websiteHistory).map((row)=> (
                             <div key={row.id} className="grid grid-cols-4 border-t">
@@ -764,13 +767,13 @@ export function Dashboard() {
                               <div className="px-3 py-2 text-sm font-medium text-gray-900">{row.credits}</div>
                               <div className="px-3 py-2 text-sm">
                                 <span className={`inline-flex px-2 py-0.5 rounded-full border text-xs ${row.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : row.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{row.status}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
                           </div>
                         </div>
+                          ))}
                       </div>
+                    </div>
+                  </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -851,7 +854,7 @@ export function Dashboard() {
 
       {/* Consultation Info Modal */}
       <Dialog open={showConsultInfo} onOpenChange={setShowConsultInfo}>
-        <DialogContent className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>About Consultations</DialogTitle>
             <DialogDescription>
@@ -874,9 +877,31 @@ export function Dashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Consultation Form Modal (embedded) */}
+      <Dialog open={showConsultForm} onOpenChange={setShowConsultForm}>
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-2xl p-0 max-h-[85vh] overflow-auto">
+          <DialogHeader className="px-4 pt-4">
+            <DialogTitle>Consultation Booking Form</DialogTitle>
+            <DialogDescription>
+              Provide your details to request a consultation time.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-4 pb-4">
+            <div className="rounded-lg overflow-hidden border border-gray-200">
+              <iframe
+                title="Consultation form"
+                src="https://api.wonderengine.ai/widget/form/zIoXSg2Bzo4iPGAlPwD0"
+                className="w-full"
+                style={{ height: '70vh' }}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Website Details Modal */}
       <Dialog open={showWebsiteDetails} onOpenChange={setShowWebsiteDetails}>
-        <DialogContent className="w-[95vw] sm:max-w-3xl p-0 max-h-[85vh] overflow-auto">
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-3xl p-0 max-h-[85vh] overflow-auto">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle>Website Services Details</DialogTitle>
             <DialogDescription>
@@ -1031,7 +1056,7 @@ export function Dashboard() {
 
       {/* Consultation Booking Modal */}
       <Dialog open={showConsultBooking} onOpenChange={setShowConsultBooking}>
-        <DialogContent className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto">
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Book a Consultation</DialogTitle>
             <DialogDescription>
@@ -1105,7 +1130,15 @@ export function Dashboard() {
               <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={()=>{ setShowConsultBooking(false); setShowCreditsModal(true); }}>Buy membership</Button>
             ) : balance < CONSULT_COST ? (
               <>
-                <Button variant="outline" onClick={()=>{ window.open('https://www.pinterest.com', '_blank'); }}>Add credits</Button>
+              <Button 
+                variant="outline" 
+                onClick={()=>{ 
+                  setShowConsultBooking(false);
+                  setShowCreditsModal(true);
+                }}
+              >
+                Add credits
+              </Button>
                 <Button onClick={()=>setShowConsultBooking(false)} variant="ghost">Close</Button>
               </>
             ) : (
@@ -1117,7 +1150,7 @@ export function Dashboard() {
 
       {/* Consultation Confirmation Modal */}
       <Dialog open={showConsultConfirmation} onOpenChange={setShowConsultConfirmation}>
-        <DialogContent className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Confirm Your Booking</DialogTitle>
             <DialogDescription>
@@ -1170,24 +1203,44 @@ export function Dashboard() {
             >
               Cancel
             </Button>
-            <Button 
-              className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1" 
-              onClick={() => { 
-                setShowConsultConfirmation(false);
-                // Here you would typically make an API call to deduct credits
-                // For now, we'll redirect to the booking platform
-                window.location.href = '/consult-booking'; 
-              }}
-            >
-              Book Now ({CONSULT_COST} credits)
-            </Button>
+            {!membership?.isActive ? (
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1" 
+                onClick={() => { 
+                  setShowConsultConfirmation(false);
+                  setShowCreditsModal(true);
+                }}
+              >
+                Buy membership
+              </Button>
+            ) : balance < CONSULT_COST ? (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-1" 
+                onClick={() => { 
+                  setShowConsultConfirmation(false);
+                  setShowCreditsModal(true);
+                }}
+              >
+                Add credits
+              </Button>
+            ) : (
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1" 
+                onClick={() => { 
+                  setShowConsultConfirmation(false);
+                  setShowConsultForm(true);
+                }}
+              >
+                Book Now ({CONSULT_COST} credits)
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Website Services Modal */}
       <Dialog open={showWebsiteModal} onOpenChange={setShowWebsiteModal}>
-        <DialogContent className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto">
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Choose a Website Pack</DialogTitle>
             <DialogDescription>
@@ -1256,13 +1309,20 @@ export function Dashboard() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2 pt-2">
-            {balance < selectedWebsitePack.cost ? (
+            {!membership?.isActive ? (
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => { setShowWebsiteModal(false); setShowCreditsModal(true); }}
+              >
+                Buy membership
+              </Button>
+            ) : balance < selectedWebsitePack.cost ? (
               <>
                 <Button 
                   variant="outline" 
-                  onClick={() => { window.open('https://www.pinterest.com', '_blank'); }}
+                  onClick={() => { setShowWebsiteModal(false); setShowCreditsModal(true); }}
                 >
-                  Add Credits
+                  Add credits
                 </Button>
                 <Button 
                   onClick={() => setShowWebsiteModal(false)} 
@@ -1276,12 +1336,111 @@ export function Dashboard() {
                 className="bg-blue-600 hover:bg-blue-700 text-white" 
                 onClick={() => { 
                   localStorage.setItem('website_pack', selectedWebsitePack.id); 
-                  window.location.href = '/website'; 
+                  setShowWebsiteModal(false);
+                  setShowWebsiteConfirmation(true);
                 }}
               >
                 Proceed
               </Button>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Website Credit Confirmation Modal */}
+      <Dialog open={showWebsiteConfirmation} onOpenChange={setShowWebsiteConfirmation}>
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Confirm Your Website Purchase</DialogTitle>
+            <DialogDescription>
+              Please review the details before proceeding with your website request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+              <div className="flex items-start gap-2">
+                <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-white text-xs font-bold">i</span>
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-800 mb-1">Credits Deduction</h4>
+                  <p className="text-blue-700 text-sm">
+                    Clicking "Proceed" will deduct {selectedWebsitePack.cost} credits for the {selectedWebsitePack.name}.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-gray-600 text-sm">Current credits:</span>
+                <span className="font-semibold text-gray-900">{balance}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600 text-sm">After purchase:</span>
+                <span className="font-semibold text-gray-900">{Math.max(0, (balance || 0) - (selectedWebsitePack?.cost || 0))}</span>
+              </div>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <p className="text-gray-700 text-sm">
+                Ready to proceed with {selectedWebsitePack.name} for {selectedWebsitePack.cost} credits?
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="outline" onClick={() => setShowWebsiteConfirmation(false)} className="flex-1">Cancel</Button>
+            {!membership?.isActive ? (
+              <Button 
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1"
+                onClick={() => { 
+                  setShowWebsiteConfirmation(false);
+                  setShowCreditsModal(true);
+                }}
+              >
+                Buy membership
+              </Button>
+            ) : balance < (selectedWebsitePack?.cost || 0) ? (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                onClick={() => { 
+                  setShowWebsiteConfirmation(false);
+                  setShowCreditsModal(true);
+                }}
+              >
+                Add credits
+              </Button>
+            ) : (
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+                onClick={() => {
+                  setShowWebsiteConfirmation(false);
+                  setShowWebsiteForm(true);
+                }}
+              >
+                Proceed ({selectedWebsitePack.cost} credits)
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Website Form Modal (embedded) */}
+      <Dialog open={showWebsiteForm} onOpenChange={setShowWebsiteForm}>
+        <DialogContent onInteractOutside={(e)=>e.preventDefault()} className="w-[95vw] sm:max-w-3xl p-0 max-h-[85vh] overflow-auto">
+          <DialogHeader className="px-4 pt-4">
+            <DialogTitle>Website Purchase Form</DialogTitle>
+            <DialogDescription>
+              Complete this form to proceed with your website request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-4 pb-4">
+            <div className="rounded-lg overflow-hidden border border-gray-200">
+              <iframe
+                title="Website form"
+                src="https://api.wonderengine.ai/widget/form/yhb8k42HP4nBj8voipXd"
+                className="w-full"
+                style={{ height: '70vh' }}
+              />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
