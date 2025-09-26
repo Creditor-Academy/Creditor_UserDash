@@ -39,7 +39,7 @@ import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
-import YouTubeComponent from '@/components/YouTubeComponent';
+import YouTubeComponent from '@/components/YouTubeComponent';import ScormComponent from '@/components/ScormComponent';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -593,6 +593,7 @@ function LessonBuilder() {
   const [youTubeTitle, setYouTubeTitle] = useState('');
   const [youTubeDescription, setYouTubeDescription] = useState('');
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
+  const [showScormDialog, setShowScormDialog] = useState(false);
   
 
 
@@ -845,6 +846,8 @@ function LessonBuilder() {
       setShowInteractiveTemplateSidebar(true);
     } else if (blockType.id === 'divider') {
       setShowDividerTemplateSidebar(true);
+    } else if (blockType.id === 'scorm') {
+      setShowScormDialog(true);
     } else {
       addContentBlock(blockType);
     }
@@ -1099,7 +1102,8 @@ function LessonBuilder() {
       blocks.map(block =>
         block.id === blockId ? {
           ...block,
-          ...updatedContent,
+          content: updatedContent.content,
+          html_css: updatedContent.html_css,
           updatedAt: new Date().toISOString()
         } : block
       )
@@ -1114,19 +1118,102 @@ function LessonBuilder() {
           content: prevLessonContent.data.content.map(block =>
             (block.block_id === blockId || block.id === blockId) ? {
               ...block,
-              ...updatedContent,
-              // Also update details if they exist
-              details: {
-                ...block.details,
-                divider_type: updatedContent.subtype || block.subtype || 'continue',
-                content: updatedContent.content || ''
-              },
+              content: updatedContent.content,
+              html_css: updatedContent.html_css,
               updatedAt: new Date().toISOString()
             } : block
           )
         }
       }));
     }
+  };
+
+  // SCORM component callbacks
+  const handleScormSave = (scormBlockData) => {
+    // Generate HTML content for SCORM block with embedded iframe
+    const scormUrl = scormBlockData.content.scormUrl || 
+                     scormBlockData.content.uploadResult?.data?.url || 
+                     scormBlockData.content.uploadResult?.data?.launchUrl ||
+                     scormBlockData.content.uploadResult?.url;
+    const htmlContent = `
+      <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900">${scormBlockData.content.title}</h3>
+              <p class="text-xs text-gray-500">SCORM Package • ${(scormBlockData.content.fileSize / (1024 * 1024)).toFixed(2)} MB</p>
+            </div>
+          </div>
+          <button 
+            onclick="window.open('${scormUrl}', '_blank')" 
+            class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+          >
+            Open Full Screen
+          </button>
+        </div>
+        <div class="relative bg-gray-50 rounded-lg p-8 text-center" style="height: 400px; display: flex; align-items: center; justify-content: center;">
+          <div>
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-9-4V8a3 3 0 013-3h6a3 3 0 013 3v2M7 21h10a2 2 0 002-2v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Interactive SCORM Content</h3>
+            <p class="text-gray-600 mb-4">Click the button below to launch the SCORM package in a new window for the best experience.</p>
+            <button 
+              onclick="
+                let url = '${scormUrl}';
+                if (url && url.includes('s3.') && url.includes('/scorm/')) {
+                  const urlParts = url.split('/scorm/');
+                  if (urlParts.length > 1) {
+                    const pathParts = urlParts[1].split('/');
+                    const scormId = pathParts[0];
+                    const filePath = pathParts.slice(1).join('/');
+                    url = '${process.env.REACT_APP_API_BASE_URL || "http://localhost:9000"}/api/scorm-proxy/' + scormId + '/' + filePath;
+                  }
+                }
+                window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+              " 
+              class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Launch SCORM Content
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const newBlock = {
+      id: scormBlockData.id,
+      block_id: scormBlockData.id,
+      type: 'scorm',
+      title: scormBlockData.title,
+      content: JSON.stringify(scormBlockData.content),
+      html_css: htmlContent,
+      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
+    };
+
+    // Add to contentBlocks
+    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+
+    // Also add to lessonContent if it exists
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: [...prevLessonContent.data.content, newBlock]
+        }
+      }));
+    }
+
+    // Close the dialog
+    setShowScormDialog(false);
   };
 
   // List component callbacks
@@ -2477,28 +2564,42 @@ function LessonBuilder() {
     e.preventDefault();
     if (draggedBlockId === null || draggedBlockId === targetBlockId) return;
 
-    // Update lesson content order
-    const content = lessonContent.data.content;
-    const sourceIndex = content.findIndex(b => b.block_id === draggedBlockId);
-    const targetIndex = content.findIndex(b => b.block_id === targetBlockId);
+    // Update lesson content order - handle both lessonContent and contentBlocks
+    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+      const content = lessonContent.data.content;
+      const sourceIndex = content.findIndex(b => (b.block_id || b.id) === draggedBlockId);
+      const targetIndex = content.findIndex(b => (b.block_id || b.id) === targetBlockId);
    
-    if (sourceIndex === -1 || targetIndex === -1) return;
-   
-    const updatedContent = [...content];
-    const [moved] = updatedContent.splice(sourceIndex, 1);
-    updatedContent.splice(targetIndex, 0, moved);
-   
-    // Update the state with new order
-    setLessonContent({
-      ...lessonContent,
-      data: {
-        ...lessonContent.data,
-        content: updatedContent.map((block, index) => ({
-          ...block,
-          order: index + 1
-        }))
-      }
-    });
+      if (sourceIndex === -1 || targetIndex === -1) return;
+     
+      const updatedContent = [...content];
+      const [moved] = updatedContent.splice(sourceIndex, 1);
+      updatedContent.splice(targetIndex, 0, moved);
+     
+      // Update the state with new order
+      setLessonContent({
+        ...lessonContent,
+        data: {
+          ...lessonContent.data,
+          content: updatedContent.map((block, index) => ({
+            ...block,
+            order: index + 1
+          }))
+        }
+      });
+    } else {
+      // Handle contentBlocks drag and drop
+      const sourceIndex = contentBlocks.findIndex(b => (b.id || b.block_id) === draggedBlockId);
+      const targetIndex = contentBlocks.findIndex(b => (b.id || b.block_id) === targetBlockId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return;
+      
+      const updatedBlocks = [...contentBlocks];
+      const [moved] = updatedBlocks.splice(sourceIndex, 1);
+      updatedBlocks.splice(targetIndex, 0, moved);
+      
+      setContentBlocks(updatedBlocks);
+    }
 
     // Reset drag state
     setDraggedBlockId(null);
@@ -3912,6 +4013,9 @@ function LessonBuilder() {
         template: template.id
       }
     };
+
+    // Generate HTML content immediately for the new block
+    newBlock.html_css = generateImageBlockHtml(newBlock);
    
     // Always add to local edit list so it appears immediately in edit mode
     setContentBlocks(prev => [...prev, newBlock]);
@@ -3928,13 +4032,21 @@ function LessonBuilder() {
     );
   };
 
-  const handleImageFileUpload = async (blockId, file) => {
+  const handleImageFileUpload = async (blockId, file, retryCount = 0) => {
     if (!file) return;
 
     // Set loading state for this specific block
     setImageUploading(prev => ({ ...prev, [blockId]: true }));
 
     try {
+      console.log('Attempting to upload image to AWS S3:', {
+        blockId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        retryCount
+      });
+
       // Upload image to API
       const uploadResult = await uploadImage(file, {
         folder: 'lesson-images', // Optional: organize images in a specific folder
@@ -3942,26 +4054,103 @@ function LessonBuilder() {
       });
 
       if (uploadResult.success && uploadResult.imageUrl) {
-        // Update the block with the uploaded image URL
+        // Update the block with the uploaded AWS S3 image URL
         handleImageBlockEdit(blockId, 'imageUrl', uploadResult.imageUrl);
         handleImageBlockEdit(blockId, 'imageFile', file);
         handleImageBlockEdit(blockId, 'uploadedImageData', uploadResult);
         
-        toast.success('Image uploaded successfully!');
+        // Clear any local URL flag
+        handleImageBlockEdit(blockId, 'isUsingLocalUrl', false);
+        
+        console.log('Image uploaded successfully to AWS S3:', {
+          blockId,
+          awsUrl: uploadResult.imageUrl,
+          uploadResult
+        });
+        
+        toast.success('Image uploaded successfully to AWS S3!');
       } else {
         throw new Error('Upload failed - no image URL returned');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image. Please try again.');
+      console.error('Error uploading image to AWS S3:', error);
+      console.error('Upload error details:', {
+        blockId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        error: error.message,
+        retryCount
+      });
       
-      // Fallback to local URL for immediate preview (optional)
+      // Retry up to 2 times for network errors
+      if (retryCount < 2 && (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('fetch'))) {
+        console.log(`Retrying upload (attempt ${retryCount + 1}/2)...`);
+        // Don't clear loading state, keep it active for retry
+        setTimeout(() => {
+          handleImageFileUpload(blockId, file, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // Exponential backoff
+        return; // Exit early, don't execute finally block
+      }
+      
+      toast.error(`Failed to upload image to AWS S3: ${error.message || 'Unknown error'}. Using local preview.`);
+      
+      // Fallback to local URL for immediate preview (but warn user)
       const localImageUrl = URL.createObjectURL(file);
       handleImageBlockEdit(blockId, 'imageUrl', localImageUrl);
       handleImageBlockEdit(blockId, 'imageFile', file);
+      
+      // Mark that this is using local URL so save function can warn
+      handleImageBlockEdit(blockId, 'isUsingLocalUrl', true);
+      
+      console.warn('Using local blob URL as fallback:', localImageUrl);
     } finally {
       // Clear loading state
       setImageUploading(prev => ({ ...prev, [blockId]: false }));
+    }
+  };
+
+  // Generate HTML content for image blocks
+  const generateImageBlockHtml = (block) => {
+    const layout = block.layout || 'centered';
+    const textContent = (block.text || block.imageDescription || '').toString();
+    const imageUrl = block.imageUrl || '';
+    const imageTitle = block.imageTitle || '';
+
+    if (!imageUrl) return '';
+
+    if (layout === 'side-by-side') {
+      return `
+        <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+          <div>
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+          </div>
+          <div>
+            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } else if (layout === 'overlay') {
+      return `
+        <div class="relative rounded-xl overflow-hidden">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+        </div>
+      `;
+    } else if (layout === 'full-width') {
+      return `
+        <div class="space-y-3">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
+          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+        </div>
+      `;
+    } else { // centered or default
+      return `
+        <div class="text-center">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+        </div>
+      `;
     }
   };
 
@@ -3971,16 +4160,58 @@ function LessonBuilder() {
         if (block.id !== blockId) return block;
         if (block.type === 'image') {
           const captionPlainText = getPlainText(block.text || '');
+          
+          // Ensure we're using the uploaded AWS URL, not local URL
+          let finalImageUrl = block.imageUrl || block.details?.image_url || '';
+          
+          // If imageUrl is a local blob URL, try to get the uploaded URL from uploadedImageData
+          if (finalImageUrl.startsWith('blob:') && block.uploadedImageData?.imageUrl) {
+            finalImageUrl = block.uploadedImageData.imageUrl;
+            console.log('Using uploaded AWS URL instead of local blob URL:', finalImageUrl);
+          }
+          
           const updatedDetails = {
             ...(block.details || {}),
-            image_url: block.imageUrl || block.details?.image_url || '',
+            image_url: finalImageUrl,
             caption: (captionPlainText || block.details?.caption || ''),
             alt_text: block.imageTitle || block.details?.alt_text || '',
             layout: block.layout || block.details?.layout,
             template: block.templateType || block.details?.template,
           };
-          // Clear html_css so the save/update pipeline regenerates with the latest URL
-          return { ...block, isEditing: false, html_css: '', imageDescription: captionPlainText, details: updatedDetails };
+          
+          // Create updated block with final image URL for HTML generation
+          const updatedBlock = {
+            ...block,
+            imageUrl: finalImageUrl,
+            details: updatedDetails
+          };
+          
+          // Generate HTML content with the correct AWS URL
+          const htmlContent = generateImageBlockHtml(updatedBlock);
+          
+          console.log('Saving image block:', {
+            blockId,
+            layout: block.layout,
+            originalUrl: block.imageUrl,
+            finalUrl: finalImageUrl,
+            isLocalUrl: finalImageUrl.startsWith('blob:'),
+            hasUploadedData: !!block.uploadedImageData,
+            isUsingLocalUrl: block.isUsingLocalUrl
+          });
+          
+          // Warn if still using local URL
+          if (finalImageUrl.startsWith('blob:') || block.isUsingLocalUrl) {
+            console.warn('WARNING: Image block is using local URL instead of AWS S3 URL');
+            toast.warning('Warning: Image is stored locally and may not be accessible after page refresh. Please re-upload the image.');
+          }
+          
+          return { 
+            ...updatedBlock,
+            isEditing: false, 
+            html_css: htmlContent, 
+            imageDescription: captionPlainText, 
+            details: updatedDetails 
+          };
         }
         return { ...block, isEditing: false };
       })
@@ -5316,15 +5547,20 @@ function LessonBuilder() {
                     const hasH1 = lowered.includes('<h1');
                     const hasH2 = lowered.includes('<h2');
                     const hasP = lowered.includes('<p');
-                    const detectedType = hasH1 && hasP
-                      ? 'heading_paragraph'
-                      : hasH2 && hasP
-                        ? 'subheading_paragraph'
-                        : hasH1
-                          ? 'heading'
-                          : hasH2
-                            ? 'subheading'
-                            : 'paragraph';
+                    // Check for master heading first (has gradient background)
+                    const isMasterHeading = hasH1 && (lowered.includes('linear-gradient') || lowered.includes('gradient'));
+                    
+                    const detectedType = isMasterHeading
+                      ? 'master_heading'
+                      : hasH1 && hasP
+                        ? 'heading_paragraph'
+                        : hasH2 && hasP
+                          ? 'subheading_paragraph'
+                          : hasH1
+                            ? 'heading'
+                            : hasH2
+                              ? 'subheading'
+                              : 'paragraph';
                     return {
                       ...base,
                       type: 'text',
@@ -5544,16 +5780,16 @@ function LessonBuilder() {
                       : contentBlocks;
                     return allBlocks.length === 0;
                   })() ? (
-                    <div className="min-h-[60vh] flex items-center justify-center">
+                    <div className="h-[calc(100vh-8rem)] flex items-center justify-center px-4 overflow-hidden">
                       <div className="max-w-2xl mx-auto text-center">
                         {/* Beautiful gradient background */}
                         <div className="relative">
                           <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-purple-50 to-pink-100 rounded-3xl transform rotate-1"></div>
-                          <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 p-12">
+                          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
                             {/* Animated icon */}
-                            <div className="mb-8 relative">
-                              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="mb-4 relative">
+                              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                 </svg>
                               </div>
@@ -5563,17 +5799,17 @@ function LessonBuilder() {
                             </div>
 
                             {/* Main heading */}
-                            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-3">
                               Ready to Create Something Amazing?
                             </h2>
                             
                             {/* Subtitle */}
-                            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                            <p className="text-base text-gray-600 mb-6 leading-relaxed">
                               Your lesson canvas is waiting! Start building engaging content by adding blocks from the sidebar.
                             </p>
 
                             {/* Feature highlights */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                               <div className="flex flex-col items-center p-4 bg-blue-50 rounded-xl border border-blue-100">
                                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
                                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5604,17 +5840,6 @@ function LessonBuilder() {
                                 <p className="text-sm text-gray-600 text-center">Build lessons in minutes</p>
                               </div>
                             </div>
-
-                            {/* Call to action */}
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                                </svg>
-                                Choose a content block from the sidebar to get started
-                              </div>
-                            </div>
-
                             {/* Decorative elements */}
                             <div className="absolute top-4 left-4 w-2 h-2 bg-blue-400 rounded-full opacity-60"></div>
                             <div className="absolute top-8 right-6 w-1 h-1 bg-purple-400 rounded-full opacity-60"></div>
@@ -5638,12 +5863,15 @@ function LessonBuilder() {
                           blockIds: blocksToRender.map(b => b.id || b.block_id)
                         });
                         
-                        return blocksToRender.map((block, index) => (
+                        return blocksToRender.map((block, index) => {
+                          const blockId = block.id || block.block_id;
+                          return (
                         <div
-                          key={block.id}
+                          key={blockId}
+                          data-block-id={blockId}
                           className="relative group bg-white rounded-lg"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, block.id)}
+                          onDrop={(e) => handleDrop(e, blockId)}
                         >
                           <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             {!block.isEditing && (
@@ -5676,7 +5904,8 @@ function LessonBuilder() {
                             <div
                               className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
                               draggable
-                              onDragStart={(e) => handleDragStart(e, block.id)}
+                              onDragStart={(e) => handleDragStart(e, blockId)}
+                              onDragEnd={handleDragEnd}
                             >
                               <GripVertical className="h-4 w-4" />
                             </div>
@@ -6212,7 +6441,7 @@ function LessonBuilder() {
                                             alt="Preview"
                                             className="mt-2 max-h-48 w-auto rounded-md border border-gray-300"
                                           />
-                                          </div>
+                                        </div>
                                         )}
                                       </div>
                                     </div>
@@ -6344,7 +6573,8 @@ function LessonBuilder() {
                             )}
                           </div>
                         </div>
-                        ));
+                        );
+                        })
                       })()}
                     </div>
                   )}
@@ -7098,6 +7328,15 @@ function LessonBuilder() {
         onDividerTemplateSelect={handleDividerTemplateSelect}
         editingDividerBlock={null}
         onDividerUpdate={handleDividerUpdate}
+      />
+
+      {/* SCORM Component */}
+      <ScormComponent
+        isOpen={showScormDialog}
+        onClose={() => setShowScormDialog(false)}
+        onSave={handleScormSave}
+        lessonId={lessonId}
+        moduleId={moduleId}
       />
 
       {/* Image Dialog */}

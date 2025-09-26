@@ -163,12 +163,12 @@ class ScormService {
     }
   }
 
-  static uploadScorm({ moduleId, file, uploadedBy, description, onProgress, onCancel }) {
+  static uploadScorm({ moduleId, lessonId, file, uploadedBy, description, onProgress, onCancel }) {
     return new Promise((resolve, reject) => {
-      // Check file size (limit to 500MB)
-      const maxFileSize = 500 * 1024 * 1024; // 500MB in bytes
+      // Check file size (limit to 1GB)
+      const maxFileSize = 1024 * 1024 * 1024; // 1GB in bytes
       if (file.size > maxFileSize) {
-        reject(new Error(`File size (${Math.round(file.size / (1024 * 1024))}MB) exceeds maximum allowed size of 500MB`));
+        reject(new Error(`File size (${Math.round(file.size / (1024 * 1024))}MB) exceeds maximum allowed size of 1GB`));
         return;
       }
 
@@ -177,6 +177,7 @@ class ScormService {
         fileSize: file.size,
         fileType: file.type,
         moduleId,
+        lessonId,
         uploadedBy,
         description
       });
@@ -184,6 +185,7 @@ class ScormService {
       const formData = new FormData();
       formData.append('scorm', file, file.name);
       formData.append('module_id', moduleId);
+      formData.append('lesson_id', lessonId);
       formData.append('uploaded_by', uploadedBy);
       formData.append('description', description);
 
@@ -193,7 +195,7 @@ class ScormService {
       }
 
       const xhr = new XMLHttpRequest();
-      const url = '/api/scorm/upload_scorm';
+      const url = `${import.meta.env.VITE_API_BASE_URL}/api/scorm/upload_scorm`;
       
       // Track if we've completed the upload
       let uploadComplete = false;
@@ -270,16 +272,26 @@ class ScormService {
           }
         } else {
           let errorMessage = `Server error: ${xhr.status} ${xhr.statusText}`;
+          let responseText = xhr.responseText || '';
+          
           try {
-            const errorData = JSON.parse(xhr.responseText);
+            const errorData = JSON.parse(responseText);
             errorMessage = errorData.message || errorMessage;
           } catch (e) {
-            console.error('Error parsing error response:', e);
+            // If we can't parse JSON, use the raw response text
+            if (responseText) {
+              errorMessage = responseText;
+            }
           }
           
-          console.error('Upload failed with status:', xhr.status, 'Details:', xhr.responseText);
+          console.error('Upload failed with status:', xhr.status);
+          console.error('Response text:', responseText);
+          console.error('Error message:', errorMessage);
           
-          if (xhr.status === 400) {
+          // Don't reject immediately for server processing errors - the upload might still be processing
+          if (xhr.status === 0) {
+            reject(new Error('Network connection lost. Please check your internet connection.'));
+          } else if (xhr.status === 400) {
             reject(new Error(errorMessage || 'Invalid request. Please check the file and try again.'));
           } else if (xhr.status === 401) {
             reject(new Error('Authentication failed. Please log in again.'));
@@ -287,8 +299,10 @@ class ScormService {
             reject(new Error('File too large. Please reduce file size and try again.'));
           } else if (xhr.status === 403) {
             reject(new Error('Access denied. You do not have permission to upload SCORM packages.'));
+          } else if (xhr.status >= 500) {
+            reject(new Error('Server is processing your upload. Please wait and check back in a moment.'));
           } else {
-            reject(new Error(errorMessage || 'Failed to upload SCORM package. Please try again.'));
+            reject(new Error(errorMessage || 'Upload failed. Please try again.'));
           }
         }
       };
@@ -300,6 +314,9 @@ class ScormService {
       xhr.ontimeout = function() {
         reject(new Error('Upload timed out. Please try again.'));
       };
+
+      // Remove timeout for large files - let it take as long as needed
+      // xhr.timeout = 600000; // 10 minutes
 
       xhr.send(formData);
     });
