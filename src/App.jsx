@@ -67,9 +67,6 @@ import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
-import ScormPage from "@/pages/ScormPage";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
-import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import Home from "@/pages/home";
@@ -100,12 +97,6 @@ import { CreditsProvider } from "./contexts/CreditsContext";
 import  ModuleView  from "@/pages/ModuleView";
      
 
-function ProtectedScormRoute() {
-  if (!allowedScormUserIds.includes(currentUserId)) {
-    return <div style={{padding: 24}}><h2>Access Denied</h2><p>You do not have permission to view this page.</p></div>;
-  }
-  return <ScormPage />;
-}
 
 function App() {
   return (
@@ -276,11 +267,6 @@ function App() {
               <Route path="tickets" element={<MyTickets />} />
             </Route>
 
-            {/* SCORM routes - inside dashboard to keep sidebar */}
-            <Route path="scorm">
-              <Route index element={<ProtectedScormRoute />} />
-              <Route path=":courseId/:moduleId" element={<Scrompack />} />
-            </Route>
           </Route>
 
           {/* Catalog and enrollment */}
@@ -305,7 +291,6 @@ function App() {
           <Route path="guides" element={<Guides />} />
           <Route path="support/ticket" element={<SupportTicket />} />
           <Route path="support/tickets" element={<MyTickets />} />
-          <Route path="scorm" element={<ProtectedScormRoute />} />
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
           <Route path="*" element={<NotFound />} />

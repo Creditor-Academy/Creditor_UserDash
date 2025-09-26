@@ -43,7 +43,9 @@ export function Dashboard() {
       activeCourses: 0,
       completedCourses: 0,
       totalLearningHours: 0,
-      averageProgress: 0
+      averageProgress: 0,
+      modulesCompleted: 0,
+      assessmentsCompleted: 0
     },
     weeklyPerformance: {
       studyHours: 0,
@@ -99,13 +101,17 @@ export function Dashboard() {
           const completedCourses = 0; // Will be calculated when progress tracking is implemented
           const totalLearningHours = 0; // Will be calculated when time tracking is implemented
           const averageProgress = 0; // Will be calculated when progress tracking is implemented
+          const modulesCompleted = 0; // Will be calculated when module progress tracking is implemented
+          const assessmentsCompleted = 0; // Will be calculated when assessment tracking is implemented
           
                       const newDashboardData = {
               summary: {
                 activeCourses,
                 completedCourses,
                 totalLearningHours,
-                averageProgress
+                averageProgress,
+                modulesCompleted,
+                assessmentsCompleted
               },
               weeklyPerformance: {
                 studyHours: 0, // Will be calculated when time tracking is implemented
@@ -123,7 +129,9 @@ export function Dashboard() {
               activeCourses: 0,
               completedCourses: 0,
               totalLearningHours: 0,
-              averageProgress: 0
+              averageProgress: 0,
+              modulesCompleted: 0,
+              assessmentsCompleted: 0
             },
             weeklyPerformance: {
               studyHours: 0,
@@ -146,7 +154,9 @@ export function Dashboard() {
             activeCourses: 0,
             completedCourses: 0,
             totalLearningHours: 0,
-            averageProgress: 0
+            averageProgress: 0,
+            modulesCompleted: 0,
+            assessmentsCompleted: 0
           },
           weeklyPerformance: {
             studyHours: 0,
@@ -180,7 +190,9 @@ export function Dashboard() {
           activeCourses: 0,
           completedCourses: 0,
           totalLearningHours: 0,
-          averageProgress: 0
+          averageProgress: 0,
+          modulesCompleted: 0,
+          assessmentsCompleted: 0
         },
         weeklyPerformance: {
           studyHours: 0,
@@ -413,7 +425,7 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-blue-600" size={20} />
@@ -430,17 +442,31 @@ export function Dashboard() {
                     </div>
                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2">
-                        <Clock className="text-emerald-600" size={20} />
-                        <span className="text-emerald-600 font-semibold">This Week</span>
+                        <BookOpen className="text-emerald-600" size={20} />
+                        <span className="text-emerald-600 font-semibold">Modules</span>
                       </div>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">
                         {loading ? (
                           <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
                         ) : (
-                          `${dashboardData.weeklyPerformance?.studyHours || 0}h`
+                          dashboardData.summary?.modulesCompleted || 0
                         )}
                       </p>
-                      <p className="text-emerald-600 text-sm">Study Time</p>
+                      <p className="text-emerald-600 text-sm">Modules Completed</p>
+                    </div>
+                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                      <div className="flex items-center gap-2">
+                        <Award className="text-orange-600" size={20} />
+                        <span className="text-orange-600 font-semibold">Assessments</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-700 mt-1">
+                        {loading ? (
+                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
+                        ) : (
+                          dashboardData.summary?.assessmentsCompleted || 0
+                        )}
+                      </p>
+                      <p className="text-orange-600 text-sm">Assessment Completed</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                       <div className="flex items-center gap-2">
