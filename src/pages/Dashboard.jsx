@@ -95,15 +95,9 @@ export function Dashboard() {
   const [showWebsiteConfirmation, setShowWebsiteConfirmation] = useState(false);
   const [showWebsiteForm, setShowWebsiteForm] = useState(false);
 
-  // Temporary sample history data (replace with API data when available)
-  const consultationHistory = [
-    { id: 'c1', date: '2025-09-10', title: '30 min consultation', credits: 1000, status: 'completed' },
-    { id: 'c2', date: '2025-09-18', title: '30 min consultation', credits: 1000, status: 'pending' },
-  ];
-  const websiteHistory = [
-    { id: 'w1', date: '2025-09-12', title: 'Basic Website pack', credits: 750, status: 'in progress' },
-    { id: 'w2', date: '2025-09-20', title: 'Premium Website pack', credits: 5000, status: 'completed' },
-  ];
+  // History data (empty until backend is connected)
+  const consultationHistory = [];
+  const websiteHistory = [];
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-testing-branch.onrender.com";
   // Get userId from localStorage or cookies, or fetch from profile
@@ -760,17 +754,23 @@ export function Dashboard() {
                           <div className="px-3 py-2">Status</div>
                         </div>
                         <div className="max-h-72 overflow-auto">
-                          {(historyTab==='consultations' ? consultationHistory : websiteHistory).map((row)=> (
-                            <div key={row.id} className="grid grid-cols-4 border-t">
-                              <div className="px-3 py-2 text-sm text-gray-900">{row.date}</div>
-                              <div className="px-3 py-2 text-sm text-gray-700">{row.title}</div>
-                              <div className="px-3 py-2 text-sm font-medium text-gray-900">{row.credits}</div>
-                              <div className="px-3 py-2 text-sm">
-                                <span className={`inline-flex px-2 py-0.5 rounded-full border text-xs ${row.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : row.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{row.status}</span>
-                          </div>
+                          {((historyTab==='consultations' ? consultationHistory : websiteHistory).length === 0) ? (
+                            <div className="flex items-center justify-center py-10">
+                              <p className="text-sm text-gray-600">Your {historyTab === 'consultations' ? 'consultation' : 'website'} history will appear here once available.</p>
+                            </div>
+                          ) : (
+                            (historyTab==='consultations' ? consultationHistory : websiteHistory).map((row)=> (
+                              <div key={row.id} className="grid grid-cols-4 border-t">
+                                <div className="px-3 py-2 text-sm text-gray-900">{row.date}</div>
+                                <div className="px-3 py-2 text-sm text-gray-700">{row.title}</div>
+                                <div className="px-3 py-2 text-sm font-medium text-gray-900">{row.credits}</div>
+                                <div className="px-3 py-2 text-sm">
+                                  <span className={`inline-flex px-2 py-0.5 rounded-full border text-xs ${row.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : row.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{row.status}</span>
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
-                          ))}
-                      </div>
                     </div>
                   </div>
                 </div>
