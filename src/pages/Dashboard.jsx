@@ -90,6 +90,7 @@ export function Dashboard() {
     }
   ];
   const [selectedWebsitePack, setSelectedWebsitePack] = useState(WEBSITE_PACKS[0]);
+  const [showWebsiteDetails, setShowWebsiteDetails] = useState(false);
 
   // Temporary sample history data (replace with API data when available)
   const consultationHistory = [
@@ -727,9 +728,8 @@ export function Dashboard() {
                             <p className="text-sm text-gray-600 mt-1">Launch or upgrade your site.<br className="hidden sm:inline" /> Pay with credits for eligible packs.</p>
                             <div className="mt-4 flex items-center gap-2">
                               <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={()=>setShowWebsiteModal(true)}>Get started</Button>
-                              <Button variant="outline" asChild className="border-blue-200 text-blue-700 hover:bg-blue-50">
-                                <Link to="/website">Learn more</Link>
-                            </Button>
+                              <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={()=>setShowWebsiteDetails(true)}>Learn more</Button>
+                            
                           </div>
                         </div>
                       </div>
@@ -851,7 +851,7 @@ export function Dashboard() {
 
       {/* Consultation Info Modal */}
       <Dialog open={showConsultInfo} onOpenChange={setShowConsultInfo}>
-        <DialogContent className="sm:max-w-md p-5 max-h-[80vh] overflow-auto">
+        <DialogContent className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>About Consultations</DialogTitle>
             <DialogDescription>
@@ -861,12 +861,11 @@ export function Dashboard() {
           <div className="space-y-3 text-sm text-gray-700">
             <div className="rounded-md bg-emerald-50 border border-emerald-200 p-3">
               <p className="font-medium text-emerald-800">How pricing works</p>
-              <p className="text-emerald-700">Example: 1000 credits for 30 minutes. Longer sessions scale proportionally.</p>
+              <p className="text-emerald-700">1000 credits for 30 minutes.</p>
             </div>
             <ul className="list-disc pl-5 space-y-1">
               <li>Flexible scheduling based on expert availability</li>
               <li>Focused help on coursework, projects, or strategy</li>
-              <li>Credits are only deducted when a session is confirmed</li>
             </ul>
           </div>
           <div className="flex gap-2 pt-2">
@@ -875,11 +874,164 @@ export function Dashboard() {
         </DialogContent>
       </Dialog>
 
+      {/* Website Details Modal */}
+      <Dialog open={showWebsiteDetails} onOpenChange={setShowWebsiteDetails}>
+        <DialogContent className="w-[95vw] sm:max-w-3xl p-0 max-h-[85vh] overflow-auto">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle>Website Services Details</DialogTitle>
+            <DialogDescription>
+              Compare what's included in each pack.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 pb-6 max-h-[70vh] overflow-auto">
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-3 min-w-[640px] text-sm border rounded-lg overflow-hidden">
+              <div className="col-span-1 bg-gray-50 px-3 py-2 font-medium text-gray-700">Feature</div>
+              <div className="px-3 py-2 bg-gray-50 font-medium text-gray-700">Basic</div>
+              <div className="px-3 py-2 bg-gray-50 font-medium text-gray-700">Premium</div>
+
+              {/* Number of Pages */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Number of Pages</div>
+              <div className="px-3 py-2 border-t text-gray-700">2-3 pages</div>
+              <div className="px-3 py-2 border-t text-gray-700">5-7+ custom pages</div>
+
+              {/* Custom Logo */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Custom Logo</div>
+              <div className="px-3 py-2 border-t text-gray-700">Basic text/logo</div>
+              <div className="px-3 py-2 border-t text-gray-700">Premium design with revisions</div>
+
+              {/* Policy Pages */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Policy Pages</div>
+              <div className="px-3 py-2 border-t text-gray-700">Basic templates</div>
+              <div className="px-3 py-2 border-t text-gray-700">Custom-written & formatted</div>
+
+              {/* Contact Form */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Contact Form</div>
+              <div className="px-3 py-2 border-t text-gray-700">Basic with auto-email</div>
+              <div className="px-3 py-2 border-t text-gray-700">Advanced with CRM sync</div>
+
+              {/* UI/UX Design */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">UI/UX Design</div>
+              <div className="px-3 py-2 border-t text-gray-700">Clean layout</div>
+              <div className="px-3 py-2 border-t text-gray-700">Brand-aligned premium design</div>
+
+              {/* Security (SSL) */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Security (SSL)</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">HTTPS</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">HTTPS + Extra layers</span>
+              </div>
+
+              {/* Mobile Responsive */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Mobile Responsive</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Underwriter-Ready Structure */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Underwriter-Ready Structure</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Hosting & Maintenance */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Hosting & Maintenance</div>
+              <div className="px-3 py-2 border-t text-gray-700">Monthly</div>
+              <div className="px-3 py-2 border-t text-gray-700">Monthly</div>
+
+              {/* Detail User Dashboard */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Detail User Dashboard</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Member Login / Portal */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Member Login / Portal</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Backend Integration */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Backend Integration</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Blog / Resource Section */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Blog / Resource Section</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Chatbot / Live Chat */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Chatbot / Live Chat</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Appointment Booking */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Appointment Booking</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* SEO Optimization */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">SEO Optimization</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+
+              {/* Client Training / Walkthrough */}
+              <div className="col-span-1 px-3 py-2 border-t text-gray-900">Client Training / Walkthrough</div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">Not included</span>
+              </div>
+              <div className="px-3 py-2 border-t">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Included</span>
+              </div>
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={()=>setShowWebsiteDetails(false)}>Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Inline Services History uses sliding panel above. Modal removed. */}
 
       {/* Consultation Booking Modal */}
       <Dialog open={showConsultBooking} onOpenChange={setShowConsultBooking}>
-        <DialogContent className="sm:max-w-lg md:max-w-xl p-6">
+        <DialogContent className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Book a Consultation</DialogTitle>
             <DialogDescription>
@@ -965,7 +1117,7 @@ export function Dashboard() {
 
       {/* Consultation Confirmation Modal */}
       <Dialog open={showConsultConfirmation} onOpenChange={setShowConsultConfirmation}>
-        <DialogContent className="sm:max-w-md p-5">
+        <DialogContent className="w-[95vw] sm:max-w-md p-4 sm:p-5 max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Confirm Your Booking</DialogTitle>
             <DialogDescription>
@@ -1035,7 +1187,7 @@ export function Dashboard() {
 
       {/* Website Services Modal */}
       <Dialog open={showWebsiteModal} onOpenChange={setShowWebsiteModal}>
-        <DialogContent className="sm:max-w-lg md:max-w-xl p-6">
+        <DialogContent className="w-[95vw] sm:max-w-lg md:max-w-xl p-4 sm:p-6 max-h-[85vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Choose a Website Pack</DialogTitle>
             <DialogDescription>

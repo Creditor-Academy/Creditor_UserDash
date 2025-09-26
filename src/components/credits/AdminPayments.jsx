@@ -10,7 +10,10 @@ const AdminPayments = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [subsPage, setSubsPage] = useState(1);
+  const [servicesPage, setServicesPage] = useState(1); // consultations page
+  const [servicesWebPage, setServicesWebPage] = useState(1); // websites page
   const itemsPerPage = 5;
+  const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [grantCreditsAmount, setGrantCreditsAmount] = useState(10);
   const [userDetailModal, setUserDetailModal] = useState({ open: false, user: null });
@@ -38,6 +41,21 @@ const AdminPayments = () => {
       }));
     
     return [...realOrders, ...dummyOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [transactions]);
+  
+  // Services: consultations and websites (dummy data for now)
+  const services = useMemo(() => {
+    const dummyConsultations = [
+      { id: 'cons_4001', user: 'alice@example.com', topic: 'Credit Strategy Call', scheduledAt: '2025-09-07 15:00', duration: '30m', payment: { amount: 30, currency: 'CR', method: 'credits' }, status: 'pending' },
+      { id: 'cons_4002', user: 'bob@example.com', topic: 'Debt Management', scheduledAt: '2025-09-10 11:30', duration: '45m', payment: { amount: 45, currency: 'CR', method: 'credits' }, status: 'in_progress' },
+      { id: 'cons_4003', user: 'dana@example.com', topic: 'Investment Basics', scheduledAt: '2025-09-12 09:00', duration: '60m', payment: { amount: 69, currency: 'USD', method: 'card' }, status: 'completed' },
+    ];
+    const dummyWebsites = [
+      { id: 'web_5001', user: 'chris@example.com', product: 'Personal Portfolio Site', purchasedAt: '2025-09-03', payment: { amount: 120, currency: 'CR', method: 'credits' }, status: 'pending' },
+      { id: 'web_5002', user: 'eve@example.com', product: 'Business Landing Page', purchasedAt: '2025-09-04', payment: { amount: 199, currency: 'USD', method: 'stripe' }, status: 'in_progress' },
+      { id: 'web_5003', user: 'frank@example.com', product: 'E‑commerce Template', purchasedAt: '2025-09-05', payment: { amount: 180, currency: 'CR', method: 'credits' }, status: 'completed' },
+    ];
+    return { consultations: dummyConsultations, websites: dummyWebsites };
   }, [transactions]);
 
   const payments = useMemo(() => {
@@ -213,6 +231,7 @@ const AdminPayments = () => {
           </div>
           <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
             <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
+            <button onClick={() => setPaymentsView("services")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "services" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Services</button>
             <button onClick={() => setPaymentsView("orders")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "orders" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Orders</button>
             <button onClick={() => setPaymentsView("payments")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "payments" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Payments</button>
             <button onClick={() => setPaymentsView("subscriptions")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "subscriptions" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Subscriptions</button>
@@ -220,20 +239,133 @@ const AdminPayments = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-semibold text-gray-800 mb-1">Credits</h3>
-          <p className="text-sm text-gray-600 mb-3">Sold vs used</p>
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
-            <div className="flex justify-between py-1"><span className="text-gray-600">Sold</span><span className="font-medium">{credits.sold}</span></div>
-            <div className="flex justify-between py-1"><span className="text-gray-600">Used</span><span className="font-medium">{credits.used}</span></div>
-            <div className="flex justify-between py-1"><span className="text-gray-600">Remaining</span><span className="font-medium">{remainingCredits}</span></div>
-            <div className="mt-2 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-blue-500 rounded" style={{ width: `${Math.min((credits.used / Math.max(credits.sold, 1)) * 100, 100)}%` }} />
+      {false && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-800 mb-1">Credits</h3>
+            <p className="text-sm text-gray-600 mb-3">Sold vs used</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
+              <div className="flex justify-between py-1"><span className="text-gray-600">Sold</span><span className="font-medium">{credits.sold}</span></div>
+              <div className="flex justify-between py-1"><span className="text-gray-600">Used</span><span className="font-medium">{credits.used}</span></div>
+              <div className="flex justify-between py-1"><span className="text-gray-600">Remaining</span><span className="font-medium">{remainingCredits}</span></div>
+              <div className="mt-2 h-2 bg-gray-200 rounded">
+                <div className="h-2 bg-blue-500 rounded" style={{ width: `${Math.min((credits.used / Math.max(credits.sold, 1)) * 100, 100)}%` }} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {paymentsView === "services" && (
+        <div className="space-y-6">
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold text-gray-800">Consultations</h3>
+            <span className="text-sm text-gray-500">User bookings and payments</span>
+          </div>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="text-left px-3 py-2">ID</th>
+                  <th className="text-left px-3 py-2">User</th>
+                  <th className="text-left px-3 py-2">Topic</th>
+                  <th className="text-left px-3 py-2">Scheduled</th>
+                  <th className="text-left px-3 py-2">Duration</th>
+                  <th className="text-left px-3 py-2">Payment</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {services.consultations.slice((servicesPage-1)*itemsPerPage, servicesPage*itemsPerPage).map(c => {
+                  const status = (serviceStatus[c.id] || c.status || 'pending');
+                  return (
+                    <tr key={c.id} className="border-t">
+                      <td className="px-3 py-2 font-medium text-gray-900">{c.id}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.user}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.topic}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.scheduledAt}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.duration}</td>
+                      <td className="px-3 py-2 text-gray-700">
+                        {c.payment.amount} {c.payment.currency} 
+                        <span className="text-xs text-gray-500">({c.payment.method})</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={status}
+                          onChange={(e)=>{ const v=e.target.value; setServiceStatus(prev=>({...prev,[c.id]:v})); console.log('Consultation status changed', c.id, v); }}
+                          className="rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        >
+                          <option value="pending">pending</option>
+                          <option value="in_progress">in progress</option>
+                          <option value="completed">completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-gray-600">Page {servicesPage} of {Math.max(Math.ceil(services.consultations.length / itemsPerPage), 1)}</span>
+            <div className="flex gap-2">
+              <button disabled={servicesPage===1} onClick={() => setServicesPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${servicesPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
+              <button disabled={servicesPage >= Math.ceil(services.consultations.length/itemsPerPage)} onClick={() => setServicesPage(p => Math.min(p+1, Math.ceil(services.consultations.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${servicesPage >= Math.ceil(services.consultations.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+            </div>
+          </div>
+
+          <div className="mt-8 mb-2">
+            <h3 className="text-lg font-semibold text-gray-800">Websites</h3>
+            <span className="text-sm text-gray-500">Purchases and credit details</span>
+          </div>
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="text-left px-3 py-2">ID</th>
+                  <th className="text-left px-3 py-2">User</th>
+                  <th className="text-left px-3 py-2">Website</th>
+                  <th className="text-left px-3 py-2">Purchased</th>
+                  <th className="text-left px-3 py-2">Payment</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {services.websites.slice((servicesWebPage-1)*itemsPerPage, servicesWebPage*itemsPerPage).map(w => {
+                  const status = (serviceStatus[w.id] || w.status || 'pending');
+                  return (
+                    <tr key={w.id} className="border-t">
+                      <td className="px-3 py-2 font-medium text-gray-900">{w.id}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.user}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.product}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.purchasedAt}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.payment.amount} {w.payment.currency} <span className="text-xs text-gray-500">({w.payment.method})</span></td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={status}
+                          onChange={(e)=>{ const v=e.target.value; setServiceStatus(prev=>({...prev,[w.id]:v})); console.log('Website status changed', w.id, v); }}
+                          className="rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        >
+                          <option value="pending">pending</option>
+                          <option value="in_progress">in progress</option>
+                          <option value="completed">completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-gray-600">Page {servicesWebPage} of {Math.max(Math.ceil(services.websites.length / itemsPerPage), 1)}</span>
+            <div className="flex gap-2">
+              <button disabled={servicesWebPage===1} onClick={() => setServicesWebPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${servicesWebPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
+              <button disabled={servicesWebPage >= Math.ceil(services.websites.length/itemsPerPage)} onClick={() => setServicesWebPage(p => Math.min(p+1, Math.ceil(services.websites.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${servicesWebPage >= Math.ceil(services.websites.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {paymentsView === "orders" && (
         <div className="mb-6">
