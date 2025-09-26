@@ -202,7 +202,7 @@ export function CatalogPage() {
       return 14000; // Operate Private
     } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
                (catalogName.includes("remedy") || catalogName.includes("private merchant"))) {
-      return 17990; // Business credit + I want Remedy Now + Private Merchant
+      return 14000; // Business credit + I want Remedy Now + Private Merchant
     } else if (catalogName.includes("master class")) {
       return 69; // Master Class
     }
