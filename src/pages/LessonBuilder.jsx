@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
+import VideoComponent from '@/components/VideoComponent';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
@@ -525,6 +526,7 @@ function LessonBuilder() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentBlock, setCurrentBlock] = useState(null);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [editingVideoBlock, setEditingVideoBlock] = useState(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
   const [videoFile, setVideoFile] = useState(null);
@@ -1830,6 +1832,47 @@ function LessonBuilder() {
     setEditingYouTubeBlock(null);
   };
 
+  const handleVideoUpdate = (videoBlock) => {
+    if (editingVideoBlock) {
+      // Update existing video block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingVideoBlock.id ? {
+            ...block,
+            ...videoBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+  
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingVideoBlock.id || block.id === editingVideoBlock.id) ? {
+                ...block,
+                ...videoBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Add new video block - THIS IS THE KEY FIX!
+      setContentBlocks(prevBlocks => [...prevBlocks, videoBlock]);
+    }
+  
+    // Reset editing state
+    setEditingVideoBlock(null);
+  };
+
+
+
+
   const handleTableUpdate = (blockId, content, htmlContent, templateId) => {
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
@@ -2475,6 +2518,12 @@ function LessonBuilder() {
       console.log('YouTube block detected for editing:', block);
       setEditingYouTubeBlock(block);
       setShowYouTubeDialog(true);
+
+    } else if (block.type === 'video') {
+      // Handle video block editing
+      console.log('Video block detected for editing:', block);
+      setEditingVideoBlock(block);
+      setShowVideoDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -3668,16 +3717,7 @@ function LessonBuilder() {
     // View mode functionality removed - now using Modern Preview only
   };
 
-  const handleVideoDialogClose = () => {
-    setShowVideoDialog(false);
-    setVideoTitle('');
-    setVideoDescription('');
-    setVideoFile(null);
-    setVideoPreview('');
-    setVideoUrl('');
-    setVideoUploadMethod('file');
-    setCurrentBlock(null);
-  };
+   
 
   const handleVideoInputChange = (e) => {
     const { name, value } = e.target;
@@ -3694,124 +3734,6 @@ function LessonBuilder() {
       }
     }
   };
-
-  const handleAddVideo = async () => {
-    // Validate required fields based on upload method
-    if (!videoTitle) {
-      alert('Please enter a video title');
-      return;
-    }
-   
-    if (videoUploadMethod === 'file' && !videoFile) {
-      alert('Please select a video file');
-      return;
-    }
-   
-    if (videoUploadMethod === 'url' && !videoUrl) {
-      alert('Please enter a video URL');
-      return;
-    }
-
-    // Create video URL based on upload method
-    let finalVideoUrl = '';
-    if (videoUploadMethod === 'file') {
-      try {
-        setIsUploading(true);
-        const upload = await uploadVideoResource(videoFile, { folder: 'lesson-videos', public: true, type: 'video' });
-        if (!upload?.success || !upload?.videoUrl) {
-          throw new Error('Video upload failed');
-        }
-        finalVideoUrl = upload.videoUrl;
-      } catch (e) {
-        setIsUploading(false);
-        toast.error(e.message || 'Video upload failed');
-        return;
-      } finally {
-        setIsUploading(false);
-      }
-    } else {
-      finalVideoUrl = videoUrl;
-    }
-
-    // Generate HTML content for display
-    const htmlContent = `
-      <video controls style="width: 100%;  height: auto; border-radius: 8px;">
-        <source src="${finalVideoUrl}" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-      ${videoTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${videoTitle}</p>` : ''}
-      ${videoDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${videoDescription}</p>` : ''}
-    `;
-
-    const videoBlock = {
-      id: currentBlock?.id || `video-${Date.now()}`,
-      block_id: currentBlock?.id || `video-${Date.now()}`,
-      type: 'video',
-      title: 'Video',
-      videoTitle: videoTitle,
-      videoDescription: videoDescription,
-      videoFile: videoUploadMethod === 'file' ? videoFile : null,
-      videoUrl: finalVideoUrl,
-      uploadMethod: videoUploadMethod,
-      originalUrl: videoUploadMethod === 'url' ? videoUrl : null,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentBlock) {
-      // Update existing block
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentBlock.id ? videoBlock : block)
-      );
-      
-      // Also update lessonContent if it exists (for fetched lessons)
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: prevLessonContent.data.content.map(block =>
-              block.block_id === currentBlock.id ? {
-                ...videoBlock,
-                block_id: currentBlock.id,
-                details: {
-                  video_url: finalVideoUrl,
-                  caption: videoTitle,
-                  description: videoDescription
-                }
-              } : block
-            )
-          }
-        }));
-      }
-    } else {
-      // Add new block to local edit list
-      setContentBlocks(prev => [...prev, videoBlock]);
-      
-      // Also add to lessonContent if it exists (for fetched lessons)
-      if (lessonContent?.data?.content) {
-        const newVideoBlock = {
-          ...videoBlock,
-          details: {
-            video_url: finalVideoUrl,
-            caption: videoTitle,
-            description: videoDescription
-          }
-        };
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newVideoBlock]
-          }
-        }));
-      }
-    }
-   
-    handleVideoDialogClose();
-  };
-
   // AI Image Generation Functions
   const generateAiImage = async (prompt) => {
     setAiImageGenerating(true);
@@ -5111,19 +5033,9 @@ function LessonBuilder() {
         prev.map(block => block.id === currentLinkBlock.id ? newBlock : block)
       );
     } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
-          }
-        }));
-      } else {
-        setContentBlocks(prev => [...prev, newBlock]);
-      }
+  
+      // Add new link block - only add to contentBlocks like other block handlers
+setContentBlocks(prev => [...prev, newBlock]);
     }
    
     handleLinkDialogClose();
@@ -6585,159 +6497,13 @@ function LessonBuilder() {
         </div>
 
       {/* Video Dialog */}
-      <Dialog open={showVideoDialog} onOpenChange={handleVideoDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Video</DialogTitle>
-            <p className="text-sm text-gray-500">Upload a video file or provide a video URL</p>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Video Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={videoTitle}
-                onChange={(e) => setVideoTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter video title"
-                required
-              />
-            </div>
-
-            {/* Upload Method Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Method <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="uploadMethod"
-                    value="file"
-                    checked={videoUploadMethod === 'file'}
-                    onChange={(e) => setVideoUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Upload File
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="uploadMethod"
-                    value="url"
-                    checked={videoUploadMethod === 'url'}
-                    onChange={(e) => setVideoUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Video URL
-                </label>
-              </div>
-            </div>
-
-            {/* File Upload Section */}
-            {videoUploadMethod === 'file' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video File <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <div className="flex text-sm text-gray-600">
-                      <label
-                        htmlFor="video-upload"
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                      >
-                        <span>Upload a file</span>
-                        <input
-                          id="video-upload"
-                          name="file"
-                          type="file"
-                          accept="video/mp4,video/webm,video/ogg"
-                          className="sr-only"
-                          onChange={handleVideoInputChange}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      MP4, WebM, or OGG up to 50MB
-                    </p>
-                  </div>
-                </div>
-                {videoPreview && videoUploadMethod === 'file' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <video
-                      src={videoPreview}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* URL Input Section */}
-            {videoUploadMethod === 'url' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video URL <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://example.com/video.mp4"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-
-                </p>
-                {videoUrl && videoUploadMethod === 'url' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <video
-                      src={videoUrl}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                      onError={() => console.log('Video URL may be invalid or not accessible')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={videoDescription}
-                onChange={(e) => setVideoDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your video (optional)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleVideoDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddVideo}
-              disabled={!videoTitle || (videoUploadMethod === 'file' && !videoFile) || (videoUploadMethod === 'url' && !videoUrl)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isUploading ? 'Uploading...' : 'Add Video'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <VideoComponent
+  showVideoDialog={showVideoDialog}
+  setShowVideoDialog={setShowVideoDialog}
+  onVideoUpdate={handleVideoUpdate}
+  editingVideoBlock={editingVideoBlock}
+      />
+       
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
@@ -7775,15 +7541,22 @@ function LessonBuilder() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handlePdfDialogClose}>
+            <Button variant="outline" onClick={handlePdfDialogClose} disabled={mainPdfUploading}>
               Cancel
             </Button>
             <Button
               onClick={handleAddPdf}
-              disabled={!pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
+              disabled={mainPdfUploading || !pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {currentBlock ? 'Update PDF' : 'Add PDF'}
+              {mainPdfUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {pdfUploadMethod === 'file' ? 'Uploading PDF...' : 'Adding PDF...'}
+                </>
+              ) : (
+                currentBlock ? 'Update PDF' : 'Add PDF'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
