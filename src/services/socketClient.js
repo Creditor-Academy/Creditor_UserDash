@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
 
 // Convert REST base to socket origin if necessary
 function deriveSocketOrigin(base) {
