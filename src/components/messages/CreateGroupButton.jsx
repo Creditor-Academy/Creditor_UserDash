@@ -15,7 +15,7 @@ import { Loader2, Search, Users, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchAllUsers } from "@/services/userService";
 import { getAllConversations } from "@/services/messageService";
-import { createGroup, addGroupMember } from "@/services/groupService";
+// Private group API will be added separately
 
 /**
  * CreateGroupButton
@@ -138,20 +138,25 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         ...(useUrl && imageUrl.trim() ? { thumbnail: imageUrl.trim() } : {}),
         ...(!useUrl && imageDataUrl ? { thumbnail: imageDataUrl } : {}),
       };
-      const res = await createGroup(payload);
-      if (!(res?.success && res?.data?.id)) throw new Error(res?.message || "Failed to create group");
-      const groupId = res.data.id;
-      for (const uid of selectedMemberIds) {
-        try { await addGroupMember(groupId, uid); } catch {}
-      }
+      // TODO: Replace with private group API
+      // const res = await createPrivateGroup(payload);
+      // if (!(res?.success && res?.data?.id)) throw new Error(res?.message || "Failed to create private group");
+      // const groupId = res.data.id;
+      // for (const uid of selectedMemberIds) {
+      //   try { await addPrivateGroupMember(groupId, uid); } catch {}
+      // }
+      
+      // Temporary mock response for testing
+      const mockGroupId = `private_${Date.now()}`;
+      console.log("Creating private group with payload:", payload);
       const created = {
-        id: `group_${groupId}`,
+        id: `group_${mockGroupId}`,
         name: groupName.trim(),
         memberCount: selectedMemberIds.length + 1,
         isGroup: true,
         isAdmin: true,
-        conversationId: groupId,
-        room: groupId,
+        conversationId: mockGroupId,
+        room: mockGroupId,
         lastMessage: "Group created",
         lastMessageType: "system",
         lastMessageFrom: "System",

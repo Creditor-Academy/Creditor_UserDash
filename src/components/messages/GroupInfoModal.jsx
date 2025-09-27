@@ -19,15 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  getGroupById, 
-  getGroupMembers, 
-  addMultipleGroupMembers,
-  deleteGroupMember,
-  makeGroupAdmin,
-  deleteGroupById,
-  updateGroup
-} from "@/services/groupService";
+// Private group APIs will be added separately
 import { fetchAllUsers } from "@/services/userService";
 import { toast } from "sonner";
 
@@ -70,20 +62,20 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const loadGroupData = async () => {
     try {
       setLoading(true);
-      const [groupRes, membersRes] = await Promise.all([
-        getGroupById(groupId),
-        getGroupMembers(groupId)
-      ]);
+      // TODO: Replace with private group APIs
+      // const [groupRes, membersRes] = await Promise.all([
+      //   getPrivateGroupById(groupId),
+      //   getPrivateGroupMembers(groupId)
+      // ]);
       
-      setGroup(groupRes?.data || groupRes);
-      const membersData = membersRes?.data || membersRes || [];
-      setMembers(Array.isArray(membersData) ? membersData : (membersData.members || []));
+      // Mock data for now
+      setGroup(groupInfo || null);
+      setMembers([]); // TODO: Load from private group API
       
       // Initialize temp values for editing
-      const groupData = groupRes?.data || groupRes;
-      setTempName(groupData?.name || "");
-      setTempDescription(groupData?.description || "");
-      setTempAvatarUrl(groupData?.thumbnail || "");
+      setTempName(groupInfo?.name || "");
+      setTempDescription(groupInfo?.description || "");
+      setTempAvatarUrl(groupInfo?.thumbnail || "");
     } catch (error) {
       console.error("Error loading group data:", error);
       toast.error("Failed to load group information");
@@ -106,7 +98,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setRemoving(memberId);
-      await deleteGroupMember(groupId, memberId);
+      // TODO: Replace with private group API
+      // await removePrivateGroupMember(groupId, memberId);
+      console.log("Remove member from private group:", { groupId, memberId, memberName });
       setMembers(prev => prev.filter(m => (m.user?.id || m.user_id || m.id) !== memberId));
       toast.success(`${memberName} removed from group`);
     } catch (error) {
@@ -120,7 +114,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handlePromoteToAdmin = async (userId) => {
     try {
       setPromoting(userId);
-      await makeGroupAdmin({ groupId, userId });
+      // TODO: Replace with private group API
+      // await promotePrivateGroupAdmin({ groupId, userId });
+      console.log("Promote to admin in private group:", { groupId, userId });
       setMembers(prev => prev.map(m => 
         (m.user?.id || m.user_id || m.id) === userId 
           ? { ...m, role: 'ADMIN', is_admin: true }
@@ -140,12 +136,14 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setAdding(true);
-      await addMultipleGroupMembers(groupId, Array.from(selectedUsers));
+      // TODO: Replace with private group API
+      // await addPrivateGroupMembers(groupId, Array.from(selectedUsers));
+      console.log("Add members to private group:", { groupId, userIds: Array.from(selectedUsers) });
       
       // Refresh members list
-      const membersRes = await getGroupMembers(groupId);
-      const membersData = membersRes?.data || membersRes || [];
-      setMembers(Array.isArray(membersData) ? membersData : (membersData.members || []));
+      // const membersRes = await getPrivateGroupMembers(groupId);
+      // const membersData = membersRes?.data || membersRes || [];
+      // setMembers(Array.isArray(membersData) ? membersData : (membersData.members || []));
       
       setSelectedUsers(new Set());
       setShowAddMembers(false);
@@ -164,7 +162,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setDeletingGroup(true);
-      await deleteGroupById(groupId);
+      // TODO: Replace with private group API
+      // await deletePrivateGroup(groupId);
+      console.log("Delete private group:", { groupId });
       toast.success("Group deleted successfully");
       onClose();
       // You might want to add a callback to refresh the parent component
@@ -181,7 +181,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setSaving(true);
-      await updateGroup(groupId, { name: tempName.trim() });
+      // TODO: Replace with private group API
+      // await updatePrivateGroup(groupId, { name: tempName.trim() });
+      console.log("Update private group name:", { groupId, name: tempName.trim() });
       setGroup(prev => ({ ...prev, name: tempName.trim() }));
       setEditingName(false);
       toast.success("Group name updated successfully");
@@ -196,7 +198,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handleSaveDescription = async () => {
     try {
       setSaving(true);
-      await updateGroup(groupId, { description: tempDescription.trim() });
+      // TODO: Replace with private group API
+      // await updatePrivateGroup(groupId, { description: tempDescription.trim() });
+      console.log("Update private group description:", { groupId, description: tempDescription.trim() });
       setGroup(prev => ({ ...prev, description: tempDescription.trim() }));
       setEditingDescription(false);
       toast.success("Group description updated successfully");
@@ -222,8 +226,10 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
         formData.append('imageUrl', avatarFile);
         formData.append('image', avatarFile);
         
-        const response = await updateGroup(groupId, formData);
-        setGroup(prev => ({ ...prev, thumbnail: response?.data?.thumbnail || response?.thumbnail }));
+        // TODO: Replace with private group API
+        // const response = await updatePrivateGroup(groupId, formData);
+        console.log("Update private group avatar (file):", { groupId, formData });
+        setGroup(prev => ({ ...prev, thumbnail: URL.createObjectURL(avatarFile) }));
       } else if (tempAvatarUrl.trim()) {
         // Handle URL
         updateData.thumbnail = tempAvatarUrl.trim();
@@ -232,7 +238,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
         updateData.imageUrl = tempAvatarUrl.trim();
         updateData.image = tempAvatarUrl.trim();
         
-        await updateGroup(groupId, updateData);
+        // TODO: Replace with private group API
+        // await updatePrivateGroup(groupId, updateData);
+        console.log("Update private group avatar (URL):", { groupId, updateData });
         setGroup(prev => ({ ...prev, thumbnail: tempAvatarUrl.trim() }));
       }
       

@@ -32,7 +32,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
 import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation } from "@/services/messageService";
-import { createGroup, addGroupMember } from "@/services/groupService";
+// Private group APIs will be added separately
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
@@ -689,96 +689,8 @@ function Messages() {
     setNewChatUsers([]);
   };
 
-  // Group creation handlers
-  const handleCreateGroup = async () => {
-    if (!groupName.trim() || selectedGroupMembers.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please provide a group name and select at least one member",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (userHasGroup) {
-      toast({
-        title: "Error",
-        description: "You can only create one group",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsCreatingGroup(true);
-    try {
-      // Create the group
-      const groupData = {
-        name: groupName.trim(),
-        description: groupDescription.trim(),
-        created_by: 0, // Will be set by backend based on auth
-        type: 'messaging', // Custom type for messaging groups
-        is_private: false
-      };
-
-      const response = await createGroup(groupData);
-      
-      if (response.success && response.data) {
-        const groupId = response.data.id;
-        
-        // Add selected members to the group
-        for (const memberId of selectedGroupMembers) {
-          try {
-            await addGroupMember(groupId, memberId);
-          } catch (error) {
-            console.warn(`Failed to add member ${memberId} to group:`, error);
-          }
-        }
-
-        // Add group to friends list
-        const newGroup = {
-          id: `group_${groupId}`,
-          name: groupName.trim(),
-          avatar: '/placeholder.svg',
-          lastMessage: "Group created",
-          lastMessageType: 'system',
-          room: groupId,
-          conversationId: groupId,
-          isRead: true,
-          lastMessageFrom: 'System',
-          lastMessageAt: new Date().toISOString(),
-          isGroup: true,
-          memberCount: selectedGroupMembers.length + 1, // +1 for creator
-          isAdmin: true
-        };
-
-        setFriends(prev => [newGroup, ...prev]);
-        setUserHasGroup(true);
-        
-        toast({
-          title: "Success",
-          description: "Group created successfully!",
-        });
-
-        // Reset form and close modal
-        setGroupName("");
-        setGroupDescription("");
-        setSelectedGroupMembers([]);
-        setGroupSearchQuery("");
-        setShowCreateGroupModal(false);
-      } else {
-        throw new Error(response.message || "Failed to create group");
-      }
-    } catch (error) {
-      console.error("Error creating group:", error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to create group",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingGroup(false);
-    }
-  };
+  // Group creation handlers - REMOVED: Using CreateGroupButton component instead
+  // This function is no longer used as we use the CreateGroupButton component
 
   const handleGroupMemberSelect = (userId) => {
     setSelectedGroupMembers(prev => 
