@@ -27,7 +27,8 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email: normalizedEmail });
       setIsEmailSent(true);
       toast.success(response.data?.message || "Password reset email sent successfully!");
     } catch (error) {
@@ -151,9 +152,11 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
       const response = await axios.post(`${API_BASE}/api/auth/login`, {
-        email,
-        password,
+        email: normalizedEmail,
+        password: normalizedPassword,
       }, {
         withCredentials: true
       });
@@ -291,7 +294,7 @@ export function Login() {
                     {/* Email Field */}
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-slate-700">
-                        Email Address
+                        User ID
                       </Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
