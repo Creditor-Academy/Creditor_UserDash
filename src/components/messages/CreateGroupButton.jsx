@@ -14,8 +14,7 @@ import {
 import { Loader2, Search, Users, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations } from "@/services/messageService";
-// Private group API will be added separately
+import { getAllConversations, createPrivateGroup, addPrivateGroupMembers, getMyPrivateGroup } from "@/services/messageService";
 
 /**
  * CreateGroupButton
@@ -60,19 +59,24 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       .filter(u => (u.name || "").toLowerCase().includes(q) && !selectedMemberIds.includes(u.id));
   }, [allUsers, search, selectedMemberIds, roleFilter]);
 
-  // Initialize on first open: fetch conversations + users
+  // Initialize on first open: fetch conversations + users + private group
   const handleOpen = async (nextOpen) => {
     setOpen(nextOpen);
     if (!nextOpen) return;
     setLoadingInit(true);
     try {
-      const [convos, users] = await Promise.all([
+      const [convos, users, privateGroupRes] = await Promise.all([
         getAllConversations().catch(() => []),
         fetchAllUsers().catch(() => []),
+        getMyPrivateGroup().catch(() => null),
       ]);
-      // Heuristic: mark hasGroup if conversation objects include isGroup truthy
-      const hasGroup = Array.isArray(convos) && convos.some(c => c?.isGroup);
+      
+      // Check if user has a group (either from conversations or private group)
+      const hasGroupFromConvos = Array.isArray(convos) && convos.some(c => c?.isGroup);
+      const hasPrivateGroup = privateGroupRes?.success && privateGroupRes?.data;
+      const hasGroup = hasGroupFromConvos || hasPrivateGroup;
       setUserHasGroup(Boolean(hasGroup));
+      
       const currentUserId = String(localStorage.getItem('userId') || '');
       const normalized = (users || []).map(u => {
         // Extract user role from user_roles array
@@ -133,36 +137,44 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       const payload = {
         name: groupName.trim(),
         description: groupDescription.trim(),
-        type: "messaging",
-        is_private: false,
+        invited_user_ids: selectedMemberIds,
         ...(useUrl && imageUrl.trim() ? { thumbnail: imageUrl.trim() } : {}),
         ...(!useUrl && imageDataUrl ? { thumbnail: imageDataUrl } : {}),
       };
-      // TODO: Replace with private group API
-      // const res = await createPrivateGroup(payload);
-      // if (!(res?.success && res?.data?.id)) throw new Error(res?.message || "Failed to create private group");
-      // const groupId = res.data.id;
-      // for (const uid of selectedMemberIds) {
-      //   try { await addPrivateGroupMember(groupId, uid); } catch {}
-      // }
       
-      // Temporary mock response for testing
-      const mockGroupId = `private_${Date.now()}`;
-      console.log("Creating private group with payload:", payload);
+      // Create private group using the API
+      const res = await createPrivateGroup(payload);
+      if (!(res?.success && res?.data?.id)) {
+        throw new Error(res?.message || "Failed to create private group");
+      }
+      
+      const groupId = res.data.id;
+      
+      // Add members to the group
+      if (selectedMemberIds.length > 0) {
+        try {
+          await addPrivateGroupMembers(groupId, selectedMemberIds);
+        } catch (memberError) {
+          console.warn("Failed to add some members:", memberError);
+        }
+      }
+      
       const created = {
-        id: `group_${mockGroupId}`,
-        name: groupName.trim(),
+        id: `group_${groupId}`,
+        name: res.data.name,
         memberCount: selectedMemberIds.length + 1,
         isGroup: true,
         isAdmin: true,
-        conversationId: mockGroupId,
-        room: mockGroupId,
+        conversationId: groupId,
+        room: groupId,
         lastMessage: "Group created",
         lastMessageType: "system",
         lastMessageFrom: "System",
         lastMessageAt: new Date().toISOString(),
-        avatar: "/placeholder.svg",
+        avatar: res.data.thumbnail || "/placeholder.svg",
+        description: res.data.description,
       };
+      
       toast({ title: "Group created" });
       if (typeof onCreated === "function") {
         try { onCreated(created); } catch {}

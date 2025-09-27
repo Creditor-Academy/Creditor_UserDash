@@ -31,8 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation } from "@/services/messageService";
-// Private group APIs will be added separately
+import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation, getMyPrivateGroup, getMyMemberPrivateGroups } from "@/services/messageService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
@@ -428,14 +427,16 @@ function Messages() {
   useEffect(() => {
     (async () => {
       try {
-        // Load conversations
-        const convos = await getAllConversations();
+        // Load conversations and private groups in parallel
+        const [convos, privateGroupRes, memberGroupsRes] = await Promise.all([
+          getAllConversations().catch(() => []),
+          getMyPrivateGroup().catch(() => null),
+          getMyMemberPrivateGroups().catch(() => null)
+        ]);
         
-        // Check if user already has a group
-        const hasGroup = convos.some(convo => convo.isGroup);
-        setUserHasGroup(hasGroup);
-        console.log('getAllConversations ->', convos);
-        // If backend returns only IDs, render placeholder items directly
+        let allFriends = [];
+        
+        // Process regular conversations
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
           const idFriends = convos.map(id => ({
             id: String(id),
@@ -443,23 +444,98 @@ function Messages() {
             avatar: '/placeholder.svg',
             lastMessage: '',
           }));
-          setFriends(idFriends);
+          allFriends = [...allFriends, ...idFriends];
         } else {
-        // Normalize using backend contract (id, room, title, image, isRead, lastMessageFrom)
-        const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
-          id: String(c.id),
-          name: c.title || 'User',
-          avatar: c.image || '/placeholder.svg',
-          lastMessage: c.lastMessage || '',
-          lastMessageType: c.lastMessageType || null,
-          room: c.room,
-          conversationId: c.id,
-          isRead: c.isRead,
-          lastMessageFrom: c.lastMessageFrom,
-          lastMessageAt: c.lastMessageAt,
-        }));
-        setFriends(normalizedFriends);
+          // Normalize using backend contract (id, room, title, image, isRead, lastMessageFrom)
+          const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
+            id: String(c.id),
+            name: c.title || 'User',
+            avatar: c.image || '/placeholder.svg',
+            lastMessage: c.lastMessage || '',
+            lastMessageType: c.lastMessageType || null,
+            room: c.room,
+            conversationId: c.id,
+            isRead: c.isRead,
+            lastMessageFrom: c.lastMessageFrom,
+            lastMessageAt: c.lastMessageAt,
+          }));
+          allFriends = [...allFriends, ...normalizedFriends];
         }
+        
+        // Process private groups where user is a member
+        const currentUserId = localStorage.getItem('userId');
+        const privateGroups = [];
+        
+        // Add user's own private group if exists
+        if (privateGroupRes?.success && privateGroupRes?.data) {
+          const group = privateGroupRes.data;
+          const isAdmin = group.members?.some(member => 
+            member.user_id === currentUserId && member.role === 'ADMIN'
+          ) || false;
+          
+          privateGroups.push({
+            id: `group_${group.id}`,
+            name: group.name,
+            avatar: group.thumbnail || '/placeholder.svg',
+            lastMessage: 'Private group',
+            lastMessageType: 'system',
+            room: group.id,
+            conversationId: group.id,
+            isRead: true,
+            lastMessageFrom: 'System',
+            lastMessageAt: group.createdAt,
+            isGroup: true,
+            isAdmin: isAdmin,
+            description: group.description,
+            memberCount: group.members?.length || 0,
+          });
+        }
+        
+        // Add all private groups where user is a member
+        if (memberGroupsRes?.success && memberGroupsRes?.data && Array.isArray(memberGroupsRes.data)) {
+          memberGroupsRes.data.forEach(group => {
+            // Skip if this is the same as user's own group (already added above)
+            const isOwnGroup = privateGroupRes?.success && 
+              privateGroupRes?.data && 
+              group.id === privateGroupRes.data.id;
+            
+            if (!isOwnGroup) {
+              const isAdmin = group.members?.some(member => 
+                member.user_id === currentUserId && member.role === 'ADMIN'
+              ) || false;
+              
+              privateGroups.push({
+                id: `group_${group.id}`,
+                name: group.name,
+                avatar: group.thumbnail || '/placeholder.svg',
+                lastMessage: 'Private group',
+                lastMessageType: 'system',
+                room: group.id,
+                conversationId: group.id,
+                isRead: true,
+                lastMessageFrom: 'System',
+                lastMessageAt: group.createdAt,
+                isGroup: true,
+                isAdmin: isAdmin,
+                description: group.description,
+                memberCount: group.members?.length || 0,
+              });
+            }
+          });
+        }
+        
+        // Add all private groups to the beginning of the list
+        allFriends = [...privateGroups, ...allFriends];
+        
+        // Check if user has a group (either from conversations or private group)
+        const hasGroup = allFriends.some(friend => friend.isGroup);
+        setUserHasGroup(hasGroup);
+        
+        console.log('getAllConversations ->', convos);
+        console.log('getMyPrivateGroup ->', privateGroupRes);
+        console.log('getMyMemberPrivateGroups ->', memberGroupsRes);
+        
+        setFriends(allFriends);
 
         // Load directory of all users for the + modal
         const users = await fetchAllUsers();

@@ -19,8 +19,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-// Private group APIs will be added separately
 import { fetchAllUsers } from "@/services/userService";
+import { 
+  getPrivateGroupById, 
+  getPrivateGroupMembers, 
+  updatePrivateGroup, 
+  deletePrivateGroup, 
+  addPrivateGroupMembers, 
+  removePrivateGroupMember, 
+  promotePrivateGroupAdmin,
+  invitePrivateGroupMembers
+} from "@/services/messageService";
 import { toast } from "sonner";
 
 export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, isAdmin = false }) {
@@ -35,6 +44,8 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const [promoting, setPromoting] = useState(null);
   const [adding, setAdding] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [invitationExpiry, setInvitationExpiry] = useState(72); // Default 72 hours
   
   // Editing states
   const [editingName, setEditingName] = useState(false);
@@ -62,23 +73,38 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const loadGroupData = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with private group APIs
-      // const [groupRes, membersRes] = await Promise.all([
-      //   getPrivateGroupById(groupId),
-      //   getPrivateGroupMembers(groupId)
-      // ]);
+      const [groupRes, membersRes] = await Promise.all([
+        getPrivateGroupById(groupId),
+        getPrivateGroupMembers(groupId)
+      ]);
       
-      // Mock data for now
-      setGroup(groupInfo || null);
-      setMembers([]); // TODO: Load from private group API
+      if (groupRes?.success && groupRes?.data) {
+        setGroup(groupRes.data);
+        setTempName(groupRes.data.name || "");
+        setTempDescription(groupRes.data.description || "");
+        setTempAvatarUrl(groupRes.data.thumbnail || "");
+      } else {
+        // Fallback to passed groupInfo
+        setGroup(groupInfo || null);
+        setTempName(groupInfo?.name || "");
+        setTempDescription(groupInfo?.description || "");
+        setTempAvatarUrl(groupInfo?.thumbnail || "");
+      }
       
-      // Initialize temp values for editing
-      setTempName(groupInfo?.name || "");
-      setTempDescription(groupInfo?.description || "");
-      setTempAvatarUrl(groupInfo?.thumbnail || "");
+      if (membersRes?.success && membersRes?.data) {
+        setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+      } else {
+        setMembers([]);
+      }
     } catch (error) {
       console.error("Error loading group data:", error);
       toast.error("Failed to load group information");
+      // Fallback to passed groupInfo
+      setGroup(groupInfo || null);
+      setTempName(groupInfo?.name || "");
+      setTempDescription(groupInfo?.description || "");
+      setTempAvatarUrl(groupInfo?.thumbnail || "");
+      setMembers([]);
     } finally {
       setLoading(false);
     }
@@ -98,9 +124,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setRemoving(memberId);
-      // TODO: Replace with private group API
-      // await removePrivateGroupMember(groupId, memberId);
-      console.log("Remove member from private group:", { groupId, memberId, memberName });
+      await removePrivateGroupMember(groupId, memberId);
       setMembers(prev => prev.filter(m => (m.user?.id || m.user_id || m.id) !== memberId));
       toast.success(`${memberName} removed from group`);
     } catch (error) {
@@ -114,9 +138,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handlePromoteToAdmin = async (userId) => {
     try {
       setPromoting(userId);
-      // TODO: Replace with private group API
-      // await promotePrivateGroupAdmin({ groupId, userId });
-      console.log("Promote to admin in private group:", { groupId, userId });
+      await promotePrivateGroupAdmin(groupId, userId);
       setMembers(prev => prev.map(m => 
         (m.user?.id || m.user_id || m.id) === userId 
           ? { ...m, role: 'ADMIN', is_admin: true }
@@ -136,14 +158,13 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setAdding(true);
-      // TODO: Replace with private group API
-      // await addPrivateGroupMembers(groupId, Array.from(selectedUsers));
-      console.log("Add members to private group:", { groupId, userIds: Array.from(selectedUsers) });
+      await addPrivateGroupMembers(groupId, Array.from(selectedUsers));
       
       // Refresh members list
-      // const membersRes = await getPrivateGroupMembers(groupId);
-      // const membersData = membersRes?.data || membersRes || [];
-      // setMembers(Array.isArray(membersData) ? membersData : (membersData.members || []));
+      const membersRes = await getPrivateGroupMembers(groupId);
+      if (membersRes?.success && membersRes?.data) {
+        setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+      }
       
       setSelectedUsers(new Set());
       setShowAddMembers(false);
@@ -157,14 +178,42 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     }
   };
 
+  const handleInviteMembers = async () => {
+    if (selectedUsers.size === 0) return;
+    
+    try {
+      setInviting(true);
+      const response = await invitePrivateGroupMembers(groupId, Array.from(selectedUsers), invitationExpiry);
+      
+      if (response?.success && response?.data) {
+        const invitations = response.data;
+        toast.success(`${invitations.length} invitations sent successfully`);
+        
+        // Show invitation details
+        const invitationDetails = invitations.map(inv => 
+          `User: ${inv.invitee_id}, Token: ${inv.token}`
+        ).join('\n');
+        
+        console.log('Invitations created:', invitationDetails);
+      }
+      
+      setSelectedUsers(new Set());
+      setShowAddMembers(false);
+      setSearchTerm("");
+    } catch (error) {
+      console.error("Error sending invitations:", error);
+      toast.error("Failed to send invitations");
+    } finally {
+      setInviting(false);
+    }
+  };
+
   const handleDeleteGroup = async () => {
     if (!isAdmin) return;
     
     try {
       setDeletingGroup(true);
-      // TODO: Replace with private group API
-      // await deletePrivateGroup(groupId);
-      console.log("Delete private group:", { groupId });
+      await deletePrivateGroup(groupId);
       toast.success("Group deleted successfully");
       onClose();
       // You might want to add a callback to refresh the parent component
@@ -181,9 +230,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setSaving(true);
-      // TODO: Replace with private group API
-      // await updatePrivateGroup(groupId, { name: tempName.trim() });
-      console.log("Update private group name:", { groupId, name: tempName.trim() });
+      await updatePrivateGroup(groupId, { name: tempName.trim() });
       setGroup(prev => ({ ...prev, name: tempName.trim() }));
       setEditingName(false);
       toast.success("Group name updated successfully");
@@ -198,9 +245,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handleSaveDescription = async () => {
     try {
       setSaving(true);
-      // TODO: Replace with private group API
-      // await updatePrivateGroup(groupId, { description: tempDescription.trim() });
-      console.log("Update private group description:", { groupId, description: tempDescription.trim() });
+      await updatePrivateGroup(groupId, { description: tempDescription.trim() });
       setGroup(prev => ({ ...prev, description: tempDescription.trim() }));
       setEditingDescription(false);
       toast.success("Group description updated successfully");
@@ -215,33 +260,27 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handleSaveAvatar = async () => {
     try {
       setSaving(true);
-      const updateData = {};
       
       if (avatarFile) {
         // Handle file upload
         const formData = new FormData();
         formData.append('thumbnail', avatarFile);
-        formData.append('banner', avatarFile);
-        formData.append('image_url', avatarFile);
-        formData.append('imageUrl', avatarFile);
-        formData.append('image', avatarFile);
         
-        // TODO: Replace with private group API
-        // const response = await updatePrivateGroup(groupId, formData);
-        console.log("Update private group avatar (file):", { groupId, formData });
-        setGroup(prev => ({ ...prev, thumbnail: URL.createObjectURL(avatarFile) }));
+        const response = await updatePrivateGroup(groupId, formData);
+        if (response?.success && response?.data?.thumbnail) {
+          setGroup(prev => ({ ...prev, thumbnail: response.data.thumbnail }));
+        } else {
+          setGroup(prev => ({ ...prev, thumbnail: URL.createObjectURL(avatarFile) }));
+        }
       } else if (tempAvatarUrl.trim()) {
         // Handle URL
-        updateData.thumbnail = tempAvatarUrl.trim();
-        updateData.banner = tempAvatarUrl.trim();
-        updateData.image_url = tempAvatarUrl.trim();
-        updateData.imageUrl = tempAvatarUrl.trim();
-        updateData.image = tempAvatarUrl.trim();
-        
-        // TODO: Replace with private group API
-        // await updatePrivateGroup(groupId, updateData);
-        console.log("Update private group avatar (URL):", { groupId, updateData });
-        setGroup(prev => ({ ...prev, thumbnail: tempAvatarUrl.trim() }));
+        const updateData = { thumbnail: tempAvatarUrl.trim() };
+        const response = await updatePrivateGroup(groupId, updateData);
+        if (response?.success && response?.data?.thumbnail) {
+          setGroup(prev => ({ ...prev, thumbnail: response.data.thumbnail }));
+        } else {
+          setGroup(prev => ({ ...prev, thumbnail: tempAvatarUrl.trim() }));
+        }
       }
       
       setEditingAvatar(false);
@@ -640,14 +679,39 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                           ))}
                         </div>
                         
+                        {/* Invitation Expiry Setting */}
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm font-medium text-gray-700">Invitation expires in:</label>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="168"
+                            value={invitationExpiry}
+                            onChange={(e) => setInvitationExpiry(parseInt(e.target.value) || 72)}
+                            className="w-20 h-8"
+                            placeholder="72"
+                          />
+                          <span className="text-sm text-gray-500">hours</span>
+                        </div>
+                        
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
                             onClick={handleAddMembers}
                             disabled={adding || selectedUsers.size === 0}
+                            variant="outline"
                           >
                             {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                             Add {selectedUsers.size} Members
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleInviteMembers}
+                            disabled={inviting || selectedUsers.size === 0}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                            Invite {selectedUsers.size} Members
                           </Button>
                           <Button
                             size="sm"
