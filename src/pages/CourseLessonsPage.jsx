@@ -26,6 +26,7 @@ const CourseLessonsPage = () => {
   const [showCreateLessonDialog, setShowCreateLessonDialog] = useState(false);
   const [selectedCourseForLesson, setSelectedCourseForLesson] = useState(null);
   const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const isAllowed = allowedScormUserIds.includes(currentUserId);
@@ -33,6 +34,7 @@ const CourseLessonsPage = () => {
   useEffect(() => {
     if (!isAllowed) return;
     const fetchCoursesData = async () => {
+      setIsLoading(true);
       try {
         const coursesData = await fetchAllCourses();
         const coursesWithModules = await Promise.all(
@@ -79,6 +81,8 @@ const CourseLessonsPage = () => {
         setCourses(coursesWithModules);
       } catch (err) {
         console.error('Error fetching courses:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchCoursesData();
@@ -251,10 +255,24 @@ const CourseLessonsPage = () => {
 
   if (!isAllowed) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
-          <p className="text-gray-600">You do not have permission to access Course Lessons Management.</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+          <Button onClick={() => navigate('/dashboard')} variant="outline">
+            <ChevronLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="text-gray-600">Loading courses...</p>
         </div>
       </div>
     );

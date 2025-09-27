@@ -11,7 +11,9 @@ import { Input } from "@/components/ui/input";
 import QuizModal from '@/components/courses/QuizModal';
 import QuizScoresModal from '@/components/courses/QuizScoresModal';
 import EditQuestionModal from '@/components/courses/EditQuestionModal';
-import { fetchQuizzesByModule, fetchAllQuizzes, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
+import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
+import { getQuizQuestions } from '@/services/quizService';
+import { getAuthHeader } from '@/services/authHeader';
 import { toast } from "sonner";
 
 const COURSES_PER_PAGE = 5;
@@ -29,7 +31,8 @@ const CreateQuizPage = () => {
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [selectedModuleForQuiz, setSelectedModuleForQuiz] = useState(null);
   const [moduleQuizzes, setModuleQuizzes] = useState({}); // { [moduleId]: [quiz, ...] }
-  const [allQuizzes, setAllQuizzes] = useState([]);
+  const [allQuizzes, setAllQuizzes] = useState([]); // kept for fallback but not used for global fetch anymore
+  const [loadingQuizzes, setLoadingQuizzes] = useState({}); // { [moduleId]: boolean }
   const [previewQuizData, setPreviewQuizData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(null);
@@ -37,27 +40,38 @@ const CreateQuizPage = () => {
   const [selectedQuizForScores, setSelectedQuizForScores] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState(null);
   const [isAddingQuestions, setIsAddingQuestions] = useState(false);
   const [showEditQuestionModal, setShowEditQuestionModal] = useState(false);
   const [selectedQuestionForEdit, setSelectedQuestionForEdit] = useState(null);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
   const isAllowed = allowedScormUserIds.includes(currentUserId);
 
   const fetchAndSetModuleQuizzes = async (moduleId) => {
+    // Set loading state
+    setLoadingQuizzes(prev => ({ ...prev, [moduleId]: true }));
+    
     try {
       const quizzes = await fetchQuizzesByModule(moduleId);
       setModuleQuizzes(prev => ({ ...prev, [moduleId]: quizzes }));
     } catch (err) {
+      console.error(`Error fetching quizzes for module ${moduleId}:`, err);
       setModuleQuizzes(prev => ({ ...prev, [moduleId]: [] }));
+    } finally {
+      // Clear loading state
+      setLoadingQuizzes(prev => ({ ...prev, [moduleId]: false }));
     }
   };
 
   useEffect(() => {
     if (!isAllowed) {
+      setLoadingCourses(false);
       return;
     }
     const fetchCoursesData = async () => {
+      setLoadingCourses(true);
       try {
         const coursesData = await fetchAllCourses();
         const coursesWithModules = await Promise.all(
@@ -74,41 +88,16 @@ const CreateQuizPage = () => {
         setCourses(coursesWithModules);
       } catch (err) {
         console.error('Error fetching courses:', err);
+      } finally {
+        setLoadingCourses(false);
       }
     };
     fetchCoursesData();
   }, [isAllowed]);
 
-  useEffect(() => {
-    if (!isAllowed) return;
-    const fetchAllQuizzes = async () => {
-      try {
-        const coursesData = await fetchAllCourses();
-        await Promise.all(
-          coursesData.flatMap(course =>
-            course.modules?.map(async (mod) => {
-              if (mod?.id) await fetchAndSetModuleQuizzes(mod.id);
-            }) || []
-          )
-        );
-      } catch {}
-    };
-    fetchAllQuizzes();
-  }, [courses, isAllowed]);
+  // Remove bulk quiz fetching - now using lazy loading
 
-  // Fetch all quizzes once
-  useEffect(() => {
-    if (!isAllowed) return;
-    const fetchQuizzes = async () => {
-      try {
-        const quizzes = await fetchAllQuizzes();
-        setAllQuizzes(Array.isArray(quizzes) ? quizzes : quizzes.data || []);
-      } catch {
-        setAllQuizzes([]);
-      }
-    };
-    fetchQuizzes();
-  }, [isAllowed]);
+  // Note: No global fetchAllQuizzes call since endpoint is not available; rely on per-module fetch
 
   // Filtered and paginated courses
   const filteredCourses = useMemo(() => {
@@ -129,8 +118,24 @@ const CreateQuizPage = () => {
   // Reset to page 1 if search changes
   useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
-  const handleExpandCourse = (courseId) => {
-    setExpandedCourseId(expandedCourseId === courseId ? null : courseId);
+  const handleExpandCourse = async (courseId) => {
+    const newExpandedId = expandedCourseId === courseId ? null : courseId;
+    setExpandedCourseId(newExpandedId);
+    
+    // If expanding, load quizzes for all modules in this course
+    if (newExpandedId) {
+      const course = courses.find(c => c.id === courseId);
+      if (course && course.modules) {
+        // Load quizzes for all modules in parallel
+        await Promise.all(
+          course.modules.map(async (module) => {
+            if (module?.id && !moduleQuizzes[module.id]) {
+              await fetchAndSetModuleQuizzes(module.id);
+            }
+          })
+        );
+      }
+    }
   };
 
   const handleCreateModule = (courseId) => {
@@ -163,8 +168,33 @@ const CreateQuizPage = () => {
     setPreviewError(null);
     setShowPreviewDialog(true);
     try {
-      const data = await getQuizById(quiz.id);
-      setPreviewQuizData(data);
+      const quizId = quiz.id || quiz.quizId;
+      try {
+        const questions = await getQuizQuestions(quizId);
+        const normalized = Array.isArray(questions) ? questions : (questions?.data || []);
+        setPreviewQuizData({
+          id: quizId,
+          title: quiz.title,
+          description: quiz.description,
+          questions: normalized,
+        });
+      } catch (innerErr) {
+        // Fallback to legacy endpoint that returns full quiz with questions
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/quiz/${quizId}/getQuizById`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader(),
+          },
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          throw new Error('Failed to load quiz details');
+        }
+        const data = await res.json();
+        const quizData = data?.data || data;
+        setPreviewQuizData(quizData);
+      }
     } catch (err) {
       setPreviewError('Failed to load quiz details.');
       setPreviewQuizData(null);
@@ -176,6 +206,7 @@ const CreateQuizPage = () => {
   const handleDeleteQuiz = async (quiz) => {
     setQuizToDelete(quiz);
     setShowDeleteConfirmation(true);
+    setIsDeleting(false);
   };
 
   const handleEditQuiz = (quiz) => {
@@ -227,15 +258,19 @@ const CreateQuizPage = () => {
           await fetchAndSetModuleQuizzes(selectedModuleForQuiz);
         }
         
-        // Refresh all module quizzes to ensure consistency
-        const coursesData = await fetchAllCourses();
-        await Promise.all(
-          coursesData.flatMap(course =>
-            course.modules?.map(async (mod) => {
-              if (mod?.id) await fetchAndSetModuleQuizzes(mod.id);
-            }) || []
-          )
-        );
+        // Refresh quizzes for currently expanded course modules only
+        if (expandedCourseId) {
+          const expandedCourse = courses.find(c => c.id === expandedCourseId);
+          if (expandedCourse && expandedCourse.modules) {
+            await Promise.all(
+              expandedCourse.modules.map(async (mod) => {
+                if (mod?.id && moduleQuizzes[mod.id]) {
+                  await fetchAndSetModuleQuizzes(mod.id);
+                }
+              })
+            );
+          }
+        }
         console.log('Quiz data refresh completed');
       } catch (error) {
         console.error('Error refreshing quiz data:', error);
@@ -281,7 +316,11 @@ const CreateQuizPage = () => {
               <Trophy className="w-8 h-8 text-blue-600 mr-3" />
               <div>
                 <p className="text-sm text-gray-600">Total Quizzes</p>
-                <p className="text-2xl font-bold">{allQuizzes.length}</p>
+                <p className="text-2xl font-bold">
+                  {Object.keys(moduleQuizzes).length > 0
+                    ? Object.values(moduleQuizzes).reduce((sum, list) => sum + (Array.isArray(list) ? list.length : 0), 0)
+                    : allQuizzes.length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -320,7 +359,9 @@ const CreateQuizPage = () => {
               <div>
                 <p className="text-sm text-gray-600">Quizzes with Questions</p>
                 <p className="text-2xl font-bold">
-                  {allQuizzes.filter(q => (q.questions?.length || q.question_count || 0) > 0).length}
+                  {Object.keys(moduleQuizzes).length > 0
+                    ? Object.values(moduleQuizzes).reduce((sum, list) => sum + (Array.isArray(list) ? list.filter(q => (q.questions?.length || q.question_count || 0) > 0).length : 0), 0)
+                    : allQuizzes.filter(q => (q.questions?.length || q.question_count || 0) > 0).length}
                 </p>
               </div>
             </div>
@@ -328,7 +369,15 @@ const CreateQuizPage = () => {
         </Card>
       </div>
 
-      {paginatedCourses.length === 0 ? (
+      {loadingCourses ? (
+        <div className="text-center py-12">
+          <div className="flex items-center justify-center mb-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading courses...</h3>
+          <p className="text-gray-500">Please wait while we fetch your course data.</p>
+        </div>
+      ) : paginatedCourses.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -368,8 +417,8 @@ const CreateQuizPage = () => {
                       </div>
                     ) : (
                       course.modules.map((mod) => {
-                        // Get all quizzes for this module
-                        const quizzes = allQuizzes.filter(q => q.module_id === mod.id);
+                        // Strictly use module-specific API results to avoid showing quizzes from other modules
+                        const quizzes = moduleQuizzes[mod.id] || [];
                         console.log(`Module ${mod.id} quizzes:`, quizzes);
                         return (
                           <div key={mod.id} className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 p-6">
@@ -415,7 +464,14 @@ const CreateQuizPage = () => {
                               </div>
                             </div>
                             {/* List all quizzes for this module */}
-                            {quizzes.length > 0 && (
+                            {loadingQuizzes[mod.id] ? (
+                              <div className="mt-4 flex items-center justify-center py-8">
+                                <div className="flex items-center space-x-2">
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                                  <span className="text-sm text-gray-600">Loading quizzes...</span>
+                                </div>
+                              </div>
+                            ) : quizzes.length > 0 ? (
                               <div className="mt-4 space-y-4">
                                 {quizzes.map((quiz) => (
                                   <div key={quiz.id} className="border rounded p-4 flex flex-col md:flex-row md:items-center md:justify-between bg-gray-50">
@@ -426,50 +482,64 @@ const CreateQuizPage = () => {
                                       <div className="text-xs text-gray-500 mb-1">Questions: {quiz.questions?.length || quiz.question_count || 0}</div>
                                     </div>
                                                                           <div className="flex gap-2 mt-2 md:mt-0">
-                                        <Button
-                                          onClick={() => handlePreviewQuiz(quiz)}
-                                          className="p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Preview Quiz"
-                                        >
-                                          <Eye className="w-4 h-4" />
-                                        </Button>
+
 
                                         <Button
                                           onClick={() => handleViewScores(quiz, course.id)}
-                                          className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="View Scores"
+                                          className="group relative overflow-hidden bg-green-500 hover:bg-green-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Trophy className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Trophy className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Scores
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleEditQuiz(quiz)}
-                                          className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Edit Quiz"
+                                          className="group relative overflow-hidden bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Edit className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Edit className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Edit
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleDeleteQuiz(quiz)}
-                                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Delete Quiz"
+                                          className="group relative overflow-hidden bg-red-500 hover:bg-red-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Trash2 className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Trash2 className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Delete
+                                            </span>
+                                          </div>
                                         </Button>
 
                                         <Button
                                           onClick={() => handleAddQuestions(quiz)}
-                                          className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition duration-200"
-                                          title="Add Questions"
+                                          className="group relative overflow-hidden bg-indigo-500 hover:bg-indigo-600 text-white rounded-md shadow-sm transition-all duration-300 hover:pr-16"
                                         >
-                                          <Plus className="w-4 h-4" />
+                                          <div className="flex items-center justify-center w-full h-full">
+                                            <Plus className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-[-4px]" />
+                                            <span className="absolute right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-xs font-medium whitespace-nowrap">
+                                              Add
+                                            </span>
+                                          </div>
                                         </Button>
                                       </div>
 
 
                                   </div>
                                 ))}
+                              </div>
+                            ) : (
+                              <div className="mt-4 text-center py-4">
+                                <p className="text-sm text-gray-500">No quizzes found for this module</p>
                               </div>
                             )}
                           </div>
@@ -556,7 +626,7 @@ const CreateQuizPage = () => {
                             <Edit className="w-4 h-4" />
                           </Button>
                         </div>
-                        {options.length > 0 && (
+                        {options.length > 0 ? (
                           <div className="space-y-2 ml-4">
                             {options.map(opt => (
                               <div key={opt.id || opt.text} className="flex items-center">
@@ -565,6 +635,42 @@ const CreateQuizPage = () => {
                                 {opt.isCorrect && <span className="ml-2 text-green-600 text-xs font-semibold">(Correct)</span>}
                               </div>
                             ))}
+                          </div>
+                        ) : (
+                          <div className="ml-4 text-sm text-gray-700">
+                            {(q.type === 'FILL_UPS' || q.type === 'ONE_WORD') ? (
+                              <div>
+                                <span className="font-medium">Answer{q.type === 'FILL_UPS' ? 's' : ''}:</span>{' '}
+                                <span>
+                                  {Array.isArray(q.correctAnswer)
+                                    ? q.correctAnswer.join(', ')
+                                    : (q.correctAnswer || q.correct_answers || q.answer || '—')}
+                                </span>
+                              </div>
+                            ) : q.type === 'CATEGORIZATION' ? (
+                              <div>
+                                <div className="font-medium mb-2">Categories and Items:</div>
+                                <div className="space-y-2">
+                                  {options.map(opt => (
+                                    <div key={opt.id || opt.text} className="flex items-center">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        opt.isCategory 
+                                          ? 'bg-blue-100 text-blue-800' 
+                                          : 'bg-green-100 text-green-800'
+                                      }`}>
+                                        {opt.isCategory ? 'Category' : 'Item'}
+                                      </span>
+                                      <span className="ml-2 text-gray-800">{opt.text || opt}</span>
+                                      {!opt.isCategory && opt.category && (
+                                        <span className="ml-2 text-xs text-gray-500">
+                                          → {opt.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         )}
                       </div>
@@ -618,26 +724,52 @@ const CreateQuizPage = () => {
               Are you sure you want to delete the quiz "{quizToDelete.title}"? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowDeleteConfirmation(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={async () => {
-                try {
-                  await deleteQuiz(quizToDelete.id);
-                  setAllQuizzes(prev => prev.filter(q => q.id !== quizToDelete.id));
-                  setModuleQuizzes(prev => {
-                    const moduleId = quizToDelete.module_id;
-                    return {
-                      ...prev,
-                      [moduleId]: prev[moduleId]?.filter(q => q.id !== quizToDelete.id) || []
-                    };
-                  });
+              <Button 
+                variant="outline" 
+                onClick={() => {
                   setShowDeleteConfirmation(false);
                   setQuizToDelete(null);
-                  toast.success('Quiz deleted successfully!');
-                } catch (err) {
-                  console.error('Error deleting quiz:', err);
-                  toast.error('Failed to delete quiz.');
-                }
-              }}>Delete</Button>
+                  setIsDeleting(false);
+                }}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await deleteQuiz(quizToDelete.id);
+                    setAllQuizzes(prev => prev.filter(q => q.id !== quizToDelete.id));
+                    setModuleQuizzes(prev => {
+                      const moduleId = quizToDelete.module_id;
+                      return {
+                        ...prev,
+                        [moduleId]: prev[moduleId]?.filter(q => q.id !== quizToDelete.id) || []
+                      };
+                    });
+                    setShowDeleteConfirmation(false);
+                    setQuizToDelete(null);
+                    setIsDeleting(false);
+                    toast.success('Quiz deleted successfully!');
+                  } catch (err) {
+                    console.error('Error deleting quiz:', err);
+                    toast.error('Failed to delete quiz.');
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Deleting...</span>
+                  </div>
+                ) : (
+                  'Delete'
+                )}
+              </Button>
             </div>
           </div>
         </div>

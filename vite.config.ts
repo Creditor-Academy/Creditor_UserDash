@@ -5,10 +5,53 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  
   server: {
     host: "::",
     port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        }
+      }
+    },
+    cors: {
+      origin: ['http://localhost:3000', 'http://localhost:5000'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+      credentials: true,
+      maxAge: 3600
+    },
+    strictPort: true,
+    hmr: {
+      port: 3000,
+      protocol: 'ws',
+      host: 'localhost',
+      clientPort: 3000
+    }
+  },
+  preview: {
+    host: "0.0.0.0",
+    port: 3000,
+    allowedHosts: [
+      "www.lmsathena.com",
+      "lmsathena.com",
+      "api.lmsathena.com",
+      "54.198.69.32"
+    ],
+    cors: true
   },
   base: '/',
   plugins: [
@@ -22,11 +65,20 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://sharebackend-sdkp.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://test-backend-e7d4.onrender.com'),
   },
 }));
 
-// https://sharebackend-sdkp.onrender.com
-// https://creditor-backend-1-iijy.onrender.com
-// https://creditor-backend-9upi.onrender.com
 
+
+// #(Testing Backend)
+// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com
+
+// #(development Backend)
+// VITE_API_BASE_URL=https://creditor-backend-1-iijy.onrender.com
+
+// #(local Backend)
+// # VITE_API_BASE_URL= http://localhost:9000
+
+// #(Main Backend)
+// # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com

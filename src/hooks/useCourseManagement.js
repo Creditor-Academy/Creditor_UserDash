@@ -7,6 +7,7 @@ import {
   deleteModule, 
   deleteCourse 
 } from '../services/courseService';
+import { createModulePublishedNotification } from '@/services/notificationService';
 
 export const useCourseManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -63,13 +64,38 @@ export const useCourseManagement = () => {
   // Handle module creation
   const handleCreateModule = async (courseId, moduleData) => {
     try {
-      await createModule(courseId, moduleData);
+      const response = await createModule(courseId, moduleData);
+      const createdModule = response.data || response;
+      
       // Refresh modules for the course
       const updatedModules = await fetchCourseModules(courseId);
       setCourseModules(prev => ({
         ...prev,
         [courseId]: updatedModules
       }));
+
+      // If module is published, send notification to enrolled users
+      if ((moduleData?.module_status || '').toUpperCase() === 'PUBLISHED') {
+        try {
+          await createModulePublishedNotification(courseId, createdModule.id);
+          console.log('Module published notification sent successfully');
+        } catch (err) {
+          console.warn('Module publish notification failed (route might be disabled); continuing.', err);
+          // Add local fallback notification
+          const now = new Date();
+          const localNotification = {
+            id: `local-${now.getTime()}`,
+            type: 'module',
+            title: 'Module Published',
+            message: `A new module "${moduleData.title}" has been published`,
+            created_at: now.toISOString(),
+            read: false,
+          };
+          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+        }
+        // Trigger UI to refresh notifications
+        window.dispatchEvent(new Event('refresh-notifications'));
+      }
     } catch (err) {
       console.error('Error creating module:', err);
       throw err;
@@ -86,6 +112,28 @@ export const useCourseManagement = () => {
         ...prev,
         [courseId]: updatedModules
       }));
+
+      // If module is published on update, send notification to enrolled users
+      if ((moduleData?.module_status || '').toUpperCase() === 'PUBLISHED') {
+        try {
+          await createModulePublishedNotification(courseId, moduleId);
+          console.log('Module published notification sent successfully');
+        } catch (err) {
+          console.warn('Module publish notification failed (route might be disabled); continuing.', err);
+          // Add local fallback notification
+          const now = new Date();
+          const localNotification = {
+            id: `local-${now.getTime()}`,
+            type: 'module',
+            title: 'Module Published',
+            message: `Module "${moduleData.title}" has been published`,
+            created_at: now.toISOString(),
+            read: false,
+          };
+          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+        }
+        window.dispatchEvent(new Event('refresh-notifications'));
+      }
     } catch (err) {
       console.error('Error updating module:', err);
       throw err;

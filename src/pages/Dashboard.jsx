@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, ChevronRight, GraduationCap, Target, Clock, ChevronLeft, CheckCircle, Search, MonitorPlay, Award, Video } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardCarousel from "@/components/dashboard/DashboardCarousel";
+import DashboardGroup from "@/components/dashboard/DashboardGroup";
 import UpcomingCourses from "@/pages/UpcomingCourses";
 import AthenaUpcomingEvent from "@/pages/AthenaUpcomingEvent";
 import DashboardCalendar from "@/components/dashboard/DashboardCalendar";
@@ -14,9 +15,10 @@ import DashboardAnnouncements from "@/components/dashboard/DashboardAnnouncement
 import LiveClasses from "@/components/dashboard/LiveClasses";
 import ComingSoonPopover from "@/components/dashboard/ComingSoonPopover";
 import axios from "axios";
-import { fetchUserCourses, fetchCourseModules } from '../services/courseService';
+import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
+import { getCourseTrialStatus } from '../utils/trialUtils';
 
 export function Dashboard() {
   const { userProfile } = useUser();
@@ -202,33 +204,20 @@ export function Dashboard() {
       setCoursesLoading(true);
       try {
         const data = await fetchUserCourses();
-        // Fetch modules for each course and add modulesCount and totalDuration
-        const coursesWithModules = await Promise.all(
-          data.map(async (course) => {
-            try {
-              const modules = await fetchCourseModules(course.id);
-              const modulesCount = modules.length;
-              const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
-              const totalDurationSecs = totalDurationMins * 60;
-              return { 
-                ...course, 
-                modulesCount, 
-                totalDurationSecs,
-                // Ensure image field is set from thumbnail with proper fallbacks
-                image: course.thumbnail || course.image || course.coverImage || course.course_image || course.thumbnail_url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-            } catch {
-              return { 
-                ...course, 
-                modulesCount: 0, 
-                totalDurationSecs: 0,
-                // Ensure image field is set from thumbnail with proper fallbacks
-                image: course.thumbnail || course.image || course.coverImage || course.course_image || course.thumbnail_url || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"
-              };
-            }
-          })
-        );
-        setUserCourses(coursesWithModules);
+        // Process courses to include module counts, durations, and trial status
+        const processedCourses = data.map(course => {
+          const trialStatus = getCourseTrialStatus(course);
+          return {
+            ...course,
+            // Use _count.modules from the API response
+            modulesCount: course._count?.modules || 0,
+            totalDurationSecs: 0, // This can be updated if duration is available in the course data
+            image: course.thumbnail || course.image || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000",
+            trialStatus
+          };
+        });
+
+        setUserCourses(processedCourses);
       } catch (err) {
         setCoursesError('Failed to fetch courses');
       } finally {
@@ -354,7 +343,13 @@ export function Dashboard() {
   // Carousel state for My Courses
   const courseScrollRef = useRef(null);
   const [scrollIndex, setScrollIndex] = useState(0);
-  const visibleCards = 2;
+  const [isSmallScreen, setIsSmallScreen] = useState(typeof window !== 'undefined' ? window.innerWidth < 640 : true);
+  useEffect(() => {
+    const handleResize = () => setIsSmallScreen(window.innerWidth < 640);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const visibleCards = isSmallScreen ? 1 : 2;
   const totalCards = userCourses.length;
 
   const handleScroll = (direction) => {
@@ -375,7 +370,7 @@ export function Dashboard() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">      
       <main className="flex-1">
-        <div className="container py-6 max-w-7xl">
+        <div className="w-full px-3 sm:px-4 md:px-6 py-6 max-w-7xl mx-auto">
           <ComingSoonPopover />
           {/* Top grid section - align greeting with latest updates */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-8 relative z-0">
@@ -384,16 +379,16 @@ export function Dashboard() {
               {/* Enhanced Greeting Section */}
               <div className="relative rounded-2xl overflow-hidden shadow-lg border border-gray-200">
                 <div className="animate-gradient-shift absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-emerald-500/10"></div>
-                <div className="relative z-10 p-4 bg-white/80 backdrop-blur-sm">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                      <GraduationCap className="text-white" size={22} />
+                <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                      <GraduationCap className="text-white" size={20} />
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-bold mb-1 bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
                         {`Welcome back${userName ? `, ${userName}` : ''}!`}
                       </h2>
-                      <p className="text-gray-600 text-base">Continue your private education journey and achieve your learning goals.</p>
+                      <p className="text-gray-600 text-sm sm:text-base leading-snug">Continue your private education journey and achieve your learning goals.</p>
                     </div>
                   </div>
                   
@@ -418,7 +413,7 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-blue-600" size={20} />
@@ -426,7 +421,7 @@ export function Dashboard() {
                       </div>
                       <p className="text-2xl font-bold text-blue-700 mt-1">
                         {loading ? (
-                          <div className="animate-pulse bg-blue-200 h-8 w-12 rounded"></div>
+                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-8 w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.completedCourses || 0
                         )}
@@ -440,7 +435,7 @@ export function Dashboard() {
                       </div>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">
                         {loading ? (
-                          <div className="animate-pulse bg-emerald-200 h-8 w-12 rounded"></div>
+                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
                         ) : (
                           `${dashboardData.weeklyPerformance?.studyHours || 0}h`
                         )}
@@ -454,7 +449,7 @@ export function Dashboard() {
                       </div>
                       <p className="text-2xl font-bold text-purple-700 mt-1">
                         {loading ? (
-                          <div className="animate-pulse bg-purple-200 h-8 w-12 rounded"></div>
+                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.activeCourses || 0
                         )}
@@ -490,7 +485,7 @@ export function Dashboard() {
                     {scrollIndex > 0 && (
                       <button
                         onClick={() => handleScroll(-1)}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
+                        className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
                         style={{ marginLeft: '-24px' }}
                         aria-label="Scroll left"
                       >
@@ -500,15 +495,15 @@ export function Dashboard() {
                     {/* Cards Row */}
                     <div
                       ref={courseScrollRef}
-                      className="flex gap-6 overflow-x-hidden scroll-smooth px-1"
+                      className="flex gap-6 overflow-x-auto sm:overflow-x-hidden scroll-smooth px-1 custom-horizontal-scroll w-full"
                       style={{ scrollBehavior: 'smooth' }}
                     >
                       {userCourses.map((course) => (
                         <div
                           key={course.id}
-                          className="min-w-[320px] max-w-xs flex-shrink-0"
+                          className="w-full min-w-0 sm:min-w-[320px] sm:max-w-xs flex-shrink-0"
                         >
-                          <CourseCard {...course} />
+                          <CourseCard {...course} course={course} />
                         </div>
                       ))}
                     </div>
@@ -516,7 +511,7 @@ export function Dashboard() {
                     {scrollIndex < userCourses.length - visibleCards && userCourses.length > visibleCards && (
                       <button
                         onClick={() => handleScroll(1)}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
+                        className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-full shadow-md p-2 hover:bg-blue-50 transition disabled:opacity-40"
                         style={{ marginRight: '-24px' }}
                         aria-label="Scroll right"
                       >
@@ -589,13 +584,10 @@ export function Dashboard() {
               {/* Catalog Banner Section */}
           <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-2">Featured Courses</h3>
-              <p className="text-gray-600 text-sm max-w-2xl mx-auto">
-                Discover our comprehensive range of private education courses designed to empower your journey
-              </p>
             </div>
             <DashboardCarousel />
           </div>
+         
           <div className="mb-8">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -606,6 +598,10 @@ export function Dashboard() {
             </div>
           </div>
           <UpcomingCourses />
+           {/* Groups Preview Section */}
+           <div className="mb-8">
+            <DashboardGroup />
+          </div>
           {/* How It Works Section */}
           <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8 mb-8">
             <div className="text-center mb-8 sm:mb-10">

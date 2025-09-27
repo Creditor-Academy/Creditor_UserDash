@@ -163,66 +163,168 @@ class ScormService {
     }
   }
 
-  static async uploadScorm({ moduleId, file, uploadedBy, description, onProgress, onCancel }) {
-    const formData = new FormData();
-    formData.append('scorm', file);
-    formData.append('module_id', moduleId);
-    formData.append('uploaded_by', uploadedBy);
-    formData.append('description', description);
-
-    const xhr = new XMLHttpRequest();
-    
+  static uploadScorm({ moduleId, lessonId, file, uploadedBy, description, onProgress, onCancel }) {
     return new Promise((resolve, reject) => {
-      xhr.upload.addEventListener('progress', (event) => {
-        if (event.lengthComputable && onProgress) {
-          const progress = Math.round((event.loaded / event.total) * 100);
+      // Check file size (limit to 1GB)
+      const maxFileSize = 1024 * 1024 * 1024; // 1GB in bytes
+      if (file.size > maxFileSize) {
+        reject(new Error(`File size (${Math.round(file.size / (1024 * 1024))}MB) exceeds maximum allowed size of 1GB`));
+        return;
+      }
+
+      console.log('Preparing to upload SCORM package:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        moduleId,
+        lessonId,
+        uploadedBy,
+        description
+      });
+
+      const formData = new FormData();
+      formData.append('scorm', file, file.name);
+      formData.append('module_id', moduleId);
+      formData.append('lesson_id', lessonId);
+      formData.append('uploaded_by', uploadedBy);
+      formData.append('description', description);
+
+      // Log form data entries
+      for (let [key, value] of formData.entries()) {
+        console.log(`FormData - ${key}:`, key === 'scorm' ? `[File: ${value.name}, ${value.size} bytes]` : value);
+      }
+
+      const xhr = new XMLHttpRequest();
+      const url = `${import.meta.env.VITE_API_BASE_URL}/api/scorm/upload_scorm`;
+      
+      // Track if we've completed the upload
+      let uploadComplete = false;
+      
+      // Set up progress tracking
+      if (onProgress) {
+        // Initial progress
+        onProgress(0);
+        
+        // Progress event handler
+        const progressHandler = (event) => {
+          if (!event.lengthComputable) return;
+          
+          let progress = 0;
+          if (event.lengthComputable && event.total > 0) {
+            progress = Math.min(99, Math.round((event.loaded / event.total) * 100));
+          }
+          
+          console.log(`Upload progress: ${progress}% (${event.loaded} of ${event.total} bytes)`);
           onProgress(progress);
-        }
-      });
-
-      xhr.addEventListener('load', () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const data = JSON.parse(xhr.responseText);
-            console.log('SCORM upload response:', data);
-            resolve(data);
-          } catch (error) {
-            reject(new Error('Invalid JSON response'));
-          }
-        } else {
-          try {
-            const errorData = JSON.parse(xhr.responseText);
-            reject(new Error(errorData.message || `Failed to upload SCORM (${xhr.status})`));
-          } catch {
-            reject(new Error(`Failed to upload SCORM (${xhr.status})`));
-          }
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        reject(new Error('Network error during upload'));
-      });
-
-      xhr.addEventListener('abort', () => {
-        reject(new Error('Upload cancelled'));
-      });
-
-      // Store the xhr object so it can be cancelled
-      if (onCancel) {
-        onCancel(() => {
-          xhr.abort();
+        };
+        
+        // Add progress event listeners
+        xhr.upload.addEventListener('loadstart', () => {
+          console.log('Upload started');
+          onProgress(0);
+        });
+        
+        xhr.upload.addEventListener('progress', progressHandler);
+        
+        xhr.upload.addEventListener('load', () => {
+          console.log('Upload complete, waiting for server response...');
+          // Don't set to 100% yet, wait for server response
         });
       }
 
-      xhr.open('POST', `${import.meta.env.VITE_API_BASE_URL}/api/scorm/upload_scorm`);
+      // Set up cancel handler
+      if (onCancel) {
+        onCancel(() => {
+          if (!uploadComplete) {
+            xhr.abort();
+            reject(new Error('Upload cancelled by user'));
+          }
+        });
+      }
+
+      xhr.open('POST', url, true);
+      
+      // Set auth headers
+      const authHeaders = getAuthHeader();
+      if (authHeaders && authHeaders.Authorization) {
+        xhr.setRequestHeader('Authorization', authHeaders.Authorization);
+      }
+      
+      // Don't set Content-Type - let the browser set it with the boundary
       xhr.withCredentials = true;
+
+      xhr.onload = function() {
+        uploadComplete = true;
+        
+        // Update progress to 100% when we get a response
+        if (onProgress) {
+          onProgress(100);
+        }
+        
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            console.log('SCORM upload successful:', data);
+            resolve(data);
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            reject(new Error('Failed to parse server response'));
+          }
+        } else {
+          let errorMessage = `Server error: ${xhr.status} ${xhr.statusText}`;
+          let responseText = xhr.responseText || '';
+          
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            // If we can't parse JSON, use the raw response text
+            if (responseText) {
+              errorMessage = responseText;
+            }
+          }
+          
+          console.error('Upload failed with status:', xhr.status);
+          console.error('Response text:', responseText);
+          console.error('Error message:', errorMessage);
+          
+          // Don't reject immediately for server processing errors - the upload might still be processing
+          if (xhr.status === 0) {
+            reject(new Error('Network connection lost. Please check your internet connection.'));
+          } else if (xhr.status === 400) {
+            reject(new Error(errorMessage || 'Invalid request. Please check the file and try again.'));
+          } else if (xhr.status === 401) {
+            reject(new Error('Authentication failed. Please log in again.'));
+          } else if (xhr.status === 413) {
+            reject(new Error('File too large. Please reduce file size and try again.'));
+          } else if (xhr.status === 403) {
+            reject(new Error('Access denied. You do not have permission to upload SCORM packages.'));
+          } else if (xhr.status >= 500) {
+            reject(new Error('Server is processing your upload. Please wait and check back in a moment.'));
+          } else {
+            reject(new Error(errorMessage || 'Upload failed. Please try again.'));
+          }
+        }
+      };
+
+      xhr.onerror = function() {
+        reject(new Error('Network error occurred during upload'));
+      };
+
+      xhr.ontimeout = function() {
+        reject(new Error('Upload timed out. Please try again.'));
+      };
+
+      // Remove timeout for large files - let it take as long as needed
+      // xhr.timeout = 600000; // 10 minutes
+
       xhr.send(formData);
     });
   }
 
   static async deleteScorm(resourceId) {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/scorm/deleteScorm/${resourceId}`, {
+      const response = await fetch(`/api/scorm/deleteScorm/${resourceId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -232,11 +334,27 @@ class ScormService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(errorData.message || `Failed to delete SCORM (${response.status})`);
+        let errorMessage = `Failed to delete SCORM package: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If we can't parse the error response, use the status text
+        }
+        
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please log in again.');
+        } else if (response.status === 403) {
+          throw new Error('Access denied. You do not have permission to delete this SCORM package.');
+        } else if (response.status === 404) {
+          throw new Error('SCORM package not found. It may have already been deleted.');
+        } else {
+          throw new Error(errorMessage);
+        }
       }
-      
+
       const data = await response.json();
+      console.log('SCORM package deleted successfully:', data);
       return data;
     } catch (error) {
       console.error('Error deleting SCORM:', error);
