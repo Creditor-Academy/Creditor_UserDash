@@ -28,7 +28,8 @@ import {
   addPrivateGroupMembers, 
   removePrivateGroupMember, 
   promotePrivateGroupAdmin,
-  invitePrivateGroupMembers
+  invitePrivateGroupMembers,
+  deleteMyPrivateGroup
 } from "@/services/messageService";
 import { toast } from "sonner";
 
@@ -213,7 +214,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setDeletingGroup(true);
-      await deletePrivateGroup(groupId);
+      await deleteMyPrivateGroup();
       toast.success("Group deleted successfully");
       onClose();
       // You might want to add a callback to refresh the parent component

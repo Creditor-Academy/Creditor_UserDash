@@ -227,3 +227,15 @@ export async function getMyMemberPrivateGroups() {
     throw error;
   }
 }
+
+export async function deleteMyPrivateGroup() {
+  try {
+    const response = await api.delete('/api/private-groups/me', {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('messageService.deleteMyPrivateGroup error:', error);
+    throw error;
+  }
+}
