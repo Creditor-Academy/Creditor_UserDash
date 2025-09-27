@@ -1,20 +1,59 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { FaCoins } from "react-icons/fa";
 import { useCredits } from "@/contexts/CreditsContext";
+import { fetchAllConsultations, updateConsultationStatus, deleteConsultation } from '@/services/consultationService';
+import { fetchAllWebsiteServices, updateWebsiteServiceStatus, deleteWebsiteService } from '@/services/websiteService';
 import { fetchAllUsersAdmin } from "@/services/userService";
 import { api } from "@/services/apiClient";
 
 const AdminPayments = () => {
   const { transactions, balance, addCredits, refreshBalance, refreshMembership } = useCredits();
+  
+  // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
+  const refreshBalanceRef = useRef(null);
+  const debouncedRefreshBalance = useCallback(() => {
+    if (refreshBalanceRef.current) {
+      clearTimeout(refreshBalanceRef.current);
+    }
+    refreshBalanceRef.current = setTimeout(() => {
+      if (refreshBalance) {
+        refreshBalance();
+      }
+    }, 1000); // 1 second debounce to prevent cascade effects
+  }, [refreshBalance]);
+  
+  // DEFENSIVE: Cleanup debounced refresh on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshBalanceRef.current) {
+        clearTimeout(refreshBalanceRef.current);
+      }
+    };
+  }, []);
   const [paymentsView, setPaymentsView] = useState("credits");
   const [ordersPage, setOrdersPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [subsPage, setSubsPage] = useState(1);
+  const [servicesPage, setServicesPage] = useState(1); // consultations page
+  const [servicesWebPage, setServicesWebPage] = useState(1); // websites page
   const itemsPerPage = 5;
+  const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [grantCreditsAmount, setGrantCreditsAmount] = useState(10);
   const [userDetailModal, setUserDetailModal] = useState({ open: false, user: null });
   const [grantModal, setGrantModal] = useState({ open: false });
+
+  // Services search and filter states
+  const [consultationsSearch, setConsultationsSearch] = useState("");
+  const [websitesSearch, setWebsitesSearch] = useState("");
+  const [consultationsFilter, setConsultationsFilter] = useState({ status: "all" });
+  const [websitesFilter, setWebsitesFilter] = useState({ status: "all", websiteType: "all" });
+
+  // Services data state
+  const [consultationsData, setConsultationsData] = useState([]);
+  const [websitesData, setWebsitesData] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesError, setServicesError] = useState("");
 
   // Mix dummy data with real transaction data
   const orders = useMemo(() => {
@@ -39,6 +78,66 @@ const AdminPayments = () => {
     
     return [...realOrders, ...dummyOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [transactions]);
+  
+  // Services: consultations and websites (using real data)
+  const services = useMemo(() => {
+    return { consultations: consultationsData, websites: websitesData };
+  }, [consultationsData, websitesData]);
+
+  // Filtered consultations with search and filter
+  const filteredConsultations = useMemo(() => {
+    let filtered = services.consultations;
+    
+    // Apply search filter
+    if (consultationsSearch.trim()) {
+      const searchTerm = consultationsSearch.toLowerCase();
+      filtered = filtered.filter(consultation =>
+        consultation.user?.toLowerCase().includes(searchTerm) ||
+        consultation.topic?.toLowerCase().includes(searchTerm) ||
+        consultation.id?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Apply status filter
+    if (consultationsFilter.status !== "all") {
+      filtered = filtered.filter(consultation => 
+        (serviceStatus[consultation.id] || consultation.status) === consultationsFilter.status
+      );
+    }
+    
+    return filtered;
+  }, [services.consultations, consultationsSearch, consultationsFilter, serviceStatus]);
+
+  // Filtered websites with search and filter
+  const filteredWebsites = useMemo(() => {
+    let filtered = services.websites;
+    
+    // Apply search filter
+    if (websitesSearch.trim()) {
+      const searchTerm = websitesSearch.toLowerCase();
+      filtered = filtered.filter(website =>
+        website.user?.toLowerCase().includes(searchTerm) ||
+        website.product?.toLowerCase().includes(searchTerm) ||
+        website.id?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Apply status filter
+    if (websitesFilter.status !== "all") {
+      filtered = filtered.filter(website => 
+        (serviceStatus[website.id] || website.status) === websitesFilter.status
+      );
+    }
+    
+    // Apply website type filter
+    if (websitesFilter.websiteType !== "all") {
+      filtered = filtered.filter(website => 
+        website.type?.toLowerCase() === websitesFilter.websiteType
+      );
+    }
+    
+    return filtered;
+  }, [services.websites, websitesSearch, websitesFilter, serviceStatus]);
 
   const payments = useMemo(() => {
     const dummyPayments = [
@@ -159,18 +258,29 @@ const AdminPayments = () => {
 
   // Keep local membership (frontend-only) in sync with loaded users
   useEffect(() => {
-    if (!Array.isArray(realUsers)) return;
+    if (!Array.isArray(realUsers) || realUsers.length === 0) return;
+    
     setLocalMembership(prev => {
       const next = { ...prev };
+      let hasChanges = false;
+      
       for (const u of realUsers) {
         const id = u?.id;
         if (id == null) continue;
-        if (next[id] == null) {
-          next[id] = (u.membership || "active").toString().toLowerCase();
+        const membership = (u.membership || "active").toString().toLowerCase();
+        if (next[id] !== membership) {
+          next[id] = membership;
+          hasChanges = true;
         }
       }
-      if (next["current_user"] == null) next["current_user"] = "active";
-      return next;
+      
+      if (next["current_user"] == null) {
+        next["current_user"] = "active";
+        hasChanges = true;
+      }
+      
+      // Only return new object if there are actual changes
+      return hasChanges ? next : prev;
     });
   }, [realUsers]);
 
@@ -201,7 +311,133 @@ const AdminPayments = () => {
   }, [filteredUsers, usersPage, itemsPerPage]);
 
   useEffect(() => { setUsersPage(1); }, [usersSearch]);
+  useEffect(() => { setServicesPage(1); }, [consultationsSearch, consultationsFilter]);
+  useEffect(() => { setServicesWebPage(1); }, [websitesSearch, websitesFilter]);
+
+  // Fetch services data when services tab is selected
+  useEffect(() => {
+    if (paymentsView === "services" && consultationsData.length === 0 && websitesData.length === 0) {
+      fetchServicesData();
+    }
+  }, [paymentsView]);
   const remainingCredits = Math.max(credits.sold - credits.used, 0);
+
+  // Fetch services data
+  const fetchServicesData = async () => {
+    setServicesLoading(true);
+    setServicesError("");
+    
+    try {
+      console.log('[AdminPayments] Fetching services data');
+      
+      const [consultations, websites] = await Promise.all([
+        fetchAllConsultations(),
+        fetchAllWebsiteServices()
+      ]);
+      
+      console.log('[AdminPayments] Consultations data:', consultations);
+      console.log('[AdminPayments] Websites data:', websites);
+      console.log('[AdminPayments] Consultation data type:', typeof consultations);
+      console.log('[AdminPayments] Website data type:', typeof websites);
+      console.log('[AdminPayments] Consultation is array:', Array.isArray(consultations));
+      console.log('[AdminPayments] Website is array:', Array.isArray(websites));
+      
+      // Process consultations data
+      const processedConsultations = Array.isArray(consultations) ? consultations.map(consultation => ({
+        id: consultation.id,
+        user: consultation.user ? `${consultation.user.first_name || ''} ${consultation.user.last_name || ''}`.trim() || consultation.user.email || 'Unknown User' : 'Unknown User',
+        topic: 'Consultation Session',
+        scheduledAt: new Date(consultation.created_at).toLocaleDateString(),
+        duration: '30 mins',
+        payment: {
+          amount: consultation.pricing?.credits || 1000,
+          currency: 'credits',
+          method: 'credits'
+        },
+        status: consultation.status?.toLowerCase() || 'pending'
+      })) : [];
+      
+      // Process websites data
+      const processedWebsites = Array.isArray(websites) ? websites.map(website => {
+        // Determine service type and cost from pricing data
+        const cost = website.pricing?.credits || 750; // Default to basic if no pricing data
+        const serviceType = cost >= 5000 ? 'Premium' : 'Basic'; // Use cost to determine type
+        
+        return {
+          id: website.id,
+          user: website.user ? `${website.user.first_name || ''} ${website.user.last_name || ''}`.trim() || website.user.email || 'Unknown User' : 'Unknown User',
+          product: `${serviceType} Website Service`,
+          purchasedAt: new Date(website.created_at).toLocaleDateString(),
+          payment: {
+            amount: cost,
+            currency: 'credits',
+            method: 'credits'
+          },
+          status: website.status?.toLowerCase() || 'pending',
+          type: serviceType.toLowerCase()
+        };
+      }) : [];
+      
+      setConsultationsData(processedConsultations);
+      setWebsitesData(processedWebsites);
+      
+    } catch (error) {
+      console.error('[AdminPayments] Failed to fetch services data:', error);
+      setServicesError('Failed to load services data');
+    } finally {
+      setServicesLoading(false);
+    }
+  };
+
+  // Handle consultation status update
+  const handleConsultationStatusUpdate = async (consultationId, newStatus) => {
+    try {
+      console.log('[AdminPayments] Updating consultation status:', consultationId, 'to', newStatus);
+      
+      await updateConsultationStatus(consultationId, newStatus.toUpperCase());
+      
+      // Update local state
+      setConsultationsData(prev => 
+        prev.map(consultation => 
+          consultation.id === consultationId 
+            ? { ...consultation, status: newStatus.toLowerCase() }
+            : consultation
+        )
+      );
+      
+      console.log('[AdminPayments] Consultation status updated successfully');
+    } catch (error) {
+      console.error('[AdminPayments] Failed to update consultation status:', error);
+      console.error('[AdminPayments] Error details:', error?.response?.data);
+      console.error('[AdminPayments] Error status:', error?.response?.status);
+      alert(`Failed to update consultation status: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    }
+  };
+
+  // Handle website service status update
+  const handleWebsiteStatusUpdate = async (serviceId, newStatus) => {
+    try {
+      console.log('[AdminPayments] Updating website service status:', serviceId, 'to', newStatus);
+      
+      await updateWebsiteServiceStatus(serviceId, newStatus.toUpperCase());
+      
+      // Update local state
+      setWebsitesData(prev => 
+        prev.map(website => 
+          website.id === serviceId 
+            ? { ...website, status: newStatus.toLowerCase() }
+            : website
+        )
+      );
+      
+      console.log('[AdminPayments] Website service status updated successfully');
+    } catch (error) {
+      console.error('[AdminPayments] Failed to update website service status:', error);
+      console.error('[AdminPayments] Error details:', error?.response?.data);
+      console.error('[AdminPayments] Error status:', error?.response?.status);
+      alert(`Failed to update website service status: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    }
+  };
 
   return (
     <>
@@ -213,6 +449,7 @@ const AdminPayments = () => {
           </div>
           <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
             <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
+            <button onClick={() => setPaymentsView("services")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "services" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Services</button>
             <button onClick={() => setPaymentsView("orders")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "orders" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Orders</button>
             <button onClick={() => setPaymentsView("payments")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "payments" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Payments</button>
             <button onClick={() => setPaymentsView("subscriptions")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "subscriptions" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Subscriptions</button>
@@ -220,20 +457,301 @@ const AdminPayments = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-semibold text-gray-800 mb-1">Credits</h3>
-          <p className="text-sm text-gray-600 mb-3">Sold vs used</p>
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
-            <div className="flex justify-between py-1"><span className="text-gray-600">Sold</span><span className="font-medium">{credits.sold}</span></div>
-            <div className="flex justify-between py-1"><span className="text-gray-600">Used</span><span className="font-medium">{credits.used}</span></div>
-            <div className="flex justify-between py-1"><span className="text-gray-600">Remaining</span><span className="font-medium">{remainingCredits}</span></div>
-            <div className="mt-2 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-blue-500 rounded" style={{ width: `${Math.min((credits.used / Math.max(credits.sold, 1)) * 100, 100)}%` }} />
+      {false && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-800 mb-1">Credits</h3>
+            <p className="text-sm text-gray-600 mb-3">Sold vs used</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
+              <div className="flex justify-between py-1"><span className="text-gray-600">Sold</span><span className="font-medium">{credits.sold}</span></div>
+              <div className="flex justify-between py-1"><span className="text-gray-600">Used</span><span className="font-medium">{credits.used}</span></div>
+              <div className="flex justify-between py-1"><span className="text-gray-600">Remaining</span><span className="font-medium">{remainingCredits}</span></div>
+              <div className="mt-2 h-2 bg-gray-200 rounded">
+                <div className="h-2 bg-blue-500 rounded" style={{ width: `${Math.min((credits.used / Math.max(credits.sold, 1)) * 100, 100)}%` }} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {paymentsView === "services" && (
+        <div className="space-y-6">
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold text-gray-800">Consultations</h3>
+            <span className="text-sm text-gray-500">User bookings and payments</span>
+          </div>
+          
+          {/* Consultations Search and Filter Controls */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input
+                  type="text"
+                  value={consultationsSearch}
+                  onChange={(e) => setConsultationsSearch(e.target.value)}
+                  placeholder="Search by user, topic, or ID..."
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={consultationsFilter.status}
+                  onChange={(e) => setConsultationsFilter(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <span className="text-gray-600">
+                Showing {filteredConsultations.length} consultation{filteredConsultations.length !== 1 ? 's' : ''}
+              </span>
+              {(consultationsSearch || consultationsFilter.status !== "all") && (
+                <button
+                  onClick={() => {
+                    setConsultationsSearch("");
+                    setConsultationsFilter({ status: "all" });
+                  }}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="text-left px-3 py-2">ID</th>
+                  <th className="text-left px-3 py-2">User</th>
+                  <th className="text-left px-3 py-2">Topic</th>
+                  <th className="text-left px-3 py-2">Booked</th>
+                  <th className="text-left px-3 py-2">Duration</th>
+                  <th className="text-left px-3 py-2">Payment</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {servicesLoading ? (
+                  <tr>
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                        Loading consultations...
+                      </div>
+                    </td>
+                  </tr>
+                ) : servicesError ? (
+                  <tr>
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                      <div className="text-red-600 mb-2">{servicesError}</div>
+                      <button 
+                        onClick={fetchServicesData}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Try again
+                      </button>
+                    </td>
+                  </tr>
+                ) : filteredConsultations.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                      {services.consultations.length === 0 
+                        ? "No consultations available" 
+                        : "No consultations match your search criteria"
+                      }
+                    </td>
+                  </tr>
+                ) : (
+                  filteredConsultations.slice((servicesPage-1)*itemsPerPage, servicesPage*itemsPerPage).map(c => {
+                  const status = (serviceStatus[c.id] || c.status || 'pending');
+                  return (
+                    <tr key={c.id} className="border-t">
+                      <td className="px-3 py-2 font-medium text-gray-900">{c.id}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.user}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.topic}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.scheduledAt}</td>
+                      <td className="px-3 py-2 text-gray-700">{c.duration}</td>
+                      <td className="px-3 py-2 text-gray-700">
+                        {c.payment.amount} {c.payment.currency} 
+                        <span className="text-xs text-gray-500">({c.payment.method})</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={status}
+                          onChange={(e)=>{ const v=e.target.value; handleConsultationStatusUpdate(c.id, v); }}
+                          className="rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        >
+                          <option value="pending">pending</option>
+                          <option value="in_progress">in progress</option>
+                          <option value="completed">completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-gray-600">Page {servicesPage} of {Math.max(Math.ceil(filteredConsultations.length / itemsPerPage), 1)}</span>
+            <div className="flex gap-2">
+              <button disabled={servicesPage===1} onClick={() => setServicesPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${servicesPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
+              <button disabled={servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)} onClick={() => setServicesPage(p => Math.min(p+1, Math.ceil(filteredConsultations.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+            </div>
+          </div>
+
+          <div className="mt-8 mb-2">
+            <h3 className="text-lg font-semibold text-gray-800">Websites</h3>
+            <span className="text-sm text-gray-500">Purchases and credit details</span>
+          </div>
+          
+          {/* Websites Search and Filter Controls */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input
+                  type="text"
+                  value={websitesSearch}
+                  onChange={(e) => setWebsitesSearch(e.target.value)}
+                  placeholder="Search by user, product, or ID..."
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={websitesFilter.status}
+                  onChange={(e) => setWebsitesFilter(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Website Type</label>
+                <select
+                  value={websitesFilter.websiteType}
+                  onChange={(e) => setWebsitesFilter(prev => ({ ...prev, websiteType: e.target.value }))}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="all">All Types</option>
+                  <option value="basic">Basic</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <span className="text-gray-600">
+                Showing {filteredWebsites.length} website{filteredWebsites.length !== 1 ? 's' : ''}
+              </span>
+              {(websitesSearch || websitesFilter.status !== "all" || websitesFilter.websiteType !== "all") && (
+                <button
+                  onClick={() => {
+                    setWebsitesSearch("");
+                    setWebsitesFilter({ status: "all", websiteType: "all" });
+                  }}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                  <th className="text-left px-3 py-2">ID</th>
+                  <th className="text-left px-3 py-2">User</th>
+                  <th className="text-left px-3 py-2">Website</th>
+                  <th className="text-left px-3 py-2">Purchased</th>
+                  <th className="text-left px-3 py-2">Payment</th>
+                  <th className="text-left px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {servicesLoading ? (
+                  <tr>
+                    <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                        Loading websites...
+                      </div>
+                    </td>
+                  </tr>
+                ) : servicesError ? (
+                  <tr>
+                    <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                      <div className="text-red-600 mb-2">{servicesError}</div>
+                      <button 
+                        onClick={fetchServicesData}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Try again
+                      </button>
+                    </td>
+                  </tr>
+                ) : filteredWebsites.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                      {services.websites.length === 0 
+                        ? "No websites available" 
+                        : "No websites match your search criteria"
+                      }
+                    </td>
+                  </tr>
+                ) : (
+                  filteredWebsites.slice((servicesWebPage-1)*itemsPerPage, servicesWebPage*itemsPerPage).map(w => {
+                  const status = (serviceStatus[w.id] || w.status || 'pending');
+                  return (
+                    <tr key={w.id} className="border-t">
+                      <td className="px-3 py-2 font-medium text-gray-900">{w.id}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.user}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.product}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.purchasedAt}</td>
+                      <td className="px-3 py-2 text-gray-700">{w.payment.amount} {w.payment.currency} <span className="text-xs text-gray-500">({w.payment.method})</span></td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={status}
+                          onChange={(e)=>{ const v=e.target.value; handleWebsiteStatusUpdate(w.id, v); }}
+                          className="rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        >
+                          <option value="pending">pending</option>
+                          <option value="in_progress">in progress</option>
+                          <option value="completed">completed</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-sm">
+            <span className="text-gray-600">Page {servicesWebPage} of {Math.max(Math.ceil(filteredWebsites.length / itemsPerPage), 1)}</span>
+            <div className="flex gap-2">
+              <button disabled={servicesWebPage===1} onClick={() => setServicesWebPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${servicesWebPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
+              <button disabled={servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)} onClick={() => setServicesWebPage(p => Math.min(p+1, Math.ceil(filteredWebsites.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {paymentsView === "orders" && (
         <div className="mb-6">
@@ -561,7 +1079,7 @@ const AdminPayments = () => {
                       await api.post('/payment-order/admin/credits/grant', { userIds: selectedUserIds, credits: grantCreditsAmount }, { withCredentials: true });
                       // Reflect change locally
                       setRealUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, credits: (Number(u.credits)||0) + (Number(grantCreditsAmount)||0) } : u));
-                      try { await refreshBalance?.(); } catch {}
+                      try { debouncedRefreshBalance(); } catch {}
                       setGrantMessage(`Granted ${grantCreditsAmount} credits to ${selectedUserIds.length} user(s).`);
                       // Optionally clear selection
                       setSelectedUserIds([]);
@@ -791,5 +1309,6 @@ const AdminPayments = () => {
 };
 
 export default AdminPayments;
+
 
 

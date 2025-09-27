@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import ProgressStats from "@/components/dashboard/ProgressStats";
 import CourseCard from "@/components/dashboard/CourseCard";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,38 @@ import { fetchUserCourses } from '../services/courseService';
 import { useUser } from '@/contexts/UserContext';
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
 import { getCourseTrialStatus } from '../utils/trialUtils';
+import { bookConsultation, fetchUserConsultations } from '../services/consultationService';
+import { bookWebsiteService, fetchUserWebsiteServices } from '../services/websiteService';
 
 export function Dashboard() {
   const { userProfile } = useUser();
-  const { balance, membership } = useCredits();
+  const { balance, membership, refreshBalance } = useCredits();
+  
+  // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
+  const refreshBalanceRef = useRef(null);
+  const debouncedRefreshBalance = useCallback(() => {
+    if (refreshBalanceRef.current) {
+      clearTimeout(refreshBalanceRef.current);
+    }
+    refreshBalanceRef.current = setTimeout(() => {
+      if (refreshBalance) {
+        refreshBalance();
+      }
+    }, 1000); // 1 second debounce to prevent cascade effects
+  }, [refreshBalance]);
+  
+  // DEFENSIVE: Cleanup debounced refresh on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshBalanceRef.current) {
+        clearTimeout(refreshBalanceRef.current);
+      }
+    };
+  }, []);
+  
+  // DEFENSIVE: Memoize userProfile to prevent unnecessary re-renders
+  const memoizedUserProfile = useMemo(() => userProfile, [userProfile?.id]);
+  
   // Dashboard data structure based on backend getUserOverview endpoint
   // Expected response structure:
   // {
@@ -94,24 +122,31 @@ export function Dashboard() {
   const [showWebsiteDetails, setShowWebsiteDetails] = useState(false);
   const [showWebsiteConfirmation, setShowWebsiteConfirmation] = useState(false);
   const [showWebsiteForm, setShowWebsiteForm] = useState(false);
+  
+  // Loading and error states for bookings
+  const [isBookingConsultation, setIsBookingConsultation] = useState(false);
+  const [isBookingWebsite, setIsBookingWebsite] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState("");
 
-  // History data (empty until backend is connected)
-  const consultationHistory = [];
-  const websiteHistory = [];
+  // History data state
+  const [consultationHistory, setConsultationHistory] = useState([]);
+  const [websiteHistory, setWebsiteHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-testing-branch.onrender.com";
   // Get userId from localStorage or cookies, or fetch from profile
-  const [userId, setUserId] = useState(localStorage.getItem('userId'));
+  // Don't use state for userId to avoid infinite loops - get it directly when needed
 
   const fetchUserOverview = async () => {
     try {
       setLoading(true);
       
       // Get userId - use from context if available, otherwise fetch from profile
-      let currentUserId = userId;
+      let currentUserId = localStorage.getItem('userId');
       if (!currentUserId && userProfile) {
         currentUserId = userProfile.id;
-        setUserId(currentUserId);
         localStorage.setItem('userId', currentUserId);
       } else if (!currentUserId) {
         currentUserId = await fetchUserProfile();
@@ -236,7 +271,7 @@ export function Dashboard() {
   useEffect(() => {
     // Always try to fetch user overview - UserContext handles authentication
     fetchUserOverview();
-  }, [userId]);
+  }, []); // Remove userId dependency to prevent infinite loop
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -266,9 +301,6 @@ export function Dashboard() {
     fetchCourses();
   }, []);
 
-  // Monitor dashboard data changes
-  useEffect(() => {
-  }, [dashboardData]);
 
   // Fetch user profile to get userId and userName if not available
   const fetchUserProfile = async () => {
@@ -283,8 +315,6 @@ export function Dashboard() {
       
       if (response.data && response.data.data && response.data.data.id) {
         const userProfile = response.data.data;
-        setUserId(userProfile.id);
-        localStorage.setItem('userId', userProfile.id);
         // Set user name for welcome message
         const name = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
         setUserName(name || userProfile.email || "User");
@@ -301,15 +331,180 @@ export function Dashboard() {
     if (userProfile) {
       const name = `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
       setUserName(name || userProfile.email || "User");
-      setUserId(userProfile.id);
+      // Set userId in localStorage when userProfile changes
       localStorage.setItem('userId', userProfile.id);
+      
+      // Fetch user history when profile is available
+      fetchUserHistory();
     }
-  }, [userProfile]);
+  }, [memoizedUserProfile]);
 
   // Add retry functionality
   const handleRetry = () => {
     setError(null);
     fetchUserOverview();
+  };
+
+  // Fetch user history
+  const fetchUserHistory = async () => {
+    if (!memoizedUserProfile?.id) return;
+    
+    setHistoryLoading(true);
+    setHistoryError("");
+    
+    try {
+      console.log('[Dashboard] Fetching user history for:', userProfile.id);
+      
+      const [consultations, websites] = await Promise.all([
+        fetchUserConsultations(userProfile.id),
+        fetchUserWebsiteServices(userProfile.id)
+      ]);
+      
+      console.log('[Dashboard] Consultation history:', consultations);
+      console.log('[Dashboard] Website history:', websites);
+      console.log('[Dashboard] Consultation data type:', typeof consultations);
+      console.log('[Dashboard] Website data type:', typeof websites);
+      console.log('[Dashboard] Consultation is array:', Array.isArray(consultations));
+      console.log('[Dashboard] Website is array:', Array.isArray(websites));
+      
+      // Process consultation history
+      const processedConsultations = Array.isArray(consultations) ? consultations.map(consultation => ({
+        id: consultation.id,
+        date: new Date(consultation.created_at).toLocaleDateString(),
+        title: 'Consultation Session',
+        credits: consultation.pricing?.credits || 1000, // Use actual pricing from backend
+        status: consultation.status?.toLowerCase() || 'pending'
+      })) : [];
+      
+      // Process website history
+      const processedWebsites = Array.isArray(websites) ? websites.map(website => {
+        // Determine service type and cost from pricing data
+        const cost = website.pricing?.credits || 750; // Default to basic if no pricing data
+        const serviceType = cost >= 5000 ? 'Premium' : 'Basic'; // Use cost to determine type
+        
+        return {
+          id: website.id,
+          date: new Date(website.created_at).toLocaleDateString(),
+          title: `${serviceType} Website Service`,
+          credits: cost,
+          status: website.status?.toLowerCase() || 'pending'
+        };
+      }) : [];
+      
+      setConsultationHistory(processedConsultations);
+      setWebsiteHistory(processedWebsites);
+      
+    } catch (error) {
+      console.error('[Dashboard] Failed to fetch user history:', error);
+      setHistoryError('Failed to load history');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // Handle consultation booking
+  const handleConsultationBooking = async () => {
+    if (!memoizedUserProfile?.id) {
+      setBookingError("User not logged in");
+      return;
+    }
+
+    setIsBookingConsultation(true);
+    setBookingError("");
+    setBookingSuccess("");
+
+    try {
+      // Create a future date for scheduling (e.g., 1 week from now)
+      const scheduledAt = new Date();
+      scheduledAt.setDate(scheduledAt.getDate() + 7);
+      scheduledAt.setHours(14, 0, 0, 0); // 2 PM
+
+      console.log('[Dashboard] Booking consultation for user:', userProfile.id);
+      console.log('[Dashboard] Scheduled at:', scheduledAt.toISOString());
+
+      // Call the consultation booking API
+      const result = await bookConsultation(userProfile.id, scheduledAt.toISOString());
+      
+      console.log('[Dashboard] Consultation booking successful:', result);
+      
+      // Refresh balance to reflect credit deduction (with small delay for backend processing)
+      try {
+        console.log('[Dashboard] Current balance before refresh:', balance);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for backend processing
+        debouncedRefreshBalance();
+        console.log('[Dashboard] Balance refreshed after consultation booking');
+        // Note: balance will be updated by the CreditsContext, check the UI for the new value
+      } catch (refreshError) {
+        console.warn('[Dashboard] Failed to refresh balance:', refreshError);
+      }
+      
+      // Show success message
+      setBookingSuccess(`Consultation redirection successfull! ${CONSULT_COST} credits deducted.`);
+      
+      // Refresh history to show new booking
+      await fetchUserHistory();
+      
+      // Close the confirmation modal and show form
+      setShowConsultConfirmation(false);
+      setShowConsultForm(true);
+      
+    } catch (error) {
+      console.error('[Dashboard] Consultation booking failed:', error);
+      setBookingError(error?.response?.data?.message || "Failed to book consultation. Please try again.");
+    } finally {
+      setIsBookingConsultation(false);
+    }
+  };
+
+  // Handle website service booking
+  const handleWebsiteServiceBooking = async () => {
+    if (!memoizedUserProfile?.id) {
+      setBookingError("User not logged in");
+      return;
+    }
+
+    setIsBookingWebsite(true);
+    setBookingError("");
+    setBookingSuccess("");
+
+    try {
+      const serviceType = selectedWebsitePack.id; // 'basic' or 'premium'
+      
+      console.log('[Dashboard] Booking website service for user:', userProfile.id);
+      console.log('[Dashboard] Service type:', serviceType);
+
+      // Call the website service booking API
+      const result = await bookWebsiteService(userProfile.id, serviceType);
+      
+      console.log('[Dashboard] Website service booking successful:', result);
+      
+      // Refresh balance to reflect credit deduction (with small delay for backend processing)
+      try {
+        console.log('[Dashboard] Current balance before refresh:', balance);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds for backend processing
+        debouncedRefreshBalance();
+        console.log('[Dashboard] Balance refreshed after website service booking');
+        // Note: balance will be updated by the CreditsContext, check the UI for the new value
+      } catch (refreshError) {
+        console.warn('[Dashboard] Failed to refresh balance:', refreshError);
+      }
+      
+      // Show success message
+      setBookingSuccess(`${selectedWebsitePack.name} booked successfully! ${selectedWebsitePack.cost} credits deducted.`);
+      
+      // Refresh history to show new booking
+      await fetchUserHistory();
+      
+      // Close the confirmation modal and show form
+      setShowWebsiteConfirmation(false);
+      setShowWebsiteForm(true);
+      
+    } catch (error) {
+      console.error('[Dashboard] Website service booking failed:', error);
+      setBookingError(error?.response?.data?.message || "Failed to book website service. Please try again.");
+    } finally {
+      setIsBookingWebsite(false);
+    }
   };
 
   const inProgressCourses = [
@@ -753,8 +948,34 @@ export function Dashboard() {
                           <div className="px-3 py-2">Credits</div>
                           <div className="px-3 py-2">Status</div>
                         </div>
-                        <div className="max-h-72 overflow-auto">
-                          {((historyTab==='consultations' ? consultationHistory : websiteHistory).length === 0) ? (
+                        <div 
+                          className="max-h-32 overflow-y-auto relative" 
+                          style={{ 
+                            maxHeight: '8rem',
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: '#d1d5db #f3f4f6'
+                          }}
+                        >
+                          {historyLoading ? (
+                            <div className="flex items-center justify-center py-10">
+                              <div className="text-center">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                <p className="text-sm text-gray-600">Loading history...</p>
+                              </div>
+                            </div>
+                          ) : historyError ? (
+                            <div className="flex items-center justify-center py-10">
+                              <div className="text-center">
+                                <p className="text-sm text-red-600 mb-2">{historyError}</p>
+                                <button 
+                                  onClick={fetchUserHistory}
+                                  className="text-sm text-blue-600 hover:text-blue-800"
+                                >
+                                  Try again
+                                </button>
+                              </div>
+                            </div>
+                          ) : ((historyTab==='consultations' ? consultationHistory : websiteHistory).length === 0) ? (
                             <div className="flex items-center justify-center py-10">
                               <p className="text-sm text-gray-600">Your {historyTab === 'consultations' ? 'consultation' : 'website'} history will appear here once available.</p>
                             </div>
@@ -769,6 +990,10 @@ export function Dashboard() {
                                 </div>
                               </div>
                             ))
+                          )}
+                          {/* Subtle fade indicator for scrollable content */}
+                          {(historyTab==='consultations' ? consultationHistory : websiteHistory).length > 2 && (
+                            <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
                           )}
                         </div>
                     </div>
@@ -1192,14 +1417,33 @@ export function Dashboard() {
                 Ready to book your consultation for {CONSULT_COST} credits?
               </p>
             </div>
+
+            {/* Success Display */}
+            {bookingSuccess && (
+              <div className="rounded-md border border-green-200 bg-green-50 p-3 text-green-700 text-sm">
+                {bookingSuccess}
+              </div>
+            )}
+
+            {/* Error Display */}
+            {bookingError && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+                {bookingError}
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-2">
             <Button 
               variant="outline" 
-              onClick={() => setShowConsultConfirmation(false)}
+              onClick={() => {
+                setShowConsultConfirmation(false);
+                setBookingSuccess("");
+                setBookingError("");
+              }}
               className="flex-1"
+              disabled={isBookingConsultation}
             >
               Cancel
             </Button>
@@ -1210,6 +1454,7 @@ export function Dashboard() {
                   setShowConsultConfirmation(false);
                   setShowCreditsModal(true);
                 }}
+                disabled={isBookingConsultation}
               >
                 Buy membership
               </Button>
@@ -1220,18 +1465,17 @@ export function Dashboard() {
                   setShowConsultConfirmation(false);
                   setShowCreditsModal(true);
                 }}
+                disabled={isBookingConsultation}
               >
                 Add credits
               </Button>
             ) : (
               <Button 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1" 
-                onClick={() => { 
-                  setShowConsultConfirmation(false);
-                  setShowConsultForm(true);
-                }}
+                onClick={handleConsultationBooking}
+                disabled={isBookingConsultation}
               >
-                Book Now ({CONSULT_COST} credits)
+                {isBookingConsultation ? 'Redirecting...' : `Book Now (${CONSULT_COST} credits)`}
               </Button>
             )}
           </div>
@@ -1335,7 +1579,6 @@ export function Dashboard() {
               <Button 
                 className="bg-blue-600 hover:bg-blue-700 text-white" 
                 onClick={() => { 
-                  localStorage.setItem('website_pack', selectedWebsitePack.id); 
                   setShowWebsiteModal(false);
                   setShowWebsiteConfirmation(true);
                 }}
@@ -1385,9 +1628,34 @@ export function Dashboard() {
                 Ready to proceed with {selectedWebsitePack.name} for {selectedWebsitePack.cost} credits?
               </p>
             </div>
+
+            {/* Success Display */}
+            {bookingSuccess && (
+              <div className="rounded-md border border-green-200 bg-green-50 p-3 text-green-700 text-sm">
+                {bookingSuccess}
+              </div>
+            )}
+
+            {/* Error Display */}
+            {bookingError && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+                {bookingError}
+              </div>
+            )}
           </div>
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={() => setShowWebsiteConfirmation(false)} className="flex-1">Cancel</Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowWebsiteConfirmation(false);
+                setBookingSuccess("");
+                setBookingError("");
+              }} 
+              className="flex-1"
+              disabled={isBookingWebsite}
+            >
+              Cancel
+            </Button>
             {!membership?.isActive ? (
               <Button 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white flex-1"
@@ -1395,6 +1663,7 @@ export function Dashboard() {
                   setShowWebsiteConfirmation(false);
                   setShowCreditsModal(true);
                 }}
+                disabled={isBookingWebsite}
               >
                 Buy membership
               </Button>
@@ -1405,18 +1674,17 @@ export function Dashboard() {
                   setShowWebsiteConfirmation(false);
                   setShowCreditsModal(true);
                 }}
+                disabled={isBookingWebsite}
               >
                 Add credits
               </Button>
             ) : (
               <Button 
                 className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
-                onClick={() => {
-                  setShowWebsiteConfirmation(false);
-                  setShowWebsiteForm(true);
-                }}
+                onClick={handleWebsiteServiceBooking}
+                disabled={isBookingWebsite}
               >
-                Proceed ({selectedWebsitePack.cost} credits)
+                {isBookingWebsite ? 'Processing...' : `Proceed (${selectedWebsitePack.cost} credits)`}
               </Button>
             )}
           </div>
