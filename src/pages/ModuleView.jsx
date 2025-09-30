@@ -231,9 +231,15 @@ export function ModuleView() {
                           onClick={() => setIsMarkedRead(true)}
                           disabled={isMarkedRead}
                         >
-                          {isMarkedRead ? "Marked" : "Mark As Read"}
+                          {isMarkedRead ? "Completed" : "Mark As Read"}
                         </Button>
                       </div>
+                      {isMarkedRead && (
+                        <div className="flex items-center justify-center gap-2 text-green-600 font-medium">
+                          <span className="text-xl" aria-hidden="true">✅</span>
+                          <span role="status" aria-live="polite">Completed</span>
+                        </div>
+                      )}
                       <p className="text-sm text-gray-500">
                         The module will open in a new browser tab for the best experience
                       </p>
