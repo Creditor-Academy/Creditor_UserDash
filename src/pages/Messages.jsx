@@ -37,8 +37,7 @@ import {
   getMyMemberPrivateGroups, 
   createPrivateGroup, 
   addPrivateGroupMembers,
-  getPrivateGroupById,
-  getPrivateGroupMembers
+  getGroupMembers
 } from "@/services/privateGroupService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
@@ -1295,6 +1294,13 @@ function Messages() {
                                 title="Group information"
                                 onClick={() => {
                                   const currentFriend = friends.find((f) => f.id === selectedFriend);
+                                  console.log('Opening group info for:', {
+                                    selectedFriend,
+                                    currentFriend,
+                                    conversationId: currentFriend?.conversationId,
+                                    isGroup: currentFriend?.isGroup,
+                                    isPrivateGroup: currentFriend?.isPrivateGroup
+                                  });
                                   setSelectedGroupInfo(currentFriend);
                                   setShowGroupInfoModal(true);
                                 }}

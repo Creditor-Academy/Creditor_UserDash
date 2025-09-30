@@ -19,17 +19,6 @@ export async function createPrivateGroup(groupData) {
   }
 }
 
-export async function getPrivateGroupById(groupId) {
-  try {
-    const response = await api.get(`/api/private-groups/${groupId}`, {
-      withCredentials: true,
-    });
-    return response?.data;
-  } catch (error) {
-    console.error('privateGroupService.getPrivateGroupById error:', error);
-    throw error;
-  }
-}
 
 export async function getPrivateGroupMembers(groupId) {
   try {
@@ -166,6 +155,30 @@ export async function deleteMyPrivateGroup() {
     return response?.data;
   } catch (error) {
     console.error('privateGroupService.deleteMyPrivateGroup error:', error);
+    throw error;
+  }
+}
+
+export async function getGroupMembers(groupId) {
+  try {
+    const response = await api.get(`/api/private-groups/${groupId}/members`, {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.getGroupMembers error:', error);
+    throw error;
+  }
+}
+// This is the api for the leaving group by members , this is not original this is put by the cursor
+export async function leavePrivateGroup(groupId) {
+  try {
+    const response = await api.delete(`/api/private-groups/${groupId}/leave`, {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.leavePrivateGroup error:', error);
     throw error;
   }
 }

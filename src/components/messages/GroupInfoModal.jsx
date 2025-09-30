@@ -21,15 +21,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { fetchAllUsers } from "@/services/userService";
 import { 
-  getPrivateGroupById, 
-  getPrivateGroupMembers, 
+  getGroupMembers, 
   updatePrivateGroup, 
   deletePrivateGroup, 
   addPrivateGroupMembers, 
   removePrivateGroupMember, 
   promotePrivateGroupAdmin,
   invitePrivateGroupMembers,
-  deleteMyPrivateGroup
+  deleteMyPrivateGroup,
+  leavePrivateGroup
 } from "@/services/privateGroupService";
 import { toast } from "sonner";
 
@@ -45,6 +45,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const [promoting, setPromoting] = useState(null);
   const [adding, setAdding] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState(false);
+  const [leavingGroup, setLeavingGroup] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [invitationExpiry, setInvitationExpiry] = useState(72); // Default 72 hours
   
@@ -74,27 +75,56 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const loadGroupData = async () => {
     try {
       setLoading(true);
-      const [groupRes, membersRes] = await Promise.all([
-        getPrivateGroupById(groupId),
-        getPrivateGroupMembers(groupId)
-      ]);
       
-      if (groupRes?.success && groupRes?.data) {
-        setGroup(groupRes.data);
-        setTempName(groupRes.data.name || "");
-        setTempDescription(groupRes.data.description || "");
-        setTempAvatarUrl(groupRes.data.thumbnail || "");
-      } else {
-        // Fallback to passed groupInfo
-        setGroup(groupInfo || null);
-        setTempName(groupInfo?.name || "");
-        setTempDescription(groupInfo?.description || "");
-        setTempAvatarUrl(groupInfo?.thumbnail || "");
-      }
+      console.log('GroupInfoModal loadGroupData called with:', {
+        groupId,
+        groupInfo,
+        isOpen
+      });
       
-      if (membersRes?.success && membersRes?.data) {
-        setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+      // First, try to use the passed groupInfo if available
+      if (groupInfo) {
+        console.log('Using groupInfo data:', groupInfo);
+        setGroup(groupInfo);
+        setTempName(groupInfo.name || "");
+        setTempDescription(groupInfo.description || "");
+        setTempAvatarUrl(groupInfo.thumbnail || groupInfo.avatar || "");
+        
+        // If groupInfo has members, use them, otherwise fetch from API
+        if (groupInfo.members && Array.isArray(groupInfo.members)) {
+          setMembers(groupInfo.members);
+        } else if (groupId) {
+          // Only fetch members if we have a groupId and no members in groupInfo
+          try {
+            const membersRes = await getGroupMembers(groupId);
+            if (membersRes?.success && membersRes?.data) {
+              setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+            } else {
+              setMembers([]);
+            }
+          } catch (memberError) {
+            console.warn("Failed to fetch members:", memberError);
+            setMembers([]);
+          }
+        } else {
+          setMembers([]);
+        }
+      } else if (groupId) {
+        // If no groupInfo but we have groupId, try to fetch members from API
+        try {
+          const membersRes = await getGroupMembers(groupId);
+          if (membersRes?.success && membersRes?.data) {
+            setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+          } else {
+            setMembers([]);
+          }
+        } catch (memberError) {
+          console.warn("Failed to fetch members:", memberError);
+          setMembers([]);
+        }
       } else {
+        // No groupInfo and no groupId
+        setGroup(null);
         setMembers([]);
       }
     } catch (error) {
@@ -104,7 +134,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
       setGroup(groupInfo || null);
       setTempName(groupInfo?.name || "");
       setTempDescription(groupInfo?.description || "");
-      setTempAvatarUrl(groupInfo?.thumbnail || "");
+      setTempAvatarUrl(groupInfo?.thumbnail || groupInfo?.avatar || "");
       setMembers([]);
     } finally {
       setLoading(false);
@@ -155,16 +185,21 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   };
 
   const handleAddMembers = async () => {
-    if (selectedUsers.size === 0) return;
+    if (selectedUsers.size === 0 || !groupId) return;
     
     try {
       setAdding(true);
       await addPrivateGroupMembers(groupId, Array.from(selectedUsers));
       
-      // Refresh members list
-      const membersRes = await getPrivateGroupMembers(groupId);
-      if (membersRes?.success && membersRes?.data) {
-        setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+      // Refresh members list using the new API
+      try {
+        const membersRes = await getGroupMembers(groupId);
+        if (membersRes?.success && membersRes?.data) {
+          setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
+        }
+      } catch (memberError) {
+        console.warn("Failed to refresh members list:", memberError);
+        // Don't show error to user as the main operation succeeded
       }
       
       setSelectedUsers(new Set());
@@ -223,6 +258,23 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
       toast.error("Failed to delete group");
     } finally {
       setDeletingGroup(false);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!groupId) return;
+    
+    try {
+      setLeavingGroup(true);
+      await leavePrivateGroup(groupId);
+      toast.success("Left group successfully");
+      onClose();
+      // You might want to add a callback to refresh the parent component
+    } catch (error) {
+      console.error("Error leaving group:", error);
+      toast.error("Failed to leave group");
+    } finally {
+      setLeavingGroup(false);
     }
   };
 
@@ -389,18 +441,18 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                             alt="Preview"
                             className="w-full h-full rounded-full object-cover"
                           />
-                        ) : group?.thumbnail ? (
+                        ) : (group?.thumbnail || group?.avatar) ? (
                           <img 
-                            src={group.thumbnail} 
+                            src={group.thumbnail || group.avatar} 
                             alt={group.name}
                             className="w-full h-full rounded-full object-cover"
                           />
                         ) : (
                           <Users className="h-12 w-12 text-gray-400" />
                         )
-                      ) : group?.thumbnail ? (
+                      ) : (group?.thumbnail || group?.avatar) ? (
                         <img 
-                          src={group.thumbnail} 
+                          src={group.thumbnail || group.avatar} 
                           alt={group.name}
                           className="w-full h-full rounded-full object-cover"
                         />
@@ -592,32 +644,49 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">Members ({members.length})</h3>
-                    {isAdmin && (
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      {isAdmin ? (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={handleDeleteGroup}
+                            disabled={deletingGroup}
+                            className="flex items-center gap-2"
+                          >
+                            {deletingGroup ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            Delete Group
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => setShowAddMembers(true)}
+                            className="flex items-center gap-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add Members
+                          </Button>
+                        </>
+                      ) : (
                         <Button
                           size="sm"
-                          variant="destructive"
-                          onClick={handleDeleteGroup}
-                          disabled={deletingGroup}
-                          className="flex items-center gap-2"
+                          variant="outline"
+                          onClick={handleLeaveGroup}
+                          disabled={leavingGroup}
+                          className="flex items-center gap-2 text-red-600 border-red-600 hover:bg-red-50"
                         >
-                          {deletingGroup ? (
+                          {leavingGroup ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <Trash2 className="h-4 w-4" />
+                            <ArrowLeft className="h-4 w-4" />
                           )}
-                          Delete Group
+                          Leave Group
                         </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => setShowAddMembers(true)}
-                          className="flex items-center gap-2"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add Members
-                        </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
 
                   {/* Add Members Modal */}
