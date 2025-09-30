@@ -1,6 +1,6 @@
 import api from './apiClient';
 
-// Private Group API functions
+// Private Group API functions wefrtyukilo;iuytrew
 export async function createPrivateGroup(groupData) {
   try {
     // Ensure group_type is always PRIVATE for private groups
