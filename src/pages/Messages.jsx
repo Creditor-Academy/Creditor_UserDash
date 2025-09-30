@@ -30,8 +30,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation, getMyPrivateGroup, getMyMemberPrivateGroups } from "@/services/messageService";
+import { fetchAllUsers, getUserRole } from "@/services/userService";
+import { getAllConversations, loadPreviousConversation, deleteConversationMessage, deleteConversation } from "@/services/messageService";
+import { 
+  getMyPrivateGroup, 
+  getMyMemberPrivateGroups, 
+  createPrivateGroup, 
+  addPrivateGroupMembers,
+  getPrivateGroupById,
+  getPrivateGroupMembers
+} from "@/services/privateGroupService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
@@ -126,7 +134,8 @@ function Messages() {
   const [showDeleteConversationDialog, setShowDeleteConversationDialog] = useState(false);
   
   // Group info modal state
-  const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showGroupInfoModal, setShowGroupInfoModal] = useState(false);
+  const [selectedGroupInfo, setSelectedGroupInfo] = useState(null);
   
   // Group creation state
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
@@ -253,6 +262,87 @@ function Messages() {
       })();
     };
 
+    // Handle private group room joining
+    const onPrivateGroupRoomJoined = ({ groupId, roomId: serverRoomId }) => {
+      console.log('Private group room joined:', { groupId, serverRoomId });
+      setRoomId(serverRoomId);
+      setConversationId(groupId);
+      setSelectedFriend(`private_group_${groupId}`);
+      setMessages([]);
+      setChatLoading(true);
+      
+      // Load previous messages for private group
+      (async () => {
+        try {
+          // For private groups, we might need a different API endpoint
+          // For now, using the same loadPreviousConversation
+          const data = await loadPreviousConversation(groupId);
+          const currentUserId = localStorage.getItem('userId');
+          const mapped = (data?.cov_messages || []).map(m => ({
+            id: m.id,
+            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+            senderImage: m?.sender?.image || null,
+            text: m.type === 'IMAGE' ? null : m.content,
+            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: m.type === 'IMAGE' ? 'image' : 'text',
+            file: m.type === 'IMAGE' ? m.content : null,
+            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
+          }));
+          setMessages(mapped);
+          setChatLoading(false);
+        } catch (e) {
+          console.warn('Failed to load previous private group messages', e);
+          setChatLoading(false);
+        }
+      })();
+    };
+
+    // Handle private group creation event
+    const onPrivateGroupCreated = ({ group }) => {
+      console.log('Private group created:', group);
+      // Build new group entry
+      const newGroup = {
+        id: `private_group_${group.id}`,
+        name: group.name,
+        avatar: group.thumbnail || '/placeholder.svg',
+        lastMessage: 'Private group created',
+        lastMessageType: 'system',
+        room: `private_group_${group.id}`,
+        conversationId: group.id,
+        isRead: true,
+        lastMessageFrom: 'System',
+        lastMessageAt: group.createdAt || new Date().toISOString(),
+        isGroup: true,
+        isPrivateGroup: true,
+        isAdmin: true,
+        memberCount: 1, // Will be updated when members are added
+        description: group.description,
+      };
+      // Avoid duplicate if already present (e.g., from initial fetch)
+      setFriends(prev => {
+        const exists = prev.some(f => String(f.conversationId || f.id) === String(group.id));
+        return exists ? prev : [newGroup, ...prev];
+      });
+      setUserHasGroup(true);
+    };
+
+    // Handle private group members added event
+    const onPrivateGroupMembersAdded = ({ groupId, users }) => {
+      console.log('Private group members added:', { groupId, users });
+      // Update the group in the friends list to reflect new member count
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            memberCount: (f.memberCount || 1) + users.length,
+            lastMessage: `${users.length} member(s) added to group`,
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+
     const onReceiveMessage = ({ from, message, image, messageid, type, conversationid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
@@ -366,6 +456,9 @@ function Messages() {
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
     socket.on('roomidforsender', onRoomIdForSender);
+    socket.on('privateGroupRoomJoined', onPrivateGroupRoomJoined);
+    socket.on('privateGroupCreated', onPrivateGroupCreated);
+    socket.on('privateGroupMembersAdded', onPrivateGroupMembersAdded);
     socket.on('receiveMessage', onReceiveMessage);
     const onMessagesRead = ({ conversationId: readConvId }) => {
       if (!readConvId) return;
@@ -414,6 +507,9 @@ function Messages() {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('roomidforsender', onRoomIdForSender);
+      socket.off('privateGroupRoomJoined', onPrivateGroupRoomJoined);
+      socket.off('privateGroupCreated', onPrivateGroupCreated);
+      socket.off('privateGroupMembersAdded', onPrivateGroupMembersAdded);
       socket.off('receiveMessage', onReceiveMessage);
       socket.off('messagesRead', onMessagesRead);
       socket.off('deleteMessage', onDeleteMessage);
@@ -427,16 +523,26 @@ function Messages() {
   useEffect(() => {
     (async () => {
       try {
-        // Load conversations and private groups in parallel
+        // Load conversations and private groups
         const [convos, privateGroupRes, memberGroupsRes] = await Promise.all([
           getAllConversations().catch(() => []),
           getMyPrivateGroup().catch(() => null),
-          getMyMemberPrivateGroups().catch(() => null)
+          getMyMemberPrivateGroups().catch(() => [])
         ]);
         
-        let allFriends = [];
+        console.log('getAllConversations ->', convos);
+        console.log('getMyPrivateGroup ->', privateGroupRes);
+        console.log('getMyMemberPrivateGroups ->', memberGroupsRes);
         
-        // Process regular conversations
+        // Check if user already has a group
+        const hasGroup = convos.some(convo => convo.isGroup) || 
+                        (privateGroupRes?.success && privateGroupRes?.data) ||
+                        (Array.isArray(memberGroupsRes?.data) && memberGroupsRes.data.length > 0);
+        setUserHasGroup(hasGroup);
+        
+        let allConversations = [];
+        
+        // Add regular conversations
         if (Array.isArray(convos) && convos.every(v => typeof v === 'string')) {
           const idFriends = convos.map(id => ({
             id: String(id),
@@ -444,7 +550,7 @@ function Messages() {
             avatar: '/placeholder.svg',
             lastMessage: '',
           }));
-          allFriends = [...allFriends, ...idFriends];
+          allConversations = [...allConversations, ...idFriends];
         } else {
           // Normalize using backend contract (id, room, title, image, isRead, lastMessageFrom)
           const normalizedFriends = (Array.isArray(convos) ? convos : []).map(c => ({
@@ -458,84 +564,66 @@ function Messages() {
             isRead: c.isRead,
             lastMessageFrom: c.lastMessageFrom,
             lastMessageAt: c.lastMessageAt,
+            isGroup: c.isGroup || false,
           }));
-          allFriends = [...allFriends, ...normalizedFriends];
+          allConversations = [...allConversations, ...normalizedFriends];
         }
         
-        // Process private groups where user is a member
-        const currentUserId = localStorage.getItem('userId');
-        const privateGroups = [];
-        
-        // Add user's own private group if exists
+        // Add private group if user owns one
         if (privateGroupRes?.success && privateGroupRes?.data) {
-          const group = privateGroupRes.data;
-          const isAdmin = group.members?.some(member => 
-            member.user_id === currentUserId && member.role === 'ADMIN'
-          ) || false;
-          
-          privateGroups.push({
-            id: `group_${group.id}`,
+          const privateGroup = {
+            id: `private_group_${privateGroupRes.data.id}`,
+            name: privateGroupRes.data.name,
+            avatar: privateGroupRes.data.thumbnail || '/placeholder.svg',
+            lastMessage: 'Private group created',
+            lastMessageType: 'system',
+            room: `private_group_${privateGroupRes.data.id}`,
+            conversationId: privateGroupRes.data.id,
+            isRead: true,
+            lastMessageFrom: 'System',
+            lastMessageAt: privateGroupRes.data.createdAt || new Date().toISOString(),
+            isGroup: true,
+            isPrivateGroup: true,
+            isAdmin: true,
+            memberCount: privateGroupRes.data.member_count || 1,
+            description: privateGroupRes.data.description,
+          };
+          allConversations = [privateGroup, ...allConversations];
+        }
+        
+        // Add member groups (groups user is a member of but doesn't own)
+        if (Array.isArray(memberGroupsRes?.data) && memberGroupsRes.data.length > 0) {
+          const memberGroups = memberGroupsRes.data.map(group => ({
+            id: `private_group_${group.id}`,
             name: group.name,
             avatar: group.thumbnail || '/placeholder.svg',
-            lastMessage: 'Private group',
+            lastMessage: 'Joined group',
             lastMessageType: 'system',
-            room: group.id,
+            room: `private_group_${group.id}`,
             conversationId: group.id,
             isRead: true,
             lastMessageFrom: 'System',
-            lastMessageAt: group.createdAt,
+            lastMessageAt: group.joined_at || new Date().toISOString(),
             isGroup: true,
-            isAdmin: isAdmin,
+            isPrivateGroup: true,
+            isAdmin: false,
+            memberCount: group.member_count || 1,
             description: group.description,
-            memberCount: group.members?.length || 0,
-          });
+          }));
+          allConversations = [...allConversations, ...memberGroups];
         }
         
-        // Add all private groups where user is a member
-        if (memberGroupsRes?.success && memberGroupsRes?.data && Array.isArray(memberGroupsRes.data)) {
-          memberGroupsRes.data.forEach(group => {
-            // Skip if this is the same as user's own group (already added above)
-            const isOwnGroup = privateGroupRes?.success && 
-              privateGroupRes?.data && 
-              group.id === privateGroupRes.data.id;
-            
-            if (!isOwnGroup) {
-              const isAdmin = group.members?.some(member => 
-                member.user_id === currentUserId && member.role === 'ADMIN'
-              ) || false;
-              
-              privateGroups.push({
-                id: `group_${group.id}`,
-                name: group.name,
-                avatar: group.thumbnail || '/placeholder.svg',
-                lastMessage: 'Private group',
-                lastMessageType: 'system',
-                room: group.id,
-                conversationId: group.id,
-                isRead: true,
-                lastMessageFrom: 'System',
-                lastMessageAt: group.createdAt,
-                isGroup: true,
-                isAdmin: isAdmin,
-                description: group.description,
-                memberCount: group.members?.length || 0,
-              });
-            }
-          });
+        // Deduplicate conversations by conversationId (or id fallback)
+        const seenKeys = new Set();
+        const dedupedConversations = [];
+        for (const conv of allConversations) {
+          const key = String(conv.conversationId || conv.id);
+          if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            dedupedConversations.push(conv);
+          }
         }
-        
-        // Add all private groups to the beginning of the list
-        allFriends = [...privateGroups, ...allFriends];
-        
-        // Check if user has a group (either from conversations or private group)
-        const hasGroup = allFriends.some(friend => friend.isGroup);
-        setUserHasGroup(hasGroup);
-        
-        console.log('getAllConversations ->', convos);
-        console.log('getMyPrivateGroup ->', privateGroupRes);
-        console.log('getMyMemberPrivateGroups ->', memberGroupsRes);
-        
-        setFriends(allFriends);
+        setFriends(dedupedConversations);
 
         // Load directory of all users for the + modal
         const users = await fetchAllUsers();
@@ -610,10 +698,20 @@ function Messages() {
       setPendingImage(null);
       (async () => {
         try {
-          await api.post('/api/private-messaging/sendimage', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            withCredentials: true,
-          });
+          const selectedFriendData = friends.find(f => f.id === selectedFriend);
+          
+          // Handle private groups differently for image sending
+          if (selectedFriendData?.isPrivateGroup) {
+            await api.post('/api/private-groups/sendimage', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              withCredentials: true,
+            });
+          } else {
+            await api.post('/api/private-messaging/sendimage', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              withCredentials: true,
+            });
+          }
         } catch (e) {
           setMessages(prev => prev.map(m => (m.id === tempId ? { ...m, status: 'failed' } : m)));
         }
@@ -643,7 +741,22 @@ function Messages() {
       setNewMessage("");
       try {
         const socket = getSocket();
-        socket.emit('sendMessage', { conversationid: conversationId, roomId, message: messageText });
+        const selectedFriendData = friends.find(f => f.id === selectedFriend);
+        
+        // Handle private groups differently
+        if (selectedFriendData?.isPrivateGroup) {
+          socket.emit('sendPrivateGroupMessage', { 
+            groupId: conversationId, 
+            roomId, 
+            message: messageText 
+          });
+        } else {
+          socket.emit('sendMessage', { 
+            conversationid: conversationId, 
+            roomId, 
+            message: messageText 
+          });
+        }
       } catch (error) {
         console.warn('Messages: failed to send message', error);
         setMessages(prev => prev.map(msg => 
@@ -765,8 +878,100 @@ function Messages() {
     setNewChatUsers([]);
   };
 
-  // Group creation handlers - REMOVED: Using CreateGroupButton component instead
-  // This function is no longer used as we use the CreateGroupButton component
+  // Private Group creation handlers
+  const handleCreateGroup = async () => {
+    if (!groupName.trim() || selectedGroupMembers.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please provide a group name and select at least one member",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userHasGroup) {
+      toast({
+        title: "Error",
+        description: "You can only create one private group",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreatingGroup(true);
+    try {
+      // Create the private group
+      const groupData = {
+        name: groupName.trim(),
+        description: groupDescription.trim(),
+        invited_user_ids: selectedGroupMembers,
+      };
+
+      const response = await createPrivateGroup(groupData);
+      
+      if (response?.success && response?.data) {
+        const groupId = response.data.id;
+        
+        // Add selected members to the group
+        if (selectedGroupMembers.length > 0) {
+          try {
+            await addPrivateGroupMembers(groupId, selectedGroupMembers);
+          } catch (error) {
+            console.warn(`Failed to add some members to group:`, error);
+          }
+        }
+
+        // Add private group to friends list
+        const newGroup = {
+          id: `private_group_${groupId}`,
+          name: response.data.name,
+          avatar: response.data.thumbnail || '/placeholder.svg',
+          lastMessage: "Private group created",
+          lastMessageType: 'system',
+          room: `private_group_${groupId}`,
+          conversationId: groupId,
+          isRead: true,
+          lastMessageFrom: 'System',
+          lastMessageAt: response.data.createdAt || new Date().toISOString(),
+          isGroup: true,
+          isPrivateGroup: true,
+          memberCount: selectedGroupMembers.length + 1, // +1 for creator
+          isAdmin: true,
+          description: response.data.description,
+        };
+
+        // Avoid duplicate if group already exists
+        setFriends(prev => {
+          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
+          return exists ? prev : [newGroup, ...prev];
+        });
+        setUserHasGroup(true);
+        
+        toast({
+          title: "Success",
+          description: "Private group created successfully!",
+        });
+
+        // Reset form and close modal
+        setGroupName("");
+        setGroupDescription("");
+        setSelectedGroupMembers([]);
+        setGroupSearchQuery("");
+        setShowCreateGroupModal(false);
+      } else {
+        throw new Error(response?.message || "Failed to create private group");
+      }
+    } catch (error) {
+      console.error("Error creating private group:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || error.message || "Failed to create private group",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingGroup(false);
+    }
+  };
 
   const handleGroupMemberSelect = (userId) => {
     setSelectedGroupMembers(prev => 
@@ -905,7 +1110,16 @@ function Messages() {
                       // Reset and show loading while fetching previous messages for this conversation
                       setMessages([]);
                       setChatLoading(true);
-                      socket.emit('joinRoom', friend.room, convId);
+                      
+                      // Handle private groups differently
+                      if (friend.isPrivateGroup) {
+                        // For private groups, emit a specific event
+                        socket.emit('joinPrivateGroupRoom', { groupId: convId });
+                      } else {
+                        // For regular conversations
+                        socket.emit('joinRoom', friend.room, convId);
+                      }
+                      
                       // Load previous messages for this conversation
                       (async () => {
                         try {
@@ -965,26 +1179,29 @@ function Messages() {
                              ) : null;
                            })()}
                     </div>
-                         <TooltipProvider>
-                           <Tooltip>
-                             <TooltipTrigger asChild>
-                               <Button
-                                 variant="ghost"
-                                 size="icon"
-                                 className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
-                                 title="Delete conversation"
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   setDeleteConversationId(friend.conversationId || friend.id);
-                                   setShowDeleteConversationDialog(true);
-                                 }}
-                               >
-                                 <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                               </Button>
-                             </TooltipTrigger>
-                             <TooltipContent>{friend.isGroup ? "Leave group" : "Delete conversation"}</TooltipContent>
-                           </Tooltip>
-                         </TooltipProvider>
+                          <div className="flex items-center gap-1">
+                            {/* Delete/Leave Button */}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
+                                    title="Delete conversation"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteConversationId(friend.conversationId || friend.id);
+                                      setShowDeleteConversationDialog(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{friend.isGroup ? "Leave group" : "Delete conversation"}</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                        </div>
                     </div>
                      <p className={`text-[11px] sm:text-[12px] truncate ${(() => {
@@ -1063,23 +1280,33 @@ function Messages() {
                         </>
                       )}
                     </Avatar>
-                    <div className="flex-1">
+                    <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-sm sm:text-base">
                         {convosLoaded ? (friends.find((f) => f.id === selectedFriend)?.name || '') : ''}
                       </h3>
+                      {convosLoaded && friends.find((f) => f.id === selectedFriend)?.isGroup && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all"
+                                title="Group information"
+                                onClick={() => {
+                                  const currentFriend = friends.find((f) => f.id === selectedFriend);
+                                  setSelectedGroupInfo(currentFriend);
+                                  setShowGroupInfoModal(true);
+                                }}
+                              >
+                                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-700" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Group information</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
-                    {/* Group Info Button - only show for groups */}
-                    {convosLoaded && friends.find((f) => f.id === selectedFriend)?.isGroup && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all"
-                        onClick={() => setShowGroupInfo(true)}
-                        title="Group Info"
-                      >
-                        <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
-                      </Button>
-                    )}
                   </div>
                 </div>
 
@@ -1364,7 +1591,7 @@ function Messages() {
         </div>
       </div>
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal new */}
       <Dialog open={imagePreview.open} onOpenChange={(o) => setImagePreview(prev => ({ ...prev, open: o }))}>
         <DialogContent className="p-0 bg-white w-auto max-w-none rounded-lg sm:rounded-xl shadow-2xl">
           {imagePreview.url && (
@@ -1440,19 +1667,16 @@ function Messages() {
       </AlertDialog>
 
       {/* Group Info Modal */}
-      {showGroupInfo && convosLoaded && selectedFriend && (
-        <GroupInfoModal
-          isOpen={showGroupInfo}
-          onClose={() => setShowGroupInfo(false)}
-          groupId={friends.find((f) => f.id === selectedFriend)?.conversationId || friends.find((f) => f.id === selectedFriend)?.room}
-          groupInfo={{
-            name: friends.find((f) => f.id === selectedFriend)?.name,
-            description: friends.find((f) => f.id === selectedFriend)?.description,
-            thumbnail: friends.find((f) => f.id === selectedFriend)?.avatar
-          }}
-          isAdmin={friends.find((f) => f.id === selectedFriend)?.isAdmin || false}
-        />
-      )}
+      <GroupInfoModal
+        isOpen={showGroupInfoModal}
+        onClose={() => {
+          setShowGroupInfoModal(false);
+          setSelectedGroupInfo(null);
+        }}
+        groupId={selectedGroupInfo?.conversationId}
+        groupInfo={selectedGroupInfo}
+        isAdmin={selectedGroupInfo?.isAdmin || false}
+      />
     </div>
   );
 }

@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, Search, Users, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { fetchAllUsers } from "@/services/userService";
-import { getAllConversations, createPrivateGroup, addPrivateGroupMembers, getMyPrivateGroup } from "@/services/messageService";
+import { fetchAllUsers, getUserRole } from "@/services/userService";
+import { getAllConversations } from "@/services/messageService";
+import { createPrivateGroup, addPrivateGroupMembers, getMyPrivateGroup } from "@/services/privateGroupService";
 
 /**
  * CreateGroupButton
@@ -132,6 +133,18 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       toast({ title: "Limit reached", description: "You can only create one group", variant: "destructive" });
       return;
     }
+    
+    // Check user role before attempting to create group
+    const currentUserRole = getUserRole();
+    if (currentUserRole !== 'user') {
+      toast({ 
+        title: "Permission Denied", 
+        description: `Only standard users can create private groups. Your role: ${currentUserRole}`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     setIsCreatingGroup(true);
     try {
       const payload = {
@@ -182,7 +195,18 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       resetForm();
       setOpen(false);
     } catch (err) {
-      toast({ title: "Error", description: err?.message || "Failed to create group", variant: "destructive" });
+      console.error('Create group error:', err);
+      let errorMessage = "Failed to create group";
+      
+      if (err?.response?.status === 403) {
+        errorMessage = "Permission denied: Only standard users can create private groups";
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsCreatingGroup(false);
     }

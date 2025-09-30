@@ -30,7 +30,7 @@ import {
   promotePrivateGroupAdmin,
   invitePrivateGroupMembers,
   deleteMyPrivateGroup
-} from "@/services/messageService";
+} from "@/services/privateGroupService";
 import { toast } from "sonner";
 
 export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, isAdmin = false }) {
