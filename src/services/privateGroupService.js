@@ -34,13 +34,43 @@ export async function getPrivateGroupMembers(groupId) {
 
 export async function updatePrivateGroup(groupId, updateData) {
   try {
-    const response = await api.put(`/api/private-groups/${groupId}`, updateData, {
+    // Prefer PATCH by id (common for partial updates)
+    const patchById = await api.patch(`/api/private-groups/${groupId}`, updateData, {
       withCredentials: true,
     });
-    return response?.data;
+    return patchById?.data;
   } catch (error) {
-    console.error('privateGroupService.updatePrivateGroup error:', error);
-    throw error;
+    // Try PUT by id
+    try {
+      const putById = await api.put(`/api/private-groups/${groupId}`, updateData, {
+        withCredentials: true,
+      });
+      return putById?.data;
+    } catch (errorPutId) {
+      // Try PATCH /me
+      try {
+        const patchMe = await api.patch('/api/private-groups/me', updateData, {
+          withCredentials: true,
+        });
+        return patchMe?.data;
+      } catch (errorPatchMe) {
+        // Try PUT /me
+        try {
+          const putMe = await api.put('/api/private-groups/me', updateData, {
+            withCredentials: true,
+          });
+          return putMe?.data;
+        } catch (errorPutMe) {
+          console.error('privateGroupService.updatePrivateGroup errors:', {
+            patchById: error?.response?.status,
+            putById: errorPutId?.response?.status,
+            patchMe: errorPatchMe?.response?.status,
+            putMe: errorPutMe?.response?.status,
+          });
+          throw errorPutMe;
+        }
+      }
+    }
   }
 }
 

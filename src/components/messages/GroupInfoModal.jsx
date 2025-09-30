@@ -50,6 +50,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const [invitationExpiry, setInvitationExpiry] = useState(72); // Default 72 hours
   
   // Editing states
+  const [editingAll, setEditingAll] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editingDescription, setEditingDescription] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState(false);
@@ -138,6 +139,63 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
       setMembers([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    if (!groupId) return;
+    try {
+      setSaving(true);
+      // Decide payload type
+      if (avatarFile) {
+        const formData = new FormData();
+        const nextName = tempName?.trim();
+        const nextDescription = (tempDescription ?? '').trim();
+        if (nextName && nextName !== (group?.name || '')) formData.append('name', nextName);
+        if (nextDescription !== (group?.description || '')) formData.append('description', nextDescription);
+        formData.append('thumbnail', avatarFile);
+        const response = await updatePrivateGroup(groupId, formData);
+        const updated = response?.data || {};
+        setGroup(prev => ({
+          ...prev,
+          name: nextName || prev?.name,
+          description: (nextDescription !== undefined ? nextDescription : prev?.description),
+          thumbnail: updated.thumbnail || prev?.thumbnail
+        }));
+      } else {
+        const payload = {};
+        const nextName = tempName?.trim();
+        const nextDescription = (tempDescription ?? '').trim();
+        const nextThumbUrl = tempAvatarUrl?.trim();
+        if (nextName && nextName !== (group?.name || '')) payload.name = nextName;
+        if (nextDescription !== (group?.description || '')) payload.description = nextDescription;
+        if (nextThumbUrl) payload.thumbnail = nextThumbUrl;
+        if (Object.keys(payload).length === 0) {
+          toast.message('No changes to save');
+          return;
+        }
+        const response = await updatePrivateGroup(groupId, payload);
+        const updated = response?.data || {};
+        setGroup(prev => ({
+          ...prev,
+          name: payload.name ?? prev?.name,
+          description: payload.description ?? prev?.description,
+          thumbnail: updated.thumbnail || payload.thumbnail || prev?.thumbnail
+        }));
+      }
+      toast.success("Group updated successfully");
+      setEditingAll(false);
+      setEditingName(false);
+      setEditingDescription(false);
+      setEditingAvatar(false);
+      setAvatarFile(null);
+      setAvatarPreview("");
+      setTempAvatarUrl("");
+    } catch (error) {
+      console.error('Error updating group info:', error);
+      toast.error('Failed to update group');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -414,12 +472,38 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                 <p className="text-sm text-gray-500">View group details and manage members</p>
               </div>
             </div>
-            <button 
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdmin && !editingAll && (
+                <Button size="sm" variant="outline" onClick={() => {
+                  setEditingAll(true);
+                  setEditingName(true);
+                  setEditingDescription(true);
+                  setEditingAvatar(true);
+                }}>Edit</Button>
+              )}
+              {isAdmin && editingAll && (
+                <>
+                  <Button size="sm" onClick={handleSaveAll} disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setEditingAll(false);
+                    setEditingName(false);
+                    setEditingDescription(false);
+                    setEditingAvatar(false);
+                    setTempName(group?.name || '');
+                    setTempDescription(group?.description || '');
+                    setAvatarFile(null);
+                    setAvatarPreview('');
+                    setTempAvatarUrl('');
+                  }}>Cancel</Button>
+                </>
+              )}
+              <button 
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
           </div>
 
           <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
@@ -460,7 +544,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                         <Users className="h-12 w-12 text-gray-400" />
                       )}
                     </div>
-                    {isAdmin && (
+                    {isAdmin && editingAll && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -475,7 +559,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
 
                 {/* Group Name and Description */}
                 <div className="text-center space-y-2">
-                  {editingName ? (
+                  {editingAll ? (
                     <div className="flex items-center gap-2 justify-center">
                       <Input
                         value={tempName}
@@ -483,41 +567,14 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                         className="text-center text-2xl font-bold max-w-xs"
                         placeholder="Group name"
                       />
-                      <Button
-                        size="sm"
-                        onClick={handleSaveName}
-                        disabled={saving || !tempName.trim()}
-                      >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setEditingName(false);
-                          setTempName(group?.name || "");
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2">
                       <h3 className="text-2xl font-bold text-gray-900">{group?.name || "Unnamed Group"}</h3>
-                      {isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingName(true)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   )}
                   
-                  {editingDescription ? (
+                  {editingAll ? (
                     <div className="space-y-2">
                       <Textarea
                         value={tempDescription}
@@ -526,25 +583,6 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                         className="text-center resize-none max-w-md mx-auto"
                         rows={2}
                       />
-                      <div className="flex justify-center gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleSaveDescription}
-                          disabled={saving}
-                        >
-                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingDescription(false);
-                            setTempDescription(group?.description || "");
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2">
@@ -553,22 +591,12 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                       ) : (
                         <p className="text-gray-400 italic">No description</p>
                       )}
-                      {isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingDescription(true)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   )}
                 </div>
 
                 {/* Avatar Editing Section */}
-                {editingAvatar && (
+                {editingAll && editingAvatar && (
                   <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
                     <h4 className="font-medium text-gray-900">Update Group Avatar</h4>
                     <div className="space-y-3">
@@ -613,29 +641,6 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                           onChange={(e) => setTempAvatarUrl(e.target.value)}
                         />
                       )}
-                      
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={handleSaveAvatar}
-                          disabled={saving || (!avatarFile && !tempAvatarUrl.trim())}
-                        >
-                          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingAvatar(false);
-                            setAvatarFile(null);
-                            setAvatarPreview("");
-                            setTempAvatarUrl("");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
                     </div>
                   </div>
                 )}
