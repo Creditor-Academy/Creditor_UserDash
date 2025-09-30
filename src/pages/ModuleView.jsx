@@ -9,6 +9,7 @@ export function ModuleView() {
   const [module, setModule] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isMarkedRead, setIsMarkedRead] = useState(false);
 
   useEffect(() => {
     const fetchModule = async () => {
@@ -210,19 +211,29 @@ export function ModuleView() {
                       </div>
                     </div>
 
-                    {/* Action Button */}
+                    {/* Action Buttons */}
                     <div className="text-center space-y-4">
-                      <Button 
-                        size="lg" 
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
-                        asChild
-                      >
-                        <a href={fullUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink size={20} className="mr-3" />
-                          Open Module in New Tab
-                        </a>
-                      </Button>
-                      
+                      <div className="flex items-center justify-center gap-3">
+                        <Button 
+                          size="lg" 
+                          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-xl"
+                          asChild
+                        >
+                          <a href={fullUrl} rel="noopener noreferrer">
+                            <ExternalLink size={20} className="mr-3" />
+                            Open Module in New Tab
+                          </a>
+                        </Button>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="px-8 py-4 text-lg font-semibold rounded-xl"
+                          onClick={() => setIsMarkedRead(true)}
+                          disabled={isMarkedRead}
+                        >
+                          {isMarkedRead ? "Marked" : "Mark As Read"}
+                        </Button>
+                      </div>
                       <p className="text-sm text-gray-500">
                         The module will open in a new browser tab for the best experience
                       </p>
