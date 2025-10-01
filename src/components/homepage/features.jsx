@@ -1,58 +1,61 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import AthenaDash from "../../assets/AthenaDash.png";
+import analytics from "../../assets/analytics.webp";
 import capybilities1 from "../../assets/capybilities1.jpeg";
-import capybilities2 from "../../assets/capybilities2.jpeg";
-import capybilities3 from "../../assets/capybilities3.jpeg";
-import capybilities4 from "../../assets/capybilities4.jpeg";
-import capybilities5 from "../../assets/capybilities5.jpeg";
-import chelengeBg from "../../assets/chelengeBg.jpeg";
+import noti from "../../assets/noti.webp";
+import community from "../../assets/community.webp";
+import global from "../../assets/global.webp";
+import secure from "../../assets/secure.webp";
+import interactive from "../../assets/interactive.webp";
 import latest2 from "../../assets/latest2.jpeg";
 
 
 // FEATURES DATA
+// FEATURES DATA - REPLACE ONLY THIS
 const features = [
+  // {
+  //   title: "A Powerful Learning Management System",
+  //   desc: "Athena goes beyond course delivery. It gives organizations control, flexibility, and insights to manage learning at scale.",
+  //   image: capybilities1,
+  // },
   {
-    title: "Content Authoring & Learning Design Studio",
-    desc: "Create, edit, and organize course content with advanced tools that empower educators to build engaging learning journeys.",
-    image: capybilities1,
+    title: "Advanced Analytics",
+    desc: "Track learner progress, quiz performance, and engagement in real time with intuitive dashboards and reporting tools.",
+    image: analytics,
   },
   {
-    title: "Collaborative Communities & Intelligent Communication Hub",
-    desc: "Connect learners and instructors seamlessly with messaging, discussion forums, and collaborative study tools.",
-    image: AthenaDash,
+    title: "Community Building",
+    desc: "Personalized profiles with bios, contact info, and social links transform your LMS into a dynamic, connected learning hub.",
+    image: community,
   },
   {
-    title: "AI-Powered Content Personalization & Co-Creation",
-    desc: "Leverage AI to tailor learning materials for each student and enable collaborative content creation.",
-    image: capybilities2,
+    title: "Smart Notifications",
+    desc: "Keep learners and admins in sync with instant alerts for payments, assignments, quizzes, and announcements.",
+    image: noti,
+  },
+  
+  {
+    title: "Global Learning",
+    desc: "Multi-language support, AI translation, and accessibility tools ensure no learner is left behind.",
+    image:  global,
   },
   {
-    title: "Comprehensive Learning Analytics & Actionable Insights",
-    desc: "Gain deep understanding of learner progress and engagement with insightful dashboards and reports.",
-    image: capybilities3,
+    title: "Secure & Reliable",
+    desc: "Athena safeguards your data with enterprise-grade security, privacy controls, and 99.9% uptime reliability.",
+    image: secure,
   },
   {
-    title: "All-in-One SaaS Ecosystem for Learning & Growth",
-    desc: "Manage courses, users, payments, and more from a unified cloud-based platform.",
-    image: capybilities4,
+    title: "Interactive Assessments",
+    desc: "Create dynamic quizzes and assignments with automated grading, detailed feedback, and performance tracking.",
+    image: interactive,
   },
-  {
-    title: "Interactive Assessments & Smart Evaluation Engine",
-    desc: "Create dynamic quizzes and assignments with automated grading to boost learner success.",
-    image: capybilities5,
-  },
-  {
-    title: "Mobile Learning Support",
-    desc: "Seamless learning across devices with offline access and responsive design.",
-    image: chelengeBg,
-  },
-  {
-    title: "Third-Party Integration",
-    desc: "Connect your LMS to Zoom, Google Drive, and more, automating workflows for teachers and students.",
-    image: latest2,
-  },
+  // {
+  //   title: "Third-Party Integration",
+  //   desc: "Connect Athena to Zoom, Google Drive, and more—automate workflows for teachers and students with seamless integrations.",
+  //   image: latest2,
+  // },
 ];
+
 
 export default function Features() {
   const [activeIdx, setActiveIdx] = useState(4);
@@ -142,7 +145,7 @@ export default function Features() {
   };
   const gridStyle = {
     display: "grid",
-    gridTemplateColumns: `repeat(4, ${cardWidth}px)`,
+    gridTemplateColumns: `repeat(3, ${cardWidth}px)`,
     gap: "12px",
     marginBottom: "30px",
   };
