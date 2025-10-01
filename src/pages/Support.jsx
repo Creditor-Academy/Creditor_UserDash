@@ -185,16 +185,7 @@ const SupportTicketsPage = () => {
         message: replyText.trim()
       });
 
-      // Fire notification to the ticket owner via backend API only
-      const ticket = tickets.find(t => t.id === ticketId);
-      if (ticket?.userId) {
-        try {
-          await createTicketReplyNotification(ticketId, ticket.userId);
-        } catch (notifyError) {
-          console.warn('Ticket reply notification API failed:', notifyError);
-        }
-      }
-
+    
       // Refresh tickets to get the updated data
       const response = await getAllTickets();
       const transformedTickets = response.data.data.map(ticket => ({
