@@ -1,7 +1,7 @@
 import { api } from './apiClient';
 
 // Pricing IDs
-const CONSULTATION_PRICING_ID = '4f8b605f-e306-41d4-a397-8999cb160461';
+const CONSULTATION_PRICING_ID = '25219706-f6db-46ab-a9a2-573b7548d4df';
 
 /**
  * Book a consultation

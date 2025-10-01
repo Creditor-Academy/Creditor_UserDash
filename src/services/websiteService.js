@@ -1,8 +1,8 @@
 import { api } from './apiClient';
 
 // Pricing IDs
-const WEBSITE_NORMAL_PRICING_ID = '593eb813-470a-49f5-9ed9-339a00611cbe';
-const WEBSITE_PREMIUM_PRICING_ID = '34b84298-1794-455c-a240-09ad61fcf6dc';
+const WEBSITE_NORMAL_PRICING_ID = '53778304-d511-4a72-831e-7498a82072a3';
+const WEBSITE_PREMIUM_PRICING_ID = '5b6f079b-cfb2-40b0-adc3-f45dd087c1d3';
 
 /**
  * Book a website service

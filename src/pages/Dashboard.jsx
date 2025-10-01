@@ -441,6 +441,11 @@ export function Dashboard() {
       // Show success message
       setBookingSuccess(`Consultation redirection successfull! ${CONSULT_COST} credits deducted.`);
       
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => {
+        setBookingSuccess("");
+      }, 5000);
+      
       // Refresh history to show new booking
       await fetchUserHistory();
       
@@ -491,6 +496,11 @@ export function Dashboard() {
       
       // Show success message
       setBookingSuccess(`${selectedWebsitePack.name} booked successfully! ${selectedWebsitePack.cost} credits deducted.`);
+      
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => {
+        setBookingSuccess("");
+      }, 5000);
       
       // Refresh history to show new booking
       await fetchUserHistory();
@@ -1345,7 +1355,6 @@ export function Dashboard() {
               <p className="font-medium text-gray-900 mb-1">How booking works</p>
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Click Book to request a time. We confirm availability.</li>
-                <li>Credits are held and only deducted when session is confirmed.</li>
                 <li>Reschedule up to 12 hours prior at no extra cost.</li>
               </ol>
             </div>

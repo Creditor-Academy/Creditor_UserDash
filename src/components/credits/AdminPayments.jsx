@@ -36,12 +36,17 @@ const AdminPayments = () => {
   const [subsPage, setSubsPage] = useState(1);
   const [servicesPage, setServicesPage] = useState(1); // consultations page
   const [servicesWebPage, setServicesWebPage] = useState(1); // websites page
+  const [servicesTab, setServicesTab] = useState("consultations"); // "consultations" | "websites"
   const itemsPerPage = 5;
   const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [grantCreditsAmount, setGrantCreditsAmount] = useState(10);
   const [userDetailModal, setUserDetailModal] = useState({ open: false, user: null });
   const [grantModal, setGrantModal] = useState({ open: false });
+  const [deductModal, setDeductModal] = useState({ open: false });
+  const [deductCreditsAmount, setDeductCreditsAmount] = useState(10);
+  const [isDeducting, setIsDeducting] = useState(false);
+  const [deductMessage, setDeductMessage] = useState("");
 
   // Services search and filter states
   const [consultationsSearch, setConsultationsSearch] = useState("");
@@ -475,165 +480,252 @@ const AdminPayments = () => {
       )}
 
       {paymentsView === "services" && (
-        <div className="space-y-6">
-          <div className="mb-2">
-            <h3 className="text-lg font-semibold text-gray-800">Consultations</h3>
-            <span className="text-sm text-gray-500">User bookings and payments</span>
-          </div>
-          
-          {/* Consultations Search and Filter Controls */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                <input
-                  type="text"
-                  value={consultationsSearch}
-                  onChange={(e) => setConsultationsSearch(e.target.value)}
-                  placeholder="Search by user, topic, or ID..."
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
+        <div className="space-y-8">
+          {/* Services Header with Tabs */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Services</h3>
+                  <span className="text-sm text-blue-600 font-medium">Manage consultations and website services</span>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={consultationsFilter.status}
-                  onChange={(e) => setConsultationsFilter(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <span className="text-gray-600">
-                Showing {filteredConsultations.length} consultation{filteredConsultations.length !== 1 ? 's' : ''}
-              </span>
-              {(consultationsSearch || consultationsFilter.status !== "all") && (
+              <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
                 <button
-                  onClick={() => {
-                    setConsultationsSearch("");
-                    setConsultationsFilter({ status: "all" });
-                  }}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  onClick={() => setServicesTab("consultations")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    servicesTab === "consultations"
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                  }`}
                 >
-                  Clear Filters
+                  Consultations
                 </button>
-              )}
+                <button
+                  onClick={() => setServicesTab("websites")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    servicesTab === "websites"
+                      ? "bg-green-500 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                  }`}
+                >
+                  Websites
+                </button>
+              </div>
             </div>
           </div>
           
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-700">
-                <tr>
-                  <th className="text-left px-3 py-2">ID</th>
-                  <th className="text-left px-3 py-2">User</th>
-                  <th className="text-left px-3 py-2">Topic</th>
-                  <th className="text-left px-3 py-2">Booked</th>
-                  <th className="text-left px-3 py-2">Duration</th>
-                  <th className="text-left px-3 py-2">Payment</th>
-                  <th className="text-left px-3 py-2">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {servicesLoading ? (
-                  <tr>
-                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
-                        Loading consultations...
-                      </div>
-                    </td>
-                  </tr>
-                ) : servicesError ? (
-                  <tr>
-                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
-                      <div className="text-red-600 mb-2">{servicesError}</div>
-                      <button 
-                        onClick={fetchServicesData}
-                        className="text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        Try again
-                      </button>
-                    </td>
-                  </tr>
-                ) : filteredConsultations.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
-                      {services.consultations.length === 0 
-                        ? "No consultations available" 
-                        : "No consultations match your search criteria"
-                      }
-                    </td>
-                  </tr>
-                ) : (
-                  filteredConsultations.slice((servicesPage-1)*itemsPerPage, servicesPage*itemsPerPage).map(c => {
-                  const status = (serviceStatus[c.id] || c.status || 'pending');
-                  return (
-                    <tr key={c.id} className="border-t">
-                      <td className="px-3 py-2 font-medium text-gray-900">{c.id}</td>
-                      <td className="px-3 py-2 text-gray-700">{c.user}</td>
-                      <td className="px-3 py-2 text-gray-700">{c.topic}</td>
-                      <td className="px-3 py-2 text-gray-700">{c.scheduledAt}</td>
-                      <td className="px-3 py-2 text-gray-700">{c.duration}</td>
-                      <td className="px-3 py-2 text-gray-700">
-                        {c.payment.amount} {c.payment.currency} 
-                        <span className="text-xs text-gray-500">({c.payment.method})</span>
-                      </td>
-                      <td className="px-3 py-2">
-                        <select
-                          value={status}
-                          onChange={(e)=>{ const v=e.target.value; handleConsultationStatusUpdate(c.id, v); }}
-                          className="rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        >
-                          <option value="pending">pending</option>
-                          <option value="in_progress">in progress</option>
-                          <option value="completed">completed</option>
-                        </select>
-                      </td>
+          {/* Consultations Tab */}
+          {servicesTab === "consultations" && (
+            <>
+              {/* Enhanced Search and Filter Controls */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={consultationsSearch}
+                        onChange={(e) => setConsultationsSearch(e.target.value)}
+                        placeholder="Search by user, topic, or ID..."
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      />
+                      <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select
+                      value={consultationsFilter.status}
+                      onChange={(e) => setConsultationsFilter(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      {filteredConsultations.length} consultation{filteredConsultations.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {(consultationsSearch || consultationsFilter.status !== "all") && (
+                    <button
+                      onClick={() => {
+                        setConsultationsSearch("");
+                        setConsultationsFilter({ status: "all" });
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700">
+                    <tr>
+                      <th className="text-left px-6 py-4 font-semibold">ID</th>
+                      <th className="text-left px-6 py-4 font-semibold">User</th>
+                      <th className="text-left px-6 py-4 font-semibold">Topic</th>
+                      <th className="text-left px-6 py-4 font-semibold">Booked</th>
+                      <th className="text-left px-6 py-4 font-semibold">Duration</th>
+                      <th className="text-left px-6 py-4 font-semibold">Payment</th>
+                      <th className="text-left px-6 py-4 font-semibold">Status</th>
                     </tr>
-                  );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-gray-600">Page {servicesPage} of {Math.max(Math.ceil(filteredConsultations.length / itemsPerPage), 1)}</span>
-            <div className="flex gap-2">
-              <button disabled={servicesPage===1} onClick={() => setServicesPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${servicesPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
-              <button disabled={servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)} onClick={() => setServicesPage(p => Math.min(p+1, Math.ceil(filteredConsultations.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
-            </div>
-          </div>
+                  </thead>
+                  <tbody>
+                    {servicesLoading ? (
+                      <tr>
+                        <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                            Loading consultations...
+                          </div>
+                        </td>
+                      </tr>
+                    ) : servicesError ? (
+                      <tr>
+                        <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                          <div className="text-red-600 mb-2">{servicesError}</div>
+                          <button 
+                            onClick={fetchServicesData}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Try again
+                          </button>
+                        </td>
+                      </tr>
+                    ) : filteredConsultations.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                          {services.consultations.length === 0 
+                            ? "No consultations available" 
+                            : "No consultations match your search criteria"
+                          }
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredConsultations.slice((servicesPage-1)*itemsPerPage, servicesPage*itemsPerPage).map(c => {
+                      const status = (serviceStatus[c.id] || c.status || 'pending');
+                      const statusColors = {
+                        pending: 'bg-amber-100 text-amber-800 border-amber-200',
+                        in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+                        completed: 'bg-green-100 text-green-800 border-green-200'
+                      };
+                      return (
+                        <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 font-mono text-xs text-gray-600 bg-gray-50">{c.id}</td>
+                          <td className="px-6 py-4 font-medium text-gray-900">{c.user}</td>
+                          <td className="px-6 py-4 text-gray-700">{c.topic}</td>
+                          <td className="px-6 py-4 text-gray-600">{c.scheduledAt}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                              {c.duration}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1">
+                              <span className="font-semibold text-gray-900">{c.payment.amount}</span>
+                              <span className="text-gray-600">{c.payment.currency}</span>
+                              <span className="text-xs text-gray-400">({c.payment.method})</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <select
+                              value={status}
+                              onChange={(e)=>{ const v=e.target.value; handleConsultationStatusUpdate(c.id, v); }}
+                              className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                            >
+                              <option value="pending">pending</option>
+                              <option value="in_progress">in progress</option>
+                              <option value="completed">completed</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Page {servicesPage} of {Math.max(Math.ceil(filteredConsultations.length / itemsPerPage), 1)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    disabled={servicesPage===1} 
+                    onClick={() => setServicesPage(p => Math.max(p-1,1))} 
+                    className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                      servicesPage===1 
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button 
+                    disabled={servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)} 
+                    onClick={() => setServicesPage(p => Math.min(p+1, Math.ceil(filteredConsultations.length/itemsPerPage)))} 
+                    className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                      servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
-          <div className="mt-8 mb-2">
-            <h3 className="text-lg font-semibold text-gray-800">Websites</h3>
-            <span className="text-sm text-gray-500">Purchases and credit details</span>
-          </div>
+          {/* Websites Tab */}
+          {servicesTab === "websites" && (
+            <>
           
-          {/* Websites Search and Filter Controls */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Enhanced Websites Search and Filter Controls */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                <input
-                  type="text"
-                  value={websitesSearch}
-                  onChange={(e) => setWebsitesSearch(e.target.value)}
-                  placeholder="Search by user, product, or ID..."
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={websitesSearch}
+                    onChange={(e) => setWebsitesSearch(e.target.value)}
+                    placeholder="Search by user, product, or ID..."
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
                 <select
                   value={websitesFilter.status}
                   onChange={(e) => setWebsitesFilter(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
@@ -642,11 +734,11 @@ const AdminPayments = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Website Type</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Website Type</label>
                 <select
                   value={websitesFilter.websiteType}
                   onChange={(e) => setWebsitesFilter(prev => ({ ...prev, websiteType: e.target.value }))}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
                 >
                   <option value="all">All Types</option>
                   <option value="basic">Basic</option>
@@ -654,34 +746,39 @@ const AdminPayments = () => {
                 </select>
               </div>
             </div>
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <span className="text-gray-600">
-                Showing {filteredWebsites.length} website{filteredWebsites.length !== 1 ? 's' : ''}
-              </span>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  {filteredWebsites.length} website{filteredWebsites.length !== 1 ? 's' : ''}
+                </span>
+              </div>
               {(websitesSearch || websitesFilter.status !== "all" || websitesFilter.websiteType !== "all") && (
                 <button
                   onClick={() => {
                     setWebsitesSearch("");
                     setWebsitesFilter({ status: "all", websiteType: "all" });
                   }}
-                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                   Clear Filters
                 </button>
               )}
             </div>
           </div>
           
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50 text-gray-700">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700">
                 <tr>
-                  <th className="text-left px-3 py-2">ID</th>
-                  <th className="text-left px-3 py-2">User</th>
-                  <th className="text-left px-3 py-2">Website</th>
-                  <th className="text-left px-3 py-2">Purchased</th>
-                  <th className="text-left px-3 py-2">Payment</th>
-                  <th className="text-left px-3 py-2">Status</th>
+                  <th className="text-left px-6 py-4 font-semibold">ID</th>
+                  <th className="text-left px-6 py-4 font-semibold">User</th>
+                  <th className="text-left px-6 py-4 font-semibold">Website</th>
+                  <th className="text-left px-6 py-4 font-semibold">Purchased</th>
+                  <th className="text-left px-6 py-4 font-semibold">Payment</th>
+                  <th className="text-left px-6 py-4 font-semibold">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -718,18 +815,40 @@ const AdminPayments = () => {
                 ) : (
                   filteredWebsites.slice((servicesWebPage-1)*itemsPerPage, servicesWebPage*itemsPerPage).map(w => {
                   const status = (serviceStatus[w.id] || w.status || 'pending');
+                  const statusColors = {
+                    pending: 'bg-amber-100 text-amber-800 border-amber-200',
+                    in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+                    completed: 'bg-green-100 text-green-800 border-green-200'
+                  };
+                  const websiteTypeColors = {
+                    basic: 'bg-blue-100 text-blue-800',
+                    premium: 'bg-purple-100 text-purple-800'
+                  };
                   return (
-                    <tr key={w.id} className="border-t">
-                      <td className="px-3 py-2 font-medium text-gray-900">{w.id}</td>
-                      <td className="px-3 py-2 text-gray-700">{w.user}</td>
-                      <td className="px-3 py-2 text-gray-700">{w.product}</td>
-                      <td className="px-3 py-2 text-gray-700">{w.purchasedAt}</td>
-                      <td className="px-3 py-2 text-gray-700">{w.payment.amount} {w.payment.currency} <span className="text-xs text-gray-500">({w.payment.method})</span></td>
-                      <td className="px-3 py-2">
+                    <tr key={w.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-gray-600 bg-gray-50">{w.id}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{w.user}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">{w.product}</span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${websiteTypeColors[w.type] || 'bg-gray-100 text-gray-800'}`}>
+                            {w.type}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{w.purchasedAt}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold text-gray-900">{w.payment.amount}</span>
+                          <span className="text-gray-600">{w.payment.currency}</span>
+                          <span className="text-xs text-gray-400">({w.payment.method})</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <select
                           value={status}
                           onChange={(e)=>{ const v=e.target.value; handleWebsiteStatusUpdate(w.id, v); }}
-                          className="rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors ${statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
                         >
                           <option value="pending">pending</option>
                           <option value="in_progress">in progress</option>
@@ -743,13 +862,37 @@ const AdminPayments = () => {
               </tbody>
             </table>
           </div>
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-gray-600">Page {servicesWebPage} of {Math.max(Math.ceil(filteredWebsites.length / itemsPerPage), 1)}</span>
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Page {servicesWebPage} of {Math.max(Math.ceil(filteredWebsites.length / itemsPerPage), 1)}</span>
+            </div>
             <div className="flex gap-2">
-              <button disabled={servicesWebPage===1} onClick={() => setServicesWebPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${servicesWebPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
-              <button disabled={servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)} onClick={() => setServicesWebPage(p => Math.min(p+1, Math.ceil(filteredWebsites.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+              <button 
+                disabled={servicesWebPage===1} 
+                onClick={() => setServicesWebPage(p => Math.max(p-1,1))} 
+                className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                  servicesWebPage===1 
+                    ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                    : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Previous
+              </button>
+              <button 
+                disabled={servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)} 
+                onClick={() => setServicesWebPage(p => Math.min(p+1, Math.ceil(filteredWebsites.length/itemsPerPage)))} 
+                className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                  servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)
+                    ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                    : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Next
+              </button>
             </div>
           </div>
+            </>
+          )}
         </div>
       )}
 
@@ -897,17 +1040,40 @@ const AdminPayments = () => {
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
               </div>
-              <button
-                disabled={selectedUserIds.length === 0}
-                onClick={() => { if (selectedUserIds.length === 0) { return; } setGrantModal({ open: true }); }}
-                className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
-                  selectedUserIds.length === 0
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-              >
-                <FaCoins /> Grant credits{selectedUserIds.length > 0 ? ` (${selectedUserIds.length})` : ""}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  disabled={selectedUserIds.length === 0}
+                  onClick={() => { if (selectedUserIds.length === 0) { return; } setGrantModal({ open: true }); }}
+                  className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
+                    selectedUserIds.length === 0
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  <FaCoins /> Grant credits{selectedUserIds.length > 0 ? ` (${selectedUserIds.length})` : ""}
+                </button>
+                <button
+                  disabled={selectedUserIds.length !== 1}
+                  onClick={() => { 
+                    if (selectedUserIds.length === 0) { 
+                      alert('Please select one user to deduct credits from.'); 
+                      return; 
+                    } 
+                    if (selectedUserIds.length > 1) { 
+                      alert('Please select only one user to deduct credits from.'); 
+                      return; 
+                    } 
+                    setDeductModal({ open: true }); 
+                  }}
+                  className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
+                    selectedUserIds.length !== 1
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  <FaCoins /> Deduct credits{selectedUserIds.length === 1 ? " (1)" : ""}
+                </button>
+              </div>
             </div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-800">Users</h3>
@@ -1091,6 +1257,45 @@ const AdminPayments = () => {
                       setIsGranting(false);
                     }
                   }} className={`px-4 py-2 rounded-md text-white ${isGranting? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{isGranting? 'Granting…' : 'Grant'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {deductModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/30" onClick={()=>setDeductModal({ open:false })} />
+              <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
+                <h4 className="text-xl font-semibold text-gray-900 mb-2">Deduct Credits</h4>
+                <p className="text-sm text-gray-600 mb-4">Selected user: {selectedUserIds.length === 1 ? realUsers.find(u => u.id === selectedUserIds[0])?.name || 'Unknown' : 'None'}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Credits to Deduct</label>
+                <input value={deductCreditsAmount} onChange={(e)=>setDeductCreditsAmount(parseInt(e.target.value||"0",10))} type="number" min="1" className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-200 mb-4" />
+                {deductMessage && (
+                  <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">{deductMessage}</div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button onClick={()=>{ if (!isDeducting) setDeductModal({ open:false }); }} className="px-4 py-2 rounded-md border hover:bg-gray-50" disabled={isDeducting}>Cancel</button>
+                  <button onClick={async ()=>{ 
+                    if (isDeducting) return; 
+                    try {
+                      setDeductMessage("");
+                      setIsDeducting(true);
+                      // Call backend to deduct credits
+                      await api.post('/payment-order/admin/credits/deduct', { userId: selectedUserIds[0], credits: deductCreditsAmount }, { withCredentials: true });
+                      // Reflect change locally
+                      setRealUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, credits: Math.max(0, (Number(u.credits)||0) - (Number(deductCreditsAmount)||0)) } : u));
+                      try { debouncedRefreshBalance(); } catch {}
+                      setDeductMessage(`Deducted ${deductCreditsAmount} credits from user.`);
+                      // Optionally clear selection
+                      setSelectedUserIds([]);
+                      // Close after brief delay
+                      setTimeout(()=>{ setDeductModal({ open:false }); setDeductMessage(""); }, 800);
+                    } catch (e) {
+                      alert('Failed to deduct credits.');
+                    } finally {
+                      setIsDeducting(false);
+                    }
+                  }} className={`px-4 py-2 rounded-md text-white ${isDeducting? 'bg-red-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>{isDeducting? 'Deducting…' : 'Deduct'}</button>
                 </div>
               </div>
             </div>
