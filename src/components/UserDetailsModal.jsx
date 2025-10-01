@@ -26,7 +26,7 @@ import {
   BookOpenCheck
 } from "lucide-react";
 import { fetchUserCoursesByUserId } from "@/services/userService";
-import { fetchCourseModules, fetchPurchasedModulesByCourse, fetchCourseById, fetchCoursePrice } from "@/services/courseService";
+import { fetchCourseModules, fetchCourseById, fetchCoursePrice } from "@/services/courseService";
 import { getUnlockedModulesByUser } from "@/services/modulesService";
 
 const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isInstructorOrAdmin = false, viewerTimezone }) => {
@@ -63,12 +63,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       if (coursesArray.length > 0) {
         fetchModulesForCourses(coursesArray);
         fetchPricesForCourses(coursesArray);
-        // Prefer unlocked/purchased modules endpoint by user; fallback to per-course API
-        try {
-          await fetchPurchasedModulesForUser(coursesArray);
-        } catch (_) {
-          await fetchAllPurchasedModules(coursesArray);
-        }
+        // Fetch unlocked/purchased modules for the viewed user (single call)
+        await fetchPurchasedModulesForUser(coursesArray);
       }
     } catch (error) {
       console.error("Failed to fetch courses:", error);
@@ -78,42 +74,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
     }
   };
   
-  const fetchAllPurchasedModules = async (coursesArray) => {
-    setLoadingPurchasedModules(true);
-    setPurchasedModulesError(null);
-    
-    try {
-      const allPurchasedModules = [];
-      
-      // Fetch purchased modules for each course
-      const modulePromises = coursesArray.map(async (course) => {
-        try {
-          // Pass target user.id so instructors/admins can fetch for viewed user
-          const purchasedModulesForCourse = await fetchPurchasedModulesByCourse(course, user.id);
-  
-          if (Array.isArray(purchasedModulesForCourse)) {
-            // Add course information to each module
-            const modulesWithCourseInfo = purchasedModulesForCourse.map(module => ({
-              ...module,
-              course_title: course.title,
-              course_id: course.course_id || course.id, // keep uuid for clarity
-            }));
-            allPurchasedModules.push(...modulesWithCourseInfo);
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch purchased modules for course ${course.course_id || course.id}:`, error);
-        }
-      });
-      
-      await Promise.all(modulePromises);
-      setPurchasedModules(allPurchasedModules);
-    } catch (error) {
-      console.error("Failed to fetch purchased modules:", error);
-      setPurchasedModulesError("Failed to load purchased modules");
-    } finally {
-      setLoadingPurchasedModules(false);
-    }
-  };
+  // Removed per-course purchased modules flow
 
   // New: fetch unlocked/purchased modules for the viewed user directly
   const fetchPurchasedModulesForUser = async (coursesArray) => {
@@ -636,13 +597,13 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
             </Card>
           )}
 
-          {/* Available Courses */}
+          {/* Enrolled */}
           {loadingCourses ? (
             <Card className="shadow-sm border border-gray-100">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4" />
-                  Available Courses
+                  Enrolled
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -654,23 +615,11 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4" />
-                  Available Courses
+                  Enrolled
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-red-500">{coursesError}</p>
-              </CardContent>
-            </Card>
-          ) : courses.length === 0 ? (
-            <Card className="shadow-sm border border-gray-100">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  Available Courses
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-500">No courses available.</p>
               </CardContent>
             </Card>
           ) : (
@@ -722,6 +671,15 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                 <div className="space-y-4 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {activeTab === 'courses' ? (
                     // Courses Tab
+                    courses.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <GraduationCap className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Enrollments</h3>
+                        <p className="text-sm text-gray-500">This user is not enrolled in any courses yet.</p>
+                      </div>
+                    ) : (
                     courses.map((course, index) => {
                       const courseId = course.course_id || course.id;
                       const modules = courseModules[courseId] || [];
@@ -831,6 +789,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         </div>
                       );
                     })
+                    )
                   ) : (
                     // Modules Tab
                     loadingPurchasedModules ? (
