@@ -20,19 +20,29 @@ import {
   DollarSign,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  BookOpenCheck
 } from "lucide-react";
 import { fetchUserCoursesByUserId } from "@/services/userService";
+import { fetchCourseModules, fetchPurchasedModulesByCourse, fetchCourseById, fetchCoursePrice } from "@/services/courseService";
 import { getUnlockedModulesByUser } from "@/services/modulesService";
-import { fetchCourseModules } from "@/services/courseService";
 
 const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isInstructorOrAdmin = false, viewerTimezone }) => {
   const [courses, setCourses] = React.useState([]);
   const [loadingCourses, setLoadingCourses] = React.useState(false);
   const [coursesError, setCoursesError] = React.useState(null);
   const [bioExpanded, setBioExpanded] = React.useState(false);
-  const [loadingModules, setLoadingModules] = React.useState(false);
-  const [unlockedModulesByCourse, setUnlockedModulesByCourse] = React.useState({});
+  const [courseModules, setCourseModules] = React.useState({});
+  const [loadingModules, setLoadingModules] = React.useState({});
+  const [modulesError, setModulesError] = React.useState({});
+  const [expandedCourses, setExpandedCourses] = React.useState({});
+  const [activeTab, setActiveTab] = React.useState('courses');
+  const [purchasedModules, setPurchasedModules] = React.useState([]);
+  const [loadingPurchasedModules, setLoadingPurchasedModules] = React.useState(false);
+  const [purchasedModulesError, setPurchasedModulesError] = React.useState(null);
+  const [coursePrices, setCoursePrices] = React.useState({});
 
   // Fetch courses for the selected user when modal opens or user changes
   React.useEffect(() => {
@@ -46,7 +56,20 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
     setCoursesError(null);
     try {
       const coursesData = await fetchUserCoursesByUserId(user.id);
-      setCourses(Array.isArray(coursesData) ? coursesData : []);
+      const coursesArray = Array.isArray(coursesData) ? coursesData : [];
+      setCourses(coursesArray);
+      
+      // Fetch modules for each course
+      if (coursesArray.length > 0) {
+        fetchModulesForCourses(coursesArray);
+        fetchPricesForCourses(coursesArray);
+        // Prefer unlocked/purchased modules endpoint by user; fallback to per-course API
+        try {
+          await fetchPurchasedModulesForUser(coursesArray);
+        } catch (_) {
+          await fetchAllPurchasedModules(coursesArray);
+        }
+      }
     } catch (error) {
       console.error("Failed to fetch courses:", error);
       setCoursesError("Failed to load courses");
@@ -54,51 +77,171 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       setLoadingCourses(false);
     }
   };
+  
+  const fetchAllPurchasedModules = async (coursesArray) => {
+    setLoadingPurchasedModules(true);
+    setPurchasedModulesError(null);
+    
+    try {
+      const allPurchasedModules = [];
+      
+      // Fetch purchased modules for each course
+      const modulePromises = coursesArray.map(async (course) => {
+        try {
+          // Pass target user.id so instructors/admins can fetch for viewed user
+          const purchasedModulesForCourse = await fetchPurchasedModulesByCourse(course, user.id);
+  
+          if (Array.isArray(purchasedModulesForCourse)) {
+            // Add course information to each module
+            const modulesWithCourseInfo = purchasedModulesForCourse.map(module => ({
+              ...module,
+              course_title: course.title,
+              course_id: course.course_id || course.id, // keep uuid for clarity
+            }));
+            allPurchasedModules.push(...modulesWithCourseInfo);
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch purchased modules for course ${course.course_id || course.id}:`, error);
+        }
+      });
+      
+      await Promise.all(modulePromises);
+      setPurchasedModules(allPurchasedModules);
+    } catch (error) {
+      console.error("Failed to fetch purchased modules:", error);
+      setPurchasedModulesError("Failed to load purchased modules");
+    } finally {
+      setLoadingPurchasedModules(false);
+    }
+  };
 
-  // Fetch unlocked modules for this user and group them by course
-  React.useEffect(() => {
-    const loadUnlockedModules = async () => {
-      if (!isOpen || !user?.id || courses.length === 0) return;
-      setLoadingModules(true);
-      try {
-        const unlocked = await getUnlockedModulesByUser(user.id);
-        // Group unlocked module IDs by courseId
-        const idsByCourse = {};
-        (Array.isArray(unlocked) ? unlocked : []).forEach((row) => {
-          const courseId = String(row.course_id || row.courseId || row.course?.id || "");
-          const moduleId = String(row.module_id || row.moduleId || row.id || "");
-          if (!courseId || !moduleId) return;
-          if (!idsByCourse[courseId]) idsByCourse[courseId] = new Set();
-          idsByCourse[courseId].add(moduleId);
-        });
+  // New: fetch unlocked/purchased modules for the viewed user directly
+  const fetchPurchasedModulesForUser = async (coursesArray) => {
+    setLoadingPurchasedModules(true);
+    setPurchasedModulesError(null);
+    try {
+      const unlocked = await getUnlockedModulesByUser(user.id);
+      const modulesArray = Array.isArray(unlocked) ? unlocked : [];
+      // Build courseId -> title map from fetched courses
+      const courseIdToTitle = new Map(
+        (coursesArray || []).map((c) => [c.course_id || c.id, c.title || c?.course?.title || "Course"])
+      );
 
-        // For each enrolled course, fetch its modules and keep only unlocked ones
-        const results = await Promise.all(
-          courses.map(async (c) => {
-            try {
-              const allModules = await fetchCourseModules(c.id);
-              const wanted = idsByCourse[String(c.id)] || new Set();
-              const filtered = (Array.isArray(allModules) ? allModules : []).filter((m) => wanted.has(String(m.id)));
-              return [c.id, filtered];
-            } catch (e) {
-              return [c.id, []];
-            }
-          })
-        );
+      // Collect missing course ids that aren't in the map
+      const missingIds = Array.from(new Set(
+        modulesArray
+          .map((m) => m.course_id || m.module?.course_id || m.courseId)
+          .filter((id) => id && !courseIdToTitle.has(id))
+      ));
 
-        const map = {};
-        results.forEach(([cid, arr]) => { map[cid] = arr; });
-        setUnlockedModulesByCourse(map);
-      } catch (e) {
-        // Non-fatal; leave map empty
-        setUnlockedModulesByCourse({});
-      } finally {
-        setLoadingModules(false);
+      // Fetch titles for missing course ids
+      if (missingIds.length > 0) {
+        try {
+          const fetched = await Promise.all(
+            missingIds.map(async (id) => {
+              try {
+                const course = await fetchCourseById(id);
+                return { id, title: course?.title || course?.name || "Course" };
+              } catch (_) {
+                return { id, title: "Course" };
+              }
+            })
+          );
+          fetched.forEach(({ id, title }) => courseIdToTitle.set(id, title));
+        } catch (_) {
+          // ignore; we'll fall back to Unknown Course
+        }
       }
-    };
+      const withCourseInfo = modulesArray.map((m) => {
+        const normalized = {
+          // Prefer top-level id/title; fallback to nested module object often returned by access APIs
+          id: m.id || m.module?.id,
+          title: m.title || m.module?.title || m.name || m.module_name || m.moduleTitle,
+          course_id: m.course_id || m.module?.course_id || m.courseId,
+          estimated_duration: m.estimated_duration || m.module?.estimated_duration,
+          price: m.price || m.module?.price,
+          thumbnail: m.thumbnail || m.module?.thumbnail,
+          // include original for any other fields
+          ...m,
+        };
+        return {
+          ...normalized,
+          course_title:
+            m.course_title || m.module?.course_title || courseIdToTitle.get(normalized.course_id) || "Unknown Course",
+        };
+      });
+      setPurchasedModules(withCourseInfo);
+    } catch (err) {
+      console.warn("getUnlockedModulesByUser failed, will fallback to per-course API", err);
+      throw err;
+    } finally {
+      setLoadingPurchasedModules(false);
+    }
+  };
 
-    loadUnlockedModules();
-  }, [isOpen, user?.id, courses]);
+  // Fetch and cache course prices to display in Courses tab
+  const fetchPricesForCourses = async (coursesArray) => {
+    try {
+      const entries = await Promise.all(
+        (coursesArray || []).map(async (c) => {
+          const id = c.course_id || c.id;
+          if (!id) return null;
+          try {
+            const priceData = await fetchCoursePrice(id);
+            const raw = (priceData && (priceData.price || priceData.amount || priceData)) ?? null;
+            return raw != null ? [id, raw] : null;
+          } catch (_) {
+            return null;
+          }
+        })
+      );
+      const map = {};
+      entries.forEach((e) => {
+        if (e && e[0] != null) map[e[0]] = e[1];
+      });
+      setCoursePrices((prev) => ({ ...prev, ...map }));
+    } catch (_) {
+      // silently ignore pricing failures
+    }
+  };
+
+  const formatPrice = (price) => {
+    if (price === undefined || price === null || price === "") return null;
+    const str = String(price).trim().replace(/^\$/, "");
+    return `$${str}`;
+  };
+  
+  const fetchModulesForCourses = async (coursesArray) => {
+    const modulesPromises = coursesArray.map(async (course) => {
+      // ✅ use course.course_id if available
+      const courseId = course.course_id || course.id;
+      if (!courseId) return;
+      
+      setLoadingModules(prev => ({ ...prev, [courseId]: true }));
+      setModulesError(prev => ({ ...prev, [courseId]: null }));
+      
+      try {
+        const modules = await fetchCourseModules(courseId);
+  
+        const publishedModules = Array.isArray(modules)
+          ? modules.filter(module => {
+              const status = (module.module_status || module.status || "").toString().toUpperCase();
+              return status === "PUBLISHED" || module.published === true;
+            })
+          : [];
+        
+        setCourseModules(prev => ({ ...prev, [courseId]: publishedModules }));
+      } catch (error) {
+        console.error(`Failed to fetch modules for course ${courseId}:`, error);
+        setModulesError(prev => ({ ...prev, [courseId]: "Failed to load modules" }));
+      } finally {
+        setLoadingModules(prev => ({ ...prev, [courseId]: false }));
+      }
+    });
+    
+    await Promise.all(modulesPromises);
+  };
+  
 
   if (isLoading) {
     return (
@@ -531,38 +674,230 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               </CardContent>
             </Card>
           ) : (
-            <Card className="shadow-sm border border-gray-100">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  Enrolled Courses
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-white" />
+                  </div>
+                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  Enrolled
+                  </span>
+                  <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-700 border-blue-200">
+                    {activeTab === 'courses' ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` : `${purchasedModules.length} Module${purchasedModules.length !== 1 ? 's' : ''}`}
+                  </Badge>
                 </CardTitle>
+                
+                {/* Tab Navigation */}
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => setActiveTab('courses')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      activeTab === 'courses'
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Courses
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('modules')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                      activeTab === 'modules'
+                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <BookOpenCheck className="h-4 w-4" />
+                      Modules
+                    </div>
+                  </button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-60 overflow-y-auto">
-                  {courses.map((course, index) => {
-                    const items = unlockedModulesByCourse?.[course.id] || [];
-                    return (
-                      <div key={course.id || index} className="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-sm font-medium text-gray-900">
-                          {course.title}
-                        </p>
-                        <div className="mt-1 pl-2">
-                          {loadingModules ? (
-                            <p className="text-xs text-gray-500">Loading modules...</p>
-                          ) : items.length > 0 ? (
-                            <ul className="list-disc list-inside space-y-1">
-                              {items.map((m) => (
-                                <li key={m.id} className="text-xs text-gray-700">{m.title || `Module #${m.id}`}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-xs text-gray-500">No purchased modules for this course</p>
+                <div className="space-y-4 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  {activeTab === 'courses' ? (
+                    // Courses Tab
+                    courses.map((course, index) => {
+                      const courseId = course.course_id || course.id;
+                      const modules = courseModules[courseId] || [];
+                      const isLoadingModules = loadingModules[courseId] || false;
+                      const modulesErrorMsg = modulesError[courseId];
+                      const isExpanded = expandedCourses[courseId];
+                      
+                      return (
+                        <div 
+                          key={courseId || index} 
+                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                        >
+                          {/* Course Header */}
+                          <div className="p-4 border-b border-gray-100">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                                    <BookOpen className="h-4 w-4 text-white" />
+                                  </div>
+                                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
+                        {course.title}
+                                  </h3>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  <div className="flex items-center gap-1">
+                                    <BookOpenCheck className="h-3 w-3" />
+                                    <span>{modules.length} module{modules.length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  {formatPrice(coursePrices[courseId]) && (
+                                    <div className="flex items-center gap-1">
+                                      <span>{formatPrice(coursePrices[courseId])}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Expand/Collapse Button */}
+                              {modules.length > 0 && (
+                                <button
+                                  onClick={() => setExpandedCourses(prev => ({ 
+                                    ...prev, 
+                                    [courseId]: !prev[courseId] 
+                                  }))}
+                                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 group-hover:bg-blue-50"
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Modules Section */}
+                          {modules.length > 0 && (
+                            <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                              <div className="p-4 pt-2 bg-gray-50/50">
+                                {isLoadingModules ? (
+                                  <div className="space-y-2">
+                                    {[1, 2, 3].map((i) => (
+                                      <div key={i} className="flex items-center gap-3 animate-pulse">
+                                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                                        <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : modulesErrorMsg ? (
+                                  <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded-lg">
+                                    <AlertCircle className="h-3 w-3" />
+                                    {modulesErrorMsg}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    {modules.map((module, moduleIndex) => (
+                                      <div 
+                                        key={module.id || moduleIndex} 
+                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 group/module"
+                                      >
+                                        <div className="flex-shrink-0">
+                                          <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full group-hover/module:scale-125 transition-transform duration-200"></div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-xs font-medium text-gray-700 group-hover/module:text-gray-900 truncate">
+                                            {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                          </p>
+                                        </div>
+                    </div>
+                  ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* No Modules State */}
+                          {!isLoadingModules && !modulesErrorMsg && modules.length === 0 && (
+                            <div className="p-4 text-center">
+                              <div className="flex flex-col items-center gap-2 text-gray-500">
+                                <BookOpen className="h-8 w-8 text-gray-300" />
+                                <p className="text-xs">No modules available yet</p>
+                              </div>
+                            </div>
                           )}
                         </div>
+                      );
+                    })
+                  ) : (
+                    // Modules Tab
+                    loadingPurchasedModules ? (
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
+                              <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    );
-                  })}
+                    ) : purchasedModulesError ? (
+                      <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <p className="text-sm text-red-700">{purchasedModulesError}</p>
+                      </div>
+                    ) : purchasedModules.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <BookOpenCheck className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Purchased Modules</h3>
+                        <p className="text-sm text-gray-500">This user hasn't purchased any individual modules yet.</p>
+                      </div>
+                    ) : (
+                      purchasedModules.map((module, index) => (
+                        <div 
+                          key={module.id || index} 
+                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                        >
+                          <div className="p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
+                                <BookOpenCheck className="h-4 w-4 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
+                                  {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                </h3>
+                                <p className="text-xs text-gray-500 mb-2 truncate">
+                                  From: {module.course_title || 'Unknown Course'}
+                                </p>
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  {formatPrice(module.price) && (
+                                    <div className="flex items-center gap-1">
+                                      <span>{formatPrice(module.price)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0">
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  Purchased
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )
+                  )}
                 </div>
               </CardContent>
             </Card>

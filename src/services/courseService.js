@@ -243,6 +243,33 @@ export async function fetchCoursePrice(courseId) {
   return data.data || data;
 }
 
+// Fetch modules purchased by a (target) user for a specific course
+// If targetUserId is omitted, backend should default to the authenticated user
+export async function fetchPurchasedModulesByCourse(course, targetUserId) {
+  const courseIdentifier = course.course_id || course.id;
+  const url = new URL(`${import.meta.env.VITE_API_BASE_URL}/api/course/${courseIdentifier}/modules/getPurchasedModules`);
+  if (targetUserId) {
+    url.searchParams.set('userId', targetUserId);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch purchased modules');
+  }
+
+  const data = await response.json();
+  return data.data || data;
+}
+
+
 // Example usage in a fetch call:
 export async function someApiFunction() {
   const response = await fetch(`${API_BASE}/api/someEndpoint`, {

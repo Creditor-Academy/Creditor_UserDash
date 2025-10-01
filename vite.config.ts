@@ -65,14 +65,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://creditor.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://test-backend-e7d4.onrender.com'),
   },
 }));
 
 
 
 // #(Testing Backend)
-// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com
+// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com  
+
 
 // #(development Backend)
 // VITE_API_BASE_URL=https://creditor-backend-1-iijy.onrender.com
@@ -82,3 +83,4 @@ export default defineConfig(({ mode }) => ({
 
 // #(Main Backend)
 // # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
+// # VITE_API_BASE_URL= https://creditor.onrender.com
