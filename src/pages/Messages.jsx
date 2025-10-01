@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -52,17 +52,17 @@ function extractUrls(text) {
 function LinkCard({ url }) {
   const host = getHostname(url);
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="block mt-2">
-      <div className="rounded-2xl border border-muted/30 shadow-sm bg-white text-foreground overflow-hidden">
-        <div className="flex items-center justify-between px-3 py-2">
-          <div className="flex items-center gap-2">
-            <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`} alt="" className="h-4 w-4" />
-            <span className="font-semibold text-sm truncate max-w-[220px]">{host || url}</span>
+    <a href={url} target="_blank" rel="noreferrer" className="block mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2">
+      <div className="rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl border border-muted/30 shadow-sm bg-white text-foreground overflow-hidden">
+        <div className="flex items-center justify-between px-1 sm:px-1.5 md:px-2 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2">
+          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5 lg:gap-2">
+            <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=32`} alt="" className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
+            <span className="font-semibold text-[9px] sm:text-[10px] md:text-xs lg:text-sm truncate max-w-[120px] sm:max-w-[140px] md:max-w-[180px] lg:max-w-[220px]">{host || url}</span>
           </div>
-          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4 text-muted-foreground" />
         </div>
-        <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground border-t border-muted/20">
-          <Globe className="h-4 w-4" />
+        <div className="flex items-center gap-0.5 sm:gap-1 md:gap-1.5 lg:gap-2 px-1 sm:px-1.5 md:px-2 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2 text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-muted-foreground border-t border-muted/20">
+          <Globe className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 lg:h-4 lg:w-4" />
           <span className="truncate">{host}</span>
         </div>
       </div>
@@ -74,20 +74,20 @@ function renderRichText(text, isOnDark = false) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return (
-    <span>
+    <span className="break-words">
       {parts.map((part, idx) => {
         if (urlRegex.test(part)) {
           const host = getHostname(part);
           return (
-            <a key={idx} href={part} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-1 ${isOnDark ? 'text-white underline' : 'text-primary hover:underline'}`}>
+            <a key={idx} href={part} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-0.5 sm:gap-1 ${isOnDark ? 'text-white underline' : 'text-primary hover:underline'}`}>
               {host && (
-                <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=16`} alt="" className={`h-4 w-4 ${isOnDark ? 'brightness-200' : ''}`} />
+                <img src={`https://www.google.com/s2/favicons?domain=${host}&sz=16`} alt="" className={`h-3 w-3 sm:h-4 sm:w-4 ${isOnDark ? 'brightness-200' : ''}`} />
               )}
-              {part}
+              <span className="break-all">{part}</span>
             </a>
           );
         }
-        return <span key={idx}>{part}</span>;
+        return <span key={idx} className="break-words">{part}</span>;
       })}
     </span>
   );
@@ -133,6 +133,15 @@ function Messages() {
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  // Truncate message to a small, fixed preview with custom ellipsis for chat list
+  const getHalfPreview = (text) => {
+    if (!text) return '';
+    const str = String(text).trim();
+    const PREVIEW_LIMIT = 24; // small portion
+    if (str.length <= PREVIEW_LIMIT) return str;
+    return str.slice(0, PREVIEW_LIMIT).trimEnd() + '.....';
   };
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
@@ -669,40 +678,40 @@ function Messages() {
   })();
 
   return (
-    <div className="container py-4">
+    <div className="container py-2 sm:py-4 px-2 sm:px-4">
       <div className="rounded-lg border bg-card shadow-sm">
-        <div className="h-[calc(100vh-120px)]">
+        <div className="h-[calc(100vh-80px)] sm:h-[calc(100vh-120px)]">
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
           <div className="w-full flex flex-col h-full">
-            <div className="p-3 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Messages</h2>
+            <div className="p-2 sm:p-3 border-b flex justify-between items-center">
+              <h2 className="text-base sm:text-lg font-semibold">Messages</h2>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" title="New Chat">
-                    <Plus className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" title="New Chat">
+                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="w-[95vw] sm:max-w-[425px] max-h-[80vh]">
                   <DialogHeader>
-                    <DialogTitle>Start a new chat</DialogTitle>
+                    <DialogTitle className="text-sm sm:text-base">Start a new chat</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="relative">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                       <Input
                         placeholder="Search users..."
-                        className="pl-8 h-9 text-sm"
+                        className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
                         value={newChatSearch}
                         onChange={(e) => setNewChatSearch(e.target.value)}
                       />
                     </div>
-                    <ScrollArea className="h-64">
+                    <ScrollArea className="h-48 sm:h-64 overflow-x-hidden">
                       <div className="space-y-2">
                         {filteredNewChatUsers.map((user) => (
                           <div 
                             key={user.id}
-                            className={`flex items-center gap-3 p-2 rounded cursor-pointer ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent'}`}
+                            className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded cursor-pointer ${startingUserId === user.id ? 'opacity-60 cursor-not-allowed' : 'hover:bg-accent'}`}
                             onClick={() => {
                               if (startingUserId) return; // block double clicks globally until response
                               setStartingUserId(user.id);
@@ -710,11 +719,11 @@ function Messages() {
                               socket.emit("startConversation", { to: user.id });
                             }}
                           >
-                            <Avatar className="h-8 w-8">
+                            <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                               <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
+                              <AvatarFallback className="text-xs">{user.name?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm">{user.name}</span>
+                            <span className="font-medium text-xs sm:text-sm truncate">{user.name}</span>
                           </div>
                         ))}
                       </div>
@@ -723,23 +732,23 @@ function Messages() {
                 </DialogContent>
               </Dialog>
             </div>
-            <div className="p-3 border-b">
+            <div className="p-2 sm:p-3 border-b">
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search contacts..."
-                  className="pl-8 h-9 text-sm"
+                  className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
             </div>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-x-hidden">
               {!convosLoaded ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Loading conversations...</span>
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                    <span className="text-xs sm:text-sm">Loading conversations...</span>
                   </div>
                 </div>
               ) : filteredFriends.map((friend) => (
@@ -781,17 +790,17 @@ function Messages() {
                     }
                     setSelectedFriend(friend.id);
                   }}
-                  className={`group p-3 mx-1 my-1 rounded-xl flex items-center gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
+                  className={`group p-2 sm:p-3 mx-0.5 sm:mx-1 my-0.5 sm:my-1 rounded-lg sm:rounded-xl flex items-center gap-2 sm:gap-3 cursor-pointer transition-all duration-200 ease-out border border-transparent hover:border-accent/50 hover:bg-accent/40 hover:shadow-md active:scale-[0.99] ${
                     selectedFriend === friend.id ? "bg-gradient-to-r from-accent to-accent/60 border-accent/60 shadow-md" : ""
                   }`}
                 >
-                  <Avatar className="h-10 w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-white shadow-sm hover:shadow-md transition-all duration-200 hover:scale-110">
                     <AvatarImage src={friend.avatar} />
                     <AvatarFallback className="text-xs">{friend.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                       <p className={`font-medium text-[15px] ${(() => {
+                       <p className={`font-medium text-sm sm:text-[15px] ${(() => {
                          const currentUserId = localStorage.getItem('userId');
                          const isUnread = friend.isRead === false && 
                                          friend.lastMessageFrom && 
@@ -800,9 +809,9 @@ function Messages() {
                        })()}`}>
                          {friend.name}
                        </p>
-                       <div className="flex items-start gap-2">
-                         <div className="flex flex-col items-end gap-1 min-w-[42px]">
-                           <span className="text-[11px] text-muted-foreground tabular-nums">
+                       <div className="flex items-start gap-1 sm:gap-2">
+                         <div className="flex flex-col items-end gap-0.5 sm:gap-1 min-w-[36px] sm:min-w-[42px]">
+                           <span className="text-[10px] sm:text-[11px] text-muted-foreground tabular-nums">
                              {formatChatTime(friend.lastMessageAt)}
                            </span>
                            {(() => {
@@ -811,17 +820,17 @@ function Messages() {
                                              friend.lastMessageFrom && 
                                              String(friend.lastMessageFrom) !== String(currentUserId);
                              return isUnread ? (
-                               <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
+                               <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full shadow-[0_0_0_2px_rgba(59,130,246,0.15)] animate-pulse"></div>
                              ) : null;
                            })()}
-                         </div>
+                    </div>
                          <TooltipProvider>
                            <Tooltip>
                              <TooltipTrigger asChild>
                                <Button
                                  variant="ghost"
                                  size="icon"
-                                 className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
+                                 className="h-6 w-6 sm:h-7 sm:w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 text-red-500 hover:text-red-600"
                                  title="Delete conversation"
                                  onClick={(e) => {
                                    e.stopPropagation();
@@ -829,7 +838,7 @@ function Messages() {
                                    setShowDeleteConversationDialog(true);
                                  }}
                                >
-                                 <Trash2 className="h-3.5 w-3.5" />
+                                 <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                </Button>
                              </TooltipTrigger>
                              <TooltipContent>Delete conversation</TooltipContent>
@@ -837,7 +846,7 @@ function Messages() {
                          </TooltipProvider>
                        </div>
                     </div>
-                     <p className={`text-[12px] truncate ${(() => {
+                     <p className={`text-[11px] sm:text-[12px] truncate ${(() => {
                        const currentUserId = localStorage.getItem('userId');
                        const isUnread = friend.isRead === false && 
                                        friend.lastMessageFrom && 
@@ -852,8 +861,8 @@ function Messages() {
                          // If last message is an image, show icon + Image label
                          if (friend.lastMessageType === 'IMAGE') {
                            return (
-                             <span className="flex items-center gap-1.5">
-                               <ImageIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                             <span className="flex items-center gap-1 sm:gap-1.5">
+                               <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
                                <span>Image</span>
                              </span>
                            );
@@ -861,21 +870,21 @@ function Messages() {
 
                          if (isSentByMe && friend.lastMessage) {
                            return (
-                             <span className="flex items-center gap-1.5">
+                             <span className="flex items-center gap-1 sm:gap-1.5">
                                <span>You:</span>
-                               <Check className="h-3 w-3 text-green-500" />
-                               <span>{friend.lastMessage}</span>
+                               <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
+                                <span>{getHalfPreview(friend.lastMessage)}</span>
                              </span>
                            );
                          }
-                         return friend.lastMessage || 'Start a conversation';
+                          return getHalfPreview(friend.lastMessage || 'Start a conversation');
                        })()}
                     </p>
                   </div>
                 </div>
               ))}
               {convosLoaded && filteredFriends.length === 0 && (
-                <div className="p-6 text-sm text-muted-foreground">
+                <div className="p-4 sm:p-6 text-xs sm:text-sm text-muted-foreground text-center">
                   No conversations yet. Click the + icon to start a chat.
                 </div>
               )}
@@ -885,11 +894,11 @@ function Messages() {
 
           {/* Chat Area - takes full width when a chat is open */}
           {selectedFriend && (
-          <div className="w-full h-full flex flex-col">
+          <div className="w-full h-full flex flex-col min-h-0">
                 {/* Chat Header */}
-                <div className="p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
-                  <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" className="mr-1" onClick={() => {
+                <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Button variant="ghost" size="icon" className="mr-0.5 sm:mr-1 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all" onClick={() => {
                       // Leave the room when going back to chat list
                       if (roomId) {
                         try {
@@ -901,20 +910,20 @@ function Messages() {
                       }
                       setSelectedFriend(null);
                     }} title="Back to chats">
-                      ←
+                      <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
                     </Button>
-                    <Avatar>
+                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                       {convosLoaded && (
                         <>
                           <AvatarImage src={friends.find((f) => f.id === selectedFriend)?.avatar} />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-xs sm:text-sm">
                             {friends.find((f) => f.id === selectedFriend)?.name?.[0] || ''}
                       </AvatarFallback>
                         </>
                       )}
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">
+                      <h3 className="font-semibold text-sm sm:text-base">
                         {convosLoaded ? (friends.find((f) => f.id === selectedFriend)?.name || '') : ''}
                       </h3>
                     </div>
@@ -922,20 +931,20 @@ function Messages() {
                 </div>
 
                 {/* Messages Area */}
-                <ScrollArea className="flex-1 px-3 py-3 overflow-y-auto">
-                  <div className="space-y-2 relative">
+                <ScrollArea className="flex-1 px-0 py-1 sm:py-2 md:py-3 overflow-y-auto overflow-x-hidden">
+                  <div className="space-y-0.5 sm:space-y-1 md:space-y-1.5 lg:space-y-2 relative min-h-0 w-full">
                     <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,_#8b5cf6_0,_transparent_40%),_radial-gradient(circle_at_80%_10%,_#a78bfa_0,_transparent_35%),_radial-gradient(circle_at_10%_80%,_#6d28d9_0,_transparent_35%),_radial-gradient(circle_at_90%_85%,_#c4b5fd_0,_transparent_40%)]" />
                     {chatLoading && (
-                      <div className="h-full w-full flex items-center justify-center py-10">
+                      <div className="h-full w-full flex items-center justify-center py-8 sm:py-10">
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Loading conversation...</span>
+                          <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                          <span className="text-xs sm:text-sm">Loading conversation...</span>
                         </div>
                       </div>
                     )}
                     {!chatLoading && (
-                      <div className="w-full flex justify-center py-2">
-                        <div className="px-3 py-1.5 rounded-full text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
+                      <div className="w-full flex justify-center py-1 sm:py-2">
+                        <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-wide bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 text-amber-700 border border-amber-200 shadow-sm">
                           Chats before 7 days will be deleted automatically
                         </div>
                       </div>
@@ -943,15 +952,15 @@ function Messages() {
                     {!chatLoading && messages.map((message, index) => (
                       <div
                         key={message.id}
-                        className={`flex items-end gap-2 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 ${
+                        className={`flex items-end gap-0 sm:gap-0.5 md:gap-1 lg:gap-1.5 xl:gap-2 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 w-full px-1 sm:px-2 min-w-0 ${
                           message.senderId === 0 ? "justify-end" : "justify-start"
                         }`}
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {message.senderId !== 0 && (
-                          <Avatar className="h-8 w-8 mt-1 ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110">
+                          <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 mt-1 ring-1 sm:ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110 flex-shrink-0">
                             <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold">
+                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold text-[10px] sm:text-xs md:text-sm">
                               {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
@@ -971,8 +980,8 @@ function Messages() {
                           </div>
                         ) : */} 
                         {message.type === 'image' ? (
-                          <div className={`max-w-[68%] group`}>
-                            <div className={`relative rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
+                          <div className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group flex-shrink-0 w-fit min-w-0`}>
+                            <div className={`relative rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
                               message.senderId === 0 
                                 ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/25" 
                                 : "border border-gray-200/80 shadow-md shadow-gray-200/60"
@@ -980,36 +989,36 @@ function Messages() {
                                 <img 
                                   src={message.file} 
                                 alt={message.fileName || 'image'} 
-                                 className="max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
+                                 className="max-h-28 sm:max-h-32 md:max-h-40 lg:max-h-48 xl:max-h-56 w-full object-cover cursor-pointer hover:brightness-110 transition-all duration-200"
                                 onClick={() => setImagePreview({ open: true, url: message.file })}
                               />
                               {deletingMessageId === message.id && (
-                                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center gap-2">
-                                  <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                                  <span className="text-sm text-foreground">Deleting...</span>
+                                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center gap-1 sm:gap-2">
+                                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-purple-600" />
+                                  <span className="text-xs sm:text-sm text-foreground">Deleting...</span>
                                 </div>
                               )}
                             </div>
-                             <div className="flex justify-between items-center mt-1 gap-2">
-                              <p className={`text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
+                             <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
+                              <p className={`text-[7px] sm:text-[8px] md:text-[9px] lg:text-[10px] xl:text-[11px] font-medium ${message.senderId === 0 ? "text-purple-600" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
-                              <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-0.5 sm:gap-1">
                                 {/* Message Status Icons for images */}
                                 {message.senderId === 0 && (
                                   <div className="flex items-center">
                                     {message.status === 'sending' && (
-                                      <Clock className="h-3 w-3 text-purple-500 animate-pulse" />
+                                      <Clock className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-purple-500 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                      <Check className="h-3 w-3 text-purple-500" />
+                                      <Check className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-purple-500" />
                                     )}
                                     {message.status === 'delivered' && (
-                                      <CheckCheck className="h-3 w-3 text-purple-500" />
+                                      <CheckCheck className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-purple-500" />
                                     )}
                                     {message.status === 'failed' && (
-                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                                        <span className="text-white text-[8px] font-bold">!</span>
+                                      <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                        <span className="text-white text-[5px] sm:text-[6px] md:text-[7px] lg:text-[8px] font-bold">!</span>
                                       </div>
                                     )}
                                   </div>
@@ -1019,10 +1028,10 @@ function Messages() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-6 w-6 p-0 hover:bg-red-100 text-red-500 hover:scale-110"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-red-100 text-red-500 hover:scale-110"
                                     onClick={() => handleDeleteMessage(message.id)}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
                                   </Button>
                                 )}
                               </div>
@@ -1030,41 +1039,41 @@ function Messages() {
                           </div>
                         ) : (
                           <div
-                            className={`max-w-[68%] group relative transition-all duration-300 hover:scale-[1.02] ${
+                            className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group relative transition-all duration-300 hover:scale-[1.02] flex-shrink-0 w-fit min-w-0 ${
                               message.senderId === 0
                                 ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40" 
                                 : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
-                            } rounded-2xl px-3 py-2.5 shadow-sm backdrop-blur-sm`}
+                            } rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl px-1 sm:px-1.5 md:px-2 lg:px-2.5 xl:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2 xl:py-2.5 shadow-sm backdrop-blur-sm`}
                           >
-                            <p className="leading-snug text-[13px] font-medium">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
                             {message.text && extractUrls(message.text).length > 0 && (
-                              <div className="mt-3">
+                              <div className="mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2 xl:mt-3">
                                 {extractUrls(message.text).map((u, i) => (
                                   <LinkCard key={`${message.id}-link-${i}`} url={u} />
                                 ))}
                               </div>
                             )}
                             {/* Deleting overlay only for images. None for text messages. */}
-                            <div className="flex justify-between items-center mt-1 gap-2">
-                              <p className={`text-[10px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
+                            <div className="flex justify-between items-center mt-0.5 sm:mt-1 gap-0.5 sm:gap-1 md:gap-2">
+                              <p className={`text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] xl:text-[10px] font-medium ${message.senderId === 0 ? "text-white/90" : "text-gray-500"}`}>
                               {message.timestamp}
                             </p>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5 sm:gap-1">
                                 {/* Message Status Icons */}
                                 {message.senderId === 0 && (
                                   <div className="flex items-center">
                                     {message.status === 'sending' && (
-                                      <Clock className="h-3 w-3 text-white/70 animate-pulse" />
+                                      <Clock className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                      <Check className="h-3 w-3 text-white/70" />
+                                      <Check className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70" />
                                     )}
                                     {message.status === 'delivered' && (
-                                      <CheckCheck className="h-3 w-3 text-white/70" />
+                                      <CheckCheck className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 text-white/70" />
                                     )}
                                     {message.status === 'failed' && (
-                                      <div className="h-3 w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
-                                        <span className="text-white text-[8px] font-bold">!</span>
+                                      <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3 rounded-full bg-red-500 flex items-center justify-center animate-pulse">
+                                        <span className="text-white text-[5px] sm:text-[6px] md:text-[7px] lg:text-[8px] font-bold">!</span>
                                       </div>
                                     )}
                                   </div>
@@ -1074,10 +1083,10 @@ function Messages() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-6 w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
                                     onClick={() => handleDeleteMessage(message.id)}
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
                                   </Button>
                                 )}
                               </div>
@@ -1086,9 +1095,9 @@ function Messages() {
                         )}
                         
                         {message.senderId === 0 && (
-                          <Avatar className="h-8 w-8 mt-1 ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110">
+                            <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 mt-1 ring-1 sm:ring-2 ring-purple-200 shadow-md hover:ring-purple-300 transition-all duration-200 hover:scale-110 flex-shrink-0 overflow-visible">
                             <AvatarImage src={message.senderImage || undefined} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold">Y</AvatarFallback>
+                            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold text-[10px] sm:text-xs md:text-sm">Y</AvatarFallback>
                           </Avatar>
                         )}
                       </div>
@@ -1098,7 +1107,7 @@ function Messages() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+                <div className="p-3 sm:p-4 border-t bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
                   <input 
                     type="file" 
                     ref={fileInputRef} 
@@ -1107,13 +1116,13 @@ function Messages() {
                     className="hidden"
                   />
                   {pendingImage && (
-                    <div className="mb-3 flex items-center gap-3 p-2 rounded-md border bg-muted/40 max-w-xs">
-                      <img src={pendingImage.previewUrl} alt={pendingImage.name} className="h-10 w-10 object-cover rounded" />
+                    <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-md border bg-muted/40 max-w-xs">
+                      <img src={pendingImage.previewUrl} alt={pendingImage.name} className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{pendingImage.name}</p>
-                        <p className="text-[11px] text-muted-foreground">Will send when you press Send</p>
+                        <p className="text-[10px] sm:text-[11px] text-muted-foreground">Will send when you press Send</p>
                       </div>
-                      <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => setPendingImage(null)}>Remove</Button>
+                      <Button size="sm" variant="ghost" className="h-6 sm:h-7 px-1.5 sm:px-2 text-xs" onClick={() => setPendingImage(null)}>Remove</Button>
                     </div>
                   )}
                   
@@ -1125,37 +1134,37 @@ function Messages() {
                     />
                   ) : ( */}
                   {true && (
-                    <div className="relative">
+                    <div className="relative w-full">
                       {showEmojiPicker && (
-                        <div className="absolute bottom-16 left-0 z-10">
+                        <div className="absolute bottom-14 sm:bottom-16 left-0 z-10">
                           <EmojiPicker 
                             onEmojiClick={handleEmojiClick}
-                            width={300}
-                            height={350}
+                            width={280}
+                            height={320}
                           />
                         </div>
                       )}
                       
-                      <div className="flex gap-3 items-center">
+                      <div className="flex gap-2 sm:gap-3 items-center">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground"
                           onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
-                          <Smile className="h-5 w-5" />
+                          <Smile className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                         
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-10 w-10 text-muted-foreground hover:text-foreground"
+                          className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground hover:text-foreground"
                           onClick={handleAttachmentClick}
                         >
-                          <Paperclip className="h-5 w-5" />
+                          <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                         
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative min-w-0">
                           <Input
                             placeholder="Type a message..."
                             value={newMessage}
@@ -1165,24 +1174,24 @@ function Messages() {
                                 handleSendMessage();
                               }
                             }}
-                            className="rounded-full pl-4 pr-16 h-12 text-base bg-gray-100 border-gray-200 focus:bg-white"
+                            className="rounded-full pl-3 sm:pl-4 pr-12 sm:pr-16 h-10 sm:h-12 text-sm sm:text-base bg-gray-100 border-gray-200 focus:bg-white break-words break-all whitespace-pre-wrap"
                           />
                         </div>
                         
-                        <div className="flex gap-3">
+                        <div className="flex gap-2 sm:gap-3">
                           {/* Voice recording button - commented out */}
                           {/* <Button 
                             onClick={() => setShowVoiceRecorder(true)} 
                             variant="ghost"
                             size="icon"
-                            className="h-12 w-12 rounded-full"
+                            className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full touch-manipulation"
                           >
-                            <Mic className="h-5 w-5" />
+                            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                           </Button> */}
                           
                           <Button 
                             onClick={handleSendMessage} 
-                            className={`rounded-full h-12 w-12 transition-all ${
+                            className={`rounded-full h-10 w-10 sm:h-12 sm:w-12 transition-all ${
                               newMessage.trim() || pendingImage 
                                 ? "bg-purple-500 hover:bg-purple-600 text-white" 
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
@@ -1190,7 +1199,7 @@ function Messages() {
                             size="icon"
                             disabled={!newMessage.trim() && !pendingImage}
                           >
-                            <Send className="h-5 w-5" />
+                            <Send className="h-4 w-4 sm:h-5 sm:w-5" />
                           </Button>
                         </div>
                       </div>
@@ -1204,12 +1213,12 @@ function Messages() {
 
       {/* Image Preview Modal */}
       <Dialog open={imagePreview.open} onOpenChange={(o) => setImagePreview(prev => ({ ...prev, open: o }))}>
-        <DialogContent className="p-0 bg-white w-auto max-w-none rounded-xl shadow-2xl">
+        <DialogContent className="p-0 bg-white w-auto max-w-none rounded-lg sm:rounded-xl shadow-2xl">
           {imagePreview.url && (
             <img 
               src={imagePreview.url} 
               alt="preview" 
-              className="block h-auto w-auto max-w-[95vw] max-h-[90vh] object-contain" 
+              className="block h-auto w-auto max-w-[98vw] sm:max-w-[95vw] max-h-[85vh] sm:max-h-[90vh] object-contain" 
             />
           )}
         </DialogContent>
@@ -1217,20 +1226,20 @@ function Messages() {
 
       {/* Delete Message Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[95vw] sm:w-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Message</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-sm sm:text-base">Delete Message</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               Are you sure you want to delete this message? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteMessage}>
+            <AlertDialogCancel onClick={cancelDeleteMessage} className="text-xs sm:text-sm">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDeleteMessage}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm"
             >
               Delete
             </AlertDialogAction>
@@ -1240,17 +1249,17 @@ function Messages() {
 
       {/* Delete Conversation Confirmation Dialog */}
       <AlertDialog open={showDeleteConversationDialog} onOpenChange={setShowDeleteConversationDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="w-[95vw] sm:w-auto">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-sm sm:text-base">Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               This will permanently delete this entire conversation, including images. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowDeleteConversationDialog(false); setDeleteConversationId(null); }}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setShowDeleteConversationDialog(false); setDeleteConversationId(null); }} className="text-xs sm:text-sm">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs sm:text-sm"
               onClick={async () => {
                 if (!deleteConversationId) return;
                 try {
