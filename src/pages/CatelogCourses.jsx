@@ -408,7 +408,12 @@ const CatelogCourses = () => {
         courses.map(async (course) => {
           try {
             const modules = await fetchCourseModules(course.id);
-            counts[course.id] = Array.isArray(modules) ? modules.length : 0;
+            // Only count published modules; hide drafts from counts
+            const publishedCount = (Array.isArray(modules) ? modules : []).filter((m) => {
+              const status = (m.module_status || m.status || "").toString().toUpperCase();
+              return status === "PUBLISHED" || m.published === true;
+            }).length;
+            counts[course.id] = publishedCount;
           } catch {
             counts[course.id] = 0;
           }
