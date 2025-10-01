@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { FaCoins } from "react-icons/fa";
+import { Trash2 } from "lucide-react";
 import { useCredits } from "@/contexts/CreditsContext";
 import { fetchAllConsultations, updateConsultationStatus, deleteConsultation } from '@/services/consultationService';
 import { fetchAllWebsiteServices, updateWebsiteServiceStatus, deleteWebsiteService } from '@/services/websiteService';
@@ -59,6 +60,8 @@ const AdminPayments = () => {
   const [websitesData, setWebsitesData] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [servicesError, setServicesError] = useState("");
+  const [deleting, setDeleting] = useState({ type: null, id: null }); // ensure single-item delete
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null, id: null, message: "" });
 
   // Mix dummy data with real transaction data
   const orders = useMemo(() => {
@@ -444,6 +447,58 @@ const AdminPayments = () => {
     }
   };
 
+  // Delete a single consultation (admin)
+  const handleDeleteConsultation = async (consultationId) => {
+    if (!consultationId || deleting.id) return;
+    try {
+      setDeleting({ type: 'consultation', id: consultationId });
+      await deleteConsultation(consultationId);
+      // Update local state to remove the deleted item
+      setConsultationsData((prev) => prev.filter((c) => c.id !== consultationId));
+    } catch (error) {
+      console.error('[AdminPayments] Failed to delete consultation:', error);
+      alert(`Failed to delete consultation: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting({ type: null, id: null });
+    }
+  };
+
+  // Delete a single website service (admin)
+  const handleDeleteWebsite = async (serviceId) => {
+    if (!serviceId || deleting.id) return;
+    try {
+      setDeleting({ type: 'website', id: serviceId });
+      await deleteWebsiteService(serviceId);
+      // Update local state to remove the deleted item
+      setWebsitesData((prev) => prev.filter((w) => w.id !== serviceId));
+    } catch (error) {
+      console.error('[AdminPayments] Failed to delete website service:', error);
+      alert(`Failed to delete website service: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting({ type: null, id: null });
+    }
+  };
+
+  // Open confirmation modal
+  const requestDelete = (type, id) => {
+    if (!id || deleting.id) return;
+    const message = type === 'consultation'
+      ? 'Delete this consultation record? This cannot be undone.'
+      : 'Delete this website service record? This cannot be undone.';
+    setConfirmDialog({ open: true, type, id, message });
+  };
+
+  // Confirm and perform deletion
+  const confirmDeletion = async () => {
+    const { type, id } = confirmDialog;
+    setConfirmDialog({ open: false, type: null, id: null, message: "" });
+    if (type === 'consultation') {
+      await handleDeleteConsultation(id);
+    } else if (type === 'website') {
+      await handleDeleteWebsite(id);
+    }
+  };
+
   return (
     <>
       <div className="mb-6">
@@ -580,7 +635,7 @@ const AdminPayments = () => {
               
               <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700">
                     <tr>
                       <th className="text-left px-6 py-4 font-semibold">ID</th>
                       <th className="text-left px-6 py-4 font-semibold">User</th>
@@ -589,12 +644,13 @@ const AdminPayments = () => {
                       <th className="text-left px-6 py-4 font-semibold">Duration</th>
                       <th className="text-left px-6 py-4 font-semibold">Payment</th>
                       <th className="text-left px-6 py-4 font-semibold">Status</th>
+                  <th className="text-left px-6 py-4 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {servicesLoading ? (
                       <tr>
-                        <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan="8" className="px-3 py-8 text-center text-gray-500">
                           <div className="flex items-center justify-center">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
                             Loading consultations...
@@ -603,7 +659,7 @@ const AdminPayments = () => {
                       </tr>
                     ) : servicesError ? (
                       <tr>
-                        <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan="8" className="px-3 py-8 text-center text-gray-500">
                           <div className="text-red-600 mb-2">{servicesError}</div>
                           <button 
                             onClick={fetchServicesData}
@@ -615,7 +671,7 @@ const AdminPayments = () => {
                       </tr>
                     ) : filteredConsultations.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan="8" className="px-3 py-8 text-center text-gray-500">
                           {services.consultations.length === 0 
                             ? "No consultations available" 
                             : "No consultations match your search criteria"
@@ -648,7 +704,7 @@ const AdminPayments = () => {
                               <span className="text-xs text-gray-400">({c.payment.method})</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                      <td className="px-6 py-4">
                             <select
                               value={status}
                               onChange={(e)=>{ const v=e.target.value; handleConsultationStatusUpdate(c.id, v); }}
@@ -659,6 +715,17 @@ const AdminPayments = () => {
                               <option value="completed">completed</option>
                             </select>
                           </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => requestDelete('consultation', c.id)}
+                          disabled={deleting.id === c.id}
+                          aria-label="Delete consultation"
+                          title="Delete"
+                          className={`p-2 rounded-full border transition-colors ${deleting.id === c.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
                         </tr>
                       );
                       })
@@ -779,12 +846,13 @@ const AdminPayments = () => {
                   <th className="text-left px-6 py-4 font-semibold">Purchased</th>
                   <th className="text-left px-6 py-4 font-semibold">Payment</th>
                   <th className="text-left px-6 py-4 font-semibold">Status</th>
+                  <th className="text-left px-6 py-4 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {servicesLoading ? (
                   <tr>
-                    <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
                         Loading websites...
@@ -793,7 +861,7 @@ const AdminPayments = () => {
                   </tr>
                 ) : servicesError ? (
                   <tr>
-                    <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
                       <div className="text-red-600 mb-2">{servicesError}</div>
                       <button 
                         onClick={fetchServicesData}
@@ -805,7 +873,7 @@ const AdminPayments = () => {
                   </tr>
                 ) : filteredWebsites.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
                       {services.websites.length === 0 
                         ? "No websites available" 
                         : "No websites match your search criteria"
@@ -854,6 +922,17 @@ const AdminPayments = () => {
                           <option value="in_progress">in progress</option>
                           <option value="completed">completed</option>
                         </select>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => requestDelete('website', w.id)}
+                          disabled={deleting.id === w.id}
+                          aria-label="Delete website service"
+                          title="Delete"
+                          className={`p-2 rounded-full border transition-colors ${deleting.id === w.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -935,6 +1014,33 @@ const AdminPayments = () => {
             <div className="flex gap-2">
               <button disabled={ordersPage===1} onClick={() => setOrdersPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${ordersPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
               <button disabled={ordersPage >= Math.ceil(orders.length/itemsPerPage)} onClick={() => setOrdersPage(p => Math.min(p+1, Math.ceil(orders.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${ordersPage >= Math.ceil(orders.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmDialog({ open: false, type: null, id: null, message: "" })} />
+          <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-sm mx-4 p-5">
+            <div className="mb-3">
+              <h4 className="text-lg font-semibold text-gray-900">Confirm deletion</h4>
+              <p className="text-sm text-gray-600 mt-1">{confirmDialog.message}</p>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setConfirmDialog({ open: false, type: null, id: null, message: "" })}
+                className="px-4 py-2 rounded-lg border text-gray-700 bg-white hover:bg-gray-50 border-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeletion}
+                className="px-4 py-2 rounded-lg border bg-red-600 text-white hover:bg-red-700 border-red-600"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
