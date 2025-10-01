@@ -233,17 +233,33 @@ function Messages() {
     const handleLocalPrivateGroupMemberLeft = (event) => {
       const { groupId, userId, userName } = event.detail;
       console.log('Local private group member left:', { groupId, userId, userName });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            memberCount: Math.max(0, (f.memberCount || 1) - 1),
-            lastMessage: `${userName || 'A member'} left the group`,
-            lastMessageAt: new Date().toISOString(),
-          };
+      const currentUserId = localStorage.getItem('userId');
+      
+      // If the current user is leaving the group, remove it from the list
+      if (String(userId) === String(currentUserId)) {
+        setFriends(prev => prev.filter(f => f.conversationId !== groupId));
+        // If the group chat is currently open, close it
+        if (String(conversationId) === String(groupId)) {
+          setSelectedFriend(null);
+          setRoomId(null);
+          setConversationId(null);
+          setMessages([]);
         }
-        return f;
-      }));
+        setUserHasGroup(false);
+      } else {
+        // If another member left, just update the member count
+        setFriends(prev => prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              memberCount: Math.max(0, (f.memberCount || 1) - 1),
+              lastMessage: `${userName || 'A member'} left the group`,
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        }));
+      }
     };
     
     // Add event listeners for local custom events
@@ -442,33 +458,65 @@ function Messages() {
     // Handle private group member left event
     const onPrivateGroupMemberLeft = ({ groupId, userId, userName }) => {
       console.log('Private group member left:', { groupId, userId, userName });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            memberCount: Math.max(0, (f.memberCount || 1) - 1),
-            lastMessage: `${userName || 'A member'} left the group`,
-            lastMessageAt: new Date().toISOString(),
-          };
+      const currentUserId = localStorage.getItem('userId');
+      
+      // If the current user is leaving the group, remove it from the list
+      if (String(userId) === String(currentUserId)) {
+        setFriends(prev => prev.filter(f => f.conversationId !== groupId));
+        // If the group chat is currently open, close it
+        if (String(conversationId) === String(groupId)) {
+          setSelectedFriend(null);
+          setRoomId(null);
+          setConversationId(null);
+          setMessages([]);
         }
-        return f;
-      }));
+        setUserHasGroup(false);
+      } else {
+        // If another member left, just update the member count
+        setFriends(prev => prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              memberCount: Math.max(0, (f.memberCount || 1) - 1),
+              lastMessage: `${userName || 'A member'} left the group`,
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        }));
+      }
     };
 
     // Handle private group member removed event
     const onPrivateGroupMemberRemoved = ({ groupId, userId, userName, removedBy }) => {
       console.log('Private group member removed:', { groupId, userId, userName, removedBy });
-      setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
-          return {
-            ...f,
-            memberCount: Math.max(0, (f.memberCount || 1) - 1),
-            lastMessage: `${userName || 'A member'} was removed from the group`,
-            lastMessageAt: new Date().toISOString(),
-          };
+      const currentUserId = localStorage.getItem('userId');
+      
+      // If the current user is removed from the group, remove it from the list
+      if (String(userId) === String(currentUserId)) {
+        setFriends(prev => prev.filter(f => f.conversationId !== groupId));
+        // If the group chat is currently open, close it
+        if (String(conversationId) === String(groupId)) {
+          setSelectedFriend(null);
+          setRoomId(null);
+          setConversationId(null);
+          setMessages([]);
         }
-        return f;
-      }));
+        setUserHasGroup(false);
+      } else {
+        // If another member was removed, just update the member count
+        setFriends(prev => prev.map(f => {
+          if (f.conversationId === groupId && f.isPrivateGroup) {
+            return {
+              ...f,
+              memberCount: Math.max(0, (f.memberCount || 1) - 1),
+              lastMessage: `${userName || 'A member'} was removed from the group`,
+              lastMessageAt: new Date().toISOString(),
+            };
+          }
+          return f;
+        }));
+      }
     };
 
     // Handle private group member promoted event
