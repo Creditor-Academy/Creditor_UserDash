@@ -200,10 +200,10 @@ export async function getGroupMembers(groupId) {
     throw error;
   }
 }
-// This is the api for the leaving group by members , this is not original this is put by the cursor
+// This is the api for the leaving group by members
 export async function leavePrivateGroup(groupId) {
   try {
-    const response = await api.delete(`/api/private-groups/${groupId}/leave`, {
+    const response = await api.post(`/api/private-groups/${groupId}/leave`, {}, {
       withCredentials: true,
     });
     return response?.data;

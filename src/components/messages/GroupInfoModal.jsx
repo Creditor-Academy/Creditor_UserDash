@@ -31,6 +31,7 @@ import {
   deleteMyPrivateGroup,
   leavePrivateGroup
 } from "@/services/privateGroupService";
+import getSocket from "@/services/socketClient";
 import { toast } from "sonner";
 
 export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, isAdmin = false }) {
@@ -146,16 +147,26 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     if (!groupId) return;
     try {
       setSaving(true);
+      const socket = getSocket();
+      let updates = {};
+      
       // Decide payload type
       if (avatarFile) {
         const formData = new FormData();
         const nextName = tempName?.trim();
         const nextDescription = (tempDescription ?? '').trim();
-        if (nextName && nextName !== (group?.name || '')) formData.append('name', nextName);
-        if (nextDescription !== (group?.description || '')) formData.append('description', nextDescription);
+        if (nextName && nextName !== (group?.name || '')) {
+          formData.append('name', nextName);
+          updates.name = nextName;
+        }
+        if (nextDescription !== (group?.description || '')) {
+          formData.append('description', nextDescription);
+          updates.description = nextDescription;
+        }
         formData.append('thumbnail', avatarFile);
         const response = await updatePrivateGroup(groupId, formData);
         const updated = response?.data || {};
+        updates.thumbnail = updated.thumbnail;
         setGroup(prev => ({
           ...prev,
           name: nextName || prev?.name,
@@ -163,26 +174,44 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
           thumbnail: updated.thumbnail || prev?.thumbnail
         }));
       } else {
-        const payload = {};
         const nextName = tempName?.trim();
         const nextDescription = (tempDescription ?? '').trim();
         const nextThumbUrl = tempAvatarUrl?.trim();
-        if (nextName && nextName !== (group?.name || '')) payload.name = nextName;
-        if (nextDescription !== (group?.description || '')) payload.description = nextDescription;
-        if (nextThumbUrl) payload.thumbnail = nextThumbUrl;
-        if (Object.keys(payload).length === 0) {
+        if (nextName && nextName !== (group?.name || '')) {
+          updates.name = nextName;
+        }
+        if (nextDescription !== (group?.description || '')) {
+          updates.description = nextDescription;
+        }
+        if (nextThumbUrl) {
+          updates.thumbnail = nextThumbUrl;
+        }
+        if (Object.keys(updates).length === 0) {
           toast.message('No changes to save');
           return;
         }
-        const response = await updatePrivateGroup(groupId, payload);
+        const response = await updatePrivateGroup(groupId, updates);
         const updated = response?.data || {};
         setGroup(prev => ({
           ...prev,
-          name: payload.name ?? prev?.name,
-          description: payload.description ?? prev?.description,
-          thumbnail: updated.thumbnail || payload.thumbnail || prev?.thumbnail
+          name: updates.name ?? prev?.name,
+          description: updates.description ?? prev?.description,
+          thumbnail: updated.thumbnail || updates.thumbnail || prev?.thumbnail
         }));
       }
+      
+      // Emit WebSocket event for real-time updates
+      if (Object.keys(updates).length > 0) {
+        socket.emit('privateGroupUpdated', { groupId, updates });
+        
+        // Also trigger the local event handler to update the UI immediately
+        // This ensures the current user sees the changes without waiting for server broadcast
+        const event = new CustomEvent('privateGroupUpdated', {
+          detail: { groupId, updates }
+        });
+        window.dispatchEvent(event);
+      }
+      
       toast.success("Group updated successfully");
       setEditingAll(false);
       setEditingName(false);
@@ -213,7 +242,17 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setRemoving(memberId);
+      const socket = getSocket();
       await removePrivateGroupMember(groupId, memberId);
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupMemberRemoved', { 
+        groupId, 
+        userId: memberId, 
+        userName: memberName,
+        removedBy: localStorage.getItem('userId')
+      });
+      
       setMembers(prev => prev.filter(m => (m.user?.id || m.user_id || m.id) !== memberId));
       toast.success(`${memberName} removed from group`);
     } catch (error) {
@@ -227,7 +266,20 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handlePromoteToAdmin = async (userId) => {
     try {
       setPromoting(userId);
+      const socket = getSocket();
       await promotePrivateGroupAdmin(groupId, userId);
+      
+      // Get user name for the promoted member
+      const promotedMember = members.find(m => (m.user?.id || m.user_id || m.id) === userId);
+      const userName = promotedMember?.user?.name || promotedMember?.name || 'A member';
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupMemberPromoted', { 
+        groupId, 
+        userId, 
+        userName 
+      });
+      
       setMembers(prev => prev.map(m => 
         (m.user?.id || m.user_id || m.id) === userId 
           ? { ...m, role: 'ADMIN', is_admin: true }
@@ -247,7 +299,15 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setAdding(true);
-      await addPrivateGroupMembers(groupId, Array.from(selectedUsers));
+      const socket = getSocket();
+      const userIds = Array.from(selectedUsers);
+      await addPrivateGroupMembers(groupId, userIds);
+      
+      // Get user details for the added members
+      const addedUsers = allUsers.filter(user => userIds.includes(user.id));
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupMembersAdded', { groupId, users: addedUsers });
       
       // Refresh members list using the new API
       try {
@@ -307,7 +367,18 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setDeletingGroup(true);
+      const socket = getSocket();
       await deleteMyPrivateGroup();
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupDeleted', { groupId });
+      
+      // Also trigger the local event handler to update the UI immediately
+      const event = new CustomEvent('privateGroupDeleted', {
+        detail: { groupId }
+      });
+      window.dispatchEvent(event);
+      
       toast.success("Group deleted successfully");
       onClose();
       // You might want to add a callback to refresh the parent component
@@ -324,7 +395,29 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setLeavingGroup(true);
+      const socket = getSocket();
+      const currentUserId = localStorage.getItem('userId');
+      const currentUserName = localStorage.getItem('userName') || 'You';
+      
       await leavePrivateGroup(groupId);
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupMemberLeft', { 
+        groupId, 
+        userId: currentUserId, 
+        userName: currentUserName 
+      });
+      
+      // Also trigger the local event handler to update the UI immediately
+      const event = new CustomEvent('privateGroupMemberLeft', {
+        detail: { 
+          groupId, 
+          userId: currentUserId, 
+          userName: currentUserName 
+        }
+      });
+      window.dispatchEvent(event);
+      
       toast.success("Left group successfully");
       onClose();
       // You might want to add a callback to refresh the parent component
@@ -341,8 +434,23 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     
     try {
       setSaving(true);
-      await updatePrivateGroup(groupId, { name: tempName.trim() });
-      setGroup(prev => ({ ...prev, name: tempName.trim() }));
+      const socket = getSocket();
+      const newName = tempName.trim();
+      await updatePrivateGroup(groupId, { name: newName });
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupUpdated', { 
+        groupId, 
+        updates: { name: newName } 
+      });
+      
+      // Also trigger the local event handler to update the UI immediately
+      const event = new CustomEvent('privateGroupUpdated', {
+        detail: { groupId, updates: { name: newName } }
+      });
+      window.dispatchEvent(event);
+      
+      setGroup(prev => ({ ...prev, name: newName }));
       setEditingName(false);
       toast.success("Group name updated successfully");
     } catch (error) {
@@ -356,8 +464,23 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const handleSaveDescription = async () => {
     try {
       setSaving(true);
-      await updatePrivateGroup(groupId, { description: tempDescription.trim() });
-      setGroup(prev => ({ ...prev, description: tempDescription.trim() }));
+      const socket = getSocket();
+      const newDescription = tempDescription.trim();
+      await updatePrivateGroup(groupId, { description: newDescription });
+      
+      // Emit WebSocket event for real-time updates
+      socket.emit('privateGroupUpdated', { 
+        groupId, 
+        updates: { description: newDescription } 
+      });
+      
+      // Also trigger the local event handler to update the UI immediately
+      const event = new CustomEvent('privateGroupUpdated', {
+        detail: { groupId, updates: { description: newDescription } }
+      });
+      window.dispatchEvent(event);
+      
+      setGroup(prev => ({ ...prev, description: newDescription }));
       setEditingDescription(false);
       toast.success("Group description updated successfully");
     } catch (error) {

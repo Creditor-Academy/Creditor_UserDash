@@ -197,6 +197,70 @@ function Messages() {
   // Ensure socket connects when Messages section is opened
   useEffect(() => {
     const socket = getSocket();
+    
+    // Handle local custom events for immediate UI updates
+    const handleLocalPrivateGroupUpdated = (event) => {
+      const { groupId, updates } = event.detail;
+      console.log('Local private group updated:', { groupId, updates });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            name: updates.name || f.name,
+            description: updates.description !== undefined ? updates.description : f.description,
+            avatar: updates.thumbnail || updates.avatar || f.avatar,
+            lastMessage: 'Group updated',
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+    
+    const handleLocalPrivateGroupDeleted = (event) => {
+      const { groupId } = event.detail;
+      console.log('Local private group deleted:', groupId);
+      setFriends(prev => prev.filter(f => f.conversationId !== groupId));
+      if (String(conversationId) === String(groupId)) {
+        setSelectedFriend(null);
+        setRoomId(null);
+        setConversationId(null);
+        setMessages([]);
+      }
+      setUserHasGroup(false);
+    };
+    
+    const handleLocalPrivateGroupMemberLeft = (event) => {
+      const { groupId, userId, userName } = event.detail;
+      console.log('Local private group member left:', { groupId, userId, userName });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            memberCount: Math.max(0, (f.memberCount || 1) - 1),
+            lastMessage: `${userName || 'A member'} left the group`,
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+    
+    // Add event listeners for local custom events
+    window.addEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
+    window.addEventListener('privateGroupDeleted', handleLocalPrivateGroupDeleted);
+    window.addEventListener('privateGroupMemberLeft', handleLocalPrivateGroupMemberLeft);
+    
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
+      window.removeEventListener('privateGroupDeleted', handleLocalPrivateGroupDeleted);
+      window.removeEventListener('privateGroupMemberLeft', handleLocalPrivateGroupMemberLeft);
+    };
+  }, []);
+  
+  useEffect(() => {
+    const socket = getSocket();
     // Optional: log to verify connection lifecycle specific to Messages
     const onConnect = () => {
       console.log('[Messages] socket connected');
@@ -342,6 +406,102 @@ function Messages() {
       }));
     };
 
+    // Handle private group updated event (name, description, avatar changes)
+    const onPrivateGroupUpdated = ({ groupId, updates }) => {
+      console.log('Private group updated:', { groupId, updates });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            name: updates.name || f.name,
+            description: updates.description !== undefined ? updates.description : f.description,
+            avatar: updates.thumbnail || updates.avatar || f.avatar,
+            lastMessage: 'Group updated',
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+
+    // Handle private group deleted event
+    const onPrivateGroupDeleted = ({ groupId }) => {
+      console.log('Private group deleted:', groupId);
+      setFriends(prev => prev.filter(f => f.conversationId !== groupId));
+      // If the deleted group is currently open, close it
+      if (String(conversationId) === String(groupId)) {
+        setSelectedFriend(null);
+        setRoomId(null);
+        setConversationId(null);
+        setMessages([]);
+      }
+      // Update user group status
+      setUserHasGroup(false);
+    };
+
+    // Handle private group member left event
+    const onPrivateGroupMemberLeft = ({ groupId, userId, userName }) => {
+      console.log('Private group member left:', { groupId, userId, userName });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            memberCount: Math.max(0, (f.memberCount || 1) - 1),
+            lastMessage: `${userName || 'A member'} left the group`,
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+
+    // Handle private group member removed event
+    const onPrivateGroupMemberRemoved = ({ groupId, userId, userName, removedBy }) => {
+      console.log('Private group member removed:', { groupId, userId, userName, removedBy });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            memberCount: Math.max(0, (f.memberCount || 1) - 1),
+            lastMessage: `${userName || 'A member'} was removed from the group`,
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+
+    // Handle private group member promoted event
+    const onPrivateGroupMemberPromoted = ({ groupId, userId, userName }) => {
+      console.log('Private group member promoted:', { groupId, userId, userName });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            lastMessage: `${userName || 'A member'} was promoted to admin`,
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+
+    // Handle private group joined event (when someone joins via invitation)
+    const onPrivateGroupJoined = ({ groupId, userId, userName }) => {
+      console.log('Private group joined:', { groupId, userId, userName });
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          return {
+            ...f,
+            memberCount: (f.memberCount || 1) + 1,
+            lastMessage: `${userName || 'A new member'} joined the group`,
+            lastMessageAt: new Date().toISOString(),
+          };
+        }
+        return f;
+      }));
+    };
+
     const onReceiveMessage = ({ from, message, image, messageid, type, conversationid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
@@ -458,6 +618,12 @@ function Messages() {
     socket.on('privateGroupRoomJoined', onPrivateGroupRoomJoined);
     socket.on('privateGroupCreated', onPrivateGroupCreated);
     socket.on('privateGroupMembersAdded', onPrivateGroupMembersAdded);
+    socket.on('privateGroupUpdated', onPrivateGroupUpdated);
+    socket.on('privateGroupDeleted', onPrivateGroupDeleted);
+    socket.on('privateGroupMemberLeft', onPrivateGroupMemberLeft);
+    socket.on('privateGroupMemberRemoved', onPrivateGroupMemberRemoved);
+    socket.on('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
+    socket.on('privateGroupJoined', onPrivateGroupJoined);
     socket.on('receiveMessage', onReceiveMessage);
     const onMessagesRead = ({ conversationId: readConvId }) => {
       if (!readConvId) return;
@@ -509,6 +675,12 @@ function Messages() {
       socket.off('privateGroupRoomJoined', onPrivateGroupRoomJoined);
       socket.off('privateGroupCreated', onPrivateGroupCreated);
       socket.off('privateGroupMembersAdded', onPrivateGroupMembersAdded);
+      socket.off('privateGroupUpdated', onPrivateGroupUpdated);
+      socket.off('privateGroupDeleted', onPrivateGroupDeleted);
+      socket.off('privateGroupMemberLeft', onPrivateGroupMemberLeft);
+      socket.off('privateGroupMemberRemoved', onPrivateGroupMemberRemoved);
+      socket.off('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
+      socket.off('privateGroupJoined', onPrivateGroupJoined);
       socket.off('receiveMessage', onReceiveMessage);
       socket.off('messagesRead', onMessagesRead);
       socket.off('deleteMessage', onDeleteMessage);

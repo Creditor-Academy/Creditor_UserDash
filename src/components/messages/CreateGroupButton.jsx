@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { fetchAllUsers, getUserRole } from "@/services/userService";
 import { getAllConversations } from "@/services/messageService";
 import { createPrivateGroup, addPrivateGroupMembers, getMyPrivateGroup } from "@/services/privateGroupService";
+import getSocket from "@/services/socketClient";
 
 /**
  * CreateGroupButton
@@ -170,6 +171,15 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         } catch (memberError) {
           console.warn("Failed to add some members:", memberError);
         }
+      }
+      
+      // Emit WebSocket events for real-time updates
+      const socket = getSocket();
+      socket.emit('privateGroupCreated', { group: res.data });
+      
+      if (selectedMemberIds.length > 0) {
+        const addedUsers = allUsers.filter(user => selectedMemberIds.includes(user.id));
+        socket.emit('privateGroupMembersAdded', { groupId, users: addedUsers });
       }
       
       const created = {
