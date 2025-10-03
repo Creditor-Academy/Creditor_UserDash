@@ -92,8 +92,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
-      Cookies.remove('accesstoken');
-      Cookies.remove('token');
+      Cookies.remove('Access-Token');
       Cookies.remove('userId');
       
       // Reset state
