@@ -37,7 +37,9 @@ import {
   getMyMemberPrivateGroups, 
   createPrivateGroup, 
   addPrivateGroupMembers,
-  getGroupMembers
+  getGroupMembers,
+  getPrivateGroupMessages,
+  sendPrivateGroupMessage
 } from "@/services/privateGroupService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
@@ -884,7 +886,7 @@ function Messages() {
     }
   }, [messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() && !pendingImage) return;
     if (!roomId || !conversationId) {
       console.warn('Messages: cannot send, missing roomId or conversationId');
@@ -921,10 +923,7 @@ function Messages() {
           
           // Handle private groups differently for image sending
           if (selectedFriendData?.isPrivateGroup) {
-            await api.post('/api/private-groups/sendimage', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              withCredentials: true,
-            });
+            await sendPrivateGroupMessage(conversationId, formData, true);
           } else {
             await api.post('/api/private-messaging/sendimage', formData, {
               headers: { 'Content-Type': 'multipart/form-data' },
@@ -962,13 +961,13 @@ function Messages() {
         const socket = getSocket();
         const selectedFriendData = friends.find(f => f.id === selectedFriend);
         
-        // Handle private groups differently
+        // Handle private groups: send via REST API; others via socket
         if (selectedFriendData?.isPrivateGroup) {
-          socket.emit('sendPrivateGroupMessage', { 
-            groupId: conversationId, 
-            roomId, 
-            message: messageText 
-          });
+          try {
+            await sendPrivateGroupMessage(conversationId, { content: messageText });
+          } catch (e) {
+            throw e;
+          }
         } else {
           socket.emit('sendMessage', { 
             conversationid: conversationId, 
@@ -1342,18 +1341,41 @@ function Messages() {
                       // Load previous messages for this conversation
                       (async () => {
                         try {
-                          const data = await loadPreviousConversation(convId);
+                          // Use private group API for private groups; fallback to conversation API otherwise
                           const currentUserId = localStorage.getItem('userId');
-                          const mapped = (data?.cov_messages || []).map(m => ({
-                            id: m.id,
-                            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
-                            senderImage: m?.sender?.image || null,
-                            text: m.type === 'IMAGE' ? null : m.content,
-                            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            type: m.type === 'IMAGE' ? 'image' : 'text',
-                            file: m.type === 'IMAGE' ? m.content : null,
-                            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
-                          }));
+                          let mapped = [];
+                          if (friend.isPrivateGroup) {
+                            const res = await getPrivateGroupMessages(convId, 1, 50);
+                            const list = res?.data?.messages || res?.messages || [];
+                            mapped = list.map(m => {
+                              const created = m.createdAt || m.created_at || m.timeStamp || m.timestamp || null;
+                              const ts = created ? new Date(created) : new Date();
+                              return {
+                                id: m.id,
+                                senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+                                senderImage: m?.sender?.image || null,
+                                text: (m.type || m.message_type) === 'IMAGE' ? null : (m.content || m.message || ''),
+                                timestamp: isNaN(ts.getTime()) 
+                                  ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                  : ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                type: (m.type || m.message_type) === 'IMAGE' ? 'image' : 'text',
+                                file: (m.type || m.message_type) === 'IMAGE' ? (m.content || m.url) : null,
+                                status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
+                              };
+                            });
+                          } else {
+                            const data = await loadPreviousConversation(convId);
+                            mapped = (data?.cov_messages || []).map(m => ({
+                              id: m.id,
+                              senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+                              senderImage: m?.sender?.image || null,
+                              text: m.type === 'IMAGE' ? null : m.content,
+                              timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                              type: m.type === 'IMAGE' ? 'image' : 'text',
+                              file: m.type === 'IMAGE' ? m.content : null,
+                              status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
+                            }));
+                          }
                           setMessages(mapped);
                           setChatLoading(false);
                         } catch (e) {

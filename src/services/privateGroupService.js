@@ -213,3 +213,64 @@ export async function leavePrivateGroup(groupId) {
   }
 }
 
+// Get private group messages
+export async function getPrivateGroupMessages(groupId, page = 1, limit = 50) {
+  try {
+    const response = await api.get(`/api/private-groups/${groupId}/messages`, {
+      params: { page, limit },
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.getPrivateGroupMessages error:', error);
+    throw error;
+  }
+}
+
+// Send a private group message
+// Supports JSON payload for text messages and FormData for image/file messages
+export async function sendPrivateGroupMessage(groupId, payload, isMultipart = false) {
+  try {
+    const isFormData = isMultipart || (typeof FormData !== 'undefined' && payload instanceof FormData);
+    const config = {
+      headers: isFormData 
+        ? { 'Content-Type': 'multipart/form-data' } 
+        : { 'Content-Type': 'application/json' },
+      withCredentials: true,
+    };
+
+    const body = isFormData ? payload : payload; // axios handles both
+    const response = await api.post(`/api/private-groups/${groupId}/messages`, body, config);
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.sendPrivateGroupMessage error:', error);
+    throw error;
+  }
+}
+
+// Delete private group message
+export async function deletePrivateGroupMessage(groupId, messageId) {
+  try {
+    const response = await api.delete(`/api/private-groups/${groupId}/messages/${messageId}`, {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.deletePrivateGroupMessage error:', error);
+    throw error;
+  }
+}
+
+// Edit private group message (universal - any member can edit)
+export async function editPrivateGroupMessage(groupId, messageId, { content }) {
+  try {
+    const response = await api.put(`/api/private-groups/${groupId}/messages/${messageId}`, { content }, {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.editPrivateGroupMessage error:', error);
+    throw error;
+  }
+}
+

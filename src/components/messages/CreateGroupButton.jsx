@@ -135,12 +135,17 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       return;
     }
     
-    // Check user role before attempting to create group
-    const currentUserRole = getUserRole();
-    if (currentUserRole !== 'user') {
+    // Check user role before attempting to create group (allow: user, admin, instructor)
+    const roleValue = getUserRole();
+    const roles = Array.isArray(roleValue) ? roleValue : [roleValue];
+    const lowerRoles = roles.filter(Boolean).map(r => String(r).toLowerCase());
+    const allowed = ['user', 'admin', 'instructor'];
+    const isAllowed = lowerRoles.some(r => allowed.includes(r));
+    if (!isAllowed) {
+      const displayRole = (lowerRoles[0] || 'unknown');
       toast({ 
         title: "Permission Denied", 
-        description: `Only standard users can create private groups. Your role: ${currentUserRole}`, 
+        description: `Your role (${displayRole}) is not allowed to create private groups`, 
         variant: "destructive" 
       });
       return;
@@ -208,9 +213,7 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       console.error('Create group error:', err);
       let errorMessage = "Failed to create group";
       
-      if (err?.response?.status === 403) {
-        errorMessage = "Permission denied: Only standard users can create private groups";
-      } else if (err?.response?.data?.message) {
+      if (err?.response?.data?.message) {
         errorMessage = err.response.data.message;
       } else if (err?.message) {
         errorMessage = err.message;
