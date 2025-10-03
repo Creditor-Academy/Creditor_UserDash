@@ -11,6 +11,7 @@ import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 import { SignUp } from "@/pages/Auth/SignUp";
+import { storeAccessToken } from "@/services/tokenService";
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -162,18 +163,9 @@ export function Login() {
       });
 
       if (response.data.success && response.data.accessToken) {
-        // Store tokens
-        localStorage.setItem('authToken', response.data.accessToken);
-        localStorage.setItem('token', response.data.accessToken); // For backward compatibility
-
-        // Persist using tokenService and schedule proactive refresh (~5 minutes default)
-        try {
-          const { storeAccessToken } = await import('@/services/tokenService');
-          storeAccessToken(response.data.accessToken);
-          console.log('[Auth] Login success. Using validation-based refresh only.');
-        } catch (e) {
-          console.warn('[Auth] Could not schedule proactive refresh after login:', e?.message || e);
-        }
+        // Store tokens using tokenService for consistent token storage
+        storeAccessToken(response.data.accessToken);
+        console.log('[Auth] Login success. Token stored.');
         
         // Set authentication state
         setAuth(response.data.accessToken);
@@ -181,34 +173,8 @@ export function Login() {
         // Set default role first
         setUserRole('user');
         
-        // Fetch user profile and set roles
-        try {
-          const profile = await fetchUserProfile();
-          console.log('Fetched user profile after login:', profile);
-          
-          if (profile) {
-            // Store user ID if available
-            if (profile.id) {
-              localStorage.setItem('userId', profile.id);
-            }
-            
-            // Handle user roles
-            if (Array.isArray(profile.user_roles) && profile.user_roles.length > 0) {
-              const roles = profile.user_roles.map(roleObj => roleObj.role);
-              const priorityRoles = ['admin', 'instructor', 'user'];
-              const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
-              
-              // Set single role (enforces single role system)
-              setUserRoles([highestRole]);
-              console.log('Set user single role to:', highestRole);
-            } else {
-              setUserRoles(['user']);
-            }
-          }
-        } catch (profileErr) {
-          console.warn("Could not fetch user profile:", profileErr);
-          setUserRoles(['user']);
-        }
+        // Dispatch userLoggedIn event to trigger UserContext profile fetch
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
         
         toast.success("Login successful!");
         navigate("/dashboard");
