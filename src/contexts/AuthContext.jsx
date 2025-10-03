@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getUserRole, getUserRoles, setUserRole as setUserRoleUtil, setUserRoles as setUserRolesUtil, setSingleRole, clearUserData, isInstructorOrAdmin as checkInstructorOrAdmin, logoutUser } from '@/services/userService';
+import Cookies from 'js-cookie';
 
 const AuthContext = createContext();
 
@@ -88,7 +89,7 @@ export const AuthProvider = ({ children }) => {
       clearUserData();
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
-      Cookies.remove('token');
+      Cookies.remove('Access-Token');
       Cookies.remove('userId');
       
       // Reset state
