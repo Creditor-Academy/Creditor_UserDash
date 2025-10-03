@@ -12,26 +12,42 @@ export const useUser = () => {
   }
   return context;
 };
-
 export const UserProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch user profile on mount
+  // Fetch user profile on mount only if authenticated
   useEffect(() => {
-    loadUserProfile();
+    // Check if user is authenticated before making API calls
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+    if (token) {
+      loadUserProfile();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   // Listen for authentication changes
   useEffect(() => {
     const handleAuthChange = () => {
-      // Always try to refresh profile when auth changes
-      loadUserProfile();
+      // Only fetch if authenticated and no existing profile
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+      if (token && !userProfile) {
+        loadUserProfile();
+      }
+    };
+
+    const handleUserLoggedIn = () => {
+      // Add small delay to ensure token is properly stored before making API calls
+      setTimeout(() => {
+        loadUserProfile();
+      }, 100);
     };
 
     // Listen for custom events
     window.addEventListener('userRoleChanged', handleAuthChange);
+    window.addEventListener('userLoggedIn', handleUserLoggedIn);
     window.addEventListener('userLoggedOut', () => {
       setUserProfile(null);
       setIsLoading(false);
@@ -39,19 +55,28 @@ export const UserProvider = ({ children }) => {
 
     return () => {
       window.removeEventListener('userRoleChanged', handleAuthChange);
+      window.removeEventListener('userLoggedIn', handleUserLoggedIn);
       window.removeEventListener('userLoggedOut', () => {
         setUserProfile(null);
         setIsLoading(false);
       });
     };
-  }, []);
+  }, [userProfile]);
 
   const loadUserProfile = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Try to fetch user profile - backend will determine if user is authenticated
+      // Check if user is authenticated before making API calls
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+      if (!token) {
+        setUserProfile(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Try to fetch user profile
       const data = await fetchUserProfile();
       setUserProfile(data);
       
