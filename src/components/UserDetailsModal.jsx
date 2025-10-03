@@ -821,40 +821,76 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         <p className="text-sm text-gray-500">This user hasn't purchased any individual modules yet.</p>
                       </div>
                     ) : (
-                      purchasedModules.map((module, index) => (
-                        <div 
-                          key={module.id || index} 
-                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-                        >
-                          <div className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
-                                <BookOpenCheck className="h-4 w-4 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
-                                  {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
-                                </h3>
-                                <p className="text-xs text-gray-500 mb-2 truncate">
-                                  From: {module.course_title || 'Unknown Course'}
-                                </p>
-                                <div className="flex items-center gap-4 text-xs text-gray-500">
-                                  {formatPrice(module.price) && (
-                                    <div className="flex items-center gap-1">
-                                      <span>{formatPrice(module.price)}</span>
-                                    </div>
-                                  )}
+                      (() => {
+                        // Group modules by course
+                        const groupedModules = purchasedModules.reduce((acc, module) => {
+                          const courseTitle = module.course_title || 'Unknown Course';
+                          if (!acc[courseTitle]) {
+                            acc[courseTitle] = [];
+                          }
+                          acc[courseTitle].push(module);
+                          return acc;
+                        }, {});
+
+                        return Object.entries(groupedModules).map(([courseTitle, modules]) => (
+                          <div key={courseTitle} className="space-y-3">
+                            {/* Course Header */}
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+                                  <BookOpen className="h-4 w-4 text-white" />
                                 </div>
-                              </div>
-                              <div className="flex-shrink-0">
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  Purchased
+                                <div className="flex-1">
+                                  <h3 className="text-sm font-semibold text-blue-900">
+                                    {courseTitle}
+                                  </h3>
+                                  <p className="text-xs text-blue-600">
+                                    {modules.length} module{modules.length !== 1 ? 's' : ''} purchased
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                                  {modules.length} Module{modules.length !== 1 ? 's' : ''}
                                 </Badge>
                               </div>
                             </div>
+
+                            {/* Modules under this course */}
+                            <div className="ml-4 space-y-2">
+                              {modules.map((module, index) => (
+                                <div 
+                                  key={module.id || index} 
+                                  className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300 ease-in-out"
+                                >
+                                  <div className="p-3">
+                                    <div className="flex items-start gap-3">
+                                      <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-md group-hover:scale-110 transition-transform duration-200">
+                                        <BookOpenCheck className="h-3 w-3 text-white" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-xs font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
+                                          {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                        </h4>
+                                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                                          {formatPrice(module.price) && (
+                                            <div className="flex items-center gap-1">
+                                              <span>{formatPrice(module.price)}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                          Purchased
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ));
+                      })()
                     )
                   )}
                 </div>
