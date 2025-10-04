@@ -243,6 +243,7 @@ export async function fetchCoursePrice(courseId) {
   return data.data || data;
 }
 
+
 // Example usage in a fetch call:
 export async function someApiFunction() {
   const response = await fetch(`${API_BASE}/api/someEndpoint`, {

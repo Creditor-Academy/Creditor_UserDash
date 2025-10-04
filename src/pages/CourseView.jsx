@@ -181,9 +181,16 @@ export function CourseView() {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
-    // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
-    // or class recording catalog
-    const freeCatalogKeywords = ["roadmap", "passive income"];
+    // Check if this course belongs to a free catalog (Roadmap Series/Start Your Passive Income Now)
+    // or a class recording catalog
+    const freeCatalogKeywords = [
+      "roadmap",
+      "road map",
+      "roadmap series",
+      "road map series",
+      "passive income",
+      "start your passive income"
+    ];
     const classRecordingKeywords = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"];
     const courseTitle = (course?.title || "").toLowerCase();
     const isFromFreeCatalog = freeCatalogKeywords.some(keyword => 
@@ -219,7 +226,14 @@ export function CourseView() {
 
   // Helper function to check if course is from a free catalog or class recording
   const isFromFreeCatalog = (course) => {
-    const freeCatalogKeywords = ["roadmap", "passive income"];
+    const freeCatalogKeywords = [
+      "roadmap",
+      "road map",
+      "roadmap series",
+      "road map series",
+      "passive income",
+      "start your passive income"
+    ];
     const classRecordingKeywords = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"];
     const courseTitle = (course?.title || "").toLowerCase();
     return freeCatalogKeywords.some(keyword => courseTitle.includes(keyword)) ||
@@ -244,11 +258,16 @@ export function CourseView() {
         ]);
         
         setCourseDetails(courseData);
-        setModules(modulesData);
-        setFilteredModules(modulesData);
+        // Only include published modules; hide drafts from users
+        const publishedModules = (Array.isArray(modulesData) ? modulesData : []).filter((m) => {
+          const status = (m.module_status || m.status || "").toString().toUpperCase();
+          return status === "PUBLISHED" || m.published === true;
+        });
+        setModules(publishedModules);
+        setFilteredModules(publishedModules);
         
         // Calculate total duration from modules
-        const total = modulesData.reduce((sum, module) => {
+        const total = publishedModules.reduce((sum, module) => {
           const duration = parseInt(module.estimated_duration) || 0;
           return sum + duration;
         }, 0);

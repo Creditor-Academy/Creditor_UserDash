@@ -72,7 +72,8 @@ export default defineConfig(({ mode }) => ({
 
 
 // #(Testing Backend)
-// # VITE_API_BASE_URL=https://sharebackend-sdkp.onrender.com
+// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com  
+
 
 // #(development Backend)
 // VITE_API_BASE_URL=https://creditor-backend-1-iijy.onrender.com
@@ -82,3 +83,4 @@ export default defineConfig(({ mode }) => ({
 
 // #(Main Backend)
 // # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
+// # VITE_API_BASE_URL= https://creditor.onrender.com
