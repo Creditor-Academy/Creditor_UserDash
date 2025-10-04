@@ -420,48 +420,48 @@ export function Sidebar({ collapsed, setCollapsed }) {
         variants={itemVariants}
       >
         {collapsed ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <DropdownMenu>
+          <DropdownMenu>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
                   <DropdownMenuTrigger asChild>
-                    <motion.button 
+                    <Button
+                      variant="ghost"
                       className="w-full flex justify-center p-3 hover:bg-gray-200 rounded-xl transition-all duration-200 text-gray-600 group shadow-sm"
-                      whileTap={{ scale: 0.98 }}
                     >
                       <HelpCircle size={24} />
-                    </motion.button>
+                    </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    side="right" 
-                    align="start" 
-                    className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
-                  >
-                    {helpItems.map((item, index) => (
-                      <DropdownMenuItem key={index} asChild>
-                        <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
-                          <item.icon size={16} />
-                          <span>{item.label}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="bg-gray-900 text-white shadow-xl">Help & Support</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="bg-gray-900 text-white shadow-xl">Help & Support</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <DropdownMenuContent 
+              side="right" 
+              align="start" 
+              className="w-56 bg-white border-gray-200 shadow-xl rounded-xl"
+            >
+              {helpItems.map((item, index) => (
+                <DropdownMenuItem key={index} asChild>
+                  <Link to={item.path} className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-gray-700 rounded-lg p-2">
+                    <item.icon size={16} />
+                    <span>{item.label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <motion.button 
+              <Button
+                variant="ghost"
                 className="w-full justify-start px-4 py-3 text-sm font-semibold bg-white hover:bg-gray-100 rounded-xl flex items-center gap-3 group transition-all duration-200 text-gray-700 shadow-sm border border-gray-200"
-                whileTap={{ y: 0 }}
               >
                 <HelpCircle size={18} />
                 <span>Help & Support</span>
                 <ChevronDown size={14} className="ml-auto transition-transform duration-200 group-hover:rotate-180" />
-              </motion.button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="end" 

@@ -10,7 +10,6 @@ import {
   AudioLines, 
   Users, 
   BarChart3, 
-  Settings,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -20,6 +19,9 @@ import {
   Edit3,
   Save,
   Trash2,
+  Copy,
+  ChevronUp,
+  ChevronDown,
   ArrowLeft,
   GripVertical,
   Type,
@@ -35,7 +37,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import aiCourseService from '../../services/aiCourseService';
+import { saveAILessons } from '../../services/aiCourseService';
 import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
 
 const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => {
@@ -216,14 +218,78 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
     setEditContent('');
   };
 
+  // CRUD Operations for Lessons
+  
+  // Create new lesson
+  const createNewLesson = () => {
+    const newLesson = {
+      id: Date.now(),
+      title: 'New Lesson',
+      description: 'Click edit to add description',
+      content: 'Add your lesson content here...',
+      duration: '15 min',
+      keyPoints: ['Key point 1', 'Key point 2']
+    };
+    
+    setLessons(prev => [...prev, newLesson]);
+    setEditingLessonId(newLesson.id);
+    setEditContent(newLesson.content);
+  };
+
+  // Update lesson
+  const updateLesson = (lessonId, updatedData) => {
+    setLessons(prev => prev.map(lesson => 
+      lesson.id === lessonId 
+        ? { ...lesson, ...updatedData }
+        : lesson
+    ));
+  };
+
   // Delete a lesson
   const deleteLesson = (lessonId) => {
-    setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
-    setContentBlocks(prev => {
-      const newBlocks = { ...prev };
-      delete newBlocks[lessonId];
-      return newBlocks;
-    });
+    if (confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
+      setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
+      setContentBlocks(prev => {
+        const newBlocks = { ...prev };
+        delete newBlocks[lessonId];
+        return newBlocks;
+      });
+      
+      // Clear editing states if deleting currently edited lesson
+      if (editingLessonId === lessonId) {
+        setEditingLessonId(null);
+        setEditContent('');
+      }
+      if (editingBlockLessonId === lessonId) {
+        setEditingBlockLessonId(null);
+      }
+    }
+  };
+
+  // Duplicate lesson
+  const duplicateLesson = (lessonId) => {
+    const lessonToDuplicate = lessons.find(lesson => lesson.id === lessonId);
+    if (lessonToDuplicate) {
+      const duplicatedLesson = {
+        ...lessonToDuplicate,
+        id: Date.now(),
+        title: `${lessonToDuplicate.title} (Copy)`,
+      };
+      
+      setLessons(prev => [...prev, duplicatedLesson]);
+      
+      // Duplicate content blocks if they exist
+      if (contentBlocks[lessonId]) {
+        const duplicatedBlocks = contentBlocks[lessonId].map(block => ({
+          ...block,
+          id: `block-${Date.now()}-${Math.random()}`
+        }));
+        setContentBlocks(prev => ({
+          ...prev,
+          [duplicatedLesson.id]: duplicatedBlocks
+        }));
+      }
+    }
   };
 
   // Start block editing for a lesson
@@ -279,21 +345,66 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
     }
   };
 
+  // CRUD Operations for Content Blocks
+
+  // Create content block (already exists as addContentBlock)
+  
+  // Read content blocks (already handled in state)
+  
   // Update a content block
-  const updateContentBlock = (lessonId, blockId, content) => {
+  const updateContentBlock = (lessonId, blockId, content, additionalData = {}) => {
     setContentBlocks(prev => ({
       ...prev,
       [lessonId]: prev[lessonId].map(block => 
-        block.id === blockId ? { ...block, content } : block
+        block.id === blockId ? { ...block, content, ...additionalData } : block
       )
     }));
   };
 
   // Delete a content block
   const deleteContentBlock = (lessonId, blockId) => {
+    if (confirm('Delete this content block?')) {
+      setContentBlocks(prev => ({
+        ...prev,
+        [lessonId]: prev[lessonId].filter(block => block.id !== blockId)
+      }));
+    }
+  };
+
+  // Duplicate content block
+  const duplicateContentBlock = (lessonId, blockId) => {
+    const blockToDuplicate = contentBlocks[lessonId]?.find(block => block.id === blockId);
+    if (blockToDuplicate) {
+      const duplicatedBlock = {
+        ...blockToDuplicate,
+        id: `block-${Date.now()}-${Math.random()}`,
+        order: (contentBlocks[lessonId]?.length || 0) + 1
+      };
+      
+      setContentBlocks(prev => ({
+        ...prev,
+        [lessonId]: [...(prev[lessonId] || []), duplicatedBlock]
+      }));
+    }
+  };
+
+  // Move content block up/down
+  const moveContentBlock = (lessonId, blockId, direction) => {
+    const blocks = contentBlocks[lessonId] || [];
+    const currentIndex = blocks.findIndex(block => block.id === blockId);
+    
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    if (newIndex < 0 || newIndex >= blocks.length) return;
+    
+    const newBlocks = [...blocks];
+    [newBlocks[currentIndex], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[currentIndex]];
+    
     setContentBlocks(prev => ({
       ...prev,
-      [lessonId]: prev[lessonId].filter(block => block.id !== blockId)
+      [lessonId]: newBlocks
     }));
   };
 
@@ -313,7 +424,7 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
       }));
       
       // Save to backend
-      const result = await aiCourseService.saveAILessons({
+      const result = await saveAILessons({
         courseTitle,
         lessons: lessonsWithBlocks,
         blockBased: true
@@ -344,7 +455,10 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
   // Generate lessons when panel opens and course title is provided
   useEffect(() => {
     if (isOpen && courseTitle && lessons.length === 0) {
+      console.log('🎓 AI Lesson Creator opened with course title:', courseTitle);
       generateAILessons();
+    } else if (isOpen && !courseTitle) {
+      console.warn('⚠️ AI Lesson Creator opened without course title');
     }
   }, [isOpen, courseTitle]);
 
@@ -363,20 +477,38 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
 
   // Render content block based on type
   const renderContentBlock = (block, lessonId) => {
+    const isEditing = editingBlockLessonId === lessonId;
+    
     switch (block.type) {
       case 'text':
         return (
-          <div 
-            className="p-4 border border-gray-200 rounded-lg bg-white"
-            dangerouslySetInnerHTML={{ __html: block.content }}
-          />
+          <div className="p-4 border border-gray-200 rounded-lg bg-white">
+            {isEditing ? (
+              <textarea
+                value={typeof block.content === 'string' ? block.content.replace(/<[^>]*>/g, '') : ''}
+                onChange={(e) => updateContentBlock(lessonId, block.id, e.target.value)}
+                className="w-full min-h-[100px] p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="Enter your text content..."
+              />
+            ) : (
+              <div dangerouslySetInnerHTML={{ __html: block.content }} />
+            )}
+          </div>
         );
       case 'statement':
         return (
-          <div 
-            className="p-4 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg"
-            dangerouslySetInnerHTML={{ __html: block.content }}
-          />
+          <div className="p-4 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg">
+            {isEditing ? (
+              <textarea
+                value={typeof block.content === 'string' ? block.content.replace(/<[^>]*>/g, '') : ''}
+                onChange={(e) => updateContentBlock(lessonId, block.id, `<p><strong>Important Statement:</strong> ${e.target.value}</p>`)}
+                className="w-full min-h-[60px] p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                placeholder="Enter your statement..."
+              />
+            ) : (
+              <div dangerouslySetInnerHTML={{ __html: block.content }} />
+            )}
+          </div>
         );
       case 'quote':
         return (
@@ -560,7 +692,9 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-600" />
             <h2 className="text-lg font-semibold text-gray-900">AI Lesson Creator</h2>
-            <span className="text-sm text-gray-500 hidden md:inline">for "{courseTitle}"</span>
+            <span className="text-sm text-gray-500 hidden md:inline">
+              {courseTitle ? `for "${courseTitle}"` : '(No course selected)'}
+            </span>
           </div>
         </div>
         <button
@@ -576,7 +710,17 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
         {/* Left panel - Lesson list - Responsive adjustments */}
         <div className="w-full md:w-1/4 border-r border-gray-200 bg-gray-50 p-4 overflow-y-auto max-h-40 md:max-h-full">
           <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Lessons</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Lessons</h3>
+              <Button
+                onClick={createNewLesson}
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add
+              </Button>
+            </div>
             <div className="space-y-2">
               {lessons.map((lesson, index) => (
                 <div 
@@ -600,17 +744,30 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                       <h4 className="font-medium text-gray-900 text-sm">{lesson.title}</h4>
                       <p className="text-xs text-gray-500 mt-1">{lesson.duration}</p>
                     </div>
-                    {activeTab === 'edit' && (
+                    
+                    {/* CRUD Action Buttons */}
+                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          duplicateLesson(lesson.id);
+                        }}
+                        className="text-gray-400 hover:text-blue-500 p-1"
+                        title="Duplicate lesson"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteLesson(lesson.id);
                         }}
                         className="text-gray-400 hover:text-red-500 p-1"
+                        title="Delete lesson"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
-                    )}
+                    </div>
                   </div>
                   <p className="text-xs text-gray-600 mt-2 line-clamp-2">
                     {lesson.description}
@@ -769,9 +926,14 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                   ) : (
                     <div className="text-center py-12">
                       <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Lessons Generated</h3>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        {!courseTitle ? 'No Course Selected' : 'No Lessons Generated'}
+                      </h3>
                       <p className="text-gray-500 mb-6">
-                        Click the "Generate Lessons" button to create AI-powered lessons for your course.
+                        {!courseTitle 
+                          ? 'Please select a course first before generating lessons.'
+                          : 'Click the "Generate Lessons" button to create AI-powered lessons for your course.'
+                        }
                       </p>
                       <Button
                         onClick={generateAILessons}
@@ -865,13 +1027,60 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                           
                           <div className="p-4">
                             {editingLessonId === lesson.id ? (
-                              <textarea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                rows={8}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
-                                placeholder="Edit lesson content..."
-                              />
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Lesson Title
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={lesson.title}
+                                      onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                      placeholder="Enter lesson title..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                      Duration
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={lesson.duration}
+                                      onChange={(e) => updateLesson(lesson.id, { duration: e.target.value })}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                      placeholder="e.g., 15 min"
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Description
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={lesson.description}
+                                    onChange={(e) => updateLesson(lesson.id, { description: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                    placeholder="Brief lesson description..."
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Content
+                                  </label>
+                                  <textarea
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    rows={8}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm"
+                                    placeholder="Edit lesson content..."
+                                  />
+                                </div>
+                              </div>
                             ) : (
                               <div className="prose prose-sm max-w-none">
                                 <p className="whitespace-pre-line text-gray-700">{lesson.content}</p>
@@ -903,13 +1112,16 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                       Block Editor
                     </h3>
                     <div className="flex gap-2 flex-wrap">
-                      <Button
-                        onClick={() => setShowContentLibrary(!showContentLibrary)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        {showContentLibrary ? 'Hide Library' : 'Show Library'}
-                      </Button>
+                      {editingBlockLessonId && (
+                        <Button
+                          onClick={() => setShowContentLibrary(!showContentLibrary)}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          {showContentLibrary ? 'Hide Blocks' : 'Add Blocks'}
+                        </Button>
+                      )}
                       <Button
                         onClick={saveLessons}
                         disabled={isSaving || lessons.length === 0}
@@ -933,6 +1145,23 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                     </div>
                   </div>
                   
+                  {lessons.length === 0 && (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Square className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Lessons Available</h3>
+                      <p className="text-gray-500 mb-4">
+                        Generate lessons first in the "AI Lessons" tab to use the block editor.
+                      </p>
+                      <Button
+                        onClick={() => setActiveTab('lessons')}
+                        className="bg-purple-600 hover:bg-purple-700"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Go to AI Lessons
+                      </Button>
+                    </div>
+                  )}
+                  
                   {lessons.length > 0 ? (
                     <div className="space-y-6">
                       {lessons.map((lesson) => (
@@ -940,13 +1169,27 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                           <div className="p-4 border-b border-gray-200">
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <h4 className="font-medium text-gray-900">{lesson.title}</h4>
-                              <Button
-                                onClick={() => startBlockEditing(lesson.id)}
-                                variant="outline"
-                                size="sm"
-                              >
-                                {editingBlockLessonId === lesson.id ? 'Editing...' : 'Edit Blocks'}
-                              </Button>
+                              <div className="flex gap-2">
+                                {editingBlockLessonId === lesson.id ? (
+                                  <Button
+                                    onClick={() => setEditingBlockLessonId(null)}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <X className="w-4 h-4 mr-1" />
+                                    Done Editing
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    onClick={() => startBlockEditing(lesson.id)}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                    size="sm"
+                                  >
+                                    <Edit3 className="w-4 h-4 mr-1" />
+                                    Edit Blocks
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                             <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
                           </div>
@@ -954,42 +1197,94 @@ const AILessonCreator = ({ isOpen, onClose, courseTitle, onLessonsCreated }) => 
                           <div className="p-4">
                             {editingBlockLessonId === lesson.id ? (
                               <div className="space-y-4">
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                                  <div className="flex items-center gap-2 text-blue-800 text-sm">
+                                    <Edit3 className="w-4 h-4" />
+                                    <span className="font-medium">Editing Mode Active</span>
+                                  </div>
+                                  <p className="text-blue-700 text-xs mt-1">
+                                    Click on any content block below to edit it. Use "Add Blocks" to add new content types.
+                                  </p>
+                                </div>
+                                
                                 {contentBlocks[lesson.id] && contentBlocks[lesson.id].length > 0 ? (
                                   contentBlocks[lesson.id].map((block, index) => (
-                                    <div key={`${block.id}-${index}`} className="relative group">
+                                    <div key={`${block.id}-${index}`} className="relative group border-2 border-dashed border-transparent hover:border-blue-300 rounded-lg transition-colors">
                                       <div className="flex items-start gap-2">
                                         <div className="mt-3 cursor-grab text-gray-400 hover:text-gray-600">
                                           <GripVertical className="w-4 h-4" />
                                         </div>
                                         <div className="flex-1">
-                                          {renderContentBlock(block, lesson.id)}
+                                          <div className="relative">
+                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                                                Click to edit
+                                              </span>
+                                            </div>
+                                            {renderContentBlock(block, lesson.id)}
+                                          </div>
                                         </div>
-                                        <button
-                                          onClick={() => deleteContentBlock(lesson.id, block.id)}
-                                          className="mt-3 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex flex-col gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                          <button
+                                            onClick={() => moveContentBlock(lesson.id, block.id, 'up')}
+                                            className="text-gray-400 hover:text-blue-500 p-1"
+                                            title="Move up"
+                                            disabled={index === 0}
+                                          >
+                                            <ChevronUp className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => moveContentBlock(lesson.id, block.id, 'down')}
+                                            className="text-gray-400 hover:text-blue-500 p-1"
+                                            title="Move down"
+                                            disabled={index === contentBlocks[lesson.id].length - 1}
+                                          >
+                                            <ChevronDown className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => duplicateContentBlock(lesson.id, block.id)}
+                                            className="text-gray-400 hover:text-green-500 p-1"
+                                            title="Duplicate block"
+                                          >
+                                            <Copy className="w-3 h-3" />
+                                          </button>
+                                          <button
+                                            onClick={() => deleteContentBlock(lesson.id, block.id)}
+                                            className="text-gray-400 hover:text-red-500 p-1"
+                                            title="Delete this block"
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   ))
                                 ) : (
-                                  <div className="text-center py-8 text-gray-500">
+                                  <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                                     <Square className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                    <p>No content blocks yet. Add blocks from the Content Library.</p>
+                                    <h4 className="font-medium text-gray-700 mb-2">No Content Blocks Yet</h4>
+                                    <p className="text-sm mb-4">Start building your lesson by adding content blocks.</p>
+                                    <Button
+                                      onClick={() => setShowContentLibrary(true)}
+                                      className="bg-blue-600 hover:bg-blue-700"
+                                    >
+                                      <Plus className="w-4 h-4 mr-2" />
+                                      Add Your First Block
+                                    </Button>
                                   </div>
                                 )}
-                                
-                                <div className="flex justify-center mt-4">
-                                  <Button
-                                    onClick={() => setShowContentLibrary(true)}
-                                    variant="outline"
-                                    className="flex items-center gap-2"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                    Add Content Block
-                                  </Button>
-                                </div>
+                                {contentBlocks[lesson.id] && contentBlocks[lesson.id].length > 0 && (
+                                  <div className="flex justify-center mt-4 pt-4 border-t border-gray-200">
+                                    <Button
+                                      onClick={() => setShowContentLibrary(true)}
+                                      variant="outline"
+                                      className="flex items-center gap-2"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      Add More Blocks
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div className="prose prose-sm max-w-none">

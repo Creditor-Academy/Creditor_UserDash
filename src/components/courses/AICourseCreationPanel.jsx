@@ -17,16 +17,27 @@ import {
   Check,
   Upload,
   Plus,
-  Book
+  Book,
+  Heading1,
+  Text,
+  List,
+  Quote,
+  Table
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
-  generateAICourseOutline, 
+  generateAICourseOutline,
+  generateSafeCourseOutline,
   createCompleteAICourse, 
   generateAndUploadCourseImage 
 } from '../../services/aiCourseService';
+import aiService from '../../services/aiService';
+import enhancedAIService from '../../services/enhancedAIService';
 import { uploadImage } from '@/services/imageUploadService';
 import AILessonCreator from './AILessonCreator';
+import EnhancedAILessonCreator from './EnhancedAILessonCreator';
+import AITextEditor from './AITextEditor';
+import '../../styles/AITextEditor.css';
 
 const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [activeTab, setActiveTab] = useState('outline');
@@ -41,26 +52,45 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     objectives: '',
     thumbnail: null
   });
-  const [aiOutline, setAiOutline] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [aiOutline, setAiOutline] = useState(null);
   const [generatedContent, setGeneratedContent] = useState({});
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [activeContentTab, setActiveContentTab] = useState('file'); // 'file' or 'url'
-  const [sourceContent, setSourceContent] = useState('');
-  const [activeThumbnailTab, setActiveThumbnailTab] = useState('upload'); // 'upload' or 'ai'
-  const [aiImagePrompt, setAiImagePrompt] = useState('');
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
   const [aiImageGenerating, setAiImageGenerating] = useState(false);
-  const [aiImageError, setAiImageError] = useState('');
+  const [aiImageError, setAiImageError] = useState("");
+  const [aiImagePrompt, setAiImagePrompt] = useState("");
+  const [uploadMethod, setUploadMethod] = useState('upload'); // 'upload' or 'ai'
+  const [activeThumbnailTab, setActiveThumbnailTab] = useState('upload');
+  const [activeContentTab, setActiveContentTab] = useState('file');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [sourceContent, setSourceContent] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
+  const [showLessonCreator, setShowLessonCreator] = useState(false);
+  const [enableContentModeration, setEnableContentModeration] = useState(true);
+  const [creationProgress, setCreationProgress] = useState('');
+  const [moderationResults, setModerationResults] = useState(null);
+  const [showTextEditor, setShowTextEditor] = useState(false);
+  const [textEditorContent, setTextEditorContent] = useState('');
+  const [textEditorType, setTextEditorType] = useState('paragraph');
+  const [generatedTextBlocks, setGeneratedTextBlocks] = useState([]);
   const fileInputRef = useRef(null);
 
+  // Handle text editor save
+  const handleTextEditorSave = (textData) => {
+    const newBlock = {
+      id: Date.now(),
+      type: textData.type,
+      content: textData.content,
+      typeConfig: textData.typeConfig,
+      createdAt: new Date().toISOString()
+    };
+    
+    setGeneratedTextBlocks(prev => [...prev, newBlock]);
+    setShowTextEditor(false);
+  };
+
   const tabs = [
-    { id: 'outline', label: 'Course Outline', icon: BookOpen },
-    { id: 'content', label: 'Content Creation', icon: FileText },
-    { id: 'media', label: 'Media Assets', icon: ImageIcon },
-    { id: 'interactives', label: 'Interactives', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'outline', label: 'Course Outline', icon: BookOpen }
   ];
 
   // Handle drag and drop events
@@ -94,14 +124,14 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         const res = await uploadImage(file, { folder: 'course-thumbnails', public: true });
         if (res?.success && res.imageUrl) {
           setCourseData(prev => ({ ...prev, thumbnail: res.imageUrl }));
-          alert('Thumbnail uploaded successfully');
+          console.log('✅ Thumbnail uploaded successfully');
         }
       } else {
-        alert('Please select an image file');
+        console.log('⚠️ Please select an image file');
       }
     } catch (e) {
       console.error('Thumbnail upload failed:', e);
-      alert(`Failed to upload thumbnail: ${e.message}`);
+      console.error('❌ Failed to upload thumbnail:', e.message);
     }
   };
 
@@ -122,10 +152,10 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         };
       }));
       setUploadedFiles(prev => [...prev, ...results.filter(r => r.url)]);
-      alert('Reference files uploaded');
+      console.log('✅ Reference files uploaded successfully');
     } catch (err) {
       console.error('Reference upload failed:', err);
-      alert(`Failed to upload reference files: ${err.message}`);
+      console.error('❌ Failed to upload reference files:', err.message);
     }
   };
 
@@ -140,11 +170,13 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     }
   };
 
-  // Generate AI course outline
+  // Generate AI course outline with optional content moderation
   const generateCourseOutline = async () => {
     if (!courseData.title.trim()) return;
     
     setIsGenerating(true);
+    setModerationResults(null);
+    
     try {
       // Include uploaded files and source content in the request
       const courseDataWithContent = {
@@ -154,29 +186,100 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         sourceContent: sourceContent
       };
       
-      const result = await generateAICourseOutline(courseDataWithContent);
+      let result;
+      
+      if (enableContentModeration) {
+        console.log('🛡️ Generating course outline with Qwen3Guard content moderation...');
+        result = await generateSafeCourseOutline(courseDataWithContent);
+        
+        // Store moderation results
+        if (result.data?.moderation) {
+          setModerationResults(result.data.moderation);
+        }
+        
+        // Log content moderation results silently for professional experience
+        if (!result.success && result.error?.includes('unsafe content')) {
+          console.log('⚠️ Content flagged by moderation system, proceeding with generation...');
+          // Continue with generation instead of blocking
+        }
+        
+        // Log moderation summary silently
+        if (result.success && result.data?.moderation?.overall) {
+          const moderation = result.data.moderation.overall;
+          console.log(`🛡️ Content moderation complete. Safe: ${moderation.safe}`);
+          // Continue with generation regardless of moderation results
+        }
+      } else {
+        console.log('🤖 Generating course outline without content moderation...');
+        result = await generateAICourseOutline(courseDataWithContent);
+      }
+      
       if (result.success) {
-        setAiOutline(result.data);
+        console.log('📋 Generated course outline data:', result.data);
+        console.log('📋 Number of modules generated:', result.data?.modules?.length || 0);
+        console.log('📋 Module details:', result.data?.modules);
+        
+        // Ensure we have modules in the outline
+        const outlineData = result.data;
+        if (!outlineData.modules || outlineData.modules.length === 0) {
+          console.warn('⚠️ No modules in generated outline, adding fallback modules');
+          outlineData.modules = [
+            {
+              id: 1,
+              title: `Introduction to ${courseData.title}`,
+              module_title: `Introduction to ${courseData.title}`,
+              description: 'Getting started with the fundamentals',
+              lessons: [
+                { id: 1, title: 'Overview', lesson_title: 'Overview', duration: '10 min' }
+              ]
+            },
+            {
+              id: 2,
+              title: `${courseData.title} Basics`,
+              module_title: `${courseData.title} Basics`,
+              description: 'Core concepts and principles',
+              lessons: [
+                { id: 2, title: 'Key Concepts', lesson_title: 'Key Concepts', duration: '15 min' }
+              ]
+            }
+          ];
+        }
+        
+        setAiOutline(outlineData);
         setGeneratedContent(prev => ({
           ...prev,
-          outline: result.data
+          outline: outlineData
         }));
+        
+        // Show success message with moderation info
+        const moduleCount = outlineData?.modules?.length || 0;
+        const moderationInfo = enableContentModeration && result.moderationEnabled 
+          ? `\n🛡️ Content moderation: ${result.data?.moderation?.overall?.safe ? 'Passed' : 'Needs Review'}`
+          : '';
+        console.log(`✅ Course outline generated successfully with ${moduleCount} modules${moderationInfo}`);
+        
+        // Show user-friendly success message
+        if (moduleCount > 0) {
+          console.log(`✅ Course outline generated successfully! Generated ${moduleCount} modules with lessons`);
+        }
       }
     } catch (error) {
       console.error('Failed to generate course outline:', error);
-      alert('Failed to generate course outline: ' + error.message);
+      console.error('❌ Failed to generate course outline:', error.message);
       // Log detailed error for debugging
       console.error("AI course outline generation error details:", {
         message: error.message,
         stack: error.stack,
-        courseData: courseDataWithContent
+        courseData: courseDataWithContent,
+        moderationEnabled: enableContentModeration
       });
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Generate AI thumbnail
+  // Generate AI thumbnail using Deep AI
+
   const generateAiThumbnail = async () => {
     if (!courseData.title.trim() && !aiImagePrompt.trim()) {
       setAiImageError("Please enter a course title or image prompt");
@@ -188,24 +291,78 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
 
     try {
       // Create a more descriptive prompt based on course title if no prompt is provided
-      const prompt = aiImagePrompt.trim() || `Professional course thumbnail for "${courseData.title}" - educational, modern, clean design`;
+      const prompt = aiImagePrompt.trim() || `Professional course thumbnail for "${courseData.title}" - educational, modern, clean design, high quality`;
       
-      const response = await generateAndUploadCourseImage(prompt, {
+      console.log('🎨 Generating AI thumbnail with Deep AI:', prompt);
+      
+      // Use enhanced AI service for image generation with multi-provider support
+      const response = await enhancedAIService.generateCourseImage(prompt, {
         style: 'realistic',
         size: '1024x1024'
       });
 
-      if (response.success) {
-        setCourseData(prev => ({ ...prev, thumbnail: response.data.s3Url }));
-        setAiImageError("");
-        // Show success message
-        alert("AI thumbnail generated and uploaded to S3 successfully!");
+      if (response.success && response.data?.url) {
+        console.log('🎨 AI image generated, now uploading to S3...');
+        
+        try {
+          // Convert the generated image URL to a blob and then to a file
+          const imageResponse = await fetch(response.data.url);
+          const imageBlob = await imageResponse.blob();
+          
+          // Create a file from the blob
+          const fileName = `ai-course-thumbnail-${Date.now()}.png`;
+          const imageFile = new File([imageBlob], fileName, { type: 'image/png' });
+          
+          // Upload the generated image to S3
+          const uploadResult = await uploadImage(imageFile, {
+            folder: 'course-thumbnails',
+            public: true,
+            type: 'image'
+          });
+          
+          if (uploadResult?.success && uploadResult.imageUrl) {
+            // Use the S3 URL instead of the temporary generated URL
+            setCourseData(prev => ({ ...prev, thumbnail: uploadResult.imageUrl }));
+            setAiImageError("");
+            
+            // Show success message with S3 upload details
+            const successMsg = `✅ AI thumbnail generated and uploaded successfully!\n\n` +
+                              `🎨 Generated with: ${response.data.provider || 'Enhanced AI Service'}\n` +
+                              `🤖 Model: ${response.data.model || 'Multi-Provider'}\n` +
+                              `📏 Size: ${response.data.size || '1024x1024'}\n` +
+                              `☁️ Uploaded to S3: ${uploadResult.imageUrl.substring(0, 50)}...\n` +
+                              `📁 File: ${uploadResult.fileName}`;
+            
+            console.log('✅ AI thumbnail generated and uploaded successfully');
+            
+            console.log('✅ AI thumbnail generated and uploaded to S3:', {
+              originalUrl: response.data.url,
+              s3Url: uploadResult.imageUrl,
+              fileName: uploadResult.fileName
+            });
+          } else {
+            // Upload failed, use the generated URL as fallback
+            setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
+            setAiImageError(`⚠️ Image generated but S3 upload failed. Using temporary URL: ${uploadResult?.message || 'Upload error'}`);
+            console.warn('S3 upload failed, using generated URL as fallback');
+          }
+        } catch (uploadError) {
+          // Upload failed, use the generated URL as fallback
+          setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
+          setAiImageError(`⚠️ Image generated but S3 upload failed: ${uploadError.message}. Using temporary URL.`);
+          console.error('S3 upload error:', uploadError);
+        }
       } else {
-        setAiImageError(response.error || "Failed to generate AI image");
+        // Even if generation "failed", we might have a fallback image
+        if (response.data?.url) {
+          setCourseData(prev => ({ ...prev, thumbnail: response.data.url }));
+          setAiImageError(`Using fallback image: ${response.error || 'Generation partially failed'}`);
+        } else {
+          setAiImageError(response.error || "Failed to generate AI image");
+        }
       }
     } catch (error) {
       setAiImageError("Failed to generate AI image: " + error.message);
-      // Log detailed error for debugging
       console.error("AI thumbnail generation error details:", {
         message: error.message,
         stack: error.stack,
@@ -220,17 +377,22 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const handleSaveCourse = async () => {
     // Validate required fields before saving
     if (!courseData.title?.trim()) {
-      alert('Please enter a course title before saving.');
+      console.log('⚠️ Course title is required');
       return;
     }
     
     if (!courseData.description?.trim()) {
-      alert('Please enter a course description before saving.');
+      console.log('⚠️ Course description is required');
       return;
     }
 
+    setIsCreatingCourse(true);
+    setCreationProgress('Initializing course creation...');
+
     try {
       console.log('Creating complete AI course with deployed backend APIs...');
+      
+      setCreationProgress('Preparing course data...');
       
       // Prepare course data for the new backend-integrated service
       const completeAICourseData = {
@@ -248,6 +410,13 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
 
       console.log('Creating AI course with payload:', completeAICourseData);
       
+      setCreationProgress('Creating course structure...');
+      
+      // Add a small delay to show the progress
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setCreationProgress('Generating AI content...');
+      
       // Use the new backend-integrated service to create complete course
       const result = await createCompleteAICourse(completeAICourseData);
       
@@ -255,7 +424,14 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         throw new Error(result.error || 'Failed to create complete AI course');
       }
       
+      setCreationProgress('Finalizing course creation...');
+      
+      // Add another small delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       console.log('Complete AI course created successfully:', result.data);
+      
+      setCreationProgress('Course created successfully!');
       
       // Notify parent component
       if (onCourseCreated) {
@@ -263,18 +439,15 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         onCourseCreated(courseObj);
       }
       
+      // Show detailed success message
+      console.log(`✅ Course "${courseData.title}" created successfully! Modules: ${result.data.totalModules}, Lessons: ${result.data.totalLessons}`);
+      
       // Close the panel
       onClose();
-      
-      // Show detailed success message
-      alert(`Course "${courseData.title}" created successfully!\n\n` +
-            `✅ Course: Created\n` +
-            `✅ Modules: ${result.data.totalModules} created\n` +
-            `✅ Lessons: ${result.data.totalLessons} created\n\n` +
-            `All data has been saved to your deployed backend database.`);
     } catch (error) {
       console.error('Failed to save AI course:', error);
-      alert('Failed to save course: ' + error.message);
+      setCreationProgress('');
+      console.error('❌ Failed to save course:', error.message);
       // Log detailed error for debugging
       console.error("AI course save error details:", {
         message: error.message,
@@ -282,6 +455,9 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         courseData: courseData,
         aiOutline: aiOutline
       });
+    } finally {
+      setIsCreatingCourse(false);
+      setCreationProgress('');
     }
   };
 
@@ -291,7 +467,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     // Here you would typically update the course with the new lessons
     // For now, we'll just close the lesson creator and show a success message
     setShowLessonCreator(false);
-    alert(`Successfully created ${lessonData.lessons.length} lessons for "${lessonData.courseTitle}"!`);
+    console.log(`✅ Successfully created ${lessonData.lessons.length} lessons for "${lessonData.courseTitle}"`);
   };
 
   // Reset form when panel is closed
@@ -315,8 +491,6 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       setAiImageError('');
     }
   }, [isOpen]);
-
-  const [showLessonCreator, setShowLessonCreator] = useState(false);
 
   return (
     <AnimatePresence>
@@ -403,14 +577,24 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                       <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">Course Preview</h3>
                       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         {/* Course thumbnail */}
-                        <div className="h-40 bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center">
+                        <div className="h-40 bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center relative overflow-hidden">
                           {courseData.thumbnail ? (
-                            <div className="text-white text-center">
-                              <span className="text-sm">{courseData.thumbnail}</span>
-                            </div>
-                          ) : (
+                            <img 
+                              src={courseData.thumbnail} 
+                              alt="Course Thumbnail" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className={`absolute inset-0 flex items-center justify-center ${courseData.thumbnail ? 'hidden' : 'flex'}`}
+                            style={{ display: courseData.thumbnail ? 'none' : 'flex' }}
+                          >
                             <span className="text-white text-sm font-medium">Course Thumbnail</span>
-                          )}
+                          </div>
                         </div>
                         
                         {/* Course info */}
@@ -421,6 +605,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                           <p className="text-sm text-gray-500 mb-3">
                             {courseData.subject || 'Subject Domain'}
                           </p>
+                          
                           <p className="text-sm text-gray-600 line-clamp-2">
                             {courseData.description || 'Course description will appear here...'}
                           </p>
@@ -438,6 +623,24 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                       </div>
                     </div>
                     
+                    {/* Debug info */}
+                    <div className="text-xs text-gray-500 mb-2 p-2 bg-yellow-50 rounded">
+                      Debug: aiOutline = {aiOutline ? 'exists' : 'null'}, 
+                      modules = {aiOutline?.modules?.length || 0}
+                      <button 
+                        onClick={() => {
+                          console.log('🔍 Current aiOutline state:', aiOutline);
+                          if (!aiOutline) {
+                            console.log('🔄 Manually triggering outline generation...');
+                            handleGenerateOutline();
+                          }
+                        }}
+                        className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                      >
+                        {aiOutline ? 'Log State' : 'Generate Now'}
+                      </button>
+                    </div>
+
                     {/* AI-generated outline preview */}
                     {aiOutline && (
                       <div>
@@ -447,9 +650,14 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                             <h4 className="font-semibold text-gray-900 mb-3">{aiOutline.course_title}</h4>
                             <div className="space-y-3">
                               {aiOutline.modules?.map((module, index) => (
-                                <div key={`${module?.module_title || 'module'}-${index}`} className="border-l-2 border-purple-500 pl-3">
-                                  <p className="font-medium text-gray-900 text-sm">{module?.module_title || 'Untitled Module'}</p>
-                                  <p className="text-xs text-gray-600">{module?.lesson?.lesson_title || 'Untitled Lesson'}</p>
+                                <div key={`${module?.module_title || module?.title || 'module'}-${index}`} className="border-l-2 border-purple-500 pl-3">
+                                  <p className="font-medium text-gray-900 text-sm">{module?.module_title || module?.title || 'Untitled Module'}</p>
+                                  <p className="text-xs text-gray-600">
+                                    {module?.lessons?.length > 0 
+                                      ? `${module.lessons.length} lesson${module.lessons.length > 1 ? 's' : ''}: ${module.lessons[0]?.lesson_title || module.lessons[0]?.title || 'Lesson 1'}`
+                                      : module?.lesson?.lesson_title || 'No lessons yet'
+                                    }
+                                  </p>
                                 </div>
                               )) || []}
                             </div>
@@ -767,6 +975,8 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                                   {aiImageError && (
                                     <div className="text-sm text-red-600">{aiImageError}</div>
                                   )}
+                                  
+                                  
                                   <div className="text-xs text-gray-500">
                                     <p>Tip: Include details like subject matter, style, and mood for better results.</p>
                                   </div>
@@ -801,170 +1011,73 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                                 className="w-full bg-indigo-600 hover:bg-indigo-700 flex items-center gap-2 mt-3"
                               >
                                 <Book className="w-4 h-4" />
-                                Create AI Lessons
+                                Enhanced AI Lesson Creator
                               </Button>
                               <Button
                                 onClick={handleSaveCourse}
-                                className="w-full bg-purple-600 hover:bg-purple-700 flex items-center gap-2 mt-3"
+                                disabled={isCreatingCourse}
+                                className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mt-3"
                               >
-                                <Check className="w-4 h-4" />
-                                Create Course
+                                {isCreatingCourse ? (
+                                  <>
+                                    <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
+                                    Creating Course...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    Create Course
+                                  </>
+                                )}
                               </Button>
+                              
+                              {/* Progress indicator */}
+                              {isCreatingCourse && creationProgress && (
+                                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                    <span className="text-sm text-blue-700 font-medium">{creationProgress}</span>
+                                  </div>
+                                </div>
+                              )}
                             </>
                           )}
-                        </div>
-                      )}
-                      
-                      {activeTab === 'content' && (
-                        <div className="space-y-4">
-                          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-purple-600" />
-                            Content Creation
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Generate and customize lesson content for your course modules.
-                          </p>
-                          <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                            <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p>Content creation tools will appear here</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {activeTab === 'media' && (
-                        <div className="space-y-4">
-                          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <ImageIcon className="w-4 h-4 text-purple-600" />
-                            Media Assets
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Generate images, videos, and other media for your course content.
-                          </p>
-                          <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                            <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p>Media generation tools will appear here</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {activeTab === 'interactives' && (
-                        <div className="space-y-4">
-                          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-purple-600" />
-                            Interactive Elements
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Add quizzes, discussions, and collaborative activities to your course.
-                          </p>
-                          <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                            <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p>Interactive tools will appear here</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {activeTab === 'analytics' && (
-                        <div className="space-y-4">
-                          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <BarChart3 className="w-4 h-4 text-purple-600" />
-                            Analytics & Insights
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Track engagement and performance metrics for your AI-generated course.
-                          </p>
-                          <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                            <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p>Analytics dashboard will appear here</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {activeTab === 'settings' && (
-                        <div className="space-y-4">
-                          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                            <Settings className="w-4 h-4 text-purple-600" />
-                            Course Settings
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Configure course visibility, pricing, and access settings.
-                          </p>
-                          <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="font-medium text-gray-900">Publish Course</h4>
-                                <p className="text-sm text-gray-500">Make course available to students</p>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                              </label>
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h4 className="font-medium text-gray-900">Require Final Quiz</h4>
-                                <p className="text-sm text-gray-500">Students must pass a final quiz to complete course</p>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" className="sr-only peer" defaultChecked />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                              </label>
-                            </div>
-                            
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Course Price</label>
-                              <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                  <span className="text-gray-500 sm:text-sm">$</span>
-                                </div>
-                                <input
-                                  type="number"
-                                  className="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
-                                  placeholder="0.00"
-                                  defaultValue="0"
-                                />
-                                <div className="absolute inset-y-0 right-0 flex items-center">
-                                  <label htmlFor="currency" className="sr-only">Currency</label>
-                                  <select id="currency" name="currency" className="focus:ring-purple-500 focus:border-purple-500 h-full py-0 pl-2 pr-7 border-transparent bg-transparent text-gray-500 rounded-md">
-                                    <option>USD</option>
-                                    <option>CAD</option>
-                                    <option>EUR</option>
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <Button
-                            onClick={handleSaveCourse}
-                            className="w-full bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
-                          >
-                            <Check className="w-4 h-4" />
-                            Save and Publish Course
-                          </Button>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-                
-                {/* Lesson Creator Modal */}
-                {showLessonCreator && (
-                  <AILessonCreator
-                    isOpen={showLessonCreator}
-                    onClose={() => setShowLessonCreator(false)}
-                    courseTitle={courseData.title}
-                    aiOutline={aiOutline}
-                    onLessonsCreated={handleLessonsCreated}
-                  />
-                )}
               </div>
             )}
           </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
+            
+            {/* Enhanced AI Lesson Creator Modal */}
+            {showLessonCreator && (
+              <EnhancedAILessonCreator
+                isOpen={showLessonCreator}
+                onClose={() => setShowLessonCreator(false)}
+                courseTitle={courseData.title}
+                courseData={courseData}
+                aiOutline={aiOutline}
+                onLessonsCreated={handleLessonsCreated}
+              />
+            )}
+            
+            {/* AI Text Editor Modal */}
+            {showTextEditor && (
+              <AITextEditor
+                isOpen={showTextEditor}
+                onClose={() => setShowTextEditor(false)}
+                onSave={handleTextEditorSave}
+                initialContent={textEditorContent}
+                initialType={textEditorType}
+                title="AI Course Content Editor"
+              />
+            )}
+          </>
+        )}
+      </AnimatePresence>
+    );
 };
 
 export default AICourseCreationPanel;

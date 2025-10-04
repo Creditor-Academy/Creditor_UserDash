@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { User, LogOut, Book, Library, GraduationCap } from "lucide-react";
 import { getUserAvatarUrl, getUserAvatarUrlSync, refreshAvatarFromBackend, validateAvatarImage } from "@/lib/avatar-utils";
 import { motion } from "framer-motion";

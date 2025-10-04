@@ -1,6 +1,45 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+import { 
+  Type, 
+  Heading1, 
+  FileText, 
+  Quote, 
+  Image as ImageIcon, 
+  Video, 
+  AudioLines, 
+  Youtube, 
+  Link as LinkIcon, 
+  Table, 
+  Box,
+  AlertCircle,
+  List,
+  CheckSquare
+} from 'lucide-react';
+
+// Icon mapping helper
+const getIconComponent = (iconName) => {
+  const iconMap = {
+    Type: Type,
+    Heading1: Heading1,
+    FileText: FileText,
+    Quote: Quote,
+    Image: ImageIcon,
+    Video: Video,
+    AudioLines: AudioLines,
+    Youtube: Youtube,
+    Link: LinkIcon,
+    Table: Table,
+    Box: Box,
+    AlertCircle: AlertCircle,
+    List: List,
+    CheckSquare: CheckSquare
+  };
+  
+  const IconComponent = iconMap[iconName];
+  return IconComponent ? <IconComponent className="w-4 h-4" /> : null;
+};
 
 const ContentLibrary = ({ onBlockClick, sidebarCollapsed }) => {
   return (
@@ -30,7 +69,7 @@ const ContentLibrary = ({ onBlockClick, sidebarCollapsed }) => {
               >
                 <CardContent className="flex flex-col items-center justify-center p-3 h-full">
                   <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2 group-hover:bg-indigo-200 transition-colors">
-                    {blockType.icon}
+                    {getIconComponent(blockType.iconName)}
                   </div>
                   <h3 className="text-xs font-medium text-gray-800 text-center">
                     {blockType.title}

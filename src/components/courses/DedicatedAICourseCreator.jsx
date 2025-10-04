@@ -41,19 +41,15 @@ const DedicatedAICourseCreator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState({});
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [activeContentTab, setActiveContentTab] = useState('file'); // 'file' or 'url'
   const [sourceContent, setSourceContent] = useState('');
   const fileInputRef = useRef(null);
   const [showLessonCreator, setShowLessonCreator] = useState(false);
+  const [editingModule, setEditingModule] = useState(null);
+  const [courseCreationStatus, setCourseCreationStatus] = useState('');
 
   const tabs = [
-    { id: 'outline', label: 'Course Outline', icon: BookOpen },
-    { id: 'content', label: 'Content Creation', icon: FileText },
-    { id: 'media', label: 'Media Assets', icon: ImageIcon },
-    { id: 'interactives', label: 'Interactives', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'outline', label: 'Course Outline', icon: BookOpen }
   ];
 
   // Handle drag and drop events
@@ -87,7 +83,7 @@ const DedicatedAICourseCreator = () => {
       // For now, we'll just store the file name
       setCourseData(prev => ({ ...prev, thumbnail: file.name }));
     } else {
-      alert('Please select an image file');
+      console.log('⚠️ Please select an image file');
     }
   };
 
@@ -132,7 +128,7 @@ const DedicatedAICourseCreator = () => {
       }
     } catch (error) {
       console.error('Failed to generate course outline:', error);
-      alert('Failed to generate course outline: ' + error.message);
+      console.error('❌ Failed to generate course outline:', error.message);
     } finally {
       setIsGenerating(false);
     }
@@ -142,14 +138,24 @@ const DedicatedAICourseCreator = () => {
   const handleSaveCourse = async () => {
     // Validate required fields before saving
     if (!courseData.title?.trim()) {
-      alert('Please enter a course title before saving.');
+      console.log('⚠️ Course title is required');
+      setCourseCreationStatus('❌ Course title is required');
       return;
     }
     
     if (!courseData.description?.trim()) {
-      alert('Please enter a course description before saving.');
+      console.log('⚠️ Course description is required');
+      setCourseCreationStatus('❌ Course description is required');
       return;
     }
+
+    if (!aiOutline || !aiOutline.modules || aiOutline.modules.length === 0) {
+      console.log('⚠️ Please generate course outline first');
+      setCourseCreationStatus('❌ Please generate course outline first');
+      return;
+    }
+
+    setCourseCreationStatus('🚀 Creating course...');
 
     try {
       // Use the existing createAICourse function from courseService
@@ -167,38 +173,48 @@ const DedicatedAICourseCreator = () => {
       };
 
       console.log('Creating AI course with payload:', coursePayload);
+      setCourseCreationStatus('📚 Creating course structure...');
       
       // Use the existing createAICourse function
       const createdCourse = await createAICourse(coursePayload);
       
       console.log('Course created successfully:', createdCourse);
+      setCourseCreationStatus('📝 Creating modules and lessons...');
       
-      // If we have AI-generated modules, create them using the existing function
-      if (aiOutline && aiOutline.modules && aiOutline.modules.length > 0) {
-        console.log('Creating AI modules and lessons...');
+      // Create modules and lessons
+      const outlines = [{
+        modules: aiOutline.modules.map((module, index) => ({
+          title: module.title || `Module ${index + 1}`,
+          description: module.description || '',
+          lessons: module.lessons || []
+        }))
+      }];
+      
+      // Create modules and lessons using the existing function
+      const moduleResult = await createAIModulesAndLessons(createdCourse.data.id, outlines);
+      console.log('Modules and lessons created:', moduleResult);
+      
+      // Check if modules were actually created
+      const totalModules = moduleResult?.modules?.length || 0;
+      const totalLessons = moduleResult?.lessons?.length || 0;
+      
+      if (totalModules > 0) {
+        setCourseCreationStatus(`✅ Course created successfully! ${totalModules} modules, ${totalLessons} lessons`);
+        console.log(`✅ Course "${courseData.title}" created successfully with ${totalModules} modules and ${totalLessons} lessons!`);
         
-        // Transform the AI outline to match the expected format
-        const outlines = [{
-          modules: aiOutline.modules.map((module, index) => ({
-            title: module.title || `Module ${index + 1}`,
-            description: module.description || '',
-            lessons: module.lessons || []
-          }))
-        }];
-        
-        // Create modules and lessons using the existing function
-        const moduleResult = await createAIModulesAndLessons(createdCourse.data.id, outlines);
-        console.log('Modules and lessons created:', moduleResult);
+        // Wait a moment to show success message, then navigate
+        setTimeout(() => {
+          navigate('/dashboard/courses');
+        }, 2000);
+      } else {
+        setCourseCreationStatus('⚠️ Course created but modules may not have been saved properly');
+        console.log('⚠️ Course created but no modules were returned from creation');
       }
       
-      // Show success message
-      alert(`Course "${courseData.title}" created successfully with ${aiOutline?.modules?.length || 0} modules!`);
-      
-      // Navigate to dashboard or course list after saving
-      navigate('/dashboard/courses');
     } catch (error) {
       console.error('Failed to save AI course:', error);
-      alert('Failed to save course: ' + error.message);
+      console.error('❌ Failed to save course:', error.message);
+      setCourseCreationStatus(`❌ Failed to save course: ${error.message}`);
     }
   };
 
@@ -208,6 +224,36 @@ const DedicatedAICourseCreator = () => {
     // Here you would typically update the course with the new lessons
     // For now, we'll just close the lesson creator
     setShowLessonCreator(false);
+  };
+
+  // Edit module functionality
+  const editModule = (moduleIndex) => {
+    if (aiOutline && aiOutline.modules && aiOutline.modules[moduleIndex]) {
+      setEditingModule({
+        index: moduleIndex,
+        ...aiOutline.modules[moduleIndex]
+      });
+    }
+  };
+
+  // Save edited module
+  const saveEditedModule = (editedModule) => {
+    if (editingModule && aiOutline) {
+      const updatedModules = [...aiOutline.modules];
+      updatedModules[editingModule.index] = {
+        title: editedModule.title,
+        description: editedModule.description,
+        lessons: editedModule.lessons || updatedModules[editingModule.index].lessons
+      };
+      
+      setAiOutline({
+        ...aiOutline,
+        modules: updatedModules
+      });
+      
+      setEditingModule(null);
+      console.log('✅ Module updated successfully');
+    }
   };
 
   return (
@@ -573,92 +619,18 @@ const DedicatedAICourseCreator = () => {
               </div>
             )}
             
-            {activeTab === 'content' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-purple-600" />
-                  Content Creation
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Generate and customize lesson content for your course modules.
-                </p>
-                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                  <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Content creation tools will appear here</p>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'media' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-purple-600" />
-                  Media Assets
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Generate images, videos, and other media for your course content.
-                </p>
-                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                  <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Media generation tools will appear here</p>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'interactives' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-purple-600" />
-                  Interactive Elements
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Add quizzes, discussions, and collaborative activities to your course.
-                </p>
-                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                  <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Interactive tools will appear here</p>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'analytics' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-purple-600" />
-                  Analytics & Insights
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Track engagement and performance metrics for your AI-generated course.
-                </p>
-                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Analytics dashboard will appear here</p>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'settings' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-purple-600" />
-                  Course Settings
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Configure course visibility, pricing, and access settings.
-                </p>
-                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border border-gray-200">
-                  <Settings className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p>Settings panel will appear here</p>
-                </div>
-              </div>
-            )}
           </div>
           
           {/* Footer */}
           <div className="bg-gray-50 p-4 border-t border-gray-200">
+            {courseCreationStatus && (
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">{courseCreationStatus}</p>
+              </div>
+            )}
             <Button
               onClick={handleSaveCourse}
-              disabled={!aiOutline}
+              disabled={!aiOutline || courseCreationStatus.includes('Creating')}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
               <Check className="w-4 h-4 mr-2" />
@@ -675,6 +647,50 @@ const DedicatedAICourseCreator = () => {
         courseTitle={courseData.title}
         onLessonsCreated={handleLessonsCreated}
       />
+
+      {/* Module Edit Modal */}
+      {editingModule && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Edit Module</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={editingModule.title}
+                  onChange={(e) => setEditingModule({...editingModule, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={editingModule.description}
+                  onChange={(e) => setEditingModule({...editingModule, description: e.target.value})}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={() => saveEditedModule(editingModule)}
+                className="flex-1 bg-purple-600 hover:bg-purple-700"
+              >
+                Save Changes
+              </Button>
+              <Button
+                onClick={() => setEditingModule(null)}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

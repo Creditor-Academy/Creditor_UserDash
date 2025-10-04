@@ -1,56 +1,68 @@
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
+import api from './apiClient'; // Enhanced API client with token refresh
 import axios from 'axios';
 
 export async function fetchAllCourses() {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getAllCourses`, {
-      method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-    ...getAuthHeader(),
-  },
-  credentials: 'include',
-});
-  if (!response.ok) {
-    throw new Error('Failed to fetch courses');
+  try {
+    // Use the enhanced API client with automatic token refresh
+    const response = await api.get('/api/course/getAllCourses');
+    
+    console.log('fetchAllCourses success response:', response.data);
+    return response.data.data || response.data;
+    
+  } catch (error) {
+    console.error('fetchAllCourses error response:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const backendMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    throw new Error(backendMessage || `Failed to fetch courses (${error.response?.status || 'Unknown'})`);
   }
-  const data = await response.json();
-  return data.data;
 }
 
 export async function fetchCourseById(courseId) {
-const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourseById/${courseId}`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-    ...getAuthHeader(),
-  },
-  credentials: 'include',
-});
-if (!response.ok) {
-  throw new Error('Failed to fetch course details');
-}
-const data = await response.json();
-return data.data || data;
+  try {
+    // Use the enhanced API client with automatic token refresh
+    const response = await api.get(`/api/course/getCourseById/${courseId}`);
+    
+    console.log('fetchCourseById success response:', response.data);
+    return response.data.data || response.data;
+    
+  } catch (error) {
+    console.error('fetchCourseById error response:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const backendMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    throw new Error(backendMessage || `Failed to fetch course details (${error.response?.status || 'Unknown'})`);
+  }
 }
 
 export async function fetchUserCourses(withModules = false) {
-  const url = new URL(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`);
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    },
-    credentials: 'include',
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch user courses');
+  try {
+    // Use the enhanced API client with automatic token refresh
+    const response = await api.get('/api/course/getCourses');
+    
+    console.log('fetchUserCourses success response:', response.data);
+    return response.data.data || response.data;
+    
+  } catch (error) {
+    console.error('fetchUserCourses error response:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const backendMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    throw new Error(backendMessage || `Failed to fetch user courses (${error.response?.status || 'Unknown'})`);
   }
-  
-  const data = await response.json();
-  return data.data;
 }
 
 export async function createCourse(courseData) {
@@ -108,40 +120,24 @@ export async function createAICourse(courseData) {
 
   console.log('Sending AI course data:', aiCourseData);
 
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/createCourse`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...getAuthHeader(),
-    },
-    credentials: 'include',
-    body: JSON.stringify(aiCourseData),
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
+  try {
+    // Use the enhanced API client with automatic token refresh
+    const response = await api.post('/api/course/createCourse', aiCourseData);
+    
+    console.log('Course created successfully:', response.data);
+    return response.data;
+    
+  } catch (error) {
     console.error('Full API Error Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      body: errorText
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
     });
     
-    let errorData;
-    try {
-      errorData = JSON.parse(errorText);
-      console.error('Parsed error data:', errorData);
-    } catch {
-      errorData = { message: errorText || 'Unknown error' };
-    }
-    
-    const backendMessage = errorData.errorMessage || errorData.message;
-    throw new Error(backendMessage || errorText || `Failed to create AI course (${response.status})`);
+    const backendMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    throw new Error(backendMessage || `Failed to create AI course (${error.response?.status || 'Unknown'})`);
   }
-  
-  const data = await response.json();
-  console.log('Course created successfully:', data);
-  return data;
 }
 
 export async function updateCourse(courseId, courseData) {
@@ -784,49 +780,26 @@ if (!response.ok) {
 const data = await response.json();
 return data.data || data; // Handle different response structures
 }
-
 export async function createModule(courseId, moduleData) {
   console.log('createModule called with:', { courseId, moduleData });
   
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-      body: JSON.stringify(moduleData),
-    });
-
-    console.log('createModule response status:', response.status);
-    console.log('createModule response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('createModule error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      });
-      
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { message: errorText || 'Unknown error' };
-      }
-      
-      throw new Error(errorData.errorMessage || errorData.message || errorText || `Failed to create module (${response.status})`);
-    }
-
-    const data = await response.json();
-    console.log('createModule success response:', data);
-    return data.data || data;
+    // Use the enhanced API client with automatic token refresh
+    const response = await api.post(`/api/course/${courseId}/modules/create`, moduleData);
+    
+    console.log('createModule success response:', response.data);
+    return response.data.data || response.data;
     
   } catch (error) {
-    console.error('createModule caught error:', error);
-    throw error;
+    console.error('createModule error response:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const backendMessage = error.response?.data?.errorMessage || error.response?.data?.message || error.message;
+    throw new Error(backendMessage || `Failed to create module (${error.response?.status || 'Unknown'})`);
   }
 }
 
