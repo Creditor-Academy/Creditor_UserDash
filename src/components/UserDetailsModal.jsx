@@ -69,6 +69,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [loadingPurchasedModules, setLoadingPurchasedModules] = React.useState(false);
   const [purchasedModulesError, setPurchasedModulesError] = React.useState(null);
   const [coursePrices, setCoursePrices] = React.useState({});
+  const [expandedModuleCourses, setExpandedModuleCourses] = React.useState({});
+  const [totalModulesPerCourse, setTotalModulesPerCourse] = React.useState({});
 
   // Fetch courses for the selected user when modal opens or user changes
 
@@ -100,6 +102,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       if (coursesArray.length > 0) {
         fetchModulesForCourses(coursesArray);
         fetchPricesForCourses(coursesArray);
+        fetchTotalModulesForCourses(coursesArray);
         // Fetch unlocked/purchased modules for the viewed user (single call)
         await fetchPurchasedModulesForUser(coursesArray);
       }
@@ -209,10 +212,65 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
     }
   };
 
+  // Fetch total modules count for each course
+  const fetchTotalModulesForCourses = async (coursesArray) => {
+    try {
+      const entries = await Promise.all(
+        (coursesArray || []).map(async (c) => {
+          const id = c.course_id || c.id;
+          if (!id) return null;
+          try {
+            const response = await fetch(`/api/course/${id}/modules/getAllModules`);
+            if (!response.ok) return null;
+            const modules = await response.json();
+            const totalCount = Array.isArray(modules) ? modules.length : 0;
+            return [id, totalCount];
+          } catch (_) {
+            return null;
+          }
+        })
+      );
+      const map = {};
+      entries.forEach((e) => {
+        if (e && e[0] != null) map[e[0]] = e[1];
+      });
+      setTotalModulesPerCourse((prev) => ({ ...prev, ...map }));
+    } catch (_) {
+      // silently ignore failures
+    }
+  };
+
   const formatPrice = (price) => {
     if (price === undefined || price === null || price === "") return null;
     const str = String(price).trim().replace(/^\$/, "");
     return `$${str}`;
+  };
+
+  // Helper function to group modules by course
+  const groupModulesByCourse = (modules) => {
+    const grouped = {};
+    modules.forEach(module => {
+      const courseId = module.course_id || module.module?.course_id || module.courseId;
+      const courseTitle = module.course_title || module.module?.course_title || 'Unknown Course';
+      
+      if (!grouped[courseId]) {
+        grouped[courseId] = {
+          courseId,
+          courseTitle,
+          modules: []
+        };
+      }
+      grouped[courseId].modules.push(module);
+    });
+    
+    return Object.values(grouped);
+  };
+
+  // Helper function to get purchased modules count for a course
+  const getPurchasedModulesCount = (courseId) => {
+    return purchasedModules.filter(module => 
+      (module.course_id || module.module?.course_id || module.courseId) === courseId
+    ).length;
   };
   
   const fetchModulesForCourses = async (coursesArray) => {
@@ -575,13 +633,17 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
     <Dialog open={isOpen} onOpenChange={onClose}>
 
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden rounded-2xl shadow-2xl border-0">
 
-        <DialogHeader className="pb-2 border-b border-gray-100">
+        <DialogHeader className="px-8 py-6 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200/60 rounded-t-2xl">
 
-          <DialogTitle className="flex items-center gap-2 text-xl">
+          <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-900">
 
-            <User className="h-5 w-5" />
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+
+              <User className="h-6 w-6 text-white" />
+
+            </div>
 
             User Details
 
@@ -591,17 +653,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
 
 
-        <div className="space-y-6">
+        <div className="px-8 py-6 space-y-8 max-h-[calc(95vh-120px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
 
           {/* Basic Information */}
 
-          <Card className="shadow-sm border border-gray-100">
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/30 rounded-2xl overflow-hidden">
 
-            <CardHeader className="pb-3 border-b border-gray-100">
+            <CardHeader className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100/50">
 
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-800">
 
-                <User className="h-4 w-4" />
+                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm">
+
+                  <User className="h-5 w-5 text-white" />
+
+                </div>
 
                 Basic Information
 
@@ -609,9 +675,9 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
             </CardHeader>
 
-            <CardContent className="space-y-4">
+            <CardContent className="px-6 py-6 space-y-6">
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
 
                 {user.image ? (
 
@@ -621,15 +687,15 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                     alt={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User avatar'}
 
-                    className="h-16 w-16 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200"
+                    className="h-20 w-20 rounded-2xl object-cover flex-shrink-0 ring-4 ring-white shadow-lg"
 
                   />
 
                 ) : (
 
-                  <div className="h-16 w-16 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200">
+                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0 ring-4 ring-white shadow-lg">
 
-                    <span className="text-lg font-medium text-gray-700">
+                    <span className="text-xl font-bold text-white">
 
                       {user.first_name?.[0]}{user.last_name?.[0]}
 
@@ -641,7 +707,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                 <div className="flex-1 min-w-0">
 
-                  <h3 className="text-lg font-semibold text-gray-900 break-words">
+                  <h3 className="text-2xl font-bold text-gray-900 break-words mb-2">
 
                     {user.first_name} {user.last_name}
 
@@ -649,11 +715,11 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                   {isInstructorOrAdmin && (
 
-                    <p className="text-sm text-gray-500 break-all">{user.email}</p>
+                    <p className="text-sm text-gray-600 break-all mb-3 font-medium">{user.email}</p>
 
                   )}
 
-                  <Badge className={`mt-2 ${getRoleBadgeColor(userRole)}`}>
+                  <Badge className={`px-3 py-1 text-sm font-medium ${getRoleBadgeColor(userRole)} rounded-full`}>
 
                     {userRole}
 
@@ -665,21 +731,25 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
 
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
                 {isInstructorOrAdmin && (
 
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <div className="flex items-center gap-2">
+                    <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
 
-                      <Mail className="h-4 w-4 text-gray-500 flex-shrink-0" />
-
-                      <span className="text-sm text-gray-600">Email:</span>
+                      <Mail className="h-4 w-4 text-blue-600" />
 
                     </div>
 
-                    <span className="text-sm font-medium break-all sm:ml-6">{user.email}</span>
+                    <div className="flex-1 min-w-0">
+
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Email</p>
+
+                      <p className="text-sm font-semibold text-gray-900 break-all">{user.email}</p>
+
+                    </div>
 
                   </div>
 
@@ -689,17 +759,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                 {isInstructorOrAdmin && (
 
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <div className="flex items-center gap-2">
+                    <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
 
-                      <Phone className="h-4 w-4 text-gray-500 flex-shrink-0" />
-
-                      <span className="text-sm text-gray-600">Phone:</span>
+                      <Phone className="h-4 w-4 text-green-600" />
 
                     </div>
 
-                    <span className="text-sm font-medium break-all sm:ml-6">{user.phone || 'Not set'}</span>
+                    <div className="flex-1 min-w-0">
+
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Phone</p>
+
+                      <p className="text-sm font-semibold text-gray-900 break-all">{user.phone || 'Not set'}</p>
+
+                    </div>
 
                   </div>
 
@@ -709,17 +783,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                 {user.location && (
 
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <div className="flex items-center gap-2">
+                    <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
 
-                      <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
-
-                      <span className="text-sm text-gray-600">Location:</span>
+                      <MapPin className="h-4 w-4 text-purple-600" />
 
                     </div>
 
-                    <span className="text-sm font-medium break-words sm:ml-6">{user.location}</span>
+                    <div className="flex-1 min-w-0">
+
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Location</p>
+
+                      <p className="text-sm font-semibold text-gray-900 break-words">{user.location}</p>
+
+                    </div>
 
                   </div>
 
@@ -729,17 +807,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                 {isInstructorOrAdmin && (
 
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <div className="flex items-center gap-2">
+                    <div className="p-2 bg-pink-100 rounded-lg flex-shrink-0">
 
-                      <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
-
-                      <span className="text-sm text-gray-600">Gender:</span>
+                      <User className="h-4 w-4 text-pink-600" />
 
                     </div>
 
-                    <span className="text-sm font-medium capitalize sm:ml-6">{user.gender || 'Not set'}</span>
+                    <div className="flex-1 min-w-0">
+
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Gender</p>
+
+                      <p className="text-sm font-semibold text-gray-900 capitalize">{user.gender || 'Not set'}</p>
+
+                    </div>
 
                   </div>
 
@@ -749,27 +831,35 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                 {user.website && (
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <Globe className="h-4 w-4 text-gray-500" />
+                    <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
 
-                    <span className="text-sm text-gray-600">Website:</span>
+                      <Globe className="h-4 w-4 text-indigo-600" />
 
-                    <a 
+                    </div>
 
-                      href={user.website} 
+                    <div className="flex-1 min-w-0">
 
-                      target="_blank" 
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Website</p>
 
-                      rel="noopener noreferrer"
+                      <a 
 
-                      className="text-sm font-medium text-blue-600 hover:underline break-all"
+                        href={user.website} 
 
-                    >
+                        target="_blank" 
 
-                      {user.website}
+                        rel="noopener noreferrer"
 
-                    </a>
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline break-all transition-colors"
+
+                      >
+
+                        {user.website}
+
+                      </a>
+
+                    </div>
 
                   </div>
 
@@ -779,69 +869,85 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                 {/* Social Handles - always show rows, fall back to Not set (Instagram removed) */}
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                  <Globe className="h-4 w-4 text-gray-500" />
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
 
-                  <span className="text-sm text-gray-600">LinkedIn:</span>
+                    <Globe className="h-4 w-4 text-blue-600" />
 
-                  {user?.social_handles?.linkedin ? (
+                  </div>
 
-                    <a 
+                  <div className="flex-1 min-w-0">
 
-                      href={user.social_handles.linkedin} 
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">LinkedIn</p>
 
-                      target="_blank" 
+                    {user?.social_handles?.linkedin ? (
 
-                      rel="noopener noreferrer"
+                      <a 
 
-                      className="text-sm font-medium text-blue-600 hover:underline break-all"
+                        href={user.social_handles.linkedin} 
 
-                    >
+                        target="_blank" 
 
-                      {user.social_handles.linkedin}
+                        rel="noopener noreferrer"
 
-                    </a>
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline break-all transition-colors"
 
-                  ) : (
+                      >
 
-                    <span className="text-sm font-medium text-gray-500">Not set</span>
+                        {user.social_handles.linkedin}
 
-                  )}
+                      </a>
+
+                    ) : (
+
+                      <span className="text-sm font-semibold text-gray-500">Not set</span>
+
+                    )}
+
+                  </div>
 
                 </div>
 
 
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                  <Globe className="h-4 w-4 text-gray-500" />
+                  <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
 
-                  <span className="text-sm text-gray-600">Facebook:</span>
+                    <Globe className="h-4 w-4 text-blue-600" />
 
-                  {user?.social_handles?.facebook ? (
+                  </div>
 
-                    <a 
+                  <div className="flex-1 min-w-0">
 
-                      href={user.social_handles.facebook} 
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Facebook</p>
 
-                      target="_blank" 
+                    {user?.social_handles?.facebook ? (
 
-                      rel="noopener noreferrer"
+                      <a 
 
-                      className="text-sm font-medium text-blue-600 hover:underline break-all"
+                        href={user.social_handles.facebook} 
 
-                    >
+                        target="_blank" 
 
-                      {user.social_handles.facebook}
+                        rel="noopener noreferrer"
 
-                    </a>
+                        className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline break-all transition-colors"
 
-                  ) : (
+                      >
 
-                    <span className="text-sm font-medium text-gray-500">Not set</span>
+                        {user.social_handles.facebook}
 
-                  )}
+                      </a>
+
+                    ) : (
+
+                      <span className="text-sm font-semibold text-gray-500">Not set</span>
+
+                    )}
+
+                  </div>
 
                 </div>
 
@@ -853,17 +959,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
 
 
-              <div className="pt-3 mt-1 border-t border-gray-100">
+              <div className="pt-6 mt-6 border-t border-gray-200/60">
 
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100/50">
 
-                  <User className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                  <div className="p-2 bg-amber-100 rounded-lg flex-shrink-0">
+
+                    <User className="h-4 w-4 text-amber-600" />
+
+                  </div>
 
                   <div className="flex-1">
 
-                    <span className="text-sm text-gray-600">Bio</span>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Bio</p>
 
-                    <div className="sm:ml-6 mt-1">
+                    <div className="space-y-2">
 
                       {(() => {
 
@@ -879,7 +989,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                           <>
 
-                            <p className="text-sm font-medium text-gray-700 break-words whitespace-pre-line">{shown}</p>
+                            <p className="text-sm font-medium text-gray-800 break-words whitespace-pre-line leading-relaxed">{shown}</p>
 
                             {isLong && (
 
@@ -889,11 +999,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                                 onClick={() => setBioExpanded(!bioExpanded)}
 
-                                className="mt-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full transition-all duration-200"
 
                               >
 
                                 {bioExpanded ? 'Show less' : 'Show more'}
+
+                                {bioExpanded ? (
+
+                                  <ChevronDown className="h-3 w-3" />
+
+                                ) : (
+
+                                  <ChevronRight className="h-3 w-3" />
+
+                                )}
 
                               </button>
 
@@ -923,13 +1043,17 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
           {isInstructorOrAdmin && (
 
-            <Card className="shadow-sm border border-gray-100">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30 rounded-2xl overflow-hidden">
 
-              <CardHeader className="pb-3 border-b border-gray-100">
+              <CardHeader className="px-6 py-5 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-slate-100/50">
 
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-800">
 
-                  <Shield className="h-4 w-4" />
+                  <div className="p-2 bg-gradient-to-r from-slate-500 to-gray-600 rounded-lg shadow-sm">
+
+                    <Shield className="h-5 w-5 text-white" />
+
+                  </div>
 
                   Account Information
 
@@ -937,53 +1061,77 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="px-6 py-6 space-y-6">
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
 
-                    <span className="text-sm text-gray-600">Joined:</span>
+                      <Calendar className="h-4 w-4 text-blue-600" />
 
-                    <span className="text-sm font-medium">
+                    </div>
 
-                      {formatDate(user.created_at)}
+                    <div className="flex-1 min-w-0">
 
-                    </span>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Joined</p>
 
-                  </div>
+                      <p className="text-sm font-semibold text-gray-900">
 
+                        {formatDate(user.created_at)}
 
+                      </p>
 
-                  <div className="flex items-center gap-2">
-
-                    <Clock className="h-4 w-4 text-gray-500" />
-
-                    <span className="text-sm text-gray-600">Last Active:</span>
-
-                    <span className="text-sm font-medium">
-
-                      {lastActiveLabel}
-
-                    </span>
+                    </div>
 
                   </div>
 
 
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                    <Activity className="h-4 w-4 text-gray-500" />
+                    <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
 
-                    <span className="text-sm text-gray-600">Status:</span>
+                      <Clock className="h-4 w-4 text-green-600" />
 
-                    <Badge variant="default">
+                    </div>
 
-                      Active
+                    <div className="flex-1 min-w-0">
 
-                    </Badge>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Last Active</p>
+
+                      <p className="text-sm font-semibold text-gray-900">
+
+                        {lastActiveLabel}
+
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+
+                  <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
+
+                    <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+
+                      <Activity className="h-4 w-4 text-emerald-600" />
+
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Status</p>
+
+                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 px-3 py-1 text-xs font-medium rounded-full">
+
+                        Active
+
+                      </Badge>
+
+                    </div>
 
                   </div>
 
@@ -991,17 +1139,25 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                   {user.last_login && (
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                      <Clock className="h-4 w-4 text-gray-500" />
+                      <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
 
-                      <span className="text-sm text-gray-600">Last Login:</span>
+                        <Clock className="h-4 w-4 text-purple-600" />
 
-                      <span className="text-sm font-medium">
+                      </div>
 
-                        {formatDate(user.last_login)}
+                      <div className="flex-1 min-w-0">
 
-                      </span>
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Last Login</p>
+
+                        <p className="text-sm font-semibold text-gray-900">
+
+                          {formatDate(user.last_login)}
+
+                        </p>
+
+                      </div>
 
                     </div>
 
@@ -1011,13 +1167,21 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
                   {user.timezone && (
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-start gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-100/50">
 
-                      <Globe className="h-4 w-4 text-gray-500" />
+                      <div className="p-2 bg-indigo-100 rounded-lg flex-shrink-0">
 
-                      <span className="text-sm text-gray-600">Timezone:</span>
+                        <Globe className="h-4 w-4 text-indigo-600" />
 
-                      <span className="text-sm font-medium">{user.timezone}</span>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+
+                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Timezone</p>
+
+                        <p className="text-sm font-semibold text-gray-900">{user.timezone}</p>
+
+                      </div>
 
                     </div>
 
@@ -1080,44 +1244,44 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
             </Card>
           ) : (
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-lg">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
-                    <GraduationCap className="h-5 w-5 text-white" />
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30 rounded-2xl overflow-hidden">
+              <CardHeader className="px-6 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100/50">
+                <CardTitle className="flex items-center gap-4 text-xl font-bold text-gray-800">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                    <GraduationCap className="h-6 w-6 text-white" />
                   </div>
                   <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Enrolled
+                    Enrolled
                   </span>
-                  <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-700 border-blue-200">
+                  <Badge className="ml-auto bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border-blue-200 px-4 py-2 text-sm font-semibold rounded-full shadow-sm">
                     {activeTab === 'courses' ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` : `${purchasedModules.length} Module${purchasedModules.length !== 1 ? 's' : ''}`}
                   </Badge>
                 </CardTitle>
                 
                 {/* Tab Navigation */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setActiveTab('courses')}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       activeTab === 'courses'
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105'
+                        : 'bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-700 border border-gray-200 hover:border-blue-300 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <BookOpen className="h-4 w-4" />
                       Courses
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('modules')}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       activeTab === 'modules'
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105'
+                        : 'bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-700 border border-gray-200 hover:border-blue-300 hover:shadow-md'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <BookOpenCheck className="h-4 w-4" />
                       Modules
                     </div>
@@ -1125,17 +1289,17 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                 </div>
               </CardHeader>
 
-              <CardContent>
-                <div className="space-y-4 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <CardContent className="px-6 py-6">
+                <div className="space-y-6 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {activeTab === 'courses' ? (
                     // Courses Tab
                     courses.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <GraduationCap className="h-8 w-8 text-gray-400" />
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                          <GraduationCap className="h-10 w-10 text-gray-400" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Enrollments</h3>
-                        <p className="text-sm text-gray-500">This user is not enrolled in any courses yet.</p>
+                        <h3 className="text-xl font-bold text-gray-700 mb-3">No Enrollments</h3>
+                        <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">This user is not enrolled in any courses yet.</p>
                       </div>
                     ) : (
                     courses.map((course, index) => {
@@ -1148,28 +1312,35 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                       return (
                         <div 
                           key={courseId || index} 
-                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                          className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200/60 hover:border-blue-300 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-2"
                         >
                           {/* Course Header */}
-                          <div className="p-4 border-b border-gray-100">
+                          <div className="p-6 border-b border-gray-100/60 bg-gradient-to-r from-white to-gray-50/30">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
-                                    <BookOpen className="h-4 w-4 text-white" />
+                                <div className="flex items-center gap-4 mb-3">
+                                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                    <BookOpen className="h-5 w-5 text-white" />
                                   </div>
-                                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
-                        {course.title}
+                                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
+                                    {course.title}
                                   </h3>
                                 </div>
-                                <div className="flex items-center gap-4 text-xs text-gray-500">
-                                  <div className="flex items-center gap-1">
-                                    <BookOpenCheck className="h-3 w-3" />
-                                    <span>{modules.length} module{modules.length !== 1 ? 's' : ''}</span>
+                                <div className="flex items-center gap-6 text-sm text-gray-600">
+                                  <div className="flex items-center gap-2">
+                                    <BookOpenCheck className="h-4 w-4 text-blue-500" />
+                                    <span className="font-medium">
+                                      {(() => {
+                                        const purchasedCount = getPurchasedModulesCount(courseId);
+                                        const totalCount = totalModulesPerCourse[courseId] || modules.length;
+                                        return `${purchasedCount}/${totalCount} module${totalCount !== 1 ? 's' : ''}`;
+                                      })()}
+                                    </span>
                                   </div>
                                   {formatPrice(coursePrices[courseId]) && (
-                                    <div className="flex items-center gap-1">
-                                      <span>{formatPrice(coursePrices[courseId])}</span>
+                                    <div className="flex items-center gap-2">
+                                      <DollarSign className="h-4 w-4 text-green-500" />
+                                      <span className="font-semibold text-green-600">{formatPrice(coursePrices[courseId])}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1182,12 +1353,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                     ...prev, 
                                     [courseId]: !prev[courseId] 
                                   }))}
-                                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 group-hover:bg-blue-50"
+                                  className="p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 group-hover:bg-blue-100 shadow-sm hover:shadow-md"
                                 >
                                   {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
+                                    <ChevronDown className="h-5 w-5 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
                                   ) : (
-                                    <ChevronRight className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
+                                    <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
                                   )}
                                 </button>
                               )}
@@ -1197,38 +1368,38 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           {/* Modules Section */}
                           {modules.length > 0 && (
                             <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                              <div className="p-4 pt-2 bg-gray-50/50">
+                              <div className="p-6 pt-4 bg-gradient-to-r from-gray-50/50 to-blue-50/30">
                                 {isLoadingModules ? (
-                                  <div className="space-y-2">
+                                  <div className="space-y-3">
                                     {[1, 2, 3].map((i) => (
-                                      <div key={i} className="flex items-center gap-3 animate-pulse">
-                                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                        <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                                      <div key={i} className="flex items-center gap-4 p-3 bg-white rounded-xl animate-pulse">
+                                        <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                                        <div className="h-4 bg-gray-300 rounded w-3/4"></div>
                                       </div>
                                     ))}
                                   </div>
                                 ) : modulesErrorMsg ? (
-                                  <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded-lg">
-                                    <AlertCircle className="h-3 w-3" />
+                                  <div className="flex items-center gap-3 p-4 text-sm text-red-600 bg-red-50 rounded-xl border border-red-200">
+                                    <AlertCircle className="h-4 w-4" />
                                     {modulesErrorMsg}
                                   </div>
                                 ) : (
-                                  <div className="space-y-2">
+                                  <div className="space-y-3">
                                     {modules.map((module, moduleIndex) => (
                                       <div 
                                         key={module.id || moduleIndex} 
-                                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 group/module"
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl hover:shadow-md transition-all duration-200 group/module border border-gray-100/50"
                                       >
                                         <div className="flex-shrink-0">
-                                          <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full group-hover/module:scale-125 transition-transform duration-200"></div>
+                                          <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full group-hover/module:scale-125 transition-transform duration-200 shadow-sm"></div>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-medium text-gray-700 group-hover/module:text-gray-900 truncate">
+                                          <p className="text-sm font-semibold text-gray-700 group-hover/module:text-gray-900 truncate">
                                             {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
                                           </p>
                                         </div>
-                    </div>
-                  ))}
+                                      </div>
+                                    ))}
                                   </div>
                                 )}
                               </div>
@@ -1237,10 +1408,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           
                           {/* No Modules State */}
                           {!isLoadingModules && !modulesErrorMsg && modules.length === 0 && (
-                            <div className="p-4 text-center">
-                              <div className="flex flex-col items-center gap-2 text-gray-500">
-                                <BookOpen className="h-8 w-8 text-gray-300" />
-                                <p className="text-xs">No modules available yet</p>
+                            <div className="p-6 text-center">
+                              <div className="flex flex-col items-center gap-3 text-gray-500">
+                                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                                  <BookOpen className="h-6 w-6 text-gray-400" />
+                                </div>
+                                <p className="text-sm font-medium">No modules available yet</p>
                               </div>
                             </div>
                           )}
@@ -1251,68 +1424,120 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                   ) : (
                     // Modules Tab
                     loadingPurchasedModules ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {[1, 2, 3].map((i) => (
-                          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
-                              <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                          <div key={i} className="bg-white rounded-2xl border border-gray-200/60 p-6 animate-pulse shadow-sm">
+                            <div className="flex items-center gap-4 mb-4">
+                              <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
+                              <div className="h-5 bg-gray-300 rounded w-1/3"></div>
                             </div>
-                            <div className="space-y-2">
-                              <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            <div className="space-y-3">
+                              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : purchasedModulesError ? (
-                      <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
-                        <AlertCircle className="h-5 w-5 text-red-500" />
-                        <p className="text-sm text-red-700">{purchasedModulesError}</p>
+                      <div className="flex items-center gap-4 p-6 bg-red-50 rounded-2xl border border-red-200 shadow-sm">
+                        <AlertCircle className="h-6 w-6 text-red-500" />
+                        <p className="text-sm font-semibold text-red-700">{purchasedModulesError}</p>
                       </div>
                     ) : purchasedModules.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <BookOpenCheck className="h-8 w-8 text-gray-400" />
+                      <div className="text-center py-12">
+                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                          <BookOpenCheck className="h-10 w-10 text-gray-400" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">No Purchased Modules</h3>
-                        <p className="text-sm text-gray-500">This user hasn't purchased any individual modules yet.</p>
+                        <h3 className="text-xl font-bold text-gray-700 mb-3">No Purchased Modules</h3>
+                        <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">This user hasn't purchased any individual modules yet.</p>
                       </div>
                     ) : (
-                      purchasedModules.map((module, index) => (
-                        <div 
-                          key={module.id || index} 
-                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-green-300 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-                        >
-                          <div className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
-                                <BookOpenCheck className="h-4 w-4 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
-                                  {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
-                                </h3>
-                                <p className="text-xs text-gray-500 mb-2 truncate">
-                                  From: {module.course_title || 'Unknown Course'}
-                                </p>
-                                <div className="flex items-center gap-4 text-xs text-gray-500">
-                                  {formatPrice(module.price) && (
-                                    <div className="flex items-center gap-1">
-                                      <span>{formatPrice(module.price)}</span>
+                      (() => {
+                        const groupedModules = groupModulesByCourse(purchasedModules);
+                        return groupedModules.map((courseGroup, courseIndex) => {
+                          const isExpanded = expandedModuleCourses[courseGroup.courseId];
+                          return (
+                            <div 
+                              key={courseGroup.courseId || courseIndex} 
+                              className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200/60 hover:border-green-300 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                            >
+                              {/* Course Header */}
+                              <div className="p-6 border-b border-gray-100/60 bg-gradient-to-r from-green-50 to-emerald-50">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                      <BookOpen className="h-5 w-5 text-white" />
                                     </div>
-                                  )}
+                                    <div>
+                                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-700 transition-colors duration-200">
+                                        {courseGroup.courseTitle}
+                                      </h3>
+                                      <p className="text-sm text-gray-600 font-medium">
+                                        {(() => {
+                                          const purchasedCount = courseGroup.modules.length;
+                                          const totalCount = totalModulesPerCourse[courseGroup.courseId] || purchasedCount;
+                                          return `${purchasedCount}/${totalCount} module${totalCount !== 1 ? 's' : ''} purchased`;
+                                        })()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Expand/Collapse Button */}
+                                  <button
+                                    onClick={() => setExpandedModuleCourses(prev => ({ 
+                                      ...prev, 
+                                      [courseGroup.courseId]: !prev[courseGroup.courseId] 
+                                    }))}
+                                    className="p-3 rounded-xl hover:bg-green-100 transition-all duration-200 group-hover:bg-green-200 shadow-sm hover:shadow-md"
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-5 w-5 text-gray-500 group-hover:text-green-600 transition-colors duration-200" />
+                                    ) : (
+                                      <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-green-600 transition-colors duration-200" />
+                                    )}
+                                  </button>
                                 </div>
                               </div>
-                              <div className="flex-shrink-0">
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  Purchased
-                                </Badge>
+                              
+                              {/* Modules Section */}
+                              <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                                <div className="p-6 pt-4 bg-gradient-to-r from-gray-50/50 to-green-50/30">
+                                  <div className="space-y-3">
+                                    {courseGroup.modules.map((module, moduleIndex) => (
+                                      <div 
+                                        key={module.id || moduleIndex} 
+                                        className="flex items-center gap-4 p-4 bg-white rounded-xl hover:shadow-md transition-all duration-200 group/module border border-gray-100/50"
+                                      >
+                                        <div className="flex-shrink-0">
+                                          <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full group-hover/module:scale-125 transition-transform duration-200 shadow-sm"></div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-semibold text-gray-700 group-hover/module:text-gray-900 truncate">
+                                            {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                          </p>
+                                          {formatPrice(module.price) && (
+                                            <div className="flex items-center gap-1 mt-1">
+                                              <DollarSign className="h-3 w-3 text-green-500" />
+                                              <p className="text-xs font-medium text-green-600">
+                                                {formatPrice(module.price)}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex-shrink-0">
+                                          <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1 text-xs font-semibold rounded-full">
+                                            Purchased
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      ))
+                          );
+                        });
+                      })()
                     )
                   )}
                 </div>
