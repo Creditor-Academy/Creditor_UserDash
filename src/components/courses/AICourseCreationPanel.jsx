@@ -31,6 +31,7 @@ import {
   createCompleteAICourse, 
   generateAndUploadCourseImage 
 } from '../../services/aiCourseService';
+import { createModule, createLesson, updateLessonContent } from '../../services/courseService';
 import aiService from '../../services/aiService';
 import enhancedAIService from '../../services/enhancedAIService';
 import { uploadImage } from '@/services/imageUploadService';
@@ -461,13 +462,133 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     }
   };
 
-  // Handle lessons created
-  const handleLessonsCreated = (lessonData) => {
-    console.log('Lessons created:', lessonData);
-    // Here you would typically update the course with the new lessons
-    // For now, we'll just close the lesson creator and show a success message
-    setShowLessonCreator(false);
-    console.log(`✅ Successfully created ${lessonData.lessons.length} lessons for "${lessonData.courseTitle}"`);
+  // Handle lessons created - NOW SAVES TO DATABASE
+  const handleLessonsCreated = async (lessonData) => {
+    console.log('🔄 Processing lessons created:', lessonData);
+    
+    try {
+      // Check if we have a course ID to save to
+      if (!courseData.id && !lessonData.courseId) {
+        console.warn('⚠️ No course ID available - creating course first');
+        
+        // Create the course first if it doesn't exist
+        const courseResult = await createCompleteAICourse({
+          title: courseData.title,
+          description: courseData.description,
+          subject: courseData.subject,
+          difficulty: courseData.difficulty,
+          modules: [] // Will add modules separately
+        });
+        
+        if (courseResult.success) {
+          setCourseData(prev => ({ ...prev, id: courseResult.data.courseId }));
+          lessonData.courseId = courseResult.data.courseId;
+          console.log('✅ Course created with ID:', courseResult.data.courseId);
+        } else {
+          throw new Error('Failed to create course: ' + courseResult.error);
+        }
+      }
+      
+      const targetCourseId = courseData.id || lessonData.courseId;
+      
+      // Group lessons by module
+      const moduleGroups = {};
+      lessonData.lessons.forEach(lesson => {
+        const moduleId = lesson.moduleId || 'default';
+        if (!moduleGroups[moduleId]) {
+          moduleGroups[moduleId] = [];
+        }
+        moduleGroups[moduleId].push(lesson);
+      });
+      
+      // Create modules and lessons in database
+      const createdModules = [];
+      const createdLessons = [];
+      
+      for (const [moduleId, moduleLessons] of Object.entries(moduleGroups)) {
+        try {
+          // Create module
+          const moduleData = {
+            title: moduleLessons[0]?.moduleTitle || `Module for ${moduleId}`,
+            description: `Generated module containing ${moduleLessons.length} lessons`,
+            order: createdModules.length + 1,
+            price: 0 // Required field
+          };
+          
+          console.log('🔄 Creating module:', moduleData.title);
+          const createdModule = await createModule(targetCourseId, moduleData);
+          createdModules.push(createdModule);
+          
+          // Create lessons in this module
+          for (const lesson of moduleLessons) {
+            try {
+              const lessonPayload = {
+                title: lesson.title,
+                description: lesson.description || 'AI-generated lesson content',
+                content: lesson.content || '',
+                duration: lesson.duration || '15 min',
+                order: createdLessons.length + 1
+              };
+              
+              console.log('🔄 Creating lesson:', lessonPayload.title);
+              const createdLesson = await createLesson(targetCourseId, createdModule.id, lessonPayload);
+              createdLessons.push(createdLesson);
+              
+              // Update lesson content with blocks if available
+              if (lesson.blocks && lesson.blocks.length > 0) {
+                const contentData = {
+                  content: lesson.structuredContent || lesson.blocks,
+                  blocks: lesson.blocks,
+                  metadata: {
+                    aiGenerated: true,
+                    generatedAt: new Date().toISOString(),
+                    blockCount: lesson.blocks.length
+                  }
+                };
+                
+                console.log('🔄 Updating lesson content for:', lessonPayload.title);
+                await updateLessonContent(createdLesson.id, contentData);
+              }
+              
+            } catch (lessonError) {
+              console.error('❌ Failed to create lesson:', lesson.title, lessonError);
+            }
+          }
+          
+        } catch (moduleError) {
+          console.error('❌ Failed to create module:', moduleId, moduleError);
+        }
+      }
+      
+      // Show success message
+      setShowLessonCreator(false);
+      console.log(`✅ Successfully saved to database:`, {
+        courseId: targetCourseId,
+        modules: createdModules.length,
+        lessons: createdLessons.length,
+        totalBlocks: lessonData.lessons.reduce((acc, lesson) => acc + (lesson.blocks?.length || 0), 0)
+      });
+      
+      // Show user notification
+      if (window.showNotification) {
+        window.showNotification(
+          `Successfully created ${createdModules.length} modules and ${createdLessons.length} lessons!`, 
+          'success'
+        );
+      } else {
+        alert(`Successfully created ${createdModules.length} modules and ${createdLessons.length} lessons!`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to save lessons to database:', error);
+      
+      // Show error notification
+      if (window.showNotification) {
+        window.showNotification(`Failed to save lessons: ${error.message}`, 'error');
+      } else {
+        alert(`Failed to save lessons: ${error.message}`);
+      }
+    }
   };
 
   // Reset form when panel is closed

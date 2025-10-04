@@ -1,6 +1,6 @@
 // AI Course Service for handling AI-powered course creation with deployed backend integration
 // Import required services and utilities
-import { createAICourse, createModule } from './courseService';
+import { createAICourse, createModule, createLesson, updateLessonContent } from './courseService';
 import { uploadImage } from './imageUploadService';
 import aiService from './aiService';
 import enhancedAIService from './enhancedAIService';
@@ -1291,42 +1291,129 @@ export async function saveAICourse(courseData) {
 }
 
 /**
- * Save AI-generated lessons to backend
+ * Save AI-generated lessons to backend - REAL DATABASE INTEGRATION
  * @param {Object} lessonData - Lesson data including course title and lessons array
  * @returns {Promise<Object>} Save result
  */
 export async function saveAILessons(lessonData) {
   try {
-    console.log('💾 Saving AI-generated lessons:', lessonData.courseTitle);
+    console.log('💾 Saving AI-generated lessons to database:', lessonData.courseTitle);
     
-    // For now, simulate successful save since the backend endpoint might not exist
-    // In a real implementation, this would save to the backend
+    const { courseTitle, courseId, lessons, blockBased } = lessonData;
+    
+    if (!courseId) {
+      throw new Error('Course ID is required to save lessons');
+    }
+    
+    if (!lessons || lessons.length === 0) {
+      throw new Error('No lessons provided to save');
+    }
+    
     console.log('📚 Lesson data to save:', {
-      courseTitle: lessonData.courseTitle,
-      lessonCount: lessonData.lessons.length,
-      blockBased: lessonData.blockBased
+      courseTitle,
+      courseId,
+      lessonCount: lessons.length,
+      blockBased,
+      totalBlocks: lessons.reduce((acc, lesson) => acc + (lesson.blocks?.length || 0), 0)
     });
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Group lessons by module
+    const moduleGroups = {};
+    lessons.forEach(lesson => {
+      const moduleId = lesson.moduleId || 'default';
+      if (!moduleGroups[moduleId]) {
+        moduleGroups[moduleId] = [];
+      }
+      moduleGroups[moduleId].push(lesson);
+    });
     
-    // Return success with mock data
+    const createdModules = [];
+    const createdLessons = [];
+    
+    // Create modules and lessons in database
+    for (const [moduleId, moduleLessons] of Object.entries(moduleGroups)) {
+      try {
+        // Create module
+        const moduleData = {
+          title: moduleLessons[0]?.moduleTitle || `AI Generated Module ${createdModules.length + 1}`,
+          description: `AI-generated module containing ${moduleLessons.length} lessons`,
+          order: createdModules.length + 1,
+          price: 0 // Required field
+        };
+        
+        console.log('🔄 Creating module:', moduleData.title);
+        const createdModule = await createModule(courseId, moduleData);
+        createdModules.push(createdModule);
+        
+        // Create lessons in this module
+        for (const lesson of moduleLessons) {
+          try {
+            const lessonPayload = {
+              title: lesson.title,
+              description: lesson.description || 'AI-generated lesson content',
+              content: lesson.content || '',
+              duration: lesson.duration || '15 min',
+              order: createdLessons.length + 1
+            };
+            
+            console.log('🔄 Creating lesson:', lessonPayload.title);
+            const createdLesson = await createLesson(courseId, createdModule.id, lessonPayload);
+            createdLessons.push(createdLesson);
+            
+            // Update lesson content with blocks if available
+            if (lesson.blocks && lesson.blocks.length > 0) {
+              const contentData = {
+                content: lesson.structuredContent || lesson.blocks,
+                blocks: lesson.blocks,
+                metadata: {
+                  aiGenerated: true,
+                  generatedAt: new Date().toISOString(),
+                  blockCount: lesson.blocks.length,
+                  blockBased: blockBased
+                }
+              };
+              
+              console.log('🔄 Updating lesson content for:', lessonPayload.title);
+              await updateLessonContent(createdLesson.id, contentData);
+            }
+            
+          } catch (lessonError) {
+            console.error('❌ Failed to create lesson:', lesson.title, lessonError);
+            throw lessonError; // Re-throw to handle in outer catch
+          }
+        }
+        
+      } catch (moduleError) {
+        console.error('❌ Failed to create module:', moduleId, moduleError);
+        throw moduleError; // Re-throw to handle in outer catch
+      }
+    }
+    
+    console.log('✅ Successfully saved AI lessons to database:', {
+      courseId,
+      modulesCreated: createdModules.length,
+      lessonsCreated: createdLessons.length
+    });
+    
     return {
       success: true,
       data: {
         data: {
-          courseId: `course_${Date.now()}`,
-          lessonIds: lessonData.lessons.map((_, index) => `lesson_${Date.now()}_${index}`),
-          message: 'Lessons saved successfully'
+          courseId: courseId,
+          moduleIds: createdModules.map(m => m.id),
+          lessonIds: createdLessons.map(l => l.id),
+          modulesCreated: createdModules.length,
+          lessonsCreated: createdLessons.length,
+          message: 'Lessons saved successfully to database'
         }
       }
     };
     
   } catch (error) {
-    console.error('❌ Failed to save AI lessons:', error);
+    console.error('❌ Failed to save AI lessons to database:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Failed to save lessons to database'
     };
   }
 }
@@ -1340,29 +1427,82 @@ export async function updateLessonContent(contentData) {
   try {
     console.log('🔄 Updating lesson content:', contentData.courseTitle);
     
-    // For now, simulate successful update since the backend endpoint might not exist
-    // In a real implementation, this would update the backend with enhanced content
-    console.log('📚 Enhanced content data to update:', {
+    // Enhanced content data processing
+    const processedData = {
       courseTitle: contentData.courseTitle,
       courseId: contentData.courseId,
       lessonCount: contentData.lessons?.length || 0,
       hasGlobalContent: !!contentData.globalContent,
-      syncSettings: contentData.syncSettings
-    });
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Return success with mock data
-    return {
-      success: true,
-      data: {
-        message: 'Lesson content updated successfully',
-        courseId: contentData.courseId || Date.now(),
-        updatedLessons: contentData.lessons?.length || 0,
-        timestamp: new Date().toISOString()
-      }
+      totalBlocks: contentData.lessons?.reduce((acc, lesson) => acc + (lesson.blocks?.length || 0), 0) || 0,
+      lessons: contentData.lessons?.map(lesson => ({
+        id: lesson.id,
+        title: lesson.title,
+        moduleId: lesson.moduleId,
+        blocks: lesson.blocks || [],
+        structuredContent: lesson.structuredContent || [],
+        contentUpdatedAt: lesson.contentUpdatedAt || new Date().toISOString()
+      })) || [],
+      globalContent: contentData.globalContent || {},
+      savedAt: contentData.savedAt || new Date().toISOString()
     };
+    
+    console.log('📚 Enhanced content data to update:', processedData);
+    
+    // Try to save to backend API if available
+    try {
+      const response = await fetch(`${API_BASE}/api/courses/${contentData.courseId}/content`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(processedData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Successfully saved to backend:', result);
+        
+        return {
+          success: true,
+          data: {
+            message: 'Lesson content updated successfully',
+            courseId: contentData.courseId,
+            updatedLessons: processedData.lessonCount,
+            totalBlocks: processedData.totalBlocks,
+            timestamp: new Date().toISOString(),
+            backendSaved: true
+          }
+        };
+      } else {
+        console.warn('⚠️ Backend save failed, using local storage fallback');
+        throw new Error(`Backend save failed: ${response.status}`);
+      }
+    } catch (backendError) {
+      console.warn('⚠️ Backend not available, using local storage:', backendError.message);
+      
+      // Fallback to localStorage
+      const storageKey = `lesson_content_${contentData.courseId || 'temp'}`;
+      localStorage.setItem(storageKey, JSON.stringify(processedData));
+      
+      // Also save to a general backup
+      const allSavedContent = JSON.parse(localStorage.getItem('ai_lesson_backups') || '{}');
+      allSavedContent[contentData.courseId || 'temp'] = processedData;
+      localStorage.setItem('ai_lesson_backups', JSON.stringify(allSavedContent));
+      
+      // Simulate API delay for UX consistency
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return {
+        success: true,
+        data: {
+          message: 'Lesson content saved locally (backend unavailable)',
+          courseId: contentData.courseId || Date.now(),
+          updatedLessons: processedData.lessonCount,
+          totalBlocks: processedData.totalBlocks,
+          timestamp: new Date().toISOString(),
+          backendSaved: false,
+          localStorageKey: storageKey
+        }
+      };
+    }
   } catch (error) {
     console.error('❌ Failed to update lesson content:', error);
     return {

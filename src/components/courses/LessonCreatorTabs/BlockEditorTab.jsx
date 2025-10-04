@@ -81,33 +81,43 @@ const BlockEditorTab = ({
 
   // Auto-initialize content blocks when a lesson is selected
   useEffect(() => {
-    if (editingLessonId && currentLesson && currentBlocks.length === 0) {
-      // Initialize with a default text block if no blocks exist
-      const defaultBlock = {
-        id: `block-${Date.now()}-${Math.random()}`,
-        type: 'text',
-        content: currentLesson.content || 'Start adding your lesson content here...',
-        order: 1,
-        settings: {}
-      };
+    if (editingLessonId && currentLesson) {
+      if (currentBlocks.length === 0) {
+        // Initialize with a default text block if no blocks exist
+        const defaultBlock = {
+          id: `block-${Date.now()}-${Math.random()}`,
+          type: 'text',
+          content: currentLesson.content || 'Start adding your lesson content here...',
+          order: 1,
+          settings: {}
+        };
 
-      setContentBlocks(prev => ({
-        ...prev,
-        [editingLessonId]: [defaultBlock]
-      }));
+        setContentBlocks(prev => ({
+          ...prev,
+          [editingLessonId]: [defaultBlock]
+        }));
+        
+        console.log('🧩 Initialized default block for lesson:', currentLesson.title);
+      } else {
+        console.log('📝 Editing lesson with', currentBlocks.length, 'existing blocks:', currentLesson.title);
+      }
     }
   }, [editingLessonId, currentLesson, currentBlocks.length, setContentBlocks]);
 
   // Add a content block to the current lesson
   const addContentBlock = (blockType) => {
-    if (!editingLessonId) return;
+    if (!editingLessonId) {
+      console.warn('⚠️ Cannot add block: No lesson selected');
+      return;
+    }
 
     const newBlock = {
       id: `block-${Date.now()}-${Math.random()}`,
       type: blockType.id,
       content: getDefaultContent(blockType.id),
       order: currentBlocks.length + 1,
-      settings: {}
+      settings: {},
+      createdAt: new Date().toISOString()
     };
 
     setContentBlocks(prev => ({
@@ -116,6 +126,22 @@ const BlockEditorTab = ({
     }));
 
     setSelectedBlockType(null);
+    
+    console.log('➕ Added new block:', {
+      type: blockType.id,
+      lessonId: editingLessonId,
+      totalBlocks: currentBlocks.length + 1
+    });
+    
+    // Trigger content sync callback
+    if (onContentSync) {
+      onContentSync({
+        type: 'block_add',
+        lessonId: editingLessonId,
+        blockType: blockType.id,
+        blockId: newBlock.id
+      });
+    }
   };
 
   // Get default content for a block type
@@ -155,9 +181,25 @@ const BlockEditorTab = ({
     setContentBlocks(prev => ({
       ...prev,
       [editingLessonId]: prev[editingLessonId].map(block => 
-        block.id === blockId ? { ...block, content, settings: { ...block.settings, ...settings } } : block
+        block.id === blockId ? { 
+          ...block, 
+          content, 
+          settings: { ...block.settings, ...settings },
+          updatedAt: new Date().toISOString()
+        } : block
       )
     }));
+    
+    // Trigger content sync callback if provided
+    if (onContentSync) {
+      onContentSync({
+        type: 'block_update',
+        lessonId: editingLessonId,
+        blockId,
+        content,
+        settings
+      });
+    }
   };
 
   // Delete a content block with professional confirmation
@@ -757,11 +799,16 @@ const BlockEditorTab = ({
               {currentLesson ? (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Editing: {currentLesson.title}
+                    Block Editor: {currentLesson.title}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Module: {currentLesson.moduleId || 'Unknown'}
-                  </p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-sm text-gray-600">
+                      Module: {currentLesson.moduleId || 'Unknown'}
+                    </p>
+                    <p className="text-sm text-purple-600">
+                      {currentBlocks.length} blocks
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div>
@@ -769,13 +816,16 @@ const BlockEditorTab = ({
                   <div className="mt-2">
                     <select
                       value={editingLessonId || ''}
-                      onChange={(e) => setEditingLessonId(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      onChange={(e) => {
+                        setEditingLessonId(e.target.value);
+                        console.log('🎯 Selected lesson for editing:', e.target.value);
+                      }}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-w-[200px]"
                     >
                       <option value="">Choose a lesson...</option>
                       {lessons.map((lesson) => (
                         <option key={lesson.id} value={lesson.id}>
-                          {lesson.title}
+                          {lesson.title} ({contentBlocks[lesson.id]?.length || 0} blocks)
                         </option>
                       ))}
                     </select>
@@ -798,9 +848,17 @@ const BlockEditorTab = ({
               
               {syncSettings.syncAcrossModules && currentLesson && (
                 <Button
-                  onClick={() => onContentSync({ type: 'lesson', lessonId: editingLessonId })}
+                  onClick={() => {
+                    onContentSync({ 
+                      type: 'lesson', 
+                      lessonId: editingLessonId,
+                      blocks: currentBlocks,
+                      timestamp: new Date().toISOString()
+                    });
+                  }}
                   variant="outline"
                   size="sm"
+                  title="Sync content across modules"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Sync Content
@@ -886,25 +944,66 @@ const BlockEditorTab = ({
               <Plus className="w-16 h-16 mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Content Blocks</h3>
               <p className="text-gray-600 mb-4">
-                Add content blocks from the sidebar to start building your lesson.
+                Add content blocks from the sidebar to start building your lesson content. You can add text, images, videos, and more.
               </p>
-              <Button
-                onClick={() => setShowBlockLibrary(true)}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add First Block
-              </Button>
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  onClick={() => setShowBlockLibrary(true)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Block
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Lesson: {currentLesson?.title}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Lesson Info Header */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-purple-900">Editing: {currentLesson?.title}</h4>
+                    <p className="text-sm text-purple-700 mt-1">
+                      {currentBlocks.length} content blocks • Last updated: {new Date().toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => {
+                        const textBlock = contentBlockTypes.find(b => b.id === 'text');
+                        if (textBlock) addContentBlock(textBlock);
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Text
+                    </Button>
+                    <Button
+                      onClick={() => setShowBlockLibrary(true)}
+                      size="sm"
+                      variant="outline"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                    >
+                      <Layers className="w-4 h-4 mr-1" />
+                      More Blocks
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Content Blocks */}
               {currentBlocks.map((block, index) => (
                 <Card 
                   key={block.id} 
-                  className={`border transition-all duration-200 ${
+                  className={`border transition-all duration-200 hover:shadow-md ${
                     selectedBlocks.has(block.id) 
                       ? 'border-blue-500 bg-blue-50' 
-                      : 'border-gray-200'
+                      : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <CardHeader className="pb-2">
@@ -918,9 +1017,14 @@ const BlockEditorTab = ({
                           />
                         )}
                         <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />
-                        <span className="text-sm font-medium text-gray-700 capitalize">
-                          {block.type} Block
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-700 capitalize">
+                            {block.type} Block
+                          </span>
+                          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            #{index + 1}
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-1">
@@ -972,6 +1076,40 @@ const BlockEditorTab = ({
                   </CardContent>
                 </Card>
               ))}
+              
+              {/* Quick Add Block Footer */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 hover:bg-purple-50 transition-colors">
+                <Plus className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600 mb-3">Add another content block</p>
+                <div className="flex justify-center gap-2 flex-wrap">
+                  {['text', 'heading', 'image', 'video', 'list'].map(blockTypeId => {
+                    const blockType = contentBlockTypes.find(b => b.id === blockTypeId);
+                    if (!blockType) return null;
+                    
+                    return (
+                      <Button
+                        key={blockTypeId}
+                        onClick={() => addContentBlock(blockType)}
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                      >
+                        {getIconComponent(blockType.iconName)}
+                        <span className="ml-1">{blockType.title}</span>
+                      </Button>
+                    );
+                  })}
+                  <Button
+                    onClick={() => setShowBlockLibrary(true)}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs text-purple-600 border-purple-300 hover:bg-purple-50"
+                  >
+                    <Layers className="w-4 h-4 mr-1" />
+                    All Blocks
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>

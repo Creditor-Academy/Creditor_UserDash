@@ -141,28 +141,111 @@ const EnhancedAILessonCreator = ({
 
   // Save content to backend
   const saveContentToBackend = async () => {
+    setIsSaving(true);
     try {
-      const lessonsWithBlocks = lessons.map(lesson => ({
-        ...lesson,
-        blocks: contentBlocks[lesson.id] || []
-      }));
+      // Prepare lessons with enhanced content blocks
+      const lessonsWithBlocks = lessons.map(lesson => {
+        const blocks = contentBlocks[lesson.id] || [];
+        
+        // Convert blocks to structured content
+        const structuredContent = blocks.map(block => {
+          switch (block.type) {
+            case 'text':
+              return {
+                type: 'paragraph',
+                content: block.content,
+                settings: block.settings
+              };
+            case 'heading':
+              return {
+                type: 'heading',
+                content: block.content,
+                level: block.settings?.level || 'h2',
+                settings: block.settings
+              };
+            case 'image':
+              return {
+                type: 'image',
+                url: block.content?.url,
+                alt: block.content?.alt,
+                caption: block.content?.caption,
+                settings: block.settings
+              };
+            case 'video':
+            case 'youtube':
+              return {
+                type: 'video',
+                url: block.content?.url,
+                title: block.content?.title,
+                description: block.content?.description,
+                settings: block.settings
+              };
+            case 'list':
+              return {
+                type: 'list',
+                items: block.content?.split('\n').filter(item => item.trim()),
+                listType: block.settings?.listType || 'bulleted',
+                settings: block.settings
+              };
+            default:
+              return {
+                type: block.type,
+                content: block.content,
+                settings: block.settings
+              };
+          }
+        });
+        
+        return {
+          ...lesson,
+          blocks: blocks,
+          structuredContent: structuredContent,
+          contentUpdatedAt: new Date().toISOString()
+        };
+      });
       
-      const result = await updateLessonContent({
+      // Save to localStorage as backup
+      const saveData = {
         courseTitle,
         courseId: courseData?.id,
         lessons: lessonsWithBlocks,
-        globalContent
-      });
+        globalContent,
+        savedAt: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`ai_course_content_${courseData?.id || 'temp'}`, JSON.stringify(saveData));
+      
+      // Try to save to backend
+      const result = await updateLessonContent(saveData);
       
       if (result.success) {
-        console.log('✅ Content saved to backend successfully');
+        console.log('✅ Content saved successfully:', {
+          lessons: lessonsWithBlocks.length,
+          totalBlocks: Object.values(contentBlocks).flat().length
+        });
+        
+        // Show success notification
+        if (window.showNotification) {
+          window.showNotification('Content saved successfully!', 'success');
+        }
+        
         return true;
       } else {
         throw new Error(result.error || 'Failed to save content');
       }
     } catch (error) {
-      console.error('❌ Failed to save content to backend:', error);
+      console.error('❌ Failed to save content:', error);
+      
+      // Show error notification
+      if (window.showNotification) {
+        window.showNotification(`Save failed: ${error.message}`, 'error');
+      } else {
+        alert(`Save failed: ${error.message}`);
+      }
+      
       return false;
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -286,8 +369,9 @@ const EnhancedAILessonCreator = ({
         <div className="flex items-center gap-2">
           <Button
             onClick={saveContentToBackend}
-            disabled={isSaving}
+            disabled={isSaving || lessons.length === 0}
             variant="outline"
+            className={isSaving ? 'opacity-50 cursor-not-allowed' : ''}
           >
             {isSaving ? (
               <>
@@ -297,7 +381,7 @@ const EnhancedAILessonCreator = ({
             ) : (
               <>
                 <Save className="w-4 h-4 mr-2" />
-                Save All
+                Save All ({Object.values(contentBlocks).flat().length} blocks)
               </>
             )}
           </Button>
@@ -306,12 +390,37 @@ const EnhancedAILessonCreator = ({
             onClick={async () => {
               const success = await saveContentToBackend();
               if (success && onLessonsCreated) {
+                // Prepare lessons with all necessary data for database saving
+                const lessonsWithCompleteData = lessons.map(lesson => ({
+                  ...lesson,
+                  blocks: contentBlocks[lesson.id] || [],
+                  structuredContent: (contentBlocks[lesson.id] || []).map(block => {
+                    switch (block.type) {
+                      case 'text':
+                        return { type: 'paragraph', content: block.content, settings: block.settings };
+                      case 'heading':
+                        return { type: 'heading', content: block.content, level: block.settings?.level || 'h2', settings: block.settings };
+                      case 'image':
+                        return { type: 'image', url: block.content?.url, alt: block.content?.alt, caption: block.content?.caption, settings: block.settings };
+                      case 'video':
+                      case 'youtube':
+                        return { type: 'video', url: block.content?.url, title: block.content?.title, description: block.content?.description, settings: block.settings };
+                      case 'list':
+                        return { type: 'list', items: block.content?.split('\\n').filter(item => item.trim()), listType: block.settings?.listType || 'bulleted', settings: block.settings };
+                      default:
+                        return { type: block.type, content: block.content, settings: block.settings };
+                    }
+                  }),
+                  moduleTitle: modules.find(m => m.id === lesson.moduleId)?.title || 'Unknown Module',
+                  contentUpdatedAt: new Date().toISOString()
+                }));
+                
                 onLessonsCreated({
                   courseTitle,
-                  lessons: lessons.map(lesson => ({
-                    ...lesson,
-                    blocks: contentBlocks[lesson.id] || []
-                  }))
+                  courseId: courseData?.id,
+                  lessons: lessonsWithCompleteData,
+                  modules: modules,
+                  totalBlocks: Object.values(contentBlocks).flat().length
                 });
               }
               onClose();
