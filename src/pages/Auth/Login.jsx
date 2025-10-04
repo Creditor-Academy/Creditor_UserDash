@@ -161,7 +161,6 @@ export function Login() {
       }, {
         withCredentials: true
       });
-
       if (response.data.success && response.data.accessToken) {
         // Store tokens using tokenService for consistent token storage
         storeAccessToken(response.data.accessToken);
@@ -170,9 +169,7 @@ export function Login() {
         // Set authentication state
         setAuth(response.data.accessToken);
 
-        // Set default role first
-        setUserRole('user');
-        
+        // Don't set default role - let UserContext fetch profile and set correct role
         // Dispatch userLoggedIn event to trigger UserContext profile fetch
         window.dispatchEvent(new CustomEvent('userLoggedIn'));
         

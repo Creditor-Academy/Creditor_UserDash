@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchUserProfile } from '@/services/userService';
+import { fetchUserProfile, setUserRole, setUserRoles } from '@/services/userService';
 import Cookies from 'js-cookie';
 import { refreshAvatarFromBackend } from '@/lib/avatar-utils';
 
@@ -79,6 +79,23 @@ export const UserProvider = ({ children }) => {
       // Try to fetch user profile
       const data = await fetchUserProfile();
       setUserProfile(data);
+      
+      // Set user role based on profile data
+      if (Array.isArray(data.user_roles) && data.user_roles.length > 0) {
+        const roles = data.user_roles.map(roleObj => roleObj.role);
+        const priorityRoles = ['admin', 'instructor', 'user'];
+        const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
+        
+        console.log('UserContext: Setting user role to:', highestRole, 'from roles:', roles);
+        setUserRole(highestRole);
+        
+        // Dispatch event to notify other components about role change
+        window.dispatchEvent(new Event('userRoleChanged'));
+      } else {
+        // Default to user role if no roles found
+        console.log('UserContext: No user_roles found, defaulting to user');
+        setUserRole('user');
+      }
       
       // Also load the user's avatar
       try {
