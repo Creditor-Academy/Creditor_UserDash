@@ -12,6 +12,7 @@ import AddGroups from "./AddGroups";
 import SupportTickets from "./Support";
 import Resources from "@/components/Resources";
 import AdminPayments from "@/components/credits/AdminPayments";
+import PrivateGroupsAdmin from "@/components/messages/PrivateGroupsAdmin";
 import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -210,6 +211,16 @@ const InstructorPage = () => {
           >
             <FaCreditCard /> Payments
           </button>
+          <button 
+            onClick={() => setActiveTab("adminPrivateGroups")} 
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === "adminPrivateGroups" 
+                ? "bg-blue-100 text-blue-700 font-semibold" 
+                : "hover:bg-gray-100 text-gray-700"
+            }`}
+          >
+            <FaUsers /> Private Groups (Admin)
+          </button>
         </div>
       </div>
 
@@ -329,6 +340,11 @@ const InstructorPage = () => {
                 <AdminPayments />
               </section>
             )}
+          {activeTab === "adminPrivateGroups" && (
+            <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <PrivateGroupsAdmin />
+            </section>
+          )}
           </div>
         </div>
       </div>
