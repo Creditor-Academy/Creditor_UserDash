@@ -1,8 +1,16 @@
 import Cookies from 'js-cookie';
 
 export function getAccessToken() {
-	// For cross-domain, prioritize localStorage over cookies
-	const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+	// Check localStorage first, then cookies for accesstoken
+	const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+	
+	// If token found in cookies, automatically store it in localStorage for future use
+	if (!localStorage.getItem('authToken') && !localStorage.getItem('token') && Cookies.get('accesstoken')) {
+		const cookieToken = Cookies.get('accesstoken');
+		localStorage.setItem('authToken', cookieToken);
+		localStorage.setItem('token', cookieToken);
+	}
+	
 	return token || '';
 }
 
@@ -33,15 +41,8 @@ export function clearAccessToken() {
 	// Clear from localStorage (primary storage)
 	localStorage.removeItem('authToken');
 	localStorage.removeItem('token');
-	
-	// Try to clear cookies (may fail on cross-domain)
-	try {
-		Cookies.remove('token');
-		Cookies.remove('userId');
-	} catch (error) {
-		console.warn('Could not clear cookies (cross-domain):', error);
-	}
-	
+	// Also remove accesstoken cookie
+	Cookies.remove('accesstoken');
 	window.dispatchEvent(new CustomEvent('authTokenCleared'));
 }
 
@@ -49,19 +50,3 @@ export function clearAccessToken() {
 export function storeAccessToken(token) {
 	setAccessToken(token);
 }
-
-// New function to clear all authentication data
-export function clearAllAuthData() {
-	clearAccessToken();
-	// Clear any other auth-related data
-	localStorage.removeItem('userId');
-	localStorage.removeItem('userRole');
-	localStorage.removeItem('userRoles');
-	
-	// Try to clear cookies
-	try {
-		Cookies.remove('userId');
-	} catch (error) {
-		console.warn('Could not clear userId cookie (cross-domain):', error);
-	}
-} 

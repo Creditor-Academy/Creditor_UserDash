@@ -234,12 +234,15 @@ export async function fetchAllUsersAdmin() {
 
 export async function logoutUser() {
   try {
-    const response = await fetch('https://creditor.onrender.com/api/auth/logout', {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    
+    const response = await fetch(`${baseUrl}/api/auth/logout`, {
       method: 'GET',
       credentials: 'include', // Keep for any same-domain cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}` // Use localStorage token
+        'Authorization': `Bearer ${token}`
       }
     });
 

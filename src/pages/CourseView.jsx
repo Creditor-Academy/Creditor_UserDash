@@ -181,6 +181,14 @@ export function CourseView() {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
+    // Hide buy option for specific Master Class courses
+    const title = (course?.title || "").toLowerCase();
+    const isMasterClassCourse = [
+      "formation of business trust",
+      "tier 1: optimizing your business credit profile"
+    ].some(name => title.includes(name));
+    if (isMasterClassCourse) return false;
+
     // Check if this course belongs to a free catalog (Roadmap Series/Start Your Passive Income Now)
     // or a class recording catalog
     const freeCatalogKeywords = [
@@ -488,35 +496,35 @@ export function CourseView() {
                     {/* Course Not Available Message */}
                     {!isEnrolled && !canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
-                        {isFromFreeCatalog(courseDetails) ? (
+                        {(() => {
+                          const title = (courseDetails?.title || "").toLowerCase();
+                          const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(k => title.includes(k));
+                          const isMasterClassCourse = [
+                            "formation of business trust",
+                            "tier 1: optimizing your business credit profile"
+                          ].some(name => title.includes(name));
+                          if (isFromFreeCatalog(courseDetails) || isMasterClassCourse) {
+                            return (
                           <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="p-2 bg-blue-500 rounded-lg shadow-md">
                               <BookOpen className="h-5 w-5 text-white" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-blue-800">
-                                {(() => {
-                                  const courseTitle = (courseDetails?.title || "").toLowerCase();
-                                  const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
-                                    courseTitle.includes(keyword)
-                                  );
-                                  return isClassRecording ? "Class Recording - Instructor Enrollment" : "Free Course - Instructor Enrollment";
-                                })()}
+                                {isClassRecording ? "Class Recording - Instructor Enrollment" : (isMasterClassCourse ? "Master Class - Instructor Enrollment" : "Free Course - Instructor Enrollment")}
                               </p>
                               <p className="text-xs text-blue-600 mt-1">
-                                {(() => {
-                                  const courseTitle = (courseDetails?.title || "").toLowerCase();
-                                  const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
-                                    courseTitle.includes(keyword)
-                                  );
-                                  return isClassRecording 
-                                    ? "This is a class recording. Your instructor will enroll you in this course."
-                                    : "This is a free course. Your instructor will enroll you in this course.";
-                                })()}
+                                {isClassRecording 
+                                  ? "This is a class recording. Your instructor will enroll you in this course." 
+                                  : (isMasterClassCourse 
+                                    ? "This is part of Master Class. Your instructor will enroll you in this course." 
+                                    : "This is a free course. Your instructor will enroll you in this course.")}
                               </p>
                             </div>
                           </div>
-                        ) : (
+                            );
+                          }
+                          return (
                           <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                             <div className="p-2 bg-green-500 rounded-lg shadow-md">
                               <BookOpen className="h-5 w-5 text-white" />
@@ -529,7 +537,8 @@ export function CourseView() {
                               </p>
                             </div>
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -637,12 +646,33 @@ export function CourseView() {
                         <CardFooter className="p-0 flex flex-col gap-2">
                            {isContentAvailable && hasAccess ? (
                             <>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
-                                <Button className="w-full">
-                                  <Play size={16} className="mr-2" />
-                                  Start Module
-                                </Button>
-                              </Link>
+                              <Button 
+                                className="w-full"
+                                onClick={() => {
+                                  // Get resource_url from module data
+                                  let fullUrl = module.resource_url;
+                                  
+                                  // If it's not already a full URL, prepend the API base URL
+                                  if (fullUrl && !fullUrl.startsWith('http')) {
+                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
+                                  }
+                                  
+                                  // For S3 URLs, ensure they have the correct protocol
+                                  if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
+                                    fullUrl = fullUrl.replace('http://', 'https://');
+                                  }
+                                  
+                                  // Open in new tab
+                                  if (fullUrl) {
+                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+                                  } else {
+                                    console.error('No resource URL found for module:', module);
+                                  }
+                                }}
+                              >
+                                <Play size={16} className="mr-2" />
+                                Start Module
+                              </Button>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
                                <Button variant="outline" className="w-full">
                                   <FileText size={16} className="mr-2" />
@@ -668,7 +698,24 @@ export function CourseView() {
                                  })()}
                                </span>
                              </Button>
-                           ) : (
+                           ) : (() => {
+                              const t = (courseDetails?.title || "").toLowerCase();
+                              const isMasterClassCourse = [
+                                "formation of business trust",
+                                "tier 1: optimizing your business credit profile"
+                              ].some(name => t.includes(name));
+                              if (isMasterClassCourse) {
+                                return (
+                                  <div className="w-full flex flex-col gap-2">
+                                    <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
+                                      <Clock size={16} className="mr-2" />
+                                      <span className="font-medium">Upcoming</span>
+                                    </Button>
+                                  </div>
+                                );
+                              }
+                              return null;
+                           })() || (
                              <div className="w-full flex flex-col gap-2">
                                <Button 
                                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"

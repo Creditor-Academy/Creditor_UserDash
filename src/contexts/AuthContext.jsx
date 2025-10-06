@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { getUserRole, getUserRoles, setUserRole as setUserRoleUtil, setUserRoles as setUserRolesUtil, setSingleRole, clearUserData, isInstructorOrAdmin as checkInstructorOrAdmin, logoutUser } from '@/services/userService';
+import Cookies from 'js-cookie';
 
 const AuthContext = createContext();
 
@@ -17,15 +18,15 @@ export const AuthProvider = ({ children }) => {
   const [userRoles, setUserRolesState] = useState(['user']);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    // Check for token on initial load
-    return !!localStorage.getItem('token');
+    // Check for token on initial load - include cookies
+    return !!(localStorage.getItem('token') || localStorage.getItem('authToken') || Cookies.get('accesstoken'));
   });
 
   useEffect(() => {
     // Initialize user roles on mount
     const role = getUserRole();
     const roles = getUserRoles();
-    const hasToken = !!localStorage.getItem('token');
+    const hasToken = !!(localStorage.getItem('token') || localStorage.getItem('authToken') || Cookies.get('accesstoken'));
     
     setUserRoleState(role);
     setUserRolesState(roles);
@@ -69,9 +70,11 @@ export const AuthProvider = ({ children }) => {
 
   const setAuth = (token) => {
     if (token) {
+      localStorage.setItem('authToken', token);
       localStorage.setItem('token', token);
       setIsAuthenticated(true);
     } else {
+      localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       setIsAuthenticated(false);
     }
@@ -87,9 +90,10 @@ export const AuthProvider = ({ children }) => {
     } finally {
       // Clear all local data
       clearUserData();
+      localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       localStorage.removeItem('userId');
-      Cookies.remove('token');
+      Cookies.remove('Access-Token');
       Cookies.remove('userId');
       
       // Reset state
