@@ -44,6 +44,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [purchasedModulesError, setPurchasedModulesError] = React.useState(null);
   const [coursePrices, setCoursePrices] = React.useState({});
   const [totalModuleCounts, setTotalModuleCounts] = React.useState({});
+  const [expandedGrouped, setExpandedGrouped] = React.useState({});
 
   // Fetch courses for the selected user when modal opens or user changes
   React.useEffect(() => {
@@ -187,13 +188,23 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
             try {
               const mods = await fetchCourseModules(id);
               const count = Array.isArray(mods) ? mods.length : 0;
-              return [id, count];
+              // Also cache modules for use in rendering not-purchased rows (published only)
+              const publishedModules = Array.isArray(mods)
+                ? mods.filter(module => {
+                    const status = (module.module_status || module.status || "").toString().toUpperCase();
+                    return status === "PUBLISHED" || module.published === true;
+                  })
+                : [];
+              return [id, count, publishedModules];
             } catch (_) {
-              return [id, 0];
+              return [id, 0, []];
             }
           }));
           const map = entries.reduce((acc, [id, cnt]) => { acc[String(id)] = cnt; return acc; }, {});
           setTotalModuleCounts(prev => ({ ...map, ...prev }));
+          // Merge modules into courseModules cache
+          const modulesMap = entries.reduce((acc, [id, _cnt, mods]) => { acc[String(id)] = mods; return acc; }, {});
+          setCourseModules(prev => ({ ...prev, ...modulesMap }));
           console.log('[UserDetailsModal] filled totals from purchased-only courses:', map);
         }
       } catch (_) {}
@@ -748,7 +759,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {activeTab === 'courses' ? (
                     // Courses Tab
                     courses.length === 0 ? (
@@ -818,7 +829,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           
                           {/* Modules Section */}
                           {modules.length > 0 && (
-                            <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                            <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[60vh] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                               <div className="p-4 pt-2 bg-gray-50/50">
                                 {isLoadingModules ? (
                                   <div className="space-y-2">
@@ -877,12 +888,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         {[1, 2, 3].map((i) => (
                           <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
                             <div className="flex items-center gap-3 mb-2">
-                              <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
-                              <div className="h-4 bg-gray-300 rounded w-1/3"></div>
+                              <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
                             </div>
                             <div className="space-y-2">
-                              <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                              <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+                              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
                             </div>
                           </div>
                         ))}
@@ -912,19 +923,42 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                       }, {});
                       console.log('[UserDetailsModal] groupedByCourse keys:', Object.keys(groupedByCourse));
 
-                      return Object.entries(groupedByCourse).map(([courseId, group]) => (
+                      return Object.entries(groupedByCourse).map(([courseId, group]) => {
+                        const getModuleId = (x) => {
+                          try {
+                            const val = x?.id || x?.module?.id || x?.module_id || x?.moduleId || x?.uuid || x?._id;
+                            return val != null ? String(val) : '';
+                          } catch { return ''; }
+                        };
+                        const isExpanded = Boolean(expandedGrouped[courseId]);
+                        const allMods = courseModules[courseId] || [];
+                        // Build a set of purchased module ids to diff
+                        const purchasedIds = new Set(
+                          group.items.map((m) => getModuleId(m)).filter(Boolean)
+                        );
+                        // Non-purchased = all course modules (published) that are not in purchased set
+                        const notPurchased = allMods.filter((mod) => {
+                          const mid = getModuleId(mod);
+                          return mid && !purchasedIds.has(mid);
+                        });
+                        const purchasedCount = group.items.length;
+                        const totalForCourse = totalModuleCounts[String(courseId)];
+                        const totalResolved = typeof totalForCourse === 'number' ? totalForCourse : purchasedCount;
+                        const showNotPurchased = purchasedCount < totalResolved && notPurchased.length > 0;
+                        return (
                         <div key={courseId} className="space-y-3">
                           {/* Course Header */}
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50/80 border border-blue-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                               onClick={() => setExpandedGrouped(prev => ({ ...prev, [courseId]: !prev[courseId] }))}>
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+                              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm">
                                 <BookOpen className="h-4 w-4 text-white" />
                               </div>
                               <div className="flex-1">
                                 <h3 className="text-sm font-semibold text-blue-900 mb-1">
                                   {group.title}
                                 </h3>
-                                <p className="text-xs text-blue-700">
+                                <p className="text-xs text-blue-700/90">
                                   {(() => {
                                     const purchased = group.items.length;
                                     const total = totalModuleCounts[String(courseId)];
@@ -933,33 +967,82 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                   })()}
                                 </p>
                               </div>
-                              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                              <Badge variant="outline" className="bg-white/70 text-blue-700 border-blue-300 shadow-sm">
                                 {(() => {
                                   const total = totalModuleCounts[String(courseId)];
                                   const totalNum = typeof total === 'number' ? total : group.items.length;
-                                  return `${totalNum} Module${totalNum !== 1 ? 's' : ''}`;
+                                  return `Total ${totalNum} Module${totalNum !== 1 ? 's' : ''}`;
                                 })()}
                               </Badge>
+                              <button type="button"
+                                      onClick={(e) => { e.stopPropagation(); setExpandedGrouped(prev => ({ ...prev, [courseId]: !prev[courseId] })); }}
+                                      className="ml-2 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-blue-600" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-blue-600" />
+                                )}
+                              </button>
                             </div>
                           </div>
                           
                           {/* Modules under this course */}
-                          <div className="ml-4 space-y-2">
-                            {group.items.map((module, index) => (
-                              <div 
-                                key={module.id || index} 
+                          <div className={`ml-4 space-y-2 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                            {isExpanded && group.items.length > 0 && (
+                              <div className="sticky top-0 z-0 -mb-1 text-[11px] text-gray-500 px-1 select-none">Purchased</div>
+                            )}
+                            {isExpanded && group.items.map((module, index) => (
+                        <div 
+                          key={module.id || index} 
                                 className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+                        >
+                                <div className="p-3">
+                            <div className="flex items-start gap-3">
+                                    <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-md group-hover:scale-110 transition-transform duration-200">
+                                      <BookOpenCheck className="h-3 w-3 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
+                                  {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                      </h4>
+                                      <div className="flex items-center gap-4 text-[11px] text-gray-500">
+                                  {formatPrice(module.price) && (
+                                    <div className="flex items-center gap-1">
+                                      <span>{formatPrice(module.price)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex-shrink-0">
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">
+                                  Purchased
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                            ))}
+                            {isExpanded && showNotPurchased && (
+                              <div className="pt-2 mt-1 border-t border-gray-100" />
+                            )}
+                            {isExpanded && showNotPurchased && (
+                              <div className="sticky top-0 z-0 -mb-1 text-[11px] text-gray-500 px-1 select-none">Not Purchased</div>
+                            )}
+                            {isExpanded && showNotPurchased && notPurchased.map((module, index) => (
+                              <div 
+                                key={(module.id || module.module?.id || `np-${index}`)} 
+                                className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-300"
                               >
                                 <div className="p-3">
                                   <div className="flex items-start gap-3">
-                                    <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-md group-hover:scale-110 transition-transform duration-200">
-                                      <BookOpenCheck className="h-3 w-3 text-white" />
+                                    <div className="p-1.5 bg-gray-200 rounded-md">
+                                      <BookOpenCheck className="h-3 w-3 text-gray-600" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
+                                      <h4 className="text-sm font-medium text-gray-700 truncate mb-1">
                                         {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
                                       </h4>
-                                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                                      <div className="flex items-center gap-4 text-[11px] text-gray-500">
                                         {formatPrice(module.price) && (
                                           <div className="flex items-center gap-1">
                                             <span>{formatPrice(module.price)}</span>
@@ -968,8 +1051,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                       </div>
                                     </div>
                                     <div className="flex-shrink-0">
-                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                                        Purchased
+                                      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px]">
+                                        Not Purchased
                                       </Badge>
                                     </div>
                                   </div>
@@ -978,7 +1061,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                             ))}
                           </div>
                         </div>
-                      ));
+                      );
+                      });
                     })()
                   )}
                 </div>
