@@ -36,10 +36,11 @@ export default defineConfig(({ mode }) => ({
     },
     strictPort: true,
     hmr: {
-      port: 3000,
+      port: 3001, // Use different port for HMR to avoid conflicts
       protocol: 'ws',
       host: 'localhost',
-      clientPort: 3000
+      clientPort: 3001,
+      overlay: false // Disable error overlay to prevent connection issues
     }
   },
   preview: {

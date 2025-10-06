@@ -65,8 +65,10 @@ export function CreateLessonDialog({
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, withAIGeneration = false) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
     
     if (!form.title.trim()) {
       setError("Title is required");
@@ -110,9 +112,14 @@ export function CreateLessonDialog({
       });
       onClose();
       
-      // Navigate to lesson builder
+      // Navigate to lesson builder with AI generation flag if requested
       if (courseId && moduleId) {
-        navigate(`/lesson-builder/${courseId}/${moduleId}/${lessonData.lessonNumber}`);
+        const navigationState = withAIGeneration ? 
+          { lessonData, openAIGenerator: true } : 
+          { lessonData };
+        navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lessonData.id || lessonData.lessonNumber}/builder`, {
+          state: navigationState
+        });
       }
     } catch (err) {
       setError(err.message || "Failed to save lesson");
@@ -193,20 +200,35 @@ export function CreateLessonDialog({
           )}
         </form>
 
-        <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={handleCancel}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmit}
-            disabled={loading || !form.title.trim()}
-          >
-            {loading ? "Creating..." : "Create Lesson"}
-          </Button>
+        <DialogFooter className="flex justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                // Create lesson and then navigate to builder with AI generation
+                handleSubmit(true); // Pass flag to indicate AI generation
+              }}
+              disabled={loading || !form.title.trim()}
+              className="text-purple-600 border-purple-200 hover:bg-purple-50"
+            >
+              Create + Generate AI Content
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              disabled={loading || !form.title.trim()}
+            >
+              {loading ? "Creating..." : "Create Lesson"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

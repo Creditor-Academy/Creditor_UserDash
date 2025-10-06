@@ -125,18 +125,39 @@ class EnhancedAIService {
         }
       } catch (error) {
         console.warn(`⚠️ ${provider.provider} failed:`, error.message);
+        
+        // Handle specific error types
+        if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+          console.log(`🔄 Rate limit hit for ${provider.provider}, trying next provider...`);
+        } else if (error.message.includes('402') || error.message.includes('Payment Required')) {
+          console.log(`💳 Payment required for ${provider.provider}, trying next provider...`);
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+          console.log(`🔑 Authentication failed for ${provider.provider}, trying next provider...`);
+        }
         continue;
       }
     }
 
-    // All providers failed, return fallback
+    // All providers failed, use fallback generator
     console.log('⚠️ All AI providers failed, using fallback generation');
-    return {
-      success: false,
-      error: 'All AI providers failed',
-      fallback: true,
-      provider: 'none'
-    };
+    try {
+      const fallbackResult = await this.fallbackGenerator.generateContent(prompt, options);
+      return {
+        success: true,
+        content: fallbackResult.content,
+        fallback: true,
+        provider: 'fallback'
+      };
+    } catch (fallbackError) {
+      console.error('❌ Even fallback generation failed:', fallbackError);
+      return {
+        success: false,
+        error: 'All providers including fallback failed',
+        content: 'Unable to generate content at this time. Please try again later.',
+        fallback: true,
+        provider: 'none'
+      };
+    }
   }
 
   /**

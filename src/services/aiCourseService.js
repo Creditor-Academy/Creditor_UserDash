@@ -547,23 +547,26 @@ export async function createCompleteAICourse(courseData) {
     const createdModules = [];
     const moduleErrors = [];
     
+    // Add progress callback if provided
+    const updateProgress = (message) => {
+      console.log(`📊 Progress: ${message}`);
+    };
+    
     for (let i = 0; i < courseStructure.modules.length; i++) {
       const moduleData = courseStructure.modules[i];
       
       try {
         console.log(`📖 Creating module ${i + 1}/${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`);
+        updateProgress(`Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`);
         
         const modulePayload = {
           title: moduleData.title || moduleData.module_title,
-          description: moduleData.description || `Module ${i + 1} content`,
+          description: moduleData.description || `${moduleData.title || moduleData.module_title} module content`,
           order: i + 1,
           estimated_duration: 60,
           module_status: 'PUBLISHED',
-          price: 0, // Default price for AI-generated modules
-          // Additional fields that might be required
-          learning_objectives: [`Learn ${moduleData.title || moduleData.module_title}`],
-          prerequisites: [],
-          difficulty_level: 'beginner'
+          thumbnail: moduleData.thumbnail || 'AI generated module thumbnail',
+          price: 0 // Backend expects number, matching manual creation
         };
         
         console.log('📋 Module payload being sent:', JSON.stringify(modulePayload, null, 2));
@@ -614,23 +617,31 @@ export async function createCompleteAICourse(courseData) {
     
     // Step 4: Create lessons for each module using deployed backend API
     const createdLessons = [];
+    const lessonErrors = [];
+    
     for (const module of createdModules) {
       const moduleId = module.data?.id || module.id;
+      const moduleTitle = module.data?.title || module.title || 'Unknown Module';
       
       if (module.originalLessons && module.originalLessons.length > 0) {
+        updateProgress(`Creating ${module.originalLessons.length} lessons for module: ${moduleTitle}`);
+        
         for (let j = 0; j < module.originalLessons.length; j++) {
           const lessonData = module.originalLessons[j];
           
           try {
+            console.log(`📝 Creating lesson ${j + 1}/${module.originalLessons.length} in module "${moduleTitle}": ${lessonData.title}`);
+            
             const lessonPayload = {
-              title: lessonData.title,
-              description: lessonData.description,
+              title: lessonData.title || `Lesson ${j + 1}`,
+              description: lessonData.description || `Lesson content for ${lessonData.title}`,
               order: j + 1,
               status: 'PUBLISHED',
               content: lessonData.content || '',
               duration: lessonData.duration || '15 min'
             };
             
+            // Use enhanced API client instead of fetch for better error handling
             const response = await fetch(`${API_BASE}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`, {
               method: 'POST',
               headers: getAuthHeaders(),
@@ -639,20 +650,38 @@ export async function createCompleteAICourse(courseData) {
             });
             
             if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(`HTTP ${response.status}: ${errorText}`);
+              const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+              throw new Error(`HTTP ${response.status}: ${errorData.message || errorData.errorMessage || 'Failed to create lesson'}`);
             }
             
             const createdLesson = await response.json();
             createdLessons.push(createdLesson);
             
-            console.log('✅ Lesson created:', createdLesson);
+            console.log(`✅ Lesson "${lessonData.title}" created successfully`);
           } catch (lessonError) {
-            console.error('❌ Failed to create lesson:', lessonError);
+            console.error(`❌ Failed to create lesson "${lessonData.title}":`, lessonError.message);
+            lessonErrors.push({
+              moduleTitle,
+              lessonTitle: lessonData.title,
+              error: lessonError.message
+            });
             // Continue with other lessons instead of failing completely
           }
         }
       }
+    }
+    
+    // Log final summary
+    console.log(`📊 Final creation summary:`);
+    console.log(`   ✅ Course: Created successfully`);
+    console.log(`   📚 Modules: ${createdModules.length}/${courseStructure.modules.length} created`);
+    console.log(`   📝 Lessons: ${createdLessons.length} created`);
+    
+    if (moduleErrors.length > 0) {
+      console.warn(`   ⚠️ Module errors: ${moduleErrors.length}`);
+    }
+    if (lessonErrors.length > 0) {
+      console.warn(`   ⚠️ Lesson errors: ${lessonErrors.length}`);
     }
     
     return {
@@ -662,7 +691,9 @@ export async function createCompleteAICourse(courseData) {
         modules: createdModules,
         lessons: createdLessons,
         totalModules: createdModules.length,
-        totalLessons: createdLessons.length
+        totalLessons: createdLessons.length,
+        moduleErrors: moduleErrors.length > 0 ? moduleErrors : undefined,
+        lessonErrors: lessonErrors.length > 0 ? lessonErrors : undefined
       }
     };
     
@@ -1419,11 +1450,11 @@ export async function saveAILessons(lessonData) {
 }
 
 /**
- * Update lesson content with enhanced features (blocks, video links, sync settings)
+ * Update enhanced lesson content with AI features (blocks, video links, sync settings)
  * @param {Object} contentData - Enhanced lesson content data
  * @returns {Promise<Object>} Update result
  */
-export async function updateLessonContent(contentData) {
+export async function updateEnhancedLessonContent(contentData) {
   try {
     console.log('🔄 Updating lesson content:', contentData.courseTitle);
     

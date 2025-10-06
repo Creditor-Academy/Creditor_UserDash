@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import { getAuthHeader } from "@/services/authHeader";
-import { MoreVertical, Edit, Trash2, Settings } from "lucide-react";
+import { MoreVertical, Edit, Trash2, Settings, Sparkles } from "lucide-react";
+import UniversalAIContentButton from "@/components/courses/UniversalAIContentButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -463,18 +464,25 @@ const ModuleLessonsView = () => {
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Edit</span>
                   </Button>
-                  {/* <Button 
-                    variant="outline" 
-                    size="icon" 
-                    className="h-8 w-8 text-purple-600 hover:bg-purple-50 border-purple-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Handle settings click
+                  <UniversalAIContentButton
+                    lessonData={lesson}
+                    moduleData={moduleDetails}
+                    courseData={{ title: 'Course' }} // You can pass actual course data if available
+                    onContentGenerated={(blocks) => {
+                      console.log('AI content generated for lesson:', lesson.title, blocks);
+                      toast({
+                        title: "Success",
+                        description: `Generated ${blocks.length} content blocks for ${lesson.title}!`,
+                      });
+                      // Optionally refresh the lesson data
+                      fetchModuleLessons();
                     }}
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span className="sr-only">Settings</span>
-                  </Button> */}
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 text-purple-600 hover:bg-purple-50 border-purple-200"
+                    buttonText=""
+                    showIcon={true}
+                  />
                   <Button 
                     variant="outline" 
                     size="icon" 

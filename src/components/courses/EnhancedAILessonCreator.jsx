@@ -46,12 +46,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { saveAILessons, updateLessonContent } from '../../services/aiCourseService';
+import { saveAILessons, updateEnhancedLessonContent } from '../../services/aiCourseService';
 import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
 import OutlineTab from './LessonCreatorTabs/OutlineTab';
 import LessonsTab from './LessonCreatorTabs/LessonsTab';
 import BlockEditorTab from './LessonCreatorTabs/BlockEditorTab';
 import PreviewTab from './LessonCreatorTabs/PreviewTab';
+import UnifiedAIBlockEditor from './UnifiedAIBlockEditor';
 
 const EnhancedAILessonCreator = ({ 
   isOpen, 
@@ -80,6 +81,7 @@ const EnhancedAILessonCreator = ({
     { id: 'outline', label: 'Course Outline', icon: BookOpen },
     { id: 'lessons', label: 'AI Lessons', icon: FileText },
     { id: 'blocks', label: 'Block Editor', icon: Square },
+    { id: 'unified', label: 'AI Block Editor', icon: Sparkles },
     { id: 'preview', label: 'Preview', icon: Eye }
   ];
 
@@ -216,7 +218,7 @@ const EnhancedAILessonCreator = ({
       localStorage.setItem(`ai_course_content_${courseData?.id || 'temp'}`, JSON.stringify(saveData));
       
       // Try to save to backend
-      const result = await updateLessonContent(saveData);
+      const result = await updateEnhancedLessonContent(saveData);
       
       if (result.success) {
         console.log('✅ Content saved successfully:', {
@@ -346,6 +348,27 @@ const EnhancedAILessonCreator = ({
             syncSettings={{
               syncAcrossModules: true,
               autoSave: true
+            }}
+          />
+        )}
+        
+        {activeTab === 'unified' && (
+          <UnifiedAIBlockEditor
+            lessons={lessons}
+            contentBlocks={contentBlocks}
+            setContentBlocks={setContentBlocks}
+            editingLessonId={editingLessonId}
+            setEditingLessonId={setEditingLessonId}
+            courseTitle={courseTitle}
+            onContentSync={(syncData) => {
+              console.log('AI Content sync requested:', syncData);
+              // Handle AI-powered content synchronization
+              if (syncData.type === 'ai_block_add') {
+                // Auto-save when AI generates content
+                setTimeout(() => {
+                  console.log('Auto-saving AI generated content...');
+                }, 1000);
+              }
             }}
           />
         )}

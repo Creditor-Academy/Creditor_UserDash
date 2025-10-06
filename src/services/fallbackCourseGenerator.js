@@ -408,6 +408,87 @@ class FallbackCourseGenerator {
   }
 
   /**
+   * Generate content based on prompt (generic method for enhanced AI service)
+   * @param {string} prompt - Content generation prompt
+   * @param {Object} options - Generation options
+   * @returns {Promise<Object>} Generated content result
+   */
+  async generateContent(prompt, options = {}) {
+    try {
+      console.log('🔄 Using fallback content generation for prompt:', prompt.substring(0, 100) + '...');
+      
+      // Analyze prompt to determine content type
+      const promptLower = prompt.toLowerCase();
+      
+      if (promptLower.includes('course outline') || promptLower.includes('modules')) {
+        // Generate course outline
+        const courseTitle = this.extractCourseTitle(prompt) || 'Course Content';
+        return await this.generateCourseOutline(courseTitle);
+      } else if (promptLower.includes('lesson') || promptLower.includes('content')) {
+        // Generate lesson content
+        const lessonTitle = this.extractLessonTitle(prompt) || 'Lesson Content';
+        return await this.generateLessonContent(lessonTitle);
+      } else {
+        // Generate generic educational content
+        return {
+          success: true,
+          content: this.generateGenericContent(prompt),
+          provider: 'fallback',
+          type: 'generic'
+        };
+      }
+    } catch (error) {
+      console.error('❌ Fallback content generation error:', error);
+      return {
+        success: false,
+        error: error.message,
+        content: 'Unable to generate content at this time.',
+        provider: 'fallback'
+      };
+    }
+  }
+
+  /**
+   * Extract course title from prompt
+   * @param {string} prompt - Generation prompt
+   * @returns {string} Extracted course title
+   */
+  extractCourseTitle(prompt) {
+    const matches = prompt.match(/course.*?["']([^"']+)["']/i) || 
+                   prompt.match(/about\s+([^.]+)/i) ||
+                   prompt.match(/for\s+([^.]+)/i);
+    return matches ? matches[1].trim() : null;
+  }
+
+  /**
+   * Extract lesson title from prompt
+   * @param {string} prompt - Generation prompt
+   * @returns {string} Extracted lesson title
+   */
+  extractLessonTitle(prompt) {
+    const matches = prompt.match(/lesson.*?["']([^"']+)["']/i) || 
+                   prompt.match(/about\s+([^.]+)/i) ||
+                   prompt.match(/explain\s+([^.]+)/i);
+    return matches ? matches[1].trim() : null;
+  }
+
+  /**
+   * Generate generic educational content
+   * @param {string} prompt - Content prompt
+   * @returns {string} Generated content
+   */
+  generateGenericContent(prompt) {
+    const templates = [
+      `This section covers important concepts related to the topic. Understanding these fundamentals is essential for building a strong foundation in the subject matter.`,
+      `Key points to remember: This content provides essential knowledge that will help you understand the core principles and apply them effectively in practical situations.`,
+      `Learning objectives: By the end of this section, you will have a comprehensive understanding of the topic and be able to apply the concepts in real-world scenarios.`,
+      `Important considerations: This material builds upon previous knowledge and introduces new concepts that are crucial for advanced understanding of the subject.`
+    ];
+    
+    return templates[Math.floor(Math.random() * templates.length)];
+  }
+
+  /**
    * Check if fallback generator is available (always true)
    * @returns {boolean} Always true
    */
