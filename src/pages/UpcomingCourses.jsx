@@ -2,131 +2,96 @@ import React, { useRef, useState, useEffect } from "react";
 import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from "lucide-react";
 
 const UPCOMING_COURSES = [
+  // Become Private
   {
-    id: "iwrn-preparing-for-private-wealth-building",
-    title: "Preparing for Private Wealth Building",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+14.png",
-  },
-  {
-    id: "iwrn-booking-your-private-credit-session",
-    title: "Booking Your Private Credit Session",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+15.png",
-  },
-  {
-    id: "iwrn-full-credit-dispute-identity-theft-remedy-kit",
-    title: "Full Credit Dispute & Identity Theft Remedy Kit",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+16.png",
-  },
-  {
-    id: "become-private-trust-creation-process",
-    title: "Trust Creation Process",
+    id: "become-private-security-agreement-and-collateralization",
+    title: "Security Agreement and Collateralization",
     course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/35.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp9.png",
   },
   {
-    id: "become-private-trust-documentation-and-structure",
-    title: "Trust Documentation and Structure",
+    id: "become-private-legal-protections-and-risk-management",
+    title: "Legal Protections and Risk Management",
     course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/36.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp10.png",
   },
   {
-    id: "become-private-trustee-and-beneficiary-roles",
-    title: "Trustee and Beneficiary Roles",
+    id: "become-private-sample-trust-implementation",
+    title: "Sample Trust Implementation",
     course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/37.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp11.png",
   },
   {
-    id: "become-private-powers-and-governance",
-    title: "Powers And Governance",
+    id: "become-private-closing-and-continuation",
+    title: "Closing and Continuation",
     course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/38.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp12.png",
+  },
+
+  // Private Merchant
+  {
+    id: "private-merchant-showdown-merchant-account-provider-vs-aggregators-1",
+    title: "Showdown: Merchant Account Provider vs Agrgegators 1",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm22.png",
   },
   {
-    id: "become-private-trust-operations-and-banking",
-    title: "Trust Operations And Banking",
-    course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/39.png",
+    id: "private-merchant-how-to-find-your-payment-processing-soul-mate",
+    title: "How To Find Your Payment Processing Soul Mate",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm29.png",
   },
   {
-    id: "become-private-notifications-and-public-record-filing",
-    title: "Notifications And Public Record Filing",
-    course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/40.png",
+    id: "private-merchant-the-future-of-payments",
+    title: "The Future of Payments",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm30.png",
+  },
+
+  // Operate Private
+  {
+    id: "operate-private-business-trust-part-17-appendix-c-trustee-liability-protection-provisions",
+    title: "Business Trust Part 17 ( Appendix “C” ~ Trustee Liability Protection Provisions )",
+    course: "Operate Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+17.png",
   },
   {
     id: "operate-private-pma-articles-of-association",
     title: "PMA Articles of Association",
     course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pma1.png",
   },
   {
-    id: "operate-private-pma-ein-application-process-church-based-ministry",
-    title: "PMA EIN Application Process of Church Based Ministry",
+    id: "operate-private-pma-ein-application-process-of-church-based-ministry",
+    title: "PMA EIN Application Process Of Church Based Ministry",
     course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/31.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pma2.png",
+  },
+
+  // Business Credit
+  {
+    id: "business-credit-maverick-office-supplies-net-30-account",
+    title: "Maverick Office Supplies - Sign Up for a Free NET 30 Account",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+7+(3).png",
   },
   {
-    id: "operate-private-appendix-c-trustee-liability-protection-provisions",
-    title: "Appendix 'C' Trustee Liability Protection Provisions",
-    course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+17.png",
+    id: "business-credit-list-of-tier-1-tradelines-to-get-started",
+    title: "List of Tier 1 Tradelines to Get Started",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+8+(4).png",
   },
   {
-    id: "private-merchant-the-payments-landscape",
-    title: "The Payments Landscape",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/134.png",
+    id: "business-credit-section-5-tier-2-business-credit-cards",
+    title: "Section 5: Tier 2 – Business Credit Cards",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+9+(3).png",
   },
   {
-    id: "private-merchant-payments-processing-breakdown-2",
-    title: "Payments Processing Breakdown 2",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/136.png",
-  },
-  {
-    id: "private-merchant-showdown-merchant-account-provider-vs-aggregators-1",
-    title: "Showdown: Merchant Account Provider vs Agrgegators 1",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/137.png",
-  },
-  {
-    id: "private-merchant-showdown-merchant-account-provider-vs-aggregators-2",
-    title: "Showdown: Merchant Account Provider vs Agrgegators 2",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/138.png",
-  },
-  {
-    id: "private-merchant-charging-demystified",
-    title: "Charging Demystified",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/139.png",
-  },
-  {
-    id: "private-merchant-security-and-fraud",
-    title: "Security And Fraud",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/140.png",
-  },
-  {
-    id: "private-merchant-omni-channel-magic-1",
-    title: "Omni Channel Magic 1",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/141.png",
-  },
-  {
-    id: "private-merchant-omni-channel-magic-2",
-    title: "Omni Channel Magic 2",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/142.png",
-  },
-  {
-    id: "private-merchant-omni-channel-magic-3",
-    title: "Omni Channel Magic 3",
-    course: "Private Merchant",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/143.png",
+    id: "business-credit-tier-3-credit-unions-and-community-banks",
+    title: "Tier 3 – Credit Unions and Community Banks",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+10+(4).png",
   },
 ];
 
@@ -176,13 +141,13 @@ function UpcomingCourses() {
   return (
     <div className="mb-16 relative max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between mb-8 px-1 gap-4">
+      <div className="mb-8 px-1">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Upcoming This Week</h2>
           <p className="text-gray-500">New content launching soon</p>
         </div>
-        {/* Course filters (no layout change) */}
-        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar py-1 mt-3 sm:mt-0 ml-0 sm:ml-6">
+        {/* Course filters placed below header */}
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
           {courseFilters.map((course) => (
             <button
               key={course}
