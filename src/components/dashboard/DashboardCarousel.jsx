@@ -11,14 +11,7 @@ const carouselItems = [
   
   {
     id: 1,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/%2469Month!+(5).png",
-    course: "04th Oct",
-    
-  },
-  {
-    id: 2,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/Master+class++member+event_04.png",
-    title: "New Member Event",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/%2469Month!+(6).png",
     course: "04th Oct",
     
   },
