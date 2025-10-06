@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { getAccessToken, setAccessToken, clearAccessToken } from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
 export const api = axios.create({
 	baseURL: API_BASE,
-	withCredentials: true,
+	withCredentials: true, // Keep this for any same-domain cookies
+	headers: {
+		'Content-Type': 'application/json',
+	}
 });
 
 // Helper: decode and check JWT expiry
@@ -55,12 +58,16 @@ let pendingQueue = [];
 async function refreshAccessToken() {
 	try {
 		console.log('[Auth] Attempting token refresh via GET', `${API_BASE}/api/auth/refresh`);
-		const response = await axios.get(`${API_BASE}/api/auth/refresh`, { withCredentials: true });
+		const response = await axios.get(`${API_BASE}/api/auth/refresh`, { 
+			withCredentials: true,
+			headers: {
+				'Authorization': `Bearer ${getAccessToken()}`
+			}
+		});
 		const newToken = response.data?.token || response.data?.accessToken || response.data?.data?.token || response.headers?.['x-access-token'];
 		if (!newToken) throw new Error('No token in refresh response');
 		setAccessToken(newToken);
 		console.log('[Auth] Refresh successful. New access token stored.');
-		// Respect 14-day refresh validity: if server signals refresh token expired, throw to logout via response interceptor
 		return newToken;
 	} catch (err) {
 		console.error('[Auth] Refresh failed:', {
@@ -116,9 +123,7 @@ api.interceptors.response.use(
 			}
 		}
 
-		// If refresh failed due to refresh token expired (e.g., 401/403/419 with a specific code), perform logout
-		// Only force logout for specific endpoints or after multiple failed attempts
-		// Don't force logout for group operations as they might have different permission requirements
+		// If refresh failed due to refresh token expired, perform logout
 		if ((status === 401 || status === 403 || status === 419) && 
 			(original.url?.includes('/auth/') || original.url?.includes('/user/') || original.url?.includes('/profile')) &&
 			!original.url?.includes('/groups/')) {
@@ -126,9 +131,7 @@ api.interceptors.response.use(
 			try {
 				const { clearAccessToken } = await import('./tokenService');
 				clearAccessToken();
-				// Broadcast and redirect if app desires
 				window.dispatchEvent(new CustomEvent('userLoggedOut'));
-				// Optional: navigate to login page
 				if (typeof window !== 'undefined') {
 					setTimeout(() => { window.location.href = '/login'; }, 0);
 				}

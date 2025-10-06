@@ -25,7 +25,7 @@ import {
   ChevronRight,
   BookOpenCheck
 } from "lucide-react";
-import { fetchUserCoursesByUserId } from "@/services/userService";
+import { fetchUserCoursesByUserId, fetchAllCourses } from "@/services/userService";
 import { fetchCourseModules, fetchCourseById, fetchCoursePrice } from "@/services/courseService";
 import { getUnlockedModulesByUser } from "@/services/modulesService";
 
@@ -43,6 +43,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [loadingPurchasedModules, setLoadingPurchasedModules] = React.useState(false);
   const [purchasedModulesError, setPurchasedModulesError] = React.useState(null);
   const [coursePrices, setCoursePrices] = React.useState({});
+  const [totalModuleCounts, setTotalModuleCounts] = React.useState({});
 
   // Fetch courses for the selected user when modal opens or user changes
   React.useEffect(() => {
@@ -58,6 +59,46 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       const coursesData = await fetchUserCoursesByUserId(user.id);
       const coursesArray = Array.isArray(coursesData) ? coursesData : [];
       setCourses(coursesArray);
+
+      // Build courseId -> totalModules map from `_count.modules` coming from getCourses
+      try {
+        let countsMap = (coursesArray || []).reduce((acc, c) => {
+          const id = c.course_id || c.courseId || c.id || c.course?.id || c.course?.course_id;
+          if (!id) return acc;
+          const total = (c._count && typeof c._count.modules === 'number')
+            ? c._count.modules
+            : (c.course && c.course._count && typeof c.course._count.modules === 'number')
+              ? c.course._count.modules
+              : (typeof c.modulesCount === 'number' ? c.modulesCount : undefined);
+          if (typeof total === 'number') acc[String(id)] = Number(total);
+          return acc;
+        }, {});
+        console.log('[UserDetailsModal] user courses IDs:', (coursesArray||[]).map(c => c.course_id || c.courseId || c.id || c.course?.id || c.course?.course_id));
+        console.log('[UserDetailsModal] derived totals from user courses:', countsMap);
+
+        // If any course is missing a count, fetch global courses to complete the map
+        const missingIds = (coursesArray || [])
+          .map(c => c.course_id || c.courseId || c.id || c.course?.id || c.course?.course_id)
+          .filter(Boolean)
+          .filter(id => countsMap[String(id)] === undefined);
+
+        if (missingIds.length > 0) {
+          const allCourses = await fetchAllCourses().catch(() => []);
+          const globalMap = Array.isArray(allCourses) ? allCourses.reduce((acc, c) => {
+            const gid = c.id || c.course_id || c.courseId;
+            if (!gid) return acc;
+            const gtotal = c?._count?.modules;
+            if (typeof gtotal === 'number') acc[String(gid)] = Number(gtotal);
+            return acc;
+          }, {}) : {};
+          countsMap = { ...globalMap, ...countsMap };
+          console.log('[UserDetailsModal] filled totals from global getCourses for missingIds:', missingIds, 'globalMap:', globalMap);
+        }
+        setTotalModuleCounts(countsMap);
+        console.log('[UserDetailsModal] final totalModuleCounts:', countsMap);
+      } catch (_) {
+        // ignore; UI will fallback to purchased count if absent
+      }
       
       // Fetch modules for each course
       if (coursesArray.length > 0) {
@@ -132,6 +173,30 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
         };
       });
       setPurchasedModules(withCourseInfo);
+
+      // Ensure we have total counts for any courseIds present only in purchased modules
+      try {
+        const purchasedCourseIds = Array.from(new Set(
+          (withCourseInfo || [])
+            .map(m => m.course_id || m.module?.course_id || m.courseId)
+            .filter(Boolean)
+        ));
+        const missingForPurchased = purchasedCourseIds.filter(id => totalModuleCounts[String(id)] === undefined);
+        if (missingForPurchased.length > 0) {
+          const entries = await Promise.all(missingForPurchased.map(async (id) => {
+            try {
+              const mods = await fetchCourseModules(id);
+              const count = Array.isArray(mods) ? mods.length : 0;
+              return [id, count];
+            } catch (_) {
+              return [id, 0];
+            }
+          }));
+          const map = entries.reduce((acc, [id, cnt]) => { acc[String(id)] = cnt; return acc; }, {});
+          setTotalModuleCounts(prev => ({ ...map, ...prev }));
+          console.log('[UserDetailsModal] filled totals from purchased-only courses:', map);
+        }
+      } catch (_) {}
     } catch (err) {
       console.warn("getUnlockedModulesByUser failed, will fallback to per-course API", err);
       throw err;
@@ -633,7 +698,22 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                   Enrolled
                   </span>
                   <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-700 border-blue-200">
-                    {activeTab === 'courses' ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` : `${purchasedModules.length} Module${purchasedModules.length !== 1 ? 's' : ''}`}
+                    {activeTab === 'courses' 
+                      ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` 
+                      : (() => {
+                          // Group modules by course to get course count
+                          const groupedModules = purchasedModules.reduce((acc, module) => {
+                            const courseTitle = module.course_title || 'Unknown Course';
+                            if (!acc[courseTitle]) {
+                              acc[courseTitle] = [];
+                            }
+                            acc[courseTitle].push(module);
+                            return acc;
+                          }, {});
+                          const courseCount = Object.keys(groupedModules).length;
+                          return `${courseCount} Course${courseCount !== 1 ? 's' : ''}`;
+                        })()
+                    }
                   </Badge>
                 </CardTitle>
                 
@@ -820,78 +900,86 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         <h3 className="text-lg font-semibold text-gray-700 mb-2">No Purchased Modules</h3>
                         <p className="text-sm text-gray-500">This user hasn't purchased any individual modules yet.</p>
                       </div>
-                    ) : (
-                      (() => {
-                        // Group modules by course
-                        const groupedModules = purchasedModules.reduce((acc, module) => {
-                          const courseTitle = module.course_title || 'Unknown Course';
-                          if (!acc[courseTitle]) {
-                            acc[courseTitle] = [];
-                          }
-                          acc[courseTitle].push(module);
-                          return acc;
-                        }, {});
+                    ) : (() => {
+                      // Group purchased modules by courseId while keeping course title for display
+                      const groupedByCourse = purchasedModules.reduce((acc, m) => {
+                        const cid = m.course_id || m.module?.course_id || m.courseId;
+                        if (!cid) return acc;
+                        const title = m.course_title || m.module?.course_title || 'Unknown Course';
+                        if (!acc[cid]) acc[cid] = { title, items: [] };
+                        acc[cid].items.push(m);
+                        return acc;
+                      }, {});
+                      console.log('[UserDetailsModal] groupedByCourse keys:', Object.keys(groupedByCourse));
 
-                        return Object.entries(groupedModules).map(([courseTitle, modules]) => (
-                          <div key={courseTitle} className="space-y-3">
-                            {/* Course Header */}
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
-                                  <BookOpen className="h-4 w-4 text-white" />
-                                </div>
-                                <div className="flex-1">
-                                  <h3 className="text-sm font-semibold text-blue-900">
-                                    {courseTitle}
-                                  </h3>
-                                  <p className="text-xs text-blue-600">
-                                    {modules.length} module{modules.length !== 1 ? 's' : ''} purchased
-                                  </p>
-                                </div>
-                                <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-                                  {modules.length} Module{modules.length !== 1 ? 's' : ''}
-                                </Badge>
+                      return Object.entries(groupedByCourse).map(([courseId, group]) => (
+                        <div key={courseId} className="space-y-3">
+                          {/* Course Header */}
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+                                <BookOpen className="h-4 w-4 text-white" />
                               </div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                                  {group.title}
+                                </h3>
+                                <p className="text-xs text-blue-700">
+                                  {(() => {
+                                    const purchased = group.items.length;
+                                    const total = totalModuleCounts[String(courseId)];
+                                    const totalNum = typeof total === 'number' ? total : purchased;
+                                    return `${purchased} purchased of ${totalNum} total`;
+                                  })()}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-300">
+                                {(() => {
+                                  const total = totalModuleCounts[String(courseId)];
+                                  const totalNum = typeof total === 'number' ? total : group.items.length;
+                                  return `${totalNum} Module${totalNum !== 1 ? 's' : ''}`;
+                                })()}
+                              </Badge>
                             </div>
-
-                            {/* Modules under this course */}
-                            <div className="ml-4 space-y-2">
-                              {modules.map((module, index) => (
-                                <div 
-                                  key={module.id || index} 
-                                  className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300 ease-in-out"
-                                >
-                                  <div className="p-3">
-                                    <div className="flex items-start gap-3">
-                                      <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-md group-hover:scale-110 transition-transform duration-200">
-                                        <BookOpenCheck className="h-3 w-3 text-white" />
+                          </div>
+                          
+                          {/* Modules under this course */}
+                          <div className="ml-4 space-y-2">
+                            {group.items.map((module, index) => (
+                              <div 
+                                key={module.id || index} 
+                                className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+                              >
+                                <div className="p-3">
+                                  <div className="flex items-start gap-3">
+                                    <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-md group-hover:scale-110 transition-transform duration-200">
+                                      <BookOpenCheck className="h-3 w-3 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
+                                        {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                      </h4>
+                                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                                        {formatPrice(module.price) && (
+                                          <div className="flex items-center gap-1">
+                                            <span>{formatPrice(module.price)}</span>
+                                          </div>
+                                        )}
                                       </div>
-                                      <div className="flex-1 min-w-0">
-                                        <h4 className="text-xs font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
-                                          {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
-                                        </h4>
-                                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                                          {formatPrice(module.price) && (
-                                            <div className="flex items-center gap-1">
-                                              <span>{formatPrice(module.price)}</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex-shrink-0">
-                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                                          Purchased
-                                        </Badge>
-                                      </div>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                                        Purchased
+                                      </Badge>
                                     </div>
                                   </div>
                                 </div>
-                              ))}
-                            </div>
+                              </div>
+                            ))}
                           </div>
-                        ));
-                      })()
-                    )
+                        </div>
+                      ));
+                    })()
                   )}
                 </div>
               </CardContent>

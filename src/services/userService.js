@@ -234,12 +234,12 @@ export async function fetchAllUsersAdmin() {
 
 export async function logoutUser() {
   try {
-    const response = await fetch('https://creditor-backend-1-iijy.onrender.com/api/auth/logout', {
+    const response = await fetch('https://creditor.onrender.com/api/auth/logout', {
       method: 'GET',
-      credentials: 'include', // Important for sending cookies
+      credentials: 'include', // Keep for any same-domain cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${localStorage.getItem('token')}` // Use localStorage token
       }
     });
 

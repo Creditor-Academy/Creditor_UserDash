@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
 import { getUserRole, getUserRoles, setUserRole as setUserRoleUtil, setUserRoles as setUserRolesUtil, setSingleRole, clearUserData, isInstructorOrAdmin as checkInstructorOrAdmin, logoutUser } from '@/services/userService';
 
 const AuthContext = createContext();

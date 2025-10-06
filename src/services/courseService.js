@@ -243,6 +243,39 @@ export async function fetchCoursePrice(courseId) {
   return data.data || data;
 }
 
+// Fetch purchased/individually unlocked modules for a given course.
+// Optional userId can be supplied to fetch for a specific user (e.g., admin view).
+export async function fetchPurchasedModulesByCourse(courseId, userId) {
+  if (!courseId) throw new Error('fetchPurchasedModulesByCourse: courseId is required');
+
+  const base = import.meta.env.VITE_API_BASE_URL;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...getAuthHeader(),
+  };
+
+  // Use the exact backend route first and only
+  const url = `${base}/api/course/${encodeURIComponent(courseId)}/modules/getPurchasedModules`;
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    });
+    // Treat 404 as "no purchased modules" rather than an error
+    if (response.status === 404) return [];
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json().catch(() => ({}));
+    const payload = data?.data ?? data ?? [];
+    return Array.isArray(payload) ? payload : (Array.isArray(payload?.items) ? payload.items : []);
+  } catch (err) {
+    // Fail silently with [] so UI can continue rendering other courses
+    console.warn('[fetchPurchasedModulesByCourse] failed', { courseId, message: err?.message });
+    return [];
+  }
+}
 
 // Example usage in a fetch call:
 export async function someApiFunction() {
