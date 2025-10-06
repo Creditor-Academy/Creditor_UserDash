@@ -103,7 +103,6 @@ import AddUsersPage from "@/pages/AddUsersPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
-import  ModuleView  from "@/pages/ModuleView";
      
 
 function ProtectedScormRoute() {
@@ -193,7 +192,6 @@ function App() {
                   </CourseTimerProvider>
                 } />
                 <Route path="modules" element={<ModulesList />} />
-                <Route path="modules/:moduleId/view" element={<ModuleView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />

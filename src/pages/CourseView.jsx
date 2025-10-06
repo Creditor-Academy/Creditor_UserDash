@@ -646,12 +646,33 @@ export function CourseView() {
                         <CardFooter className="p-0 flex flex-col gap-2">
                            {isContentAvailable && hasAccess ? (
                             <>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/view`} className="w-full">
-                                <Button className="w-full">
-                                  <Play size={16} className="mr-2" />
-                                  Start Module
-                                </Button>
-                              </Link>
+                              <Button 
+                                className="w-full"
+                                onClick={() => {
+                                  // Get resource_url from module data
+                                  let fullUrl = module.resource_url;
+                                  
+                                  // If it's not already a full URL, prepend the API base URL
+                                  if (fullUrl && !fullUrl.startsWith('http')) {
+                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
+                                  }
+                                  
+                                  // For S3 URLs, ensure they have the correct protocol
+                                  if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
+                                    fullUrl = fullUrl.replace('http://', 'https://');
+                                  }
+                                  
+                                  // Open in new tab
+                                  if (fullUrl) {
+                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+                                  } else {
+                                    console.error('No resource URL found for module:', module);
+                                  }
+                                }}
+                              >
+                                <Play size={16} className="mr-2" />
+                                Start Module
+                              </Button>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
                                <Button variant="outline" className="w-full">
                                   <FileText size={16} className="mr-2" />
