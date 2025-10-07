@@ -11,6 +11,7 @@ import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 import { SignUp } from "@/pages/Auth/SignUp";
+import { storeAccessToken } from "@/services/tokenService";
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -27,7 +28,8 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email: normalizedEmail });
       setIsEmailSent(true);
       toast.success(response.data?.message || "Password reset email sent successfully!");
     } catch (error) {
@@ -151,61 +153,25 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
       const response = await axios.post(`${API_BASE}/api/auth/login`, {
-        email,
-        password,
+        email: normalizedEmail,
+        password: normalizedPassword,
       }, {
         withCredentials: true
       });
-
       if (response.data.success && response.data.accessToken) {
-        // Store tokens
-        localStorage.setItem('authToken', response.data.accessToken);
-        localStorage.setItem('token', response.data.accessToken); // For backward compatibility
-
-        // Persist using tokenService and schedule proactive refresh (~5 minutes default)
-        try {
-          const { storeAccessToken } = await import('@/services/tokenService');
-          storeAccessToken(response.data.accessToken);
-          console.log('[Auth] Login success. Using validation-based refresh only.');
-        } catch (e) {
-          console.warn('[Auth] Could not schedule proactive refresh after login:', e?.message || e);
-        }
+        // Store tokens using tokenService for consistent token storage
+        storeAccessToken(response.data.accessToken);
+        console.log('[Auth] Login success. Token stored.');
         
         // Set authentication state
         setAuth(response.data.accessToken);
 
-        // Set default role first
-        setUserRole('user');
-        
-        // Fetch user profile and set roles
-        try {
-          const profile = await fetchUserProfile();
-          console.log('Fetched user profile after login:', profile);
-          
-          if (profile) {
-            // Store user ID if available
-            if (profile.id) {
-              localStorage.setItem('userId', profile.id);
-            }
-            
-            // Handle user roles
-            if (Array.isArray(profile.user_roles) && profile.user_roles.length > 0) {
-              const roles = profile.user_roles.map(roleObj => roleObj.role);
-              const priorityRoles = ['admin', 'instructor', 'user'];
-              const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
-              
-              // Set single role (enforces single role system)
-              setUserRoles([highestRole]);
-              console.log('Set user single role to:', highestRole);
-            } else {
-              setUserRoles(['user']);
-            }
-          }
-        } catch (profileErr) {
-          console.warn("Could not fetch user profile:", profileErr);
-          setUserRoles(['user']);
-        }
+        // Don't set default role - let UserContext fetch profile and set correct role
+        // Dispatch userLoggedIn event to trigger UserContext profile fetch
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
         
         toast.success("Login successful!");
         navigate("/dashboard");
@@ -291,7 +257,7 @@ export function Login() {
                     {/* Email Field */}
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-slate-700">
-                        Email Address
+                        User ID
                       </Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -365,7 +331,7 @@ export function Login() {
                 )}
               </CardContent>
 
-              {!showSignUp && !showForgotPassword && (
+              {/* {!showSignUp && !showForgotPassword && (
                 <CardFooter className="flex flex-col space-y-4 pt-2">
                   <div className="text-center text-sm text-slate-500">
                     Don't have an account?{" "}
@@ -379,7 +345,7 @@ export function Login() {
                     </button>
                   </div>
                 </CardFooter>
-              )}
+              )} */}
             </Card>
           </div>
         </div>

@@ -73,6 +73,12 @@ import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import Home from "@/pages/home";
+import About from "@/pages/AboutUsPage/About";
+import Contact from "@/pages/contactpage/contact";
+import FAQPage from "@/pages/faqpages/faqpage";
+import Features from "@/pages/FeaturesPage/Features";
+import WhyUs from "@/pages/WhyusPage/WhyUs";
+import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -97,7 +103,6 @@ import AddUsersPage from "@/pages/AddUsersPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
-import  ModuleView  from "@/pages/ModuleView";
      
 
 function ProtectedScormRoute() {
@@ -118,6 +123,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/whyus" element={<WhyUs />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -182,7 +192,6 @@ function App() {
                   </CourseTimerProvider>
                 } />
                 <Route path="modules" element={<ModulesList />} />
-                <Route path="modules/:moduleId/view" element={<ModuleView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />
@@ -313,6 +322,7 @@ function App() {
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
           <Route path="/games" element={<Games />} />
           </Routes>
+          <PageTransitionOverlay />
           <Toaster />
           </CreditsProvider>
         </UserProvider>

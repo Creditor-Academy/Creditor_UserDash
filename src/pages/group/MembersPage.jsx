@@ -224,10 +224,10 @@ export function MembersPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-4">
             <div>
-              <CardTitle>Group Members</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Group Members</CardTitle>
+              <CardDescription className="text-sm">
                 {members.length} members · {adminCount} admins
               </CardDescription>
             </div>
@@ -235,25 +235,30 @@ export function MembersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex w-full items-center space-x-2 pb-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9"
-            />
+          <div className="flex w-full items-center gap-2 pb-4">
+            <Search className="h-4 w-4 text-muted-foreground hidden sm:block" />
+            <div className="flex-1 relative">
+              <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 sm:hidden" />
+              <Input
+                placeholder="Search by name or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 w-full pl-9 sm:pl-3"
+              />
+            </div>
           </div>
-          
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+
+          <div className="-mx-4 sm:mx-0 overflow-x-auto">
+            <div className="inline-block min-w-full align-middle">
+              <Table className="min-w-[520px] sm:min-w-0">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs sm:text-sm">Member</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Role</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Joined</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
@@ -271,8 +276,8 @@ export function MembersPage() {
                           <AvatarFallback useSvgFallback={true}>{member.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="font-medium">{member.name}</div>
-                          <div className="text-sm text-muted-foreground">{member.email}</div>
+                          <div className="font-medium text-sm sm:text-base">{member.name}</div>
+                          <div className="text-xs sm:text-sm text-muted-foreground">{member.email}</div>
                         </div>
                       </div>
                     </TableCell>
@@ -280,10 +285,10 @@ export function MembersPage() {
                       {member.isAdmin ? (
                         <Badge className="bg-primary/10 text-primary border-primary/20">Admin</Badge>
                       ) : (
-                        <span className="text-sm text-muted-foreground">{member.role}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">{member.role}</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-xs sm:text-sm text-muted-foreground">
                       {member.joinDate}
                     </TableCell>
                   </TableRow>
@@ -295,8 +300,10 @@ export function MembersPage() {
                   </TableCell>
                 </TableRow>
               )}
-            </TableBody>
-          </Table>
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

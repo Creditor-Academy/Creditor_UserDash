@@ -302,17 +302,16 @@ export function LiveClasses() {
             const end = new Date(event.endTime);
             return now <= end;
           }).length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg font-medium text-gray-600">No classes scheduled for today</p>
-              <p className="text-sm text-muted-foreground mt-1">Check back later for upcoming classes</p>
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  Current timezone: {userTimezone}
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  Events are filtered based on your timezone preference
-                </p>
+            <div className="text-center py-6">
+              <div className="mx-auto w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-3 shadow-sm">
+                <Video className="h-6 w-6 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">All caught up!</h3>
+              <p className="text-sm text-gray-500 mb-2">No live classes scheduled for today</p>
+              <div className="flex justify-center items-center gap-2 text-xs text-gray-400">
+                <div className="w-1 h-1 bg-gray-300 rounded-full animate-pulse"></div>
+                <span>Perfect time to review recordings</span>
+                <div className="w-1 h-1 bg-gray-300 rounded-full animate-pulse"></div>
               </div>
             </div>
           ) : (
