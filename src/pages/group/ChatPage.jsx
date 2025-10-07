@@ -1189,20 +1189,19 @@ export function ChatPage() {
 
   // Removed local pinned persistence; server is the source of truth via API + sockets
 
-  // Derive pinned polls and remaining messages for display
+  // Derive pinned polls for top bar (keep polls also in the chat list)
   const pinnedPolls = React.useMemo(() => (messages || []).filter(m => m.type === 'poll' && m.isPinned), [messages]);
-  const nonPinnedMessages = React.useMemo(() => (messages || []).filter(m => !(m.type === 'poll' && m.isPinned)), [messages]);
   const [activePinnedPoll, setActivePinnedPoll] = React.useState(null);
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <Card className="shadow-lg border-0 bg-white h-[700px] flex flex-col">
+    <div className="max-w-6xl mx-auto px-4 py-4 md:p-6">
+      <Card className="shadow-lg border-0 bg-white h-[80vh] md:h-[700px] flex flex-col rounded-lg">
 
         
-        <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+        <CardContent className="flex-1 flex flex-col p-0 overflow-hidden min-h-0">
           {/* Single Group Information Card - NO DUPLICATES */}
           <div className="bg-white border-b border-gray-200 p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
                   {getGroupName()}
@@ -1238,17 +1237,17 @@ export function ChatPage() {
 
           {/* Pinned polls section */}
           {pinnedPolls.length > 0 && (
-            <div className="bg-indigo-50/50 border-b border-indigo-100 px-6 py-2">
+            <div className="bg-indigo-50/50 border-b border-indigo-100 px-3 md:px-6 py-2">
               <div className="text-xs font-medium text-indigo-700 mb-1">Pinned polls</div>
               <div className="flex gap-2 overflow-x-auto py-1">
                 {pinnedPolls.map(pm => (
                   <div
                     key={`pinned-${pm.id}`}
-                    className="flex items-center gap-2 px-2.5 py-1 rounded-full text-xs bg-white border border-indigo-200 text-indigo-700 shadow-sm whitespace-nowrap cursor-pointer hover:bg-indigo-50"
+                    className="flex items-center gap-2 px-2 py-1 rounded-full text-[11px] md:text-xs bg-white border border-indigo-200 text-indigo-700 shadow-sm whitespace-nowrap cursor-pointer hover:bg-indigo-50"
                     title={pm.poll?.question || 'Pinned poll'}
                     onClick={() => setActivePinnedPoll(pm)}
                   >
-                    <span className="max-w-[220px] truncate">{pm.poll?.question || 'Pinned poll'}</span>
+                    <span className="max-w-[200px] md:max-w-[220px] truncate">{pm.poll?.question || 'Pinned poll'}</span>
                     {isCurrentUserAdmin() && (
                       <button
                         className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-white hover:bg-indigo-700"
@@ -1263,17 +1262,19 @@ export function ChatPage() {
             </div>
           )}
 
-          <ChatMessagesList 
-            messages={nonPinnedMessages} 
-            currentUserId={currentUserId}
-            onEditMessage={handleEditMessage}
-            onDeleteMessage={handleDeleteMessage}
-            onVotePoll={handleVotePoll}
-            onPinToggle={handlePinToggle}
-            onPollPinToggle={handlePollPinToggle}
-            isAdmin={isCurrentUserAdmin()}
-            groupId={groupId}
-          />
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <ChatMessagesList 
+              messages={messages} 
+              currentUserId={currentUserId}
+              onEditMessage={handleEditMessage}
+              onDeleteMessage={handleDeleteMessage}
+              onVotePoll={handleVotePoll}
+              onPinToggle={handlePinToggle}
+              onPollPinToggle={handlePollPinToggle}
+              isAdmin={isCurrentUserAdmin()}
+              groupId={groupId}
+            />
+          </div>
 
           <ChatInput
             newMessage={newMessage}
@@ -1287,7 +1288,7 @@ export function ChatPage() {
           />
           {activePinnedPoll && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setActivePinnedPoll(null)}>
-              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-4" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white rounded-xl shadow-xl w-full max-w-sm md:max-w-md p-4" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-medium text-gray-800">Pinned poll</div>
                   <button className="text-gray-500 hover:text-gray-700 text-sm" onClick={() => setActivePinnedPoll(null)}>Close</button>
@@ -1308,12 +1309,12 @@ export function ChatPage() {
       {/* Enhanced Members Modal */}
       {showMembers && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-full md:max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 bg-white">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{getGroupName()}</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900">{getGroupName()}</h2>
+                <p className="text-xs md:text-sm text-gray-600 mt-1">
                   {getMemberCount()} member{getMemberCount() !== 1 ? 's' : ''} • {roleStats.admin} admin{roleStats.admin !== 1 ? 's' : ''}
                 </p>
               </div>
@@ -1329,7 +1330,7 @@ export function ChatPage() {
             </div>
 
             {/* Search and Stats */}
-            <div className="p-6 pb-4 border-b border-gray-100 bg-gray-50">
+            <div className="p-4 md:p-6 pb-4 border-b border-gray-100 bg-gray-50">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1341,7 +1342,7 @@ export function ChatPage() {
                   />
                 </div>
                 
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-4 text-xs md:text-sm">
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
                     <span className="text-gray-700">{roleStats.admin} Admin</span>
@@ -1359,14 +1360,14 @@ export function ChatPage() {
             </div>
 
             {/* Members List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
               {filteredMembers.length === 0 ? (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">
+                  <h3 className="text-base md:text-lg font-medium text-gray-900 mb-1">
                     {searchTerm ? 'No members found' : 'No members in this group yet'}
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs md:text-sm text-gray-500">
                     {searchTerm ? 'Try adjusting your search terms' : 'Members will appear here once they join'}
                   </p>
                 </div>
@@ -1379,7 +1380,7 @@ export function ChatPage() {
                     const memberAvatar = getMemberAvatar(member);
                     
                     return (
-                      <div key={member.id || index} className="flex items-center p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                      <div key={member.id || index} className="flex items-center p-3 md:p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                         <div className="flex-shrink-0 mr-4">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg">
                             {member.user?.image ? (
@@ -1396,7 +1397,7 @@ export function ChatPage() {
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-gray-900 truncate">{memberName}</h4>
+                            <h4 className="font-medium text-gray-900 truncate text-sm md:text-base">{memberName}</h4>
                             <Badge 
                               variant="outline" 
                               className={`${roleBadge.color} flex items-center gap-1 py-0.5 text-xs`}
@@ -1406,7 +1407,7 @@ export function ChatPage() {
                             </Badge>
                           </div>
                           
-                          <p className="text-sm text-gray-600 truncate">{memberEmail}</p>
+                          <p className="text-xs md:text-sm text-gray-600 truncate">{memberEmail}</p>
                           <p className="text-xs text-gray-500 mt-1">{formatJoinDate(member.joined_at)}</p>
                         </div>
                       </div>
@@ -1417,7 +1418,7 @@ export function ChatPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+            <div className="p-3 md:p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
               <Button 
                 onClick={() => {
                   setShowMembers(false);

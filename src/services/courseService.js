@@ -224,6 +224,25 @@ export async function unenrollUser(courseId, userId) {
   return data;
 }
 
+export async function fetchCoursePrice(courseId) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/price`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    // If price endpoint doesn't exist, return null to use fallback pricing
+    return null;
+  }
+  
+  const data = await response.json();
+  return data.data || data;
+}
+
 // Example usage in a fetch call:
 export async function someApiFunction() {
   const response = await fetch(`${API_BASE}/api/someEndpoint`, {

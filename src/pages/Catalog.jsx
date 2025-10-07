@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Search, Loader2, FolderOpen, Star, Gem, Video, Award, ShoppingCart } from "lucide-react";
+import { BookOpen, Search, Loader2, FolderOpen, Star, Gem, Video, Award, ShoppingCart, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { fetchAllCatalogs as fetchAllCatalogsPrimary } from "@/services/catalogService";
 import { fetchUserCourses } from "@/services/courseService";
 import { getCatalogCourses, fetchAllCatalogs as fetchAllCatalogsFallback } from "@/services/instructorCatalogService";
+import { getUnlockedModulesByUser } from "@/services/modulesService";
 import CreditPurchaseModal from '@/components/credits/CreditPurchaseModal';
 import { useCredits } from '@/contexts/CreditsContext';
+import { useUser } from '@/contexts/UserContext';
+import api from '@/services/apiClient';
 
 export function CatalogPage() {
   const [catalogs, setCatalogs] = useState([]);
@@ -23,6 +26,9 @@ export function CatalogPage() {
   const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
   const [purchaseNotice, setPurchaseNotice] = useState("");
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [unlockedModules, setUnlockedModules] = useState([]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const { userProfile } = useUser();
   const { balance: creditsBalance, credits: creditsAlt, unlockContent, refreshBalance } = (typeof useCredits === 'function' ? useCredits() : {}) || {};
 
   useEffect(() => {
@@ -86,6 +92,27 @@ export function CatalogPage() {
     fetchUserCoursesData();
   }, []);
 
+
+  // Fetch unlocked modules to check for individual lesson purchases
+  useEffect(() => {
+    const fetchUnlockedModules = async () => {
+      if (!userProfile?.id) return;
+      
+      try {
+        // Fetch unlocked modules (same API as My Lessons page)
+        const modules = await getUnlockedModulesByUser(userProfile.id);
+        console.log(`[DEBUG] Fetched unlocked modules:`, modules);
+        console.log(`[DEBUG] First module structure:`, modules[0]);
+        setUnlockedModules(modules || []);
+      } catch (err) {
+        console.error('Error fetching unlocked modules:', err);
+        setUnlockedModules([]);
+      }
+    };
+
+    fetchUnlockedModules();
+  }, [userProfile?.id]);
+
   const categories = Array.from(new Set((catalogs || []).map(catalog => catalog.category || "General")));
 
   const filteredCatalogs = (catalogs || []).filter(catalog => {
@@ -97,26 +124,91 @@ export function CatalogPage() {
     return matchesSearch && matchesCategory;
   });
 
-  // Helper function to check if user is enrolled in catalog
-  const isEnrolledInCatalog = (catalog) => {
-    // Buy should appear only if user is enrolled in NONE of the courses in this catalog
+  // Helper function to check if user has purchased the entire catalog (enrolled in ALL courses)
+  const hasPurchasedEntireCatalog = (catalog) => {
     const userCourseIds = new Set((userCourses || []).map(c => c?.id || c?._id || c?.courseId || c?.course_id).filter(Boolean));
     const catalogCourseIds = catalogCourseIdsMap[catalog.id] || new Set();
+    
+    // Check if user is enrolled in ALL courses within this catalog
+    const catalogCourseIdsList = Array.from(catalogCourseIds);
+    const enrolledCoursesInCatalog = catalogCourseIdsList.filter(courseId => userCourseIds.has(courseId));
+    
+    console.log(`[DEBUG] Catalog ${catalog.name}: ${enrolledCoursesInCatalog.length}/${catalogCourseIdsList.length} courses enrolled`);
+    
+    // User has purchased entire catalog if enrolled in all courses
+    return catalogCourseIdsList.length > 0 && enrolledCoursesInCatalog.length === catalogCourseIdsList.length;
+  };
+
+  // Helper function to check if user is enrolled in catalog or has purchased any lessons
+  const isEnrolledInCatalog = (catalog) => {
+    console.log(`[DEBUG] Checking enrollment for catalog: ${catalog.name} (ID: ${catalog.id})`);
+    
+    // Check if user is enrolled in any course in this catalog
+    const userCourseIds = new Set((userCourses || []).map(c => c?.id || c?._id || c?.courseId || c?.course_id).filter(Boolean));
+    const catalogCourseIds = catalogCourseIdsMap[catalog.id] || new Set();
+    
+    console.log(`[DEBUG] User course IDs:`, Array.from(userCourseIds));
+    console.log(`[DEBUG] Catalog course IDs:`, Array.from(catalogCourseIds));
+    
+    // Check for course enrollment
     for (const id of catalogCourseIds) {
       if (userCourseIds.has(id)) {
-        // User has at least one course → do NOT show buy
+        console.log(`[DEBUG] User is enrolled in course ${id} - hiding buy button`);
         return true;
       }
     }
-    // No overlap → user not enrolled in any course of this catalog
+    
+    // Check for individual lesson purchases from courses in this catalog
+    console.log(`[DEBUG] Unlocked modules count:`, unlockedModules.length);
+    console.log(`[DEBUG] First module structure:`, unlockedModules[0]);
+    
+    const catalogCourseIdsList = Array.from(catalogCourseIds);
+    const hasLessonPurchasesFromCatalog = unlockedModules.some(module => {
+      // Get course_id from the module data
+      const courseId = module.course_id || module.courseId;
+      console.log(`[DEBUG] Module ${module.module_id} -> Course ${courseId}`);
+      
+      const belongsToCatalog = courseId && catalogCourseIdsList.includes(courseId);
+      if (belongsToCatalog) {
+        console.log(`[DEBUG] Module ${module.module_id} belongs to catalog course ${courseId}`);
+      }
+      
+      return belongsToCatalog;
+    });
+    
+    console.log(`[DEBUG] Has lesson purchases from catalog:`, hasLessonPurchasesFromCatalog);
+    
+    if (hasLessonPurchasesFromCatalog) {
+      console.log(`[DEBUG] User has purchased lessons from this catalog - hiding buy button`);
+      return true;
+    }
+    
+    console.log(`[DEBUG] No enrollment or lesson purchases - showing buy button`);
     return false;
   };
 
   // Helper function to calculate catalog price in credits
   const getCatalogPriceCredits = (catalog) => {
-    // Free catalogs should never show a price or buy button
-    if (isFreeCourse(catalog)) return 0;
-    // Flat price per catalog
+    // Free catalogs and class recordings should never show a price or buy button
+    if (isFreeCourse(catalog) || isClassRecording(catalog)) return 0;
+    
+    const catalogName = (catalog.name || "").toLowerCase();
+    
+    // Specific pricing for premium catalogs
+    if (catalogName.includes("become private") && catalogName.includes("sov 101")) {
+      return 14000; // Become Private + SOV 101
+    } else if (catalogName.includes("operate private")) {
+      return 14000; // Operate Private
+    } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
+               (catalogName.includes("remedy") || catalogName.includes("private merchant"))) {
+      return 14000; // Business credit + I want Remedy Now + Private Merchant
+    } else if (catalogName.includes("complete financial freedom")) {
+      return 14000; // Complete Financial Freedom
+    } else if (catalogName.includes("master class")) {
+      return 69; // Master Class
+    }
+    
+    // Default price for all other catalogs
     return 2800;
   };
 
@@ -144,6 +236,7 @@ export function CatalogPage() {
     setShowInsufficientCreditsModal(false);
     setSelectedCatalogToBuy(null);
     setIsPurchasing(false);
+    setIsDescriptionExpanded(false);
   };
 
   // 1. Free Courses
@@ -155,13 +248,14 @@ export function CatalogPage() {
   const isMasterClass = (catalog) => (catalog.name || "").toLowerCase().includes("master class");
   const masterClasses = filteredCatalogs.filter(isMasterClass);
 
-  // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want)
+  // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want, Complete Financial Freedom)
   const premiumCourseNames = [
     "Become Private",
     "SOV 101", 
     "Operate Private",
     "Business credit",
-    "I want"
+    "I want",
+    "Complete Financial Freedom"
   ];
   const isPremiumCourse = (catalog) => premiumCourseNames.some(name => 
     (catalog.name || "").toLowerCase().includes(name.toLowerCase())
@@ -176,8 +270,10 @@ export function CatalogPage() {
       return 2; // Second priority
     } else if (name.includes("business credit") || name.includes("i want")) {
       return 3; // Third priority
+    } else if (name.includes("complete financial freedom")) {
+      return 4; // Fourth priority
     }
-    return 4; // Default for any other premium courses
+    return 5; // Default for any other premium courses
   };
   
   const premiumCatalogs = filteredCatalogs
@@ -193,7 +289,9 @@ export function CatalogPage() {
     (catalog.name || "").toLowerCase().includes("class recording") || 
     (catalog.name || "").toLowerCase().includes("class recordings") ||
     (catalog.name || "").toLowerCase().includes("course recording") ||
-    (catalog.name || "").toLowerCase().includes("course recordings");
+    (catalog.name || "").toLowerCase().includes("course recordings") ||
+    (catalog.name || "").toLowerCase().includes("recordings") ||
+    (catalog.name || "").toLowerCase().includes("recording");
   const classRecordings = filteredCatalogs.filter(catalog => 
     isClassRecording(catalog) && 
     !isFreeCourse(catalog) && 
@@ -253,6 +351,7 @@ export function CatalogPage() {
 
   const CatalogCard = ({ catalog, badgeColor, badgeText, gradientFrom, gradientTo, buttonClass }) => {
     const isEnrolled = isEnrolledInCatalog(catalog);
+    const hasPurchasedEntire = hasPurchasedEntireCatalog(catalog);
     const catalogPrice = getCatalogPriceCredits(catalog);
     const currentBalance = Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0);
     const canAfford = currentBalance >= catalogPrice && catalogPrice > 0;
@@ -295,17 +394,17 @@ export function CatalogPage() {
                  catalog.courseCount || 0
                 )} courses</span>
             </span>
-            {catalogPrice > 0 && (
+            {catalogPrice > 0 && !isMasterClass(catalog) && (
               <span className="flex items-center gap-1 text-blue-600 font-medium">
-                <ShoppingCart className="h-4 w-4" />
-                {catalogPrice}
+                <span>{catalogPrice}</span>
+                <span className="text-[10px] leading-4 px-1.5 py-0.5 rounded-md border border-blue-200 bg-blue-50 text-blue-600 font-semibold tracking-wider">CP</span>
               </span>
             )}
           </div>
 
           <div className="flex gap-2">
             <Button 
-              className={`flex-1 h-11 ${buttonClass}`}
+              className={`flex-1 h-11 ${buttonClass} ${hasPurchasedEntire ? 'ring-2 ring-offset-2 ring-emerald-400' : ''}`}
               asChild
             >
               <Link 
@@ -313,11 +412,18 @@ export function CatalogPage() {
                 state={{ catalog: catalog }}
                 className="flex items-center justify-center"
               >
-                Explore Catalog
+                {hasPurchasedEntire ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Open Catalog
+                  </>
+                ) : (
+                  "Explore Catalog"
+                )}
               </Link>
             </Button>
             
-            {catalogPrice > 0 && !isEnrolled && (
+            {catalogPrice > 0 && !isEnrolled && !isMasterClass(catalog) && (
               <Button
                 onClick={(e) => {
                   e.preventDefault();
@@ -505,16 +611,92 @@ export function CatalogPage() {
       {buyDetailsOpen && selectedCatalogToBuy && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={closeAllModals} />
-          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md p-5">
-            <div className="mb-2">
-              <h3 className="text-lg font-semibold text-gray-900">Confirm Catalog Purchase</h3>
+          <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-lg p-6">
+            <div className="mb-4">
+              <div className="flex items-center mb-3">
+                <div className="bg-green-100 p-2 rounded-full mr-3">
+                  <ShoppingCart className="h-5 w-5 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Confirm Catalog Purchase</h3>
+              </div>
             </div>
-            <div className="text-sm text-gray-700 mb-4">
-              <div className="mb-1"><span className="font-medium">Catalog:</span> {selectedCatalogToBuy.name}</div>
-              <div className="mb-1"><span className="font-medium">Price:</span> {selectedCatalogToBuy.priceCredits || 0}</div>
-              <div className="mb-1"><span className="font-medium">Your balance:</span> {Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0)}</div>
-              <div className="mb-1"><span className="font-medium">Courses included:</span> {selectedCatalogToBuy.coursesCount ?? (selectedCatalogToBuy.courses?.length || 0)} courses</div>
-              <p className="mt-3 text-xs text-gray-600">Buying the catalog will unlock all courses in this catalog at once.</p>
+            
+            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="text-lg font-semibold text-gray-900 mb-2">{selectedCatalogToBuy.name}</div>
+              <div className="text-sm text-gray-600 mb-3">
+                {(() => {
+                  const description = selectedCatalogToBuy.description || "Complete catalog with multiple courses";
+                  const maxLength = 200; // Character limit for truncated description
+                  
+                  if (description.length <= maxLength) {
+                    return description;
+                  }
+                  
+                  return (
+                    <div>
+                      {isDescriptionExpanded ? description : `${description.substring(0, maxLength)}...`}
+                      <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 font-medium text-xs underline"
+                      >
+                        {isDescriptionExpanded ? 'View Less' : 'View More'}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+              
+              {/* Courses List */}
+              <div className="mb-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">Courses included ({selectedCatalogToBuy.coursesCount ?? (selectedCatalogToBuy.courses?.length || 0)}):</div>
+                <div className="max-h-32 overflow-y-auto space-y-1">
+                  {(selectedCatalogToBuy.courses || []).slice(0, 5).map((course, idx) => (
+                    <div key={idx} className="text-xs text-gray-600 flex items-center">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></div>
+                      {course.title || course.name || `Course ${idx + 1}`}
+                    </div>
+                  ))}
+                  {(selectedCatalogToBuy.courses?.length || 0) > 5 && (
+                    <div className="text-xs text-gray-500 italic">
+                      +{(selectedCatalogToBuy.courses?.length || 0) - 5} more courses
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Total Cost:</span>
+                <span className="text-lg font-bold text-green-600">{selectedCatalogToBuy.priceCredits || 0} credits</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Your Balance:</span>
+                <span className="text-sm font-semibold text-gray-900">{Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0)} credits</span>
+              </div>
+              <div className="border-t border-blue-200 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">After Purchase:</span>
+                  <span className="text-sm font-bold text-blue-600">
+                    {((Number.isFinite(creditsBalance) ? creditsBalance : (creditsAlt ?? 0)) - (selectedCatalogToBuy.priceCredits || 0))} credits
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-4 w-4 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-2">
+                  <p className="text-xs text-yellow-800">
+                    <strong>Note:</strong> Buying this catalog will unlock all courses and their modules at once. You'll have immediate access to all content.
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={closeAllModals} className="px-4 py-2 rounded-md border hover:bg-gray-50 text-sm">Cancel</button>
@@ -532,6 +714,24 @@ export function CatalogPage() {
                     // Refresh balance to show updated credits
                     if (refreshBalance) {
                       await refreshBalance();
+                    }
+                    
+                    // Refresh user courses to update enrollment status
+                    try {
+                      const updatedCourses = await fetchUserCourses();
+                      setUserCourses(updatedCourses || []);
+                    } catch (err) {
+                      console.error('Error refreshing user courses after purchase:', err);
+                    }
+                    
+                    // Refresh unlocked modules
+                    try {
+                      if (userProfile?.id) {
+                        const modules = await getUnlockedModulesByUser(userProfile.id);
+                        setUnlockedModules(modules || []);
+                      }
+                    } catch (err) {
+                      console.error('Error refreshing unlocked modules after purchase:', err);
                     }
                     
                     // Show success notice

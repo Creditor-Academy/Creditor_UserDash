@@ -234,35 +234,37 @@ export function Groups() {
   const handleViewChange = (view) => {
     setActiveView(view);
     setCurrentPage(1);
-  };
+   };
 
   return (
-    <div className="container py-6 md:py-8 max-w-6xl">
-      {/* Page header */}
-      <div className="mb-8">
-        <div className="flex flex-col gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Learning Communities</h1>
-            <p className="text-gray-600 mt-2">
-              Connect with peers, share knowledge, and collaborate on learning journeys.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-4 md:py-6 lg:py-8 max-w-6xl">
+        {/* Page header */}
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Learning Communities</h1>
+              <p className="text-sm md:text-base text-gray-600 mt-2">
+                Connect with peers, share knowledge, and collaborate on learning journeys.
+              </p>
+            </div>
           
          
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-fit">
+          <div className="flex items-center gap-1 md:gap-2 bg-gray-100 p-1 rounded-lg w-full md:w-fit overflow-x-auto">
             <Button
               variant={activeView === "common" ? "default" : "ghost"}
               size="sm"
               onClick={() => handleViewChange("common")}
-              className={`flex items-center gap-2 px-4 py-2 ${
+              className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 whitespace-nowrap ${
                 activeView === "common" 
                   ? "bg-white text-blue-600 shadow-sm" 
                   : "text-gray-600 hover:text-gray-800"
               }`}
             >
-              <Users className="h-4 w-4" />
-              Common Groups
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-1">
+              <Users className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Common Groups</span>
+              <span className="sm:hidden">Common</span>
+              <span className="text-xs bg-gray-100 text-gray-600 px-1.5 md:px-2 py-1 rounded-full ml-1">
                 {filteredGroups.filter(g => g.type !== "course").length}
               </span>
             </Button>
@@ -270,22 +272,23 @@ export function Groups() {
               variant={activeView === "course" ? "default" : "ghost"}
               size="sm"
               onClick={() => handleViewChange("course")}
-              className={`flex items-center gap-2 px-4 py-2 ${
+              className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-2 whitespace-nowrap ${
                 activeView === "course" 
                   ? "bg-white text-purple-600 shadow-sm" 
                   : "text-gray-600 hover:text-gray-800"
               }`}
             >
-              <BookOpen className="h-4 w-4" />
-              Course Groups
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-1">
+              <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Course Groups</span>
+              <span className="sm:hidden">Course</span>
+              <span className="text-xs bg-gray-100 text-gray-600 px-1.5 md:px-2 py-1 rounded-full ml-1">
                 {filteredGroups.filter(g => g.type === "course").length}
               </span>
             </Button>
           </div>
           
           {/* Search and filter section */}
-          <div className="flex flex-col md:flex-row gap-4 mt-4">
+          <div className="flex flex-col gap-4 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -297,15 +300,13 @@ export function Groups() {
               />
             </div>
             
-            <div className="flex flex-wrap gap-2">
-              
-              
-              <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg flex-1 sm:flex-none">
                 <Filter className="h-4 w-4 text-gray-600" />
                 <select
                   value={filterBy}
                   onChange={(e) => setFilterBy(e.target.value)}
-                  className="bg-transparent text-sm focus:outline-none text-gray-700"
+                  className="bg-transparent text-sm focus:outline-none text-gray-700 flex-1"
                 >
                   <option value="all">All Groups</option>
                   <option value="featured">Featured</option>
@@ -313,12 +314,12 @@ export function Groups() {
                 </select>
               </div>
               
-              <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg">
+              <div className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-lg flex-1 sm:flex-none">
                 <span className="text-gray-600 text-sm">Sort:</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-transparent text-sm focus:outline-none text-gray-700"
+                  className="bg-transparent text-sm focus:outline-none text-gray-700 flex-1"
                 >
                   <option value="name">Name</option>
                   <option value="members">Members</option>
@@ -330,73 +331,73 @@ export function Groups() {
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <div className="text-lg font-medium text-gray-700">Loading groups...</div>
-          <p className="text-gray-500 mt-1 text-sm">Please wait while we fetch the latest groups</p>
-        </div>
-      )}
-
-      {/* Error State */}
-      {error && !isLoading && (
-        <div className="flex flex-col items-center justify-center py-16 text-center border border-red-200 rounded-xl bg-red-50">
-          <div className="text-red-500 mb-3">
-            <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+            <div className="text-lg font-medium text-gray-700">Loading groups...</div>
+            <p className="text-gray-500 mt-1 text-sm">Please wait while we fetch the latest groups</p>
           </div>
-          <div className="text-lg font-medium text-red-700">Error loading groups</div>
-          <p className="text-red-600 mt-1 text-sm mb-4">{error}</p>
-          <Button onClick={fetchGroups} variant="outline" size="sm">
-            Try Again
-          </Button>
-        </div>
-      )}
+        )}
 
-      {/* Results count */}
-      {!isLoading && !error && viewGroups.length > 0 && (
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-sm text-gray-500">
-            {viewGroups.length} {activeView === "common" ? "common" : "course"} group{viewGroups.length !== 1 ? 's' : ''} found
-          </p>
-        </div>
-      )}
-
-      {/* Groups grid */}
-      {!isLoading && !error && (
-        <>
-          {viewGroups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-gray-300 rounded-xl bg-gray-50">
-              {activeView === "common" ? (
-              <Users2 className="h-12 w-12 text-gray-400 mb-4" />
-              ) : (
-                <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
-              )}
-              <div className="text-lg font-medium text-gray-700">
-                No {activeView === "common" ? "common" : "course"} groups found
-              </div>
-              <p className="text-gray-500 mt-1 text-sm max-w-md">
-                {activeView === "common" 
-                  ? "Try adjusting your search or filters to find relevant communities."
-                  : "No course-specific groups available at the moment."
-                }
-              </p>
-              <Button 
-                variant="outline" 
-                className="mt-4 border-gray-300 text-gray-700"
-                onClick={() => {
-                  setQuery("");
-                  setFilterBy("all");
-                  setSortBy("name");
-                }}
-              >
-                Clear filters
-              </Button>
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center border border-red-200 rounded-xl bg-red-50 mx-4">
+            <div className="text-red-500 mb-3">
+              <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
             </div>
-          ) : (
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="text-lg font-medium text-red-700">Error loading groups</div>
+            <p className="text-red-600 mt-1 text-sm mb-4 px-4">{error}</p>
+            <Button onClick={fetchGroups} variant="outline" size="sm">
+              Try Again
+            </Button>
+          </div>
+        )}
+
+        {/* Results count */}
+        {!isLoading && !error && viewGroups.length > 0 && (
+          <div className="mb-6 flex items-center justify-between px-4">
+            <p className="text-sm text-gray-500">
+              {viewGroups.length} {activeView === "common" ? "common" : "course"} group{viewGroups.length !== 1 ? 's' : ''} found
+            </p>
+          </div>
+        )}
+
+        {/* Groups grid */}
+        {!isLoading && !error && (
+          <>
+            {viewGroups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed border-gray-300 rounded-xl bg-gray-50 mx-4">
+                {activeView === "common" ? (
+                <Users2 className="h-12 w-12 text-gray-400 mb-4" />
+                ) : (
+                  <BookOpen className="h-12 w-12 text-gray-400 mb-4" />
+                )}
+                <div className="text-lg font-medium text-gray-700">
+                  No {activeView === "common" ? "common" : "course"} groups found
+                </div>
+                <p className="text-gray-500 mt-1 text-sm max-w-md px-4">
+                  {activeView === "common" 
+                    ? "Try adjusting your search or filters to find relevant communities."
+                    : "No course-specific groups available at the moment."
+                  }
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4 border-gray-300 text-gray-700"
+                  onClick={() => {
+                    setQuery("");
+                    setFilterBy("all");
+                    setSortBy("name");
+                  }}
+                >
+                  Clear filters
+                </Button>
+              </div>
+            ) : (
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 px-4">
               {currentGroups.map((group) => (
                   <Card 
                     key={group.id} 
@@ -408,7 +409,7 @@ export function Groups() {
                   }`} />
                   
                   {/* Group Banner - Always show placeholder */}
-                  <div className="h-32 w-full overflow-hidden relative bg-gray-100">
+                  <div className="h-24 md:h-32 w-full overflow-hidden relative bg-gray-100">
                     {group.thumbnail ? (
                       <img
                         src={group.thumbnail}
@@ -443,65 +444,69 @@ export function Groups() {
                     )}
                   </div>
 
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-3 px-4">
                     <div className="flex items-start">
                       <div className="flex-1 min-w-0">
-                        <CardTitle className={`text-lg font-semibold text-gray-800 group-hover:${
+                        <CardTitle className={`text-base md:text-lg font-semibold text-gray-800 group-hover:${
                           group.type === "course" ? "text-purple-600" : "text-blue-600"
-                        } transition-colors`}>
+                        } transition-colors line-clamp-2`}>
                           {group.name}
                         </CardTitle>
-                        <CardDescription className="mt-1 line-clamp-2 text-gray-600">
+                        <CardDescription className="mt-1 line-clamp-2 text-gray-600 text-sm">
                           {group.description}
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                     
-                    <CardContent className="pb-3 pt-0">
+                    <CardContent className="pb-3 pt-0 px-4">
                       <div className="flex flex-wrap gap-2 mb-3">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
                         group.type === "course" 
                           ? "bg-purple-50 text-purple-700" 
                           : "bg-blue-50 text-blue-700"
                       }`}>
                           <Users className="h-3 w-3" /> {group.members} members
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
                           Active
                         </span>
                       </div>
                       
                       <div className="flex items-center text-xs text-gray-500">
                         <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                        Last activity: {group.lastActivity}
+                        <span className="hidden sm:inline">Last activity: {group.lastActivity}</span>
+                        <span className="sm:hidden">Recent</span>
                       </div>
                     </CardContent>
                     
-                  <CardFooter className="relative border-t border-gray-100 bg-gray-50/50 py-3 flex justify-between">
+                  <CardFooter className="relative border-t border-gray-100 bg-gray-50/50 py-3 px-4 flex flex-col sm:flex-row justify-between gap-2">
                     {group.isMember ? (
                       <>
                         <Button 
                           variant="ghost" 
                           size="sm" 
                           disabled
-                          className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50 text-xs sm:text-sm"
                         >
-                          <Check className="h-4 w-4" />
-                          Joined
+                          <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Joined</span>
+                          <span className="sm:hidden">✓</span>
                         </Button>
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         asChild
-                          className={`gap-1 hover:bg-gray-100 ${
+                          className={`gap-1 hover:bg-gray-100 text-xs sm:text-sm ${
                             group.type === "course" 
                               ? "text-purple-600 hover:text-purple-700" 
                               : "text-blue-600 hover:text-blue-700"
                           }`}
                       >
                         <Link to={`/dashboard/groups/${group.id}/news`}>
-                            View Group <ArrowRight className="h-4 w-4" />
+                            <span className="hidden sm:inline">View Group</span>
+                            <span className="sm:hidden">View</span>
+                            <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Link>
                       </Button>
                       </>
@@ -512,7 +517,7 @@ export function Groups() {
                           <Lock className="h-4 w-4" />
                           <span className="text-sm font-medium">Group Locked</span>
                         </div>
-                        <p className="text-xs text-gray-600 text-center">
+                        <p className="text-xs text-gray-600 text-center px-2">
                           Enroll into <span className="font-medium text-purple-600">"{getCourseDisplayName(group)}"</span> to join this group
                         </p>
                       </div>
@@ -523,14 +528,15 @@ export function Groups() {
                         size="sm" 
                         onClick={() => handleJoinGroup(group.id)}
                         disabled={joiningGroup === group.id}
-                        className={`gap-1 ${
+                        className={`gap-1 text-xs sm:text-sm ${
                           group.type === "course" 
                             ? "text-purple-600 hover:text-purple-700 hover:bg-purple-50" 
                             : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         }`}
                       >
-                        <UserPlus className="h-4 w-4" />
-                        {joiningGroup === group.id ? "Joining..." : "Join Group"}
+                        <UserPlus className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">{joiningGroup === group.id ? "Joining..." : "Join Group"}</span>
+                        <span className="sm:hidden">{joiningGroup === group.id ? "..." : "Join"}</span>
                       </Button>
                     )}
 
@@ -546,18 +552,19 @@ export function Groups() {
 
            {/* Pagination Controls */}
            {totalPages > 1 && (
-             <div className="flex items-center justify-center gap-2 mt-8">
+             <div className="flex items-center justify-center gap-2 mt-8 px-4">
                <Button
                  variant="outline"
                  size="sm"
                  onClick={goToPrevPage}
                  disabled={currentPage === 1}
-                 className="px-3 py-1"
+                 className="px-2 sm:px-3 py-1 text-xs sm:text-sm"
                >
-                 Previous
+                 <span className="hidden sm:inline">Previous</span>
+                 <span className="sm:hidden">Prev</span>
                </Button>
                
-               <div className="flex items-center gap-1">
+               <div className="flex items-center gap-1 overflow-x-auto">
                  {Array.from({ length: totalPages }, (_, index) => {
                    const pageNumber = index + 1;
                    // Show current page, first page, last page, and pages around current
@@ -572,7 +579,7 @@ export function Groups() {
                          variant={currentPage === pageNumber ? "default" : "outline"}
                          size="sm"
                          onClick={() => goToPage(pageNumber)}
-                         className="px-3 py-1 min-w-[40px]"
+                         className="px-2 sm:px-3 py-1 min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm"
                        >
                          {pageNumber}
                        </Button>
@@ -581,7 +588,7 @@ export function Groups() {
                      pageNumber === currentPage - 2 ||
                      pageNumber === currentPage + 2
                    ) {
-                     return <span key={pageNumber} className="px-2 text-gray-500">...</span>;
+                     return <span key={pageNumber} className="px-1 sm:px-2 text-gray-500 text-xs sm:text-sm">...</span>;
                    }
                    return null;
                  })}
@@ -592,22 +599,24 @@ export function Groups() {
                  size="sm"
                  onClick={goToNextPage}
                  disabled={currentPage === totalPages}
-                 className="px-3 py-1"
+                 className="px-2 sm:px-3 py-1 text-xs sm:text-sm"
                >
-                 Next
+                 <span className="hidden sm:inline">Next</span>
+                 <span className="sm:hidden">Next</span>
                </Button>
              </div>
            )}
 
            {/* Page Info */}
            {totalPages > 1 && (
-             <div className="text-center text-sm text-gray-500 mt-4">
+             <div className="text-center text-xs sm:text-sm text-gray-500 mt-4 px-4">
               Showing {startIndex + 1}-{Math.min(endIndex, viewGroups.length)} of {viewGroups.length} groups
              </div>
            )}
          </>
        )}
-     </div>
+      </div>
+    </div>
    );
  }
 
