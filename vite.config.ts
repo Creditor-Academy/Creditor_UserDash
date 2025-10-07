@@ -36,10 +36,12 @@ export default defineConfig(({ mode }) => ({
     },
     strictPort: true,
     hmr: {
-      port: 3000,
-      protocol: 'ws',
-      host: 'localhost',
-      clientPort: 3000
+      overlay: false,
+      port: 3001
+    },
+    watch: {
+      usePolling: false,
+      ignored: ['**/node_modules/**', '**/.git/**']
     }
   },
   preview: {
@@ -56,8 +58,9 @@ export default defineConfig(({ mode }) => ({
   base: '/',
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    // Temporarily disabled componentTagger to fix infinite refresh
+    // mode === 'development' &&
+    // componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -65,7 +68,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://creditor-backend-ceds.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://test-backend-e7d4.onrender.com'),
   },
 }));
 
@@ -74,3 +77,4 @@ export default defineConfig(({ mode }) => ({
 // # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
 // # VITE_API_BASE_URL= http://localhost:9000
 // # VITE_API_BASE_URL= https://creditor-backend-ceds.onrender.com
+
