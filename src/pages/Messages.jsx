@@ -41,7 +41,7 @@ import {
   getPrivateGroupMessages,
   sendPrivateGroupMessage
 } from "@/services/privateGroupService";
-import getSocket, { onPrivateGroupMessage, offPrivateGroupMessage, joinPrivateGroupRoom } from "@/services/socketClient";
+import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -401,8 +401,7 @@ function Messages() {
       };
       // Avoid duplicate if already present (e.g., from initial fetch)
       setFriends(prev => {
-        const normalizeKey = (k) => String(k || '').replace(/^private_group_/i, '');
-        const exists = prev.some(f => normalizeKey(f.conversationId || f.id) === normalizeKey(group.id));
+        const exists = prev.some(f => String(f.conversationId || f.id) === String(group.id));
         return exists ? prev : [newGroup, ...prev];
       });
       setUserHasGroup(true);
@@ -676,71 +675,6 @@ function Messages() {
     socket.on('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
     socket.on('privateGroupJoined', onPrivateGroupJoined);
     socket.on('receiveMessage', onReceiveMessage);
-
-    // Real-time: private group message stream
-    const onPrivateMsg = (payload) => {
-      try {
-        const currentOpenGroupId = conversationId;
-        const currentFriend = friends.find(f => f.id === selectedFriend);
-        const isPrivateOpen = currentFriend?.isPrivateGroup;
-        const msgGroupId = payload?.group_id || payload?.groupId;
-        if (!msgGroupId) return;
-
-        // Update chat window if same private group is open
-        if (isPrivateOpen && String(msgGroupId) === String(currentOpenGroupId)) {
-          const currentUserId = localStorage.getItem('userId');
-          const isImage = (payload?.type || payload?.message_type) === 'IMAGE' || (payload?.mime_type || '').startsWith?.('image/');
-          const content = payload?.content || payload?.message || '';
-          const created = payload?.createdAt || payload?.created_at || Date.now();
-          setMessages(prev => {
-            // 1) If this message id already exists, skip (avoid duplicates after refresh)
-            if (payload?.id && prev.some(m => String(m.id) === String(payload.id))) {
-              return prev;
-            }
-            // 2) If we have an optimistic message 'sending' that matches, replace it
-            const optimisticIndex = prev.findLastIndex(msg =>
-              msg.senderId === 0 && msg.status === 'sending' && (
-                (isImage && msg.type === 'image') || (!isImage && msg.text === content)
-              )
-            );
-            const next = [...prev];
-            const newItem = {
-              id: payload?.id || `${Date.now()}_${Math.random()}`,
-              senderId: String(payload?.sender_id) === String(currentUserId) ? 0 : String(payload?.sender_id),
-              senderImage: payload?.sender?.image || null,
-              text: isImage ? null : content,
-              timestamp: new Date(created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              type: isImage ? 'image' : 'text',
-              file: isImage ? (content || payload?.url) : null,
-              status: String(payload?.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
-            };
-            if (optimisticIndex !== -1) {
-              next[optimisticIndex] = { ...next[optimisticIndex], ...newItem };
-              return next;
-            }
-            // 3) Otherwise append as new
-            return [...prev, newItem];
-          });
-        }
-
-        // Update list preview (last message + time) for that private group
-        setFriends(prev => prev.map(f => {
-          if (f.isPrivateGroup && String(f.conversationId) === String(msgGroupId)) {
-            const isImg = (payload?.type || payload?.message_type) === 'IMAGE' || (payload?.mime_type || '').startsWith?.('image/');
-            return {
-              ...f,
-              lastMessage: isImg ? 'Image' : (payload?.content || payload?.message || ''),
-              lastMessageType: isImg ? 'IMAGE' : 'TEXT',
-              lastMessageFrom: payload?.sender_id,
-              lastMessageAt: payload?.createdAt || payload?.created_at || new Date().toISOString(),
-              isRead: (isPrivateOpen && String(msgGroupId) === String(currentOpenGroupId)) ? true : f.isRead,
-            };
-          }
-          return f;
-        }));
-      } catch {}
-    };
-    onPrivateGroupMessage(onPrivateMsg);
     const onMessagesRead = ({ conversationId: readConvId }) => {
       if (!readConvId) return;
       setFriends(prev => prev.map(f => (
@@ -803,7 +737,6 @@ function Messages() {
       socket.off('conversationUpdated', onConversationUpdated);
       socket.off('conversationdeleted', onConversationDeleted);
       socket.off('error', onError);
-      offPrivateGroupMessage(onPrivateMsg);
     };
   }, []);
 
@@ -901,24 +834,16 @@ function Messages() {
           allConversations = [...allConversations, ...memberGroups];
         }
         
-        // Deduplicate conversations by normalized key of conversationId/id
+        // Deduplicate conversations by conversationId (or id fallback)
         const seenKeys = new Set();
         const dedupedConversations = [];
-        const normalizeKey = (k) => String(k || '').replace(/^private_group_/i, '');
         for (const conv of allConversations) {
-          const rawKey = String(conv.conversationId || conv.id);
-          const key = normalizeKey(rawKey);
+          const key = String(conv.conversationId || conv.id);
           if (!seenKeys.has(key)) {
             seenKeys.add(key);
             dedupedConversations.push(conv);
           }
         }
-        // Sort by last activity time, newest first
-        dedupedConversations.sort((a, b) => {
-          const aTs = new Date(a.lastMessageAt || a.createdAt || 0).getTime();
-          const bTs = new Date(b.lastMessageAt || b.createdAt || 0).getTime();
-          return bTs - aTs;
-        });
         setFriends(dedupedConversations);
 
         // Load directory of all users for the + modal
@@ -995,23 +920,10 @@ function Messages() {
       (async () => {
         try {
           const selectedFriendData = friends.find(f => f.id === selectedFriend);
-          // Ensure joined to private group room to receive events
-          if (selectedFriendData?.isPrivateGroup && conversationId) {
-            try { joinPrivateGroupRoom(conversationId); } catch {}
-          }
           
           // Handle private groups differently for image sending
           if (selectedFriendData?.isPrivateGroup) {
-            const res = await sendPrivateGroupMessage(conversationId, formData, true);
-            // Mark optimistic image as sent with real id if provided
-            try {
-              const newId = res?.data?.id || res?.message?.id || res?.id;
-              setMessages(prev => prev.map(m => (
-                m.id === tempId
-                  ? { ...m, id: newId || m.id, status: 'sent' }
-                  : m
-              )));
-            } catch {}
+            await sendPrivateGroupMessage(conversationId, formData, true);
           } else {
             await api.post('/api/private-messaging/sendimage', formData, {
               headers: { 'Content-Type': 'multipart/form-data' },
@@ -1051,18 +963,11 @@ function Messages() {
         
         // Handle private groups: send via REST API; others via socket
         if (selectedFriendData?.isPrivateGroup) {
-          // Ensure joined to private group room to receive events
-          if (conversationId) {
-            try { joinPrivateGroupRoom(conversationId); } catch {}
-          }
-          const res = await sendPrivateGroupMessage(conversationId, { content: messageText });
-          // Mark optimistic text as sent (and replace id if returned)
           try {
-            const newId = res?.data?.id || res?.message?.id || res?.id;
-            setMessages(prev => prev.map(msg => (
-              msg.tempId === tempId ? { ...msg, id: newId || msg.id, status: 'sent' } : msg
-            )));
-          } catch {}
+            await sendPrivateGroupMessage(conversationId, { content: messageText });
+          } catch (e) {
+            throw e;
+          }
         } else {
           socket.emit('sendMessage', { 
             conversationid: conversationId, 
@@ -1255,8 +1160,7 @@ function Messages() {
 
         // Avoid duplicate if group already exists
         setFriends(prev => {
-          const normalizeKey = (k) => String(k || '').replace(/^private_group_/i, '');
-          const exists = prev.some(f => normalizeKey(f.conversationId || f.id) === normalizeKey(groupId));
+          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
           return exists ? prev : [newGroup, ...prev];
         });
         setUserHasGroup(true);
