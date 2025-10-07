@@ -707,16 +707,14 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               </CardContent>
             </Card>
           ) : (
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <Card className="shadow-sm border border-gray-100 bg-white">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-3 text-lg">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
-                    <GraduationCap className="h-5 w-5 text-white" />
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-gray-700" />
                   </div>
-                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  Enrolled
-                  </span>
-                  <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-700 border-blue-200">
+                  <span className="text-gray-800">Enrolled</span>
+                  <Badge variant="secondary" className="ml-auto bg-gray-100 text-gray-700 border-gray-200">
                     {activeTab === 'courses' 
                       ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` 
                       : (() => {
@@ -742,7 +740,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                     onClick={() => setActiveTab('courses')}
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                       activeTab === 'courses'
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                        ? 'bg-gray-100 text-gray-900 border border-gray-200 shadow-sm'
                         : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                     }`}
                   >
@@ -755,7 +753,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                     onClick={() => setActiveTab('modules')}
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                       activeTab === 'modules'
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                        ? 'bg-gray-100 text-gray-900 border border-gray-200 shadow-sm'
                         : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                     }`}
                   >
@@ -785,21 +783,25 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                       const isLoadingModules = loadingModules[courseId] || false;
                       const modulesErrorMsg = modulesError[courseId];
                       const isExpanded = expandedCourses[courseId];
+                      const totalFromCounts = totalModuleCounts[String(courseId)];
+                      const totalModulesForHeader = modules.length > 0
+                        ? modules.length
+                        : (typeof totalFromCounts === 'number' ? totalFromCounts : 0);
                       
                       return (
                         <div 
                           key={courseId || index} 
-                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200"
                         >
                           {/* Course Header */}
                           <div className="p-4 border-b border-gray-100">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg group-hover:scale-110 transition-transform duration-200">
-                                    <BookOpen className="h-4 w-4 text-white" />
+                                  <div className="p-2 bg-gray-100 rounded-lg">
+                                    <BookOpen className="h-4 w-4 text-gray-700" />
                                   </div>
-                                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
+                                  <h3 className="text-sm font-semibold text-gray-900 truncate">
                         {course.title}
                                   </h3>
                                 </div>
@@ -816,29 +818,41 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                 </div>
                               </div>
                               
-                              {/* Expand/Collapse Button */}
-                              {modules.length > 0 && (
-                                <button
-                                  onClick={() => setExpandedCourses(prev => ({ 
-                                    ...prev, 
-                                    [courseId]: !prev[courseId] 
-                                  }))}
-                                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 group-hover:bg-blue-50"
+                              {/* Right-side controls */}
+                              <div className="flex items-center gap-2">
+                                {/* Total modules pill */}
+                                <span
+                                  className="hidden sm:inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-white border border-gray-200 text-gray-700"
+                                  title={`Total modules in ${course.title}`}
                                 >
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-gray-500 group-hover:text-blue-600" />
-                                  )}
-                                </button>
-                              )}
+                                  {`Total ${totalModulesForHeader} Module${totalModulesForHeader !== 1 ? 's' : ''}`}
+                                </span>
+
+                                {/* Expand/Collapse Button */}
+                                {modules.length > 0 && (
+                                  <button
+                                    onClick={() => setExpandedCourses(prev => ({ 
+                                      ...prev, 
+                                      [courseId]: !prev[courseId] 
+                                    }))}
+                                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                                    aria-label={isExpanded ? 'Collapse modules' : 'Expand modules'}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="h-4 w-4 text-gray-600" />
+                                    ) : (
+                                      <ChevronRight className="h-4 w-4 text-gray-600" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                           
                           {/* Modules Section */}
                           {modules.length > 0 && (
                             <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[60vh] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                              <div className="p-4 pt-2 bg-gray-50/50">
+                              <div className="p-4 pt-2 bg-gray-50">
                                 {isLoadingModules ? (
                                   <div className="space-y-2">
                                     {[1, 2, 3].map((i) => (
@@ -861,7 +875,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                         className="flex items-center gap-3 p-2 rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 group/module"
                                       >
                                         <div className="flex-shrink-0">
-                                          <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full group-hover/module:scale-125 transition-transform duration-200"></div>
+                                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <p className="text-xs font-medium text-gray-700 group-hover/module:text-gray-900 truncate">
