@@ -218,11 +218,19 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
   // Fetch and cache course prices to display in Courses tab
   const fetchPricesForCourses = async (coursesArray) => {
+    console.log('[UserDetailsModal] Fetching prices for courses. Note: 404 errors for /price endpoints are normal for free courses.');
     try {
       const entries = await Promise.all(
         (coursesArray || []).map(async (c) => {
           const id = c.course_id || c.id;
           if (!id) return null;
+          
+          // Skip price fetching for courses that are likely free or don't have individual pricing
+          // This prevents unnecessary 404 errors in the console
+          if (c.price === "0" || c.price === 0 || c.courseType === "FREE") {
+            return null;
+          }
+          
           try {
             const priceData = await fetchCoursePrice(id);
             const raw = (priceData && (priceData.price || priceData.amount || priceData)) ?? null;
@@ -237,8 +245,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
         if (e && e[0] != null) map[e[0]] = e[1];
       });
       setCoursePrices((prev) => ({ ...prev, ...map }));
-    } catch (_) {
-      // silently ignore pricing failures
+    } catch (error) {
+      console.warn('[UserDetailsModal] Price fetching failed:', error);
     }
   };
 
@@ -943,8 +951,20 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         });
                         const purchasedCount = group.items.length;
                         const totalForCourse = totalModuleCounts[String(courseId)];
-                        const totalResolved = typeof totalForCourse === 'number' ? totalForCourse : purchasedCount;
-                        const showNotPurchased = purchasedCount < totalResolved && notPurchased.length > 0;
+                        const actualTotal = allMods.length > 0 ? allMods.length : (typeof totalForCourse === 'number' ? totalForCourse : purchasedCount);
+                        const showNotPurchased = purchasedCount < actualTotal && notPurchased.length > 0;
+                        
+                        // Debug logging for inconsistent counts
+                        if (purchasedCount === actualTotal && notPurchased.length > 0) {
+                          console.warn(`[UserDetailsModal] Inconsistent module counts for course ${courseId}:`, {
+                            purchased: purchasedCount,
+                            totalFromCounts: totalForCourse,
+                            actualModules: allMods.length,
+                            notPurchased: notPurchased.length,
+                            purchasedIds: Array.from(purchasedIds),
+                            allModuleIds: allMods.map(m => getModuleId(m))
+                          });
+                        }
                         return (
                         <div key={courseId} className="space-y-3">
                           {/* Course Header */}
@@ -962,16 +982,18 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                   {(() => {
                                     const purchased = group.items.length;
                                     const total = totalModuleCounts[String(courseId)];
-                                    const totalNum = typeof total === 'number' ? total : purchased;
-                                    return `${purchased} purchased of ${totalNum} total`;
+                                    const allMods = courseModules[courseId] || [];
+                                    const actualTotal = allMods.length > 0 ? allMods.length : (typeof total === 'number' ? total : purchased);
+                                    return `${purchased} purchased of ${actualTotal} total`;
                                   })()}
                                 </p>
                               </div>
                               <Badge variant="outline" className="bg-white/70 text-blue-700 border-blue-300 shadow-sm">
                                 {(() => {
                                   const total = totalModuleCounts[String(courseId)];
-                                  const totalNum = typeof total === 'number' ? total : group.items.length;
-                                  return `Total ${totalNum} Module${totalNum !== 1 ? 's' : ''}`;
+                                  const allMods = courseModules[courseId] || [];
+                                  const actualTotal = allMods.length > 0 ? allMods.length : (typeof total === 'number' ? total : group.items.length);
+                                  return `Total ${actualTotal} Module${actualTotal !== 1 ? 's' : ''}`;
                                 })()}
                               </Badge>
                               <button type="button"
