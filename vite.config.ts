@@ -67,14 +67,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://private-chat-creditor-backend.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://testbackend-hcoy.onrender.com'),
   },
 }));
 
 
 
 // #(Testing Backend)
-// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com
+// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com  
+
 
 // #(development Backend)
 // VITE_API_BASE_URL=https://creditor-backend-1-iijy.onrender.com
@@ -84,3 +85,4 @@ export default defineConfig(({ mode }) => ({
 
 // #(Main Backend)
 // # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
+// # VITE_API_BASE_URL= https://creditor.onrender.com
