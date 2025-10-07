@@ -94,42 +94,6 @@ export function leaveGroupRoom(groupId) {
   }
 }
 
-// Private group room management
-export function joinPrivateGroupRoom(groupId) {
-  const s = getSocket();
-  if (s && groupId) {
-    s.emit('joinPrivateGroupRoom', { groupId });
-    console.log('[socket] joined private group room:', groupId);
-  }
-}
-
-export function leavePrivateGroupRoom(groupId) {
-  const s = getSocket();
-  if (s && groupId) {
-    s.emit('leavePrivateGroupRoom', { groupId });
-    console.log('[socket] left private group room:', groupId);
-  }
-}
-
-export function onPrivateGroupMessage(callback) {
-  const s = getSocket();
-  if (s && typeof callback === 'function') {
-    // Prefer canonical event, support common aliases
-    s.on('privateGroupMessage', callback);
-    s.on('private_group_message', callback);
-    s.on('newPrivateGroupMessage', callback);
-  }
-}
-
-export function offPrivateGroupMessage(callback) {
-  const s = getSocket();
-  if (s && typeof callback === 'function') {
-    s.off('privateGroupMessage', callback);
-    s.off('private_group_message', callback);
-    s.off('newPrivateGroupMessage', callback);
-  }
-}
-
 // Announcement functions
 export function onAnnouncementNew(callback) {
   const s = getSocket();
