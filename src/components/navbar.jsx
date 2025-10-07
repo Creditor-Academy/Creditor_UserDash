@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Navbar = () => {
   const [show, setShow] = useState(true);
@@ -75,9 +75,20 @@ const Navbar = () => {
           pointerEvents: show ? "auto" : "none",
         }}
       >
-        <div style={{ fontWeight: "bold", fontSize: "1.8rem", color: "#fff", letterSpacing: "0.5px" }}>
-          ATHENA LMS
-        </div>
+        <Link
+  to="/"
+  style={{
+    fontWeight: "bold",
+    fontSize: "1.8rem",
+    color: "#fff",
+    letterSpacing: "0.5px",
+    textDecoration: "none",
+    cursor: "pointer"
+  }}
+>
+  ATHENA LMS
+</Link>
+
         
         <button
           aria-label="Menu"
@@ -88,13 +99,17 @@ const Navbar = () => {
         </button>
         
         <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
-          <a href="/" style={navLinkStyle}>About Us</a>
-          <a href="/" style={navLinkStyle}>Features</a>
-          <a href="/" style={navLinkStyle}>Why Us</a>
-          <a href="/" style={navLinkStyle}>FAQ</a>
-          <a href="/" style={navLinkStyle}>Contact Us</a>
-          <button
-            onClick={() => navigate('/login')}
+          <Link to="/about" style={navLinkStyle}>About Us</Link>
+          <Link to="/features" style={navLinkStyle}>Features</Link>
+          <Link to="/whyus" style={navLinkStyle}>Why Us</Link>
+          <Link to="/faq" style={navLinkStyle}>FAQ</Link>
+          <Link to="/contact" style={navLinkStyle}>Contact Us</Link>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/login');
+            }}
             style={{
               background: "#fff",
               color: "#3182f6",
@@ -106,7 +121,6 @@ const Navbar = () => {
               marginLeft: "12px",
               transition: "all 0.2s ease",
               boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              border: "none",
               cursor: "pointer"
             }}
             onMouseEnter={(e) => {
@@ -119,7 +133,7 @@ const Navbar = () => {
             }}
           >
             Login
-          </button>
+          </a>
         </div>
       </nav>
 
@@ -171,16 +185,18 @@ const Navbar = () => {
           </button>
         </div>
         
-        <a href="/" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</a>
-        <a href="/" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Features</a>
-        <a href="/" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Why Us</a>
-        <a href="/" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>FAQ</a>
-        <a href="/" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</a>
+        <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
+        <Link to="/features" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Features</Link>
+        <Link to="/whyus" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Why Us</Link>
+        <Link to="/faq" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>FAQ</Link>
+        <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
         
-        <button 
-          onClick={() => {
-            setDrawerOpen(false);
+        <a 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
             navigate('/login');
+            setDrawerOpen(false);
           }}
           style={{
             background: "#fff",
@@ -194,12 +210,11 @@ const Navbar = () => {
             textDecoration: "none",
             fontSize: "0.95rem",
             display: "block",
-            width: "100%",
             cursor: "pointer"
           }}
         >
           Login
-        </button>
+        </a>
       </div>
 
       {/* Backdrop overlay for drawer */}
@@ -218,7 +233,7 @@ const Navbar = () => {
         />
       )}
 
-      <style jsx>{`
+      <style >{`
         @media (max-width: 900px) {
           .athena-navbar { 
             padding: 10px 16px; 
