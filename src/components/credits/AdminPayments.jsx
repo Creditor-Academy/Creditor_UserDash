@@ -507,12 +507,73 @@ const AdminPayments = () => {
             <h2 className="text-2xl font-semibold text-gray-800">Payments & Subscriptions</h2>
             <p className="text-gray-600">Dummy data preview for admin payments dashboard.</p>
           </div>
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-            <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
-            <button onClick={() => setPaymentsView("services")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "services" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Services</button>
-            <button onClick={() => setPaymentsView("orders")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "orders" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Orders</button>
-            <button onClick={() => setPaymentsView("payments")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "payments" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Payments</button>
-            <button onClick={() => setPaymentsView("subscriptions")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "subscriptions" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Subscriptions</button>
+          <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner">
+            <button 
+              onClick={() => setPaymentsView("credits")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "credits" 
+                  ? "bg-white shadow-md text-blue-700 border border-blue-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <FaCoins className="w-4 h-4" />
+              Credits
+            </button>
+            <button 
+              onClick={() => setPaymentsView("services")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "services" 
+                  ? "bg-white shadow-md text-green-700 border border-green-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Services
+            </button>
+            {/* Orders tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("orders")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "orders" 
+                  ? "bg-white shadow-md text-purple-700 border border-purple-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Orders
+            </button> */}
+            {/* Payments tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("payments")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "payments" 
+                  ? "bg-white shadow-md text-orange-700 border border-orange-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Payments
+            </button> */}
+            {/* Subscriptions tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("subscriptions")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "subscriptions" 
+                  ? "bg-white shadow-md text-indigo-700 border border-indigo-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              Subscriptions
+            </button> */}
           </div>
         </div>
       </div>
@@ -1203,120 +1264,137 @@ const AdminPayments = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedUsers.map((u)=>{
-                    const checked = selectedUserIds.includes(u.id);
-                    return (
-                      <tr key={u.id} className="border-t hover:bg-gray-50">
-                        <td className="px-3 py-2">
-                          <input type="checkbox" checked={checked} onChange={(e)=>{
-                            setSelectedUserIds(prev => e.target.checked ? [...new Set([...prev, u.id])] : prev.filter(id=>id!==u.id));
-                          }} />
-                        </td>
-                        <td className="px-3 py-2 font-medium text-gray-900 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.name}</td>
-                        <td className="px-3 py-2 text-gray-700 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.email}</td>
-                        <td className="px-3 py-2">
-                          {(() => {
-                            const value = (localMembership[u.id] || u.membership || "active").toString().toLowerCase();
-                            return (
-                              <select
-                                value={value}
-                                onChange={async (e) => {
-                                  const v = e.target.value;
-                                  const userId = u.id;
-                                  
-                                  // Update local state immediately
-                                  setLocalMembership(prev => ({ ...prev, [userId]: v }));
-                                  setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: v } : r));
-                                  
-                                  // Call backend API when setting to "not active" (cancelled)
-                                  if (v === "cancelled") {
-                                    try {
-                                      await api.patch(`/payment-order/membership/${userId}/cancel`, {}, { withCredentials: true });
-                                      console.log(`Membership cancelled for user ${userId}`);
-                                      // Refresh current user's membership status if this is the current user
-                                      try { await refreshMembership?.(); } catch {}
-                                    } catch (err) {
-                                      console.error('Failed to cancel membership:', err);
-                                      // Revert local state on error
-                                      setLocalMembership(prev => ({ ...prev, [userId]: "active" }));
-                                      setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: "active" } : r));
-                                    }
-                                  } else if (v === "active") {
-                                    // Use subscription API to activate membership
-                                    try {
-                                      const subscriptionData = {
-                                        plan_type: "MONTHLY",
-                                        total_amount: 69,
-                                        type: "MEMBERSHIP"
-                                      };
-                                      console.log(`Activating membership for user ${userId} with data:`, subscriptionData);
-                                      console.log(`Making POST request to: /payment-order/membership/subscribe/${userId}`);
-                                      
-                                      const response = await api.post(`/payment-order/membership/subscribe/${userId}`, subscriptionData, { withCredentials: true });
-                                      console.log(`Membership activation response:`, response?.data);
-                                      console.log(`Response status:`, response?.status);
-                                      console.log(`Full response object:`, response);
-                                      
-                                      // Refresh current user's membership status if this is the current user
-                                      try { await refreshMembership?.(); } catch {}
-                                      
-                                      // Refresh the users list to show updated status
-                                      setTimeout(async () => {
-                                        // Reload users with fresh membership data
-                                        try {
-                                          const fetched = await fetchAllUsersAdmin();
-                                          const usersWithMembership = await Promise.all(
-                                            fetched.map(async (u) => {
-                                              const userId = u.id || u.user_id || u._id;
-                                              let membershipStatus = "cancelled";
-                                              
-                                              try {
-                                                const membershipRes = await api.get(`/payment-order/membership/status/${userId}`, { withCredentials: true });
-                                                const membershipData = membershipRes?.data?.data;
-                                                if (membershipData && membershipData !== null) {
-                                                  membershipStatus = membershipData?.status?.toLowerCase() || "cancelled";
+                  {usersLoading ? (
+                    <tr>
+                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                          Loading users...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : pagedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                        No users found
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedUsers.map((u)=>{
+                      const checked = selectedUserIds.includes(u.id);
+                      return (
+                        <tr key={u.id} className="border-t hover:bg-gray-50">
+                          <td className="px-3 py-2">
+                            <input type="checkbox" checked={checked} onChange={(e)=>{
+                              setSelectedUserIds(prev => e.target.checked ? [...new Set([...prev, u.id])] : prev.filter(id=>id!==u.id));
+                            }} />
+                          </td>
+                          <td className="px-3 py-2 font-medium text-gray-900 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.name}</td>
+                          <td className="px-3 py-2 text-gray-700 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.email}</td>
+                          <td className="px-3 py-2">
+                            {(() => {
+                              const value = (localMembership[u.id] || u.membership || "active").toString().toLowerCase();
+                              return (
+                                <select
+                                  value={value}
+                                  onChange={async (e) => {
+                                    const v = e.target.value;
+                                    const userId = u.id;
+                                    
+                                    // Update local state immediately
+                                    setLocalMembership(prev => ({ ...prev, [userId]: v }));
+                                    setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: v } : r));
+                                    
+                                    // Call backend API when setting to "not active" (cancelled)
+                                    if (v === "cancelled") {
+                                      try {
+                                        await api.patch(`/payment-order/membership/${userId}/cancel`, {}, { withCredentials: true });
+                                        console.log(`Membership cancelled for user ${userId}`);
+                                        // Refresh current user's membership status if this is the current user
+                                        try { await refreshMembership?.(); } catch {}
+                                      } catch (err) {
+                                        console.error('Failed to cancel membership:', err);
+                                        // Revert local state on error
+                                        setLocalMembership(prev => ({ ...prev, [userId]: "active" }));
+                                        setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: "active" } : r));
+                                      }
+                                    } else if (v === "active") {
+                                      // Use subscription API to activate membership
+                                      try {
+                                        const subscriptionData = {
+                                          plan_type: "MONTHLY",
+                                          total_amount: 69,
+                                          type: "MEMBERSHIP"
+                                        };
+                                        console.log(`Activating membership for user ${userId} with data:`, subscriptionData);
+                                        console.log(`Making POST request to: /payment-order/membership/subscribe/${userId}`);
+                                        
+                                        const response = await api.post(`/payment-order/membership/subscribe/${userId}`, subscriptionData, { withCredentials: true });
+                                        console.log(`Membership activation response:`, response?.data);
+                                        console.log(`Response status:`, response?.status);
+                                        console.log(`Full response object:`, response);
+                                        
+                                        // Refresh current user's membership status if this is the current user
+                                        try { await refreshMembership?.(); } catch {}
+                                        
+                                        // Refresh the users list to show updated status
+                                        setTimeout(async () => {
+                                          // Reload users with fresh membership data
+                                          try {
+                                            const fetched = await fetchAllUsersAdmin();
+                                            const usersWithMembership = await Promise.all(
+                                              fetched.map(async (u) => {
+                                                const userId = u.id || u.user_id || u._id;
+                                                let membershipStatus = "cancelled";
+                                                
+                                                try {
+                                                  const membershipRes = await api.get(`/payment-order/membership/status/${userId}`, { withCredentials: true });
+                                                  const membershipData = membershipRes?.data?.data;
+                                                  if (membershipData && membershipData !== null) {
+                                                    membershipStatus = membershipData?.status?.toLowerCase() || "cancelled";
+                                                  }
+                                                } catch (err) {
+                                                  console.warn(`Failed to fetch membership for user ${userId}:`, err);
                                                 }
-                                              } catch (err) {
-                                                console.warn(`Failed to fetch membership for user ${userId}:`, err);
-                                              }
-                                              
-                                              return {
-                                                id: userId,
-                                                name: `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() || u.name || u.username || u.email || "Unknown",
-                                                email: u.email || u.user_email || "",
-                                                membership: membershipStatus,
-                                                credits: Number(u.total_credits) || 0,
-                                              };
-                                            })
-                                          );
-                                          setRealUsers(usersWithMembership);
-                                        } catch (err) {
-                                          console.error('Failed to refresh users:', err);
-                                        }
-                                      }, 1000);
-                                    } catch (err) {
-                                      console.error('Failed to activate membership:', err?.response?.data || err?.message);
-                                      console.error('Full error object:', err);
-                                      console.error('Error status:', err?.response?.status);
-                                      console.error('Error config:', err?.config);
-                                      // Don't revert local state - keep it as "active" to show the attempt
-                                      // The user can manually refresh to see the real status
+                                                
+                                                return {
+                                                  id: userId,
+                                                  name: `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() || u.name || u.username || u.email || "Unknown",
+                                                  email: u.email || u.user_email || "",
+                                                  membership: membershipStatus,
+                                                  credits: Number(u.total_credits) || 0,
+                                                };
+                                              })
+                                            );
+                                            setRealUsers(usersWithMembership);
+                                          } catch (err) {
+                                            console.error('Failed to refresh users:', err);
+                                          }
+                                        }, 1000);
+                                      } catch (err) {
+                                        console.error('Failed to activate membership:', err?.response?.data || err?.message);
+                                        console.error('Full error object:', err);
+                                        console.error('Error status:', err?.response?.status);
+                                        console.error('Error config:', err?.config);
+                                        // Don't revert local state - keep it as "active" to show the attempt
+                                        // The user can manually refresh to see the real status
+                                      }
                                     }
-                                  }
-                                }}
-                                className={`rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200 ${membershipColorClasses(value)}`}
-                              >
-                                <option value="active">active</option>
-                                <option value="cancelled">not active</option>
-                              </select>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-3 py-2 text-gray-700">{u.credits}</td>
-                        <td className="px-3 py-2 text-gray-400">—</td>
-                      </tr>
-                    );
-                  })}
+                                  }}
+                                  className={`rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200 ${membershipColorClasses(value)}`}
+                                >
+                                  <option value="active">active</option>
+                                  <option value="cancelled">not active</option>
+                                </select>
+                              );
+                            })()}
+                          </td>
+                          <td className="px-3 py-2 text-gray-700">{u.credits}</td>
+                          <td className="px-3 py-2 text-gray-400">—</td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
