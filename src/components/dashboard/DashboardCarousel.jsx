@@ -8,11 +8,18 @@ import {
 } from "@/components/ui/carousel";
 
 const carouselItems = [
-  
+  {
+    id: 0,
+    type: "video",
+    videoUrl: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/This+Saturday.mp4",
+    title: "This Saturday",
+    course: "Upcoming Event",
+    order: 1
+  },
   {
     id: 1,
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/Master+class++member+event_04.png",
-    title: "New Member Event",
+    type: "image",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/%2469Month!+(6).png",
     course: "04th Oct",
     
   },
@@ -20,21 +27,39 @@ const carouselItems = [
 
 export function DashboardCarousel() {
   const nextBtnRef = useRef(null);
+  const prevBtnRef = useRef(null);
+  const carouselApiRef = useRef(null);
+  const intervalRef = useRef(null);
+  const videoRef = useRef(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
+  const startAutoAdvance = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => {
       if (nextBtnRef.current) {
         nextBtnRef.current.click();
       }
     }, 5000);
+  };
 
-    return () => clearInterval(interval);
+  const stopAutoAdvance = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    startAutoAdvance();
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
-  const handleSlideChange = (index) => {
-    setCurrentSlide(index);
-  };
 
   return (
     <div className="group relative w-full max-w-4xl mx-auto">
@@ -56,30 +81,64 @@ export function DashboardCarousel() {
           align: "center",
           loop: true
         }}
-         className="w-full relative z-10 px-1"
-        onSlideChange={handleSlideChange}
+        className="w-full relative z-10 px-1"
+        setApi={(api) => {
+          carouselApiRef.current = api;
+          if (api) {
+            api.on('select', () => {
+              const newSlide = api.selectedScrollSnap();
+              setCurrentSlide(newSlide);
+              
+              // Check if current slide is a video and restart it
+              const currentItem = carouselItems[newSlide];
+              if (currentItem && currentItem.type === "video" && videoRef.current) {
+                videoRef.current.currentTime = 0;
+                videoRef.current.play();
+              }
+            });
+          }
+        }}
       >
         <CarouselContent>
           {carouselItems.map((item, index) => (
             <CarouselItem key={item.id} className="md:basis-full">
-              <a href={item.link} className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100 block">
+              <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100">
                 <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] bg-white flex items-center justify-center p-2 sm:p-3">
-                  <img
-                    src={item.image}
-                    alt={`${item.title} – ${item.course}`}
-                    loading="lazy"
-                    draggable={false}
-                    className="max-w-full max-h-full object-contain transition-all duration-700 select-none"
-                  />
+                  {item.type === "video" ? (
+                    <video
+                      ref={videoRef}
+                      src={item.videoUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="max-w-full max-h-full object-contain transition-all duration-700 select-none rounded-lg"
+                      onMouseEnter={(e) => {
+                        e.target.muted = false;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.muted = true;
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={item.image}
+                      alt={`${item.title} – ${item.course}`}
+                      loading="lazy"
+                      draggable={false}
+                      className="max-w-full max-h-full object-contain transition-all duration-700 select-none"
+                    />
+                  )}
                   {/* No text overlays to avoid clashing with banner text */}
                 </div>
-              </a>
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>
 
         {/* Enhanced navigation arrows */}
         <CarouselPrevious
+          ref={prevBtnRef}
           className="absolute left-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 border border-gray-200 hover:border-gray-300 rounded-full shadow-lg hover:shadow-xl p-3 w-12 h-12 backdrop-blur-sm hover:scale-110"
         />
         <CarouselNext
@@ -98,8 +157,9 @@ export function DashboardCarousel() {
                   : 'bg-blue-300 hover:bg-blue-400'
               }`}
               onClick={() => {
-                // This would need to be connected to the carousel API
-                // For now, it's just visual
+                if (carouselApiRef.current) {
+                  carouselApiRef.current.scrollTo(index);
+                }
               }}
             />
           ))}
