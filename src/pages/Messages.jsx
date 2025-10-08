@@ -552,6 +552,66 @@ function Messages() {
       }));
     };
 
+    // Handle new private group message event
+    const onNewGroupMessage = ({ groupId, message }) => {
+      console.log('New private group message:', { groupId, message });
+      const currentUserId = localStorage.getItem('userId');
+      const isSelf = String(message.sender_id) === String(currentUserId);
+      const isSystem = message.type === 'SYSTEM';
+      
+      // Update the group's last message in the friends list
+      setFriends(prev => prev.map(f => {
+        if (f.conversationId === groupId && f.isPrivateGroup) {
+          let messageText = message.content;
+          let messageType = message.type || 'TEXT';
+          
+          // Handle different message types
+          if (message.type === 'IMAGE') {
+            messageText = 'Image';
+            messageType = 'IMAGE';
+          } else if (message.type === 'SYSTEM') {
+            messageText = message.content;
+            messageType = 'system';
+          }
+          
+          return {
+            ...f,
+            lastMessage: messageText,
+            lastMessageType: messageType,
+            lastMessageFrom: isSystem ? 'System' : (isSelf ? currentUserId : message.sender_id),
+            lastMessageAt: message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date().toISOString(),
+            isRead: isSelf || isSystem ? true : f.isRead, // Mark as read if it's our own message or system message
+          };
+        }
+        return f;
+      }));
+
+      // If this message is for the currently open group chat, add it to messages
+      if (String(conversationId) === String(groupId)) {
+        setMessages(prev => {
+          // Check if message already exists (avoid duplicates)
+          const exists = prev.some(m => String(m.id) === String(message.id));
+          if (exists) return prev;
+
+          const mappedMessage = {
+            id: message.id,
+            senderId: isSystem ? 'system' : (isSelf ? 0 : String(message.sender_id)),
+            senderImage: isSystem ? null : (message.sender?.image || null),
+            text: message.type === 'IMAGE' ? null : message.content,
+            timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            type: message.type === 'IMAGE' ? 'image' : (message.type === 'SYSTEM' ? 'system' : 'text'),
+            file: message.type === 'IMAGE' ? message.content : null,
+            status: isSystem ? 'delivered' : (isSelf ? 'sent' : 'delivered'),
+          };
+
+          return [...prev, mappedMessage];
+        });
+      }
+    };
+
     const onReceiveMessage = ({ from, message, image, messageid, type, conversationid }) => {
       const currentUserId = localStorage.getItem('userId');
       const isSelf = String(from) === String(currentUserId);
@@ -674,6 +734,7 @@ function Messages() {
     socket.on('privateGroupMemberRemoved', onPrivateGroupMemberRemoved);
     socket.on('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
     socket.on('privateGroupJoined', onPrivateGroupJoined);
+    socket.on('newGroupMessage', onNewGroupMessage);
     socket.on('receiveMessage', onReceiveMessage);
     const onMessagesRead = ({ conversationId: readConvId }) => {
       if (!readConvId) return;
@@ -731,6 +792,7 @@ function Messages() {
       socket.off('privateGroupMemberRemoved', onPrivateGroupMemberRemoved);
       socket.off('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
       socket.off('privateGroupJoined', onPrivateGroupJoined);
+      socket.off('newGroupMessage', onNewGroupMessage);
       socket.off('receiveMessage', onReceiveMessage);
       socket.off('messagesRead', onMessagesRead);
       socket.off('deleteMessage', onDeleteMessage);
@@ -739,6 +801,73 @@ function Messages() {
       socket.off('error', onError);
     };
   }, []);
+
+  // Polling mechanism to refresh private group last messages periodically
+  useEffect(() => {
+    if (!convosLoaded) return;
+
+    const refreshPrivateGroupMessages = async () => {
+      const privateGroups = friends.filter(f => f.isPrivateGroup);
+      if (privateGroups.length === 0) return;
+
+      try {
+        const lastMessagePromises = privateGroups.map(async (group) => {
+          try {
+            const messagesRes = await getPrivateGroupMessages(group.conversationId, 1, 1);
+            const messages = messagesRes?.data?.messages || messagesRes?.messages || [];
+            if (messages.length > 0) {
+              const lastMsg = messages[0];
+              const currentUserId = localStorage.getItem('userId');
+              const isSelf = String(lastMsg.sender_id) === String(currentUserId);
+              
+              return {
+                groupId: group.conversationId,
+                lastMessage: lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
+                lastMessageType: lastMsg.type || 'TEXT',
+                lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
+                lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
+              };
+            }
+            return null;
+          } catch (error) {
+            console.warn(`Failed to refresh last message for group ${group.conversationId}:`, error);
+            return null;
+          }
+        });
+
+        const lastMessages = await Promise.all(lastMessagePromises);
+        
+        // Update friends list with refreshed last messages
+        setFriends(prev => prev.map(f => {
+          if (f.isPrivateGroup) {
+            const lastMsgData = lastMessages.find(lm => lm && String(lm.groupId) === String(f.conversationId));
+            if (lastMsgData) {
+              // Only update if the message is actually newer
+              const currentTime = new Date(f.lastMessageAt).getTime();
+              const newTime = new Date(lastMsgData.lastMessageAt).getTime();
+              if (newTime > currentTime) {
+                return {
+                  ...f,
+                  lastMessage: lastMsgData.lastMessage,
+                  lastMessageType: lastMsgData.lastMessageType,
+                  lastMessageFrom: lastMsgData.lastMessageFrom,
+                  lastMessageAt: lastMsgData.lastMessageAt,
+                };
+              }
+            }
+          }
+          return f;
+        }));
+      } catch (error) {
+        console.warn('Failed to refresh private group messages:', error);
+      }
+    };
+
+    // Refresh every 30 seconds
+    const interval = setInterval(refreshPrivateGroupMessages, 30000);
+    
+    return () => clearInterval(interval);
+  }, [convosLoaded, friends]);
 
   // Load conversations for current user on entry; also load all users for starting new chat
   useEffect(() => {
@@ -796,7 +925,7 @@ function Messages() {
             id: `private_group_${privateGroupRes.data.id}`,
             name: privateGroupRes.data.name,
             avatar: privateGroupRes.data.thumbnail || '/placeholder.svg',
-            lastMessage: 'Private group created',
+            lastMessage: 'Private group created', // Will be updated with real last message
             lastMessageType: 'system',
             room: `private_group_${privateGroupRes.data.id}`,
             conversationId: privateGroupRes.data.id,
@@ -818,7 +947,7 @@ function Messages() {
             id: `private_group_${group.id}`,
             name: group.name,
             avatar: group.thumbnail || '/placeholder.svg',
-            lastMessage: 'Joined group',
+            lastMessage: 'Joined group', // Will be updated with real last message
             lastMessageType: 'system',
             room: `private_group_${group.id}`,
             conversationId: group.id,
@@ -845,6 +974,54 @@ function Messages() {
           }
         }
         setFriends(dedupedConversations);
+
+        // Fetch last messages for private groups
+        const privateGroups = dedupedConversations.filter(conv => conv.isPrivateGroup);
+        if (privateGroups.length > 0) {
+          // Fetch last messages for each private group
+          const lastMessagePromises = privateGroups.map(async (group) => {
+            try {
+              const messagesRes = await getPrivateGroupMessages(group.conversationId, 1, 1);
+              const messages = messagesRes?.data?.messages || messagesRes?.messages || [];
+              if (messages.length > 0) {
+                const lastMsg = messages[0]; // Most recent message
+                const currentUserId = localStorage.getItem('userId');
+                const isSelf = String(lastMsg.sender_id) === String(currentUserId);
+                
+                return {
+                  groupId: group.conversationId,
+                  lastMessage: lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
+                  lastMessageType: lastMsg.type || 'TEXT',
+                  lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
+                  lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
+                };
+              }
+              return null;
+            } catch (error) {
+              console.warn(`Failed to fetch last message for group ${group.conversationId}:`, error);
+              return null;
+            }
+          });
+
+          const lastMessages = await Promise.all(lastMessagePromises);
+          
+          // Update friends list with real last messages
+          setFriends(prev => prev.map(f => {
+            if (f.isPrivateGroup) {
+              const lastMsgData = lastMessages.find(lm => lm && String(lm.groupId) === String(f.conversationId));
+              if (lastMsgData) {
+                return {
+                  ...f,
+                  lastMessage: lastMsgData.lastMessage,
+                  lastMessageType: lastMsgData.lastMessageType,
+                  lastMessageFrom: lastMsgData.lastMessageFrom,
+                  lastMessageAt: lastMsgData.lastMessageAt,
+                };
+              }
+            }
+            return f;
+          }));
+        }
 
         // Load directory of all users for the + modal
         const users = await fetchAllUsers();
@@ -923,7 +1100,33 @@ function Messages() {
           
           // Handle private groups differently for image sending
           if (selectedFriendData?.isPrivateGroup) {
-            await sendPrivateGroupMessage(conversationId, formData, true);
+            const response = await sendPrivateGroupMessage(conversationId, formData, true);
+            // Update the optimistic message with the real message data
+            if (response?.success && response?.data) {
+              setMessages(prev => prev.map(msg => 
+                msg.id === tempId ? { 
+                  ...msg, 
+                  id: response.data.id,
+                  status: 'sent',
+                  file: response.data.content || response.data.url || msg.file
+                } : msg
+              ));
+              
+              // Update the group's last message in the friends list
+              setFriends(prev => prev.map(f => {
+                if (f.conversationId === conversationId && f.isPrivateGroup) {
+                  return {
+                    ...f,
+                    lastMessage: 'Image',
+                    lastMessageType: 'IMAGE',
+                    lastMessageFrom: localStorage.getItem('userId'),
+                    lastMessageAt: response.data.createdAt || response.data.created_at || response.data.timeStamp || response.data.timestamp || new Date().toISOString(),
+                    isRead: true,
+                  };
+                }
+                return f;
+              }));
+            }
           } else {
             await api.post('/api/private-messaging/sendimage', formData, {
               headers: { 'Content-Type': 'multipart/form-data' },
@@ -964,7 +1167,33 @@ function Messages() {
         // Handle private groups: send via REST API; others via socket
         if (selectedFriendData?.isPrivateGroup) {
           try {
-            await sendPrivateGroupMessage(conversationId, { content: messageText });
+            const response = await sendPrivateGroupMessage(conversationId, { content: messageText });
+            // Update the optimistic message with the real message data
+            if (response?.success && response?.data) {
+              setMessages(prev => prev.map(msg => 
+                msg.tempId === tempId ? { 
+                  ...msg, 
+                  id: response.data.id,
+                  status: 'sent',
+                  tempId: undefined // Remove tempId since we have real ID
+                } : msg
+              ));
+              
+              // Update the group's last message in the friends list
+              setFriends(prev => prev.map(f => {
+                if (f.conversationId === conversationId && f.isPrivateGroup) {
+                  return {
+                    ...f,
+                    lastMessage: messageText,
+                    lastMessageType: 'TEXT',
+                    lastMessageFrom: localStorage.getItem('userId'),
+                    lastMessageAt: response.data.createdAt || response.data.created_at || response.data.timeStamp || response.data.timestamp || new Date().toISOString(),
+                    isRead: true,
+                  };
+                }
+                return f;
+              }));
+            }
           } catch (e) {
             throw e;
           }
@@ -1333,6 +1562,35 @@ function Messages() {
                       if (friend.isPrivateGroup) {
                         // For private groups, emit a specific event
                         socket.emit('joinPrivateGroupRoom', { groupId: convId });
+                        
+                        // Refresh the last message for this group when opening
+                        (async () => {
+                          try {
+                            const messagesRes = await getPrivateGroupMessages(convId, 1, 1);
+                            const messages = messagesRes?.data?.messages || messagesRes?.messages || [];
+                            if (messages.length > 0) {
+                              const lastMsg = messages[0];
+                              const currentUserId = localStorage.getItem('userId');
+                              const isSelf = String(lastMsg.sender_id) === String(currentUserId);
+                              
+                              // Update the group's last message in the friends list
+                              setFriends(prev => prev.map(f => {
+                                if (f.conversationId === convId && f.isPrivateGroup) {
+                                  return {
+                                    ...f,
+                                    lastMessage: lastMsg.type === 'IMAGE' ? 'Image' : lastMsg.content,
+                                    lastMessageType: lastMsg.type || 'TEXT',
+                                    lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
+                                    lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
+                                  };
+                                }
+                                return f;
+                              }));
+                            }
+                          } catch (error) {
+                            console.warn(`Failed to refresh last message for group ${convId}:`, error);
+                          }
+                        })();
                       } else {
                         // For regular conversations
                         socket.emit('joinRoom', friend.room, convId);

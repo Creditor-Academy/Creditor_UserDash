@@ -187,6 +187,23 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         socket.emit('privateGroupMembersAdded', { groupId, users: addedUsers });
       }
       
+      // Emit a system message for group creation
+      socket.emit('newGroupMessage', {
+        groupId,
+        message: {
+          id: `system_${Date.now()}`,
+          sender_id: localStorage.getItem('userId'),
+          content: 'Private group created',
+          type: 'SYSTEM',
+          createdAt: new Date().toISOString(),
+          sender: {
+            first_name: 'System',
+            name: 'System',
+            image: null
+          }
+        }
+      });
+      
       const created = {
         id: `group_${groupId}`,
         name: res.data.name,
