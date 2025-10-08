@@ -452,20 +452,24 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl">
-        <DialogHeader className="pb-2 border-b border-gray-100">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <User className="h-5 w-5" />
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl">
+        <DialogHeader className="pb-4 border-b border-gray-100">
+          <DialogTitle className="flex items-center gap-3 text-2xl font-semibold text-gray-900">
+            <div className="p-2 bg-blue-100 rounded-xl">
+              <User className="h-6 w-6 text-blue-600" />
+            </div>
             User Details
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Basic Information */}
-          <Card className="shadow-sm border border-gray-100">
-            <CardHeader className="pb-3 border-b border-gray-100">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <User className="h-4 w-4" />
+          <Card className="shadow-sm border border-gray-100 rounded-xl">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <User className="h-5 w-5 text-gray-600" />
+                </div>
                 Basic Information
               </CardTitle>
             </CardHeader>
@@ -626,10 +630,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
           {/* Account Information - Only for instructors/admins */}
           {isInstructorOrAdmin && (
-            <Card className="shadow-sm border border-gray-100">
-              <CardHeader className="pb-3 border-b border-gray-100">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Shield className="h-4 w-4" />
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
+              <CardHeader className="pb-4 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Shield className="h-5 w-5 text-purple-600" />
+                  </div>
                   Account Information
                 </CardTitle>
               </CardHeader>
@@ -683,10 +689,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
           {/* Enrolled */}
           {loadingCourses ? (
-            <Card className="shadow-sm border border-gray-100">
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
                   Enrolled
                 </CardTitle>
               </CardHeader>
@@ -695,10 +703,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               </CardContent>
             </Card>
           ) : coursesError ? (
-            <Card className="shadow-sm border border-gray-100">
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
                   Enrolled
                 </CardTitle>
               </CardHeader>
@@ -707,14 +717,14 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               </CardContent>
             </Card>
           ) : (
-            <Card className="shadow-sm border border-gray-100 bg-white">
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-3 text-lg">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <GraduationCap className="h-5 w-5 text-gray-700" />
+            <Card className="shadow-lg border border-gray-200 bg-white rounded-2xl">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-900">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm">
+                    <GraduationCap className="h-6 w-6 text-white" />
                   </div>
-                  <span className="text-gray-800">Enrolled</span>
-                  <Badge variant="secondary" className="ml-auto bg-gray-100 text-gray-700 border-gray-200">
+                  <span>Enrolled</span>
+                  <Badge variant="secondary" className="ml-auto bg-blue-50 text-blue-700 border-blue-200 font-medium">
                     {activeTab === 'courses' 
                       ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` 
                       : (() => {
@@ -735,30 +745,30 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                 </CardTitle>
                 
                 {/* Tab Navigation */}
-                <div className="flex gap-2 mt-4">
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setActiveTab('courses')}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       activeTab === 'courses'
-                        ? 'bg-gray-100 text-gray-900 border border-gray-200 shadow-sm'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-200 shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
+                    <div className="flex items-center gap-3">
+                      <BookOpen className="h-5 w-5" />
                       Courses
                     </div>
                   </button>
                   <button
                     onClick={() => setActiveTab('modules')}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       activeTab === 'modules'
-                        ? 'bg-gray-100 text-gray-900 border border-gray-200 shadow-sm'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-200 shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <BookOpenCheck className="h-4 w-4" />
+                    <div className="flex items-center gap-3">
+                      <BookOpenCheck className="h-5 w-5" />
                       Modules
                     </div>
                   </button>
@@ -791,17 +801,17 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                       return (
                         <div 
                           key={courseId || index} 
-                          className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200"
+                          className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
                         >
                           {/* Course Header */}
                           <div className="p-4 border-b border-gray-100">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <div className="p-2 bg-gray-100 rounded-lg">
-                                    <BookOpen className="h-4 w-4 text-gray-700" />
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-sm">
+                                    <BookOpen className="h-5 w-5 text-white" />
                                   </div>
-                                  <h3 className="text-sm font-semibold text-gray-900 truncate">
+                                  <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
                         {course.title}
                                   </h3>
                                 </div>
@@ -827,24 +837,24 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                 >
                                   {`Total ${totalModulesForHeader} Module${totalModulesForHeader !== 1 ? 's' : ''}`}
                                 </span>
-
-                                {/* Expand/Collapse Button */}
-                                {modules.length > 0 && (
-                                  <button
-                                    onClick={() => setExpandedCourses(prev => ({ 
-                                      ...prev, 
-                                      [courseId]: !prev[courseId] 
-                                    }))}
+                              
+                              {/* Expand/Collapse Button */}
+                              {modules.length > 0 && (
+                                <button
+                                  onClick={() => setExpandedCourses(prev => ({ 
+                                    ...prev, 
+                                    [courseId]: !prev[courseId] 
+                                  }))}
                                     className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                                     aria-label={isExpanded ? 'Collapse modules' : 'Expand modules'}
-                                  >
-                                    {isExpanded ? (
+                                >
+                                  {isExpanded ? (
                                       <ChevronDown className="h-4 w-4 text-gray-600" />
-                                    ) : (
+                                  ) : (
                                       <ChevronRight className="h-4 w-4 text-gray-600" />
-                                    )}
-                                  </button>
-                                )}
+                                  )}
+                                </button>
+                              )}
                               </div>
                             </div>
                           </div>
@@ -982,7 +992,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         return (
                         <div key={courseId} className="space-y-3">
                           {/* Course Header */}
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50/80 border border-blue-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
                                onClick={() => setExpandedGrouped(prev => ({ ...prev, [courseId]: !prev[courseId] }))}>
                             <div className="flex items-center gap-3">
                               <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm">
@@ -1023,14 +1033,17 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           </div>
                           
                           {/* Modules under this course */}
-                          <div className={`ml-4 space-y-2 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                          <div className={`ml-4 space-y-2 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100 overflow-y-auto border-l-2 border-gray-200 pl-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                             {isExpanded && group.items.length > 0 && (
-                              <div className="sticky top-0 z-0 -mb-1 text-[11px] text-gray-500 px-1 select-none">Purchased</div>
+                              <div className="text-[11px] text-gray-500 px-1 select-none mb-2">Purchased ({group.items.length})</div>
+                            )}
+                            {isExpanded && group.items.length === 0 && (
+                              <div className="text-[11px] text-gray-500 px-1 select-none mb-2">No purchased modules</div>
                             )}
                             {isExpanded && group.items.map((module, index) => (
                         <div 
                           key={module.id || index} 
-                                className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-green-300 hover:shadow-md transition-all duration-300 ease-in-out transform hover:-translate-y-0.5"
+                                className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
                         >
                                 <div className="p-3">
                             <div className="flex items-start gap-3">
@@ -1062,12 +1075,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                               <div className="pt-2 mt-1 border-t border-gray-100" />
                             )}
                             {isExpanded && showNotPurchased && (
-                              <div className="sticky top-0 z-0 -mb-1 text-[11px] text-gray-500 px-1 select-none">Not Purchased</div>
+                              <div className="text-[11px] text-gray-500 px-1 select-none mb-2 mt-4">Not Purchased</div>
                             )}
                             {isExpanded && showNotPurchased && notPurchased.map((module, index) => (
                               <div 
                                 key={(module.id || module.module?.id || `np-${index}`)} 
-                                className="group relative overflow-hidden bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-300"
+                                className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
                               >
                                 <div className="p-3">
                                   <div className="flex items-start gap-3">
