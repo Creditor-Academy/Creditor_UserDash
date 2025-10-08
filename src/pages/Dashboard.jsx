@@ -674,7 +674,7 @@ export function Dashboard() {
                     <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='assessments'? null : 'assessments')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='assessments' ? 'bg-orange-100 border-orange-200 shadow' : 'bg-orange-50 border-orange-100 hover:border-orange-200'}`}>
                       <div className="flex items-center gap-2">
                         <Award className="text-orange-600" size={20} />
-                        <span className="text-orange-600 font-semibold">Quizs</span>
+                        <span className="text-orange-600 font-semibold"><Quizzes></Quizzes></span>
                       </div>
                       <p className="text-2xl font-bold text-orange-700 mt-1">
                         {loading ? (
