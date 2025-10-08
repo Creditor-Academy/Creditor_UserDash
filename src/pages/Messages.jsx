@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 // Voice recording components - commented out
@@ -133,6 +133,15 @@ function Messages() {
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  // Truncate message to a small, fixed preview with custom ellipsis for chat list
+  const getHalfPreview = (text) => {
+    if (!text) return '';
+    const str = String(text).trim();
+    const PREVIEW_LIMIT = 24; // small portion
+    if (str.length <= PREVIEW_LIMIT) return str;
+    return str.slice(0, PREVIEW_LIMIT).trimEnd() + '.....';
   };
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
@@ -864,11 +873,11 @@ function Messages() {
                              <span className="flex items-center gap-1 sm:gap-1.5">
                                <span>You:</span>
                                <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
-                               <span>{friend.lastMessage}</span>
+                                <span>{getHalfPreview(friend.lastMessage)}</span>
                              </span>
                            );
                          }
-                         return friend.lastMessage || 'Start a conversation';
+                          return getHalfPreview(friend.lastMessage || 'Start a conversation');
                        })()}
                     </p>
                   </div>
@@ -885,11 +894,11 @@ function Messages() {
 
           {/* Chat Area - takes full width when a chat is open */}
           {selectedFriend && (
-          <div className="w-full h-full flex flex-col">
+          <div className="w-full h-full flex flex-col min-h-0">
                 {/* Chat Header */}
                 <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <Button variant="ghost" size="icon" className="mr-0.5 sm:mr-1 h-8 w-8 sm:h-9 sm:w-9" onClick={() => {
+                    <Button variant="ghost" size="icon" className="mr-0.5 sm:mr-1 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all" onClick={() => {
                       // Leave the room when going back to chat list
                       if (roomId) {
                         try {
@@ -901,7 +910,7 @@ function Messages() {
                       }
                       setSelectedFriend(null);
                     }} title="Back to chats">
-                      <span className="text-lg sm:text-xl">←</span>
+                      <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
                     </Button>
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                       {convosLoaded && (
@@ -1125,7 +1134,7 @@ function Messages() {
                     />
                   ) : ( */}
                   {true && (
-                    <div className="relative">
+                    <div className="relative w-full">
                       {showEmojiPicker && (
                         <div className="absolute bottom-14 sm:bottom-16 left-0 z-10">
                           <EmojiPicker 
@@ -1155,7 +1164,7 @@ function Messages() {
                           <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                         
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative min-w-0">
                           <Input
                             placeholder="Type a message..."
                             value={newMessage}
@@ -1175,9 +1184,9 @@ function Messages() {
                             onClick={() => setShowVoiceRecorder(true)} 
                             variant="ghost"
                             size="icon"
-                            className="h-12 w-12 rounded-full"
+                            className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full touch-manipulation"
                           >
-                            <Mic className="h-5 w-5" />
+                            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                           </Button> */}
                           
                           <Button 

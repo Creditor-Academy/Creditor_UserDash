@@ -507,12 +507,73 @@ const AdminPayments = () => {
             <h2 className="text-2xl font-semibold text-gray-800">Payments & Subscriptions</h2>
             <p className="text-gray-600">Dummy data preview for admin payments dashboard.</p>
           </div>
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-            <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
-            <button onClick={() => setPaymentsView("services")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "services" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Services</button>
-            <button onClick={() => setPaymentsView("orders")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "orders" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Orders</button>
-            <button onClick={() => setPaymentsView("payments")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "payments" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Payments</button>
-            <button onClick={() => setPaymentsView("subscriptions")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "subscriptions" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Subscriptions</button>
+          <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner">
+            <button 
+              onClick={() => setPaymentsView("credits")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "credits" 
+                  ? "bg-white shadow-md text-blue-700 border border-blue-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <FaCoins className="w-4 h-4" />
+              Credits
+            </button>
+            <button 
+              onClick={() => setPaymentsView("services")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "services" 
+                  ? "bg-white shadow-md text-green-700 border border-green-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Services
+            </button>
+            {/* Orders tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("orders")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "orders" 
+                  ? "bg-white shadow-md text-purple-700 border border-purple-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Orders
+            </button> */}
+            {/* Payments tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("payments")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "payments" 
+                  ? "bg-white shadow-md text-orange-700 border border-orange-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Payments
+            </button> */}
+            {/* Subscriptions tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("subscriptions")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "subscriptions" 
+                  ? "bg-white shadow-md text-indigo-700 border border-indigo-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              Subscriptions
+            </button> */}
           </div>
         </div>
       </div>
@@ -1203,7 +1264,23 @@ const AdminPayments = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedUsers.map((u)=>{
+                  {usersLoading ? (
+                    <tr>
+                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                          Loading users...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : pagedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                        No users found
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedUsers.map((u)=>{
                     const checked = selectedUserIds.includes(u.id);
                     return (
                       <tr key={u.id} className="border-t hover:bg-gray-50">
@@ -1316,7 +1393,8 @@ const AdminPayments = () => {
                         <td className="px-3 py-2 text-gray-400">—</td>
                       </tr>
                     );
-                  })}
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

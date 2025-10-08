@@ -49,7 +49,9 @@ export default defineConfig(({ mode }) => ({
       "www.lmsathena.com",
       "lmsathena.com",
       "api.lmsathena.com",
-      "54.198.69.32"
+      "54.198.69.32",
+      "https://creditor.onrender.com",
+      "https://creditor-frontend-p6lt.onrender.com"
     ],
     cors: true
   },
@@ -72,15 +74,13 @@ export default defineConfig(({ mode }) => ({
 
 
 // #(Testing Backend)
-// # VITE_API_BASE_URL=https://test-backend-e7d4.onrender.com  
-
+// # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
 // #(development Backend)
-// VITE_API_BASE_URL=https://creditor-backend-1-iijy.onrender.com
+// VITE_API_BASE_URL=https://creditor.onrender.com
 
 // #(local Backend)
 // # VITE_API_BASE_URL= http://localhost:9000
 
 // #(Main Backend)
-// # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
-// # VITE_API_BASE_URL= https://creditor.onrender.com
+// # VITE_API_BASE_URL= https://creditor-backend-lfre.onrender.com

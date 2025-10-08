@@ -105,6 +105,16 @@ export function Courses() {
     });
   }, [filteredCourses, myLessons, activeTab]);
 
+  // Recording course IDs to filter out from My Courses
+  const RECORDING_COURSE_IDS = [
+    "a188173c-23a6-4cb7-9653-6a1a809e9914", // Become Private Recordings
+    "7b798545-6f5f-4028-9b1e-e18c7d2b4c47", // Operate Private Recordings
+    "199e328d-8366-4af1-9582-9ea545f8b59e", // Business Credit Recordings
+    "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e", // Private Merchant Recordings
+    "d5330607-9a45-4298-8ead-976dd8810283", // Sovereignty 101 Recordings
+    "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now Recordings
+  ];
+
   useEffect(() => {
     const fetchCourses = async () => {
       setLoading(true);
@@ -112,8 +122,11 @@ export function Courses() {
         // Fetch courses with modules included in a single API call
         const data = await fetchUserCourses(true);
         
+        // Filter out recording courses from My Courses
+        const filteredData = data.filter(course => !RECORDING_COURSE_IDS.includes(course.id));
+        
         // Process each course to add modulesCount, totalDuration, and trial status
-        const processedCourses = data.map(course => {
+        const processedCourses = filteredData.map(course => {
           const modules = course.modules || [];
           // Sum durations using 'estimated_duration' (in minutes)
           const totalDurationMins = modules.reduce((sum, m) => sum + (parseInt(m.estimated_duration, 10) || 0), 0);
