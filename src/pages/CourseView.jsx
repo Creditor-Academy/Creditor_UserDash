@@ -84,6 +84,8 @@ export function CourseView() {
   const { balance, unlockContent, refreshBalance } = useCredits();
   // Track locally completed module ids
   const [completedModuleIds, setCompletedModuleIds] = useState(new Set());
+  // Track modules currently being marked as complete
+  const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
   
   // Course purchase states
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState(false);
@@ -758,22 +760,43 @@ export function CourseView() {
                                )}
                              </div>
                            )}
-                           {/* Mark as Complete - shown on all cards until clicked */}
-                           {!completedModuleIds.has(String(module.id)) ? (
-                             <Button
-                               variant="secondary"
-                               className="w-full"
-                               onClick={() => {
-                                 setCompletedModuleIds(prev => {
-                                   const next = new Set(prev);
-                                   next.add(String(module.id));
-                                   return next;
-                                 });
-                               }}
-                             >
-                               Mark as Complete
-                             </Button>
-                           ) : (
+                          {/* Mark as Complete - persist via backend then reflect in UI */}
+                          {!completedModuleIds.has(String(module.id)) ? (
+                            <Button
+                              variant="secondary"
+                              className="w-full disabled:opacity-60"
+                              disabled={markingCompleteIds.has(String(module.id))}
+                              onClick={async () => {
+                                const idStr = String(module.id);
+                                if (!courseId || !module?.id) return;
+                                // Prevent duplicate clicks
+                                if (markingCompleteIds.has(idStr)) return;
+                                setMarkingCompleteIds(prev => {
+                                  const next = new Set(prev);
+                                  next.add(idStr);
+                                  return next;
+                                });
+                                try {
+                                  await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                  setCompletedModuleIds(prev => {
+                                    const next = new Set(prev);
+                                    next.add(idStr);
+                                    return next;
+                                  });
+                                } catch (err) {
+                                  console.error('Failed to mark module as complete', err);
+                                } finally {
+                                  setMarkingCompleteIds(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(idStr);
+                                    return next;
+                                  });
+                                }
+                              }}
+                            >
+                              {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                            </Button>
+                          ) : (
                              <div className="w-full flex items-center justify-center">
                                <Badge className="px-3 py-1">Completed</Badge>
                              </div>
