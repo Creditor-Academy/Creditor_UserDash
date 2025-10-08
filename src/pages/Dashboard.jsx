@@ -75,7 +75,9 @@ export function Dashboard() {
       activeCourses: 0,
       completedCourses: 0,
       totalLearningHours: 0,
-      averageProgress: 0
+      averageProgress: 0,
+      modulesCompleted: 0,
+      assessmentsCompleted: 0
     },
     weeklyPerformance: {
       studyHours: 0,
@@ -90,6 +92,7 @@ export function Dashboard() {
   const [userCourses, setUserCourses] = useState([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
   const [coursesError, setCoursesError] = useState(null);
+  const [selectedSummary, setSelectedSummary] = useState(null); // 'completed' | 'modules' | 'assessments' | 'active' | null
   const [userCoursesMap, setUserCoursesMap] = useState({});
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [showConsultInfo, setShowConsultInfo] = useState(false);
@@ -173,13 +176,17 @@ export function Dashboard() {
           const completedCourses = 0; // Will be calculated when progress tracking is implemented
           const totalLearningHours = 0; // Will be calculated when time tracking is implemented
           const averageProgress = 0; // Will be calculated when progress tracking is implemented
+          const modulesCompleted = 0; // Will be calculated when module progress tracking is implemented
+          const assessmentsCompleted = 0; // Will be calculated when assessment tracking is implemented
           
                       const newDashboardData = {
               summary: {
                 activeCourses,
                 completedCourses,
                 totalLearningHours,
-                averageProgress
+                averageProgress,
+                modulesCompleted,
+                assessmentsCompleted
               },
               weeklyPerformance: {
                 studyHours: 0, // Will be calculated when time tracking is implemented
@@ -197,7 +204,9 @@ export function Dashboard() {
               activeCourses: 0,
               completedCourses: 0,
               totalLearningHours: 0,
-              averageProgress: 0
+              averageProgress: 0,
+              modulesCompleted: 0,
+              assessmentsCompleted: 0
             },
             weeklyPerformance: {
               studyHours: 0,
@@ -220,7 +229,9 @@ export function Dashboard() {
             activeCourses: 0,
             completedCourses: 0,
             totalLearningHours: 0,
-            averageProgress: 0
+            averageProgress: 0,
+            modulesCompleted: 0,
+            assessmentsCompleted: 0
           },
           weeklyPerformance: {
             studyHours: 0,
@@ -254,7 +265,9 @@ export function Dashboard() {
           activeCourses: 0,
           completedCourses: 0,
           totalLearningHours: 0,
-          averageProgress: 0
+          averageProgress: 0,
+          modulesCompleted: 0,
+          assessmentsCompleted: 0
         },
         weeklyPerformance: {
           studyHours: 0,
@@ -670,8 +683,8 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                    <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='completed'? null : 'completed')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='completed' ? 'bg-blue-100 border-blue-200 shadow' : 'bg-blue-50 border-blue-100 hover:border-blue-200'}`}>
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-blue-600" size={20} />
                         <span className="text-blue-600 font-semibold">Completed</span>
@@ -684,22 +697,36 @@ export function Dashboard() {
                         )}
                       </p>
                       <p className="text-blue-600 text-sm">Courses finished</p>
-                    </div>
-                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                    </button>
+                    <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='modules'? null : 'modules')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='modules' ? 'bg-emerald-100 border-emerald-200 shadow' : 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'}`}>
                       <div className="flex items-center gap-2">
-                        <Clock className="text-emerald-600" size={20} />
-                        <span className="text-emerald-600 font-semibold">This Week</span>
+                        <BookOpen className="text-emerald-600" size={20} />
+                        <span className="text-emerald-600 font-semibold">Modules</span>
                       </div>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">
                         {loading ? (
                           <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
                         ) : (
-                          `${dashboardData.weeklyPerformance?.studyHours || 0}h`
+                          dashboardData.summary?.modulesCompleted || 0
                         )}
                       </p>
-                      <p className="text-emerald-600 text-sm">Study Time</p>
-                    </div>
-                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                      <p className="text-emerald-600 text-sm">Modules Completed</p>
+                    </button>
+                    <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='assessments'? null : 'assessments')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='assessments' ? 'bg-orange-100 border-orange-200 shadow' : 'bg-orange-50 border-orange-100 hover:border-orange-200'}`}>
+                      <div className="flex items-center gap-2">
+                        <Award className="text-orange-600" size={20} />
+                        <span className="text-orange-600 font-semibold">Assessments</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-700 mt-1">
+                        {loading ? (
+                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
+                        ) : (
+                          dashboardData.summary?.assessmentsCompleted || 0
+                        )}
+                      </p>
+                      <p className="text-orange-600 text-sm">Assessment Completed</p>
+                    </button>
+                    <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='active'? null : 'active')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='active' ? 'bg-purple-100 border-purple-200 shadow' : 'bg-purple-50 border-purple-100 hover:border-purple-200'}`}>
                       <div className="flex items-center gap-2">
                         <BookOpen className="text-purple-600" size={20} />
                         <span className="text-purple-600 font-semibold">Active</span>
@@ -712,7 +739,94 @@ export function Dashboard() {
                         )}
                       </p>
                       <p className="text-purple-600 text-sm">Courses</p>
-                    </div>
+                    </button>
+                  </div>
+
+                  {/* Detail panel below quick stats */}
+                  <div className={`mt-4 overflow-hidden transition-[max-height,opacity] duration-300 ${selectedSummary ? 'max-h-[480px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    {selectedSummary && (
+                      <div className="rounded-xl border border-gray-200 bg-white p-4">
+                        {selectedSummary === 'completed' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-base font-semibold text-gray-900">Completed Courses</h3>
+                              <button className="text-sm text-blue-600 hover:underline" onClick={()=>setSelectedSummary(null)}>Hide</button>
+                            </div>
+                            <div className="space-y-2 max-h-56 overflow-auto">
+                              {(userCourses.filter(c=>c.isCompleted).slice(0,10)).length === 0 ? (
+                                <p className="text-sm text-gray-600">No completed courses yet.</p>
+                              ) : (
+                                userCourses.filter(c=>c.isCompleted).slice(0,10).map(c => (
+                                  <div key={c.id} className="flex items-center justify-between p-2 rounded border border-gray-200">
+                                    <span className="text-sm font-medium text-gray-900 truncate">{c.title}</span>
+                                    <span className="text-xs text-gray-600">{c.modulesCount} modules</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {selectedSummary === 'modules' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-base font-semibold text-gray-900">Modules Progress</h3>
+                              <button className="text-sm text-blue-600 hover:underline" onClick={()=>setSelectedSummary(null)}>Hide</button>
+                            </div>
+                            <div className="space-y-2 max-h-56 overflow-auto">
+                              {userCourses.length === 0 ? (
+                                <p className="text-sm text-gray-600">No courses available to show module progress.</p>
+                              ) : (
+                                userCourses.slice(0,10).map(c => (
+                                  <div key={c.id} className="p-2 rounded border border-gray-200">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="font-medium text-gray-900 truncate">{c.title}</span>
+                                      <span className="text-gray-600">{c.modulesCount} modules</span>
+                                    </div>
+                                    <div className="mt-2 h-2 rounded bg-gray-100">
+                                      <div className="h-2 rounded bg-emerald-500" style={{ width: `${Math.min(100, c.progress || 0)}%` }}></div>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {selectedSummary === 'assessments' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-base font-semibold text-gray-900">Assessments</h3>
+                              <button className="text-sm text-blue-600 hover:underline" onClick={()=>setSelectedSummary(null)}>Hide</button>
+                            </div>
+                            <p className="text-sm text-gray-600">Assessment tracking is coming soon. Once available, you will see each course's assessment completion status here.</p>
+                          </div>
+                        )}
+                        {selectedSummary === 'active' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-base font-semibold text-gray-900">Active Courses</h3>
+                              <button className="text-sm text-blue-600 hover:underline" onClick={()=>setSelectedSummary(null)}>Hide</button>
+                            </div>
+                            <div className="space-y-2 max-h-56 overflow-auto">
+                              {(userCourses.slice(0,10)).length === 0 ? (
+                                <p className="text-sm text-gray-600">No active courses yet.</p>
+                              ) : (
+                                userCourses.slice(0,10).map(c => (
+                                  <div key={c.id} className="p-2 rounded border border-gray-200">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="font-medium text-gray-900 truncate">{c.title}</span>
+                                      <span className="text-gray-600">{c.modulesCount} modules</span>
+                                    </div>
+                                    <div className="mt-2 h-2 rounded bg-gray-100">
+                                      <div className="h-2 rounded bg-purple-500" style={{ width: `${Math.min(100, c.progress || 0)}%` }}></div>
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
