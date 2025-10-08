@@ -147,15 +147,22 @@ export function CourseView() {
     if (isRecordingCourse(title)) return false; // Don't show Book Smart/Street Smart in recording courses
     
     const t = (title || "").toLowerCase();
+    // More specific matching to avoid catching courses like "Tier 1: Optimizing Your Business Credit Profile"
     return [
-      "become private",
-      "sovereignty 101",
-      "sov 101",
-      "operate private",
-      "business credit",
-      "i want remedy now",
-      "private merchant",
-    ].some((k) => t.includes(k));
+      "become private", // Exact main course
+      "sovereignty 101", // Exact main course
+      "sov 101", // Exact main course
+      "operate private", // Exact main course
+      "business credit", // Only if it's the main "Business Credit" course, not sub-courses
+      "i want remedy now", // Exact main course
+      "private merchant", // Exact main course
+    ].some((k) => {
+      // For "business credit", be more specific to avoid sub-courses like "Tier 1: Optimizing Your Business Credit Profile"
+      if (k === "business credit") {
+        return t.includes("business credit") && !t.includes("tier") && !t.includes("optimizing") && !t.includes("profile");
+      }
+      return t.includes(k);
+    });
   };
 
   // Get recording course id for the matching title
@@ -704,30 +711,47 @@ export function CourseView() {
             <div className="mb-4 space-y-3">
               {/* Book Smart */}
               <div
-                className={`w-full flex items-center justify-between px-6 py-6 rounded-2xl border-2 transition-colors cursor-default select-none ${
-                  viewMode === "book" ? "bg-blue-50 border-blue-300" : "bg-white border-gray-200"
+                className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
+                  viewMode === "book" 
+                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-lg" 
+                    : "bg-white border-gray-200 hover:border-blue-200 hover:shadow-md"
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-600 rounded-xl shadow-md">
-                    <BookOpen className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-lg md:text-xl font-semibold text-gray-900">Book Smart</div>
-                    <div className="text-base md:text-lg text-gray-600">Standard lessons for this course</div>
-                  </div>
-                  <div className="ml-3 hidden sm:flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-[13px] rounded-full border font-semibold transition-all ${
-                      viewMode === 'book'
-                        ? 'bg-white text-blue-700 border-blue-400 ring-2 ring-blue-300/70 shadow-md'
-                        : 'bg-gradient-to-b from-blue-50 to-blue-100 text-blue-800 border-blue-300'
-                    }`}>
-                      <span className={`inline-block w-2 h-2 rounded-full ${viewMode === 'book' ? 'bg-blue-600' : 'bg-blue-500'}`}></span>
-                      Standard
-                    </span>
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg">
+                        <BookOpen className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900">Book Smart</h3>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
+                            viewMode === 'book'
+                              ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${viewMode === 'book' ? 'bg-blue-500' : 'bg-gray-400'}`}></span>
+                            Standard
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mb-4">Standard lessons for this course</p>
+                        
+                        <div className="flex items-center gap-8">
+                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
+                            <BookOpen className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-semibold text-gray-700">{filteredModules.length} modules</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
+                            <Clock className="w-4 h-4 text-blue-600" />
+                            <span className="text-sm font-semibold text-gray-700">{Math.round(filteredModules.reduce((total, module) => total + (parseInt(module.estimated_duration) || 60), 0) / 60 * 10) / 10} hr</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-5 w-5 text-gray-400 mt-1`} />
                   </div>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-gray-300`} />
               </div>
               {
                 filteredModules.length === 0 ? (
@@ -931,30 +955,47 @@ export function CourseView() {
 
               {/* Street Smart */}
               <div
-                className={`w-full flex items-center justify-between px-6 py-6 rounded-2xl border-2 transition-colors cursor-default select-none ${
-                  viewMode === "street" ? "bg-blue-50 border-blue-300" : "bg-white border-gray-200"
+                className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
+                  viewMode === "street" 
+                    ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-300 shadow-lg" 
+                    : "bg-white border-gray-200 hover:border-purple-200 hover:shadow-md"
                 }`}
               >
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-600 rounded-xl shadow-md">
-                    <Play className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-lg md:text-xl font-semibold text-gray-900">Street Smart</div>
-                    <div className="text-base md:text-lg text-gray-600">Recorded lessons for this course</div>
-                  </div>
-                  <div className="ml-3 hidden sm:flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 text-[13px] rounded-full border font-semibold transition-all ${
-                      viewMode === 'street'
-                        ? 'bg-white text-purple-700 border-purple-400 ring-2 ring-purple-300/70 shadow-md'
-                        : 'bg-gradient-to-b from-purple-50 to-purple-100 text-purple-800 border-purple-300'
-                    }`}>
-                      <span className={`inline-block w-2 h-2 rounded-full ${viewMode === 'street' ? 'bg-purple-600' : 'bg-purple-500'}`}></span>
-                      Recorded
-                    </span>
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="p-4 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg">
+                        <Play className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900">Street Smart</h3>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
+                            viewMode === 'street'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${viewMode === 'street' ? 'bg-purple-500' : 'bg-gray-400'}`}></span>
+                            Recorded
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mb-4">Recorded lessons for this course</p>
+                        
+                        <div className="flex items-center gap-8">
+                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                            <BookOpen className="w-4 h-4 text-purple-600" />
+                            <span className="text-sm font-semibold text-gray-700">{streetModules.length} modules</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
+                            <Clock className="w-4 h-4 text-purple-600" />
+                            <span className="text-sm font-semibold text-gray-700">{Math.round(streetModules.reduce((total, module) => total + (parseInt(module.duration) || 60), 0) / 60 * 10) / 10} hr</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-5 w-5 text-gray-400 mt-1`} />
                   </div>
                 </div>
-                <ChevronDown className={`h-5 w-5 text-gray-300`} />
               </div>
               {
             streetLoading ? (
