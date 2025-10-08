@@ -272,11 +272,9 @@ function ModuleAssessmentsView() {
       <main className="flex-1">
         <div className="container py-8 max-w-7xl">
                      <div className="flex items-center gap-4 mb-8">
-             <Button variant="outline" size="sm" asChild className="border-gray-300 hover:bg-gray-100">
-               <Link to={`/dashboard/courses/${courseId}/modules`} className="flex items-center gap-1">
-                 <ChevronLeft size={16} />
-                 <span>Back to Module</span>
-               </Link>
+             <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="border-gray-300 hover:bg-gray-100 flex items-center gap-1">
+               <ChevronLeft size={16} />
+               <span>Back</span>
              </Button>
              <div className="flex-1">
                <h1 className="text-2xl font-bold text-gray-900">{module?.title || 'Module Assessments'}</h1>

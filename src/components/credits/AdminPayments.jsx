@@ -1281,118 +1281,118 @@ const AdminPayments = () => {
                     </tr>
                   ) : (
                     pagedUsers.map((u)=>{
-                      const checked = selectedUserIds.includes(u.id);
-                      return (
-                        <tr key={u.id} className="border-t hover:bg-gray-50">
-                          <td className="px-3 py-2">
-                            <input type="checkbox" checked={checked} onChange={(e)=>{
-                              setSelectedUserIds(prev => e.target.checked ? [...new Set([...prev, u.id])] : prev.filter(id=>id!==u.id));
-                            }} />
-                          </td>
-                          <td className="px-3 py-2 font-medium text-gray-900 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.name}</td>
-                          <td className="px-3 py-2 text-gray-700 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.email}</td>
-                          <td className="px-3 py-2">
-                            {(() => {
-                              const value = (localMembership[u.id] || u.membership || "active").toString().toLowerCase();
-                              return (
-                                <select
-                                  value={value}
-                                  onChange={async (e) => {
-                                    const v = e.target.value;
-                                    const userId = u.id;
-                                    
-                                    // Update local state immediately
-                                    setLocalMembership(prev => ({ ...prev, [userId]: v }));
-                                    setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: v } : r));
-                                    
-                                    // Call backend API when setting to "not active" (cancelled)
-                                    if (v === "cancelled") {
-                                      try {
-                                        await api.patch(`/payment-order/membership/${userId}/cancel`, {}, { withCredentials: true });
-                                        console.log(`Membership cancelled for user ${userId}`);
-                                        // Refresh current user's membership status if this is the current user
-                                        try { await refreshMembership?.(); } catch {}
-                                      } catch (err) {
-                                        console.error('Failed to cancel membership:', err);
-                                        // Revert local state on error
-                                        setLocalMembership(prev => ({ ...prev, [userId]: "active" }));
-                                        setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: "active" } : r));
-                                      }
-                                    } else if (v === "active") {
-                                      // Use subscription API to activate membership
-                                      try {
-                                        const subscriptionData = {
-                                          plan_type: "MONTHLY",
-                                          total_amount: 69,
-                                          type: "MEMBERSHIP"
-                                        };
-                                        console.log(`Activating membership for user ${userId} with data:`, subscriptionData);
-                                        console.log(`Making POST request to: /payment-order/membership/subscribe/${userId}`);
-                                        
-                                        const response = await api.post(`/payment-order/membership/subscribe/${userId}`, subscriptionData, { withCredentials: true });
-                                        console.log(`Membership activation response:`, response?.data);
-                                        console.log(`Response status:`, response?.status);
-                                        console.log(`Full response object:`, response);
-                                        
-                                        // Refresh current user's membership status if this is the current user
-                                        try { await refreshMembership?.(); } catch {}
-                                        
-                                        // Refresh the users list to show updated status
-                                        setTimeout(async () => {
-                                          // Reload users with fresh membership data
-                                          try {
-                                            const fetched = await fetchAllUsersAdmin();
-                                            const usersWithMembership = await Promise.all(
-                                              fetched.map(async (u) => {
-                                                const userId = u.id || u.user_id || u._id;
-                                                let membershipStatus = "cancelled";
-                                                
-                                                try {
-                                                  const membershipRes = await api.get(`/payment-order/membership/status/${userId}`, { withCredentials: true });
-                                                  const membershipData = membershipRes?.data?.data;
-                                                  if (membershipData && membershipData !== null) {
-                                                    membershipStatus = membershipData?.status?.toLowerCase() || "cancelled";
-                                                  }
-                                                } catch (err) {
-                                                  console.warn(`Failed to fetch membership for user ${userId}:`, err);
-                                                }
-                                                
-                                                return {
-                                                  id: userId,
-                                                  name: `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() || u.name || u.username || u.email || "Unknown",
-                                                  email: u.email || u.user_email || "",
-                                                  membership: membershipStatus,
-                                                  credits: Number(u.total_credits) || 0,
-                                                };
-                                              })
-                                            );
-                                            setRealUsers(usersWithMembership);
-                                          } catch (err) {
-                                            console.error('Failed to refresh users:', err);
-                                          }
-                                        }, 1000);
-                                      } catch (err) {
-                                        console.error('Failed to activate membership:', err?.response?.data || err?.message);
-                                        console.error('Full error object:', err);
-                                        console.error('Error status:', err?.response?.status);
-                                        console.error('Error config:', err?.config);
-                                        // Don't revert local state - keep it as "active" to show the attempt
-                                        // The user can manually refresh to see the real status
-                                      }
+                    const checked = selectedUserIds.includes(u.id);
+                    return (
+                      <tr key={u.id} className="border-t hover:bg-gray-50">
+                        <td className="px-3 py-2">
+                          <input type="checkbox" checked={checked} onChange={(e)=>{
+                            setSelectedUserIds(prev => e.target.checked ? [...new Set([...prev, u.id])] : prev.filter(id=>id!==u.id));
+                          }} />
+                        </td>
+                        <td className="px-3 py-2 font-medium text-gray-900 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.name}</td>
+                        <td className="px-3 py-2 text-gray-700 cursor-pointer" onClick={()=>setUserDetailModal({ open: true, user: u })}>{u.email}</td>
+                        <td className="px-3 py-2">
+                          {(() => {
+                            const value = (localMembership[u.id] || u.membership || "active").toString().toLowerCase();
+                            return (
+                              <select
+                                value={value}
+                                onChange={async (e) => {
+                                  const v = e.target.value;
+                                  const userId = u.id;
+                                  
+                                  // Update local state immediately
+                                  setLocalMembership(prev => ({ ...prev, [userId]: v }));
+                                  setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: v } : r));
+                                  
+                                  // Call backend API when setting to "not active" (cancelled)
+                                  if (v === "cancelled") {
+                                    try {
+                                      await api.patch(`/payment-order/membership/${userId}/cancel`, {}, { withCredentials: true });
+                                      console.log(`Membership cancelled for user ${userId}`);
+                                      // Refresh current user's membership status if this is the current user
+                                      try { await refreshMembership?.(); } catch {}
+                                    } catch (err) {
+                                      console.error('Failed to cancel membership:', err);
+                                      // Revert local state on error
+                                      setLocalMembership(prev => ({ ...prev, [userId]: "active" }));
+                                      setRealUsers(prev => prev.map(r => r.id === userId ? { ...r, membership: "active" } : r));
                                     }
-                                  }}
-                                  className={`rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200 ${membershipColorClasses(value)}`}
-                                >
-                                  <option value="active">active</option>
-                                  <option value="cancelled">not active</option>
-                                </select>
-                              );
-                            })()}
-                          </td>
-                          <td className="px-3 py-2 text-gray-700">{u.credits}</td>
-                          <td className="px-3 py-2 text-gray-400">—</td>
-                        </tr>
-                      );
+                                  } else if (v === "active") {
+                                    // Use subscription API to activate membership
+                                    try {
+                                      const subscriptionData = {
+                                        plan_type: "MONTHLY",
+                                        total_amount: 69,
+                                        type: "MEMBERSHIP"
+                                      };
+                                      console.log(`Activating membership for user ${userId} with data:`, subscriptionData);
+                                      console.log(`Making POST request to: /payment-order/membership/subscribe/${userId}`);
+                                      
+                                      const response = await api.post(`/payment-order/membership/subscribe/${userId}`, subscriptionData, { withCredentials: true });
+                                      console.log(`Membership activation response:`, response?.data);
+                                      console.log(`Response status:`, response?.status);
+                                      console.log(`Full response object:`, response);
+                                      
+                                      // Refresh current user's membership status if this is the current user
+                                      try { await refreshMembership?.(); } catch {}
+                                      
+                                      // Refresh the users list to show updated status
+                                      setTimeout(async () => {
+                                        // Reload users with fresh membership data
+                                        try {
+                                          const fetched = await fetchAllUsersAdmin();
+                                          const usersWithMembership = await Promise.all(
+                                            fetched.map(async (u) => {
+                                              const userId = u.id || u.user_id || u._id;
+                                              let membershipStatus = "cancelled";
+                                              
+                                              try {
+                                                const membershipRes = await api.get(`/payment-order/membership/status/${userId}`, { withCredentials: true });
+                                                const membershipData = membershipRes?.data?.data;
+                                                if (membershipData && membershipData !== null) {
+                                                  membershipStatus = membershipData?.status?.toLowerCase() || "cancelled";
+                                                }
+                                              } catch (err) {
+                                                console.warn(`Failed to fetch membership for user ${userId}:`, err);
+                                              }
+                                              
+                                              return {
+                                                id: userId,
+                                                name: `${u.first_name || u.firstName || u.given_name || ""} ${u.last_name || u.lastName || u.family_name || ""}`.trim() || u.name || u.username || u.email || "Unknown",
+                                                email: u.email || u.user_email || "",
+                                                membership: membershipStatus,
+                                                credits: Number(u.total_credits) || 0,
+                                              };
+                                            })
+                                          );
+                                          setRealUsers(usersWithMembership);
+                                        } catch (err) {
+                                          console.error('Failed to refresh users:', err);
+                                        }
+                                      }, 1000);
+                                    } catch (err) {
+                                      console.error('Failed to activate membership:', err?.response?.data || err?.message);
+                                      console.error('Full error object:', err);
+                                      console.error('Error status:', err?.response?.status);
+                                      console.error('Error config:', err?.config);
+                                      // Don't revert local state - keep it as "active" to show the attempt
+                                      // The user can manually refresh to see the real status
+                                    }
+                                  }
+                                }}
+                                className={`rounded-md border px-2 py-1 text-xs capitalize focus:outline-none focus:ring-2 focus:ring-blue-200 ${membershipColorClasses(value)}`}
+                              >
+                                <option value="active">active</option>
+                                <option value="cancelled">not active</option>
+                              </select>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-3 py-2 text-gray-700">{u.credits}</td>
+                        <td className="px-3 py-2 text-gray-400">—</td>
+                      </tr>
+                    );
                     })
                   )}
                 </tbody>
