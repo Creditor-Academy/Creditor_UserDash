@@ -136,6 +136,8 @@ const CatelogCourses = () => {
   const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
   const [purchaseNotice, setPurchaseNotice] = useState("");
   const [isPurchasing, setIsPurchasing] = useState(false);
+  // Toggle for long description inside the buy modal
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
   
   // Unlocked modules state for checking individual lesson purchases
   const [unlockedModules, setUnlockedModules] = useState([]);
@@ -911,7 +913,19 @@ const CatelogCourses = () => {
             
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="text-lg font-semibold text-gray-900 mb-2">{selectedCourseToBuy.title}</div>
-              <div className="text-sm text-gray-600 mb-3">{selectedCourseToBuy.description || "Complete course with multiple modules"}</div>
+              {/* Collapsible description with View More/Less */}
+              <div className={`text-sm text-gray-600 mb-2 ${isDescExpanded ? '' : 'line-clamp-3'}`}>
+                {selectedCourseToBuy.description || "Complete course with multiple modules"}
+              </div>
+              {selectedCourseToBuy?.description && selectedCourseToBuy.description.length > 140 && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescExpanded(v => !v)}
+                  className="text-blue-600 hover:text-blue-700 text-xs font-semibold"
+                >
+                  {isDescExpanded ? 'View less' : 'View more'}
+                </button>
+              )}
               
               {/* Course Details */}
               <div className="grid grid-cols-2 gap-4 mb-3">

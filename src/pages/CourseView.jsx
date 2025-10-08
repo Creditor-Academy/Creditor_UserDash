@@ -712,9 +712,9 @@ export function CourseView() {
               {/* Book Smart */}
               <div
                 className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
-                  viewMode === "book" 
-                    ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-lg" 
-                    : "bg-white border-gray-200 hover:border-blue-200 hover:shadow-md"
+                  viewMode === "book"
+                    ? "bg-blue-100 border-blue-300 shadow-lg"
+                    : "bg-blue-50 border-blue-200 hover:shadow-md"
                 }`}
               >
                 <div className="p-6">
@@ -956,9 +956,9 @@ export function CourseView() {
               {/* Street Smart */}
               <div
                 className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
-                  viewMode === "street" 
-                    ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-300 shadow-lg" 
-                    : "bg-white border-gray-200 hover:border-purple-200 hover:shadow-md"
+                  viewMode === "street"
+                    ? "bg-purple-100 border-purple-300 shadow-lg"
+                    : "bg-purple-50 border-purple-200 hover:shadow-md"
                 }`}
               >
                 <div className="p-6">
