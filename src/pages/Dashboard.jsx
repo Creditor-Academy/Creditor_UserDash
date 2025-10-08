@@ -159,69 +159,41 @@ export function Dashboard() {
         throw new Error('Unable to get user ID. Please log in again.');
       }
       
-      // Use the working endpoints from your backend
+      // Use the new user progress endpoint from your backend
       try {
-        // console.log('🔍 Fetching user courses from:', `${API_BASE}/api/course/getCourses`);
-        // console.log('👤 User ID:', currentUserId);
-        
-        // Get user courses via interceptor-enabled client (handles validation + refresh)
         const { api } = await import('@/services/apiClient');
-        const userCoursesResponse = await api.get('/api/course/getCourses');
-        
-        if (userCoursesResponse.data && userCoursesResponse.data.data) {
-          const courses = userCoursesResponse.data.data;
-          
-          // Calculate basic dashboard stats from available data
-          const activeCourses = courses.length;
-          const completedCourses = 0; // Will be calculated when progress tracking is implemented
-          const totalLearningHours = 0; // Will be calculated when time tracking is implemented
-          const averageProgress = 0; // Will be calculated when progress tracking is implemented
-          const modulesCompleted = 0; // Will be calculated when module progress tracking is implemented
-          const assessmentsCompleted = 0; // Will be calculated when assessment tracking is implemented
-          
-                      const newDashboardData = {
-              summary: {
-                activeCourses,
-                completedCourses,
-                totalLearningHours,
-                averageProgress,
-                modulesCompleted,
-                assessmentsCompleted
-              },
-              weeklyPerformance: {
-                studyHours: 0, // Will be calculated when time tracking is implemented
-                lessonsCompleted: activeCourses
-              },
-              monthlyProgressChart: [],
-              learningActivities: []
-            };
-            
-            setDashboardData(newDashboardData);
-        } else {
-          // No courses found, set default values
-          setDashboardData({
-            summary: {
-              activeCourses: 0,
-              completedCourses: 0,
-              totalLearningHours: 0,
-              averageProgress: 0,
-              modulesCompleted: 0,
-              assessmentsCompleted: 0
-            },
-            weeklyPerformance: {
-              studyHours: 0,
-              lessonsCompleted: 0
-            },
-            monthlyProgressChart: [],
-            learningActivities: []
-          });
-        }
-      } catch (coursesError) {
-        console.error('❌ Failed to fetch user courses:', coursesError);
+        const progressResponse = await api.get('/api/user/dashboard/userProgress');
+        const progressData = progressResponse?.data?.data || {};
+
+        const activeCourses = Number(progressData.allActiveCoursesCount) || 0;
+        const completedCourses = Number(progressData.completedCourseCount) || 0;
+        const modulesCompleted = Number(progressData.modulesCompletedCount) || 0;
+        const assessmentsCompleted = Number(progressData.quizCompletedCount) || 0;
+
+        const newDashboardData = {
+          summary: {
+            activeCourses,
+            completedCourses,
+            totalLearningHours: 0, // Not provided by backend yet
+            averageProgress: 0, // Not provided by backend yet
+            modulesCompleted,
+            assessmentsCompleted
+          },
+          weeklyPerformance: {
+            studyHours: 0, // Placeholder until backend provides
+            lessonsCompleted: activeCourses
+          },
+          monthlyProgressChart: [],
+          learningActivities: []
+        };
+
+        setDashboardData(newDashboardData);
+      } catch (progressError) {
+        console.error('❌ Failed to fetch user progress:', progressError);
         console.error('❌ Error details:', {
-          message: coursesError.message,
-          status: coursesError.response?.status,
-          data: coursesError.response?.data
+          message: progressError.message,
+          status: progressError.response?.status,
+          data: progressError.response?.data
         });
         // Set default values if endpoint fails
         setDashboardData({
@@ -702,7 +674,7 @@ export function Dashboard() {
                     <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='assessments'? null : 'assessments')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='assessments' ? 'bg-orange-100 border-orange-200 shadow' : 'bg-orange-50 border-orange-100 hover:border-orange-200'}`}>
                       <div className="flex items-center gap-2">
                         <Award className="text-orange-600" size={20} />
-                        <span className="text-orange-600 font-semibold">Assessments</span>
+                        <span className="text-orange-600 font-semibold">Quizs</span>
                       </div>
                       <p className="text-2xl font-bold text-orange-700 mt-1">
                         {loading ? (
@@ -711,7 +683,7 @@ export function Dashboard() {
                           dashboardData.summary?.assessmentsCompleted || 0
                         )}
                       </p>
-                      <p className="text-orange-600 text-sm">Assessment Completed</p>
+                      <p className="text-orange-600 text-sm">Quiz Completed</p>
                     </button>
                     <button type="button" onClick={()=>setSelectedSummary(prev=> prev==='active'? null : 'active')} className={`text-left rounded-xl p-4 border transition ${selectedSummary==='active' ? 'bg-purple-100 border-purple-200 shadow' : 'bg-purple-50 border-purple-100 hover:border-purple-200'}`}>
                       <div className="flex items-center gap-2">

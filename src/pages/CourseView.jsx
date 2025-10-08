@@ -82,6 +82,8 @@ export function CourseView() {
   const [confirmUnlock, setConfirmUnlock] = useState({ open: false, module: null });
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const { balance, unlockContent, refreshBalance } = useCredits();
+  // Track locally completed module ids
+  const [completedModuleIds, setCompletedModuleIds] = useState(new Set());
   
   // Course purchase states
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState(false);
@@ -754,6 +756,26 @@ export function CourseView() {
                                    Buy credits
                                  </Button>
                                )}
+                             </div>
+                           )}
+                           {/* Mark as Complete - shown on all cards until clicked */}
+                           {!completedModuleIds.has(String(module.id)) ? (
+                             <Button
+                               variant="secondary"
+                               className="w-full"
+                               onClick={() => {
+                                 setCompletedModuleIds(prev => {
+                                   const next = new Set(prev);
+                                   next.add(String(module.id));
+                                   return next;
+                                 });
+                               }}
+                             >
+                               Mark as Complete
+                             </Button>
+                           ) : (
+                             <div className="w-full flex items-center justify-center">
+                               <Badge className="px-3 py-1">Completed</Badge>
                              </div>
                            )}
                         </CardFooter>
