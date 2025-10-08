@@ -1033,37 +1033,43 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           </div>
                           
                           {/* Modules under this course */}
-                          <div className={`ml-4 space-y-2 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100 overflow-y-auto border-l-2 border-gray-200 pl-3 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                          <div className={`ml-6 space-y-4 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100 overflow-y-auto border-l-2 border-blue-200 pl-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
                             {isExpanded && group.items.length > 0 && (
-                              <div className="text-[11px] text-gray-500 px-1 select-none mb-2">Purchased ({group.items.length})</div>
+                              <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                <BookOpenCheck className="h-4 w-4" />
+                                Purchased ({group.items.length})
+                              </div>
                             )}
                             {isExpanded && group.items.length === 0 && (
-                              <div className="text-[11px] text-gray-500 px-1 select-none mb-2">No purchased modules</div>
+                              <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                                <BookOpenCheck className="h-4 w-4" />
+                                No purchased modules
+                              </div>
                             )}
                             {isExpanded && group.items.map((module, index) => (
                         <div 
                           key={module.id || index} 
-                                className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                                className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
                         >
-                                <div className="p-3">
-                            <div className="flex items-start gap-3">
-                                    <div className="p-1.5 bg-gradient-to-r from-green-500 to-emerald-500 rounded-md group-hover:scale-110 transition-transform duration-200">
-                                      <BookOpenCheck className="h-3 w-3 text-white" />
+                                <div className="p-4">
+                            <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-200">
+                                      <BookOpenCheck className="h-4 w-4 text-white" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-medium text-gray-900 group-hover:text-green-700 transition-colors duration-200 truncate mb-1">
+                                      <h4 className="text-base font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 mb-2">
                                   {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
                                       </h4>
-                                      <div className="flex items-center gap-4 text-[11px] text-gray-500">
+                                      <div className="flex items-center gap-4 text-sm text-gray-500">
                                   {formatPrice(module.price) && (
-                                    <div className="flex items-center gap-1">
-                                      <span>{formatPrice(module.price)}</span>
+                                    <div className="flex items-center gap-1 font-medium">
+                                      <span className="text-green-600">{formatPrice(module.price)}</span>
                                     </div>
                                   )}
                                 </div>
                               </div>
                               <div className="flex-shrink-0">
-                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-[10px]">
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs font-semibold px-3 py-1">
                                   Purchased
                                 </Badge>
                               </div>
@@ -1072,35 +1078,38 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         </div>
                             ))}
                             {isExpanded && showNotPurchased && (
-                              <div className="pt-2 mt-1 border-t border-gray-100" />
+                              <div className="pt-4 mt-2 border-t border-gray-200" />
                             )}
                             {isExpanded && showNotPurchased && (
-                              <div className="text-[11px] text-gray-500 px-1 select-none mb-2 mt-4">Not Purchased</div>
+                              <div className="flex items-center gap-2 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                                <BookOpenCheck className="h-4 w-4" />
+                                Not Purchased ({notPurchased.length})
+                              </div>
                             )}
                             {isExpanded && showNotPurchased && notPurchased.map((module, index) => (
                               <div 
                                 key={(module.id || module.module?.id || `np-${index}`)} 
-                                className="group relative overflow-hidden bg-white rounded-xl border border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+                                className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
                               >
-                                <div className="p-3">
-                                  <div className="flex items-start gap-3">
-                                    <div className="p-1.5 bg-gray-200 rounded-md">
-                                      <BookOpenCheck className="h-3 w-3 text-gray-600" />
+                                <div className="p-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-gray-200 rounded-xl shadow-sm">
+                                      <BookOpenCheck className="h-4 w-4 text-gray-600" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-medium text-gray-700 truncate mb-1">
+                                      <h4 className="text-base font-semibold text-gray-700 mb-2">
                                         {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
                                       </h4>
-                                      <div className="flex items-center gap-4 text-[11px] text-gray-500">
+                                      <div className="flex items-center gap-4 text-sm text-gray-500">
                                         {formatPrice(module.price) && (
-                                          <div className="flex items-center gap-1">
-                                            <span>{formatPrice(module.price)}</span>
+                                          <div className="flex items-center gap-1 font-medium">
+                                            <span className="text-gray-600">{formatPrice(module.price)}</span>
                                           </div>
                                         )}
                                       </div>
                                     </div>
                                     <div className="flex-shrink-0">
-                                      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[10px]">
+                                      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs font-semibold px-3 py-1">
                                         Not Purchased
                                       </Badge>
                                     </div>
