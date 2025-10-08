@@ -119,6 +119,22 @@ export function CourseView() {
     initUnlocked();
   }, [userProfile?.id]);
 
+  // Initialize completed modules from backend data
+  useEffect(() => {
+    if (modules && modules.length > 0) {
+      const completedIds = new Set();
+      modules.forEach(module => {
+        if (module.user_module_progress && 
+            Array.isArray(module.user_module_progress) && 
+            module.user_module_progress.length > 0 &&
+            module.user_module_progress[0].completed === true) {
+          completedIds.add(String(module.id));
+        }
+      });
+      setCompletedModuleIds(completedIds);
+    }
+  }, [modules]);
+
   const getStableRandomPrice = (moduleObj) => {
     const input = String(moduleObj?.id || "");
     let hash = 0;
