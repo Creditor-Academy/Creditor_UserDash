@@ -155,12 +155,38 @@ export async function invitePrivateGroupMembers(groupId, userIds, expiresInHours
 
 export async function getInvitationByToken(token) {
   try {
-    const response = await api.get(`/api/private-groups/invite/${token}`, {
+    const response = await api.get(`/api/private-groups/invitations/${token}`, {
       withCredentials: true,
     });
     return response?.data;
   } catch (error) {
     console.error('privateGroupService.getInvitationByToken error:', error);
+    throw error;
+  }
+}
+
+// Accept private group invitation by token
+export async function acceptPrivateGroupInvitation(token) {
+  try {
+    const response = await api.post(`/api/private-groups/invitations/${token}/accept`, {}, {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.acceptPrivateGroupInvitation error:', error);
+    throw error;
+  }
+}
+
+// Reject private group invitation by token
+export async function rejectPrivateGroupInvitation(token) {
+  try {
+    const response = await api.post(`/api/private-groups/invitations/${token}/reject`, {}, {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.rejectPrivateGroupInvitation error:', error);
     throw error;
   }
 }

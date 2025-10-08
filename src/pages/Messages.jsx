@@ -3,7 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft, Users, Crown, X, ChevronRight } from "lucide-react";
+import { MessageCircle, Search, Send, Smile, Paperclip, Mic, Plus, Trash2, MoreVertical, Clock, Check, CheckCheck, Loader2, ExternalLink, Globe, ImageIcon, ArrowLeft, Users, Crown, X, ChevronRight, Edit3 } from "lucide-react";
 import CreateGroupButton from "@/components/messages/CreateGroupButton";
 import GroupInfoModal from "@/components/messages/GroupInfoModal";
 import { useState, useRef, useEffect } from "react";
@@ -39,7 +39,9 @@ import {
   addPrivateGroupMembers,
   getGroupMembers,
   getPrivateGroupMessages,
-  sendPrivateGroupMessage
+  sendPrivateGroupMessage,
+  deletePrivateGroupMessage,
+  editPrivateGroupMessage
 } from "@/services/privateGroupService";
 import getSocket from "@/services/socketClient";
 import api from "@/services/apiClient";
@@ -125,6 +127,8 @@ function Messages() {
   const [startingUserId, setStartingUserId] = useState(null);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState("");
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const location = useLocation();
@@ -1269,7 +1273,12 @@ function Messages() {
     }
     try {
       setDeletingMessageId(deleteMessageId);
-      await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
+      const selectedFriendData = friends.find(f => f.id === selectedFriend);
+      if (selectedFriendData?.isPrivateGroup) {
+        await deletePrivateGroupMessage(conversationId, deleteMessageId);
+      } else {
+        await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
+      }
       // Notify success
       try {
         toast({ title: 'Message Deleted Successfully', duration: 1500, className: 'text-xs py-1 px-2' });
@@ -1291,6 +1300,46 @@ function Messages() {
   const cancelDeleteMessage = () => {
     setShowDeleteDialog(false);
     setDeleteMessageId(null);
+  };
+
+  const handleEditMessage = (messageId, currentText) => {
+    setEditingMessageId(messageId);
+    setEditingText(currentText);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !editingText.trim() || !conversationId) {
+      setEditingMessageId(null);
+      setEditingText("");
+      return;
+    }
+
+    try {
+      const selectedFriendData = friends.find(f => f.id === selectedFriend);
+      if (selectedFriendData?.isPrivateGroup) {
+        await editPrivateGroupMessage(conversationId, editingMessageId, { content: editingText.trim() });
+      }
+      
+      // Update the message in the UI
+      setMessages(prev => prev.map(msg => 
+        String(msg.id) === String(editingMessageId) 
+          ? { ...msg, text: editingText.trim() }
+          : msg
+      ));
+      
+      toast({ title: 'Message updated successfully', duration: 1500, className: 'text-xs py-1 px-2' });
+    } catch (err) {
+      console.warn('Failed to edit message', err);
+      toast({ title: 'Failed to update message', variant: 'destructive', duration: 1500, className: 'text-xs py-1 px-2' });
+    } finally {
+      setEditingMessageId(null);
+      setEditingText("");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
   };
 
   const handleNewChatUserSelect = (userId) => {
@@ -1931,7 +1980,43 @@ function Messages() {
                                 : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
                             } rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl px-1 sm:px-1.5 md:px-2 lg:px-2.5 xl:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2 xl:py-2.5 shadow-sm backdrop-blur-sm`}
                           >
-                            <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            {editingMessageId === message.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] bg-white/10 border-white/20 text-white placeholder-white/70"
+                                  placeholder="Edit message..."
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleSaveEdit();
+                                    } else if (e.key === 'Escape') {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    onClick={handleSaveEdit}
+                                    className="h-5 px-2 text-[8px] sm:text-[9px] bg-white/20 hover:bg-white/30 text-white"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelEdit}
+                                    className="h-5 px-2 text-[8px] sm:text-[9px] border-white/20 text-white hover:bg-white/10"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            )}
                             {message.text && extractUrls(message.text).length > 0 && (
                               <div className="mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2 xl:mt-3">
                                 {extractUrls(message.text).map((u, i) => (
@@ -1964,8 +2049,30 @@ function Messages() {
                                     )}
                                   </div>
                                 )}
-                                {/* Delete button - only show for own messages */}
-                                {message.senderId === 0 && (
+                                {/* Edit and Delete buttons - only show for own messages in private groups */}
+                                {message.senderId === 0 && friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
+                                  <>
+                                    {/* Edit button - disabled until backend implements PUT /api/private-groups/:groupId/messages/:messageId */}
+                                    {/* <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                      onClick={() => handleEditMessage(message.id, message.text)}
+                                    >
+                                      <Edit3 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
+                                    </Button> */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 lg:h-6 lg:w-6 p-0 hover:bg-white/20 text-white hover:scale-110"
+                                      onClick={() => handleDeleteMessage(message.id)}
+                                    >
+                                      <Trash2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 md:h-2.5 md:w-2.5 lg:h-3 lg:w-3" />
+                                    </Button>
+                                  </>
+                                )}
+                                {/* Delete button for non-private groups */}
+                                {message.senderId === 0 && !friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
                                   <Button
                                     variant="ghost"
                                     size="sm"

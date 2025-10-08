@@ -13,9 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { markAllNotificationsRead } from "@/services/notificationService";
+import getSocket from "@/services/socketClient";
+import { getInvitationByToken, acceptPrivateGroupInvitation, rejectPrivateGroupInvitation } from "@/services/privateGroupService";
 
 export function NotificationModal({ open, onOpenChange, onNotificationUpdate, notificationsFromApi = [], onMarkedAllRead }) {
   const [notifications, setNotifications] = useState([]);
+  const [chatInvites, setChatInvites] = useState([]);
 
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
@@ -55,10 +58,57 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
   // Initialize unread count when modal opens
   useEffect(() => {
     if (open && onNotificationUpdate) {
-      const unreadCount = notifications.filter(n => !n.read).length;
+      const unreadCount = notifications.filter(n => !n.read).length + chatInvites.filter(c => !c.read).length;
       onNotificationUpdate(unreadCount);
     }
-  }, [open, notifications, onNotificationUpdate]);
+  }, [open, notifications, chatInvites, onNotificationUpdate]);
+
+  // Socket listener for private group invitations
+  useEffect(() => {
+    const socket = getSocket();
+    const currentUserId = String(localStorage.getItem('userId') || '');
+
+    const onInvitationSent = async (data) => {
+      try {
+        const invites = Array.isArray(data?.invites) ? data.invites : [];
+        const match = invites.find((i) => String(i.invitee_id) === currentUserId || String(i.inviteeId) === currentUserId);
+        if (!match || !match.token) return;
+
+        // Fetch invite details for rich card
+        const detailRes = await getInvitationByToken(match.token);
+        const detail = detailRes?.data || detailRes || {};
+        const group = detail.group || {};
+        const inviter = detail.inviter || {};
+
+        const newInvite = {
+          id: String(match.token),
+          type: 'chat-invitation',
+          title: group.name || 'Private Group',
+          description: `You’ve been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+          time: new Date().toLocaleString(),
+          token: match.token,
+          groupId: group.id,
+          thumbnail: group.thumbnail || group.image || null,
+          inviterName: [inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'Admin',
+          read: false,
+        };
+
+        setChatInvites((prev) => {
+          const exists = prev.some((c) => String(c.id) === String(newInvite.id));
+          return exists ? prev : [newInvite, ...prev];
+        });
+
+        toast.info('New chat invitation received');
+      } catch (e) {
+        console.warn('Failed processing privateGroupInvitationSent', e);
+      }
+    };
+
+    socket.on('privateGroupInvitationSent', onInvitationSent);
+    return () => {
+      socket.off('privateGroupInvitationSent', onInvitationSent);
+    };
+  }, []);
 
   const markAsRead = (id) => {
     setNotifications(notifications.map(n => 
@@ -76,9 +126,34 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
       console.warn('Mark-all API failed or unavailable; applying frontend fallback.');
     }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setChatInvites(prev => prev.map(c => ({ ...c, read: true })));
     if (onMarkedAllRead) onMarkedAllRead();
     toast.success("All notifications marked as read");
     if (onNotificationUpdate) onNotificationUpdate(0);
+  };
+
+  const acceptInvite = async (token, idToRemove) => {
+    try {
+      await acceptPrivateGroupInvitation(token);
+      toast.success('You joined the group successfully.');
+      setChatInvites(prev => prev.filter(c => String(c.id) !== String(idToRemove)));
+      // Optional navigation to messages view (adjust if you have a different route)
+      // window.location.href = `/messages`;
+    } catch (e) {
+      console.warn('Accept invitation failed', e);
+      toast.error(e?.response?.data?.message || 'Failed to accept invitation');
+    }
+  };
+
+  const rejectInvite = async (token, idToRemove) => {
+    try {
+      await rejectPrivateGroupInvitation(token);
+      toast.success('Invitation rejected.');
+      setChatInvites(prev => prev.filter(c => String(c.id) !== String(idToRemove)));
+    } catch (e) {
+      console.warn('Reject invitation failed', e);
+      toast.error(e?.response?.data?.message || 'Failed to reject invitation');
+    }
   };
 
   return (
@@ -93,7 +168,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         
         <Tabs defaultValue="all" className="w-full flex flex-col flex-1 min-h-0">
           <div className="px-4 pb-2 border-b border-gray-100 flex-shrink-0">
-            <TabsList className="grid w-full grid-cols-4 h-8 bg-gray-100 rounded-lg p-1">
+            <TabsList className="grid w-full grid-cols-5 h-8 bg-gray-100 rounded-lg p-1">
               <TabsTrigger 
                 value="all" 
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
@@ -111,6 +186,12 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
               >
                 Payment
+              </TabsTrigger>
+              <TabsTrigger 
+                value="chats" 
+                className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
+              >
+                Chats
               </TabsTrigger>
               <TabsTrigger 
                 value="settings" 
@@ -259,6 +340,36 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 </div>
               )}
 
+            </TabsContent>
+
+            {/* Chats tab - private group invitations */}
+            <TabsContent value="chats" className="space-y-2 mt-0">
+              {chatInvites.length > 0 ? (
+                chatInvites.map((c) => (
+                  <div key={c.id} className={`p-3 rounded-lg ${c.read ? 'bg-gray-50' : 'bg-blue-50'} border border-gray-100`}>
+                    <div className="flex items-start gap-3">
+                      {c.thumbnail ? (
+                        <img src={c.thumbnail} alt={c.title} className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-200 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 text-xs">{c.title}</h4>
+                        <p className="text-gray-700 text-xs mt-1">You’ve been invited to join {c.title} by {c.inviterName}</p>
+                        <p className="text-blue-600 text-[10px] mt-1">{c.time}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button onClick={() => acceptInvite(c.token, c.id)} variant="default" className="h-6 px-2 py-1 text-xs">Accept</Button>
+                        <Button onClick={() => rejectInvite(c.token, c.id)} variant="outline" className="h-6 px-2 py-1 text-xs">Reject</Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500 text-xs">No chat notifications yet</p>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="settings" className="space-y-3 mt-0">
