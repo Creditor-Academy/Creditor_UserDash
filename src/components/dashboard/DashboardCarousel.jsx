@@ -8,9 +8,17 @@ import {
 } from "@/components/ui/carousel";
 
 const carouselItems = [
-  
+  // {
+  //   id: 0,
+  //   type: "video",
+  //   videoUrl: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/This+Saturday.mp4",
+  //   title: "This Saturday",
+  //   course: "Upcoming Event",
+  //   order: 1
+  // },
   {
     id: 1,
+    type: "image",
     image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/%2469Month!+(6).png",
     course: "04th Oct",
     
@@ -21,16 +29,35 @@ export function DashboardCarousel() {
   const nextBtnRef = useRef(null);
   const prevBtnRef = useRef(null);
   const carouselApiRef = useRef(null);
+  const intervalRef = useRef(null);
+  const videoRef = useRef(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
+  const startAutoAdvance = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(() => {
       if (nextBtnRef.current) {
         nextBtnRef.current.click();
       }
     }, 5000);
+  };
 
-    return () => clearInterval(interval);
+  const stopAutoAdvance = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    startAutoAdvance();
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
 
@@ -59,7 +86,15 @@ export function DashboardCarousel() {
           carouselApiRef.current = api;
           if (api) {
             api.on('select', () => {
-              setCurrentSlide(api.selectedScrollSnap());
+              const newSlide = api.selectedScrollSnap();
+              setCurrentSlide(newSlide);
+              
+              // Check if current slide is a video and restart it
+              const currentItem = carouselItems[newSlide];
+              if (currentItem && currentItem.type === "video" && videoRef.current) {
+                videoRef.current.currentTime = 0;
+                videoRef.current.play();
+              }
             });
           }
         }}
@@ -67,18 +102,36 @@ export function DashboardCarousel() {
         <CarouselContent>
           {carouselItems.map((item, index) => (
             <CarouselItem key={item.id} className="md:basis-full">
-              <a href={item.link} className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100 block">
+              <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white border border-gray-100">
                 <div className="relative w-full h-[200px] sm:h-[250px] md:h-[300px] lg:h-[350px] bg-white flex items-center justify-center p-2 sm:p-3">
-                  <img
-                    src={item.image}
-                    alt={`${item.title} – ${item.course}`}
-                    loading="lazy"
-                    draggable={false}
-                    className="max-w-full max-h-full object-contain transition-all duration-700 select-none"
-                  />
+                  {item.type === "video" ? (
+                    <video
+                      ref={videoRef}
+                      src={item.videoUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="max-w-full max-h-full object-contain transition-all duration-700 select-none rounded-lg"
+                      onMouseEnter={(e) => {
+                        e.target.muted = false;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.muted = true;
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={item.image}
+                      alt={`${item.title} – ${item.course}`}
+                      loading="lazy"
+                      draggable={false}
+                      className="max-w-full max-h-full object-contain transition-all duration-700 select-none"
+                    />
+                  )}
                   {/* No text overlays to avoid clashing with banner text */}
                 </div>
-              </a>
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>

@@ -1026,72 +1026,7 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-          {/* How It Works Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8 mb-8">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-3">How It Works</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto text-base sm:text-lg">
-                Start your education journey in just three simple steps. Our platform makes learning accessible and effective.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-              {/* Step 1 */}
-              <div className="group relative bg-gradient-to-br from-blue-50 to-white p-4 sm:p-6 rounded-xl border border-blue-100 hover:shadow-lg transition-all duration-300 min-h-[320px] flex flex-col justify-between">
-                <div className="absolute -top-5 left-4 sm:left-6 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <span className="font-bold">1</span>
-                </div>
-                <div className="flex flex-col items-center text-center pt-8 sm:pt-6">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-blue-200 transition-all">
-                    <Search className="text-blue-600" size={24} />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Choose a Course</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Browse our extensive catalog of private courses and select the one that matches your career goals.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Step 2 */}
-              <div className="group relative bg-gradient-to-br from-purple-50 to-white p-4 sm:p-6 rounded-xl border border-purple-100 hover:shadow-lg transition-all duration-300 min-h-[320px] flex flex-col justify-between">
-                <div className="absolute -top-5 left-4 sm:left-6 w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <span className="font-bold">2</span>
-                </div>
-                <div className="flex flex-col items-center text-center pt-8 sm:pt-6">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-100 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-purple-200 transition-all">
-                    <MonitorPlay className="text-purple-600" size={24} />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Learn Anytime</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Access high-quality video lectures, case studies, and interactive materials at your own pace.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Step 3 - Updated version without certification mention */}
-              <div className="group relative bg-gradient-to-br from-green-50 to-white p-4 sm:p-6 rounded-xl border border-green-100 hover:shadow-lg transition-all duration-300 min-h-[320px] flex flex-col justify-between">
-                <div className="absolute -top-5 left-4 sm:left-6 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <span className="font-bold">3</span>
-                </div>
-                <div className="flex flex-col items-center text-center pt-8 sm:pt-6">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-green-200 transition-all">
-                    <CheckCircle className="text-green-600" size={24} />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Master the Material</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Complete lessons, apply your knowledge with practical exercises, and track your progress.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-center mt-8 sm:mt-10">
-            </div>
-          </div>
-
           
-          
-
           <AthenaUpcomingEvent />
         </div>
       </main>
