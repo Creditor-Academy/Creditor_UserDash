@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
-import { createModule, fetchAllCourses, fetchCourseModules } from "@/services/courseService";
+import { createModule, fetchAllCourses } from "@/services/courseService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
 import { CreateLessonDialog } from "@/components/courses/CreateLessonDialog";
 import { Button } from "@/components/ui/button";
@@ -37,47 +37,20 @@ const CourseLessonsPage = () => {
       setIsLoading(true);
       try {
         const coursesData = await fetchAllCourses();
-        const coursesWithModules = await Promise.all(
-          coursesData.map(async (course) => {
-            try {
-              const modules = await fetchCourseModules(course.id);
-              // Only add dummy lessons to 'Introduction machine learning' module
-              const modulesWithLessons = modules.map(module => {
-                if (module.title === 'Introduction machine learning') {
-                  return {
-                    ...module,
-                    lessons: [
-                      {
-                        id: `lesson-${module.id}-1`,
-                        title: `Intro: What is Machine Learning?`,
-                        description: 'A beginner-friendly introduction to ML concepts.',
-                        status: 'PUBLISHED',
-                        duration: 20,
-                        order: 1,
-                        createdAt: new Date().toISOString()
-                      },
-                      {
-                        id: `lesson-${module.id}-2`,
-                        title: `Supervised vs Unsupervised Learning`,
-                        description: 'Understanding the two main types of ML.',
-                        status: 'DRAFT',
-                        duration: 25,
-                        order: 2,
-                        createdAt: new Date().toISOString()
-                      }
-                    ]
-                  };
-                } else {
-                  return { ...module, lessons: [] };
-                }
-              });
-              return { ...course, modules: modulesWithLessons };
-            } catch (err) {
-              console.error(`Error fetching modules for course ${course.id}:`, err);
-              return { ...course, modules: [] };
-            }
-          })
-        );
+        console.log('✅ OPTIMIZATION: Using module count from course data instead of fetching modules for each course');
+        
+        // Use module count from course data instead of fetching modules for each course
+        const coursesWithModules = coursesData.map(course => {
+          // Use the module count from _count.modules instead of fetching actual modules
+          const moduleCount = course._count?.modules || 0;
+          console.log(`Course "${course.title}" has ${moduleCount} modules (from _count.modules)`);
+          
+          return {
+            ...course,
+            moduleCount, // Add module count for display
+            modules: [] // Don't fetch actual modules unless needed for specific functionality
+          };
+        });
         setCourses(coursesWithModules);
       } catch (err) {
         console.error('Error fetching courses:', err);
@@ -94,7 +67,7 @@ const CourseLessonsPage = () => {
     const lower = searchTerm.toLowerCase();
     return courses.filter(course =>
       course.title.toLowerCase().includes(lower) ||
-      course.modules.some(mod => mod.title.toLowerCase().includes(lower))
+      course.description?.toLowerCase().includes(lower)
     );
   }, [courses, searchTerm]);
 
@@ -334,14 +307,27 @@ const CourseLessonsPage = () => {
                           </div>
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <BookOpen className="h-4 w-4" />
-                            <span>{course.modules?.length || 0} modules</span>
+                            <span>{course.moduleCount || 0} modules</span>
                           </div>
                         </div>
                       </div>
                       
                       {/* View Modules Button */}
                       <Button
-                        onClick={() => navigate(`/instructor/courses/${course.id}/modules`)}
+                        onClick={() => navigate(`/instructor/courses/${course.id}/modules`, {
+                          state: {
+                            courseData: {
+                              id: course.id,
+                              title: course.title,
+                              description: course.description,
+                              estimated_duration: course.estimated_duration,
+                              course_level: course.course_level,
+                              course_status: course.course_status,
+                              thumbnail: course.thumbnail,
+                              moduleCount: course.moduleCount
+                            }
+                          }
+                        })}
                         className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
                       >
                         View Modules
@@ -365,7 +351,7 @@ const CourseLessonsPage = () => {
                     </Button>
                   </div>
                   
-                  {course.modules?.length === 0 ? (
+                  {course.moduleCount === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg">
                       <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                       <h5 className="text-lg font-medium text-gray-900 mb-2">No modules yet</h5>

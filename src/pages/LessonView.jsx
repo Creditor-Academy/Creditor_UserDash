@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useContext } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import axios from "axios";
 const LessonView = () => {
   const { courseId, moduleId } = useParams();
   const navigate = useNavigate(); 
+  const location = useLocation();
   const { toast } = useToast();
   const { setSidebarCollapsed } = useContext(SidebarContext);
   
@@ -29,10 +30,28 @@ const LessonView = () => {
   // Fetch module and lessons data
   useEffect(() => {
     console.log('LessonView component mounted with courseId:', courseId, 'moduleId:', moduleId);
-    if (courseId && moduleId) {
-      fetchModuleLessons();
+    
+    // Check if we have data from navigation state (OPTIMIZATION)
+    const navigationState = location.state;
+    if (navigationState?.moduleData && navigationState?.courseData) {
+      console.log('Using navigation state data - avoiding 2 API calls!');
+      
+      // Use passed data instead of API calls
+      setCourseDetails(navigationState.courseData);
+      setModuleDetails(navigationState.moduleData);
+      
+      // Only fetch lessons (1 API call instead of 3)
+      if (courseId && moduleId) {
+        fetchLessonsOnly();
+      }
+    } else {
+      console.log('No navigation state data - falling back to full API calls');
+      // Fallback to current approach if no state data
+      if (courseId && moduleId) {
+        fetchModuleLessons();
+      }
     }
-  }, [courseId, moduleId]);
+  }, [courseId, moduleId, location.state]);
 
   const fetchModuleLessons = async () => {
     try {
@@ -138,6 +157,73 @@ const LessonView = () => {
       setLoading(false);
     }
   }; 
+
+  // Optimized function to fetch only lessons (1 API call instead of 3)
+  const fetchLessonsOnly = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching lessons only for courseId:', courseId, 'moduleId:', moduleId);
+      
+      // Only fetch lessons (1 API call)
+      const lessonsResponse = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/all-lessons`,
+        {
+          headers: getAuthHeader(),
+          withCredentials: true,
+        }
+      );
+      
+      console.log('Lessons response:', lessonsResponse.data);
+      
+      // Handle lessons response (same logic as fetchModuleLessons)
+      let lessonsData = [];
+      if (Array.isArray(lessonsResponse.data)) {
+        lessonsData = lessonsResponse.data;
+      } else if (lessonsResponse.data?.data) {
+        lessonsData = Array.isArray(lessonsResponse.data.data) 
+          ? lessonsResponse.data.data 
+          : [lessonsResponse.data.data];
+      } else if (lessonsResponse.data?.lessons) {
+        lessonsData = Array.isArray(lessonsResponse.data.lessons)
+          ? lessonsResponse.data.lessons
+          : [lessonsResponse.data.lessons];
+      }
+      
+      // Normalize lesson data to ensure consistent field names
+      const normalizedLessons = lessonsData.map(lesson => ({
+        id: lesson.id || lesson.lesson_id,
+        title: lesson.title || lesson.lesson_title || 'Untitled Lesson',
+        description: lesson.description || lesson.lesson_description || 'No description available.',
+        order: lesson.order || lesson.lesson_order || 0,
+        status: lesson.status || lesson.lesson_status || 'DRAFT',
+        duration: lesson.duration || lesson.lesson_duration || '0 min',
+        thumbnail: lesson.thumbnail || lesson.lesson_thumbnail || null,
+        updatedAt: lesson.updatedAt || lesson.updated_at || lesson.createdAt || lesson.created_at,
+        type: lesson.type || lesson.lesson_type || 'text'
+      }));
+      
+      // Filter to only show published lessons
+      const publishedLessons = normalizedLessons.filter(lesson => 
+        lesson.status && lesson.status.toUpperCase() === 'PUBLISHED'
+      );
+      
+      // Sort lessons by order
+      publishedLessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      setLessons(publishedLessons);
+      
+    } catch (err) {
+      console.error("Error fetching lessons:", err);
+      setError("Failed to load lessons. Please try again later.");
+      toast({
+        title: "Error",
+        description: "Failed to load lessons. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredLessons = useMemo(() => {
     if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {

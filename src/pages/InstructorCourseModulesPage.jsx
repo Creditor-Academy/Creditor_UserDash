@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import axios from "axios";
 import { getAuthHeader } from '../services/authHeader';
 const InstructorCourseModulesPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { courseId } = useParams();
   const { isInstructorOrAdmin } = useAuth();
   const isAllowed = isInstructorOrAdmin();
@@ -32,12 +33,31 @@ const InstructorCourseModulesPage = () => {
     const init = async () => {
       try {
         setLoading(true);
-        const [courseData, modulesData] = await Promise.all([
-          fetchCourseById(courseId),
-          fetchCourseModules(courseId),
-        ]);
-        setCourse(courseData);
-        setModules(Array.isArray(modulesData) ? modulesData : []);
+        
+        // Check if we have course data from navigation state (OPTIMIZATION)
+        const navigationState = location.state;
+        console.log('🔍 Checking navigation state:', navigationState);
+        
+        if (navigationState?.courseData) {
+          console.log('✅ OPTIMIZATION ACTIVE: Using navigation state data - avoiding course API call!');
+          console.log('📦 Course data from navigation state:', navigationState.courseData);
+          
+          // Set course details from navigation state
+          setCourse(navigationState.courseData);
+          
+          // Only fetch modules data (1 API call instead of 2)
+          const modulesData = await fetchCourseModules(courseId);
+          setModules(Array.isArray(modulesData) ? modulesData : []);
+        } else {
+          console.log('❌ No navigation state data - falling back to full API calls');
+          // Fallback to original approach
+          const [courseData, modulesData] = await Promise.all([
+            fetchCourseById(courseId),
+            fetchCourseModules(courseId),
+          ]);
+          setCourse(courseData);
+          setModules(Array.isArray(modulesData) ? modulesData : []);
+        }
       } catch (err) {
         console.error("Error loading course/modules:", err);
       } finally {
@@ -45,7 +65,7 @@ const InstructorCourseModulesPage = () => {
       }
     };
     init();
-  }, [courseId, isAllowed]);
+  }, [courseId, isAllowed, location.state]);
 
   const handleCreateModuleClick = () => {
     setEditModuleData(null);

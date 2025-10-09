@@ -81,12 +81,30 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     } catch {}
   };
 
-  // Fetch enrolled courses on component mount
+  // Fetch enrolled courses on component mount with caching
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       try {
+        // Check if we have cached enrolled courses (valid for 5 minutes)
+        const cached = localStorage.getItem('enrolledCourses');
+        const cacheTime = localStorage.getItem('enrolledCoursesTime');
+        const now = Date.now();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+        
+        if (cached && cacheTime && (now - parseInt(cacheTime)) < CACHE_DURATION) {
+          console.log('✅ Using cached enrolled courses - avoiding getCourses API call!');
+          setEnrolledCourses(JSON.parse(cached));
+          setIsLoadingEnrolled(false);
+          return;
+        }
+        
+        console.log('🔄 Fetching enrolled courses from API...');
         const courses = await fetchUserCourses();
         setEnrolledCourses(courses);
+        
+        // Cache the results
+        localStorage.setItem('enrolledCourses', JSON.stringify(courses));
+        localStorage.setItem('enrolledCoursesTime', now.toString());
       } catch (error) {
         console.error('Failed to fetch enrolled courses:', error);
         setEnrolledCourses([]);

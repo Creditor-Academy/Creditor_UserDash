@@ -244,11 +244,18 @@ export function CourseView() {
         ]);
         
         setCourseDetails(courseData);
-        setModules(modulesData);
-        setFilteredModules(modulesData);
         
-        // Calculate total duration from modules
-        const total = modulesData.reduce((sum, module) => {
+        // Filter modules to only show PUBLISHED ones
+        const publishedModules = modulesData.filter(module => 
+          module.module_status === 'PUBLISHED'
+        );
+        console.log(`[CourseView] Total modules: ${modulesData.length}, Published modules: ${publishedModules.length}`);
+        
+        setModules(publishedModules);
+        setFilteredModules(publishedModules);
+        
+        // Calculate total duration from published modules only
+        const total = publishedModules.reduce((sum, module) => {
           const duration = parseInt(module.estimated_duration) || 0;
           return sum + duration;
         }, 0);
@@ -623,7 +630,21 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                          <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} className="w-full">
+                          <Link 
+                            to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} 
+                            state={{ 
+                              moduleData: {
+                                title: module.title || module.module_title || module.name || 'Module',
+                                description: module.description || module.module_description || '',
+                                duration: module.estimated_duration || module.duration || 0,
+                                totalModules: modules.length || 0
+                              },
+                              courseData: {
+                                title: courseDetails?.title || courseDetails?.course_title || courseDetails?.name || 'Course',
+                                description: courseDetails?.description || courseDetails?.course_description || ''
+                              }
+                            }}
+                            className="w-full">
                             <Button className="w-full">
                               <Play size={16} className="mr-2" />
                               View Lessons
