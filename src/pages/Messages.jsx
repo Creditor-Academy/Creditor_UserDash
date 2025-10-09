@@ -132,6 +132,7 @@ function Messages() {
   const [editingText, setEditingText] = useState("");
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const conversationIdRef = useRef(null); // Ref to track current conversationId for event handlers
   const location = useLocation();
   const [pendingImage, setPendingImage] = useState(null);
   const [imagePreview, setImagePreview] = useState({ open: false, url: null });
@@ -173,6 +174,11 @@ function Messages() {
     if (str.length <= PREVIEW_LIMIT) return str;
     return str.slice(0, PREVIEW_LIMIT).trimEnd() + '.....';
   };
+
+  // Keep conversationId ref in sync with state for event handlers
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
 
   // Reset local UI state when arriving at Messages route to avoid showing stale names
   useEffect(() => {
@@ -271,7 +277,7 @@ function Messages() {
       }));
 
       // If we're in the conversation, add the message to the messages list
-      if (String(conversationId) === String(groupId)) {
+      if (String(conversationIdRef.current) === String(groupId)) {
         setMessages(prev => {
           const currentUserId = localStorage.getItem('userId');
           const isSelf = String(message.sender_id) === String(currentUserId);
@@ -378,7 +384,7 @@ function Messages() {
       console.log('Private group message edited:', { groupId, messageId, content });
       
       // If we're viewing this group, update the message
-      if (String(conversationId) === String(groupId)) {
+      if (String(conversationIdRef.current) === String(groupId)) {
         setMessages(prev => prev.map(msg => 
           String(msg.id) === String(messageId) 
             ? { ...msg, text: content, edited: true }
@@ -393,7 +399,7 @@ function Messages() {
       console.log('Private group message deleted:', { groupId, messageId });
       
       // If we're viewing this group, remove the message
-      if (String(conversationId) === String(groupId)) {
+      if (String(conversationIdRef.current) === String(groupId)) {
         setMessages(prev => prev.filter(msg => String(msg.id) !== String(messageId)));
       }
     };
@@ -433,7 +439,7 @@ function Messages() {
       const { groupId } = event.detail;
       console.log('Local private group deleted:', groupId);
       setFriends(prev => prev.filter(f => f.conversationId !== groupId));
-      if (String(conversationId) === String(groupId)) {
+      if (String(conversationIdRef.current) === String(groupId)) {
         setSelectedFriend(null);
         setRoomId(null);
         setConversationId(null);
@@ -451,7 +457,7 @@ function Messages() {
       if (String(userId) === String(currentUserId)) {
         setFriends(prev => prev.filter(f => f.conversationId !== groupId));
         // If the group chat is currently open, close it
-        if (String(conversationId) === String(groupId)) {
+        if (String(conversationIdRef.current) === String(groupId)) {
           setSelectedFriend(null);
           setRoomId(null);
           setConversationId(null);
@@ -601,6 +607,16 @@ function Messages() {
     // Handle private group creation event
     const onPrivateGroupCreated = ({ group }) => {
       console.log('Private group created:', group);
+      
+      // Only add group if current user is the creator
+      const currentUserId = localStorage.getItem('userId');
+      const isCreator = String(group.owner_id || group.creator_id || group.created_by) === String(currentUserId);
+      
+      if (!isCreator) {
+        console.log('Ignoring privateGroupCreated event: current user is not the creator');
+        return;
+      }
+      
       // Build new group entry
       const newGroup = {
         id: `private_group_${group.id}`,
@@ -628,9 +644,41 @@ function Messages() {
     };
 
     // Handle private group members added event
-    const onPrivateGroupMembersAdded = ({ groupId, users }) => {
-      console.log('Private group members added:', { groupId, users });
-      // Update the group in the friends list to reflect new member count
+    const onPrivateGroupMembersAdded = ({ groupId, users, group }) => {
+      console.log('Private group members added:', { groupId, users, group });
+      
+      const currentUserId = localStorage.getItem('userId');
+      const isAddedMember = users.some(user => String(user.id || user.user_id) === String(currentUserId));
+      
+      // If current user is one of the added members, add group to their list
+      if (isAddedMember && group) {
+        const newGroup = {
+          id: `private_group_${groupId}`,
+          name: group.name,
+          avatar: group.thumbnail || '/placeholder.svg',
+          lastMessage: 'You were added to this group',
+          lastMessageType: 'system',
+          room: `private_group_${groupId}`,
+          conversationId: groupId,
+          isRead: false, // Mark as unread since it's a new addition
+          lastMessageFrom: 'System',
+          lastMessageAt: new Date().toISOString(),
+          isGroup: true,
+          isPrivateGroup: true,
+          isAdmin: false,
+          memberCount: (group.member_count || 1) + users.length,
+          description: group.description,
+        };
+        
+        setFriends(prev => {
+          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
+          return exists ? prev : [newGroup, ...prev];
+        });
+        setUserHasGroup(true);
+        return;
+      }
+      
+      // If current user is already in the group (e.g., admin), just update member count
       setFriends(prev => prev.map(f => {
         if (f.conversationId === groupId && f.isPrivateGroup) {
           return {
@@ -667,7 +715,7 @@ function Messages() {
       console.log('Private group deleted:', groupId);
       setFriends(prev => prev.filter(f => f.conversationId !== groupId));
       // If the deleted group is currently open, close it
-      if (String(conversationId) === String(groupId)) {
+      if (String(conversationIdRef.current) === String(groupId)) {
         setSelectedFriend(null);
         setRoomId(null);
         setConversationId(null);
@@ -686,7 +734,7 @@ function Messages() {
       if (String(userId) === String(currentUserId)) {
         setFriends(prev => prev.filter(f => f.conversationId !== groupId));
         // If the group chat is currently open, close it
-        if (String(conversationId) === String(groupId)) {
+        if (String(conversationIdRef.current) === String(groupId)) {
           setSelectedFriend(null);
           setRoomId(null);
           setConversationId(null);
@@ -718,7 +766,7 @@ function Messages() {
       if (String(userId) === String(currentUserId)) {
         setFriends(prev => prev.filter(f => f.conversationId !== groupId));
         // If the group chat is currently open, close it
-        if (String(conversationId) === String(groupId)) {
+        if (String(conversationIdRef.current) === String(groupId)) {
           setSelectedFriend(null);
           setRoomId(null);
           setConversationId(null);
@@ -829,7 +877,7 @@ function Messages() {
       }));
 
       // If this message is for the currently open group chat, add it to messages
-      if (String(conversationId) === String(groupId)) {
+      if (String(conversationIdRef.current) === String(groupId)) {
         setMessages(prev => {
           // For own messages, update the optimistic message instead of adding new
           if (isSelf) {
@@ -981,7 +1029,7 @@ function Messages() {
       console.log('Conversation updated:', updatePayload);
       setFriends(prev => {
         const existingIndex = prev.findIndex(f => f.id === updatePayload.id);
-        const isOpen = String(updatePayload.id) === String(conversationId);
+        const isOpen = String(updatePayload.id) === String(conversationIdRef.current);
 
         const updatedFriend = {
           id: String(updatePayload.id),
@@ -1036,7 +1084,7 @@ function Messages() {
     const onDeleteMessage = ({ messageid, conversation_id }) => {
       if (!messageid) return;
       // Only act if we're on the same conversation or if unknown treat as current
-      if (!conversationId || String(conversationId) === String(conversation_id)) {
+      if (!conversationIdRef.current || String(conversationIdRef.current) === String(conversation_id)) {
         setDeletingMessageId(messageid);
         setTimeout(() => {
           setMessages(prev => prev.filter(m => String(m.id) !== String(messageid)));
@@ -1825,7 +1873,16 @@ function Messages() {
                 <CreateGroupButton
                   className="h-7 w-7 sm:h-8 sm:w-8"
                   onCreated={(created) => {
-                    try { setFriends(prev => [created, ...prev]); } catch {}
+                    try { 
+                      // Check for duplicates before adding (socket event may have already added it)
+                      setFriends(prev => {
+                        const exists = prev.some(f => 
+                          String(f.conversationId || f.id) === String(created.conversationId) ||
+                          String(f.id) === String(created.id)
+                        );
+                        return exists ? prev : [created, ...prev];
+                      });
+                    } catch {}
                     try { setUserHasGroup(true); } catch {}
                     try { setSelectedFriend(created.id); } catch {}
                     try { setRoomId(created.room); } catch {}

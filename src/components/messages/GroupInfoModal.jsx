@@ -306,8 +306,12 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
       // Get user details for the added members
       const addedUsers = allUsers.filter(user => userIds.includes(user.id));
       
-      // Emit WebSocket event for real-time updates
-      socket.emit('privateGroupMembersAdded', { groupId, users: addedUsers });
+      // Emit WebSocket event for real-time updates with group data
+      socket.emit('privateGroupMembersAdded', { 
+        groupId, 
+        users: addedUsers,
+        group: group // Include group data so new members can see the group details
+      });
       
       // Refresh members list using the new API
       try {

@@ -184,7 +184,12 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       
       if (selectedMemberIds.length > 0) {
         const addedUsers = allUsers.filter(user => selectedMemberIds.includes(user.id));
-        socket.emit('privateGroupMembersAdded', { groupId, users: addedUsers });
+        // Include group data so new members can see the group details
+        socket.emit('privateGroupMembersAdded', { 
+          groupId, 
+          users: addedUsers,
+          group: res.data 
+        });
       }
       
       // Emit a system message for group creation
@@ -205,13 +210,14 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
       });
       
       const created = {
-        id: `group_${groupId}`,
+        id: `private_group_${groupId}`,
         name: res.data.name,
         memberCount: selectedMemberIds.length + 1,
         isGroup: true,
+        isPrivateGroup: true,
         isAdmin: true,
         conversationId: groupId,
-        room: groupId,
+        room: `private_group_${groupId}`,
         lastMessage: "Group created",
         lastMessageType: "system",
         lastMessageFrom: "System",
