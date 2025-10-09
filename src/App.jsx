@@ -67,8 +67,6 @@ import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
-import ScormPage from "@/pages/ScormPage";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
@@ -77,7 +75,6 @@ import LessonPreview from "./pages/LessonPreview";
 import LandingPage from "@/pages/LandingPage";
 import Home from "@/pages/home";
 import AdminModal from "@/components/AdminModal";
-import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
 import Sophomore from "./coursesL/Sophomore";
 import OperatePrivate from './coursesL/OperatePrivate'; 
@@ -104,12 +101,6 @@ import  ModuleView  from "@/pages/ModuleView";
 import LessonView from "./pages/LessonView";
      
 
-function ProtectedScormRoute() {
-  if (!allowedScormUserIds.includes(currentUserId)) {
-    return <div style={{padding: 24}}><h2>Access Denied</h2><p>You do not have permission to view this page.</p></div>;
-  }
-  return <ScormPage />;
-}
 
 function App() {
   return (
@@ -311,11 +302,6 @@ function App() {
               <Route path="tickets" element={<MyTickets />} />
             </Route>
 
-            {/* SCORM routes - inside dashboard to keep sidebar */}
-            <Route path="scorm">
-              <Route index element={<ProtectedScormRoute />} />
-              <Route path=":courseId/:moduleId" element={<Scrompack />} />
-            </Route>
           </Route>
 
           {/* Catalog and enrollment */}
@@ -340,11 +326,9 @@ function App() {
           <Route path="guides" element={<Guides />} />
           <Route path="support/ticket" element={<SupportTicket />} />
           <Route path="support/tickets" element={<MyTickets />} />
-          <Route path="scorm" element={<ProtectedScormRoute />} />
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
           <Route path="*" element={<NotFound />} />
-          <Route path="/scorm/:courseId" element={<Scrompack />} />
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
           <Route path="/modern-lesson-demo" element={<ModernLessonDemo />} />
           <Route path="/games" element={<Games />} />

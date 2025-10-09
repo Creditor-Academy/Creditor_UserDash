@@ -26,6 +26,7 @@ const LessonView = () => {
   const [moduleDetails, setModuleDetails] = useState(null);
   const [courseDetails, setCourseDetails] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingLesson, setLoadingLesson] = useState(null); // Track which lesson is being loaded
 
   // Fetch module and lessons data
   useEffect(() => {
@@ -243,43 +244,51 @@ const LessonView = () => {
 
   const handleViewLesson = async (lesson) => {
     try {
+      // Set loading state for this specific lesson
+      setLoadingLesson(lesson.id);
+
       // Close the sidebar before navigating
       if (setSidebarCollapsed) {
         setSidebarCollapsed(true);
       }
 
       // Fetch lesson content to check for SCORM URL
-      const lessonContentResponse = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/${lesson.id}`,
-        {
-          headers: getAuthHeader(),
-          withCredentials: true,
-        }
-      );
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+      const response = await fetch(`${baseUrl}/api/lessoncontent/${lesson.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-      console.log('Lesson content response:', lessonContentResponse.data);
-
-      const lessonData = lessonContentResponse.data?.data || lessonContentResponse.data;
-
-      // Check if SCORM URL exists
-      if (lessonData.scorm_url) {
-        console.log('Opening SCORM content in new tab:', lessonData.scorm_url);
-        // Open SCORM URL in new tab
-        window.open(lessonData.scorm_url, '_blank', 'noopener,noreferrer');
-        return;
+      if (!response.ok) {
+        throw new Error(`Failed to fetch lesson content: ${response.status}`);
       }
 
-      // Check if content array has data
-      if (lessonData.content && Array.isArray(lessonData.content) && lessonData.content.length > 0) {
-        console.log('Opening lesson preview with content:', lessonData.content.length, 'blocks');
-        // Navigate to lesson preview
+      const responseData = await response.json();
+      console.log('Lesson content response:', responseData);
+      
+      // Extract the actual data from the API response
+      const data = responseData.data || responseData;
+      
+      // Check if there's a SCORM URL
+      const scormUrl = data.scorm_url || data.scormUrl || data.lesson?.scorm_url;
+      
+      if (scormUrl && scormUrl.trim()) {
+        // If SCORM URL exists, open it in a new tab
+        console.log('Opening SCORM URL in new tab:', scormUrl);
+        window.open(scormUrl, '_blank', 'noopener,noreferrer');
+        
+        toast({
+          title: "Opening SCORM Content",
+          description: "The lesson will open in a new tab.",
+        });
+      } else {
+        // If no SCORM URL, navigate to lesson preview (regardless of content)
+        console.log('No SCORM URL found, navigating to preview page');
         navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`);
-        return;
       }
-
-      // If no SCORM URL and no content, navigate to preview page
-      console.log('No SCORM URL and no content - navigating to preview page');
-      navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`);
 
     } catch (error) {
       console.error('Error fetching lesson content:', error);
@@ -288,6 +297,9 @@ const LessonView = () => {
         description: "Failed to load lesson content. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      // Clear loading state
+      setLoadingLesson(null);
     }
   };
 
@@ -473,8 +485,17 @@ const LessonView = () => {
                 <Button 
                   className="w-full flex items-center justify-center gap-2"
                   onClick={() => handleViewLesson(lesson)}
+                  disabled={loadingLesson === lesson.id}
                 >
-                  <Play className="h-4 w-4" /> Start Lesson
+                  {loadingLesson === lesson.id ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4" /> Start Lesson
+                    </>
+                  )}
                 </Button>
               </CardFooter>
             </Card>

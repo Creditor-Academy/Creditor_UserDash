@@ -22,7 +22,6 @@ import {
   School,
   Bot
 } from "lucide-react";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import { getUserRole } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -174,8 +173,6 @@ export function Sidebar({ collapsed, setCollapsed }) {
     }
   };
 
-  // Replace localStorage logic with a constant for testing
-  const isScormAllowed = allowedScormUserIds.includes(currentUserId);
 
   // Help section navigation items
   const helpItems = [

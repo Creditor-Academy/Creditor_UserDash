@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import CreateCourse from "./CreateCourse";
-import ScormPage from "./ScormPage";
 import CourseLessonsPage from "./CourseLessonsPage";
 import AddEvent from "./AddEvent";
 import AddCatelog from "./AddCatelog";
@@ -175,16 +174,6 @@ const InstructorPage = () => {
           >
             <FaEdit /> Create Quiz
           </button>
-          {/* <button 
-            onClick={() => setActiveTab("scorm")} 
-            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "scorm" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
-            }`}
-          >
-            <FaFolder /> SCORM Content
-          </button> */}
           <button 
             onClick={() => handleNavigation("lessons", "/instructor/course-lessons")} 
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
@@ -348,11 +337,6 @@ const InstructorPage = () => {
               </section>
             )}
 
-            {/* {activeTab === "scorm" && (
-              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <ScormPage />
-              </section>
-            )} */}
 
             {activeTab === "lessons" && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

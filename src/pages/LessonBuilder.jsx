@@ -40,7 +40,7 @@ import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
-import YouTubeComponent from '@/components/YouTubeComponent';import ScormComponent from '@/components/ScormComponent';
+import YouTubeComponent from '@/components/YouTubeComponent';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -595,7 +595,6 @@ function LessonBuilder() {
   const [youTubeTitle, setYouTubeTitle] = useState('');
   const [youTubeDescription, setYouTubeDescription] = useState('');
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
-  const [showScormDialog, setShowScormDialog] = useState(false);
   
 
 
@@ -715,11 +714,6 @@ function LessonBuilder() {
       id: 'tables',
       title: 'Tables',
       icon: <Table className="h-5 w-5" />
-    },
-    {
-      id: 'scorm',
-      title: 'SCORM',
-      icon: <Box className="h-5 w-5" />
     },
     {
       id: 'interactive',
@@ -848,8 +842,6 @@ function LessonBuilder() {
       setShowInteractiveTemplateSidebar(true);
     } else if (blockType.id === 'divider') {
       setShowDividerTemplateSidebar(true);
-    } else if (blockType.id === 'scorm') {
-      setShowScormDialog(true);
     } else {
       addContentBlock(blockType);
     }
@@ -1130,93 +1122,6 @@ function LessonBuilder() {
     }
   };
 
-  // SCORM component callbacks
-  const handleScormSave = (scormBlockData) => {
-    // Generate HTML content for SCORM block with embedded iframe
-    const scormUrl = scormBlockData.content.scormUrl || 
-                     scormBlockData.content.uploadResult?.data?.url || 
-                     scormBlockData.content.uploadResult?.data?.launchUrl ||
-                     scormBlockData.content.uploadResult?.url;
-    const htmlContent = `
-      <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-        <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-          <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-              </svg>
-            </div>
-            <div>
-              <h3 class="text-sm font-semibold text-gray-900">${scormBlockData.content.title}</h3>
-              <p class="text-xs text-gray-500">SCORM Package • ${(scormBlockData.content.fileSize / (1024 * 1024)).toFixed(2)} MB</p>
-            </div>
-          </div>
-          <button 
-            onclick="window.open('${scormUrl}', '_blank')" 
-            class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-          >
-            Open Full Screen
-          </button>
-        </div>
-        <div class="relative bg-gray-50 rounded-lg p-8 text-center" style="height: 400px; display: flex; align-items: center; justify-content: center;">
-          <div>
-            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-9-4V8a3 3 0 013-3h6a3 3 0 013 3v2M7 21h10a2 2 0 002-2v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Interactive SCORM Content</h3>
-            <p class="text-gray-600 mb-4">Click the button below to launch the SCORM package in a new window for the best experience.</p>
-            <button 
-              onclick="
-                let url = '${scormUrl}';
-                if (url && url.includes('s3.') && url.includes('/scorm/')) {
-                  const urlParts = url.split('/scorm/');
-                  if (urlParts.length > 1) {
-                    const pathParts = urlParts[1].split('/');
-                    const scormId = pathParts[0];
-                    const filePath = pathParts.slice(1).join('/');
-                    url = '${process.env.REACT_APP_API_BASE_URL || "http://localhost:9000"}/api/scorm-proxy/' + scormId + '/' + filePath;
-                  }
-                }
-                window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-              " 
-              class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Launch SCORM Content
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const newBlock = {
-      id: scormBlockData.id,
-      block_id: scormBlockData.id,
-      type: 'scorm',
-      title: scormBlockData.title,
-      content: JSON.stringify(scormBlockData.content),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    // Add to contentBlocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
-
-    // Also add to lessonContent if it exists
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
-      }));
-    }
-
-    // Close the dialog
-    setShowScormDialog(false);
-  };
 
   // List component callbacks
   const handleListTemplateSelect = (newBlock) => {
@@ -7096,14 +7001,6 @@ setContentBlocks(prev => [...prev, newBlock]);
         onDividerUpdate={handleDividerUpdate}
       />
 
-      {/* SCORM Component */}
-      <ScormComponent
-        isOpen={showScormDialog}
-        onClose={() => setShowScormDialog(false)}
-        onSave={handleScormSave}
-        lessonId={lessonId}
-        moduleId={moduleId}
-      />
 
       {/* Image Dialog */}
       <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>

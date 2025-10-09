@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import { createModule, fetchAllCourses } from "@/services/courseService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
@@ -29,7 +28,7 @@ const CourseLessonsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const isAllowed = allowedScormUserIds.includes(currentUserId);
+  const isAllowed = true;
 
   useEffect(() => {
     if (!isAllowed) return;

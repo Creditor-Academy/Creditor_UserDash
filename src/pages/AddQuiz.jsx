@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import { fetchAllCourses, fetchCourseModules } from "@/services/courseService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
@@ -47,7 +46,7 @@ const CreateQuizPage = () => {
   const [selectedQuestionForEdit, setSelectedQuestionForEdit] = useState(null);
   const [loadingCourses, setLoadingCourses] = useState(true);
 
-  const isAllowed = allowedScormUserIds.includes(currentUserId);
+  const isAllowed = true;
 
   const fetchAndSetModuleQuizzes = async (moduleId) => {
     // Set loading state
