@@ -422,7 +422,7 @@ const AthenaFeatures = () => {
       }}>
         {/* Header Section */}
         <div style={headerStyle}>
-          <div style={{
+          {/* <div style={{
             display: 'inline-block',
             marginBottom: '1.5rem',
             animation: 'pulse 6s infinite alternate'
@@ -434,7 +434,7 @@ const AthenaFeatures = () => {
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>✨</div>
-          </div>
+          </div> */}
           
           <h1 style={headlineStyle}>
             Athena LMS Features
