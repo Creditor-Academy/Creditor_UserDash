@@ -277,12 +277,9 @@ const LessonView = () => {
         return;
       }
 
-      // If no SCORM URL and no content, show message
-      toast({
-        title: "No Content Available",
-        description: "This lesson doesn't have any content yet. Please check back later.",
-        variant: "destructive",
-      });
+      // If no SCORM URL and no content, navigate to preview page
+      console.log('No SCORM URL and no content - navigating to preview page');
+      navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`);
 
     } catch (error) {
       console.error('Error fetching lesson content:', error);
