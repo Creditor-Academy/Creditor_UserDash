@@ -45,6 +45,67 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [coursePrices, setCoursePrices] = React.useState({});
   const [totalModuleCounts, setTotalModuleCounts] = React.useState({});
   const [expandedGrouped, setExpandedGrouped] = React.useState({});
+  const [expandedProgress, setExpandedProgress] = React.useState({
+    completed: false,
+    modules: false,
+    quizzes: false,
+    enrolled: false,
+    pending: false
+  });
+
+  // Dummy progress data for UI display
+  const dummyProgressData = {
+    allEnrolledCoursesCount: 12,
+    completedCourses: 5,
+    modulesCompleted: 28,
+    assessmentsCompleted: 15,
+    pendingCoursesCount: 7
+  };
+
+  // Dummy data for expandable sections
+  const dummyCompletedCourses = [
+    { id: 1, title: "Business Credit Fundamentals", completedDate: "2024-01-15" },
+    { id: 2, title: "Private Merchant Basics", completedDate: "2024-01-20" },
+    { id: 3, title: "Credit Building Strategies", completedDate: "2024-02-05" },
+    { id: 4, title: "Financial Management", completedDate: "2024-02-18" },
+    { id: 5, title: "Legal Compliance Essentials", completedDate: "2024-03-01" }
+  ];
+
+  const dummyModules = [
+    { id: 1, title: "Introduction to Business Credit", course: "Business Credit Fundamentals" },
+    { id: 2, title: "Credit Reporting Agencies", course: "Business Credit Fundamentals" },
+    { id: 3, title: "Building Your Business Profile", course: "Credit Building Strategies" },
+    { id: 4, title: "Trade Lines and Vendors", course: "Private Merchant Basics" },
+    { id: 5, title: "Credit Monitoring Tools", course: "Credit Building Strategies" }
+  ];
+
+  const dummyQuizzes = [
+    { id: 1, title: "Credit Basics Quiz", course: "Business Credit Fundamentals", score: "95%" },
+    { id: 2, title: "Financial Management Assessment", course: "Financial Management", score: "88%" },
+    { id: 3, title: "Legal Compliance Test", course: "Legal Compliance Essentials", score: "92%" },
+    { id: 4, title: "Trade Lines Quiz", course: "Private Merchant Basics", score: "100%" },
+    { id: 5, title: "Credit Building Final Exam", course: "Credit Building Strategies", score: "85%" }
+  ];
+
+  const dummyEnrolledCourses = [
+    { id: 1, title: "Business Credit Fundamentals", enrolledDate: "2024-01-10", progress: 100 },
+    { id: 2, title: "Private Merchant Basics", enrolledDate: "2024-01-12", progress: 100 },
+    { id: 3, title: "Credit Building Strategies", enrolledDate: "2024-01-15", progress: 100 },
+    { id: 4, title: "Financial Management", enrolledDate: "2024-02-01", progress: 100 },
+    { id: 5, title: "Legal Compliance Essentials", enrolledDate: "2024-02-10", progress: 100 },
+    { id: 6, title: "Advanced Credit Strategies", enrolledDate: "2024-03-01", progress: 65 },
+    { id: 7, title: "Business Funding Mastery", enrolledDate: "2024-03-05", progress: 45 }
+  ];
+
+  const dummyPendingCourses = [
+    { id: 1, title: "Advanced Credit Strategies", progress: 65 },
+    { id: 2, title: "Business Funding Mastery", progress: 45 },
+    { id: 3, title: "Tax Strategies for Business", progress: 30 },
+    { id: 4, title: "Investment and Growth", progress: 20 },
+    { id: 5, title: "Business Exit Strategies", progress: 10 },
+    { id: 6, title: "International Business Law", progress: 5 },
+    { id: 7, title: "Digital Marketing Essentials", progress: 0 }
+  ];
 
   // Fetch courses for the selected user when modal opens or user changes
   React.useEffect(() => {
@@ -1127,6 +1188,253 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               </CardContent>
             </Card>
           )}
+
+          {/* Progress Overview - Only for instructors/admins */}
+          {isInstructorOrAdmin && (
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
+              <CardHeader className="pb-4 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
+                  Progress Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {/* Completed Courses */}
+                  <div className="bg-blue-50 rounded-xl border border-blue-100 overflow-hidden">
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-blue-100 transition-colors"
+                      onClick={() => setExpandedProgress(prev => ({ ...prev, completed: !prev.completed }))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <CheckCircle className="text-blue-600" size={20} />
+                        </div>
+                        <div>
+                          <span className="text-blue-600 font-semibold text-sm block">Completed</span>
+                          <p className="text-blue-600 text-xs mt-0.5">Courses finished</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-3xl font-bold text-blue-700">
+                          {dummyProgressData.completedCourses}
+                        </p>
+                        {expandedProgress.completed ? (
+                          <ChevronDown className="text-blue-600" size={20} />
+                        ) : (
+                          <ChevronRight className="text-blue-600" size={20} />
+                        )}
+                      </div>
+                    </div>
+                    {expandedProgress.completed && (
+                      <div className="px-4 pb-4 space-y-2">
+                        {dummyCompletedCourses.map((course) => (
+                          <div key={course.id} className="bg-white rounded-lg p-3 border border-blue-200 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
+                                <p className="text-xs text-gray-500 mt-1">Completed: {course.completedDate}</p>
+                              </div>
+                              <Badge className="bg-green-100 text-green-700 border-green-200">
+                                <CheckCircle className="h-3 w-3 mr-1" /> Done
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modules Completed */}
+                  <div className="bg-emerald-50 rounded-xl border border-emerald-100 overflow-hidden">
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-100 transition-colors"
+                      onClick={() => setExpandedProgress(prev => ({ ...prev, modules: !prev.modules }))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-100 rounded-lg">
+                          <BookOpen className="text-emerald-600" size={20} />
+                        </div>
+                        <div>
+                          <span className="text-emerald-600 font-semibold text-sm block">Modules</span>
+                          <p className="text-emerald-600 text-xs mt-0.5">Modules Completed</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-3xl font-bold text-emerald-700">
+                          {dummyProgressData.modulesCompleted}
+                        </p>
+                        {expandedProgress.modules ? (
+                          <ChevronDown className="text-emerald-600" size={20} />
+                        ) : (
+                          <ChevronRight className="text-emerald-600" size={20} />
+                        )}
+                      </div>
+                    </div>
+                    {expandedProgress.modules && (
+                      <div className="px-4 pb-4 space-y-2">
+                        {dummyModules.map((module) => (
+                          <div key={module.id} className="bg-white rounded-lg p-3 border border-emerald-200 hover:shadow-sm transition-shadow">
+                            <h4 className="text-sm font-semibold text-gray-900">{module.title}</h4>
+                            <p className="text-xs text-gray-500 mt-1">Course: {module.course}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quizzes Completed */}
+                  <div className="bg-orange-50 rounded-xl border border-orange-100 overflow-hidden">
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-orange-100 transition-colors"
+                      onClick={() => setExpandedProgress(prev => ({ ...prev, quizzes: !prev.quizzes }))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                          <Award className="text-orange-600" size={20} />
+                        </div>
+                        <div>
+                          <span className="text-orange-600 font-semibold text-sm block">Quizzes</span>
+                          <p className="text-orange-600 text-xs mt-0.5">Quiz Completed</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-3xl font-bold text-orange-700">
+                          {dummyProgressData.assessmentsCompleted}
+                        </p>
+                        {expandedProgress.quizzes ? (
+                          <ChevronDown className="text-orange-600" size={20} />
+                        ) : (
+                          <ChevronRight className="text-orange-600" size={20} />
+                        )}
+                      </div>
+                    </div>
+                    {expandedProgress.quizzes && (
+                      <div className="px-4 pb-4 space-y-2">
+                        {dummyQuizzes.map((quiz) => (
+                          <div key={quiz.id} className="bg-white rounded-lg p-3 border border-orange-200 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900">{quiz.title}</h4>
+                                <p className="text-xs text-gray-500 mt-1">Course: {quiz.course}</p>
+                              </div>
+                              <Badge className="bg-orange-100 text-orange-700 border-orange-200">
+                                Score: {quiz.score}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Enrolled Courses */}
+                  <div className="bg-purple-50 rounded-xl border border-purple-100 overflow-hidden">
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-purple-100 transition-colors"
+                      onClick={() => setExpandedProgress(prev => ({ ...prev, enrolled: !prev.enrolled }))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <BookOpen className="text-purple-600" size={20} />
+                        </div>
+                        <div>
+                          <span className="text-purple-600 font-semibold text-sm block">Enrolled</span>
+                          <p className="text-purple-600 text-xs mt-0.5">Total Courses</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-3xl font-bold text-purple-700">
+                          {dummyProgressData.allEnrolledCoursesCount}
+                        </p>
+                        {expandedProgress.enrolled ? (
+                          <ChevronDown className="text-purple-600" size={20} />
+                        ) : (
+                          <ChevronRight className="text-purple-600" size={20} />
+                        )}
+                      </div>
+                    </div>
+                    {expandedProgress.enrolled && (
+                      <div className="px-4 pb-4 space-y-2">
+                        {dummyEnrolledCourses.map((course) => (
+                          <div key={course.id} className="bg-white rounded-lg p-3 border border-purple-200 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
+                                <p className="text-xs text-gray-500 mt-1">Enrolled: {course.enrolledDate}</p>
+                              </div>
+                              <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                                {course.progress}%
+                              </Badge>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-purple-600 h-2 rounded-full transition-all" 
+                                style={{ width: `${course.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pending Courses */}
+                  <div className="bg-yellow-50 rounded-xl border border-yellow-100 overflow-hidden">
+                    <div 
+                      className="p-4 flex items-center justify-between cursor-pointer hover:bg-yellow-100 transition-colors"
+                      onClick={() => setExpandedProgress(prev => ({ ...prev, pending: !prev.pending }))}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-yellow-100 rounded-lg">
+                          <Clock className="text-yellow-600" size={20} />
+                        </div>
+                        <div>
+                          <span className="text-yellow-600 font-semibold text-sm block">Pending</span>
+                          <p className="text-yellow-600 text-xs mt-0.5">Courses Remaining</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-3xl font-bold text-yellow-700">
+                          {dummyProgressData.pendingCoursesCount}
+                        </p>
+                        {expandedProgress.pending ? (
+                          <ChevronDown className="text-yellow-600" size={20} />
+                        ) : (
+                          <ChevronRight className="text-yellow-600" size={20} />
+                        )}
+                      </div>
+                    </div>
+                    {expandedProgress.pending && (
+                      <div className="px-4 pb-4 space-y-2">
+                        {dummyPendingCourses.map((course) => (
+                          <div key={course.id} className="bg-white rounded-lg p-3 border border-yellow-200 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h4 className="text-sm font-semibold text-gray-900">{course.title}</h4>
+                              </div>
+                              <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                                {course.progress}%
+                              </Badge>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-yellow-600 h-2 rounded-full transition-all" 
+                                style={{ width: `${course.progress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Payment Status Section - Only for instructors/admins */}
           {isInstructorOrAdmin && ((Array.isArray(user?.payments) && user.payments.length > 0) || (Array.isArray(user?.subscriptions) && user.subscriptions.length > 0)) ? (
             <Card className="shadow-sm border border-gray-100">

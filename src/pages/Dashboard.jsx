@@ -656,76 +656,76 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
-                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600" size={20} />
-                        <span className="text-blue-600 font-semibold">Completed</span>
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 mt-6 px-1">
+                    <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border border-blue-100 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle className="text-blue-600 flex-shrink-0" size={18} />
+                        <span className="text-blue-600 font-semibold text-sm sm:text-base truncate">Completed</span>
                       </div>
-                      <p className="text-2xl font-bold text-blue-700 mt-1">
+                      <p className="text-xl sm:text-2xl font-bold text-blue-700 mb-1">
                         {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-8 w-12 rounded"></span>
+                          <span className="inline-block align-middle animate-pulse bg-blue-200 h-6 sm:h-8 w-8 sm:w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.completedCourses || 0
                         )}
                       </p>
-                      <p className="text-blue-600 text-sm">Courses finished</p>
+                      <p className="text-blue-600 text-xs sm:text-sm truncate">Courses finished</p>
                     </div>
-                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600" size={20} />
-                        <span className="text-emerald-600 font-semibold">Modules</span>
+                    <div className="bg-emerald-50 rounded-xl p-3 sm:p-4 border border-emerald-100 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="text-emerald-600 flex-shrink-0" size={18} />
+                        <span className="text-emerald-600 font-semibold text-sm sm:text-base truncate">Modules</span>
                       </div>
-                      <p className="text-2xl font-bold text-emerald-700 mt-1">
+                      <p className="text-xl sm:text-2xl font-bold text-emerald-700 mb-1">
                         {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
+                          <span className="inline-block align-middle animate-pulse bg-emerald-200 h-6 sm:h-8 w-8 sm:w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.modulesCompleted || 0
                         )}
                       </p>
-                      <p className="text-emerald-600 text-sm">Modules Completed</p>
+                      <p className="text-emerald-600 text-xs sm:text-sm truncate">Modules Completed</p>
                     </div>
-                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
-                      <div className="flex items-center gap-2">
-                        <Award className="text-orange-600" size={20} />
-                        <span className="text-orange-600 font-semibold">Quizzes</span>
+                    <div className="bg-orange-50 rounded-xl p-3 sm:p-4 border border-orange-100 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Award className="text-orange-600 flex-shrink-0" size={18} />
+                        <span className="text-orange-600 font-semibold text-sm sm:text-base truncate">Quizzes</span>
                       </div>
-                      <p className="text-2xl font-bold text-orange-700 mt-1">
+                      <p className="text-xl sm:text-2xl font-bold text-orange-700 mb-1">
                         {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
+                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-6 sm:h-8 w-8 sm:w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.assessmentsCompleted || 0
                         )}
                       </p>
-                      <p className="text-orange-600 text-sm">Quiz Completed</p>
+                      <p className="text-orange-600 text-xs sm:text-sm truncate">Quiz Completed</p>
                     </div>
-                    <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600" size={20} />
-                        <span className="text-purple-600 font-semibold">Enrolled</span>
+                    <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border border-purple-100 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="text-purple-600 flex-shrink-0" size={18} />
+                        <span className="text-purple-600 font-semibold text-sm sm:text-base truncate">Enrolled</span>
                       </div>
-                      <p className="text-2xl font-bold text-purple-700 mt-1">
+                      <p className="text-xl sm:text-2xl font-bold text-purple-700 mb-1">
                         {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
+                          <span className="inline-block align-middle animate-pulse bg-purple-200 h-6 sm:h-8 w-8 sm:w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.allEnrolledCoursesCount || 0
                         )}
                       </p>
-                      <p className="text-purple-600 text-sm">Total Courses</p>
+                      <p className="text-purple-600 text-xs sm:text-sm truncate">Total Courses</p>
                     </div>
-                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
-                      <div className="flex items-center gap-2">
-                        <Clock className="text-yellow-600" size={20} />
-                        <span className="text-yellow-600 font-semibold">Pending</span>
+                    <div className="bg-yellow-50 rounded-xl p-3 sm:p-4 border border-yellow-100 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Clock className="text-yellow-600 flex-shrink-0" size={18} />
+                        <span className="text-yellow-600 font-semibold text-sm sm:text-base truncate">Pending</span>
                       </div>
-                      <p className="text-2xl font-bold text-yellow-700 mt-1">
+                      <p className="text-xl sm:text-2xl font-bold text-yellow-700 mb-1">
                         {loading ? (
-                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
+                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-6 sm:h-8 w-8 sm:w-12 rounded"></span>
                         ) : (
                           dashboardData.summary?.pendingCoursesCount || 0
                         )}
                       </p>
-                      <p className="text-yellow-600 text-sm">Courses Remaining</p>
+                      <p className="text-yellow-600 text-xs sm:text-sm truncate">Courses Remaining</p>
                     </div>
                   </div>
                 </div>

@@ -1121,9 +1121,9 @@ export function CourseView() {
                               <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
                                 <Lock className="w-5 h-5 text-gray-700" />
                                 <span className="text-sm font-medium text-gray-800">Locked</span>
-                              </div>
-                            </div>
-                          )}
+              </div>
+            </div>
+          )}
                         </div>
                         <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
                           <CardHeader className="pb-2 px-0 pt-0">
