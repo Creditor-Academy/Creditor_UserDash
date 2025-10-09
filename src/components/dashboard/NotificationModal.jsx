@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { markAllNotificationsRead } from "@/services/notificationService";
 import getSocket from "@/services/socketClient";
-import { getInvitationByToken, acceptPrivateGroupInvitation, rejectPrivateGroupInvitation } from "@/services/privateGroupService";
+import { getInvitationByToken, acceptPrivateGroupInvitation, rejectPrivateGroupInvitation, getPendingInvitations } from "@/services/privateGroupService";
 
 export function NotificationModal({ open, onOpenChange, onNotificationUpdate, notificationsFromApi = [], onMarkedAllRead }) {
   const [notifications, setNotifications] = useState([]);
@@ -54,6 +54,72 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
       setNotifications([]);
     }
   }, [notificationsFromApi]);
+
+  // Load pending invitations when component mounts or modal opens
+  useEffect(() => {
+    // Load on mount to update notification badge
+    loadPendingInvitations();
+  }, []);
+
+  // Also load when modal opens to ensure fresh data
+  useEffect(() => {
+    if (open) {
+      loadPendingInvitations();
+    }
+  }, [open]);
+
+  const loadPendingInvitations = async () => {
+    try {
+      const response = await getPendingInvitations();
+      const invitations = response?.data || response?.invitations || [];
+      
+      if (!Array.isArray(invitations) || invitations.length === 0) {
+        return;
+      }
+
+      console.log('Loaded pending invitations:', invitations);
+
+      // Map invitations to the format expected by the UI
+      const mappedInvites = await Promise.all(
+        invitations.map(async (inv) => {
+          try {
+            // Fetch full invitation details if needed
+            const detailRes = inv.group ? { data: inv } : await getInvitationByToken(inv.token);
+            const detail = detailRes?.data || detailRes || {};
+            const group = detail.group || {};
+            const inviter = detail.inviter || {};
+
+            return {
+              id: String(inv.token || inv.id),
+              type: 'chat-invitation',
+              title: group.name || inv.group_name || 'Private Group',
+              description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+              time: new Date(inv.created_at || inv.createdAt || Date.now()).toLocaleString(),
+              token: inv.token,
+              groupId: group.id || inv.group_id,
+              thumbnail: group.thumbnail || group.image || null,
+              inviterName: [inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'Admin',
+              read: false,
+            };
+          } catch (err) {
+            console.warn('Failed to process invitation:', err);
+            return null;
+          }
+        })
+      );
+
+      // Filter out any null values and update state
+      const validInvites = mappedInvites.filter(Boolean);
+      setChatInvites(prev => {
+        // Merge with existing invites, avoiding duplicates
+        const existingTokens = new Set(prev.map(c => String(c.token)));
+        const newInvites = validInvites.filter(inv => !existingTokens.has(String(inv.token)));
+        return [...prev, ...newInvites];
+      });
+    } catch (error) {
+      console.error('Failed to load pending invitations:', error);
+    }
+  };
 
   // Initialize unread count when modal opens
   useEffect(() => {

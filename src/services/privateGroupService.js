@@ -191,6 +191,19 @@ export async function rejectPrivateGroupInvitation(token) {
   }
 }
 
+// Get pending invitations for the current user
+export async function getPendingInvitations() {
+  try {
+    const response = await api.get('/api/private-groups/invitations/pending', {
+      withCredentials: true,
+    });
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.getPendingInvitations error:', error);
+    throw error;
+  }
+}
+
 export async function getMyMemberPrivateGroups() {
   try {
     const response = await api.get('/api/private-groups/member-of', {
