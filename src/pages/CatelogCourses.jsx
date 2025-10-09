@@ -115,6 +115,58 @@ const CatelogCourses = () => {
   const navigate = useNavigate();
   const { userProfile } = useUser();
   const { balance, unlockContent, refreshBalance } = useCredits();
+
+  // Mapping of supported courses to their recordings course IDs (Street Smart)
+  const RECORDING_COURSE_IDS = {
+    becomePrivate: "a188173c-23a6-4cb7-9653-6a1a809e9914",
+    operatePrivate: "7b798545-6f5f-4028-9b1e-e18c7d2b4c47",
+    businessCredit: "199e328d-8366-4af1-9582-9ea545f8b59e",
+    privateMerchant: "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e",
+    sovereignty101: "d5330607-9a45-4298-8ead-976dd8810283",
+    remedy: "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now recording course ID
+  };
+
+  // Check if current course is a recording course
+  const isRecordingCourse = (title) => {
+    const t = (title || "").toLowerCase();
+    return t.includes("recording") || t.includes("recordings");
+  };
+
+  // Determine if current course is one of the eligible courses (with recording course IDs)
+  // But exclude recording courses themselves
+  const isEligibleForTwoModes = (title) => {
+    if (isRecordingCourse(title)) return false; // Don't show Book Smart/Street Smart in recording courses
+    
+    const t = (title || "").toLowerCase();
+    // More specific matching to avoid catching courses like "Tier 1: Optimizing Your Business Credit Profile"
+    return [
+      "become private", // Exact main course
+      "sovereignty 101", // Exact main course
+      "sov 101", // Exact main course
+      "operate private", // Exact main course
+      "business credit", // Only if it's the main "Business Credit" course, not sub-courses
+      "i want remedy now", // Exact main course
+      "private merchant", // Exact main course
+    ].some((k) => {
+      // For "business credit", be more specific to avoid sub-courses like "Tier 1: Optimizing Your Business Credit Profile"
+      if (k === "business credit") {
+        return t.includes("business credit") && !t.includes("tier") && !t.includes("optimizing") && !t.includes("profile");
+      }
+      return t.includes(k);
+    });
+  };
+
+  // Get recording course id for the matching title
+  const getRecordingCourseIdForTitle = (title) => {
+    const t = (title || "").toLowerCase();
+    if (t.includes("become private")) return RECORDING_COURSE_IDS.becomePrivate;
+    if (t.includes("operate private")) return RECORDING_COURSE_IDS.operatePrivate;
+    if (t.includes("business credit")) return RECORDING_COURSE_IDS.businessCredit;
+    if (t.includes("private merchant")) return RECORDING_COURSE_IDS.privateMerchant;
+    if (t.includes("sovereignty 101") || t.includes("sov 101")) return RECORDING_COURSE_IDS.sovereignty101;
+    if (t.includes("i want remedy now")) return RECORDING_COURSE_IDS.remedy;
+    return null;
+  };
   const [catalog, setCatalog] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -243,9 +295,11 @@ const CatelogCourses = () => {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
-    // Hide buy options for Master Class catalog courses
+    // Hide buy options for Master Class catalog courses EXCEPT for Private Merchant
     const isMasterClassCatalog = (catalog?.name || "").toLowerCase().includes("master class");
-    if (isMasterClassCatalog) return false;
+    const isPrivateMerchantCourse = (course?.title || "").toLowerCase().includes("private merchant");
+    
+    if (isMasterClassCatalog && !isPrivateMerchantCourse) return false;
 
     // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
     const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
@@ -985,6 +1039,18 @@ const CatelogCourses = () => {
                     
                     // Call unlock API for course
                     await unlockContent('COURSE', selectedCourseToBuy.id, selectedCourseToBuy.priceCredits);
+                    
+                    // Additionally unlock recording courses for eligible titles
+                    try {
+                      if (isEligibleForTwoModes(selectedCourseToBuy.title)) {
+                        const recId = getRecordingCourseIdForTitle(selectedCourseToBuy.title);
+                        if (recId) {
+                          await unlockContent('COURSE', recId, 0);
+                        }
+                      }
+                    } catch (e) {
+                      console.warn('[CatelogCourses] Optional recording unlock failed:', e?.message || e);
+                    }
                     
                     // Refresh balance to show updated credits
                     if (refreshBalance) {

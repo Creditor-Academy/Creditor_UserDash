@@ -243,13 +243,19 @@ export function CourseView() {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
-    // Hide buy option for specific Master Class courses
+    // Hide buy option for Master Class courses EXCEPT for Private Merchant
     const title = (course?.title || "").toLowerCase();
+    const isPrivateMerchantCourse = title.includes("private merchant");
+    
+    // Check if this is a Master Class course (but allow Private Merchant)
     const isMasterClassCourse = [
       "formation of business trust",
-      "tier 1: optimizing your business credit profile"
+      "tier 1: optimizing your business credit profile",
+      "business trust",
+      "credit optimization"
     ].some(name => title.includes(name));
-    if (isMasterClassCourse) return false;
+    
+    if (isMasterClassCourse && !isPrivateMerchantCourse) return false;
 
     // Check if this course belongs to a free catalog (Roadmap Series/Start Your Passive Income Now)
     // or a class recording catalog
@@ -640,7 +646,9 @@ export function CourseView() {
                           const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(k => title.includes(k));
                           const isMasterClassCourse = [
                             "formation of business trust",
-                            "tier 1: optimizing your business credit profile"
+                            "tier 1: optimizing your business credit profile",
+                            "business trust",
+                            "credit optimization"
                           ].some(name => title.includes(name));
                           if (isFromFreeCatalog(courseDetails) || isMasterClassCourse) {
                             return (
@@ -668,13 +676,16 @@ export function CourseView() {
                             <div className="p-2 bg-green-500 rounded-lg shadow-md">
                               <BookOpen className="h-5 w-5 text-white" />
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-800">Continue Your Learning Journey</p>
-                              <p className="text-xs text-green-600 mt-1">
-                                You've already started this course with individual lessons! 
-                                Keep building your knowledge by purchasing more lessons.
-                              </p>
-                            </div>
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  {isMasterClassCourse ? "Master Class - Instructor Enrollment" : "Continue Your Learning Journey"}
+                                </p>
+                                <p className="text-xs text-green-600 mt-1">
+                                  {isMasterClassCourse 
+                                    ? "This is part of Master Class. Your instructor will enroll you in this course." 
+                                    : "You've already started this course with individual lessons! Keep building your knowledge by purchasing more lessons."}
+                                </p>
+                              </div>
                           </div>
                           );
                         })()}
@@ -889,9 +900,21 @@ export function CourseView() {
                                   const t = (courseDetails?.title || "").toLowerCase();
                                   const isMasterClassCourse = [
                                     "formation of business trust",
-                                    "tier 1: optimizing your business credit profile"
+                                    "tier 1: optimizing your business credit profile",
+                                    "business trust",
+                                    "credit optimization"
                                   ].some(name => t.includes(name));
-                                  if (isMasterClassCourse) {
+                                  
+                                  const isFreeCourse = [
+                                    "roadmap",
+                                    "road map",
+                                    "roadmap series",
+                                    "road map series",
+                                    "passive income",
+                                    "start your passive income"
+                                  ].some(name => t.includes(name));
+                                  
+                                  if (isMasterClassCourse || isFreeCourse) {
                                     return (
                                       <div className="w-full flex flex-col gap-2">
                                         <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
@@ -1290,9 +1313,21 @@ export function CourseView() {
                               const t = (courseDetails?.title || "").toLowerCase();
                               const isMasterClassCourse = [
                                 "formation of business trust",
-                                "tier 1: optimizing your business credit profile"
+                                "tier 1: optimizing your business credit profile",
+                                "business trust",
+                                "credit optimization"
                               ].some(name => t.includes(name));
-                              if (isMasterClassCourse) {
+                              
+                              const isFreeCourse = [
+                                "roadmap",
+                                "road map",
+                                "roadmap series",
+                                "road map series",
+                                "passive income",
+                                "start your passive income"
+                              ].some(name => t.includes(name));
+                              
+                              if (isMasterClassCourse || isFreeCourse) {
                                 return (
                                   <div className="w-full flex flex-col gap-2">
                                     <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
