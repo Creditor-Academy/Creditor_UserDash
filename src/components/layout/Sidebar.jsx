@@ -20,7 +20,8 @@ import {
   GraduationCap,
   Library,
   School,
-  Bot
+  Bot,
+  CreditCard
 } from "lucide-react";
 import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
@@ -138,7 +139,7 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
   );
 };
 
-export function Sidebar({ collapsed, setCollapsed }) {
+export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
@@ -171,6 +172,12 @@ export function Sidebar({ collapsed, setCollapsed }) {
     }
     if (collapsed) {
       setCollapsed(false);
+    }
+  };
+
+  const handleCreditorCardClick = () => {
+    if (onCreditorCardClick) {
+      onCreditorCardClick();
     }
   };
 
@@ -365,6 +372,18 @@ export function Sidebar({ collapsed, setCollapsed }) {
               onNavigate={handleNavigate}
             />
           </motion.div>
+
+          {/* Creditor Card */}
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={CreditCard}
+              label="Creditor Card"
+              href="#"
+              active={false}
+              collapsed={collapsed}
+              onNavigate={handleCreditorCardClick}
+            />
+          </motion.div>
           </>
           )}
 
@@ -524,6 +543,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
           </DropdownMenu>
         )}
       </motion.div> 
+
     </motion.div>
   );
 }
