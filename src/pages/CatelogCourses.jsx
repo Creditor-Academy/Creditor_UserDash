@@ -136,6 +136,8 @@ const CatelogCourses = () => {
   const [buyDetailsOpen, setBuyDetailsOpen] = useState(false);
   const [purchaseNotice, setPurchaseNotice] = useState("");
   const [isPurchasing, setIsPurchasing] = useState(false);
+  // Toggle for long description inside the buy modal
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
   
   // Unlocked modules state for checking individual lesson purchases
   const [unlockedModules, setUnlockedModules] = useState([]);
@@ -241,6 +243,10 @@ const CatelogCourses = () => {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
+    // Hide buy options for Master Class catalog courses
+    const isMasterClassCatalog = (catalog?.name || "").toLowerCase().includes("master class");
+    if (isMasterClassCatalog) return false;
+
     // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
     const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
     const isFreeCatalog = freeCourseNames.some(name => 
@@ -811,7 +817,7 @@ const CatelogCourses = () => {
                              </Link>
                            </Button>
                            
-                         <Button
+                        <Button
                            onClick={(e) => {
                              e.preventDefault();
                              e.stopPropagation();
@@ -832,7 +838,7 @@ const CatelogCourses = () => {
                            </Button>
                            </Link>
                            {/* Only show the message for non-free and non-recording catalog courses */}
-                           {(() => {
+                          {(() => {
                              // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
                              const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
                              const isFreeCatalog = freeCourseNames.some(name =>
@@ -847,8 +853,9 @@ const CatelogCourses = () => {
                                (catalog?.name || "").toLowerCase().includes("recordings") ||
                                (catalog?.name || "").toLowerCase().includes("recording");
 
-                             // Only show the message if it's NOT a free catalog and NOT a class recording catalog
-                             if (!isFreeCatalog && !isClassRecordingCatalog) {
+                              // Only show the message if it's NOT a free catalog, NOT a class recording catalog, and NOT master class
+                             const isMasterClassCatalog = (catalog?.name || "").toLowerCase().includes("master class");
+                             if (!isFreeCatalog && !isClassRecordingCatalog && !isMasterClassCatalog) {
                                return (
                                  <p className="text-xs text-gray-500 mt-2 text-center">
                                    You bought individual lessons - continue buying lessons only
@@ -906,7 +913,19 @@ const CatelogCourses = () => {
             
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="text-lg font-semibold text-gray-900 mb-2">{selectedCourseToBuy.title}</div>
-              <div className="text-sm text-gray-600 mb-3">{selectedCourseToBuy.description || "Complete course with multiple modules"}</div>
+              {/* Collapsible description with View More/Less */}
+              <div className={`text-sm text-gray-600 mb-2 ${isDescExpanded ? '' : 'line-clamp-3'}`}>
+                {selectedCourseToBuy.description || "Complete course with multiple modules"}
+              </div>
+              {selectedCourseToBuy?.description && selectedCourseToBuy.description.length > 140 && (
+                <button
+                  type="button"
+                  onClick={() => setIsDescExpanded(v => !v)}
+                  className="text-blue-600 hover:text-blue-700 text-xs font-semibold"
+                >
+                  {isDescExpanded ? 'View less' : 'View more'}
+                </button>
+              )}
               
               {/* Course Details */}
               <div className="grid grid-cols-2 gap-4 mb-3">

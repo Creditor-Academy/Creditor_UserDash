@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Video, PlayCircle, Shield, Lock, Briefcase, Store, Crown } from "lucide-react";
+import { Video, PlayCircle, Shield, Lock, Briefcase, Store, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { fetchUserCourses } from "@/services/courseService";
 
@@ -17,6 +17,7 @@ export default function ClassRecording() {
 
   const [enrolledCourseIds, setEnrolledCourseIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const loadUserCourses = async () => {
@@ -130,81 +131,100 @@ export default function ClassRecording() {
 
   return (
     <div className="p-4 sm:p-6 w-full max-w-5xl mx-auto">
-      <div className="mb-2 flex items-center gap-2 text-2xl font-bold text-gray-800">
-        <Video className="h-6 w-6 text-purple-500" />
-        Class Recordings
+      <div 
+        className="mb-2 flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors"
+        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+      >
+        <div className="flex items-center gap-2 text-2xl font-bold text-gray-800">
+          <Video className="h-6 w-6 text-purple-500" />
+          Class Recordings
+        </div>
+        <div className="flex items-center gap-2">
+          <p className="text-gray-500 text-sm">Access past sessions at your convenience</p>
+          {isDropdownOpen ? (
+            <ChevronUp className="h-5 w-5 text-gray-500 transition-transform" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform" />
+          )}
+        </div>
       </div>
-      <p className="text-gray-500 mt-1">Access past sessions at your convenience</p>
 
-      {/* Recordings grid gated by enrollment */}
-      <div className="mt-6">
-        {loading ? (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 text-center text-sm text-gray-600">
-            Loading your eligible recordings...
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cards
-              .filter((card) => enrolledCourseIds.has(card.courseId))
-              .map((card) => (
-                (() => {
-                  const style = getCardStyle(card.courseId);
-                  const Icon = style.Icon;
-                  return (
-                    <div
-                      key={card.courseId}
-                      className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all"
-                    >
-                      {/* Side color accents inspired by reference (behind content) */}
-                      <div aria-hidden className="pointer-events-none absolute -left-6 top-10 h-24 w-24 rounded-xl rotate-[-8deg] opacity-50 z-0">
-                        <div className={`h-full w-full rounded-xl ${style.leftAccent}`}></div>
-                      </div>
-                      <div aria-hidden className="pointer-events-none absolute -right-6 bottom-10 h-24 w-24 rounded-xl rotate-[8deg] opacity-50 z-0">
-                        <div className={`h-full w-full rounded-xl ${style.rightAccent}`}></div>
-                      </div>
-
-                      {/* Top tab with icon (above accents) */}
-                      <div className="relative px-4 pt-6 pb-2 z-10">
-                        <div className="relative inline-flex">
-                          <div className={`relative inline-flex items-center gap-2 px-3 py-1.5 rounded-t-xl text-white text-xs font-semibold shadow ${style.tabBg} ring-1 ${style.tabRing}`}>
-                            <Icon className="h-4 w-4 text-white" />
-                            Recordings
-                          </div>
-                          {/* small notch */}
-                          <div className="absolute left-0 -bottom-2 w-6 h-2 bg-black/10 blur-[2px] opacity-20 rounded-b" />
-                        </div>
-                      </div>
-
-                      {/* Body (above accents) */}
-                      <div className="relative px-4 pb-4 z-10">
-                        <h3 className="text-base font-semibold text-gray-900 line-clamp-2">
-                          {card.title}
-                        </h3>
-                        <p className="mt-1 text-sm text-gray-600 line-clamp-3">{card.description}</p>
-
-                        <div className="mt-4">
-                          <button
-                            onClick={card.action}
-                            className="w-full inline-flex items-center justify-center h-10 rounded-md bg-slate-100 text-slate-800 hover:bg-slate-900 hover:text-white border border-slate-300 text-sm font-medium transition-colors shadow-sm"
-                          >
-                            {card.actionText}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()
-              ))}
-          </div>
-        )}
-
-        {/* If none matched */}
-        {!loading &&
-          cards.filter((c) => enrolledCourseIds.has(c.courseId)).length === 0 && (
+      {/* Animated dropdown content */}
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          isDropdownOpen ? 'max-h-[2000px] opacity-100 mt-6' : 'max-h-0 opacity-0 mt-0'
+        }`}
+      >
+        {/* Recordings grid gated by enrollment */}
+        <div>
+          {loading ? (
             <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 text-center text-sm text-gray-600">
-              No eligible recordings available for your enrolled courses yet.
+              Loading your eligible recordings...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {cards
+                .filter((card) => enrolledCourseIds.has(card.courseId))
+                .map((card) => (
+                  (() => {
+                    const style = getCardStyle(card.courseId);
+                    const Icon = style.Icon;
+                    return (
+                      <div
+                        key={card.courseId}
+                        className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all"
+                      >
+                        {/* Side color accents inspired by reference (behind content) */}
+                        <div aria-hidden className="pointer-events-none absolute -left-6 top-10 h-24 w-24 rounded-xl rotate-[-8deg] opacity-50 z-0">
+                          <div className={`h-full w-full rounded-xl ${style.leftAccent}`}></div>
+                        </div>
+                        <div aria-hidden className="pointer-events-none absolute -right-6 bottom-10 h-24 w-24 rounded-xl rotate-[8deg] opacity-50 z-0">
+                          <div className={`h-full w-full rounded-xl ${style.rightAccent}`}></div>
+                        </div>
+
+                        {/* Top tab with icon (above accents) */}
+                        <div className="relative px-4 pt-6 pb-2 z-10">
+                          <div className="relative inline-flex">
+                            <div className={`relative inline-flex items-center gap-2 px-3 py-1.5 rounded-t-xl text-white text-xs font-semibold shadow ${style.tabBg} ring-1 ${style.tabRing}`}>
+                              <Icon className="h-4 w-4 text-white" />
+                              Recordings
+                            </div>
+                            {/* small notch */}
+                            <div className="absolute left-0 -bottom-2 w-6 h-2 bg-black/10 blur-[2px] opacity-20 rounded-b" />
+                          </div>
+                        </div>
+
+                        {/* Body (above accents) */}
+                        <div className="relative px-4 pb-4 z-10">
+                          <h3 className="text-base font-semibold text-gray-900 line-clamp-2">
+                            {card.title}
+                          </h3>
+                          <p className="mt-1 text-sm text-gray-600 line-clamp-3">{card.description}</p>
+
+                          <div className="mt-4">
+                            <button
+                              onClick={card.action}
+                              className="w-full inline-flex items-center justify-center h-10 rounded-md bg-slate-100 text-slate-800 hover:bg-slate-900 hover:text-white border border-slate-300 text-sm font-medium transition-colors shadow-sm"
+                            >
+                              {card.actionText}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()
+                ))}
             </div>
           )}
+
+          {/* If none matched */}
+          {!loading &&
+            cards.filter((c) => enrolledCourseIds.has(c.courseId)).length === 0 && (
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 text-center text-sm text-gray-600">
+                No eligible recordings available for your enrolled courses yet.
+              </div>
+            )}
+        </div>
       </div>
 
       {/* Sovereignty 101 section (temporarily disabled) */}
