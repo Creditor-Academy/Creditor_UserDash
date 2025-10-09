@@ -891,6 +891,47 @@ export function CourseView() {
                                       Start Assessment
                                     </Button> 
                                   </Link>
+                                  {/* Mark as Complete - only show when enrolled in the course */}
+                                  {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                                    <Button
+                                      variant="secondary"
+                                      className="w-full disabled:opacity-60"
+                                      disabled={markingCompleteIds.has(String(module.id))}
+                                      onClick={async () => {
+                                        const idStr = String(module.id);
+                                        if (!courseId || !module?.id) return;
+                                        // Prevent duplicate clicks
+                                        if (markingCompleteIds.has(idStr)) return;
+                                        setMarkingCompleteIds(prev => {
+                                          const next = new Set(prev);
+                                          next.add(idStr);
+                                          return next;
+                                        });
+                                        try {
+                                          await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                          setCompletedModuleIds(prev => {
+                                            const next = new Set(prev);
+                                            next.add(idStr);
+                                            return next;
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to mark module as complete', err);
+                                        } finally {
+                                          setMarkingCompleteIds(prev => {
+                                            const next = new Set(prev);
+                                            next.delete(idStr);
+                                            return next;
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                                    </Button>
+                                  ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                                    <div className="w-full flex items-center justify-center">
+                                      <Badge className="px-3 py-1">Completed</Badge>
+                                    </div>
+                                  ) : null}
                                 </>
                                ) : !isContentAvailable ? (
                                  <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
@@ -1137,6 +1178,47 @@ export function CourseView() {
                                       Start Assessment
                                     </Button>
                                   </Link>
+                                  {/* Mark as Complete - only show when enrolled in the recording course */}
+                                  {isEnrolledRecording && !completedModuleIds.has(String(module.id)) ? (
+                                    <Button
+                                      variant="secondary"
+                                      className="w-full disabled:opacity-60"
+                                      disabled={markingCompleteIds.has(String(module.id))}
+                                      onClick={async () => {
+                                        const idStr = String(module.id);
+                                        if (!recordingCourseId || !module?.id) return;
+                                        // Prevent duplicate clicks
+                                        if (markingCompleteIds.has(idStr)) return;
+                                        setMarkingCompleteIds(prev => {
+                                          const next = new Set(prev);
+                                          next.add(idStr);
+                                          return next;
+                                        });
+                                        try {
+                                          await api.post(`/api/course/${recordingCourseId}/modules/${module.id}/mark-complete`);
+                                          setCompletedModuleIds(prev => {
+                                            const next = new Set(prev);
+                                            next.add(idStr);
+                                            return next;
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to mark module as complete', err);
+                                        } finally {
+                                          setMarkingCompleteIds(prev => {
+                                            const next = new Set(prev);
+                                            next.delete(idStr);
+                                            return next;
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                                    </Button>
+                                  ) : isEnrolledRecording && completedModuleIds.has(String(module.id)) ? (
+                                    <div className="w-full flex items-center justify-center">
+                                      <Badge className="px-3 py-1">Completed</Badge>
+                                    </div>
+                                  ) : null}
                               </>
                             ) : !isContentAvailable ? (
                               <Button className="w-full" disabled>
