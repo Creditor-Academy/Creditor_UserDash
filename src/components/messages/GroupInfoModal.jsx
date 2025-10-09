@@ -361,6 +361,9 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
           invites: invitations,
           group: group
         });
+        
+        // Trigger global refresh for invitations
+        window.dispatchEvent(new CustomEvent('refresh-invitations'));
       }
       
       setSelectedUsers(new Set());

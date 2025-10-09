@@ -68,21 +68,70 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
     }
   }, [open]);
 
+  // Load invitations on user login
+  useEffect(() => {
+    const handleUserLoggedIn = () => {
+      console.log('User logged in - loading pending invitations');
+      setTimeout(() => {
+        loadPendingInvitations();
+      }, 500); // Small delay to ensure token is set
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLoggedIn);
+    return () => window.removeEventListener('userLoggedIn', handleUserLoggedIn);
+  }, []);
+
+  // Refresh invitations when window gains focus (user returns to tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused - refreshing invitations');
+      loadPendingInvitations();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
+  // Listen for invitation refresh requests
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('Invitation refresh requested');
+      loadPendingInvitations();
+    };
+
+    window.addEventListener('refresh-invitations', handleRefresh);
+    return () => window.removeEventListener('refresh-invitations', handleRefresh);
+  }, []);
+
   const loadPendingInvitations = async () => {
     try {
+      console.log('[Invitation API] Fetching pending invitations for current user...');
       const response = await getPendingInvitations();
       const invitations = response?.data || response?.invitations || [];
       
+      console.log('[Invitation API] Response:', response);
+      console.log('[Invitation API] Parsed invitations:', invitations);
+      console.log('[Invitation API] Current user ID:', localStorage.getItem('userId'));
+      
       if (!Array.isArray(invitations) || invitations.length === 0) {
+        console.log('[Invitation API] No pending invitations found');
         return;
       }
 
-      console.log('Loaded pending invitations:', invitations);
+      console.log('[Invitation API] Processing', invitations.length, 'invitations');
 
       // Map invitations to the format expected by the UI
+      const currentUserId = localStorage.getItem('userId');
       const mappedInvites = await Promise.all(
         invitations.map(async (inv) => {
           try {
+            // Double-check this invitation is for the current user
+            const inviteeId = String(inv.invitee_id || inv.inviteeId || '');
+            if (inviteeId && inviteeId !== String(currentUserId)) {
+              console.log('[Invitation API] Skipping invitation not for current user:', inv);
+              return null;
+            }
+            
             // Fetch full invitation details if needed
             const detailRes = inv.group ? { data: inv } : await getInvitationByToken(inv.token);
             const detail = detailRes?.data || detailRes || {};
@@ -114,7 +163,15 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         // Merge with existing invites, avoiding duplicates
         const existingTokens = new Set(prev.map(c => String(c.token)));
         const newInvites = validInvites.filter(inv => !existingTokens.has(String(inv.token)));
-        return [...prev, ...newInvites];
+        const updatedInvites = [...prev, ...newInvites];
+        
+        // Update parent badge count immediately
+        if (onNotificationUpdate && newInvites.length > 0) {
+          const totalUnread = notifications.filter(n => !n.read).length + updatedInvites.filter(c => !c.read).length;
+          onNotificationUpdate(totalUnread);
+        }
+        
+        return updatedInvites;
       });
     } catch (error) {
       console.error('Failed to load pending invitations:', error);
@@ -136,9 +193,26 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
 
     const onInvitationSent = async (data) => {
       try {
+        console.log('[Invitation] Received socket event:', data);
+        console.log('[Invitation] Current user ID:', currentUserId);
+        
         const invites = Array.isArray(data?.invites) ? data.invites : [];
-        const match = invites.find((i) => String(i.invitee_id) === currentUserId || String(i.inviteeId) === currentUserId);
-        if (!match || !match.token) return;
+        console.log('[Invitation] Processing invites:', invites);
+        
+        // Check if current user is in the invitee list
+        const match = invites.find((i) => {
+          const inviteeId = String(i.invitee_id || i.inviteeId || '');
+          const isMatch = inviteeId === currentUserId;
+          console.log('[Invitation] Checking invitee:', inviteeId, 'against current:', currentUserId, '-> Match:', isMatch);
+          return isMatch;
+        });
+        
+        if (!match || !match.token) {
+          console.log('[Invitation] No match found for current user - ignoring invitation');
+          return;
+        }
+
+        console.log('[Invitation] Match found! Processing invitation for token:', match.token);
 
         // Fetch invite details for rich card
         const detailRes = await getInvitationByToken(match.token);
@@ -150,7 +224,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
           id: String(match.token),
           type: 'chat-invitation',
           title: group.name || 'Private Group',
-          description: `You’ve been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+          description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
           time: new Date().toLocaleString(),
           token: match.token,
           groupId: group.id,
@@ -161,12 +235,17 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
 
         setChatInvites((prev) => {
           const exists = prev.some((c) => String(c.id) === String(newInvite.id));
-          return exists ? prev : [newInvite, ...prev];
+          if (exists) {
+            console.log('[Invitation] Invitation already exists - skipping');
+            return prev;
+          }
+          console.log('[Invitation] Adding new invitation to list');
+          return [newInvite, ...prev];
         });
 
         toast.info('New chat invitation received');
       } catch (e) {
-        console.warn('Failed processing privateGroupInvitationSent', e);
+        console.warn('[Invitation] Failed processing privateGroupInvitationSent', e);
       }
     };
 
