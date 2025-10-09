@@ -222,7 +222,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
 
   return (
     <motion.div
-      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20 overflow-hidden"
+      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
       variants={sidebarVariants}
       animate={collapsed ? "collapsed" : "expanded"}
       initial={false}
@@ -308,9 +308,9 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 overflow-hidden py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white">
+      <div className="flex-1 overflow-y-auto py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white custom-scrollbar">
         <motion.div 
-          className="space-y-2 overflow-hidden px-2"
+          className="space-y-2 px-2"
           variants={listVariants}
           initial="hidden"
           animate="show"
