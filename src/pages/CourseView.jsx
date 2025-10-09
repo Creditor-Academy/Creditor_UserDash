@@ -100,6 +100,40 @@ export function CourseView() {
   // Sequential unlock modal state
   const [showSequentialModal, setShowSequentialModal] = useState(false);
   const [selectedModuleForSequential, setSelectedModuleForSequential] = useState(null);
+  
+  // View mode and street modules state
+  const [viewMode, setViewMode] = useState("book");
+  const [streetModules, setStreetModules] = useState([]);
+  const [streetLoading, setStreetLoading] = useState(false);
+  const [streetError, setStreetError] = useState("");
+  const [isEnrolledRecording, setIsEnrolledRecording] = useState(false);
+  
+  // Helper function to check if course is eligible for two modes
+  const isEligibleForTwoModes = (title) => {
+    if (!title) return false;
+    const lowerTitle = title.toLowerCase();
+    return lowerTitle.includes("private") || lowerTitle.includes("sovereign");
+  };
+
+  // Helper function to get recording course ID based on title
+  const getRecordingCourseIdForTitle = (title) => {
+    if (!title) return null;
+    const lowerTitle = title.toLowerCase();
+    
+    // Map course titles to their recording course IDs
+    const courseMapping = {
+      "private": "recording-private-course-id",
+      "sovereign": "recording-sovereign-course-id"
+    };
+    
+    for (const [keyword, recordingId] of Object.entries(courseMapping)) {
+      if (lowerTitle.includes(keyword)) {
+        return recordingId;
+      }
+    }
+    
+    return null;
+  };
 
   // Initialize unlocked modules from backend for this user
   useEffect(() => {
@@ -274,6 +308,63 @@ export function CourseView() {
     setShowSequentialModal(true);
   };
 
+  // Check if user is enrolled in the current course
+  const checkEnrollmentStatus = async () => {
+    if (!userProfile?.id || !courseId) {
+      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
+      return;
+    }
+    
+    try {
+      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
+      // Use the same method as Courses.jsx - fetchUserCourses from courseService
+      const userCourses = await fetchUserCourses();
+      console.log(`[CourseView] User courses:`, userCourses);
+      
+      // Check if current course is in user's enrolled courses
+      const enrolled = userCourses.some(course => {
+        const courseIdStr = course.id?.toString();
+        const currentCourseIdStr = courseId?.toString();
+        const match = courseIdStr === currentCourseIdStr;
+        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
+        return match;
+      });
+      
+      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
+      setIsEnrolled(enrolled);
+      
+      // Check recording course enrollment
+      try {
+        if (courseDetails?.title) {
+          const recId = getRecordingCourseIdForTitle(courseDetails.title);
+          console.log(`[CourseView] Recording course ID for ${courseDetails.title}:`, recId);
+          if (recId) {
+            const recEnrolled = userCourses.some(c => {
+              const cId = c.id?.toString?.() || c.id?.toString();
+              const recIdStr = recId.toString();
+              const match = cId === recIdStr;
+              console.log(`[CourseView] Recording enrollment check - course.id: ${cId}, recordingId: ${recIdStr}, match: ${match}`);
+              return match;
+            });
+            console.log(`[CourseView] Is user enrolled in recording course ${recId}:`, recEnrolled);
+            setIsEnrolledRecording(recEnrolled);
+          } else {
+            console.log(`[CourseView] No recording course ID found for ${courseDetails.title}`);
+            setIsEnrolledRecording(false);
+          }
+        } else {
+          setIsEnrolledRecording(false);
+        }
+      } catch (e) { 
+        console.error(`[CourseView] Error checking recording enrollment:`, e);
+        setIsEnrolledRecording(false); 
+      }
+    } catch (error) {
+      console.error('Failed to check enrollment status:', error);
+      setIsEnrolled(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -345,63 +436,6 @@ export function CourseView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseDetails?.title]);
 
-  // Check if user is enrolled in the current course
-  const checkEnrollmentStatus = async () => {
-    if (!userProfile?.id || !courseId) {
-      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
-      return;
-    }
-    
-    try {
-      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
-      // Use the same method as Courses.jsx - fetchUserCourses from courseService
-      const userCourses = await fetchUserCourses();
-      console.log(`[CourseView] User courses:`, userCourses);
-      
-      // Check if current course is in user's enrolled courses
-      const enrolled = userCourses.some(course => {
-        const courseIdStr = course.id?.toString();
-        const currentCourseIdStr = courseId?.toString();
-        const match = courseIdStr === currentCourseIdStr;
-        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
-        return match;
-      });
-      
-      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
-      setIsEnrolled(enrolled);
-      
-      // Check recording course enrollment
-      try {
-        if (courseDetails?.title) {
-          const recId = getRecordingCourseIdForTitle(courseDetails.title);
-          console.log(`[CourseView] Recording course ID for ${courseDetails.title}:`, recId);
-          if (recId) {
-            const recEnrolled = userCourses.some(c => {
-              const cId = c.id?.toString?.() || c.id?.toString();
-              const recIdStr = recId.toString();
-              const match = cId === recIdStr;
-              console.log(`[CourseView] Recording enrollment check - course.id: ${cId}, recordingId: ${recIdStr}, match: ${match}`);
-              return match;
-            });
-            console.log(`[CourseView] Is user enrolled in recording course ${recId}:`, recEnrolled);
-            setIsEnrolledRecording(recEnrolled);
-          } else {
-            console.log(`[CourseView] No recording course ID found for ${courseDetails.title}`);
-            setIsEnrolledRecording(false);
-          }
-        } else {
-          setIsEnrolledRecording(false);
-        }
-      } catch (e) { 
-        console.error(`[CourseView] Error checking recording enrollment:`, e);
-        setIsEnrolledRecording(false); 
-      }
-    } catch (error) {
-      console.error('Failed to check enrollment status:', error);
-      setIsEnrolled(false);
-    }
-  };
-
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredModules(modules);
@@ -470,11 +504,6 @@ export function CourseView() {
     if (remainingMinutes === 0) return `${hours} hr`;
     return `${hours} hr ${remainingMinutes} min`;
   };
-
-  // Removed handleUnlockClick since we're not using locked state anymore
-
-  // Removed unlock-related functions since we're not using locked state anymore
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -548,8 +577,6 @@ export function CourseView() {
                       )}
                     </div>
                     
-                    {/* Moved accordion below the Total Modules/Search section */}
-
                     {/* Course Purchase Section (Book Smart only) */}
                     {viewMode === "book" && !isEnrolled && canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
@@ -711,22 +738,72 @@ export function CourseView() {
                   </div>
                 </div>
               </div>
-              {
-                filteredModules.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">No modules found</h3>
-                    <p className="text-muted-foreground mt-1">
-                      {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
-                    </p>
+
+              {/* Street Smart */}
+              <div
+                className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
+                  viewMode === "street"
+                    ? "bg-orange-100 border-orange-300 shadow-lg"
+                    : "bg-orange-50 border-orange-200 hover:shadow-md"
+                }`}
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="p-4 bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl shadow-lg">
+                        <Play className="h-7 w-7 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-gray-900">Street Smart</h3>
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
+                            viewMode === 'street'
+                              ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                              : 'bg-gray-100 text-gray-600 border border-gray-200'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${viewMode === 'street' ? 'bg-orange-500' : 'bg-gray-400'}`}></span>
+                            Recordings
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mb-4">Class recordings and practical sessions</p>
+                        
+                        <div className="flex items-center gap-8">
+                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-orange-100">
+                            <Play className="w-4 h-4 text-orange-600" />
+                            <span className="text-sm font-semibold text-gray-700">{streetModules.length} recordings</span>
+                          </div>
+                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-orange-100">
+                            <Clock className="w-4 h-4 text-orange-600" />
+                            <span className="text-sm font-semibold text-gray-700">
+                              {Math.round(streetModules.reduce((total, module) => total + (parseInt(module.estimated_duration) || 60), 0) / 60 * 10) / 10} hr
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className={`h-5 w-5 text-gray-400 mt-1`} />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {filteredModules.map((module) => {
-                    const isContentAvailable = !!module.resource_url;
-                    const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
-                    const isLocked = !hasAccess;
-                    const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Module Grid */}
+          {filteredModules.length === 0 ? (
+            <div className="text-center py-12">
+              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No modules found</h3>
+              <p className="text-muted-foreground mt-1">
+                {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredModules.map((module) => {
+                const isContentAvailable = !!module.resource_url;
+                const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
+                const isLocked = !hasAccess;
+                const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
 
                 // Sequential unlock: allow only the first module or next after highest unlocked
                 let canUnlockInOrder = false;
@@ -901,43 +978,43 @@ export function CourseView() {
                                )}
                              </div>
                            )}
-                          {/* Mark as Complete - persist via backend then reflect in UI */}
-                          {!completedModuleIds.has(String(module.id)) ? (
-                            <Button
-                              variant="secondary"
-                              className="w-full disabled:opacity-60"
-                              disabled={markingCompleteIds.has(String(module.id))}
-                              onClick={async () => {
-                                const idStr = String(module.id);
-                                if (!courseId || !module?.id) return;
-                                // Prevent duplicate clicks
-                                if (markingCompleteIds.has(idStr)) return;
-                                setMarkingCompleteIds(prev => {
-                                  const next = new Set(prev);
-                                  next.add(idStr);
-                                  return next;
-                                });
-                                try {
-                                  await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
-                                  setCompletedModuleIds(prev => {
-                                    const next = new Set(prev);
-                                    next.add(idStr);
-                                    return next;
-                                  });
-                                } catch (err) {
-                                  console.error('Failed to mark module as complete', err);
-                                } finally {
-                                  setMarkingCompleteIds(prev => {
-                                    const next = new Set(prev);
-                                    next.delete(idStr);
-                                    return next;
-                                  });
-                                }
-                              }}
-                            >
-                              {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
-                            </Button>
-                          ) : (
+                           {/* Mark as Complete - persist via backend then reflect in UI */}
+                           {!completedModuleIds.has(String(module.id)) ? (
+                             <Button
+                               variant="secondary"
+                               className="w-full disabled:opacity-60"
+                               disabled={markingCompleteIds.has(String(module.id))}
+                               onClick={async () => {
+                                 const idStr = String(module.id);
+                                 if (!courseId || !module?.id) return;
+                                 // Prevent duplicate clicks
+                                 if (markingCompleteIds.has(idStr)) return;
+                                 setMarkingCompleteIds(prev => {
+                                   const next = new Set(prev);
+                                   next.add(idStr);
+                                   return next;
+                                 });
+                                 try {
+                                   await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                   setCompletedModuleIds(prev => {
+                                     const next = new Set(prev);
+                                     next.add(idStr);
+                                     return next;
+                                   });
+                                 } catch (err) {
+                                   console.error('Failed to mark module as complete', err);
+                                 } finally {
+                                   setMarkingCompleteIds(prev => {
+                                     const next = new Set(prev);
+                                     next.delete(idStr);
+                                     return next;
+                                   });
+                                 }
+                               }}
+                             >
+                               {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                             </Button>
+                           ) : (
                              <div className="w-full flex items-center justify-center">
                                <Badge className="px-3 py-1">Completed</Badge>
                              </div>
@@ -952,6 +1029,7 @@ export function CourseView() {
           )}
         </div>
       </main>
+      
       {/* Confirm Unlock Dialog */}
       {confirmUnlock.open && confirmUnlock.module && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1099,7 +1177,7 @@ export function CourseView() {
               <div className="flex items-center mb-3">
                 <div className="bg-blue-100 p-2 rounded-full mr-3">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900">Confirm Course Purchase</h3>
               </div>
             </div>
@@ -1372,4 +1450,3 @@ export function CourseView() {
 }
 
 export default CourseView;
-
