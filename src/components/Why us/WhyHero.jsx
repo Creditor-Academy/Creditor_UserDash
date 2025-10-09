@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { motion, useInView, useMotionValue, useSpring, animate } from "framer-motion";
+import { motion, useInView, useMotionValue, useSpring } from "framer-motion";
 
 const WhyUsHero = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, threshold: 0.3 });
+  const isInView = useInView(ref, { once: true, threshold: 0.1 });
   
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -102,10 +102,10 @@ const WhyUsHero = () => {
 
   // Updated stats as requested
   const stats = [
-    { number: 400, suffix: "+", label: "Learners", color: colors.primary },
+    { number: 450, suffix: "+", label: "Members", color: colors.primary },
     { number: 24, suffix: "/7", label: "Support", color: colors.accent },
-    { number: 95, suffix: "%", label: "Success Rate", color: colors.success },
-    { number: 10, suffix: "+", label: "Content Editors", color: colors.secondary }
+    { number: 98, suffix: "%", label: "Accuracy", color: colors.success },
+    { number: 10, suffix: "+", label: "Content Parts", color: colors.secondary }
   ];
   
   // Interactive background gradient that follows mouse
@@ -329,48 +329,7 @@ const WhyUsHero = () => {
     </motion.div>
   );
 
-  // Animated counter component - Fixed to start from 0
-  const AnimatedCounter = ({ value, suffix, label, color }) => {
-    const [displayValue, setDisplayValue] = useState(0);
-    const [hasAnimated, setHasAnimated] = useState(false);
-    
-    useEffect(() => {
-      if (isInView && !hasAnimated) {
-        setDisplayValue(0); // Ensure it starts from 0
-        const controls = animate(0, value, {
-          duration: 2,
-          onUpdate: (latest) => setDisplayValue(Math.floor(latest))
-        });
-        setHasAnimated(true);
-        return controls.stop;
-      }
-    }, [value, isInView, hasAnimated]);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6 }}
-        style={{ textAlign: "center" }}
-      >
-        <div style={{
-          fontSize: "clamp(1.6rem, 3.2vw, 2.2rem)",
-          fontWeight: "800",
-          color: color,
-          marginBottom: "3px"
-        }}>
-          {displayValue}{suffix}
-        </div>
-        <div style={{
-          fontSize: "12px",
-          color: colors.textLight,
-          fontWeight: "600"
-        }}>
-          {label}
-        </div>
-      </motion.div>
-    );
-  };
+  // Removed AnimatedCounter (static stats now)
 
   return (
     <div 
@@ -495,7 +454,7 @@ const WhyUsHero = () => {
               deliver <strong>exceptional results</strong> through innovation and excellence.
           </motion.p>
 
-            {/* Stats Grid */}
+            {/* Stats Grid (static) */}
         <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -503,12 +462,55 @@ const WhyUsHero = () => {
               style={{ 
                 display: "grid", 
                 gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "25px", // Reduced gap
+                gap: "25px",
                 marginBottom: "40px"
               }}
             >
               {stats.map((stat, index) => (
-                <AnimatedCounter key={index} {...stat} />
+                <div key={index} style={{
+                  background: "rgba(255, 255, 255, 0.8)",
+                  borderRadius: "12px",
+                  padding: "16px 20px",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: "clamp(1.6rem, 3.2vw, 2.2rem)",
+                      fontWeight: 800,
+                      color: stat.color,
+                      marginBottom: 4
+                    }}>
+                      {stat.number}{stat.suffix}
+                    </div>
+                    <div style={{
+                      fontSize: 12,
+                      color: colors.textLight,
+                      fontWeight: 600
+                    }}>
+                      {stat.label}
+                    </div>
+                  </div>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    background: `linear-gradient(135deg, ${stat.color}20, ${stat.color}10)`,
+                    borderRadius: 10,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <div style={{
+                      width: 20,
+                      height: 20,
+                      background: stat.color,
+                      borderRadius: "50%"
+                    }} />
+                  </div>
+                </div>
               ))}
             </motion.div>
 
