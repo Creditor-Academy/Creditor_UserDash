@@ -156,71 +156,54 @@ export function Dashboard() {
         throw new Error('Unable to get user ID. Please log in again.');
       }
       
-      // Use the working endpoints from your backend
+      // Use the new user progress endpoint from your backend
       try {
-        // console.log('🔍 Fetching user courses from:', `${API_BASE}/api/course/getCourses`);
-        // console.log('👤 User ID:', currentUserId);
-        
-        // Get user courses via interceptor-enabled client (handles validation + refresh)
         const { api } = await import('@/services/apiClient');
-        const userCoursesResponse = await api.get('/api/course/getCourses');
-        
-        if (userCoursesResponse.data && userCoursesResponse.data.data) {
-          const courses = userCoursesResponse.data.data;
-          
-          // Calculate basic dashboard stats from available data
-          const activeCourses = courses.length;
-          const completedCourses = 0; // Will be calculated when progress tracking is implemented
-          const totalLearningHours = 0; // Will be calculated when time tracking is implemented
-          const averageProgress = 0; // Will be calculated when progress tracking is implemented
-          
-                      const newDashboardData = {
-              summary: {
-                activeCourses,
-                completedCourses,
-                totalLearningHours,
-                averageProgress
-              },
-              weeklyPerformance: {
-                studyHours: 0, // Will be calculated when time tracking is implemented
-                lessonsCompleted: activeCourses
-              },
-              monthlyProgressChart: [],
-              learningActivities: []
-            };
-            
-            setDashboardData(newDashboardData);
-        } else {
-          // No courses found, set default values
-          setDashboardData({
-            summary: {
-              activeCourses: 0,
-              completedCourses: 0,
-              totalLearningHours: 0,
-              averageProgress: 0
-            },
-            weeklyPerformance: {
-              studyHours: 0,
-              lessonsCompleted: 0
-            },
-            monthlyProgressChart: [],
-            learningActivities: []
-          });
-        }
-      } catch (coursesError) {
-        console.error('❌ Failed to fetch user courses:', coursesError);
+        const progressResponse = await api.get('/api/user/dashboard/userProgress');
+        const progressData = progressResponse?.data?.data || {};
+
+        const allEnrolledCoursesCount = Number(progressData.allEnrolledCoursesCount) || 0;
+        const completedCourses = Number(progressData.completedCourseCount) || 0;
+        const modulesCompleted = Number(progressData.modulesCompletedCount) || 0;
+        const assessmentsCompleted = Number(progressData.quizCompletedCount) || 0;
+        const pendingCoursesCount = Number(progressData.pendingCoursesCount) || 0;
+
+        const newDashboardData = {
+          summary: {
+            allEnrolledCoursesCount,
+            completedCourses,
+            totalLearningHours: 0, // Not provided by backend yet
+            averageProgress: 0, // Not provided by backend yet
+            modulesCompleted,
+            assessmentsCompleted,
+            pendingCoursesCount
+          },
+          weeklyPerformance: {
+            studyHours: 0, // Placeholder until backend provides
+            lessonsCompleted: allEnrolledCoursesCount
+          },
+          monthlyProgressChart: [],
+          learningActivities: []
+        };
+
+        setDashboardData(newDashboardData);
+      } catch (progressError) {
+        console.error('❌ Failed to fetch user progress:', progressError);
         console.error('❌ Error details:', {
-          message: coursesError.message,
-          status: coursesError.response?.status,
-          data: coursesError.response?.data
+          message: progressError.message,
+          status: progressError.response?.status,
+          data: progressError.response?.data
         });
         // Set default values if endpoint fails
         setDashboardData({
           summary: {
-            activeCourses: 0,
+            allEnrolledCoursesCount: 0,
             completedCourses: 0,
             totalLearningHours: 0,
-            averageProgress: 0
+            averageProgress: 0,
+            modulesCompleted: 0,
+            assessmentsCompleted: 0,
+            pendingCoursesCount: 0
           },
           weeklyPerformance: {
             studyHours: 0,
@@ -251,10 +234,13 @@ export function Dashboard() {
       // Set default values if API fails
       setDashboardData({
         summary: {
-          activeCourses: 0,
+          allEnrolledCoursesCount: 0,
           completedCourses: 0,
           totalLearningHours: 0,
-          averageProgress: 0
+          averageProgress: 0,
+          modulesCompleted: 0,
+          assessmentsCompleted: 0,
+          pendingCoursesCount: 0
         },
         weeklyPerformance: {
           studyHours: 0,
@@ -670,7 +656,7 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
                         <CheckCircle className="text-blue-600" size={20} />
@@ -687,31 +673,59 @@ export function Dashboard() {
                     </div>
                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2">
-                        <Clock className="text-emerald-600" size={20} />
-                        <span className="text-emerald-600 font-semibold">This Week</span>
+                        <BookOpen className="text-emerald-600" size={20} />
+                        <span className="text-emerald-600 font-semibold">Modules</span>
                       </div>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">
                         {loading ? (
                           <span className="inline-block align-middle animate-pulse bg-emerald-200 h-8 w-12 rounded"></span>
                         ) : (
-                          `${dashboardData.weeklyPerformance?.studyHours || 0}h`
+                          dashboardData.summary?.modulesCompleted || 0
                         )}
                       </p>
-                      <p className="text-emerald-600 text-sm">Study Time</p>
+                      <p className="text-emerald-600 text-sm">Modules Completed</p>
+                    </div>
+                    <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                      <div className="flex items-center gap-2">
+                        <Award className="text-orange-600" size={20} />
+                        <span className="text-orange-600 font-semibold">Quizzes</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-700 mt-1">
+                        {loading ? (
+                          <span className="inline-block align-middle animate-pulse bg-orange-200 h-8 w-12 rounded"></span>
+                        ) : (
+                          dashboardData.summary?.assessmentsCompleted || 0
+                        )}
+                      </p>
+                      <p className="text-orange-600 text-sm">Quiz Completed</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                       <div className="flex items-center gap-2">
                         <BookOpen className="text-purple-600" size={20} />
-                        <span className="text-purple-600 font-semibold">Active</span>
+                        <span className="text-purple-600 font-semibold">Enrolled</span>
                       </div>
                       <p className="text-2xl font-bold text-purple-700 mt-1">
                         {loading ? (
                           <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
                         ) : (
-                          dashboardData.summary?.activeCourses || 0
+                          dashboardData.summary?.allEnrolledCoursesCount || 0
                         )}
                       </p>
-                      <p className="text-purple-600 text-sm">Courses</p>
+                      <p className="text-purple-600 text-sm">Total Courses</p>
+                    </div>
+                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                      <div className="flex items-center gap-2">
+                        <Clock className="text-yellow-600" size={20} />
+                        <span className="text-yellow-600 font-semibold">Pending</span>
+                      </div>
+                      <p className="text-2xl font-bold text-yellow-700 mt-1">
+                        {loading ? (
+                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
+                        ) : (
+                          dashboardData.summary?.pendingCoursesCount || 0
+                        )}
+                      </p>
+                      <p className="text-yellow-600 text-sm">Courses Remaining</p>
                     </div>
                   </div>
                 </div>

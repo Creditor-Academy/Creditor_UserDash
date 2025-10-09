@@ -82,13 +82,11 @@ export function CourseView() {
   const [confirmUnlock, setConfirmUnlock] = useState({ open: false, module: null });
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const { balance, unlockContent, refreshBalance } = useCredits();
+  // Track locally completed module ids
+  const [completedModuleIds, setCompletedModuleIds] = useState(new Set());
+  // Track modules currently being marked as complete
+  const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
   
-  // Book Smart vs Street Smart state
-  const [viewMode, setViewMode] = useState("book"); // "book" | "street"
-  const [streetModules, setStreetModules] = useState([]);
-  const [streetLoading, setStreetLoading] = useState(false);
-  const [streetError, setStreetError] = useState("");
-  const [isEnrolledRecording, setIsEnrolledRecording] = useState(false);
   // Accordion expansion control for Book/Street sections
   const [expandedSection, setExpandedSection] = useState(null); // null | 'book' | 'street'
   
@@ -105,25 +103,14 @@ export function CourseView() {
   // Sequential unlock modal state
   const [showSequentialModal, setShowSequentialModal] = useState(false);
   const [selectedModuleForSequential, setSelectedModuleForSequential] = useState(null);
-
-  // Initialize unlocked modules from backend for this user
-  useEffect(() => {
-    const initUnlocked = async () => {
-      try {
-        if (!userProfile?.id) return;
-        console.log('[UI] Fetch unlocked IDs for CourseView', userProfile.id);
-        const data = await getUnlockedModulesByUser(userProfile.id);
-        console.log('[UI] Unlocked IDs count', Array.isArray(data) ? data.length : 'not-array');
-        const ids = new Set((data || []).map((d) => String(d.module_id)));
-        setUnlockedIds(ids);
-        setUnlockedModules(data || []);
-      } catch (e) {
-        console.error('[UI] Fetch unlocked IDs error', e);
-      }
-    };
-    initUnlocked();
-  }, [userProfile?.id]);
-
+  
+  // View mode and street modules state
+  const [viewMode, setViewMode] = useState("book");
+  const [streetModules, setStreetModules] = useState([]);
+  const [streetLoading, setStreetLoading] = useState(false);
+  const [streetError, setStreetError] = useState("");
+  const [isEnrolledRecording, setIsEnrolledRecording] = useState(false);
+  
   // Mapping of supported courses to their recordings course IDs (Street Smart)
   // Source IDs from components/dashboard/ClassRecording.jsx
   const RECORDING_COURSE_IDS = {
@@ -132,7 +119,7 @@ export function CourseView() {
     businessCredit: "199e328d-8366-4af1-9582-9ea545f8b59e",
     privateMerchant: "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e",
     sovereignty101: "d5330607-9a45-4298-8ead-976dd8810283",
-      remedy: "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now recording course ID
+    remedy: "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now recording course ID
   };
 
   // Check if current course is a recording course
@@ -176,6 +163,40 @@ export function CourseView() {
     if (t.includes("i want remedy now")) return RECORDING_COURSE_IDS.remedy;
     return null;
   };
+
+  // Initialize unlocked modules from backend for this user
+  useEffect(() => {
+    const initUnlocked = async () => {
+      try {
+        if (!userProfile?.id) return;
+        console.log('[UI] Fetch unlocked IDs for CourseView', userProfile.id);
+        const data = await getUnlockedModulesByUser(userProfile.id);
+        console.log('[UI] Unlocked IDs count', Array.isArray(data) ? data.length : 'not-array');
+        const ids = new Set((data || []).map((d) => String(d.module_id)));
+        setUnlockedIds(ids);
+        setUnlockedModules(data || []);
+      } catch (e) {
+        console.error('[UI] Fetch unlocked IDs error', e);
+      }
+    };
+    initUnlocked();
+  }, [userProfile?.id]);
+
+  // Initialize completed modules from backend data
+  useEffect(() => {
+    if (modules && modules.length > 0) {
+      const completedIds = new Set();
+      modules.forEach(module => {
+        if (module.user_module_progress && 
+            Array.isArray(module.user_module_progress) && 
+            module.user_module_progress.length > 0 &&
+            module.user_module_progress[0].completed === true) {
+          completedIds.add(String(module.id));
+        }
+      });
+      setCompletedModuleIds(completedIds);
+    }
+  }, [modules]);
 
   const getStableRandomPrice = (moduleObj) => {
     const input = String(moduleObj?.id || "");
@@ -322,6 +343,63 @@ export function CourseView() {
     setShowSequentialModal(true);
   };
 
+  // Check if user is enrolled in the current course
+  const checkEnrollmentStatus = async () => {
+    if (!userProfile?.id || !courseId) {
+      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
+      return;
+    }
+    
+    try {
+      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
+      // Use the same method as Courses.jsx - fetchUserCourses from courseService
+      const userCourses = await fetchUserCourses();
+      console.log(`[CourseView] User courses:`, userCourses);
+      
+      // Check if current course is in user's enrolled courses
+      const enrolled = userCourses.some(course => {
+        const courseIdStr = course.id?.toString();
+        const currentCourseIdStr = courseId?.toString();
+        const match = courseIdStr === currentCourseIdStr;
+        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
+        return match;
+      });
+      
+      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
+      setIsEnrolled(enrolled);
+      
+      // Check recording course enrollment
+      try {
+        if (courseDetails?.title) {
+          const recId = getRecordingCourseIdForTitle(courseDetails.title);
+          console.log(`[CourseView] Recording course ID for ${courseDetails.title}:`, recId);
+          if (recId) {
+            const recEnrolled = userCourses.some(c => {
+              const cId = c.id?.toString?.() || c.id?.toString();
+              const recIdStr = recId.toString();
+              const match = cId === recIdStr;
+              console.log(`[CourseView] Recording enrollment check - course.id: ${cId}, recordingId: ${recIdStr}, match: ${match}`);
+              return match;
+            });
+            console.log(`[CourseView] Is user enrolled in recording course ${recId}:`, recEnrolled);
+            setIsEnrolledRecording(recEnrolled);
+          } else {
+            console.log(`[CourseView] No recording course ID found for ${courseDetails.title}`);
+            setIsEnrolledRecording(false);
+          }
+        } else {
+          setIsEnrolledRecording(false);
+        }
+      } catch (e) { 
+        console.error(`[CourseView] Error checking recording enrollment:`, e);
+        setIsEnrolledRecording(false); 
+      }
+    } catch (error) {
+      console.error('Failed to check enrollment status:', error);
+      setIsEnrolled(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
@@ -393,63 +471,6 @@ export function CourseView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseDetails?.title]);
 
-  // Check if user is enrolled in the current course
-  const checkEnrollmentStatus = async () => {
-    if (!userProfile?.id || !courseId) {
-      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
-      return;
-    }
-    
-    try {
-      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
-      // Use the same method as Courses.jsx - fetchUserCourses from courseService
-      const userCourses = await fetchUserCourses();
-      console.log(`[CourseView] User courses:`, userCourses);
-      
-      // Check if current course is in user's enrolled courses
-      const enrolled = userCourses.some(course => {
-        const courseIdStr = course.id?.toString();
-        const currentCourseIdStr = courseId?.toString();
-        const match = courseIdStr === currentCourseIdStr;
-        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
-        return match;
-      });
-      
-      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
-      setIsEnrolled(enrolled);
-      
-      // Check recording course enrollment
-      try {
-        if (courseDetails?.title) {
-          const recId = getRecordingCourseIdForTitle(courseDetails.title);
-          console.log(`[CourseView] Recording course ID for ${courseDetails.title}:`, recId);
-          if (recId) {
-            const recEnrolled = userCourses.some(c => {
-              const cId = c.id?.toString?.() || c.id?.toString();
-              const recIdStr = recId.toString();
-              const match = cId === recIdStr;
-              console.log(`[CourseView] Recording enrollment check - course.id: ${cId}, recordingId: ${recIdStr}, match: ${match}`);
-              return match;
-            });
-            console.log(`[CourseView] Is user enrolled in recording course ${recId}:`, recEnrolled);
-            setIsEnrolledRecording(recEnrolled);
-          } else {
-            console.log(`[CourseView] No recording course ID found for ${courseDetails.title}`);
-            setIsEnrolledRecording(false);
-          }
-        } else {
-          setIsEnrolledRecording(false);
-        }
-      } catch (e) { 
-        console.error(`[CourseView] Error checking recording enrollment:`, e);
-        setIsEnrolledRecording(false); 
-      }
-    } catch (error) {
-      console.error('Failed to check enrollment status:', error);
-      setIsEnrolled(false);
-    }
-  };
-
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredModules(modules);
@@ -518,11 +539,6 @@ export function CourseView() {
     if (remainingMinutes === 0) return `${hours} hr`;
     return `${hours} hr ${remainingMinutes} min`;
   };
-
-  // Removed handleUnlockClick since we're not using locked state anymore
-
-  // Removed unlock-related functions since we're not using locked state anymore
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -596,8 +612,6 @@ export function CourseView() {
                       )}
                     </div>
                     
-                    {/* Moved accordion below the Total Modules/Search section */}
-
                     {/* Course Purchase Section (Book Smart only) */}
                     {viewMode === "book" && !isEnrolled && canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
@@ -877,6 +891,47 @@ export function CourseView() {
                                       Start Assessment
                                     </Button> 
                                   </Link>
+                                  {/* Mark as Complete - only show when enrolled in the course */}
+                                  {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                                    <Button
+                                      variant="secondary"
+                                      className="w-full disabled:opacity-60"
+                                      disabled={markingCompleteIds.has(String(module.id))}
+                                      onClick={async () => {
+                                        const idStr = String(module.id);
+                                        if (!courseId || !module?.id) return;
+                                        // Prevent duplicate clicks
+                                        if (markingCompleteIds.has(idStr)) return;
+                                        setMarkingCompleteIds(prev => {
+                                          const next = new Set(prev);
+                                          next.add(idStr);
+                                          return next;
+                                        });
+                                        try {
+                                          await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                          setCompletedModuleIds(prev => {
+                                            const next = new Set(prev);
+                                            next.add(idStr);
+                                            return next;
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to mark module as complete', err);
+                                        } finally {
+                                          setMarkingCompleteIds(prev => {
+                                            const next = new Set(prev);
+                                            next.delete(idStr);
+                                            return next;
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                                    </Button>
+                                  ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                                    <div className="w-full flex items-center justify-center">
+                                      <Badge className="px-3 py-1">Completed</Badge>
+                                    </div>
+                                  ) : null}
                                 </>
                                ) : !isContentAvailable ? (
                                  <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
@@ -1011,7 +1066,9 @@ export function CourseView() {
                           </div>
                           <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
                             <Clock className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-700">{Math.round(streetModules.reduce((total, module) => total + (parseInt(module.duration) || 60), 0) / 60 * 10) / 10} hr</span>
+                            <span className="text-sm font-semibold text-gray-700">
+                              {Math.round(streetModules.reduce((total, module) => total + (parseInt(module.duration) || 60), 0) / 60 * 10) / 10} hr
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1054,8 +1111,8 @@ export function CourseView() {
                     <div key={module.id} className="module-card h-full">
                       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                         <div className="aspect-video relative overflow-hidden">
-                          <img 
-                            src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
+                          <img
+                            src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"}
                             alt={module.title}
                             className="w-full h-full object-cover"
                           />
@@ -1088,7 +1145,7 @@ export function CourseView() {
                           <CardFooter className="p-0 flex flex-col gap-2">
                             {isContentAvailable && hasAccessRecording ? (
                               <>
-                              <Button 
+                              <Button
                                 className="w-full"
                                 onClick={() => {
                                       // Get resource_url from module data
@@ -1119,8 +1176,49 @@ export function CourseView() {
                                    <Button variant="outline" className="w-full">
                                       <FileText size={16} className="mr-2" />
                                       Start Assessment
-                                    </Button> 
+                                    </Button>
                                   </Link>
+                                  {/* Mark as Complete - only show when enrolled in the recording course */}
+                                  {isEnrolledRecording && !completedModuleIds.has(String(module.id)) ? (
+                                    <Button
+                                      variant="secondary"
+                                      className="w-full disabled:opacity-60"
+                                      disabled={markingCompleteIds.has(String(module.id))}
+                                      onClick={async () => {
+                                        const idStr = String(module.id);
+                                        if (!recordingCourseId || !module?.id) return;
+                                        // Prevent duplicate clicks
+                                        if (markingCompleteIds.has(idStr)) return;
+                                        setMarkingCompleteIds(prev => {
+                                          const next = new Set(prev);
+                                          next.add(idStr);
+                                          return next;
+                                        });
+                                        try {
+                                          await api.post(`/api/course/${recordingCourseId}/modules/${module.id}/mark-complete`);
+                                          setCompletedModuleIds(prev => {
+                                            const next = new Set(prev);
+                                            next.add(idStr);
+                                            return next;
+                                          });
+                                        } catch (err) {
+                                          console.error('Failed to mark module as complete', err);
+                                        } finally {
+                                          setMarkingCompleteIds(prev => {
+                                            const next = new Set(prev);
+                                            next.delete(idStr);
+                                            return next;
+                                          });
+                                        }
+                                      }}
+                                    >
+                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                                    </Button>
+                                  ) : isEnrolledRecording && completedModuleIds.has(String(module.id)) ? (
+                                    <div className="w-full flex items-center justify-center">
+                                      <Badge className="px-3 py-1">Completed</Badge>
+                                    </div>
+                                  ) : null}
                               </>
                             ) : !isContentAvailable ? (
                               <Button className="w-full" disabled>
@@ -1129,7 +1227,7 @@ export function CourseView() {
                               </Button>
                             ) : (
                               <div className="w-full flex flex-col gap-2">
-                                <Button 
+                                <Button
                                   className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
                                   onClick={() => {
                                     if (!modulePrice || modulePrice <= 0) return;
@@ -1154,7 +1252,7 @@ export function CourseView() {
                                   )}
                                 </Button>
                                 {balance < modulePrice && (
-                                  <Button 
+                                  <Button
                                     variant="outline"
                                     className="w-full"
                                     onClick={() => setCreditsModalOpen(true)}
@@ -1179,16 +1277,16 @@ export function CourseView() {
           {/* For non-eligible courses, show normal module grid without Book/Street headers */}
           {!isEligibleForTwoModes(courseDetails?.title) && (
             filteredModules.length === 0 ? (
-              <div className="text-center py-12">
-                <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No modules found</h3>
-                <p className="text-muted-foreground mt-1">
-                  {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {filteredModules.map((module) => {
+            <div className="text-center py-12">
+              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium">No modules found</h3>
+              <p className="text-muted-foreground mt-1">
+                {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredModules.map((module) => {
                 const isContentAvailable = !!module.resource_url;
                 const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
                 const isLocked = !hasAccess;
@@ -1379,6 +1477,47 @@ export function CourseView() {
                                )}
                              </div>
                            )}
+                           {/* Mark as Complete - only show when enrolled in the course */}
+                           {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                             <Button
+                               variant="secondary"
+                               className="w-full disabled:opacity-60"
+                               disabled={markingCompleteIds.has(String(module.id))}
+                               onClick={async () => {
+                                 const idStr = String(module.id);
+                                 if (!courseId || !module?.id) return;
+                                 // Prevent duplicate clicks
+                                 if (markingCompleteIds.has(idStr)) return;
+                                 setMarkingCompleteIds(prev => {
+                                   const next = new Set(prev);
+                                   next.add(idStr);
+                                   return next;
+                                 });
+                                 try {
+                                   await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                   setCompletedModuleIds(prev => {
+                                     const next = new Set(prev);
+                                     next.add(idStr);
+                                     return next;
+                                   });
+                                 } catch (err) {
+                                   console.error('Failed to mark module as complete', err);
+                                 } finally {
+                                   setMarkingCompleteIds(prev => {
+                                     const next = new Set(prev);
+                                     next.delete(idStr);
+                                     return next;
+                                   });
+                                 }
+                               }}
+                             >
+                               {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                             </Button>
+                           ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                             <div className="w-full flex items-center justify-center">
+                               <Badge className="px-3 py-1">Completed</Badge>
+                             </div>
+                           ) : null}
                         </CardFooter>
                       </div>
                     </Card>
@@ -1390,6 +1529,7 @@ export function CourseView() {
           )}
         </div>
       </main>
+      
       {/* Confirm Unlock Dialog */}
       {confirmUnlock.open && confirmUnlock.module && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1537,7 +1677,7 @@ export function CourseView() {
               <div className="flex items-center mb-3">
                 <div className="bg-blue-100 p-2 rounded-full mr-3">
                   <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900">Confirm Course Purchase</h3>
               </div>
             </div>
@@ -1810,4 +1950,3 @@ export function CourseView() {
 }
 
 export default CourseView;
-

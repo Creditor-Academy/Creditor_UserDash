@@ -1051,10 +1051,10 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           key={module.id || index} 
                                 className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
                         >
-                                <div className="p-4">
+                          <div className="p-4">
                             <div className="flex items-start gap-4">
                                     <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-200">
-                                      <BookOpenCheck className="h-4 w-4 text-white" />
+                                <BookOpenCheck className="h-4 w-4 text-white" />
                               </div>
                               <div className="flex-1 min-w-0">
                                       <h4 className="text-base font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 mb-2">
