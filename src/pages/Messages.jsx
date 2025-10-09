@@ -44,6 +44,7 @@ import {
   editPrivateGroupMessage
 } from "@/services/privateGroupService";
 import getSocket from "@/services/socketClient";
+import privateGroupSocket from "@/services/privateGroupSocket";
 import api from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -199,9 +200,186 @@ function Messages() {
     };
   }, [roomId]);
 
-  // Load conversations for current user on entry; also load all users for starting new chat
-  // Ensure socket connects when Messages section is opened
+  // Initialize private group socket and event listeners
   useEffect(() => {
+    // Initialize private group socket and ensure connection
+    const initializeSocket = async () => {
+      try {
+        // Initialize socket
+        privateGroupSocket.initialize();
+        
+        // Wait for socket to connect if not already connected
+        if (!privateGroupSocket.connected) {
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Socket connection timeout'));
+            }, 5000); // 5 second timeout
+
+            const checkConnection = () => {
+              if (privateGroupSocket.connected) {
+                clearTimeout(timeout);
+                resolve();
+              } else {
+                setTimeout(checkConnection, 100);
+              }
+            };
+            checkConnection();
+          });
+        }
+      } catch (error) {
+        console.error('Failed to initialize socket:', error);
+      }
+    };
+
+    initializeSocket();
+
+    // Handle private group messages
+    const onPrivateGroupMessage = (event) => {
+      const { groupId, message } = event.detail;
+      if (!groupId || !message) {
+        console.error('Invalid message data received:', event.detail);
+        return;
+      }
+      console.log('Private group message received:', { groupId, message });
+      
+      // Update the group's last message in the friends list
+      setFriends(prev => prev.map(f => {
+        if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
+          const currentUserId = localStorage.getItem('userId');
+          const isSelf = String(message.sender_id) === String(currentUserId);
+          const isSystem = message.type === 'SYSTEM';
+          
+          let messageText = message.content;
+          let messageType = message.type || 'TEXT';
+          
+          if (messageType === 'IMAGE') {
+            messageText = 'Image';
+          } else if (isSystem) {
+            messageText = message.content || 'System message';
+          }
+          
+          return {
+            ...f,
+            lastMessage: messageText,
+            lastMessageType: messageType,
+            lastMessageFrom: message.sender_id,
+            lastMessageAt: message.timeStamp || message.created_at || new Date().toISOString(),
+            isRead: isSelf // Mark as read if we sent it
+          };
+        }
+        return f;
+      }));
+
+      // If we're in the conversation, add the message to the messages list
+      if (String(conversationId) === String(groupId)) {
+        setMessages(prev => {
+          const currentUserId = localStorage.getItem('userId');
+          const isSelf = String(message.sender_id) === String(currentUserId);
+          const isSystem = message.type === 'SYSTEM';
+          
+          // Check if message already exists
+          const exists = prev.some(m => String(m.id) === String(message.id));
+          if (exists) return prev;
+
+          // For own messages, update the optimistic message
+          if (isSelf) {
+            const updated = prev.map(m => {
+              if (m.tempId || (m.status === 'sending' && m.text === message.content)) {
+                return {
+                  ...m,
+                  id: message.id,
+                  tempId: undefined,
+                  status: 'sent',
+                  timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })
+                };
+              }
+              return m;
+            });
+            
+            // If no message was updated, add as new
+            if (updated.every(m => m.id !== message.id)) {
+              const mappedMessage = {
+                id: message.id,
+                senderId: 0,
+                senderImage: message.sender?.image || null,
+                text: message.type === 'IMAGE' ? null : message.content,
+                image: message.type === 'IMAGE' ? message.content : null,
+                timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                }),
+                status: 'sent'
+              };
+              return [...updated, mappedMessage];
+            }
+            return updated;
+          }
+
+          // For others' messages
+          const mappedMessage = {
+            id: message.id,
+            senderId: isSystem ? 'system' : String(message.sender_id),
+            senderImage: isSystem ? null : (message.sender?.image || null),
+            text: message.type === 'IMAGE' ? null : message.content,
+            image: message.type === 'IMAGE' ? message.content : null,
+            timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+            status: 'delivered'
+          };
+
+          // Auto-scroll to bottom for new messages
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+
+          return [...prev, mappedMessage];
+        });
+
+        // Play notification sound for incoming messages
+        if (String(message.sender_id) !== String(localStorage.getItem('userId'))) {
+          try {
+            new Audio('/message.mp3').play().catch(() => {});
+          } catch (e) {}
+        }
+      }
+    };
+
+    // Handle member updates
+    const onMemberAdded = (event) => {
+      const member = event.detail;
+      handlePrivateGroupMemberAdded(member);
+    };
+
+    const onMemberRemoved = (event) => {
+      const { userId, groupId } = event.detail;
+      handlePrivateGroupMemberRemoved(userId, groupId);
+    };
+
+    // Handle group updates
+    const onGroupUpdated = (event) => {
+      const { groupId, ...updates } = event.detail;
+      handlePrivateGroupUpdated(groupId, updates);
+    };
+
+    // Handle message status
+    const onMessageRead = (event) => {
+      const { groupId, messageId } = event.detail;
+      handlePrivateGroupMessageRead(groupId, messageId);
+    };
+
+    // Add event listeners
+    window.addEventListener('privateGroupMessage', onPrivateGroupMessage);
+    window.addEventListener('privateGroupMemberAdded', onMemberAdded);
+    window.addEventListener('privateGroupMemberRemoved', onMemberRemoved);
+    window.addEventListener('privateGroupUpdated', onGroupUpdated);
+    window.addEventListener('privateGroupMessageRead', onMessageRead);
+
+    // Regular socket setup
     const socket = getSocket();
     
     // Handle local custom events for immediate UI updates
@@ -275,6 +453,14 @@ function Messages() {
     
     // Cleanup event listeners
     return () => {
+      // Remove private group socket event listeners
+      window.removeEventListener('privateGroupMessage', onPrivateGroupMessage);
+      window.removeEventListener('privateGroupMemberAdded', onMemberAdded);
+      window.removeEventListener('privateGroupMemberRemoved', onMemberRemoved);
+      window.removeEventListener('privateGroupUpdated', onGroupUpdated);
+      window.removeEventListener('privateGroupMessageRead', onMessageRead);
+
+      // Remove local event listeners
       window.removeEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
       window.removeEventListener('privateGroupDeleted', handleLocalPrivateGroupDeleted);
       window.removeEventListener('privateGroupMemberLeft', handleLocalPrivateGroupMemberLeft);
@@ -557,15 +743,37 @@ function Messages() {
     };
 
     // Handle new private group message event
-    const onNewGroupMessage = ({ groupId, message }) => {
-      console.log('New private group message:', { groupId, message });
-      const currentUserId = localStorage.getItem('userId');
-      const isSelf = String(message.sender_id) === String(currentUserId);
-      const isSystem = message.type === 'SYSTEM';
+    const onNewGroupMessage = (data) => {
+      console.log('Raw group message received:', data);
       
+      // Extract data from either format
+      const messageData = data?.detail || data;
+      const groupId = messageData?.groupId || messageData?.group_id;
+      const message = messageData?.message || messageData;
+      
+      // Validate message data
+      if (!message || !groupId) {
+        console.error('Invalid message data received:', { groupId, message, originalData: data });
+        return;
+      }
+      
+      console.log('Processed message data:', { groupId, message });
+
+      const currentUserId = localStorage.getItem('userId');
+      const isSelf = String(message.sender_id || message.senderId) === String(currentUserId);
+      const isSystem = (message.type || '').toUpperCase() === 'SYSTEM';
+      
+      // Play notification sound for incoming messages (not for own messages or system messages)
+      if (!isSelf && !isSystem) {
+        try {
+          new Audio('/message.mp3').play().catch(() => {});
+        } catch (e) {}
+      }
+
       // Update the group's last message in the friends list
       setFriends(prev => prev.map(f => {
-        if (f.conversationId === groupId && f.isPrivateGroup) {
+        // Match by both conversationId and id since they might be used interchangeably
+        if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
           let messageText = message.content;
           let messageType = message.type || 'TEXT';
           
@@ -593,13 +801,52 @@ function Messages() {
       // If this message is for the currently open group chat, add it to messages
       if (String(conversationId) === String(groupId)) {
         setMessages(prev => {
-          // Check if message already exists (avoid duplicates)
+          // For own messages, update the optimistic message instead of adding new
+          if (isSelf) {
+            const updated = prev.map(m => {
+              // Match by tempId or content for optimistic updates
+              if (m.tempId || (m.status === 'sending' && m.text === message.content)) {
+                return {
+                  ...m,
+                  id: message.id,
+                  tempId: undefined,
+                  status: 'sent',
+                  timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })
+                };
+              }
+              return m;
+            });
+            
+            // If no message was updated (no optimistic update found), add as new
+            if (updated.every(m => m.id !== message.id)) {
+              const mappedMessage = {
+                id: message.id,
+                senderId: 0,
+                senderImage: message.sender?.image || null,
+                text: message.type === 'IMAGE' ? null : message.content,
+                timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                }),
+                type: message.type === 'IMAGE' ? 'image' : (message.type === 'SYSTEM' ? 'system' : 'text'),
+                file: message.type === 'IMAGE' ? message.content : null,
+                status: 'sent'
+              };
+              return [...updated, mappedMessage];
+            }
+            return updated;
+          }
+
+          // For others' messages, check for duplicates and add if new
           const exists = prev.some(m => String(m.id) === String(message.id));
           if (exists) return prev;
 
           const mappedMessage = {
             id: message.id,
-            senderId: isSystem ? 'system' : (isSelf ? 0 : String(message.sender_id)),
+            senderId: isSystem ? 'system' : String(message.sender_id),
             senderImage: isSystem ? null : (message.sender?.image || null),
             text: message.type === 'IMAGE' ? null : message.content,
             timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
@@ -608,8 +855,13 @@ function Messages() {
             }),
             type: message.type === 'IMAGE' ? 'image' : (message.type === 'SYSTEM' ? 'system' : 'text'),
             file: message.type === 'IMAGE' ? message.content : null,
-            status: isSystem ? 'delivered' : (isSelf ? 'sent' : 'delivered'),
+            status: 'delivered'
           };
+
+          // Auto-scroll to bottom for new messages
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
 
           return [...prev, mappedMessage];
         });
@@ -738,7 +990,9 @@ function Messages() {
     socket.on('privateGroupMemberRemoved', onPrivateGroupMemberRemoved);
     socket.on('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
     socket.on('privateGroupJoined', onPrivateGroupJoined);
+    // Listen for both socket and custom events
     socket.on('newGroupMessage', onNewGroupMessage);
+    window.addEventListener('newGroupMessage', onNewGroupMessage);
     socket.on('receiveMessage', onReceiveMessage);
     const onMessagesRead = ({ conversationId: readConvId }) => {
       if (!readConvId) return;
@@ -797,6 +1051,7 @@ function Messages() {
       socket.off('privateGroupMemberPromoted', onPrivateGroupMemberPromoted);
       socket.off('privateGroupJoined', onPrivateGroupJoined);
       socket.off('newGroupMessage', onNewGroupMessage);
+      window.removeEventListener('newGroupMessage', onNewGroupMessage);
       socket.off('receiveMessage', onReceiveMessage);
       socket.off('messagesRead', onMessagesRead);
       socket.off('deleteMessage', onDeleteMessage);
@@ -1104,7 +1359,8 @@ function Messages() {
           
           // Handle private groups differently for image sending
           if (selectedFriendData?.isPrivateGroup) {
-            const response = await sendPrivateGroupMessage(conversationId, formData, true);
+            const groupId = selectedFriendData.conversationId || selectedFriendData.id;
+            const response = await sendPrivateGroupMessage(groupId, formData, true);
             // Update the optimistic message with the real message data
             if (response?.success && response?.data) {
               setMessages(prev => prev.map(msg => 
@@ -1118,7 +1374,7 @@ function Messages() {
               
               // Update the group's last message in the friends list
               setFriends(prev => prev.map(f => {
-                if (f.conversationId === conversationId && f.isPrivateGroup) {
+                if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
                   return {
                     ...f,
                     lastMessage: 'Image',
@@ -1130,6 +1386,13 @@ function Messages() {
                 }
                 return f;
               }));
+
+              // Emit via socket for real-time
+              privateGroupSocket.sendMessage(
+                groupId,
+                response.data.content || response.data.url,
+                'IMAGE'
+              );
             }
           } else {
             await api.post('/api/private-messaging/sendimage', formData, {
@@ -1171,7 +1434,12 @@ function Messages() {
         // Handle private groups: send via REST API; others via socket
         if (selectedFriendData?.isPrivateGroup) {
           try {
-            const response = await sendPrivateGroupMessage(conversationId, { content: messageText });
+            // Get the correct group ID
+            const groupId = selectedFriendData.conversationId || selectedFriendData.id;
+            
+            // Send via REST API
+            const response = await sendPrivateGroupMessage(groupId, { content: messageText });
+            
             // Update the optimistic message with the real message data
             if (response?.success && response?.data) {
               setMessages(prev => prev.map(msg => 
@@ -1185,7 +1453,7 @@ function Messages() {
               
               // Update the group's last message in the friends list
               setFriends(prev => prev.map(f => {
-                if (f.conversationId === conversationId && f.isPrivateGroup) {
+                if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
                   return {
                     ...f,
                     lastMessage: messageText,
@@ -1197,6 +1465,13 @@ function Messages() {
                 }
                 return f;
               }));
+
+              // Emit via socket for real-time
+              privateGroupSocket.sendMessage(
+                groupId,
+                messageText,
+                'TEXT'
+              );
             }
           } catch (e) {
             throw e;
@@ -1277,7 +1552,7 @@ function Messages() {
       if (selectedFriendData?.isPrivateGroup) {
         await deletePrivateGroupMessage(conversationId, deleteMessageId);
       } else {
-        await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
+      await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
       }
       // Notify success
       try {
@@ -1609,8 +1884,8 @@ function Messages() {
                       
                       // Handle private groups differently
                       if (friend.isPrivateGroup) {
-                        // For private groups, emit a specific event
-                        socket.emit('joinPrivateGroupRoom', { groupId: convId });
+                        // Use private group socket handler to join the room
+                        privateGroupSocket.joinGroup(convId);
                         
                         // Refresh the last message for this group when opening
                         (async () => {
@@ -1673,15 +1948,15 @@ function Messages() {
                           } else {
                             const data = await loadPreviousConversation(convId);
                             mapped = (data?.cov_messages || []).map(m => ({
-                              id: m.id,
-                              senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
-                              senderImage: m?.sender?.image || null,
-                              text: m.type === 'IMAGE' ? null : m.content,
-                              timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                              type: m.type === 'IMAGE' ? 'image' : 'text',
-                              file: m.type === 'IMAGE' ? m.content : null,
+                            id: m.id,
+                            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+                            senderImage: m?.sender?.image || null,
+                            text: m.type === 'IMAGE' ? null : m.content,
+                            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            type: m.type === 'IMAGE' ? 'image' : 'text',
+                            file: m.type === 'IMAGE' ? m.content : null,
                               status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered',
-                            }));
+                          }));
                           }
                           setMessages(mapped);
                           setChatLoading(false);
@@ -2015,7 +2290,7 @@ function Messages() {
                                 </div>
                               </div>
                             ) : (
-                              <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
+                            <p className="leading-snug text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] xl:text-[13px] font-medium break-words break-all whitespace-pre-wrap min-w-0">{message.text && renderRichText(message.text, message.senderId === 0)}</p>
                             )}
                             {message.text && extractUrls(message.text).length > 0 && (
                               <div className="mt-0.5 sm:mt-1 md:mt-1.5 lg:mt-2 xl:mt-3">
