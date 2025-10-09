@@ -155,13 +155,57 @@ const LessonView = () => {
     });
   }, [lessons, searchQuery]);
 
-  const handleViewLesson = (lesson) => {
-    // Close the sidebar before navigating
-    if (setSidebarCollapsed) {
-      setSidebarCollapsed(true);
+  const handleViewLesson = async (lesson) => {
+    try {
+      // Close the sidebar before navigating
+      if (setSidebarCollapsed) {
+        setSidebarCollapsed(true);
+      }
+
+      // Fetch lesson content to check for SCORM URL
+      const lessonContentResponse = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/${lesson.id}`,
+        {
+          headers: getAuthHeader(),
+          withCredentials: true,
+        }
+      );
+
+      console.log('Lesson content response:', lessonContentResponse.data);
+
+      const lessonData = lessonContentResponse.data?.data || lessonContentResponse.data;
+
+      // Check if SCORM URL exists
+      if (lessonData.scorm_url) {
+        console.log('Opening SCORM content in new tab:', lessonData.scorm_url);
+        // Open SCORM URL in new tab
+        window.open(lessonData.scorm_url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      // Check if content array has data
+      if (lessonData.content && Array.isArray(lessonData.content) && lessonData.content.length > 0) {
+        console.log('Opening lesson preview with content:', lessonData.content.length, 'blocks');
+        // Navigate to lesson preview
+        navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`);
+        return;
+      }
+
+      // If no SCORM URL and no content, show message
+      toast({
+        title: "No Content Available",
+        description: "This lesson doesn't have any content yet. Please check back later.",
+        variant: "destructive",
+      });
+
+    } catch (error) {
+      console.error('Error fetching lesson content:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load lesson content. Please try again.",
+        variant: "destructive",
+      });
     }
-    // Navigate to lesson preview
-    navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lesson.id}/preview`);
   };
 
   const getStatusColor = (status) => {
