@@ -248,33 +248,41 @@ function Messages() {
       }
       console.log('Private group message received:', { groupId, message });
       
-      // Update the group's last message in the friends list
-      setFriends(prev => prev.map(f => {
-        if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
-          const currentUserId = localStorage.getItem('userId');
-          const isSelf = String(message.sender_id) === String(currentUserId);
-          const isSystem = message.type === 'SYSTEM';
-          
-          let messageText = message.content;
-          let messageType = message.type || 'TEXT';
-          
-          if (messageType === 'IMAGE') {
-            messageText = 'Image';
-          } else if (isSystem) {
-            messageText = message.content || 'System message';
-          }
-          
-          return {
-            ...f,
-            lastMessage: messageText,
-            lastMessageType: messageType,
-            lastMessageFrom: message.sender_id,
-            lastMessageAt: message.timeStamp || message.created_at || new Date().toISOString(),
-            isRead: isSelf // Mark as read if we sent it
-          };
+      // Update the group's last message in the friends list and move to top
+      setFriends(prev => {
+        const existingIndex = prev.findIndex(f => 
+          (f.conversationId === groupId || String(f.conversationId) === String(groupId) || 
+           f.id === groupId || String(f.id) === String(groupId)) && f.isPrivateGroup
+        );
+        
+        if (existingIndex === -1) return prev; // Group not found
+        
+        const existingGroup = prev[existingIndex];
+        const currentUserId = localStorage.getItem('userId');
+        const isSelf = String(message.sender_id) === String(currentUserId);
+        const isSystem = message.type === 'SYSTEM';
+        
+        let messageText = message.content;
+        let messageType = message.type || 'TEXT';
+        
+        if (messageType === 'IMAGE') {
+          messageText = 'Image';
+        } else if (isSystem) {
+          messageText = message.content || 'System message';
         }
-        return f;
-      }));
+        
+        const updatedGroup = {
+          ...existingGroup,
+          lastMessage: messageText,
+          lastMessageType: messageType,
+          lastMessageFrom: message.sender_id,
+          lastMessageAt: message.timeStamp || message.created_at || new Date().toISOString(),
+          isRead: isSelf // Mark as read if we sent it
+        };
+        
+        // Move to top: return updated group first, then all others except the old position
+        return [updatedGroup, ...prev.filter((_, i) => i !== existingIndex)];
+      });
 
       // If we're in the conversation, add the message to the messages list
       if (String(conversationIdRef.current) === String(groupId)) {
@@ -404,6 +412,41 @@ function Messages() {
       }
     };
 
+    // Handle invitation acceptance
+    const onInvitationAccepted = async (event) => {
+      const { groupId, userId, group } = event.detail || {};
+      const currentUserId = localStorage.getItem('userId');
+      
+      // If current user accepted the invitation, add group to their list
+      if (String(userId) === String(currentUserId) && group) {
+        console.log('Current user accepted invitation to group:', group);
+        
+        const newGroup = {
+          id: `private_group_${groupId}`,
+          name: group.name,
+          avatar: group.thumbnail || '/placeholder.svg',
+          lastMessage: 'You joined the group',
+          lastMessageType: 'system',
+          room: `private_group_${groupId}`,
+          conversationId: groupId,
+          isRead: true,
+          lastMessageFrom: 'System',
+          lastMessageAt: new Date().toISOString(),
+          isGroup: true,
+          isPrivateGroup: true,
+          isAdmin: false,
+          memberCount: group.member_count || 1,
+          description: group.description,
+        };
+        
+        setFriends(prev => {
+          const exists = prev.some(f => String(f.conversationId || f.id) === String(groupId));
+          return exists ? prev : [newGroup, ...prev];
+        });
+        setUserHasGroup(true);
+      }
+    };
+
     // Add event listeners
     window.addEventListener('privateGroupMessage', onPrivateGroupMessage);
     window.addEventListener('privateGroupMemberAdded', onMemberAdded);
@@ -412,6 +455,7 @@ function Messages() {
     window.addEventListener('privateGroupMessageRead', onMessageRead);
     window.addEventListener('privateGroupMessageEdited', onMessageEdited);
     window.addEventListener('privateGroupMessageDeleted', onMessageDeleted);
+    window.addEventListener('privateGroupInvitationAccepted', onInvitationAccepted);
 
     // Regular socket setup
     const socket = getSocket();
@@ -495,6 +539,7 @@ function Messages() {
       window.removeEventListener('privateGroupMessageRead', onMessageRead);
       window.removeEventListener('privateGroupMessageEdited', onMessageEdited);
       window.removeEventListener('privateGroupMessageDeleted', onMessageDeleted);
+      window.removeEventListener('privateGroupInvitationAccepted', onInvitationAccepted);
 
       // Remove local event listeners
       window.removeEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
@@ -848,33 +893,40 @@ function Messages() {
         } catch (e) {}
       }
 
-      // Update the group's last message in the friends list
-      setFriends(prev => prev.map(f => {
-        // Match by both conversationId and id since they might be used interchangeably
-        if ((f.conversationId === groupId || f.id === groupId) && f.isPrivateGroup) {
-          let messageText = message.content;
-          let messageType = message.type || 'TEXT';
-          
-          // Handle different message types
-          if (message.type === 'IMAGE') {
-            messageText = 'Image';
-            messageType = 'IMAGE';
-          } else if (message.type === 'SYSTEM') {
-            messageText = message.content;
-            messageType = 'system';
-          }
-          
-          return {
-            ...f,
-            lastMessage: messageText,
-            lastMessageType: messageType,
-            lastMessageFrom: isSystem ? 'System' : (isSelf ? currentUserId : message.sender_id),
-            lastMessageAt: message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date().toISOString(),
-            isRead: isSelf || isSystem ? true : f.isRead, // Mark as read if it's our own message or system message
-          };
+      // Update the group's last message in the friends list and move to top
+      setFriends(prev => {
+        const existingIndex = prev.findIndex(f => 
+          (f.conversationId === groupId || String(f.conversationId) === String(groupId) || 
+           f.id === groupId || String(f.id) === String(groupId))
+        );
+        
+        if (existingIndex === -1) return prev; // Group not found
+        
+        const existingGroup = prev[existingIndex];
+        let messageText = message.content;
+        let messageType = message.type || 'TEXT';
+        
+        // Handle different message types
+        if (message.type === 'IMAGE') {
+          messageText = 'Image';
+          messageType = 'IMAGE';
+        } else if (message.type === 'SYSTEM') {
+          messageText = message.content;
+          messageType = 'system';
         }
-        return f;
-      }));
+        
+        const updatedGroup = {
+          ...existingGroup,
+          lastMessage: messageText,
+          lastMessageType: messageType,
+          lastMessageFrom: isSystem ? 'System' : (isSelf ? currentUserId : message.sender_id),
+          lastMessageAt: message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date().toISOString(),
+          isRead: isSelf || isSystem ? true : existingGroup.isRead, // Mark as read if it's our own message or system message
+        };
+        
+        // Move to top: return updated group first, then all others except the old position
+        return [updatedGroup, ...prev.filter((_, i) => i !== existingIndex)];
+      });
 
       // If this message is for the currently open group chat, add it to messages
       if (String(conversationIdRef.current) === String(groupId)) {

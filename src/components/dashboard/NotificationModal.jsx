@@ -134,9 +134,45 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
 
   const acceptInvite = async (token, idToRemove) => {
     try {
-      await acceptPrivateGroupInvitation(token);
+      const response = await acceptPrivateGroupInvitation(token);
+      
+      // Get invitation details before removing from list
+      const invite = chatInvites.find(c => String(c.id) === String(idToRemove));
+      
       toast.success('You joined the group successfully.');
       setChatInvites(prev => prev.filter(c => String(c.id) !== String(idToRemove)));
+      
+      // Emit socket event for real-time updates
+      const socket = getSocket();
+      const currentUserId = localStorage.getItem('userId');
+      socket.emit('privateGroupInvitationAccepted', {
+        groupId: invite?.groupId,
+        userId: currentUserId,
+        token: token,
+        group: {
+          id: invite?.groupId,
+          name: invite?.title,
+          thumbnail: invite?.thumbnail,
+          member_count: response?.data?.member_count || 1,
+          description: response?.data?.description
+        }
+      });
+      
+      // Dispatch custom event for local UI update
+      window.dispatchEvent(new CustomEvent('privateGroupInvitationAccepted', {
+        detail: {
+          groupId: invite?.groupId,
+          userId: currentUserId,
+          group: {
+            id: invite?.groupId,
+            name: invite?.title,
+            thumbnail: invite?.thumbnail,
+            member_count: response?.data?.member_count || 1,
+            description: response?.data?.description
+          }
+        }
+      }));
+      
       // Optional navigation to messages view (adjust if you have a different route)
       // window.location.href = `/messages`;
     } catch (e) {

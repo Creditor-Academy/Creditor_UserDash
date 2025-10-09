@@ -230,6 +230,22 @@ class PrivateGroupSocket {
         window.dispatchEvent(new CustomEvent('privateGroupMessageDeleted', { detail: data }));
       });
 
+      // Handle private group invitations
+      this.socket.on('privateGroupInvitationSent', (data) => {
+        console.log('Private group invitation sent:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupInvitationSent', { detail: data }));
+      });
+
+      this.socket.on('privateGroupInvitationAccepted', (data) => {
+        console.log('Private group invitation accepted:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupInvitationAccepted', { detail: data }));
+      });
+
+      this.socket.on('privateGroupInvitationRejected', (data) => {
+        console.log('Private group invitation rejected:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupInvitationRejected', { detail: data }));
+      });
+
       // Handle errors
       this.socket.on('error', (error) => {
         console.error('Socket error:', error);

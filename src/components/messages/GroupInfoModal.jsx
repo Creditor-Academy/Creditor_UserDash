@@ -353,6 +353,14 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
         ).join('\n');
         
         console.log('Invitations created:', invitationDetails);
+        
+        // Emit WebSocket event for real-time invitation notifications
+        const socket = getSocket();
+        socket.emit('privateGroupInvitationSent', {
+          groupId,
+          invites: invitations,
+          group: group
+        });
       }
       
       setSelectedUsers(new Set());
