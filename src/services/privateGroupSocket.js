@@ -75,7 +75,7 @@ class PrivateGroupSocket {
         console.error('Socket authentication failed:', error);
       });
 
-      // Handle new messages
+      // Handle new messages (listen to both generic and private-specific events)
       this.socket.on('newGroupMessage', (messageWithDetails) => {
         try {
           console.log('Raw socket message received:', messageWithDetails);
@@ -127,30 +127,107 @@ class PrivateGroupSocket {
         }
       });
 
-      // Handle group events
-      this.socket.on('memberAdded', (data) => {
+      // Handle group events - listen to privateGroup* specific events
+      this.socket.on('privateGroupCreated', (data) => {
+        console.log('Private group created:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupCreated', { detail: data }));
+      });
+
+      this.socket.on('privateGroupMemberAdded', (data) => {
         console.log('Member added to private group:', data);
         window.dispatchEvent(new CustomEvent('privateGroupMemberAdded', { detail: data }));
       });
 
-      this.socket.on('memberRemoved', (data) => {
+      this.socket.on('privateGroupMembersAdded', (data) => {
+        console.log('Members added to private group:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMembersAdded', { detail: data }));
+      });
+
+      this.socket.on('privateGroupMemberRemoved', (data) => {
         console.log('Member removed from private group:', data);
         window.dispatchEvent(new CustomEvent('privateGroupMemberRemoved', { detail: data }));
       });
 
+      this.socket.on('privateGroupMemberLeft', (data) => {
+        console.log('Member left private group:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMemberLeft', { detail: data }));
+      });
+
+      this.socket.on('privateGroupMemberPromoted', (data) => {
+        console.log('Member promoted in private group:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMemberPromoted', { detail: data }));
+      });
+
+      this.socket.on('privateGroupUserJoined', (payload) => {
+        console.log('User joined private group:', payload);
+        window.dispatchEvent(new CustomEvent('privateGroupUserJoined', { detail: payload }));
+      });
+
+      this.socket.on('privateGroupUserLeft', (payload) => {
+        console.log('User left private group:', payload);
+        window.dispatchEvent(new CustomEvent('privateGroupUserLeft', { detail: payload }));
+      });
+
+      this.socket.on('privateGroupUpdated', (data) => {
+        console.log('Private group info updated:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupUpdated', { detail: data }));
+      });
+
+      this.socket.on('privateGroupDeleted', (data) => {
+        console.log('Private group deleted:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupDeleted', { detail: data }));
+      });
+
+      // Also listen to generic group events as fallback
+      this.socket.on('memberAdded', (data) => {
+        console.log('Member added (generic event):', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMemberAdded', { detail: data }));
+      });
+
+      this.socket.on('memberRemoved', (data) => {
+        console.log('Member removed (generic event):', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMemberRemoved', { detail: data }));
+      });
+
       this.socket.on('userJoinedGroup', (payload) => {
-        console.log('User joined group:', payload);
+        console.log('User joined group (generic event):', payload);
         window.dispatchEvent(new CustomEvent('privateGroupUserJoined', { detail: payload }));
       });
 
       this.socket.on('userLeftGroup', (payload) => {
-        console.log('User left group:', payload);
+        console.log('User left group (generic event):', payload);
         window.dispatchEvent(new CustomEvent('privateGroupUserLeft', { detail: payload }));
       });
 
       this.socket.on('groupInfoUpdated', (data) => {
-        console.log('Private group info updated:', data);
+        console.log('Group info updated (generic event):', data);
         window.dispatchEvent(new CustomEvent('privateGroupUpdated', { detail: data }));
+      });
+
+      // Handle message edits and deletes
+      this.socket.on('privateGroupMessageEdited', (data) => {
+        console.log('Private group message edited:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMessageEdited', { detail: data }));
+      });
+
+      this.socket.on('groupMessageEdited', (data) => {
+        console.log('Group message edited (generic event):', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMessageEdited', { detail: data }));
+      });
+
+      this.socket.on('messageEdited', (data) => {
+        console.log('Message edited (generic event):', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMessageEdited', { detail: data }));
+      });
+
+      this.socket.on('privateGroupMessageDeleted', (data) => {
+        console.log('Private group message deleted:', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMessageDeleted', { detail: data }));
+      });
+
+      this.socket.on('groupMessageDeleted', (data) => {
+        console.log('Group message deleted (generic event):', data);
+        window.dispatchEvent(new CustomEvent('privateGroupMessageDeleted', { detail: data }));
       });
 
       // Handle errors

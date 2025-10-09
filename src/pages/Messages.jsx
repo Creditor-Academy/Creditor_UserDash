@@ -372,12 +372,40 @@ function Messages() {
       handlePrivateGroupMessageRead(groupId, messageId);
     };
 
+    // Handle message edits
+    const onMessageEdited = (event) => {
+      const { groupId, messageId, content } = event.detail;
+      console.log('Private group message edited:', { groupId, messageId, content });
+      
+      // If we're viewing this group, update the message
+      if (String(conversationId) === String(groupId)) {
+        setMessages(prev => prev.map(msg => 
+          String(msg.id) === String(messageId) 
+            ? { ...msg, text: content, edited: true }
+            : msg
+        ));
+      }
+    };
+
+    // Handle message deletes
+    const onMessageDeleted = (event) => {
+      const { groupId, messageId } = event.detail;
+      console.log('Private group message deleted:', { groupId, messageId });
+      
+      // If we're viewing this group, remove the message
+      if (String(conversationId) === String(groupId)) {
+        setMessages(prev => prev.filter(msg => String(msg.id) !== String(messageId)));
+      }
+    };
+
     // Add event listeners
     window.addEventListener('privateGroupMessage', onPrivateGroupMessage);
     window.addEventListener('privateGroupMemberAdded', onMemberAdded);
     window.addEventListener('privateGroupMemberRemoved', onMemberRemoved);
     window.addEventListener('privateGroupUpdated', onGroupUpdated);
     window.addEventListener('privateGroupMessageRead', onMessageRead);
+    window.addEventListener('privateGroupMessageEdited', onMessageEdited);
+    window.addEventListener('privateGroupMessageDeleted', onMessageDeleted);
 
     // Regular socket setup
     const socket = getSocket();
@@ -459,6 +487,8 @@ function Messages() {
       window.removeEventListener('privateGroupMemberRemoved', onMemberRemoved);
       window.removeEventListener('privateGroupUpdated', onGroupUpdated);
       window.removeEventListener('privateGroupMessageRead', onMessageRead);
+      window.removeEventListener('privateGroupMessageEdited', onMessageEdited);
+      window.removeEventListener('privateGroupMessageDeleted', onMessageDeleted);
 
       // Remove local event listeners
       window.removeEventListener('privateGroupUpdated', handleLocalPrivateGroupUpdated);
