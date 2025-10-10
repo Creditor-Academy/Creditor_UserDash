@@ -220,7 +220,9 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         console.log('[Invitation] Current user ID:', currentUserId);
         
         const invites = Array.isArray(data?.invites) ? data.invites : [];
+        
         console.log('[Invitation] Processing invites:', invites);
+        console.log('[Invitation] Number of invites:', invites.length);
         
         // Check if current user is in the invitee list
         const match = invites.find((i) => {
@@ -230,12 +232,13 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
           return isMatch;
         });
         
+        // Only process if current user is actually invited (in the invitee list)
         if (!match || !match.token) {
-          console.log('[Invitation] No match found for current user - ignoring invitation');
+          console.log('[Invitation] Current user is NOT in invitee list - ignoring invitation');
           return;
         }
 
-        console.log('[Invitation] Match found! Processing invitation for token:', match.token);
+        console.log('[Invitation] Match found! Current user IS invited - Processing token:', match.token);
 
         // Fetch invite details for rich card
         const detailRes = await getInvitationByToken(match.token);
