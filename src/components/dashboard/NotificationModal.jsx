@@ -164,10 +164,28 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
 
       // Filter out any null values and update state
       const validInvites = mappedInvites.filter(Boolean);
+      
+      // Deduplicate invitations by group - only keep the most recent invitation per group
+      const deduplicatedInvites = [];
+      const seenGroups = new Set();
+      
+      // Sort by time (newest first) and keep only the first invitation per group
+      validInvites
+        .sort((a, b) => new Date(b.time) - new Date(a.time))
+        .forEach(inv => {
+          const groupKey = String(inv.groupId);
+          if (!seenGroups.has(groupKey)) {
+            seenGroups.add(groupKey);
+            deduplicatedInvites.push(inv);
+          } else {
+            console.log('[Invitation API] Skipping duplicate invitation for group:', groupKey);
+          }
+        });
+      
       setChatInvites(prev => {
-        // Merge with existing invites, avoiding duplicates
+        // Merge with existing invites, avoiding duplicates by token
         const existingTokens = new Set(prev.map(c => String(c.token)));
-        const newInvites = validInvites.filter(inv => !existingTokens.has(String(inv.token)));
+        const newInvites = deduplicatedInvites.filter(inv => !existingTokens.has(String(inv.token)));
         const updatedInvites = [...prev, ...newInvites];
         
         // Update parent badge count immediately
@@ -239,12 +257,32 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         };
 
         setChatInvites((prev) => {
-          const exists = prev.some((c) => String(c.id) === String(newInvite.id));
+          // Check if invitation with same token already exists
+          const exists = prev.some((c) => String(c.id) === String(newInvite.id) || String(c.token) === String(newInvite.token));
           if (exists) {
             console.log('[Invitation] Invitation already exists - skipping');
             return prev;
           }
+          
+          // Check if user already has an invitation for this group
+          const hasInviteForGroup = prev.some((c) => String(c.groupId) === String(newInvite.groupId));
+          if (hasInviteForGroup) {
+            console.log('[Invitation] User already has invitation for this group - replacing with newer one');
+            // Remove old invitation for this group and add the new one
+            const filtered = prev.filter(c => String(c.groupId) !== String(newInvite.groupId));
+            return [newInvite, ...filtered];
+          }
+          
           console.log('[Invitation] Adding new invitation to list');
+          
+          // Update notification badge
+          if (onNotificationUpdate) {
+            setTimeout(() => {
+              const totalUnread = notifications.filter(n => !n.read).length + (prev.length + 1);
+              onNotificationUpdate(totalUnread);
+            }, 100);
+          }
+          
           return [newInvite, ...prev];
         });
 
@@ -284,13 +322,34 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
 
   const acceptInvite = async (token, idToRemove) => {
     try {
-      const response = await acceptPrivateGroupInvitation(token);
-      
       // Get invitation details before removing from list
       const invite = chatInvites.find(c => String(c.id) === String(idToRemove));
       
+      const response = await acceptPrivateGroupInvitation(token);
+      
       toast.success('You joined the group successfully.');
-      setChatInvites(prev => prev.filter(c => String(c.id) !== String(idToRemove)));
+      
+      // Remove ALL invitations for the same group (handles duplicate invitations)
+      setChatInvites(prev => {
+        const filtered = prev.filter(c => {
+          // Remove the accepted invitation by token
+          if (String(c.id) === String(idToRemove)) return false;
+          // Also remove any other invitations for the same group
+          if (String(c.groupId) === String(invite?.groupId)) {
+            console.log('[Invitation] Removing duplicate invitation for same group:', c.id);
+            return false;
+          }
+          return true;
+        });
+        
+        // Update notification badge
+        if (onNotificationUpdate) {
+          const totalUnread = notifications.filter(n => !n.read).length + filtered.filter(c => !c.read).length;
+          onNotificationUpdate(totalUnread);
+        }
+        
+        return filtered;
+      });
       
       // Emit socket event for real-time updates
       const socket = getSocket();
@@ -327,7 +386,29 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
       // window.location.href = `/messages`;
     } catch (e) {
       console.warn('Accept invitation failed', e);
-      toast.error(e?.response?.data?.message || 'Failed to accept invitation');
+      const errorMessage = e?.response?.data?.message || '';
+      
+      // Check if user is already a member
+      if (errorMessage.toLowerCase().includes('already') || 
+          errorMessage.toLowerCase().includes('member')) {
+        toast.info('You are already a member of this group');
+        
+        // Remove this invitation since it's no longer valid
+        const invite = chatInvites.find(c => String(c.id) === String(idToRemove));
+        setChatInvites(prev => {
+          const filtered = prev.filter(c => String(c.groupId) !== String(invite?.groupId));
+          
+          // Update notification badge
+          if (onNotificationUpdate) {
+            const totalUnread = notifications.filter(n => !n.read).length + filtered.filter(c => !c.read).length;
+            onNotificationUpdate(totalUnread);
+          }
+          
+          return filtered;
+        });
+      } else {
+        toast.error(errorMessage || 'Failed to accept invitation');
+      }
     }
   };
 
@@ -335,7 +416,19 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
     try {
       await rejectPrivateGroupInvitation(token);
       toast.success('Invitation rejected.');
-      setChatInvites(prev => prev.filter(c => String(c.id) !== String(idToRemove)));
+      
+      // Remove the rejected invitation and update badge
+      setChatInvites(prev => {
+        const filtered = prev.filter(c => String(c.id) !== String(idToRemove));
+        
+        // Update notification badge
+        if (onNotificationUpdate) {
+          const totalUnread = notifications.filter(n => !n.read).length + filtered.filter(c => !c.read).length;
+          onNotificationUpdate(totalUnread);
+        }
+        
+        return filtered;
+      });
     } catch (e) {
       console.warn('Reject invitation failed', e);
       toast.error(e?.response?.data?.message || 'Failed to reject invitation');
