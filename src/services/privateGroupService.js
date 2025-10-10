@@ -6,7 +6,7 @@ import api from './apiClient';
 export async function getAllPrivateGroups() {
   try {
     // Using the admin endpoint for fetching all private groups
-    const response = await api.get('/api/admin/groups/private', {
+    const response = await api.get('/api/private-groups/all', {
       withCredentials: true
     });
     
