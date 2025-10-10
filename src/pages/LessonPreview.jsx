@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Clock, User, BookOpen, CheckCircle, Circle, X, Menu, FileText, Plus, Edit3, Hourglass, Star, Sparkles, Calendar } from 'lucide-react';
+import { ChevronLeft, Clock, User, BookOpen, CheckCircle, Circle, X, Menu, FileText, Plus, Edit3, Hourglass, Star, Sparkles, Calendar, Box } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -152,14 +152,19 @@ const LessonPreview = () => {
 
     console.log('Parsing lesson content:', {
       totalBlocks: content.length,
-      blockTypes: content.map(block => ({ id: block.id || block.block_id, type: block.type })),
-      youtubeBlocks: content.filter(block => block.type === 'youtube').length,
-      youtubeBlockDetails: content.filter(block => block.type === 'youtube').map(block => ({
-        id: block.id || block.block_id,
+      textBlocks: content.filter(block => block.type === 'text').length,
+      masterHeadingBlocks: content.filter(block => block.type === 'text' && block.textType === 'master_heading').length,
+      masterHeadingDetails: content.filter(block => block.type === 'text' && block.textType === 'master_heading').map(block => ({
+        id: block.block_id || block.id,
+        textType: block.textType,
         hasHtmlCss: !!block.html_css,
-        videoTitle: block.videoTitle || block.video_title || block.details?.videoTitle
+        htmlPreview: block.html_css ? block.html_css.substring(0, 50) + '...' : 'None'
       })),
-      duplicateIds: content.map(block => block.id || block.block_id).filter((id, index, arr) => arr.indexOf(id) !== index)
+      allBlockTypes: content.map(block => ({ 
+        id: block.id || block.block_id, 
+        type: block.type,
+        textType: block.textType || block.text_type || 'none'
+      }))
     });
 
     // Check for duplicate blocks
@@ -204,7 +209,13 @@ const LessonPreview = () => {
     const processedIds = new Set();
     
     uniqueContent.forEach((block, index) => {
-      console.log(`Processing block ${index}:`, block);
+      console.log(`Processing block ${index}:`, {
+        type: block.type,
+        textType: block.textType,
+        text_type: block.text_type,
+        blockId: block.block_id || block.id,
+        hasHtmlCss: !!block.html_css
+      });
       
       const blockId = block.block_id || block.id || `section-${index}`;
       
@@ -216,7 +227,7 @@ const LessonPreview = () => {
 
       // Handle different block types based on your API structure
       if (block.type === 'text') {
-        // Check if it's a heading type
+        // Check if it's a heading type - check both textType and text_type fields
         const textType = block.textType || block.text_type;
         // Extract content from multiple possible locations
         const content = block.details?.content || 
@@ -246,6 +257,13 @@ const LessonPreview = () => {
           if (!headingText || headingText === '') {
             headingText = `Section ${index + 1}`;
           }
+          
+          console.log(`Found master heading ${headingSections.length + 1}:`, {
+            blockId: blockId,
+            title: headingText,
+            index: index,
+            textType: textType
+          });
           
           headingSections.push({
             ...blockData,
@@ -415,10 +433,14 @@ const LessonPreview = () => {
 
     console.log('Final parsed content result:', {
       totalAllContent: allContent.length,
-      youtubeInAllContent: allContent.filter(block => block.type === 'youtube').length,
-      allContentYoutubeIds: allContent.filter(block => block.type === 'youtube').map(block => block.id),
-      headingSections: headingSections.length,
-      allContentTypes: allContent.map(block => ({ id: block.id, type: block.type }))
+      totalHeadingSections: headingSections.length,
+      headingSectionTitles: headingSections.map(h => h.title),
+      masterHeadingBlocks: allContent.filter(block => block.type === 'text' && block.textType === 'master_heading'),
+      allTextBlocks: allContent.filter(block => block.type === 'text').map(block => ({
+        id: block.id,
+        textType: block.textType,
+        hasContent: !!block.content
+      }))
     });
     
     return {
@@ -690,12 +712,16 @@ const LessonPreview = () => {
         <div className="p-6 h-screen flex flex-col overflow-hidden">
           {/* Lesson Header */}
           <div className="mb-6 flex-shrink-0">
-            <div className="text-sm opacity-75 mb-1">Lesson {lessonData.lessonOrder} of {lessonData.totalLessons}</div>
-            <h1 className="text-xl font-bold leading-tight mb-2">{lessonData.title}</h1>
-            {/* <div className="flex items-center text-sm opacity-75 mb-4"> */}
-              {/* <Clock className="h-4 w-4 mr-1" /> */}
-              {/* {lessonData.duration} */}
-            {/* </div> */}
+            <div className="text-sm opacity-75 mb-1">Lesson {lessonData.lessonOrder}</div>
+            <h1 className="text-xl font-bold leading-tight mb-3">{lessonData.title}</h1>
+            
+            {/* Section Progress */}
+            {totalSections > 0 && (
+              <div className="text-sm opacity-75 mb-3">
+                Section {Math.max(1, lessonData.headingSections.findIndex(s => s.id === currentSection) + 1)} of {totalSections}
+              </div>
+            )}
+            
             <div className="bg-blue-700 rounded-full h-2 mb-2">
               <div 
                 className="bg-white rounded-full h-2 transition-all duration-300"
@@ -746,43 +772,67 @@ const LessonPreview = () => {
       <div className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'lg:ml-80' : 'lg:ml-0'}`}>
         {/* Fixed Header */}
         <header 
-          className="fixed top-0 right-0 z-40 bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-200 transition-all duration-300" 
+          className="fixed top-0 right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80 transition-all duration-300" 
           style={{ left: sidebarVisible ? '320px' : '0' }}
         >
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Left Section - Navigation */}
+            <div className="flex items-center space-x-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarVisible(!sidebarVisible)}
-                className="h-9 w-9 p-0 rounded-lg hover:bg-gray-100 transition-colors"
+                className="h-8 w-8 p-0 rounded-md hover:bg-gray-100 transition-colors"
                 title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
               >
-                <Menu className="h-5 w-5 text-gray-600" />
+                <Menu className="h-4 w-4 text-gray-600" />
               </Button>
-              <div className="h-6 w-px bg-gray-300"></div>
+              
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden h-9 w-9 p-0 rounded-lg hover:bg-gray-100"
+                className="lg:hidden h-8 w-8 p-0 rounded-md hover:bg-gray-100"
               >
                 <ChevronLeft className="h-4 w-4 text-gray-600" />
               </Button>
+              
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors"
+                className="flex items-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 px-2 py-1.5 rounded-md transition-colors ml-1"
               >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                <span className="font-medium">Back</span>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                <span className="text-sm font-medium">Back</span>
               </Button>
             </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                Lesson {lessonData.lessonOrder} of {lessonData.totalLessons}
+
+            {/* Center Section - Lesson Info */}
+            <div className="hidden md:flex items-center justify-center flex-1 max-w-md mx-8">
+              <div className="text-center">
+                <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                  Lesson {lessonData.lessonOrder}
+                </div>
+                <div className="text-base font-semibold text-gray-900 mt-0.5 truncate">
+                  {lessonData.title}
+                </div>
+              </div>
+            </div>
+            
+            {/* Right Section - Progress Badges */}
+            <div className="flex items-center space-x-3">
+              {/* Mobile lesson badge */}
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 md:hidden text-xs px-2 py-1">
+                Lesson {lessonData.lessonOrder}
               </Badge>
+              
+              {/* Section progress badge */}
+              {totalSections > 0 && (
+                <Badge variant="outline" className="bg-gray-50/80 text-gray-700 border-gray-300 text-xs px-2.5 py-1 font-medium">
+                  Section {Math.max(1, lessonData.headingSections.findIndex(s => s.id === currentSection) + 1)} of {totalSections}
+                </Badge>
+              )}
             </div>
           </div>
         </header>
@@ -895,21 +945,30 @@ const LessonPreview = () => {
                       </>
                     )}
 
-                    {/* Image Content */}
-                    {block.type === 'image' && block.imageUrl && (
-                      <div className="text-center">
-                        <img
-                          src={block.imageUrl}
-                          alt={block.imageTitle || 'Lesson Image'}
-                          className="max-w-full h-auto rounded-lg shadow-md mx-auto"
-                        />
-                        {block.imageTitle && (
-                          <h3 className="text-lg font-semibold mt-4 text-gray-800">{block.imageTitle}</h3>
+                    {/* Image Content - Use HTML/CSS from API */}
+                    {block.type === 'image' && (
+                      <>
+                        {block.htmlCss ? (
+                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                        ) : (
+                          // Fallback rendering when html_css is not available
+                          block.imageUrl && (
+                            <div className="text-center">
+                              <img
+                                src={block.imageUrl}
+                                alt={block.imageTitle || 'Lesson Image'}
+                                className="max-w-full h-auto rounded-lg shadow-md mx-auto"
+                              />
+                              {block.imageTitle && (
+                                <h3 className="text-lg font-semibold mt-4 text-gray-800">{block.imageTitle}</h3>
+                              )}
+                              {block.imageDescription && (
+                                <p className="text-gray-600 mt-2">{block.imageDescription}</p>
+                              )}
+                            </div>
+                          )
                         )}
-                        {block.imageDescription && (
-                          <p className="text-gray-600 mt-2">{block.imageDescription}</p>
-                        )}
-                      </div>
+                      </>
                     )}
 
                     {/* Video Content */}
@@ -1174,8 +1233,162 @@ const LessonPreview = () => {
                       </>
                     )}
 
+                    {/* SCORM Content */}
+                    {block.type === 'scorm' && (
+                      <>
+                        {/* Always use the new launch button approach for SCORM, ignore old htmlCss */}
+                        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                  <Box className="w-4 h-4 text-blue-600" />
+                                </div>
+                                <div>
+                                  <h3 className="text-sm font-semibold text-gray-900">
+                                    {(() => {
+                                      try {
+                                        const content = JSON.parse(block.content || '{}');
+                                        return content.title || block.title || 'SCORM Package';
+                                      } catch {
+                                        return block.title || 'SCORM Package';
+                                      }
+                                    })()}
+                                  </h3>
+                                  <p className="text-xs text-gray-500">
+                                    SCORM Package • {(() => {
+                                      try {
+                                        const content = JSON.parse(block.content || '{}');
+                                        return content.fileSize ? `${(content.fileSize / (1024 * 1024)).toFixed(2)} MB` : '';
+                                      } catch {
+                                        return '';
+                                      }
+                                    })()}
+                                  </p>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  try {
+                                    const content = JSON.parse(block.content || '{}');
+                                    let scormUrl = content.scormUrl || 
+                                                   content.uploadResult?.data?.url || 
+                                                   content.uploadResult?.data?.launchUrl ||
+                                                   content.uploadResult?.url ||
+                                                   content.url ||
+                                                   content.launchUrl;
+                                    
+                                    if (!scormUrl && block.htmlCss) {
+                                      const urlMatch = block.htmlCss.match(/https:\/\/[^'"]+\.s3\.[^'"]+/);
+                                      if (urlMatch) {
+                                        scormUrl = urlMatch[0];
+                                      }
+                                    }
+                                     
+                                    if (scormUrl && scormUrl.includes('s3.') && scormUrl.includes('/scorm/')) {
+                                      const urlParts = scormUrl.split('/scorm/');
+                                      if (urlParts.length > 1) {
+                                        const pathParts = urlParts[1].split('/');
+                                        const scormId = pathParts[0];
+                                        const filePath = pathParts.slice(1).join('/');
+                                        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+                                        scormUrl = `${baseUrl}/api/scorm-proxy/${scormId}/${filePath}`;
+                                      }
+                                    }
+                                     
+                                    if (scormUrl) {
+                                      window.open(scormUrl, '_blank');
+                                    } else {
+                                      console.error('SCORM URL not found in any location');
+                                      console.error('Available content keys:', Object.keys(content));
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing SCORM content:', e);
+                                  }
+                                }}
+                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                              >
+                                Open Full Screen
+                              </button>
+                            </div>
+                            <div className="relative bg-gray-50 rounded-lg p-8 text-center flex items-center justify-center" style={{ height: '400px' }}>
+                              <div>
+                                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                  <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-9-4V8a3 3 0 013-3h6a3 3 0 013 3v2M7 21h10a2 2 0 002-2v-2a2 2 0 00-2-2H7a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+                                  </svg>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Interactive SCORM Content</h3>
+                                <p className="text-gray-600 mb-4">Click the button below to launch the SCORM package in a new window for the best experience.</p>
+                                <button 
+                                  onClick={async () => {
+                                    // First test if proxy is working
+                                    try {
+                                      const testResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000'}/api/scorm-proxy/test`);
+                                      const testData = await testResponse.json();
+                                      console.log('Proxy test result:', testData);
+                                    } catch (e) {
+                                      console.error('Proxy test failed:', e);
+                                    }
+
+                                    try {
+                                      console.log('Full block data:', block);
+                                      const content = JSON.parse(block.content || '{}');
+                                      console.log('Parsed content:', content);
+                                      
+                                      // Try multiple ways to get the SCORM URL
+                                      let scormUrl = content.scormUrl || 
+                                                     content.uploadResult?.data?.url || 
+                                                     content.uploadResult?.data?.launchUrl ||
+                                                     content.uploadResult?.url ||
+                                                     content.url ||
+                                                     content.launchUrl;
+                                      
+                                      // Also try to extract from htmlCss if URL not found in content
+                                      if (!scormUrl && block.htmlCss) {
+                                        const urlMatch = block.htmlCss.match(/https:\/\/[^'"]+\.s3\.[^'"]+/);
+                                        if (urlMatch) {
+                                          scormUrl = urlMatch[0];
+                                          console.log('Extracted URL from htmlCss:', scormUrl);
+                                        }
+                                      }
+                                      
+                                      console.log('Header button - Original SCORM URL:', scormUrl);
+                                      
+                                      // If it's still a direct S3 URL, try to convert it to proxy URL
+                                      if (scormUrl && scormUrl.includes('s3.') && scormUrl.includes('/scorm/')) {
+                                        const urlParts = scormUrl.split('/scorm/');
+                                        if (urlParts.length > 1) {
+                                          const pathParts = urlParts[1].split('/');
+                                          const scormId = pathParts[0];
+                                          const filePath = pathParts.slice(1).join('/');
+                                          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+                                          scormUrl = `${baseUrl}/api/scorm-proxy/${scormId}/${filePath}`;
+                                          console.log('Header button - Converted to proxy URL:', scormUrl);
+                                        }
+                                      }
+                                      
+                                      if (scormUrl) {
+                                        window.open(scormUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+                                      } else {
+                                        console.error('SCORM URL not found in any location');
+                                        console.error('Available content keys:', Object.keys(content));
+                                      }
+                                    } catch (e) {
+                                      console.error('Error parsing SCORM content:', e);
+                                    }
+                                  }}
+                                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                >
+                                  Launch SCORM Content
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                      </>
+                    )}
+
                     {/* Other Content Types - Fallback for any unhandled block types */}
-                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider', 'youtube', 'audio'].includes(block.type) && (
+                    {!['text', 'statement', 'image', 'video', 'quote', 'list', 'pdf', 'table', 'embed', 'divider', 'youtube', 'audio', 'scorm'].includes(block.type) && (
                       <>
                         {block.htmlCss ? (
                           <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
