@@ -1,6 +1,40 @@
 import api from './apiClient';
 
 // Private Group API functions wefrtyukilo;iuytrew
+
+// Get all private groups (admin only)
+export async function getAllPrivateGroups() {
+  try {
+    // Using the admin endpoint for fetching all private groups
+    const response = await api.get('/api/admin/groups/private', {
+      withCredentials: true
+    });
+    
+    // Handle both success response formats
+    if (response?.data?.data) {
+      // If response is wrapped in data field
+      return {
+        data: response.data.data,
+        success: response.data.success,
+        message: response.data.message
+      };
+    }
+    return response?.data;
+  } catch (error) {
+    console.error('privateGroupService.getAllPrivateGroups error:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        headers: error.config?.headers
+      }
+    });
+    throw error;
+  }
+}
+
 export async function createPrivateGroup(groupData) {
   try {
     // Ensure group_type is always PRIVATE for private groups

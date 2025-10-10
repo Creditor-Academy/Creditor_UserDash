@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { getAllPrivateGroups, deletePrivateGroup, getPrivateGroupMessages, getGroupMembers } from '@/services/privateGroupService';
 
 const formatTs = (ts) => {
   try {
@@ -12,57 +13,121 @@ const formatTs = (ts) => {
   }
 };
 
-// Presentational admin panel. Does NOT perform any API calls.
-// Provide data and actions via props if needed.
-export default function PrivateGroupsAdmin({
-  groups: externalGroups = [],
-  loading: externalLoading = false,
-  onDeleteGroup, // async (groupId) => {}
-  onSelectGroup, // (group) => {}
-  fetchGroupDetails, // async (groupId) => { messages: [], members: [] }
-}) {
+export default function PrivateGroupsAdmin() {
   const { hasRole } = useAuth();
   const { toast } = useToast();
   const isAdmin = hasRole('admin');
 
-  const [loading, setLoading] = useState(externalLoading);
-  const [groups, setGroups] = useState(() => Array.isArray(externalGroups) ? externalGroups : []);
+  const [loading, setLoading] = useState(true);
+  const [groups, setGroups] = useState([]);
   const [query, setQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Sync with external props
+  // Load all private groups
   useEffect(() => {
-    setGroups(Array.isArray(externalGroups) ? externalGroups : []);
-  }, [externalGroups]);
+    loadGroups();
+  }, []);
 
-  useEffect(() => {
-    setLoading(!!externalLoading);
-  }, [externalLoading]);
-
+  // Load group details when a group is selected
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!selectedGroup?.id) { setMessages([]); setMembers([]); return; }
-      if (typeof fetchGroupDetails === 'function') {
-        try {
-          const details = await fetchGroupDetails(selectedGroup.id);
-          if (!mounted) return;
-          setMessages(Array.isArray(details?.messages) ? details.messages : []);
-          setMembers(Array.isArray(details?.members) ? details.members : []);
-        } catch (e) {
-          toast({ title: 'Failed to load group details', description: e?.message || 'Unknown error', variant: 'destructive' });
-        }
-      } else {
-        // No loader provided; clear details
-        setMessages([]);
-        setMembers([]);
+      if (!selectedGroup?.id) { 
+        setMessages([]); 
+        setMembers([]); 
+        return; 
+      }
+
+      try {
+        const [messagesRes, membersRes] = await Promise.all([
+          getPrivateGroupMessages(selectedGroup.id, 1, 10), // Get last 10 messages
+          getGroupMembers(selectedGroup.id)
+        ]);
+
+        if (!mounted) return;
+
+        setMessages(messagesRes?.data?.messages || []);
+        setMembers(membersRes?.data || []);
+      } catch (error) {
+        toast({
+          title: 'Failed to load group details',
+          description: error?.message || 'Unknown error',
+          variant: 'destructive'
+        });
       }
     })();
     return () => { mounted = false; };
-  }, [selectedGroup?.id, fetchGroupDetails, toast]);
+  }, [selectedGroup?.id, toast]);
+
+  const loadGroups = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllPrivateGroups();
+      
+      // Handle error responses
+      if (!response?.success && response?.message) {
+        throw new Error(response.message);
+      }
+      
+      // Handle both response formats
+      const groups = response?.data || response || [];
+      if (!Array.isArray(groups)) {
+        throw new Error('Invalid response format');
+      }
+      
+      setGroups(groups);
+    } catch (error) {
+      // Detailed error logging
+      console.error('Failed to load groups:', {
+        error: error,
+        message: error.message,
+        response: {
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers
+        },
+        request: {
+          url: error.config?.url,
+          method: error.config?.method
+        }
+      });
+
+      // Show error toast with more details
+      toast({
+        title: 'Failed to load private groups',
+        description: `${error?.response?.data?.message || error?.message || 'Unknown error'} (${error?.response?.status || 'No status'})`,
+        variant: 'destructive',
+        duration: 5000 // Show for longer since it's an error
+      });
+      // Set empty array to avoid undefined errors
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm('Delete this group? This action is permanent.')) return;
+    
+    try {
+      setIsDeleting(true);
+      await deletePrivateGroup(groupId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
+      setSelectedGroup(null);
+      toast({ title: 'Group deleted' });
+    } catch (error) {
+      toast({
+        title: 'Failed to delete group',
+        description: error?.message || 'Unknown error',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,10 +138,22 @@ export default function PrivateGroupsAdmin({
     );
   }, [groups, query]);
 
+  // Check for admin access
   if (!isAdmin) {
+    // Show error toast for non-admin users
+    useEffect(() => {
+      toast({
+        title: 'Access Denied',
+        description: 'Only administrators can access this page.',
+        variant: 'destructive',
+        duration: 5000
+      });
+    }, [toast]);
+
     return (
       <div className="p-8 text-center">
-        <div className="text-red-500 text-base">Admin access only</div>
+        <div className="text-red-500 text-base font-medium">Access Denied</div>
+        <div className="text-gray-500 text-sm mt-2">Only administrators can access this page.</div>
       </div>
     );
   }
@@ -88,7 +165,7 @@ export default function PrivateGroupsAdmin({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search groups"
+          placeholder="Search groups by name or ID"
           className="max-w-lg mx-auto"
         />
       </div>
@@ -98,15 +175,12 @@ export default function PrivateGroupsAdmin({
         {/* Groups List */}
         <div className="w-72 bg-white border-r p-4 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-400">Loading...</div>
+            <div className="text-sm text-gray-400">Loading groups...</div>
           ) : filtered.length ? (
             filtered.map(g => (
               <button
                 key={g.id}
-                onClick={() => {
-                  setSelectedGroup(g);
-                  if (typeof onSelectGroup === 'function') onSelectGroup(g);
-                }}
+                onClick={() => setSelectedGroup(g)}
                 className={`w-full block text-left px-3 py-2 rounded mb-1 ${
                   selectedGroup?.id === g.id
                     ? 'bg-blue-100 border border-blue-400'
@@ -155,29 +229,13 @@ export default function PrivateGroupsAdmin({
                   <div>
                     <div className="text-lg font-semibold">{selectedGroup.name || 'Untitled Group'}</div>
                     <div className="text-xs text-gray-500">Created: {formatTs(selectedGroup.createdAt || selectedGroup.created_at)}</div>
+                    <div className="text-xs text-gray-500">Created by: {selectedGroup.created_by}</div>
                   </div>
                 </div>
                 <Button
                   variant="destructive"
                   disabled={isDeleting}
-                  onClick={async () => {
-                    if (!window.confirm('Delete this group? This action is permanent.')) return;
-                    try {
-                      setIsDeleting(true);
-                      if (typeof onDeleteGroup === 'function') {
-                        await onDeleteGroup(selectedGroup.id);
-                        setGroups(prev => prev.filter(g => g.id !== selectedGroup.id));
-                        setSelectedGroup(null);
-                        toast({ title: 'Group deleted' });
-                      } else {
-                        toast({ title: 'No delete handler provided', description: 'Provide onDeleteGroup prop to enable deletion.', variant: 'destructive' });
-                      }
-                    } catch (e) {
-                      toast({ title: 'Failed to delete group', description: e?.message || 'Unknown error', variant: 'destructive' });
-                    } finally {
-                      setIsDeleting(false);
-                    }
-                  }}
+                  onClick={() => handleDeleteGroup(selectedGroup.id)}
                 >
                   Delete Group
                 </Button>
