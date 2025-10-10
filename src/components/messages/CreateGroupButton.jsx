@@ -24,7 +24,7 @@ import getSocket from "@/services/socketClient";
  * - Enforces one-group-per-user rule via conversations check
  * - On success, invokes optional onCreated callback with { id, name, memberCount, ... }
  */
-export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) {
+export default function CreateGroupButton({ className = "", onCreated }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loadingInit, setLoadingInit] = useState(false);
@@ -98,7 +98,7 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         return {
           id: u.id || u._id || u.user_id || u.userId,
           name: [u.first_name, u.last_name].filter(Boolean).join(" ") || u.name || u.email || "User",
-          avatar: u.image || u.avatar || "/placeholder.svg",
+          avatar: u.image || u.avatar || "",
           role: userRole,
         };
       }).filter(u => u.id && String(u.id) !== currentUserId); // Exclude current user
@@ -222,7 +222,7 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         lastMessageType: "system",
         lastMessageFrom: "System",
         lastMessageAt: new Date().toISOString(),
-        avatar: res.data.thumbnail || "/placeholder.svg",
+        avatar: res.data.thumbnail || "",
         description: res.data.description,
       };
       
@@ -254,14 +254,13 @@ export default function CreateGroupButton({ className = "h-8 w-8", onCreated }) 
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant="ghost"
-              size="icon"
-              className={`${className} ${userHasGroup ? "opacity-50 cursor-not-allowed" : ""}`}
+              size="sm"
+              className={`bg-purple-600 hover:bg-purple-700 text-white ${className} ${userHasGroup ? "opacity-50 cursor-not-allowed" : ""}`}
               title="Create Group"
               onClick={() => !userHasGroup && handleOpen(true)}
               disabled={userHasGroup}
             >
-              <Users className="h-4 w-4" />
+              Create Group
             </Button>
           </TooltipTrigger>
           <TooltipContent>

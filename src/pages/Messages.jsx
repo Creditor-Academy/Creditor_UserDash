@@ -125,6 +125,7 @@ function Messages() {
   const [conversationId, setConversationId] = useState(null);
   const [newChatUsers, setNewChatUsers] = useState([]);
   const [newChatSearch, setNewChatSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all"); // "all", "chats", "groups"
   const [startingUserId, setStartingUserId] = useState(null);
   const [deleteMessageId, setDeleteMessageId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -1887,9 +1888,20 @@ function Messages() {
     !selectedGroupMembers.includes(user.id)
   );
 
-  const filteredFriends = friends.filter(friend => 
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredFriends = friends.filter(friend => {
+    const matchesSearch = friend.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Apply filter based on activeFilter
+    let matchesFilter = true;
+    if (activeFilter === "chats") {
+      matchesFilter = !friend.isPrivateGroup; // Only 1-on-1 chats
+    } else if (activeFilter === "groups") {
+      matchesFilter = friend.isPrivateGroup; // Only private groups
+    }
+    // "all" shows everything, so matchesFilter remains true
+    
+    return matchesSearch && matchesFilter;
+  });
 
   const filteredNewChatUsers = (() => {
     const currentUserId = String(localStorage.getItem('userId') || '');
@@ -1919,11 +1931,11 @@ function Messages() {
           {/* Single-section layout: show list OR chat, not both */}
           {!selectedFriend && (
           <div className="w-full flex flex-col h-full">
-            <div className="p-2 sm:p-3 border-b flex justify-between items-center">
-              <h2 className="text-base sm:text-lg font-semibold">Messages</h2>
-              <div className="flex items-center gap-1 sm:gap-2">
+            <div className="p-2 sm:p-3 border-b">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-base sm:text-lg font-semibold">Messages</h2>
+                <div className="flex items-center gap-1 sm:gap-2">
                 <CreateGroupButton
-                  className="h-7 w-7 sm:h-8 sm:w-8"
                   onCreated={(created) => {
                     try { 
                       // Check for duplicates before adding (socket event may have already added it)
@@ -1943,8 +1955,9 @@ function Messages() {
                 />
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" title="New Chat">
-                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <Button variant="outline" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white border-blue-600" title="New Chat">
+                    <Plus className="h-4 w-4 mr-1" />
+                    New Chat
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="w-[95vw] sm:max-w-[425px] max-h-[80vh]">
@@ -1986,6 +1999,35 @@ function Messages() {
                   </div>
                 </DialogContent>
               </Dialog>
+                </div>
+              </div>
+              
+              {/* Filter Buttons */}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={activeFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter("all")}
+                  className={`text-xs px-2 py-1 h-7 ${activeFilter === "all" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+                >
+                  All
+                </Button>
+                <Button
+                  variant={activeFilter === "chats" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter("chats")}
+                  className={`text-xs px-2 py-1 h-7 ${activeFilter === "chats" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+                >
+                  Chats
+                </Button>
+                <Button
+                  variant={activeFilter === "groups" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter("groups")}
+                  className={`text-xs px-2 py-1 h-7 ${activeFilter === "groups" ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+                >
+                  Groups
+                </Button>
               </div>
             </div>
             <div className="p-2 sm:p-3 border-b">

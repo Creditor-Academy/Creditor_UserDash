@@ -24,7 +24,6 @@ import {
   getGroupMembers, 
   updatePrivateGroup, 
   deletePrivateGroup, 
-  addPrivateGroupMembers, 
   removePrivateGroupMember, 
   promotePrivateGroupAdmin,
   invitePrivateGroupMembers,
@@ -44,7 +43,6 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [removing, setRemoving] = useState(null);
   const [promoting, setPromoting] = useState(null);
-  const [adding, setAdding] = useState(false);
   const [deletingGroup, setDeletingGroup] = useState(false);
   const [leavingGroup, setLeavingGroup] = useState(false);
   const [inviting, setInviting] = useState(false);
@@ -294,47 +292,6 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
     }
   };
 
-  const handleAddMembers = async () => {
-    if (selectedUsers.size === 0 || !groupId) return;
-    
-    try {
-      setAdding(true);
-      const socket = getSocket();
-      const userIds = Array.from(selectedUsers);
-      await addPrivateGroupMembers(groupId, userIds);
-      
-      // Get user details for the added members
-      const addedUsers = allUsers.filter(user => userIds.includes(user.id));
-      
-      // Emit WebSocket event for real-time updates with group data
-      socket.emit('privateGroupMembersAdded', { 
-        groupId, 
-        users: addedUsers,
-        group: group // Include group data so new members can see the group details
-      });
-      
-      // Refresh members list using the new API
-      try {
-        const membersRes = await getGroupMembers(groupId);
-        if (membersRes?.success && membersRes?.data) {
-          setMembers(Array.isArray(membersRes.data) ? membersRes.data : []);
-        }
-      } catch (memberError) {
-        console.warn("Failed to refresh members list:", memberError);
-        // Don't show error to user as the main operation succeeded
-      }
-      
-      setSelectedUsers(new Set());
-      setShowAddMembers(false);
-      setSearchTerm("");
-      toast.success(`${selectedUsers.size} members added to group`);
-    } catch (error) {
-      console.error("Error adding members:", error);
-      toast.error("Failed to add members");
-    } finally {
-      setAdding(false);
-    }
-  };
 
   const handleInviteMembers = async () => {
     if (selectedUsers.size === 0) return;
@@ -910,21 +867,12 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
                         <div className="flex items-center gap-2">
                           <Button
                             size="sm"
-                            onClick={handleAddMembers}
-                            disabled={adding || selectedUsers.size === 0}
-                            variant="outline"
-                          >
-                            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                            Add {selectedUsers.size} Members
-                          </Button>
-                          <Button
-                            size="sm"
                             onClick={handleInviteMembers}
                             disabled={inviting || selectedUsers.size === 0}
                             className="bg-blue-600 hover:bg-blue-700 text-white"
                           >
                             {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                            Invite {selectedUsers.size} Members
+                            Invite {selectedUsers.size} Member
                           </Button>
                           <Button
                             size="sm"
