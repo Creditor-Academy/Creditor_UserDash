@@ -107,9 +107,14 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
     try {
       console.log('[Invitation API] Fetching pending invitations for current user...');
       const response = await getPendingInvitations();
-      const invitations = response?.data || response?.invitations || [];
       
-      console.log('[Invitation API] Response:', response);
+      // Handle nested response structure from backend
+      // Backend returns: { success: true, data: [...] }
+      // Axios wraps it: { data: { success: true, data: [...] } }
+      const invitations = response?.data?.data || response?.data?.invitations || response?.data || [];
+      
+      console.log('[Invitation API] Full response:', response);
+      console.log('[Invitation API] Response.data:', response?.data);
       console.log('[Invitation API] Parsed invitations:', invitations);
       console.log('[Invitation API] Current user ID:', localStorage.getItem('userId'));
       
