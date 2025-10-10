@@ -389,7 +389,7 @@ const LessonView = () => {
               <CardFooter className="pt-0">
                 <Button 
                   className="w-full flex items-center justify-center gap-2"
-                 // onClick={() => handleViewLesson(lesson)}
+                 onClick={() => handleViewLesson(lesson)}
                 >
                   <Play className="h-4 w-4" /> Start Lesson
                 </Button>
