@@ -484,18 +484,9 @@ const LessonView = () => {
               <CardFooter className="pt-0">
                 <Button 
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => handleViewLesson(lesson)}
-                  disabled={loadingLesson === lesson.id}
+                 onClick={() => handleViewLesson(lesson)}
                 >
-                  {loadingLesson === lesson.id ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Loading...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4" /> Start Lesson
-                    </>
-                  )}
+                  <Play className="h-4 w-4" /> Start Lesson
                 </Button>
               </CardFooter>
             </Card>

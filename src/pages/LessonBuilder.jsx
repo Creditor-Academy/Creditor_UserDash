@@ -322,11 +322,97 @@ const Font = Quill.import('formats/font');
 Font.whitelist = ['arial', 'helvetica', 'times', 'courier', 'verdana', 'georgia', 'impact', 'roboto'];
 Quill.register(Font, true);
 
+// Override font display names for better readability
+const fontNames = {
+  'arial': 'Arial',
+  'helvetica': 'Helvetica', 
+  'times': 'Times Roman',
+  'courier': 'Courier New',
+  'verdana': 'Verdana',
+  'georgia': 'Georgia',
+  'impact': 'Impact',
+  'roboto': 'Roboto'
+};
+
+// Apply custom font names and override Quill's font labels
+if (typeof document !== 'undefined') {
+  const fontCSS = Object.entries(fontNames).map(([key, value]) => 
+    `.ql-font-${key} { font-family: "${value}"; }`
+  ).join('\n');
+  
+  if (!document.getElementById('custom-font-names')) {
+    const style = document.createElement('style');
+    style.id = 'custom-font-names';
+    style.textContent = fontCSS + `
+      /* Override dropdown options text only - not content */
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="arial"]::before { content: "Arial"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="helvetica"]::before { content: "Helvetica"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="times"]::before { content: "Times Roman"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="courier"]::before { content: "Courier New"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="verdana"]::before { content: "Verdana"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="georgia"]::before { content: "Georgia"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="impact"]::before { content: "Impact"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="roboto"]::before { content: "Roboto"; }
+      
+      /* Ensure font names don't appear in content area */
+      .ql-editor .ql-font-arial::before,
+      .ql-editor .ql-font-helvetica::before,
+      .ql-editor .ql-font-times::before,
+      .ql-editor .ql-font-courier::before,
+      .ql-editor .ql-font-verdana::before,
+      .ql-editor .ql-font-georgia::before,
+      .ql-editor .ql-font-impact::before,
+      .ql-editor .ql-font-roboto::before {
+        content: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 
 // Register font sizes - simplified to 4 options
 const Size = Quill.import('formats/size');
 Size.whitelist = ['small', 'normal', 'large', 'huge'];
 Quill.register(Size, true);
+
+// Add CSS for Quill editor overflow handling
+const quillOverflowCSS = `
+  .quill-editor-overflow-visible .ql-toolbar {
+    overflow: visible !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker {
+    overflow: visible !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker-options {
+    z-index: 9999 !important;
+    position: absolute !important;
+    overflow: visible !important;
+    min-width: 180px !important;
+    max-width: 250px !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker-label {
+    overflow: visible !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker-options .ql-picker-item {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    padding: 5px 10px !important;
+    min-width: 160px !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-font .ql-picker-options {
+    min-width: 200px !important;
+    max-width: 300px !important;
+  }
+`;
+
+// Inject the CSS
+if (typeof document !== 'undefined' && !document.getElementById('quill-overflow-css')) {
+  const style = document.createElement('style');
+  style.id = 'quill-overflow-css';
+  style.textContent = quillOverflowCSS;
+  document.head.appendChild(style);
+}
 
 // Universal toolbar for paragraph/content
 const paragraphToolbar = [
@@ -361,15 +447,14 @@ const getToolbarModules = (type = 'full') => {
     [{ 'align': [] }]
   ];
 
-  // For heading-only and subheading-only editors, REMOVE size picker
+  // For heading-only and subheading-only editors, include size picker
   if (type === 'heading' || type === 'subheading') {
     return {
       toolbar: [
         [{ 'font': Font.whitelist }],
+        [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline'],
-        [{ 'color': [] }, { 'background': [] }],
-        [{ 'align': [] }],
-        ['clean']
+        [{ 'color': [] }, { 'background': [] }]
       ]
     };
   }
@@ -565,10 +650,6 @@ function LessonBuilder() {
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
   const [showStatementSidebar, setShowStatementSidebar] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
-  const [showAiImageDialog, setShowAiImageDialog] = useState(false);
-  const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [aiImageGenerating, setAiImageGenerating] = useState(false);
-  const [generatedAiImage, setGeneratedAiImage] = useState('');
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfDescription, setPdfDescription] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
@@ -642,18 +723,6 @@ function LessonBuilder() {
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
         text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy.'
-      }
-    },
-    {
-      id: 'ai-generated',
-      title: 'AI Generated Image',
-      description: 'Generate custom images using AI prompts',
-      icon: <Image className="h-6 w-6" />,
-      layout: 'ai-generated',
-      defaultContent: {
-        imageUrl: '',
-        text: 'AI generated image will appear here',
-        prompt: ''
       }
     }
   ];
@@ -1738,8 +1807,12 @@ function LessonBuilder() {
   };
 
   const handleVideoUpdate = (videoBlock) => {
+    console.log('handleVideoUpdate called with:', videoBlock);
+    console.log('editingVideoBlock:', editingVideoBlock);
+    
     if (editingVideoBlock) {
       // Update existing video block
+      console.log('Updating existing video block');
       setContentBlocks(blocks =>
         blocks.map(block =>
           block.id === editingVideoBlock.id ? {
@@ -1767,7 +1840,8 @@ function LessonBuilder() {
         }));
       }
     } else {
-      // Add new video block - THIS IS THE KEY FIX!
+      // Add new video block
+      console.log('Adding new video block');
       setContentBlocks(prevBlocks => [...prevBlocks, videoBlock]);
     }
   
@@ -2429,6 +2503,23 @@ function LessonBuilder() {
       console.log('Video block detected for editing:', block);
       setEditingVideoBlock(block);
       setShowVideoDialog(true);
+    } else if (block.type === 'divider') {
+      // Handle divider block editing
+      console.log('Divider block detected for editing:', block);
+      if (dividerComponentRef.current) {
+        dividerComponentRef.current.editDivider(block);
+      }
+    } else if (block.type === 'link') {
+      // Handle link block editing
+      console.log('Link block detected for editing:', block);
+      setCurrentLinkBlock(block);
+      setLinkTitle(block.linkTitle || '');
+      setLinkUrl(block.linkUrl || '');
+      setLinkDescription(block.linkDescription || '');
+      setLinkButtonText(block.linkButtonText || 'Visit Link');
+      setLinkButtonStyle(block.linkButtonStyle || 'primary');
+      setLinkError('');
+      setShowLinkDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -3639,180 +3730,8 @@ function LessonBuilder() {
       }
     }
   };
-  // AI Image Generation Functions
-  const generateAiImage = async (prompt) => {
-    setAiImageGenerating(true);
-    try {
-      console.log('Generating AI image with prompt:', prompt);
-      
-      // Try Pollinations AI (free alternative)
-      try {
-        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&seed=${Date.now()}`;
-        
-        // Test if the URL is accessible
-        const testResponse = await fetch(pollinationsUrl, { method: 'HEAD' });
-        if (testResponse.ok) {
-          console.log('Successfully generated image via Pollinations AI:', pollinationsUrl);
-          setGeneratedAiImage(pollinationsUrl);
-          toast.success('AI image generated successfully!');
-          return pollinationsUrl;
-        }
-      } catch (pollinationsError) {
-        console.log('Pollinations AI not available, trying other options:', pollinationsError);
-      }
-
-      // Try calling through your backend API
-      try {
-        const backendResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/generate-ai-image`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            prompt: prompt,
-          }),
-        });
-
-        if (backendResponse.ok) {
-          const backendResult = await backendResponse.json();
-          if (backendResult.imageUrl) {
-            console.log('Successfully generated image via backend:', backendResult.imageUrl);
-            setGeneratedAiImage(backendResult.imageUrl);
-            toast.success('AI image generated successfully!');
-            return backendResult.imageUrl;
-          }
-        }
-      } catch (backendError) {
-        console.log('Backend API not available:', backendError);
-      }
-
-      // Try DeepAI (will likely fail due to credits)
-      try {
-        const response = await fetch("https://api.deepai.org/api/text2img", {
-          method: "POST",
-          headers: { 
-            "api-key": "1293f249-b3b7-471b-b69f-8ee0fe482df7",
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: new URLSearchParams({
-            text: prompt,
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.output_url) {
-            console.log('Successfully generated image via DeepAI:', result.output_url);
-            setGeneratedAiImage(result.output_url);
-            toast.success('AI image generated successfully!');
-            return result.output_url;
-          }
-        }
-      } catch (deepaiError) {
-        console.log('DeepAI not available:', deepaiError);
-      }
-
-      // Fallback to related images
-      throw new Error('All AI services unavailable');
-      
-    } catch (error) {
-      console.error('Error generating AI image:', error);
-      
-      // Enhanced fallback: Use Unsplash with prompt keywords
-      try {
-        const keywords = prompt.split(' ').slice(0, 3).join(',');
-        const unsplashUrl = `https://source.unsplash.com/800x600/?${encodeURIComponent(keywords)}`;
-        setGeneratedAiImage(unsplashUrl);
-        toast.info(`Using related image for: ${keywords}`);
-        return unsplashUrl;
-      } catch (fallbackError) {
-        // Final fallback to random image
-        const fallbackUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
-        setGeneratedAiImage(fallbackUrl);
-        toast.warning('Using placeholder image - AI generation unavailable');
-        return fallbackUrl;
-      }
-    } finally {
-      setAiImageGenerating(false);
-    }
-  };
-
-  const handleAiImageGenerate = async () => {
-    if (!aiImagePrompt.trim()) {
-      toast.error('Please enter a prompt for image generation');
-      return;
-    }
-
-    const generatedImageUrl = await generateAiImage(aiImagePrompt);
-    
-    const newBlock = {
-      id: `ai-image-${Date.now()}`,
-      block_id: `ai-image-${Date.now()}`,
-      type: 'image',
-      title: 'AI Generated Image',
-      layout: 'centered',
-      templateType: 'ai-generated',
-      imageUrl: generatedImageUrl,
-      imageTitle: `AI Generated: ${aiImagePrompt.substring(0, 50)}...`,
-      imageDescription: `Generated from prompt: "${aiImagePrompt}"`,
-      text: `AI generated image: ${aiImagePrompt}`,
-      isEditing: false,
-      timestamp: new Date().toISOString(),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1,
-      details: {
-        image_url: generatedImageUrl,
-        caption: `AI generated image: ${aiImagePrompt}`,
-        alt_text: `AI Generated: ${aiImagePrompt.substring(0, 50)}...`,
-        layout: 'centered',
-        template: 'ai-generated',
-        prompt: aiImagePrompt
-      },
-      html_css: `
-        <div class="lesson-image centered">
-          <div class="text-center space-y-4 max-w-4xl mx-auto">
-            <img src="${generatedImageUrl}" alt="AI Generated: ${aiImagePrompt.substring(0, 50)}..." class="mx-auto max-h-96 object-contain rounded-lg shadow-lg border border-gray-200" />
-            <div class="text-sm text-gray-600 italic">
-              <p>AI generated image: ${aiImagePrompt}</p>
-            </div>
-          </div>
-        </div>
-      `
-    };
-
-    // Add to local edit list
-    setContentBlocks(prev => [...prev, newBlock]);
-
-    // Add to lesson content if it exists
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
-      }));
-    }
-
-    handleAiImageDialogClose();
-    toast.success('AI image generated and added to lesson!');
-  };
-
-  const handleAiImageDialogClose = () => {
-    setShowAiImageDialog(false);
-    setAiImagePrompt('');
-    setGeneratedAiImage('');
-    setSelectedImageTemplate(null);
-  };
 
   const handleImageTemplateSelect = (template) => {
-    // Handle AI Generated Image template differently
-    if (template.id === 'ai-generated') {
-      setSelectedImageTemplate(template);
-      setShowImageTemplateSidebar(false);
-      setShowAiImageDialog(true);
-      return;
-    }
 
     const imageUrl = template.defaultContent?.imageUrl || '';
     const imageTitle = template.title;
@@ -4240,36 +4159,74 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, use same styled container as other blocks
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Heading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Heading') : (editorHtml || 'Heading');
-          const cleanedContent = (extracted || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For heading blocks, preserve Quill editor styling but ensure proper heading size
+          let styledContent = editorHtml || '<h1>Heading</h1>';
+          
+          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 24px; font-weight: bold; margin: 0;">${styledContent}</h1>`;
+          } else {
+            // Ensure h1 tags have proper default size if no size is specified
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; margin: 0;">`;
+              }
+              return match;
+            });
+          }
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+                <div class="prose prose-lg max-w-none">
+                  ${styledContent}
+                </div>
               </article>
             </div>
           `;
         } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, enforce true h2 with fixed size (strip Quill wrappers and inline font-sizes)
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Subheading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Subheading') : (editorHtml || 'Subheading');
-          const cleanedContent = (extracted || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For subheading blocks, preserve Quill editor styling but ensure proper subheading size
+          let styledContent = editorHtml || '<h2>Subheading</h2>';
+          
+          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
+          } else {
+            // Ensure h2 tags have proper default size if no size is specified
+            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
+              }
+              return match;
+            });
+          }
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
+                <div class="prose prose-lg max-w-none">
+                  ${styledContent}
+                </div>
               </article>
             </div>`;
         } else if (effectiveTextType === 'master_heading') {
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
-          const cleanedContent = (extracted || 'Master Heading');
-          updatedContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${cleanedContent}</h1>`;
+          // For master heading, preserve Quill editor styling but keep the gradient background and proper size
+          let styledContent = editorHtml || 'Master Heading';
+          
+          // Ensure master heading has proper size if no size is specified
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 40px; font-weight: 600; margin: 0;">${styledContent}</h1>`;
+          } else {
+            // Ensure h1 tags have proper default size for master heading if no size is specified
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h1${attrs} style="font-size: 40px; font-weight: 600; margin: 0;">`;
+              }
+              return match;
+            });
+          }
+          
+          updatedContent = `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
         } else {
           // For paragraph and other single content blocks - use same styled container as heading/subheading
           updatedContent = `
@@ -5559,7 +5516,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handlePreview}
+                 onClick={handlePreview}
                   className="flex items-center gap-1"
                 >
                   <Eye className="h-4 w-4 mr-1" />
@@ -5852,6 +5809,11 @@ setContentBlocks(prev => [...prev, newBlock]);
                                   
                                   // Check if we have a valid video URL
                                   if (videoUrl && videoUrl.trim()) {
+                                    // Check if it's a YouTube URL by looking at the content or checking if it's an embed URL
+                                    const isYouTubeVideo = videoUrl.includes('youtube.com/embed') || 
+                                                          (block.content && JSON.parse(block.content).isYouTube) ||
+                                                          (block.details && block.details.isYouTube);
+                                    
                                     return (
                                       <>
                                         {videoDescription && (
@@ -5859,12 +5821,24 @@ setContentBlocks(prev => [...prev, newBlock]);
                                         )}
                                         
                                         <div className="bg-gray-50 rounded-lg p-4">
-                                          <video controls className="w-full max-w-full" style={{ maxHeight: '400px' }} preload="metadata">
-                                            <source src={videoUrl} type="video/mp4" />
-                                            <source src={videoUrl} type="video/webm" />
-                                            <source src={videoUrl} type="video/ogg" />
-                                            Your browser does not support the video element.
-                                          </video>
+                                          {isYouTubeVideo ? (
+                                            <iframe
+                                              src={videoUrl}
+                                              title={videoTitle}
+                                              className="w-full max-w-full"
+                                              style={{ height: '400px', borderRadius: '8px' }}
+                                              frameBorder="0"
+                                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                              allowFullScreen
+                                            />
+                                          ) : (
+                                            <video controls className="w-full max-w-full" style={{ maxHeight: '400px' }} preload="metadata">
+                                              <source src={videoUrl} type="video/mp4" />
+                                              <source src={videoUrl} type="video/webm" />
+                                              <source src={videoUrl} type="video/ogg" />
+                                              Your browser does not support the video element.
+                                            </video>
+                                          )}
                                           
                                           <div className="mt-2 text-xs text-gray-500 flex items-center">
                                             <Video className="h-3 w-3 mr-1" />
@@ -6441,7 +6415,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Heading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '350px' }}>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white" style={{ height: '350px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
@@ -6449,6 +6423,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                           modules={getToolbarModules('heading')}
                           placeholder="Enter your heading text..."
                           style={{ height: '300px' }}
+                          className="quill-editor-overflow-visible"
                         />
                       </div>
                     </div>
@@ -6462,7 +6437,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Subheading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '35px' }}>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white" style={{ height: '350px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
@@ -6470,6 +6445,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                           modules={getToolbarModules('heading')}
                           placeholder="Enter your subheading text..."
                           style={{ height: '300px' }}
+                          className="quill-editor-overflow-visible"
                         />
                       </div>
                     </div>
@@ -6505,7 +6481,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Heading
                         </label>
-                        <div className="border rounded-md bg-white" style={{ height: '120px', overflow: 'visible' }}>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorHeading}
@@ -6513,6 +6489,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             modules={getToolbarModules('heading')}
                             placeholder="Type and format your heading here"
                             style={{ height: '80px' }}
+                            className="quill-editor-overflow-visible"
                           />
                         </div>
                       </div>
@@ -6520,7 +6497,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Paragraph
                         </label>
-                        <div className="border rounded-md bg-white" style={{ height: '230px', overflow: 'visible' }}>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '230px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorContent}
@@ -6528,6 +6505,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             modules={getToolbarModules('full')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
+                            className="quill-editor-overflow-visible"
                           />
                         </div>
                       </div>
@@ -6600,14 +6578,14 @@ setContentBlocks(prev => [...prev, newBlock]);
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Heading
                     </label>
-                    <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                    <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white">
                       <ReactQuill
                         theme="snow"
                         value={editorHtml}
                         onChange={setEditorHtml}
                         modules={getToolbarModules('heading')}
                         placeholder="Enter your heading text..."
-                        className="flex-1"
+                        className="flex-1 quill-editor-overflow-visible"
                       />
                     </div>
                   </div>
@@ -7103,7 +7081,7 @@ setContentBlocks(prev => [...prev, newBlock]);
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Link</DialogTitle>
+            <DialogTitle>{currentLinkBlock ? 'Edit Link' : 'Add Link'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -7198,106 +7176,12 @@ setContentBlocks(prev => [...prev, newBlock]);
               onClick={handleAddLink}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              Add Link
+              {currentLinkBlock ? 'Save' : 'Add Link'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* AI Image Generation Dialog */}
-      <Dialog open={showAiImageDialog} onOpenChange={handleAiImageDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Generate AI Image</DialogTitle>
-            <p className="text-sm text-gray-500">Describe the image you want to generate using AI</p>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image Prompt <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={aiImagePrompt}
-                onChange={(e) => setAiImagePrompt(e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Describe the image you want to generate... (e.g., 'A serene mountain landscape at sunset with a lake reflection')"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Be descriptive and specific for better results. Include style, mood, colors, and composition details.
-              </p>
-            </div>
-
-            {/* Preview Section */}
-            {generatedAiImage && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Generated Preview
-                </label>
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <img
-                    src={generatedAiImage}
-                    alt="AI Generated Preview"
-                    className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Prompt: "{aiImagePrompt}"
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Generation Status */}
-            {aiImageGenerating && (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600">Generating your AI image...</p>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleAiImageDialogClose}>
-              Cancel
-            </Button>
-            {!generatedAiImage ? (
-              <Button
-                onClick={() => generateAiImage(aiImagePrompt)}
-                disabled={!aiImagePrompt.trim() || aiImageGenerating}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {aiImageGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Generating...
-                  </>
-                ) : (
-                  'Generate Image'
-                )}
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => generateAiImage(aiImagePrompt)}
-                  disabled={aiImageGenerating}
-                  className="border-purple-600 text-purple-600 hover:bg-purple-50"
-                >
-                  Regenerate
-                </Button>
-                <Button
-                  onClick={handleAiImageGenerate}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Add to Lesson
-                </Button>
-              </div>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* PDF Dialog */}
       <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>

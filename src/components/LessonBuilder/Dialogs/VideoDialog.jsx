@@ -108,7 +108,7 @@ const VideoDialog = ({
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    MP4, WebM, or OGG up to 50MB
+                    MP4, WebM, or OGG up to 500MB
                   </p>
                 </div>
               </div>

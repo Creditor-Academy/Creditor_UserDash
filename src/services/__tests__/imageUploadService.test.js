@@ -48,7 +48,7 @@ describe('ImageUploadService', () => {
     expect(result.success).toBe(true);
     expect(result.imageUrl).toBe('https://example.com/image.jpg');
     expect(axios.post).toHaveBeenCalledWith(
-      'https://sharebackend-sdkp.onrender.com/api/resource/upload-resource',
+      'https://creditor-backend-ceds.onrender.com/api/resource/upload-resource',
       expect.any(FormData),
       expect.objectContaining({
         headers: {
