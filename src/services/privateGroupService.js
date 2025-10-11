@@ -107,7 +107,7 @@ export async function updatePrivateGroup(groupId, updateData) {
     }
   }
 }
-
+// Delete private group by platform admin
 export async function deletePrivateGroup(groupId) {
   try {
     const response = await api.delete(`/api/private-groups/${groupId}`, {

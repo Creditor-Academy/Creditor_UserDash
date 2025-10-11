@@ -3,16 +3,273 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { getAllPrivateGroups, deletePrivateGroup, getPrivateGroupMessages, getGroupMembers } from '@/services/privateGroupService';
+import { getAllPrivateGroups, getPrivateGroupMessages, getGroupMembers, deletePrivateGroup } from '@/services/privateGroupService';
+import { fetchAllUsers } from '@/services/userService';
+import { ArrowLeft, Users, Calendar, User, MessageSquare, Trash2 } from 'lucide-react';
 
-const formatTs = (ts) => {
+const formatDate = (ts) => {
   try {
-    return new Date(ts).toLocaleString();
+    const date = new Date(ts);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch {
-    return String(ts || '');
+    return 'N/A';
   }
 };
 
+// Page 1: List View
+function PrivateGroupsAdminList({ groups, loading, onSelectGroup, searchQuery, onSearchChange, getCreatorName }) {
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Private Groups Management</h1>
+          <p className="text-sm text-gray-500">Browse and manage all private groups on the platform</p>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <Input
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search groups by name or ID..."
+            className="max-w-md"
+          />
+        </div>
+
+        {/* Groups Grid */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-400">Loading groups...</div>
+          </div>
+        ) : groups.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Users className="h-12 w-12 text-gray-300 mb-4" />
+            <p className="text-gray-500 text-sm">No groups found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {groups.map((group) => (
+              <div
+                key={group.id}
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => onSelectGroup(group)}
+              >
+                {/* Group Thumbnail and Name */}
+                <div className="flex items-start gap-3 mb-3">
+                  {group.thumbnail ? (
+                    <img
+                      src={group.thumbnail}
+                      alt={group.name}
+                      className="h-12 w-12 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+                      <Users className="h-6 w-6 text-purple-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base text-gray-900 truncate">
+                      {group.name || 'Untitled Group'}
+                    </h3>
+                    <p className="text-xs text-gray-500 truncate">ID: {group.id}</p>
+                  </div>
+                </div>
+
+                {/* Group Info */}
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center text-xs text-gray-600">
+                    <User className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                    <span className="truncate">
+                      Created by: {getCreatorName(group.created_by) || 'Unknown'}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-600">
+                    <Users className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                    <span>{group.member_count || 0} members</span>
+                  </div>
+                  <div className="flex items-center text-xs text-gray-600">
+                    <Calendar className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                    <span>{formatDate(group.createdAt || group.created_at)}</span>
+                  </div>
+                </div>
+
+                {/* View Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectGroup(group);
+                  }}
+                >
+                  View Details
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Page 2: Details View
+function PrivateGroupDetails({ group, members, onBack, getCreatorName, onDeleteGroup, isDeleting }) {
+  const handleViewChatroom = () => {
+    // TODO: Implement navigation to chatroom
+    // This can be customized based on your routing setup
+    // For example: window.location.href = `/admin/groups/${group.id}/chatroom`;
+    console.log(`Navigate to chatroom for group ${group.id}`);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          className="mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Groups
+        </Button>
+
+        {/* Main Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {/* Group Header */}
+          <div className="flex items-start gap-4 mb-6 pb-6 border-b">
+            {group.thumbnail ? (
+              <img
+                src={group.thumbnail}
+                alt={group.name}
+                className="h-20 w-20 rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="h-20 w-20 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center flex-shrink-0">
+                <Users className="h-10 w-10 text-purple-600" />
+              </div>
+            )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                {group.name || 'Untitled Group'}
+              </h1>
+              <p className="text-sm text-gray-500">Group ID: {group.id}</p>
+            </div>
+          </div>
+
+          {/* Description */}
+          {group.description && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-gray-700 mb-2">Description</h2>
+              <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+                {group.description}
+              </p>
+            </div>
+          )}
+
+          {/* Group Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Admin/Creator</h3>
+              <p className="text-sm text-gray-600">{getCreatorName(group.created_by) || 'Unknown'}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">Created Date</h3>
+              <p className="text-sm text-gray-600">
+                {formatDate(group.createdAt || group.created_at)}
+              </p>
+            </div>
+          </div>
+
+          {/* Members List */}
+          <div className="mb-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-3">
+              Members ({members.length})
+            </h2>
+            {members.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 text-sm">
+                No members found
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                        S.No
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                        Full Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                        User ID
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                        Role
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {members.map((member, index) => {
+                      const user = member.user || {};
+                      const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'N/A';
+                      const userId = user.id || member.user_id || 'N/A';
+                      const role = (member.role || member.group_role || 'MEMBER').toUpperCase();
+                      
+                      return (
+                        <tr key={member.id || index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{fullName}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{userId}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              role === 'ADMIN' 
+                                ? 'bg-purple-100 text-purple-700' 
+                                : 'bg-gray-100 text-gray-700'
+                            }`}>
+                              {role}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-4 border-t space-y-3">
+            <Button
+              onClick={handleViewChatroom}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              View Chatroom
+            </Button>
+            
+            <Button
+              onClick={() => onDeleteGroup(group.id)}
+              disabled={isDeleting}
+              variant="destructive"
+              className="w-full"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {isDeleting ? 'Deleting...' : 'Delete Group'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main Component
 export default function PrivateGroupsAdmin() {
   const { hasRole } = useAuth();
   const { toast } = useToast();
@@ -20,46 +277,53 @@ export default function PrivateGroupsAdmin() {
 
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState([]);
-  const [query, setQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Load all private groups
+  // Load all private groups and users on mount
   useEffect(() => {
+    if (isAdmin) {
     loadGroups();
-  }, []);
+      loadAllUsers();
+    }
+  }, [isAdmin]);
 
   // Load group details when a group is selected
   useEffect(() => {
     let mounted = true;
-    (async () => {
+    
       if (!selectedGroup?.id) { 
-        setMessages([]); 
         setMembers([]); 
         return; 
       }
 
+    (async () => {
       try {
-        const [messagesRes, membersRes] = await Promise.all([
-          getPrivateGroupMessages(selectedGroup.id, 1, 10), // Get last 10 messages
-          getGroupMembers(selectedGroup.id)
-        ]);
+        setLoadingDetails(true);
+        const membersRes = await getGroupMembers(selectedGroup.id);
 
         if (!mounted) return;
 
-        setMessages(messagesRes?.data?.messages || []);
         setMembers(membersRes?.data || []);
       } catch (error) {
+        console.error('Failed to load group details:', error);
         toast({
           title: 'Failed to load group details',
           description: error?.message || 'Unknown error',
           variant: 'destructive'
         });
+      } finally {
+        if (mounted) setLoadingDetails(false);
       }
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+    };
   }, [selectedGroup?.id, toast]);
 
   const loadGroups = async () => {
@@ -67,61 +331,101 @@ export default function PrivateGroupsAdmin() {
       setLoading(true);
       const response = await getAllPrivateGroups();
       
-      // Handle error responses
       if (!response?.success && response?.message) {
         throw new Error(response.message);
       }
       
-      // Handle both response formats
       const groups = response?.data || response || [];
       if (!Array.isArray(groups)) {
         throw new Error('Invalid response format');
       }
       
-      setGroups(groups);
+      // Fetch member counts for each group
+      const groupsWithMemberCounts = await Promise.all(
+        groups.map(async (group) => {
+          try {
+            const membersRes = await getGroupMembers(group.id);
+            const memberCount = Array.isArray(membersRes?.data) ? membersRes.data.length : 0;
+            return {
+              ...group,
+              member_count: memberCount
+            };
+          } catch (error) {
+            console.warn(`Failed to fetch members for group ${group.id}:`, error);
+            return {
+              ...group,
+              member_count: 0
+            };
+          }
+        })
+      );
+      
+      setGroups(groupsWithMemberCounts);
     } catch (error) {
-      // Detailed error logging
-      console.error('Failed to load groups:', {
-        error: error,
-        message: error.message,
-        response: {
-          status: error.response?.status,
-          data: error.response?.data,
-          headers: error.response?.headers
-        },
-        request: {
-          url: error.config?.url,
-          method: error.config?.method
-        }
-      });
-
-      // Show error toast with more details
+      console.error('Failed to load groups:', error);
       toast({
         title: 'Failed to load private groups',
-        description: `${error?.response?.data?.message || error?.message || 'Unknown error'} (${error?.response?.status || 'No status'})`,
+        description: error?.message || 'Unknown error',
         variant: 'destructive',
-        duration: 5000 // Show for longer since it's an error
+        duration: 5000
       });
-      // Set empty array to avoid undefined errors
       setGroups([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const loadAllUsers = async () => {
+    try {
+      const users = await fetchAllUsers();
+      setAllUsers(Array.isArray(users) ? users : []);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      setAllUsers([]);
+    }
+  };
+
+  // Helper function to get creator's name
+  const getCreatorName = (creatorId) => {
+    if (!creatorId || !allUsers.length) return creatorId;
+    
+    const user = allUsers.find(u => u.id === creatorId || u._id === creatorId);
+    if (user) {
+      const firstName = user.first_name || '';
+      const lastName = user.last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      return fullName || user.name || user.email || creatorId;
+    }
+    
+    return creatorId;
+  };
+
+  // Delete group function
   const handleDeleteGroup = async (groupId) => {
-    if (!window.confirm('Delete this group? This action is permanent.')) return;
+    if (!window.confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+      return;
+    }
     
     try {
       setIsDeleting(true);
       await deletePrivateGroup(groupId);
+      
+      // Remove the group from the list
       setGroups(prev => prev.filter(g => g.id !== groupId));
+      
+      // Go back to list view
       setSelectedGroup(null);
-      toast({ title: 'Group deleted' });
+      setMembers([]);
+      
+      toast({
+        title: 'Group deleted successfully',
+        description: 'The private group has been permanently removed.',
+      });
     } catch (error) {
+      console.error('Failed to delete group:', error);
       toast({
         title: 'Failed to delete group',
-        description: error?.message || 'Unknown error',
+        description: error?.message || 'Unknown error occurred',
         variant: 'destructive'
       });
     } finally {
@@ -129,174 +433,59 @@ export default function PrivateGroupsAdmin() {
     }
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return groups;
+  const filteredGroups = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return groups;
     return groups.filter(g =>
-      String(g.name || '').toLowerCase().includes(q) ||
-      String(g.id || '').toLowerCase().includes(q)
+      String(g.name || '').toLowerCase().includes(query) ||
+      String(g.id || '').toLowerCase().includes(query)
     );
-  }, [groups, query]);
+  }, [groups, searchQuery]);
+
+  const handleSelectGroup = (group) => {
+    setSelectedGroup(group);
+  };
+
+  const handleBackToList = () => {
+    setSelectedGroup(null);
+    setMembers([]);
+  };
 
   // Check for admin access
   if (!isAdmin) {
-    // Show error toast for non-admin users
-    useEffect(() => {
-      toast({
-        title: 'Access Denied',
-        description: 'Only administrators can access this page.',
-        variant: 'destructive',
-        duration: 5000
-      });
-    }, [toast]);
-
     return (
       <div className="p-8 text-center">
         <div className="text-red-500 text-base font-medium">Access Denied</div>
-        <div className="text-gray-500 text-sm mt-2">Only administrators can access this page.</div>
+        <div className="text-gray-500 text-sm mt-2">
+          Only administrators can access this page.
+        </div>
       </div>
     );
   }
 
+  // Show details view if a group is selected
+  if (selectedGroup) {
+    return (
+      <PrivateGroupDetails
+        group={selectedGroup}
+        members={members}
+        onBack={handleBackToList}
+        getCreatorName={getCreatorName}
+        onDeleteGroup={handleDeleteGroup}
+        isDeleting={isDeleting}
+      />
+    );
+  }
+
+  // Show list view by default
   return (
-    <div className="flex flex-col h-[80vh] bg-muted rounded-lg border shadow-sm overflow-hidden">
-      {/* Top Search Bar */}
-      <div className="bg-white border-b p-4">
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search groups by name or ID"
-          className="max-w-lg mx-auto"
-        />
-      </div>
-
-      {/* Content: Groups List + Details */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Groups List */}
-        <div className="w-72 bg-white border-r p-4 overflow-y-auto">
-          {loading ? (
-            <div className="text-sm text-gray-400">Loading groups...</div>
-          ) : filtered.length ? (
-            filtered.map(g => (
-              <button
-                key={g.id}
-                onClick={() => setSelectedGroup(g)}
-                className={`w-full block text-left px-3 py-2 rounded mb-1 ${
-                  selectedGroup?.id === g.id
-                    ? 'bg-blue-100 border border-blue-400'
-                    : 'hover:bg-gray-100'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {g.thumbnail ? (
-                    <img src={g.thumbnail} alt={g.name} className="h-8 w-8 rounded object-cover" />
-                  ) : (
-                    <div className="h-8 w-8 rounded bg-gray-200" />
-                  )}
-                  <div className="flex-1 truncate">
-                    <span className="font-medium text-sm">{g.name || 'Untitled'}</span>
-                    <div className="text-xs text-gray-500 truncate">{g.id}</div>
-                    {Array.isArray(g.members) && (
-                      <span className="text-[10px] text-gray-400 ml-1">
-                        {g.members.length} members
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))
-          ) : (
-            <div className="text-xs text-gray-400">No groups found.</div>
-          )}
-        </div>
-
-        {/* Group Details */}
-        <div className="flex-1 bg-white p-6 overflow-y-auto">
-          {!selectedGroup ? (
-            <div className="flex flex-col h-full items-center justify-center text-gray-400 text-base">
-              Select a group to view details
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Group Header */}
-              <div className="flex items-center justify-between pb-4 border-b">
-                <div className="flex items-center gap-4">
-                  {selectedGroup.thumbnail ? (
-                    <img src={selectedGroup.thumbnail} alt={selectedGroup.name} className="h-12 w-12 rounded object-cover" />
-                  ) : (
-                    <div className="h-12 w-12 rounded bg-gray-200" />
-                  )}
-                  <div>
-                    <div className="text-lg font-semibold">{selectedGroup.name || 'Untitled Group'}</div>
-                    <div className="text-xs text-gray-500">Created: {formatTs(selectedGroup.createdAt || selectedGroup.created_at)}</div>
-                    <div className="text-xs text-gray-500">Created by: {selectedGroup.created_by}</div>
-                  </div>
-                </div>
-                <Button
-                  variant="destructive"
-                  disabled={isDeleting}
-                  onClick={() => handleDeleteGroup(selectedGroup.id)}
-                >
-                  Delete Group
-                </Button>
-              </div>
-
-              {/* Description */}
-              {selectedGroup.description && (
-                <div className="text-sm text-gray-600 border rounded p-3 bg-gray-50">{selectedGroup.description}</div>
-              )}
-
-              {/* Info Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Admins */}
-                <div>
-                  <div className="text-sm font-semibold mb-2">Admins</div>
-                  <div className="bg-gray-50 rounded p-2 space-y-1 max-h-32 overflow-auto text-xs">
-                    {(members || []).filter(
-                      m => (m.role || m.group_role || '').toUpperCase() === 'ADMIN'
-                    ).map(m => (
-                      <div key={m.user_id || m.id}>
-                        {(m.user?.first_name || '') + ' ' + (m.user?.last_name || '')}
-                        {' '}({m.user?.id || m.user_id})
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Members */}
-                <div>
-                  <div className="text-sm font-semibold mb-2">
-                    Members <span className="ml-1 text-xs text-gray-400">({members?.length || 0})</span>
-                  </div>
-                  <div className="bg-gray-50 rounded p-2 space-y-1 max-h-32 overflow-auto text-xs">
-                    {(members || []).map(m => (
-                      <div key={m.user_id || m.id}>
-                        {(m.user?.first_name || '') + ' ' + (m.user?.last_name || '')}
-                        {' '}({m.user?.id || m.user_id}) - {(m.role || m.group_role || '').toUpperCase()}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div>
-                  <div className="text-sm font-semibold mb-2">Recent Messages</div>
-                  <div className="bg-gray-50 rounded p-2 space-y-2 max-h-32 overflow-auto text-xs">
-                    {(messages || []).map(msg => (
-                      <div key={msg.id} className="mb-1">
-                        <div className="text-[11px] text-gray-400">{formatTs(msg.createdAt)}</div>
-                        {msg.type === 'image'
-                          ? <a href={msg.file} target="_blank" rel="noreferrer" className="text-blue-500">Image</a>
-                          : <div>{msg.text}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    <PrivateGroupsAdminList
+      groups={filteredGroups}
+      loading={loading}
+      onSelectGroup={handleSelectGroup}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      getCreatorName={getCreatorName}
+    />
   );
 }
