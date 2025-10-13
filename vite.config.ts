@@ -65,7 +65,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://testbackend-hcoy.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://creditor.onrender.com'),
   },
 }));
 
@@ -74,7 +74,7 @@ export default defineConfig(({ mode }) => ({
 // VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
 // #(development Backend)
-// # VITE_API_BASE_URL=https://creditor.onrender.com
+// VITE_API_BASE_URL=https://creditor.onrender.com
 
 // #(local Backend)
 // # VITE_API_BASE_URL= http://localhost:9000
