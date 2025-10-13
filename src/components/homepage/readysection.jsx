@@ -261,7 +261,7 @@ export default function Ready() {
         TO START<br />YOUR JOURNEY
       </div>
 
-      <button className="ready-btn">START THE PROJECT</button>
+      <button className="ready-btn">START FREE TRIAL</button>
     </section>
   );
 }

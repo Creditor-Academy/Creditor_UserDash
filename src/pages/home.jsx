@@ -12,6 +12,7 @@ import Testimonial from '../components/homepage/Testimonial.jsx';
 import HowWork from '../components/homepage/HowWork.jsx';
 import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
 import LearningPathways from '../components/homepage/LearningPathways.jsx';
+import CTA from '../components/homepage/cta.jsx';
 
 
 const Home = () => {
@@ -23,10 +24,11 @@ const Home = () => {
       <KeyCapabilities />
       <HowWork />
       <Features />
-      <LearningSection />
-      <Ready />
+      {/* <LearningSection /> */}
       <LearningPathways />
-      <Testimonial />
+      {/* <Testimonial />
+      <CTA /> */}
+      <Ready />
       <Footer />
     </>
   );

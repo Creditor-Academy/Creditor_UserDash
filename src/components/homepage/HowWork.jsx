@@ -41,7 +41,9 @@ const HowAthenaWorks = () => {
   ];
 
   return (
-    <section className="py-20 px-4 bg-white">
+    <section className="py-20 px-4" style={{
+      background: "linear-gradient(135deg,#8fd6ff 0%,#f7faff 75%)"
+    }}>
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
@@ -103,16 +105,6 @@ const HowAthenaWorks = () => {
                     <div className={`absolute inset-0 bg-gradient-to-r ${step.gradient} opacity-0 group-hover:opacity-3 rounded-2xl transition-opacity duration-300`} />
                   </div>
 
-                  {/* Connecting Arrow (Mobile) */}
-                  {index < steps.length - 1 && (
-                    <div className="lg:hidden flex justify-center my-6">
-                      <div className="w-8 h-8 text-sky-400 transform rotate-90">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
