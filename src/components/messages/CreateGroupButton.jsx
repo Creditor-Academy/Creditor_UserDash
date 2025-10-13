@@ -15,7 +15,7 @@ import { Loader2, Search, Users, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { fetchAllUsers, getUserRole } from "@/services/userService";
 import { getAllConversations } from "@/services/messageService";
-import { createPrivateGroup, addPrivateGroupMembers, getMyPrivateGroup } from "@/services/privateGroupService";
+import { createPrivateGroup, getMyPrivateGroup } from "@/services/privateGroupService";
 import getSocket from "@/services/socketClient";
 
 /**
@@ -153,30 +153,51 @@ export default function CreateGroupButton({ className = "", onCreated }) {
     
     setIsCreatingGroup(true);
     try {
-      const payload = {
-        name: groupName.trim(),
-        description: groupDescription.trim(),
-        invited_user_ids: selectedMemberIds,
-        ...(useUrl && imageUrl.trim() ? { thumbnail: imageUrl.trim() } : {}),
-        ...(!useUrl && imageDataUrl ? { thumbnail: imageDataUrl } : {}),
-      };
+      let res;
+      
+      // Use FormData if uploading a file, otherwise use JSON payload
+      if (!useUrl && imageFile) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('name', groupName.trim());
+        formData.append('description', groupDescription.trim());
+        
+        // Try multiple approaches for array handling
+        // Approach 1: Each ID as separate entry (most common for FormData)
+        selectedMemberIds.forEach(userId => {
+          formData.append('invited_user_ids', userId);
+        });
+        
+        formData.append('media', imageFile); // Backend expects 'media' for local files
+        
+        // Debug: Log FormData contents
+        console.log('Creating group with FormData:');
+        for (let pair of formData.entries()) {
+          console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File(${pair[1].name})` : pair[1]));
+        }
+        
+        res = await createPrivateGroup(formData);
+      } else {
+        // Use JSON payload for URL or no image
+        const payload = {
+          name: groupName.trim(),
+          description: groupDescription.trim(),
+          invited_user_ids: selectedMemberIds,
+          ...(useUrl && imageUrl.trim() ? { thumbnail: imageUrl.trim() } : {}),
+        };
+        
+        res = await createPrivateGroup(payload);
+      }
       
       // Create private group using the API
-      const res = await createPrivateGroup(payload);
       if (!(res?.success && res?.data?.id)) {
         throw new Error(res?.message || "Failed to create private group");
       }
       
       const groupId = res.data.id;
       
-      // Add members to the group
-      if (selectedMemberIds.length > 0) {
-        try {
-          await addPrivateGroupMembers(groupId, selectedMemberIds);
-        } catch (memberError) {
-          console.warn("Failed to add some members:", memberError);
-        }
-      }
+      // Members are already invited via invited_user_ids during group creation
+      // No need to call addPrivateGroupMembers separately
       
       // Emit WebSocket events for real-time updates
       const socket = getSocket();

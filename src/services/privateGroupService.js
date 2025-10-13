@@ -37,14 +37,25 @@ export async function getAllPrivateGroups() {
 
 export async function createPrivateGroup(groupData) {
   try {
-    // Ensure group_type is always PRIVATE for private groups
-    const payload = {
-      ...groupData,
-      group_type: 'PRIVATE'
-    };
+    // Check if groupData is FormData (for file uploads)
+    const isFormData = typeof FormData !== 'undefined' && groupData instanceof FormData;
     
+    let payload;
+    if (isFormData) {
+      // If it's FormData, just add group_type to it
+      payload = groupData;
+      payload.append('group_type', 'PRIVATE');
+    } else {
+      // If it's a regular object, spread it
+      payload = {
+        ...groupData,
+        group_type: 'PRIVATE'
+      };
+    }
+    
+    // Don't manually set Content-Type for FormData - axios handles it automatically with boundary
     const response = await api.post('/api/private-groups', payload, {
-      withCredentials: true,
+      withCredentials: true
     });
     return response?.data;
   } catch (error) {
@@ -68,31 +79,40 @@ export async function getPrivateGroupMembers(groupId) {
 
 export async function updatePrivateGroup(groupId, updateData) {
   try {
+    // Don't manually set Content-Type for FormData - axios handles it automatically with boundary
+    const config = {
+      withCredentials: true
+    };
+    
     // Prefer PATCH by id (common for partial updates)
-    const patchById = await api.patch(`/api/private-groups/${groupId}`, updateData, {
-      withCredentials: true,
-    });
+    const patchById = await api.patch(`/api/private-groups/${groupId}`, updateData, config);
     return patchById?.data;
   } catch (error) {
     // Try PUT by id
     try {
-      const putById = await api.put(`/api/private-groups/${groupId}`, updateData, {
-        withCredentials: true,
-      });
+      const config = {
+        withCredentials: true
+      };
+      
+      const putById = await api.put(`/api/private-groups/${groupId}`, updateData, config);
       return putById?.data;
     } catch (errorPutId) {
       // Try PATCH /me
       try {
-        const patchMe = await api.patch('/api/private-groups/me', updateData, {
-          withCredentials: true,
-        });
+        const config = {
+          withCredentials: true
+        };
+        
+        const patchMe = await api.patch('/api/private-groups/me', updateData, config);
         return patchMe?.data;
       } catch (errorPatchMe) {
         // Try PUT /me
         try {
-          const putMe = await api.put('/api/private-groups/me', updateData, {
-            withCredentials: true,
-          });
+          const config = {
+            withCredentials: true
+          };
+          
+          const putMe = await api.put('/api/private-groups/me', updateData, config);
           return putMe?.data;
         } catch (errorPutMe) {
           console.error('privateGroupService.updatePrivateGroup errors:', {

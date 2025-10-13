@@ -161,7 +161,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
           formData.append('description', nextDescription);
           updates.description = nextDescription;
         }
-        formData.append('thumbnail', avatarFile);
+        formData.append('media', avatarFile); // Backend expects 'media' for local files
         const response = await updatePrivateGroup(groupId, formData);
         const updated = response?.data || {};
         updates.thumbnail = updated.thumbnail;
@@ -470,7 +470,7 @@ export default function GroupInfoModal({ isOpen, onClose, groupId, groupInfo, is
       if (avatarFile) {
         // Handle file upload
         const formData = new FormData();
-        formData.append('thumbnail', avatarFile);
+        formData.append('media', avatarFile); // Backend expects 'media' for local files
         
         const response = await updatePrivateGroup(groupId, formData);
         if (response?.success && response?.data?.thumbnail) {

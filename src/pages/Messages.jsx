@@ -278,7 +278,7 @@ function Messages() {
           lastMessageType: messageType,
           lastMessageFrom: message.sender_id,
           lastMessageAt: message.timeStamp || message.created_at || new Date().toISOString(),
-          isRead: isSelf // Mark as read if we sent it
+          isRead: isSelf || isSystem ? true : false // Mark as read if we sent it or system message, otherwise mark as unread
         };
         
         // Move to top: return updated group first, then all others except the old position
@@ -366,25 +366,31 @@ function Messages() {
 
     // Handle member updates
     const onMemberAdded = (event) => {
-      const member = event.detail;
-      handlePrivateGroupMemberAdded(member);
+      const detail = event.detail;
+      console.log('Member added event:', detail);
+      // These handlers are defined further down in the socket setup
+      // Will be processed by onPrivateGroupMembersAdded
     };
 
     const onMemberRemoved = (event) => {
-      const { userId, groupId } = event.detail;
-      handlePrivateGroupMemberRemoved(userId, groupId);
+      const detail = event.detail;
+      console.log('Member removed event:', detail);
+      // These handlers are defined further down in the socket setup
+      // Will be processed by onPrivateGroupMemberRemoved
     };
 
-    // Handle group updates
-    const onGroupUpdated = (event) => {
-      const { groupId, ...updates } = event.detail;
-      handlePrivateGroupUpdated(groupId, updates);
-    };
+    // Note: Group updates are handled by handleLocalPrivateGroupUpdated (defined below)
 
     // Handle message status
     const onMessageRead = (event) => {
       const { groupId, messageId } = event.detail;
-      handlePrivateGroupMessageRead(groupId, messageId);
+      console.log('Message read:', { groupId, messageId });
+      // Update message status in UI
+      setMessages(prev => prev.map(msg => 
+        String(msg.id) === String(messageId) 
+          ? { ...msg, status: 'read' }
+          : msg
+      ));
     };
 
     // Handle message edits
@@ -452,7 +458,7 @@ function Messages() {
     window.addEventListener('privateGroupMessage', onPrivateGroupMessage);
     window.addEventListener('privateGroupMemberAdded', onMemberAdded);
     window.addEventListener('privateGroupMemberRemoved', onMemberRemoved);
-    window.addEventListener('privateGroupUpdated', onGroupUpdated);
+    // Note: privateGroupUpdated is handled by handleLocalPrivateGroupUpdated (registered below)
     window.addEventListener('privateGroupMessageRead', onMessageRead);
     window.addEventListener('privateGroupMessageEdited', onMessageEdited);
     window.addEventListener('privateGroupMessageDeleted', onMessageDeleted);
@@ -536,7 +542,7 @@ function Messages() {
       window.removeEventListener('privateGroupMessage', onPrivateGroupMessage);
       window.removeEventListener('privateGroupMemberAdded', onMemberAdded);
       window.removeEventListener('privateGroupMemberRemoved', onMemberRemoved);
-      window.removeEventListener('privateGroupUpdated', onGroupUpdated);
+      // Note: privateGroupUpdated cleanup is handled in the local event listeners section below
       window.removeEventListener('privateGroupMessageRead', onMessageRead);
       window.removeEventListener('privateGroupMessageEdited', onMessageEdited);
       window.removeEventListener('privateGroupMessageDeleted', onMessageDeleted);
@@ -587,7 +593,24 @@ function Messages() {
             lastMessageFrom: c.lastMessageFrom,
             lastMessageAt: c.lastMessageAt,
           }));
-          setFriends(normalizedFriends);
+          
+          // PRESERVE existing private groups while updating regular conversations
+          setFriends(prev => {
+            // Keep all private groups
+            const existingGroups = prev.filter(f => f.isPrivateGroup || f.isGroup);
+            
+            // Merge with updated conversations, avoiding duplicates
+            const conversationIds = new Set(normalizedFriends.map(f => String(f.conversationId || f.id)));
+            const existingNonGroups = prev.filter(f => 
+              !f.isPrivateGroup && 
+              !f.isGroup && 
+              !conversationIds.has(String(f.conversationId || f.id))
+            );
+            
+            // Return: groups first, then new/updated conversations, then remaining conversations
+            return [...existingGroups, ...normalizedFriends, ...existingNonGroups];
+          });
+          
           setConvosLoaded(true);
         } catch {}
       })();
@@ -922,7 +945,7 @@ function Messages() {
           lastMessageType: messageType,
           lastMessageFrom: isSystem ? 'System' : (isSelf ? currentUserId : message.sender_id),
           lastMessageAt: message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date().toISOString(),
-          isRead: isSelf || isSystem ? true : existingGroup.isRead, // Mark as read if it's our own message or system message
+          isRead: isSelf || isSystem ? true : false, // Mark as read if it's our own message or system message, otherwise mark as unread
         };
         
         // Move to top: return updated group first, then all others except the old position
@@ -2059,6 +2082,14 @@ function Messages() {
                       const convId = friend.conversationId || friend.id;
                       setRoomId(friend.room);
                       setConversationId(convId);
+                      
+                      // Mark conversation as read when opening it
+                      setFriends(prev => prev.map(f => 
+                        f.id === friend.id 
+                          ? { ...f, isRead: true }
+                          : f
+                      ));
+                      
                       // Reset and show loading while fetching previous messages for this conversation
                       setMessages([]);
                       setChatLoading(true);
