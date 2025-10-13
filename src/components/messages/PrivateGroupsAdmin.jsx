@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { getAllPrivateGroups, getPrivateGroupMessages, getGroupMembers, deletePrivateGroup } from '@/services/privateGroupService';
 import { fetchAllUsers } from '@/services/userService';
-import { ArrowLeft, Users, Calendar, User, MessageSquare, Trash2 } from 'lucide-react';
+import { ArrowLeft, Users, Calendar, User, MessageSquare, Trash2, Clock } from 'lucide-react';
 
 const formatDate = (ts) => {
   try {
@@ -116,13 +116,7 @@ function PrivateGroupsAdminList({ groups, loading, onSelectGroup, searchQuery, o
 }
 
 // Page 2: Details View
-function PrivateGroupDetails({ group, members, onBack, getCreatorName, onDeleteGroup, isDeleting }) {
-  const handleViewChatroom = () => {
-    // TODO: Implement navigation to chatroom
-    // This can be customized based on your routing setup
-    // For example: window.location.href = `/admin/groups/${group.id}/chatroom`;
-    console.log(`Navigate to chatroom for group ${group.id}`);
-  };
+function PrivateGroupDetails({ group, members, onBack, getCreatorName, onDeleteGroup, isDeleting, onViewChatroom }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -246,7 +240,7 @@ function PrivateGroupDetails({ group, members, onBack, getCreatorName, onDeleteG
           {/* Action Buttons */}
           <div className="pt-4 border-t space-y-3">
             <Button
-              onClick={handleViewChatroom}
+              onClick={() => onViewChatroom(group.id)}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -269,6 +263,184 @@ function PrivateGroupDetails({ group, members, onBack, getCreatorName, onDeleteG
   );
 }
 
+// Page 3: Admin Chatroom View
+function AdminChatroomView({ group, messages, loading, onBack, getCreatorName }) {
+  const formatMessageTime = (timestamp) => {
+    try {
+      if (!timestamp) return 'No date';
+      
+      // Handle different timestamp formats
+      let date;
+      if (typeof timestamp === 'string') {
+        // Try parsing as ISO string first
+        date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+          // Try parsing as Unix timestamp (seconds)
+          const unixTimestamp = parseInt(timestamp);
+          if (!isNaN(unixTimestamp)) {
+            date = new Date(unixTimestamp * 1000);
+          }
+        }
+      } else if (typeof timestamp === 'number') {
+        // Handle Unix timestamp (could be seconds or milliseconds)
+        if (timestamp < 10000000000) {
+          // Likely seconds, convert to milliseconds
+          date = new Date(timestamp * 1000);
+        } else {
+          // Likely milliseconds
+          date = new Date(timestamp);
+        }
+      } else {
+        date = new Date(timestamp);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.warn('Error formatting timestamp:', timestamp, error);
+      return 'Invalid date';
+    }
+  };
+
+  const getSenderName = (senderId) => {
+    if (!senderId) return 'Unknown User';
+    return getCreatorName(senderId) || `User ${senderId}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Details
+              </Button>
+              <div className="h-8 w-px bg-gray-300" />
+              <div className="flex items-center gap-3">
+                {group.thumbnail ? (
+                  <img
+                    src={group.thumbnail}
+                    alt={group.name}
+                    className="h-10 w-10 rounded-lg object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-purple-600" />
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-lg font-semibold text-gray-900">
+                    {group.name || 'Untitled Group'}
+                  </h1>
+                  <p className="text-sm text-gray-500">Admin Chatroom View</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages Container */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[calc(100vh-200px)] flex flex-col">
+          {/* Messages Header */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold text-gray-900">Group Messages</h2>
+              <div className="flex items-center text-sm text-gray-500">
+                <MessageSquare className="h-4 w-4 mr-1" />
+                {messages.length} messages
+              </div>
+            </div>
+          </div>
+
+          {/* Messages List */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {loading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-400">Loading messages...</div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <MessageSquare className="h-12 w-12 text-gray-300 mb-4" />
+                <p className="text-gray-500 text-sm">No messages found</p>
+                <p className="text-gray-400 text-xs mt-1">This group hasn't had any conversations yet</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((message) => {
+                  const senderName = getSenderName(message.sender_id);
+                  const isImage = message.type === 'IMAGE' || message.type === 'image';
+                  
+                  return (
+                    <div key={message.id} className="flex gap-3">
+                      {/* Sender Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                          <span className="text-xs font-medium text-blue-700">
+                            {senderName.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Message Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-gray-900">{senderName}</span>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {formatMessageTime(message.createdAt || message.created_at || message.timestamp || message.timeStamp || message.sent_at)}
+                          </div>
+                        </div>
+                        
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          {isImage ? (
+                            <div className="space-y-2">
+                              <p className="text-sm text-gray-600 italic">📷 Image message</p>
+                              {message.content && (
+                                <img
+                                  src={message.content}
+                                  alt="Group message"
+                                  className="max-w-xs rounded-lg border border-gray-200"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                              {message.content || message.message || 'No content'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Main Component
 export default function PrivateGroupsAdmin() {
   const { hasRole } = useAuth();
@@ -283,6 +455,9 @@ export default function PrivateGroupsAdmin() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showChatroom, setShowChatroom] = useState(false);
+  const [chatroomMessages, setChatroomMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   // Load all private groups and users on mount
   useEffect(() => {
@@ -433,6 +608,32 @@ export default function PrivateGroupsAdmin() {
     }
   };
 
+  // Load chatroom messages
+  const loadChatroomMessages = async (groupId) => {
+    try {
+      setLoadingMessages(true);
+      const response = await getPrivateGroupMessages(groupId, 1, 100); // Get last 100 messages
+      const messages = response?.data?.messages || response?.messages || [];
+      
+      // Debug: Log message structure to see timestamp format
+      if (messages.length > 0) {
+        console.log('Sample message structure:', messages[0]);
+      }
+      
+      setChatroomMessages(messages);
+    } catch (error) {
+      console.error('Failed to load chatroom messages:', error);
+      toast({
+        title: 'Failed to load messages',
+        description: error?.message || 'Unknown error occurred',
+        variant: 'destructive'
+      });
+      setChatroomMessages([]);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
   const filteredGroups = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return groups;
@@ -449,6 +650,18 @@ export default function PrivateGroupsAdmin() {
   const handleBackToList = () => {
     setSelectedGroup(null);
     setMembers([]);
+    setShowChatroom(false);
+    setChatroomMessages([]);
+  };
+
+  const handleViewChatroom = async (groupId) => {
+    setShowChatroom(true);
+    await loadChatroomMessages(groupId);
+  };
+
+  const handleBackToDetails = () => {
+    setShowChatroom(false);
+    setChatroomMessages([]);
   };
 
   // Check for admin access
@@ -463,6 +676,19 @@ export default function PrivateGroupsAdmin() {
     );
   }
 
+  // Show chatroom view if viewing chatroom
+  if (showChatroom && selectedGroup) {
+  return (
+      <AdminChatroomView
+        group={selectedGroup}
+        messages={chatroomMessages}
+        loading={loadingMessages}
+        onBack={handleBackToDetails}
+        getCreatorName={getCreatorName}
+      />
+    );
+  }
+
   // Show details view if a group is selected
   if (selectedGroup) {
     return (
@@ -473,6 +699,7 @@ export default function PrivateGroupsAdmin() {
         getCreatorName={getCreatorName}
         onDeleteGroup={handleDeleteGroup}
         isDeleting={isDeleting}
+        onViewChatroom={handleViewChatroom}
       />
     );
   }
