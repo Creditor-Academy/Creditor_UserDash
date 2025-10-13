@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import BackButton from "@/components/navigation/BackButton";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 
 // Create a context for the sidebar state
 export const SidebarContext = React.createContext({
@@ -15,6 +16,7 @@ export function DashboardLayout() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [creditModalOpen, setCreditModalOpen] = useState(false);
 
   // Only show back button on specific pages where navigation back makes sense
   const pathsWithBackButton = [
@@ -36,6 +38,9 @@ export function DashboardLayout() {
   // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileSidebarOpen(false);
+    // Auto-collapse sidebar for immersive pages like ScenarioTakePage
+    const immersive = location.pathname.startsWith('/dashboard/scenario/take/');
+    setSidebarCollapsed(immersive);
   }, [location.pathname]);
 
   return (
@@ -49,7 +54,11 @@ export function DashboardLayout() {
             `lg:translate-x-0`
           }
         >
-          <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+          <Sidebar 
+          collapsed={sidebarCollapsed} 
+          setCollapsed={setSidebarCollapsed} 
+          onCreditorCardClick={() => setCreditModalOpen(true)}
+        />
         </div>
 
         {/* Mobile overlay */}
@@ -92,6 +101,12 @@ export function DashboardLayout() {
           </div>
         </div>
       </div>
+
+      {/* Credit Purchase Modal */}
+      <CreditPurchaseModal 
+        open={creditModalOpen} 
+        onClose={() => setCreditModalOpen(false)} 
+      />
     </SidebarContext.Provider>
   );
 }

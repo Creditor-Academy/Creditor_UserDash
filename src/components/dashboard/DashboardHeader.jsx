@@ -44,6 +44,54 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  // Display helper: format credit points using USD-style units (K, M, B, T)
+  // Clamp the numeric part to a maximum of 100 and append '+' if clamped
+  const formatCreditPoints = (value) => {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+
+    const formatWithClamp = (val, suffix) => {
+      let display = val;
+      let clamped = false;
+      if (display > 100) {
+        display = 100;
+        clamped = true;
+      }
+      // Keep at most one decimal place; strip trailing .0
+      const rounded = Math.round(display * 10) / 10;
+      const text = (rounded % 1 === 0) ? String(rounded) : rounded.toFixed(1);
+      return `${sign}${text}${suffix}${clamped ? '+' : ''}`;
+    };
+
+    // Units in descending order for easy promotion (e.g., 100M -> 1B)
+    const units = [
+      { value: 1_000_000_000_000, suffix: 'T' },
+      { value: 1_000_000_000, suffix: 'B' },
+      { value: 1_000_000, suffix: 'M' },
+      { value: 1_000, suffix: 'K' },
+    ];
+
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (abs >= u.value) {
+        const val = abs / u.value;
+        // If value is at least 100 of this unit, promote to the next higher unit
+        if (val >= 100 && i > 0) {
+          const higher = units[i - 1];
+          const hasPlus = abs > 100 * u.value; // strictly greater than the threshold
+          return `${sign}1${higher.suffix}${hasPlus ? '+' : ''}`;
+        }
+        return formatWithClamp(val, u.suffix);
+      }
+    }
+
+    // For small values, clamp raw number to 100 as well
+    const clampedSmall = Math.min(abs, 100);
+    const suffixPlus = abs > 100 ? '+' : '';
+    return `${sign}${clampedSmall}${suffixPlus}`;
+  };
+
   // Listen for a global request to open the credits modal
   useEffect(() => {
     const handler = () => setCreditsModalOpen(true);
@@ -683,7 +731,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
               <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[10px] font-extrabold shadow-inner">
                 CP
               </span>
-              <span className="text-sm font-semibold tabular-nums tracking-wide">{balance}</span>
+              <span className="text-sm font-semibold tabular-nums tracking-wide">{formatCreditPoints(balance)}</span>
               <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
             </button>
             

@@ -74,6 +74,12 @@ import LessonBuilder from "./pages/LessonBuilder";
 import LessonPreview from "./pages/LessonPreview";
 import LandingPage from "@/pages/LandingPage";
 import Home from "@/pages/home";
+import About from "@/pages/AboutUsPage/About";
+import Contact from "@/pages/contactpage/contact";
+import FAQPage from "@/pages/faqpages/faqpage";
+import Features from "@/pages/FeaturesPage/Features";
+import WhyUs from "@/pages/WhyusPage/WhyUs";
+import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
 import Sov from "./coursesL/Sov";
 import Sophomore from "./coursesL/Sophomore";
@@ -94,6 +100,9 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import CreateScenario from "@/pages/CreateScenario";
+import PreviewScenario from "@/pages/PreviewScenario";
+import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
@@ -113,6 +122,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/whyus" element={<WhyUs />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -175,6 +189,30 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/add-quiz"
+            element={
+              <ProtectedRoute>
+                <Instructorpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-scenario"
+            element={
+              <ProtectedRoute>
+                <CreateScenario />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/preview-scenario"
+            element={
+              <ProtectedRoute>
+                <PreviewScenario />
+              </ProtectedRoute>
+            }
+          />
           
           {/* Public routes (outside ProtectedRoute) */}
           <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -228,6 +266,11 @@ function App() {
               <Route path="instruction/:quizId" element={<QuizInstructionPage />} />
               <Route path="take/:quizId" element={<QuizTakePage />} />
               <Route path="results/:quizId" element={<QuizResultsPage />} />
+            </Route>
+
+            {/* Scenario routes */}
+            <Route path="scenario">
+              <Route path="take/:scenarioId" element={<ScenarioTakePage />} />
             </Route>
 
             <Route path="assignment">
@@ -333,6 +376,7 @@ function App() {
           <Route path="/modern-lesson-demo" element={<ModernLessonDemo />} />
           <Route path="/games" element={<Games />} />
           </Routes>
+          <PageTransitionOverlay />
           <Toaster />
           </CreditsProvider>
         </UserProvider>

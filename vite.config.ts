@@ -49,7 +49,9 @@ export default defineConfig(({ mode }) => ({
       "www.lmsathena.com",
       "lmsathena.com",
       "api.lmsathena.com",
-      "54.198.69.32"
+      "54.198.69.32",
+      "https://creditor.onrender.com",
+      "https://creditor-frontend-p6lt.onrender.com"
     ],
     cors: true
   },

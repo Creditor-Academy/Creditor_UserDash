@@ -20,7 +20,8 @@ import {
   GraduationCap,
   Library,
   School,
-  Bot
+  Bot,
+  CreditCard
 } from "lucide-react";
 import { currentUserId } from "@/data/currentUser";
 import { getUserRole } from "@/services/userService";
@@ -137,7 +138,7 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
   );
 };
 
-export function Sidebar({ collapsed, setCollapsed }) {
+export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
@@ -173,6 +174,14 @@ export function Sidebar({ collapsed, setCollapsed }) {
     }
   };
 
+  const handleCreditorCardClick = () => {
+    if (onCreditorCardClick) {
+      onCreditorCardClick();
+    }
+  };
+
+  // Replace localStorage logic with a constant for testing
+  const isScormAllowed = allowedScormUserIds.includes(currentUserId);
 
   // Help section navigation items
   const helpItems = [
@@ -212,7 +221,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
 
   return (
     <motion.div
-      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20 overflow-hidden"
+      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
       variants={sidebarVariants}
       animate={collapsed ? "collapsed" : "expanded"}
       initial={false}
@@ -298,9 +307,9 @@ export function Sidebar({ collapsed, setCollapsed }) {
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 overflow-hidden py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white">
+      <div className="flex-1 overflow-y-auto py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white custom-scrollbar">
         <motion.div 
-          className="space-y-2 overflow-hidden px-2"
+          className="space-y-2 px-2"
           variants={listVariants}
           initial="hidden"
           animate="show"
@@ -360,6 +369,18 @@ export function Sidebar({ collapsed, setCollapsed }) {
               active={isActive("/dashboard/messages")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
+            />
+          </motion.div>
+
+          {/* Creditor Card */}
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={CreditCard}
+              label="Creditor Card"
+              href="#"
+              active={false}
+              collapsed={collapsed}
+              onNavigate={handleCreditorCardClick}
             />
           </motion.div>
           </>
@@ -521,6 +542,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
           </DropdownMenu>
         )}
       </motion.div> 
+
     </motion.div>
   );
 }
