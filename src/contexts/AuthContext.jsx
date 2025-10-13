@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getUserRole, getUserRoles, setUserRole as setUserRoleUtil, setUserRoles as setUserRolesUtil, clearUserData, isInstructorOrAdmin as checkInstructorOrAdmin, logoutUser } from '@/services/userService';
-import { saveLoginTime, isAuthenticated } from '@/services/tokenService';
+import { saveLoginTime, isAuthenticated, setAccessToken, clearAccessToken } from '@/services/tokenService';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -47,12 +47,12 @@ export const AuthProvider = ({ children }) => {
 
   const setAuth = useCallback((token) => {
     if (token) {
-      localStorage.setItem('token', token);
+      setAccessToken(token); // This sets both 'authToken' and 'token' in localStorage
       saveLoginTime();
       setIsAuth(true);
     } else {
       // clearTokenRefresh(); // Removed this line as it's no longer needed
-      localStorage.removeItem('token');
+      clearAccessToken(); // This removes both 'authToken' and 'token' from localStorage
       setIsAuth(false);
     }
   }, []);
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       clearUserData();
       // clearTokenRefresh(); // Removed this line as it's no longer needed
-      localStorage.removeItem('token');
+      clearAccessToken(); // This removes both 'authToken' and 'token' from localStorage
       localStorage.removeItem('userId');
       Cookies.remove('token');
       Cookies.remove('userId');
