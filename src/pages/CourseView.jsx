@@ -184,8 +184,10 @@ export function CourseView() {
 
   // Initialize completed modules from backend data
   useEffect(() => {
+    const completedIds = new Set();
+    
+    // Check main course modules
     if (modules && modules.length > 0) {
-      const completedIds = new Set();
       modules.forEach(module => {
         if (module.user_module_progress && 
             Array.isArray(module.user_module_progress) && 
@@ -194,9 +196,22 @@ export function CourseView() {
           completedIds.add(String(module.id));
         }
       });
-      setCompletedModuleIds(completedIds);
     }
-  }, [modules]);
+    
+    // Check Street Smart modules
+    if (streetModules && streetModules.length > 0) {
+      streetModules.forEach(module => {
+        if (module.user_module_progress && 
+            Array.isArray(module.user_module_progress) && 
+            module.user_module_progress.length > 0 &&
+            module.user_module_progress[0].completed === true) {
+          completedIds.add(String(module.id));
+        }
+      });
+    }
+    
+    setCompletedModuleIds(completedIds);
+  }, [modules, streetModules]);
 
   const getStableRandomPrice = (moduleObj) => {
     const input = String(moduleObj?.id || "");
@@ -891,8 +906,8 @@ export function CourseView() {
                                       Start Assessment
                                     </Button> 
                                   </Link>
-                                  {/* Mark as Complete - only show when enrolled in the course */}
-                                  {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                                  {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
+                                  {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
                                     <Button
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
@@ -927,7 +942,7 @@ export function CourseView() {
                                     >
                                       {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                                     </Button>
-                                  ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                                  ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
                                     <div className="w-full flex items-center justify-center">
                                       <Badge className="px-3 py-1">Completed</Badge>
                                     </div>
@@ -1178,8 +1193,8 @@ export function CourseView() {
                                       Start Assessment
                                     </Button>
                                   </Link>
-                                  {/* Mark as Complete - only show when enrolled in the recording course */}
-                                  {isEnrolledRecording && !completedModuleIds.has(String(module.id)) ? (
+                                  {/* Mark as Complete - show when enrolled in the recording course OR when user has individual module access */}
+                                  {(isEnrolledRecording || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
                                     <Button
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
@@ -1214,7 +1229,7 @@ export function CourseView() {
                                     >
                                       {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                                     </Button>
-                                  ) : isEnrolledRecording && completedModuleIds.has(String(module.id)) ? (
+                                  ) : (isEnrolledRecording || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
                                     <div className="w-full flex items-center justify-center">
                                       <Badge className="px-3 py-1">Completed</Badge>
                                     </div>
@@ -1477,8 +1492,8 @@ export function CourseView() {
                                )}
                              </div>
                            )}
-                           {/* Mark as Complete - only show when enrolled in the course */}
-                           {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                           {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
+                           {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
                              <Button
                                variant="secondary"
                                className="w-full disabled:opacity-60"
@@ -1513,7 +1528,7 @@ export function CourseView() {
                              >
                                {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                              </Button>
-                           ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                           ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
                              <div className="w-full flex items-center justify-center">
                                <Badge className="px-3 py-1">Completed</Badge>
                              </div>
