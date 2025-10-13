@@ -19,7 +19,7 @@ const carouselItems = [
   {
     id: 1,
     type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/%2469Month!+(7).png",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/18oct.png",
     course: "04th Oct",
     
   },
