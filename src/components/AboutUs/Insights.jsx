@@ -1,486 +1,87 @@
-import React, { useState, useRef, useEffect } from "react";
-import { motion, useInView, useAnimation } from "framer-motion";
+import './CoreValues.css';
 
-// Icon components
-const BookOpenIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-  </svg>
-);
-
-const UsersIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-    <circle cx="9" cy="7" r="4"></circle>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-  </svg>
-);
-
-const LightbulbIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 18h6"></path>
-    <path d="M10 22h4"></path>
-    <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path>
-  </svg>
-);
-
-const Globe2Icon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
-    <path d="M2 12h20"></path>
-  </svg>
-);
-
-const ArrowRightIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-    <polyline points="12 5 19 12 12 19"></polyline>
-  </svg>
-);
-
-const SparklesIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"></path>
-    <path d="M20 3v4"></path>
-    <path d="M22 5h-4"></path>
-    <path d="M4 17v2"></path>
-    <path d="M5 18h-2"></path>
-  </svg>
-);
-
-const values = [
-  {
-    title: "Excellence in Learning",
-    description: "We deliver structured, adaptive, and accessible learning experiences that empower every student to reach their full potential.",
-    icon: BookOpenIcon,
-    color: ["#2563EB", "#06B6D4"],
-    bgColor: ["#2563EB", "#06B6D4"],
-  },
-  {
-    title: "Community & Support",
-    description: "We foster a supportive community of learners, educators, and innovators who collaborate to create meaningful educational experiences.",
-    icon: UsersIcon,
-    color: ["#7C3AED", "#EC4899"],
-    bgColor: ["#7C3AED", "#EC4899"],
-  },
-  {
-    title: "Innovation & Growth",
-    description: "We embrace creativity and cutting-edge technology to unlock better education outcomes and drive continuous improvement.",
-    icon: LightbulbIcon,
-    color: ["#F59E0B", "#F97316"],
-    bgColor: ["#F59E0B", "#F97316"],
-  },
-  {
-    title: "Global Reach",
-    description: "We empower learners across borders with scalable digital solutions that break down barriers to quality education.",
-    icon: Globe2Icon,
-    color: ["#10B981", "#14B8A6"],
-    bgColor: ["#10B981", "#14B8A6"],
-  },
-];
-
-const ValuesSection = () => {
-  const [activeCard, setActiveCard] = useState(null);
-  const [cols, setCols] = useState("1fr");
-  const [windowWidth, setWindowWidth] = useState(0);
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.3 });
-  const controls = useAnimation();
-
-  useEffect(() => {
-    if (isInView) controls.start("visible");
-  }, [isInView, controls]);
-
-  useEffect(() => {
-    function onResize() {
-      const width = window.innerWidth;
-      setWindowWidth(width);
-     
-      if (width >= 1024) setCols("1fr 1fr 1fr 1fr");
-      else if (width >= 768) setCols("1fr 1fr");
-      else setCols("1fr");
-    }
-   
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const containerVariants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.15
-      }
-    }
-  };
- 
-  const itemVariants = {
-    hidden: {
-      opacity: 0,
-      y: 40
+const CoreValues = () => {
+  const values = [
+    {
+      title: "Innovation",
+      description: "Ahead of the curve.",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+      )
     },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut"
-      }
+    {
+      title: "Pedagogy",
+      description: "Understandable and actionable.",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+          <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/>
+        </svg>
+      )
+    },
+    {
+      title: "Accessibility",
+      description: "We build for everyone.",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+        </svg>
+      )
+    },
+    {
+      title: "Human-Centered Design",
+      description: "Empathy is our starting point.",
+      icon: (
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+        </svg>
+      )
     }
-  };
+  ];
 
   return (
-    <section className="values-section" style={{
-      position: "relative",
-      padding: "70px 20px",
-      background: "linear-gradient(to bottom, #F8FAFC, rgba(59, 130, 246, 0.05))",
-      overflow: "hidden",
-      minHeight: "100vh",
-      boxSizing: "border-box",
-    }}>
-      {/* Animated background elements */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        overflow: "hidden",
-        pointerEvents: "none",
-        zIndex: 0,
-      }}>
-        {[...Array(12)].map((_, i) => (
-          <motion.div
-            key={i}
-            style={{
-              position: "absolute",
-              borderRadius: "50%",
-              background: "rgba(59, 130, 246, 0.08)",
-              width: `${Math.random() * 80 + 30}px`,
-              height: `${Math.random() * 80 + 30}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, Math.random() * 15 - 7.5],
-              x: [0, Math.random() * 15 - 7.5],
-            }}
-            transition={{
-              duration: Math.random() * 8 + 4,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-          />
-        ))}
-      </div>
+    <section className="core-values">
+      <div className="core-values-container">
+        {/* Section Header */}
+        <h2 className="core-values-header">
+          Our Guiding Stars
+        </h2>
+        <p className="core-values-subtitle">
+          These four principles are the bedrock of everything we create. They guide our strategy, design, and delivery.
+        </p>
 
-      <div style={{
-        maxWidth: "1200px",
-        margin: "0 auto",
-        position: "relative",
-        zIndex: 1,
-        width: "100%",
-        boxSizing: "border-box",
-      }}>
-        <motion.div
-          ref={ref}
-          initial="hidden"
-          animate={controls}
-          variants={containerVariants}
-          style={{
-            textAlign: "center",
-            marginBottom: "60px",
-            width: "100%",
-          }}
-        >
-          <motion.div variants={itemVariants} style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "6px 14px",
-            borderRadius: "20px",
-            backgroundColor: "rgba(37, 99, 235, 0.1)",
-            color: "#1D4ED8",
-            marginBottom: "16px",
-            fontSize: "13px",
-            fontWeight: 500,
-          }}>
-            <SparklesIcon />
-            <span>Our Principles</span>
-          </motion.div>
-         
-          <motion.h3 variants={itemVariants} style={{
-            fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
-            fontWeight: 700,
-            color: "#0F172A",
-            marginBottom: "16px",
-            lineHeight: 1.2,
-            margin: "0 auto",
-            maxWidth: "90%",
-          }}>
-            Guiding <span style={{
-              background: "linear-gradient(90deg, #2563EB, #06B6D4)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              color: "transparent", // Fallback
-            }}>Principles</span>
-          </motion.h3>
-         
-          <motion.p variants={itemVariants} style={{
-            fontSize: "clamp(14px, 2vw, 16px)",
-            color: "#64748B",
-            maxWidth: "600px",
-            margin: "0 auto",
-            lineHeight: 1.6,
-            padding: "0 20px",
-          }}>
-            At Athena LMS, our core values shape every aspect of our platform, creating transformative learning experiences for everyone.
-          </motion.p>
-        </motion.div>
-
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: cols,
-          gap: "20px",
-          width: "100%",
-          padding: "0 10px",
-          boxSizing: "border-box",
-        }}>
-          {values.map((value, idx) => {
-            const Icon = value.icon;
-            const isActive = activeCard === idx;
-           
-            return (
-              <motion.div
-                key={idx}
-                variants={itemVariants}
-                initial="hidden"
-                animate={controls}
-                whileHover={{ y: -6, scale: 1.02 }}
-                onMouseEnter={() => setActiveCard(idx)}
-                onMouseLeave={() => setActiveCard(null)}
-                style={{
-                  cursor: "pointer",
-                  position: "relative",
-                  minHeight: "220px",
-                }}
-              >
-                <div style={{
-                  borderRadius: "16px",
-                  overflow: "hidden",
-                  boxShadow: isActive
-                    ? "0 12px 30px rgba(30, 41, 59, 0.16)"
-                    : "0 6px 20px rgba(30, 41, 59, 0.08)",
-                  transition: "all 0.3s ease",
-                  background: "#ffffff",
-                  height: "100%",
-                  border: "1px solid rgba(0,0,0,0.05)",
-                }}>
-                  {/* Gradient border effect */}
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "16px",
-                    background: `linear-gradient(135deg, ${value.color[0]}, ${value.color[1]})`,
-                    opacity: isActive ? 0.1 : 0,
-                    transition: "opacity 0.3s ease",
-                    pointerEvents: "none",
-                  }} />
-                 
-                  <div style={{
-                    padding: "24px 20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    position: "relative",
-                    zIndex: 1,
-                    boxSizing: "border-box",
-                  }}>
-                    {/* Icon container */}
-                    <div style={{
-                      width: "48px",
-                      height: "48px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: "12px",
-                      marginBottom: "20px",
-                      color: "#ffffff",
-                      background: `linear-gradient(135deg, ${value.bgColor[0]}, ${value.bgColor[1]})`,
-                      position: "relative",
-                      overflow: "hidden",
-                      flexShrink: 0,
-                    }}>
-                      <Icon />
-                     
-                      {/* Sparkle effect */}
-                      <motion.div
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                        }}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: isActive ? 1 : 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        {[...Array(2)].map((_, i) => (
-                          <motion.div
-                            key={i}
-                            style={{
-                              position: "absolute",
-                              color: "#ffffff",
-                              top: `${Math.random() * 60 + 20}%`,
-                              left: `${Math.random() * 60 + 20}%`,
-                            }}
-                            animate={{
-                              scale: [0, 1, 0],
-                              rotate: [0, 180, 360],
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              delay: i * 0.5,
-                            }}
-                          >
-                            <SparklesIcon />
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    </div>
-                   
-                    <h3 style={{
-                      fontSize: "18px",
-                      fontWeight: 600,
-                      color: "#0F172A",
-                      marginBottom: "12px",
-                      lineHeight: 1.3,
-                    }}>
-                      {value.title}
-                    </h3>
-                   
-                    <p style={{
-                      color: "#64748B",
-                      marginBottom: "20px",
-                      fontSize: "14px",
-                      lineHeight: 1.5,
-                      flexGrow: 1,
-                    }}>
-                      {value.description}
-                    </p>
-                   
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: isActive ? "#2563EB" : "#94A3B8",
-                      transition: "color 0.2s ease",
-                      marginTop: "auto",
-                    }}>
-                      <span>Learn more</span>
-                      <motion.div
-                        animate={{ x: isActive ? 4 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        style={{ marginLeft: "6px" }}
-                      >
-                        <ArrowRightIcon />
-                      </motion.div>
-                    </div>
+        {/* Values Grid */}
+        <div className="core-values-grid">
+          {values.map((value, index) => (
+            <div
+              key={index}
+              className="core-values-card"
+            >
+              <div>
+                {/* Icon Container */}
+                <div className="core-values-icon-container">
+                  <div className="core-values-icon">
+                    {value.icon}
                   </div>
                 </div>
-               
-                {/* Connecting line animation between cards */}
-                {isActive && idx < values.length - 1 && windowWidth >= 1024 && (
-                  <motion.div
-                    style={{
-                      position: "absolute",
-                      top: "50%",
-                      right: "-10px",
-                      width: "20px",
-                      height: "3px",
-                      background: `linear-gradient(90deg, ${value.color[0]}, ${value.color[1]})`,
-                      borderRadius: "2px",
-                      zIndex: 20,
-                    }}
-                    initial={{ width: 0 }}
-                    animate={{ width: 20 }}
-                    transition={{ duration: 0.4 }}
-                  />
-                )}
-              </motion.div>
-            );
-          })}
+
+                {/* Content */}
+                <h3 className="core-values-title">
+                  {value.title}
+                </h3>
+                <p className="core-values-description">
+                  {value.description}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.4 }}
-          style={{
-            textAlign: "center",
-            marginTop: "50px",
-            width: "100%",
-          }}
-        >
-          <button
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "14px 28px",
-              borderRadius: "14px",
-              color: "#ffffff",
-              background: "linear-gradient(90deg, #2563EB, #06B6D4)",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: "15px",
-              boxShadow: "0 6px 20px rgba(37, 99, 235, 0.3)",
-              transition: "all 0.3s ease",
-              position: "relative",
-              overflow: "hidden",
-              minWidth: "200px",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 10px 25px rgba(37, 99, 235, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 6px 20px rgba(37, 99, 235, 0.3)";
-            }}
-          >
-            <span style={{ position: "relative", zIndex: 2 }}>
-              Explore Our Platform
-            </span>
-          </button>
-        </motion.div>
       </div>
-
-      <style jsx>{`
-        .values-section {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-        }
-       
-        @media (max-width: 768px) {
-          .values-section {
-            padding: 50px 15px;
-          }
-        }
-       
-        @media (max-width: 480px) {
-          .values-section {
-            padding: 40px 10px;
-          }
-        }
-      `}</style>
     </section>
   );
 };
 
-export default ValuesSection;
+export default CoreValues;

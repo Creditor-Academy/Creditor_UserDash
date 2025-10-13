@@ -9,7 +9,7 @@ import Ready from '../components/homepage/readysection.jsx';
 import Features from '../components/homepage/features.jsx';
 import LearningSection from '../components/homepage/learningsection.jsx';
 import Testimonial from '../components/homepage/Testimonial.jsx';
-
+import HowWork from '../components/homepage/HowWork.jsx';
 
 
 const Home = () => {
@@ -18,10 +18,12 @@ const Home = () => {
       <Navbar />
       <Hero />
       <About/>
+      <HowWork />
       <Features />
       <LearningSection />
       <Ready />
       <Testimonial />
+      
       <Footer />
     </>
   );
