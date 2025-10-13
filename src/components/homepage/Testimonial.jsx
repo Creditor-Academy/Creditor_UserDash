@@ -36,15 +36,19 @@ const Testimonials = () => {
   const styles = {
     mainBox: {
       width: '100%',
-      maxWidth: '1222px',
-      margin: '0 auto',
       background: '#f2f8ff',
-      padding: '40px 20px',
+      padding: '60px 0 0 0',
       fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center'
+    },
+    contentContainer: {
+      width: '100%',
+      maxWidth: '1400px',
+      padding: '0 clamp(20px, 5vw, 40px) 60px',
+      margin: '0 auto'
     },
     headerSection: {
       textAlign: 'center',
@@ -135,7 +139,8 @@ const Testimonials = () => {
       display: 'flex',
       justifyContent: 'center',
       gap: '11px',
-      marginTop: '18px'
+      marginTop: '18px',
+      marginBottom: '0'
     },
     navDot: {
       width: '13px',
@@ -159,15 +164,16 @@ const Testimonials = () => {
 
   return (
     <div style={styles.mainBox}>
-      <div style={styles.headerSection}>
-        <div style={styles.smallHeading}>Testimonials</div>
-        <div style={styles.mainHeading}>What Our Clients Say</div>
-        <div style={styles.subHeading}>
-          Discover why educators and organizations trust Athena for learning management
+      <div style={styles.contentContainer}>
+        <div style={styles.headerSection}>
+          <div style={styles.smallHeading}>Testimonials</div>
+          <div style={styles.mainHeading}>What Our Clients Say</div>
+          <div style={styles.subHeading}>
+            Discover why educators and organizations trust Athena for learning management
+          </div>
         </div>
-      </div>
 
-      <div style={styles.testimonialsGrid}>
+        <div style={styles.testimonialsGrid}>
         {testimonials.map((testimonial, index) => (
           <div
             key={testimonial.id}
@@ -199,19 +205,20 @@ const Testimonials = () => {
             </div>
           </div>
         ))}
-      </div>
+        </div>
 
-      <div style={styles.navigation}>
-        {testimonials.map((_, index) => (
-          <div
-            key={index}
-            style={{
-              ...styles.navDot,
-              ...(activeDot === index ? styles.navDotActive : {})
-            }}
-            onMouseEnter={() => handleDotHover(index)}
-          />
-        ))}
+        <div style={styles.navigation}>
+          {testimonials.map((_, index) => (
+            <div
+              key={index}
+              style={{
+                ...styles.navDot,
+                ...(activeDot === index ? styles.navDotActive : {})
+              }}
+              onMouseEnter={() => handleDotHover(index)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

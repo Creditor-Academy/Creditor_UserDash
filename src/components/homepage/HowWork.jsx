@@ -53,64 +53,90 @@ const HowAthenaWorks = () => {
           </p>
         </div>
 
-        {/* Steps Container */}
-        <div className="relative">
-          {/* Connecting Line */}
-          <div className="hidden lg:block absolute top-24 left-1/2 transform -translate-x-1/2 w-2/3 h-1 bg-gradient-to-r from-sky-200 via-blue-200 to-sky-200 rounded-full z-0" />
-          
-          {/* Steps Grid */}
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">
-            {steps.map((step, index) => (
-              <div
-                key={index}
-                className="group relative"
-              >
-                {/* Step Card */}
-                <div className={`${step.bgColor} rounded-2xl p-8 relative overflow-hidden transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-blue-100 border border-blue-50`}>
-                  
-                  {/* Background Pattern */}
-                  <div className="absolute inset-0 opacity-5">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white to-transparent" />
-                    <div className="absolute bottom-0 right-0 w-32 h-32 bg-blue-200 rounded-full -mr-16 -mb-16 opacity-10" />
-                  </div>
-
-                  {/* Step Number */}
-                  <div className={`absolute -top-4 -left-4 w-16 h-16 bg-gradient-to-r ${step.gradient} rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-200/50 transform rotate-12 group-hover:rotate-0 transition-transform duration-300`}>
-                    {step.number}
-                  </div>
-
-                  {/* Content */}
-                  <div className="relative z-10 text-center mt-4">
-                    {/* Icon */}
-                    <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-r ${step.gradient} flex items-center justify-center text-white shadow-lg shadow-blue-300/50 group-hover:shadow-blue-400/50 transition-all duration-300`}>
-                      {step.icon}
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+          {/* Left Column - Steps */}
+          <div className="relative">
+            {/* Connecting Line */}
+            <div className="hidden lg:block absolute top-12 left-8 w-1 h-80 bg-gradient-to-b from-sky-200 via-blue-200 to-sky-200 rounded-full z-0" />
+            
+            {/* Steps Container */}
+            <div className="relative z-10 space-y-8">
+              {steps.map((step, index) => (
+                <div
+                  key={index}
+                  className="group relative"
+                >
+                  {/* Step Card */}
+                  <div className={`${step.bgColor} rounded-2xl p-6 relative overflow-hidden transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl group-hover:shadow-blue-100 border border-blue-50`}>
+                    
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 opacity-5">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white to-transparent" />
+                      <div className="absolute bottom-0 right-0 w-24 h-24 bg-blue-200 rounded-full -mr-12 -mb-12 opacity-10" />
                     </div>
 
-                    {/* Text Content */}
-                    <h3 className="text-2xl font-bold text-sky-700 mb-3 group-hover:text-blue-700 transition-colors">
-                      {step.title}
-                    </h3>
-                    <p className="text-sky-600 leading-relaxed group-hover:text-blue-600 transition-colors">
-                      {step.description}
-                    </p>
+                    {/* Step Number */}
+                    <div className={`absolute -top-3 -left-3 w-12 h-12 bg-gradient-to-r ${step.gradient} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-200/50 transform rotate-12 group-hover:rotate-0 transition-transform duration-300`}>
+                      {step.number}
+                    </div>
+
+                    {/* Content */}
+                    <div className="relative z-10 flex items-center space-x-4 mt-2">
+                      {/* Icon */}
+                      <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${step.gradient} flex items-center justify-center text-white shadow-lg shadow-blue-300/50 group-hover:shadow-blue-400/50 transition-all duration-300 flex-shrink-0`}>
+                        {step.icon}
+                      </div>
+
+                      {/* Text Content */}
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-sky-700 mb-2 group-hover:text-blue-700 transition-colors">
+                          {step.title}
+                        </h3>
+                        <p className="text-sky-600 leading-relaxed group-hover:text-blue-600 transition-colors">
+                          {step.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Hover Effect */}
+                    <div className={`absolute inset-0 bg-gradient-to-r ${step.gradient} opacity-0 group-hover:opacity-3 rounded-2xl transition-opacity duration-300`} />
                   </div>
 
-                  {/* Hover Effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${step.gradient} opacity-0 group-hover:opacity-3 rounded-2xl transition-opacity duration-300`} />
+                  {/* Connecting Arrow (Mobile) */}
+                  {index < steps.length - 1 && (
+                    <div className="lg:hidden flex justify-center my-6">
+                      <div className="w-8 h-8 text-sky-400 transform rotate-90">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Connecting Arrow (Mobile) */}
-                {index < steps.length - 1 && (
-                  <div className="lg:hidden flex justify-center my-6">
-                    <div className="w-8 h-8 text-sky-400 transform rotate-90">
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                )}
+          {/* Right Column - Demo Video */}
+          <div className="relative flex items-center">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 bg-gradient-to-br from-sky-50 to-blue-50 p-4 w-full">
+              <video
+                className="w-full h-auto rounded-xl"
+                controls
+                poster=""
+                preload="metadata"
+              >
+                <source src="/src/assets/homevideo.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              
+              {/* Video Overlay Pattern */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-4 right-4 w-16 h-16 bg-blue-200 rounded-full opacity-10" />
+                <div className="absolute bottom-4 left-4 w-12 h-12 bg-sky-200 rounded-full opacity-10" />
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
