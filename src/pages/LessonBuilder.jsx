@@ -3430,6 +3430,7 @@ function LessonBuilder() {
                 alt_text: block.imageTitle || '',
                 layout: layout,
                 template: block.templateType || block.template || undefined,
+                alignment: block.alignment || 'left', // Include alignment in details
               };
 
               if (layout === 'side-by-side') {
@@ -5183,6 +5184,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                       title: 'Image',
                       layout: b.details?.layout || 'centered',
                       templateType: b.details?.template || undefined,
+                      alignment: b.details?.alignment || 'left', // Extract alignment from details
                       imageUrl: b.details?.image_url || '',
                       imageTitle: b.details?.alt_text || 'Image',
                       imageDescription: b.details?.caption || '',

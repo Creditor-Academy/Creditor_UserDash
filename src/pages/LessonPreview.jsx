@@ -308,6 +308,7 @@ const LessonPreview = () => {
           imageDescription: block.imageDescription || block.image_description || block.details?.imageDescription || '',
           imageUrl: block.imageUrl || block.image_url || block.details?.imageUrl || block.url || '',
           layout: block.layout || block.details?.layout || 'centered',
+          alignment: block.alignment || block.details?.alignment || 'left', // Extract alignment from details
           htmlCss: block.html_css || '',
         });
       } else if (block.type === 'video') {
