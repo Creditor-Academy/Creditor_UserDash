@@ -3175,7 +3175,7 @@ function LessonBuilder() {
         } else {
           // Fallback: generate HTML from video block properties
           const videoUrl = block.videoUrl || block.details?.video_url || '';
-          const videoTitle = block.videoTitle || block.details?.caption || 'Video';
+          const videoTitle = (block.videoTitle || block.details?.caption || 'Video').replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
           const videoDescription = block.videoDescription || block.details?.description || '';
           
           html = `
@@ -5798,7 +5798,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             {block.type === 'video' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Video'}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title?.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim() || 'Video'}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Video
                                   </Badge>
@@ -5807,7 +5807,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                                 {(() => {
                                   // First try to get video URL from block properties (for newly created blocks)
                                   let videoUrl = block.videoUrl || block.details?.video_url || '';
-                                  let videoTitle = block.videoTitle || block.details?.caption || 'Video';
+                                  let videoTitle = (block.videoTitle || block.details?.caption || 'Video').replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
                                   let videoDescription = block.videoDescription || block.details?.description || '';
                                   
                                   console.log('Video block edit rendering:', {
@@ -5852,10 +5852,6 @@ setContentBlocks(prev => [...prev, newBlock]);
                                             </video>
                                           )}
                                           
-                                          <div className="mt-2 text-xs text-gray-500 flex items-center">
-                                            <Video className="h-3 w-3 mr-1" />
-                                            <span>{videoTitle}</span>
-                                          </div>
                                         </div>
                                       </>
                                     );

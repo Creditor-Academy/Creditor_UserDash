@@ -199,6 +199,11 @@ const VideoComponent = ({
     return true;
   };
 
+  // Function to remove emojis from text
+  const removeEmojis = (text) => {
+    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+  };
+
   const handleSaveVideo = async () => {
     if (!validateForm()) return;
 
@@ -251,9 +256,10 @@ const VideoComponent = ({
         }
       }
 
-      // Create video block content
+      // Create video block content with emoji removed from title
+      const cleanTitle = removeEmojis(videoTitle.trim());
       const videoContent = {
-        title: videoTitle.trim(),
+        title: cleanTitle,
         description: videoDescription.trim(),
         uploadMethod: videoUploadMethod,
         url: finalVideoUrl,
@@ -271,8 +277,8 @@ const VideoComponent = ({
         id: editingVideoBlock?.id || `video_${Date.now()}`,
         block_id: editingVideoBlock?.block_id || `video_${Date.now()}`,
         type: 'video',
-        title: videoTitle.trim(),
-        videoTitle: videoTitle.trim(),
+        title: cleanTitle,
+        videoTitle: cleanTitle,
         videoDescription: videoDescription.trim(),
         videoUrl: finalVideoUrl,
         uploadMethod: videoUploadMethod,
@@ -304,13 +310,6 @@ const VideoComponent = ({
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
         <div class="space-y-4">
           <div class="flex items-start space-x-4">
-            <div class="flex-shrink-0">
-              <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M15 14h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-              </div>
-            </div>
             <div class="flex-1 min-w-0">
               <h3 class="text-lg font-semibold text-gray-900 mb-1">${content.title}</h3>
               ${content.description ? `<p class="text-sm text-gray-600 mb-3">${content.description}</p>` : ''}
@@ -335,15 +334,6 @@ const VideoComponent = ({
                 Your browser does not support the video element.
               </video>
             `}
-            ${content.uploadedData ? `
-              <div class="mt-2 text-xs text-gray-500 flex items-center">
-                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span>${content.uploadedData.fileName}</span>
-                <span class="ml-2">${(content.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
-              </div>
-            ` : ''}
           </div>
         </div>
       </div>
@@ -477,13 +467,6 @@ const VideoComponent = ({
                       </Button>
                     </div>
                   </div>
-                  {videoFile && (
-                    <div className="mt-2 text-xs text-gray-500 flex items-center">
-                      <Video className="h-3 w-3 mr-1" />
-                      <span>{videoFile.name}</span>
-                      <span className="ml-2">{(videoFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
