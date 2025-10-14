@@ -8,19 +8,19 @@ import {
 } from "@/components/ui/carousel";
 
 const carouselItems = [
-  {
-    id: 0,
-    type: "video",
-    videoUrl: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/This+Saturday.mp4",
-    title: "This Saturday",
-    course: "Upcoming Event",
-    order: 1
-  },
+  // {
+  //   id: 0,
+  //   type: "video",
+  //   videoUrl: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/This+Saturday.mp4",
+  //   title: "This Saturday",
+  //   course: "Upcoming Event",
+  //   order: 1
+  // },
   {
     id: 1,
     type: "image",
-    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/%2469Month!+(6).png",
-    course: "04th Oct",
+    image: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/Upcoming_events_Banner/18oct.png",
+    course: "18th Oct",
     
   },
 ];

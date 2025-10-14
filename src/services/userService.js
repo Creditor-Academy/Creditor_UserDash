@@ -239,7 +239,7 @@ export async function logoutUser() {
     
     const response = await fetch(`${baseUrl}/api/auth/logout`, {
       method: 'GET',
-      credentials: 'include', // Important for sending cookies
+      credentials: 'include', // Keep for any same-domain cookies
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`

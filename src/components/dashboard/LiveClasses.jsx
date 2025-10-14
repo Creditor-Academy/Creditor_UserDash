@@ -512,11 +512,11 @@ export function LiveClasses() {
     
   </Card>
 )}
-<ClassRecording/>
+{/* <ClassRecording/>
       <AttendanceViewerModal
         isOpen={isAttendanceModalOpen}
         onClose={() => setIsAttendanceModalOpen(false)}
-      />
+      /> */}
       
     </div>
   );

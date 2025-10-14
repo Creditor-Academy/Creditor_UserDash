@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateCourse from "./CreateCourse";
-import ScormPage from "./ScormPage";
 import CourseLessonsPage from "./CourseLessonsPage";
 import AddEvent from "./AddEvent";
 import AddCatelog from "./AddCatelog";
@@ -139,7 +138,7 @@ const InstructorPage = () => {
                 : "hover:bg-gray-100 text-gray-700"
             }`}
           >
-            <FaEdit /> Create Quiz
+            <FaEdit /> Manage Assessments
           </button>
           {/* <button 
             onClick={() => setActiveTab("scorm")} 

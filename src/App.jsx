@@ -67,9 +67,6 @@ import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
-import ScormPage from "@/pages/ScormPage";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
-import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
 import Home from "@/pages/home";
@@ -100,17 +97,14 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import CreateScenario from "@/pages/CreateScenario";
+import PreviewScenario from "@/pages/PreviewScenario";
+import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
      
 
-function ProtectedScormRoute() {
-  if (!allowedScormUserIds.includes(currentUserId)) {
-    return <div style={{padding: 24}}><h2>Access Denied</h2><p>You do not have permission to view this page.</p></div>;
-  }
-  return <ScormPage />;
-}
 
 function App() {
   return (
@@ -159,6 +153,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <AddUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-quiz"
+            element={
+              <ProtectedRoute>
+                <Instructorpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-scenario"
+            element={
+              <ProtectedRoute>
+                <CreateScenario />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/preview-scenario"
+            element={
+              <ProtectedRoute>
+                <PreviewScenario />
               </ProtectedRoute>
             }
           />
@@ -211,6 +229,11 @@ function App() {
               <Route path="instruction/:quizId" element={<QuizInstructionPage />} />
               <Route path="take/:quizId" element={<QuizTakePage />} />
               <Route path="results/:quizId" element={<QuizResultsPage />} />
+            </Route>
+
+            {/* Scenario routes */}
+            <Route path="scenario">
+              <Route path="take/:scenarioId" element={<ScenarioTakePage />} />
             </Route>
 
             <Route path="assignment">
@@ -285,11 +308,6 @@ function App() {
               <Route path="tickets" element={<MyTickets />} />
             </Route>
 
-            {/* SCORM routes - inside dashboard to keep sidebar */}
-            <Route path="scorm">
-              <Route index element={<ProtectedScormRoute />} />
-              <Route path=":courseId/:moduleId" element={<Scrompack />} />
-            </Route>
           </Route>
 
           {/* Catalog and enrollment */}
@@ -314,7 +332,6 @@ function App() {
           <Route path="guides" element={<Guides />} />
           <Route path="support/ticket" element={<SupportTicket />} />
           <Route path="support/tickets" element={<MyTickets />} />
-          <Route path="scorm" element={<ProtectedScormRoute />} />
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
           <Route path="*" element={<NotFound />} />

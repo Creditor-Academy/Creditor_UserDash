@@ -202,8 +202,8 @@ export function CatalogPage() {
     } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
                (catalogName.includes("remedy") || catalogName.includes("private merchant"))) {
       return 14000; // Business credit + I want Remedy Now + Private Merchant
-    } else if (catalogName.includes("complete financial freedom")) {
-      return 14000; // Complete Financial Freedom
+    } else if (catalogName.includes("financial freedom")) {
+      return 14000; // Financial Freedom
     } else if (catalogName.includes("master class")) {
       return 69; // Master Class
     }
@@ -248,14 +248,14 @@ export function CatalogPage() {
   const isMasterClass = (catalog) => (catalog.name || "").toLowerCase().includes("master class");
   const masterClasses = filteredCatalogs.filter(isMasterClass);
 
-  // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want, Complete Financial Freedom)
+  // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want, Financial Freedom)
   const premiumCourseNames = [
     "Become Private",
     "SOV 101", 
     "Operate Private",
     "Business credit",
     "I want",
-    "Complete Financial Freedom"
+    "Financial Freedom"
   ];
   const isPremiumCourse = (catalog) => premiumCourseNames.some(name => 
     (catalog.name || "").toLowerCase().includes(name.toLowerCase())
@@ -270,7 +270,7 @@ export function CatalogPage() {
       return 2; // Second priority
     } else if (name.includes("business credit") || name.includes("i want")) {
       return 3; // Third priority
-    } else if (name.includes("complete financial freedom")) {
+    } else if (name.includes("financial freedom")) {
       return 4; // Fourth priority
     }
     return 5; // Default for any other premium courses
@@ -423,7 +423,7 @@ export function CatalogPage() {
               </Link>
             </Button>
             
-            {catalogPrice > 0 && !isEnrolled && !isMasterClass(catalog) && (
+            {catalogPrice > 0 && !isEnrolled && (!isMasterClass(catalog) || (isMasterClass(catalog) && (catalog.name || "").toLowerCase().includes("private merchant"))) && (
               <Button
                 onClick={(e) => {
                   e.preventDefault();
@@ -478,7 +478,8 @@ export function CatalogPage() {
             </div>
           ) : (
             <div className="space-y-12">
-              {freeCourses.length > 0 && (
+              {/* Free Courses section commented out - courses moved elsewhere */}
+              {/* {freeCourses.length > 0 && (
                 <div>
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
@@ -501,7 +502,7 @@ export function CatalogPage() {
                     ))}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {masterClasses.length > 0 && (
                 <div>
@@ -553,7 +554,8 @@ export function CatalogPage() {
                 </div>
               )}
 
-              {classRecordings.length > 0 && (
+              {/* Street Smart (Recordings) section intentionally disabled for now */}
+              {/* {classRecordings.length > 0 && (
                 <div>
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
@@ -576,7 +578,7 @@ export function CatalogPage() {
                     ))}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {otherCatalogs.length > 0 && (
                 <div>
@@ -710,6 +712,44 @@ export function CatalogPage() {
                     
                     // Call unlock API for catalog
                     await unlockContent('CATALOG', selectedCatalogToBuy.id, selectedCatalogToBuy.priceCredits);
+                    
+                    // Additionally unlock recording courses for eligible titles within this catalog
+                    try {
+                      const courseIdsSet = catalogCourseIdsMap[selectedCatalogToBuy.id] || new Set();
+                      const coursesList = Array.from(courseIdsSet);
+                      // We don't have course titles here reliably; this is a best-effort: fetch courses by id when needed
+                      // If APIs aren't available, this block safely no-ops
+                      try {
+                        const details = await Promise.all(coursesList.map(async (cid) => {
+                          try {
+                            const res = await api.get(`/api/course/getCourseById/${cid}`);
+                            return res?.data?.data || res?.data;
+                          } catch {_=>null;}
+                          return null;
+                        }));
+                        for (const course of (details || [])) {
+                          const title = course?.title || course?.name;
+                          if (title && title.trim && title.trim() && (
+                            ["become private","sovereignty 101","sov 101","operate private","business credit","i want remedy now","private merchant"]
+                              .some(k => title.toLowerCase().includes(k))
+                          )) {
+                            // best-effort unlock of recording sibling
+                            const mapTitle = title.toLowerCase();
+                            let recId = null;
+                            if (mapTitle.includes('become private')) recId = 'a188173c-23a6-4cb7-9653-6a1a809e9914';
+                            else if (mapTitle.includes('operate private')) recId = '7b798545-6f5f-4028-9b1e-e18c7d2b4c47';
+                            else if (mapTitle.includes('business credit')) recId = '199e328d-8366-4af1-9582-9ea545f8b59e';
+                            else if (mapTitle.includes('private merchant')) recId = 'd8e2e17f-af91-46e3-9a81-6e5b0214bc5e';
+                            else if (mapTitle.includes('sovereignty 101') || mapTitle.includes('sov 101')) recId = 'd5330607-9a45-4298-8ead-976dd8810283';
+                            if (recId) {
+                              try { await unlockContent('COURSE', recId, 0); } catch {}
+                            }
+                          }
+                        }
+                      } catch {}
+                    } catch (e) {
+                      console.warn('[Catalog] Optional recording unlock failed:', e?.message || e);
+                    }
                     
                     // Refresh balance to show updated credits
                     if (refreshBalance) {

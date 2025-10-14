@@ -2287,7 +2287,7 @@ function Messages() {
 
           {/* Chat Area - takes full width when a chat is open */}
           {selectedFriend && (
-          <div className="w-full h-full flex flex-col">
+          <div className="w-full h-full flex flex-col min-h-0">
                 {/* Chat Header */}
                 <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -2614,7 +2614,7 @@ function Messages() {
                     />
                   ) : ( */}
                   {true && (
-                    <div className="relative">
+                    <div className="relative w-full">
                       {showEmojiPicker && (
                         <div className="absolute bottom-14 sm:bottom-16 left-0 z-10">
                           <EmojiPicker 
@@ -2644,7 +2644,7 @@ function Messages() {
                           <Paperclip className="h-4 w-4 sm:h-5 sm:w-5" />
                         </Button>
                         
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative min-w-0">
                           <Input
                             placeholder="Type a message..."
                             value={newMessage}
@@ -2664,9 +2664,9 @@ function Messages() {
                             onClick={() => setShowVoiceRecorder(true)} 
                             variant="ghost"
                             size="icon"
-                            className="h-12 w-12 rounded-full"
+                            className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-full touch-manipulation"
                           >
-                            <Mic className="h-5 w-5" />
+                            <Mic className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
                           </Button> */}
                           
                           <Button 

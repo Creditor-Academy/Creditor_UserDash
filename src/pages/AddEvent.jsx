@@ -42,6 +42,7 @@ const AddEvent = () => {
   const [showDateEvents, setShowDateEvents] = useState(false);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [selectedDateForEvents, setSelectedDateForEvents] = useState(null);
+  const [isScheduling, setIsScheduling] = useState(false);
 
   // Sort events by startTime descending (most recent at top)
   const sortedEvents = [...events].sort((a, b) => {
@@ -585,6 +586,9 @@ const AddEvent = () => {
       return;
     }
     
+    // Set scheduling state to true
+    setIsScheduling(true);
+    
     // Decode and log the JWT token to see what's in it
     const decodedToken = decodeToken();
 
@@ -592,6 +596,7 @@ const AddEvent = () => {
     const validationErrors = validateRecurringEvent(form);
     if (validationErrors.length > 0) {
       alert("Validation errors:\n" + validationErrors.join("\n"));
+      setIsScheduling(false);
       return;
     }
 
@@ -696,6 +701,8 @@ const AddEvent = () => {
       } catch (err) {
         
         alert(err.message || 'Failed to update event');
+      } finally {
+        setIsScheduling(false);
       }
       setEditIndex(null);
     } else {
@@ -745,6 +752,8 @@ const AddEvent = () => {
         alert("Event created successfully!");
       } catch (err) {
         alert("Failed to create event: " + err.message);
+      } finally {
+        setIsScheduling(false);
       }
     }
     
@@ -1123,10 +1132,18 @@ const AddEvent = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-5xl relative transform transition-all duration-300 scale-100 opacity-100">
             <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+              disabled={isScheduling}
+              className={`absolute top-4 right-4 transition-colors duration-200 p-1 rounded-full ${
+                isScheduling 
+                  ? 'text-gray-300 cursor-not-allowed' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
               onClick={() => {
-                setShowModal(false);
-                setEditIndex(null);
+                if (!isScheduling) {
+                  setShowModal(false);
+                  setEditIndex(null);
+                  setIsScheduling(false);
+                }
               }}
               aria-label="Close"
             >
@@ -1273,19 +1290,39 @@ const AddEvent = () => {
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
+                  disabled={isScheduling}
                   onClick={() => {
                     setShowModal(false);
                     setEditIndex(null);
+                    setIsScheduling(false);
                   }}
-                  className="px-5 py-2.5 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  className={`px-5 py-2.5 border border-gray-300 text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
+                    isScheduling 
+                      ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+                      : 'text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  disabled={isScheduling}
+                  className={`px-5 py-2.5 text-white text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 flex items-center justify-center gap-2 ${
+                    isScheduling 
+                      ? 'bg-blue-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  {editIndex !== null ? 'Update Event' : 'Schedule Event'}
+                  {isScheduling && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {isScheduling 
+                    ? (editIndex !== null ? 'Updating...' : 'Scheduling...') 
+                    : (editIndex !== null ? 'Update Event' : 'Schedule Event')
+                  }
                 </button>
               </div>
             </form>
