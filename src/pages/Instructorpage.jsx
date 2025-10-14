@@ -11,7 +11,7 @@ import AddGroups from "./AddGroups";
 import SupportTickets from "./Support";
 import Resources from "@/components/Resources";
 import AdminPayments from "@/components/credits/AdminPayments";
-import CourseActivityAnalytics from "@/components/dashboard/CourseActivityAnalytics";
+import CourseActivityAnalytics from "@/pages/CourseActivityAnalytics";
 import Sidebar from "@/components/layout/Sidebar";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
