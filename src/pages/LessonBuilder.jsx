@@ -27,7 +27,8 @@ import {
   Layers,
   Minus,
   Volume2,
-  Youtube
+  Youtube,
+  Crop
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
@@ -41,6 +42,7 @@ import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
+import ImageEditor from '@/components/ImageEditor';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -690,6 +692,11 @@ function LessonBuilder() {
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
   const [imageAlignment, setImageAlignment] = useState('left'); // 'left' or 'right' for image & text blocks
   const [standaloneImageAlignment, setStandaloneImageAlignment] = useState('center'); // 'left', 'center', 'right' for standalone images
+  
+  // Image Editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
   
 
 
@@ -4538,13 +4545,63 @@ function LessonBuilder() {
         return;
       }
      
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      // Show image editor instead of directly setting the file
+      setImageToEdit(file);
+      setImageEditorTitle('Edit Image');
+      setShowImageEditor(true);
     } else if (name === 'title') {
       setImageTitle(value);
     } else if (name === 'description') {
       setImageDescription(value);
     }
+  };
+
+  // Image Editor callbacks
+  const handleImageEditorSave = (editedFile) => {
+    // Check if this is inline editing (currentBlock has an id)
+    if (currentBlock && currentBlock.id) {
+      // Inline editing - upload the edited file directly
+      handleImageFileUpload(currentBlock.id, editedFile);
+    } else {
+      // Regular image dialog editing
+      setImageFile(editedFile);
+      setImagePreview(URL.createObjectURL(editedFile));
+    }
+    
+    setShowImageEditor(false);
+    setImageToEdit(null);
+    setCurrentBlock(null);
+  };
+
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setImageToEdit(null);
+  };
+
+  // Inline image editing with image editor
+  const handleInlineImageFileUpload = (blockId, file) => {
+    if (!file) return;
+
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload only JPG or PNG images');
+      return;
+    }
+   
+    // Check file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Image size should be less than 50MB');
+      return;
+    }
+
+    // Show image editor for inline editing
+    setImageToEdit(file);
+    setImageEditorTitle('Edit Image');
+    setShowImageEditor(true);
+    
+    // Store the block ID for when the editor saves
+    setCurrentBlock({ id: blockId });
   };
 
   const handleAddImage = async () => {
@@ -6284,7 +6341,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                                             onChange={(e) => {
                                               const file = e.target.files[0];
                                               if (file) {
-                                                handleImageFileUpload(block.id, file);
+                                                handleInlineImageFileUpload(block.id, file);
                                               }
                                             }}
                                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -6316,6 +6373,10 @@ setContentBlocks(prev => [...prev, newBlock]);
                                         {/* Image Preview */}
                                         {(block.imageUrl || block.defaultContent?.imageUrl) && (
                                           <div className="mt-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="text-sm font-medium text-gray-700">Current Image:</span>
+                                              
+                                            </div>
                                             <img
                                             src={block.imageUrl || block.defaultContent?.imageUrl}
                                             alt="Preview"
@@ -7289,7 +7350,16 @@ setContentBlocks(prev => [...prev, newBlock]);
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
+      {/* Image Editor */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageFile={imageToEdit}
+        onSave={handleImageEditorSave}
+        title={imageEditorTitle}
+      />
+
 
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
