@@ -128,6 +128,7 @@ const ImageEditor = ({
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     
+    // Corner handles
     // Top-left handle
     ctx.fillRect(cropX - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
     ctx.strokeRect(cropX - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
@@ -143,6 +144,23 @@ const ImageEditor = ({
     // Bottom-right handle
     ctx.fillRect(cropX + cropW - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
     ctx.strokeRect(cropX + cropW - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
+
+    // Center edge handles
+    // Top center handle
+    ctx.fillRect(cropX + cropW/2 - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
+    ctx.strokeRect(cropX + cropW/2 - handleSize/2, cropY - handleSize/2, handleSize, handleSize);
+    
+    // Bottom center handle
+    ctx.fillRect(cropX + cropW/2 - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
+    ctx.strokeRect(cropX + cropW/2 - handleSize/2, cropY + cropH - handleSize/2, handleSize, handleSize);
+    
+    // Left center handle
+    ctx.fillRect(cropX - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
+    ctx.strokeRect(cropX - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
+    
+    // Right center handle
+    ctx.fillRect(cropX + cropW - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
+    ctx.strokeRect(cropX + cropW - handleSize/2, cropY + cropH/2 - handleSize/2, handleSize, handleSize);
 
     // Add text to show what will be kept
     ctx.fillStyle = '#00ff00';
@@ -202,7 +220,7 @@ const ImageEditor = ({
     const handleSize = 12;
     const tolerance = 8;
 
-    // Check each corner handle
+    // Check corner handles first
     if (Math.abs(mouseX - canvasArea.x) < tolerance && Math.abs(mouseY - canvasArea.y) < tolerance) {
       return 'resize-nw'; // Top-left
     }
@@ -214,6 +232,24 @@ const ImageEditor = ({
     }
     if (Math.abs(mouseX - (canvasArea.x + canvasArea.width)) < tolerance && Math.abs(mouseY - (canvasArea.y + canvasArea.height)) < tolerance) {
       return 'resize-se'; // Bottom-right
+    }
+
+    // Check center edge handles
+    // Top center handle
+    if (Math.abs(mouseX - (canvasArea.x + canvasArea.width/2)) < tolerance && Math.abs(mouseY - canvasArea.y) < tolerance) {
+      return 'resize-n'; // Top center
+    }
+    // Bottom center handle
+    if (Math.abs(mouseX - (canvasArea.x + canvasArea.width/2)) < tolerance && Math.abs(mouseY - (canvasArea.y + canvasArea.height)) < tolerance) {
+      return 'resize-s'; // Bottom center
+    }
+    // Left center handle
+    if (Math.abs(mouseX - canvasArea.x) < tolerance && Math.abs(mouseY - (canvasArea.y + canvasArea.height/2)) < tolerance) {
+      return 'resize-w'; // Left center
+    }
+    // Right center handle
+    if (Math.abs(mouseX - (canvasArea.x + canvasArea.width)) < tolerance && Math.abs(mouseY - (canvasArea.y + canvasArea.height/2)) < tolerance) {
+      return 'resize-e'; // Right center
     }
 
     // Check if inside crop area for moving
@@ -240,7 +276,27 @@ const ImageEditor = ({
       const canvas = canvasRef.current;
       if (canvas) {
         if (handle.startsWith('resize')) {
-          canvas.style.cursor = 'nw-resize';
+          // Set appropriate cursor based on resize direction
+          switch (handle) {
+            case 'resize-nw':
+            case 'resize-se':
+              canvas.style.cursor = 'nw-resize';
+              break;
+            case 'resize-ne':
+            case 'resize-sw':
+              canvas.style.cursor = 'ne-resize';
+              break;
+            case 'resize-n':
+            case 'resize-s':
+              canvas.style.cursor = 'ns-resize';
+              break;
+            case 'resize-w':
+            case 'resize-e':
+              canvas.style.cursor = 'ew-resize';
+              break;
+            default:
+              canvas.style.cursor = 'nw-resize';
+          }
         } else if (handle === 'move') {
           canvas.style.cursor = 'move';
         }
@@ -256,7 +312,27 @@ const ImageEditor = ({
     const canvas = canvasRef.current;
     if (canvas && !isDragging) {
       if (handle && handle.startsWith('resize')) {
-        canvas.style.cursor = 'nw-resize';
+        // Set appropriate cursor based on resize direction
+        switch (handle) {
+          case 'resize-nw':
+          case 'resize-se':
+            canvas.style.cursor = 'nw-resize';
+            break;
+          case 'resize-ne':
+          case 'resize-sw':
+            canvas.style.cursor = 'ne-resize';
+            break;
+          case 'resize-n':
+          case 'resize-s':
+            canvas.style.cursor = 'ns-resize';
+            break;
+          case 'resize-w':
+          case 'resize-e':
+            canvas.style.cursor = 'ew-resize';
+            break;
+          default:
+            canvas.style.cursor = 'nw-resize';
+        }
       } else if (handle === 'move') {
         canvas.style.cursor = 'move';
       } else {
@@ -320,6 +396,20 @@ const ImageEditor = ({
           case 'resize-se': // Bottom-right
             newWidth = Math.max(50, Math.min(image.width - prev.x, prev.width + deltaX * scaleX));
             newHeight = Math.max(50, Math.min(image.height - prev.y, prev.height + deltaY * scaleY));
+            break;
+          case 'resize-n': // Top center
+            newY = Math.max(0, Math.min(prev.y + prev.height - 50, prev.y + deltaY * scaleY));
+            newHeight = prev.height - (newY - prev.y);
+            break;
+          case 'resize-s': // Bottom center
+            newHeight = Math.max(50, Math.min(image.height - prev.y, prev.height + deltaY * scaleY));
+            break;
+          case 'resize-w': // Left center
+            newX = Math.max(0, Math.min(prev.x + prev.width - 50, prev.x + deltaX * scaleX));
+            newWidth = prev.width - (newX - prev.x);
+            break;
+          case 'resize-e': // Right center
+            newWidth = Math.max(50, Math.min(image.width - prev.x, prev.width + deltaX * scaleX));
             break;
         }
 
@@ -563,7 +653,8 @@ const ImageEditor = ({
                 <p>• <span className="text-green-600 font-bold">Green area</span> = What you'll KEEP</p>
                 <p>• <span className="text-gray-600">Dark area</span> = What will be CUT OUT</p>
                 <p>• Drag green rectangle to move crop area</p>
-                <p>• Drag corner handles to resize crop area</p>
+                <p>• Drag corner handles to resize diagonally</p>
+                <p>• Drag center handles to resize horizontally/vertically</p>
               </div>
             </div>
           </div>
