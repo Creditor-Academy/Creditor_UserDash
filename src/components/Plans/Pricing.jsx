@@ -8,7 +8,7 @@ const Pricing = () => {
       name: "Creator",
       icon: Users,
       target: "For individual educators",
-      price: "$29",
+      price: "$7",
       period: "/month",
       description: "Everything you need to get started",
       features: [
