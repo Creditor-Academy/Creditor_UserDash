@@ -4,7 +4,6 @@ import { createAICourse, createModule, createLesson, updateLessonContent } from 
 import { uploadImage } from './imageUploadService';
 import aiService from './aiService';
 import enhancedAIService from './enhancedAIService';
-import { generateWithBytez } from './bytezIntegration';
 import { generateAndUploadCourseImage as enhancedGenerateImage } from './enhancedImageService';
 import qwenGuardService from './qwenGuardService';
 
@@ -199,18 +198,7 @@ export async function generateAICourseOutline(courseData) {
           throw new Error(aiResult.error || 'Legacy OpenAI generation failed');
         }
       } catch (legacyError) {
-        console.warn('🔄 Legacy OpenAI failed, trying Bytez fallback:', legacyError.message);
-        
-        // Try Bytez as final AI attempt
-        try {
-          const bytezResult = await generateWithBytez(courseData);
-          if (bytezResult.success) {
-            return bytezResult;
-          }
-          throw new Error(bytezResult.error);
-        } catch (bytezError) {
-          console.warn('🔄 Bytez failed, using structured fallback:', bytezError.message);
-        }
+        console.warn('🔄 Legacy OpenAI failed, using structured fallback:', legacyError.message);
       }
       
       // Final fallback to structured generation
@@ -357,24 +345,8 @@ function generateFallbackModules(courseData) {
  */
 async function enhanceModulesWithLessons(modules, courseData) {
   try {
-    // Enhance first 2 modules with detailed lessons
-    for (let i = 0; i < Math.min(2, modules.length); i++) {
-      const module = modules[i];
-      
-      if (!module.lessons || module.lessons.length === 0) {
-        // Generate lessons for this module
-        const lessonResponse = await bytezAPI.generateTopicCurriculum(
-          `${module.title} - ${courseData.subject}`,
-          courseData.difficulty || 'intermediate'
-        );
-        
-        if (lessonResponse.curriculum) {
-          // Parse lessons from curriculum response
-          module.lessons = parseLessonsFromCurriculum(lessonResponse.curriculum, module.id);
-        }
-      }
-    }
-    
+    // AI enhancement removed - Bytez API no longer used
+    // Modules will use fallback lesson structure
     return modules;
   } catch (error) {
     console.warn('Could not enhance modules with AI lessons:', error);

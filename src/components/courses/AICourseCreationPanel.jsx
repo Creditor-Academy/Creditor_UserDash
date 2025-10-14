@@ -744,24 +744,6 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                       </div>
                     </div>
                     
-                    {/* Debug info */}
-                    <div className="text-xs text-gray-500 mb-2 p-2 bg-yellow-50 rounded">
-                      Debug: aiOutline = {aiOutline ? 'exists' : 'null'}, 
-                      modules = {aiOutline?.modules?.length || 0}
-                      <button 
-                        onClick={() => {
-                          console.log('🔍 Current aiOutline state:', aiOutline);
-                          if (!aiOutline) {
-                            console.log('🔄 Manually triggering outline generation...');
-                            handleGenerateOutline();
-                          }
-                        }}
-                        className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                      >
-                        {aiOutline ? 'Log State' : 'Generate Now'}
-                      </button>
-                    </div>
-
                     {/* AI-generated outline preview */}
                     {aiOutline && (
                       <div>

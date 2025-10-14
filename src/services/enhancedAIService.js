@@ -1,13 +1,12 @@
-// Enhanced AI Service - Multi-API Integration with HuggingFace, OpenAI, Bytez, and Deep AI
+// Enhanced AI Service - Multi-API Integration with HuggingFace, OpenAI, and Deep AI
 import OpenAI from "openai";
 import qwenImageService from './qwenImageService';
 import apiKeyManager from './apiKeyManager.js';
-import bytezService from './bytezService.js';
 import fallbackCourseGenerator from './fallbackCourseGenerator.js';
 
 /**
  * Enhanced AI Service with intelligent failover system
- * Supports: OpenAI, HuggingFace, Bytez, Deep AI
+ * Supports: OpenAI, HuggingFace, Deep AI
  */
 class EnhancedAIService {
   constructor() {
@@ -26,8 +25,7 @@ class EnhancedAIService {
         { provider: 'huggingface', model: 'google/flan-t5-large', priority: 7 },
         { provider: 'huggingface', model: 'meta-llama/Llama-3.1-8B-Instruct', priority: 8 },
         { provider: 'huggingface', model: 'tiiuae/falcon-7b-instruct', priority: 9 },
-        { provider: 'huggingface', model: 'gpt2-medium', priority: 10 },
-        { provider: 'bytez', model: 'google/flan-t5-base', priority: 11 }
+        { provider: 'huggingface', model: 'gpt2-medium', priority: 10 }
       ],
       imageGeneration: [
         { provider: 'deepai', model: 'text2img', priority: 1 },
@@ -76,9 +74,6 @@ class EnhancedAIService {
 
     // Deep AI Configuration
     this.deepAIKey = this.apiKeyManager.getApiKey('deepai');
-
-    // Bytez Configuration (handled by bytezService)
-    this.bytezService = bytezService;
     
     // Fallback generator (always available)
     this.fallbackGenerator = fallbackCourseGenerator;
@@ -107,13 +102,6 @@ class EnhancedAIService {
             break;
           case 'huggingface':
             result = await this.generateWithHuggingFace(prompt, provider.model, options);
-            break;
-          case 'bytez':
-            result = await this.bytezService.generateText(prompt, { 
-              model: provider.model,
-              maxTokens: options.maxTokens || 1000,
-              temperature: options.temperature || 0.7
-            });
             break;
           default:
             continue;
@@ -890,8 +878,7 @@ Format the response as JSON with this structure:
     const results = {
       openai: { available: false, error: null },
       huggingface: { available: false, error: null },
-      deepai: { available: false, error: null },
-      bytez: { available: false, error: null }
+      deepai: { available: false, error: null }
     };
 
     // Test OpenAI
@@ -920,10 +907,6 @@ Format the response as JSON with this structure:
     } catch (error) {
       results.deepai.error = error.message;
     }
-
-    // Test Bytez (placeholder)
-    results.bytez.available = false;
-    results.bytez.error = "Bytez integration pending";
 
     return results;
   }
@@ -958,18 +941,12 @@ Format the response as JSON with this structure:
           models: ['text2img'],
           capabilities: ['image'],
           error: testResults.deepai.error
-        },
-        bytez: {
-          available: testResults.bytez.available,
-          models: ['google/flan-t5-base', 'google/flan-t5-small'],
-          capabilities: ['text'],
-          error: testResults.bytez.error
         }
       },
       summary: {
-        totalProviders: 4,
+        totalProviders: 3,
         availableProviders: Object.values(testResults).filter(r => r.available).length,
-        textProviders: [testResults.openai, testResults.huggingface, testResults.bytez].filter(r => r.available).length,
+        textProviders: [testResults.openai, testResults.huggingface].filter(r => r.available).length,
         imageProviders: [testResults.huggingface, testResults.deepai].filter(r => r.available).length
       }
     };

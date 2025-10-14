@@ -66,7 +66,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://test-backend-e7d4.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://testbackend-hcoy.onrender.com'),
   },
 }));
 

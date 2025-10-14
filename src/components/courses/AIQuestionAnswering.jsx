@@ -16,7 +16,6 @@ import {
   CheckCircle
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import bytezAPI from '../../services/bytezAPI';
 import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
 
 const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
@@ -57,26 +56,17 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
         trackUsage('QUESTION_ANSWERING');
       }
       
-      const response = await bytezAPI.answerQuestionWithFlanT5(
-        question,
-        context,
-        {
-          max_new_tokens: 200,
-          min_new_tokens: 50,
-          temperature: 0.5
-        }
-      );
-
+      // AI Q&A functionality removed - Bytez API no longer used
       const newQA = {
         id: Date.now(),
         question: question,
-        answer: response.answer,
+        answer: 'AI Question Answering feature is currently unavailable. This feature has been deprecated.',
         context: context || null,
-        model: response.model,
-        success: response.success,
-        confidence: response.confidence,
+        model: 'unavailable',
+        success: false,
+        confidence: 'none',
         createdAt: new Date().toISOString(),
-        isError: !response.success
+        isError: true
       };
 
       setQaHistory([newQA, ...qaHistory]);

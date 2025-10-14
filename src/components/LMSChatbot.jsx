@@ -10,7 +10,6 @@ import {
   Loader2,
   HelpCircle
 } from 'lucide-react';
-import bytezAPI from '../services/bytezAPI';
 
 const LMSChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -115,12 +114,12 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
         { role: 'user', content: userMessage.content }
       ];
 
-      const response = await bytezAPI.chatWithBot(chatMessages);
-      
+      // AI chat functionality removed - Bytez API no longer used
+      // Provide helpful fallback response
       const botMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: response.message || 'I apologize, but I\'m having trouble processing your request right now. Please try again or contact support if the issue persists.',
+        content: 'The AI chatbot feature is currently unavailable. For assistance, please contact our support team or check the Help section.',
         timestamp: new Date()
       };
 

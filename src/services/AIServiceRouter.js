@@ -1,5 +1,4 @@
 // AIServiceRouter.js - Multi-provider AI service router
-import Bytez from 'bytez.js';
 
 class AIServiceRouter {
   constructor() {
@@ -8,26 +7,16 @@ class AIServiceRouter {
       openai: import.meta.env.VITE_OPENAI_API_KEY,
       stability: import.meta.env.VITE_STABILITY_API_KEY,
       elevenlabs: import.meta.env.VITE_ELEVENLABS_API_KEY,
-      azure: {
-        key: import.meta.env.VITE_AZURE_TTS_KEY,
-        region: import.meta.env.VITE_AZURE_REGION
-      },
-      assemblyai: import.meta.env.VITE_ASSEMBLYAI_API_KEY,
-      bytez: import.meta.env.VITE_BYTEZ_API_KEY
+      assemblyai: import.meta.env.VITE_ASSEMBLYAI_API_KEY
     };
     
     // Provider priority order (fallback sequence)
     this.providerPriority = {
-      text: ['openai', 'bytez'],
-      image: ['stability', 'openai', 'bytez'],
-      tts: ['elevenlabs', 'azure', 'bytez'],
-      stt: ['assemblyai', 'openai', 'bytez']
+      text: ['openai'],
+      image: ['stability', 'openai'],
+      tts: ['elevenlabs'],
+      stt: ['assemblyai', 'openai']
     };
-    
-    // Initialize Bytez SDK if key is available
-    if (this.apiKeys.bytez) {
-      this.bytezSDK = new Bytez(this.apiKeys.bytez);
-    }
   }
 
   /**
@@ -45,11 +34,6 @@ class AIServiceRouter {
           case 'openai':
             if (this.apiKeys.openai) {
               return await this.generateTextWithOpenAI(prompt, options);
-            }
-            break;
-          case 'bytez':
-            if (this.bytezSDK) {
-              return await this.generateTextWithBytez(prompt, options);
             }
             break;
         }
@@ -89,25 +73,6 @@ class AIServiceRouter {
     return data.choices[0].message.content;
   }
 
-  /**
-   * Generate text using Bytez SDK as fallback
-   */
-  async generateTextWithBytez(prompt, options = {}) {
-    const model = this.bytezSDK.model(options.model || 'meta-llama/Llama-2-7b-chat-hf');
-    await model.create();
-    
-    const { error, output } = await model.run(prompt, {
-      max_new_tokens: options.maxTokens || 500,
-      temperature: options.temperature || 0.7,
-      ...options
-    });
-    
-    if (error) {
-      throw new Error(`Bytez error: ${error}`);
-    }
-    
-    return output;
-  }
 
   /**
    * Generate image using the best available provider
@@ -131,11 +96,6 @@ class AIServiceRouter {
               return await this.generateImageWithDalle(prompt, options);
             }
             break;
-          case 'bytez':
-            if (this.bytezSDK) {
-              return await this.generateImageWithBytez(prompt, options);
-            }
-            break;
         }
       } catch (error) {
         console.warn(`Image generation failed with ${provider}:`, error.message);
@@ -147,7 +107,6 @@ class AIServiceRouter {
     const availableProviders = [];
     if (this.apiKeys.stability) availableProviders.push('Stability AI');
     if (this.apiKeys.openai) availableProviders.push('OpenAI');
-    if (this.bytezSDK) availableProviders.push('Bytez');
     
     throw new Error(`All image generation providers failed. Available providers: ${availableProviders.join(', ') || 'None'}. Please check your API keys.`);
   }
@@ -208,26 +167,6 @@ class AIServiceRouter {
     return data.data[0].url;
   }
 
-  /**
-   * Generate image using Bytez SDK as fallback
-   */
-  async generateImageWithBytez(prompt, options = {}) {
-    const model = this.bytezSDK.model(options.model || 'dreamlike-art/dreamlike-photoreal-2.0');
-    await model.create();
-    
-    const { error, output } = await model.run(prompt, {
-      width: options.width || 512,
-      height: options.height || 512,
-      ...options
-    });
-    
-    if (error) {
-      throw new Error(`Bytez error: ${error}`);
-    }
-    
-    // Return image URL
-    return Array.isArray(output) ? output[0] : output;
-  }
 
   /**
    * Convert text to speech using the best available provider
@@ -244,16 +183,6 @@ class AIServiceRouter {
           case 'elevenlabs':
             if (this.apiKeys.elevenlabs) {
               return await this.textToSpeechWithElevenLabs(text, options);
-            }
-            break;
-          case 'azure':
-            if (this.apiKeys.azure.key) {
-              return await this.textToSpeechWithAzure(text, options);
-            }
-            break;
-          case 'bytez':
-            if (this.bytezSDK) {
-              return await this.textToSpeechWithBytez(text, options);
             }
             break;
         }
@@ -296,24 +225,6 @@ class AIServiceRouter {
   }
 
   /**
-   * Convert text to speech using Azure TTS
-   */
-  async textToSpeechWithAzure(text, options = {}) {
-    // Note: This is a simplified implementation
-    // In practice, you would need to implement proper Azure TTS integration
-    throw new Error('Azure TTS implementation pending');
-  }
-
-  /**
-   * Convert text to speech using Bytez SDK as fallback
-   */
-  async textToSpeechWithBytez(text, options = {}) {
-    // Note: This is a simplified implementation
-    // Bytez may not have direct TTS support, so we might need to use a different approach
-    throw new Error('Bytez TTS not implemented');
-  }
-
-  /**
    * Convert speech to text using the best available provider
    * @param {ArrayBuffer} audioBuffer - Audio file buffer
    * @param {Object} options - STT options
@@ -333,11 +244,6 @@ class AIServiceRouter {
           case 'openai':
             if (this.apiKeys.openai) {
               return await this.speechToTextWithWhisper(audioBuffer, options);
-            }
-            break;
-          case 'bytez':
-            if (this.bytezSDK) {
-              return await this.speechToTextWithBytez(audioBuffer, options);
             }
             break;
         }
@@ -433,15 +339,6 @@ class AIServiceRouter {
   }
 
   /**
-   * Convert speech to text using Bytez SDK as fallback
-   */
-  async speechToTextWithBytez(audioBuffer, options = {}) {
-    // Note: This is a simplified implementation
-    // Bytez may not have direct STT support, so we might need to use a different approach
-    throw new Error('Bytez STT not implemented');
-  }
-
-  /**
    * Check if a specific provider is configured
    * @param {string} provider - Provider name
    * @returns {boolean} Whether the provider is configured
@@ -454,12 +351,8 @@ class AIServiceRouter {
         return !!this.apiKeys.stability;
       case 'elevenlabs':
         return !!this.apiKeys.elevenlabs;
-      case 'azure':
-        return !!this.apiKeys.azure.key;
       case 'assemblyai':
         return !!this.apiKeys.assemblyai;
-      case 'bytez':
-        return !!this.bytezSDK;
       default:
         return false;
     }

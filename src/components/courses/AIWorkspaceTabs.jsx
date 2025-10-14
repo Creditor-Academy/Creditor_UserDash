@@ -412,29 +412,17 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
     
     setIsSearching(true);
     try {
-      // Import bytezAPI dynamically to avoid circular imports
-      const bytezAPI = (await import('../../services/bytezAPI')).default;
-      
-      const result = await bytezAPI.answerQuestionWithFlanT5(
-        searchQuery,
-        context,
-        {
-          max_new_tokens: 200,
-          min_new_tokens: 50,
-          temperature: 0.5
-        }
-      );
-      
+      // AI Q&A functionality removed - Bytez API no longer used
       const qaResult = {
         id: Date.now(),
         question: searchQuery,
-        answer: result.answer,
+        answer: 'AI search feature is currently unavailable. This feature has been deprecated.',
         context: context || null,
-        model: result.model,
-        success: result.success,
-        confidence: result.confidence,
+        model: 'unavailable',
+        success: false,
+        confidence: 'none',
         type: 'Q&A',
-        difficulty: result.success ? 'Answered' : 'Failed'
+        difficulty: 'Failed'
       };
       
       setSearchResults(prev => [qaResult, ...prev]);
