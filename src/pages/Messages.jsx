@@ -2308,7 +2308,7 @@ function Messages() {
                          
                          // If last message is an image, show icon + Image label
                          if (friend.lastMessageType === 'IMAGE') {
-                           if (isSentByMe && friend.isPrivateGroup) { // Only for private groups
+                           if (isSentByMe) { // For both private chats and private groups
                              return (
                                <span className="flex items-center gap-1 sm:gap-1.5">
                                  <span>You:</span>
@@ -2335,7 +2335,7 @@ function Messages() {
                            }
                          }
 
-                         if (isSentByMe && friend.lastMessage && friend.isPrivateGroup) { // Only for private groups
+                         if (isSentByMe && friend.lastMessage) { // For both private chats and private groups
                            return (
                              <span className="flex items-center gap-1 sm:gap-1.5">
                                <span>You:</span>
@@ -2490,8 +2490,8 @@ function Messages() {
                         ) : */} 
                         {message.type === 'image' ? (
                           <div className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group flex-shrink-0 w-fit min-w-0`}>
-                            {/* Sender name - only show for messages from others (not senderId 0) */}
-                            {message.senderId !== 0 && message.senderName && (
+                            {/* Sender name - only show for messages from others in private groups (not senderId 0) */}
+                            {message.senderId !== 0 && message.senderName && friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
                               <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1 mb-1 block">
                                 {message.senderName}
                               </span>
@@ -2554,8 +2554,8 @@ function Messages() {
                           </div>
                         ) : (
                           <div className="flex flex-col gap-0.5 sm:gap-1 max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%]">
-                            {/* Sender name - only show for messages from others (not senderId 0) */}
-                            {message.senderId !== 0 && message.senderName && (
+                            {/* Sender name - only show for messages from others in private groups (not senderId 0) */}
+                            {message.senderId !== 0 && message.senderName && friends.find(f => f.id === selectedFriend)?.isPrivateGroup && (
                               <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1">
                                 {message.senderName}
                               </span>
