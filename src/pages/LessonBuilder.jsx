@@ -459,6 +459,18 @@ const getToolbarModules = (type = 'full') => {
     };
   }
   
+  // Simplified toolbar for paragraph blocks (no alignment, lists, links, images, clean)
+  if (type === 'paragraph') {
+    return {
+      toolbar: [
+        [{ 'font': Font.whitelist }],
+        [{ 'size': Size.whitelist }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }]
+      ]
+    };
+  }
+  
   if (type === 'full') {
     return {
       toolbar: [
@@ -4459,9 +4471,9 @@ function LessonBuilder() {
         return;
       }
      
-      // Check file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size should be less than 10MB');
+      // Check file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('Image size should be less than 50MB');
         return;
       }
      
@@ -6464,7 +6476,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={getToolbarModules('full')}
+                          modules={getToolbarModules('paragraph')}
                           placeholder="Enter your paragraph text..."
                           style={{ height: '300px' }}
                         />
@@ -6502,7 +6514,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={getToolbarModules('full')}
+                            modules={getToolbarModules('paragraph')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                             className="quill-editor-overflow-visible"
@@ -6541,7 +6553,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={getToolbarModules('full')}
+                            modules={getToolbarModules('paragraph')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                           />
@@ -6683,7 +6695,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={getToolbarModules('full')}
+                      modules={getToolbarModules('paragraph')}
                       placeholder="Type and format your content here"
                       style={{ height: '300px' }}
                     />
@@ -7040,7 +7052,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    JPG, PNG up to 10MB
+                    JPG, PNG up to 50MB
                   </p>
                 </div>
               </div>
