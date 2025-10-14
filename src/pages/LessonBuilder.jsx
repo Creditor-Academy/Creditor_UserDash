@@ -4471,9 +4471,9 @@ function LessonBuilder() {
         return;
       }
      
-      // Check file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size should be less than 10MB');
+      // Check file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('Image size should be less than 50MB');
         return;
       }
      
@@ -7052,7 +7052,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    JPG, PNG up to 10MB
+                    JPG, PNG up to 50MB
                   </p>
                 </div>
               </div>
