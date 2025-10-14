@@ -278,7 +278,10 @@ function Messages() {
           lastMessageType: messageType,
           lastMessageFrom: message.sender_id,
           lastMessageAt: message.timeStamp || message.created_at || new Date().toISOString(),
-          isRead: isSelf || isSystem ? true : false // Mark as read if we sent it or system message, otherwise mark as unread
+          isRead: isSelf || isSystem ? true : false, // Mark as read if we sent it or system message, otherwise mark as unread
+          lastMessageSenderName: isSystem ? 'System' : (isSelf ? 'You' : (message.sender?.first_name && message.sender?.last_name
+            ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
+            : message.sender?.name || message.sender?.email || 'User'))
         };
         
         // Move to top: return updated group first, then all others except the old position
@@ -320,6 +323,7 @@ function Messages() {
                 id: message.id,
                 senderId: 0,
                 senderImage: message.sender?.image || null,
+                senderName: 'You',
                 text: message.type === 'IMAGE' ? null : message.content,
                 image: message.type === 'IMAGE' ? message.content : null,
                 timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
@@ -338,6 +342,11 @@ function Messages() {
             id: message.id,
             senderId: isSystem ? 'system' : String(message.sender_id),
             senderImage: isSystem ? null : (message.sender?.image || null),
+            senderName: isSystem ? 'System' : (
+              message.sender?.first_name && message.sender?.last_name 
+                ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
+                : message.sender?.name || message.sender?.email || 'User'
+            ),
             text: message.type === 'IMAGE' ? null : message.content,
             image: message.type === 'IMAGE' ? message.content : null,
             timestamp: new Date(message.timeStamp || message.created_at || new Date()).toLocaleTimeString([], { 
@@ -592,6 +601,7 @@ function Messages() {
             isRead: c.isRead,
             lastMessageFrom: c.lastMessageFrom,
             lastMessageAt: c.lastMessageAt,
+            lastMessageSenderName: c.lastMessageSenderName || null, // Store sender name if available
           }));
           
           // PRESERVE existing private groups while updating regular conversations
@@ -618,17 +628,20 @@ function Messages() {
       (async () => {
         try {
           const data = await loadPreviousConversation(conversationid);
-          const currentUserId = localStorage.getItem('userId');
-          const mapped = (data?.cov_messages || []).map(m => ({
-            id: m.id,
-            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
-            senderImage: m?.sender?.image || null,
-            text: m.type === 'IMAGE' ? null : m.content,
-            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: m.type === 'IMAGE' ? 'image' : 'text',
-            file: m.type === 'IMAGE' ? m.content : null,
-            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
-          }));
+                          const currentUserId = localStorage.getItem('userId');
+                          const mapped = (data?.cov_messages || []).map(m => ({
+                            id: m.id,
+                            senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
+                            senderImage: m?.sender?.image || null,
+                            senderName: m?.sender?.first_name && m?.sender?.last_name 
+                              ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
+                              : m?.sender?.name || m?.sender?.email || 'User',
+                            text: m.type === 'IMAGE' ? null : m.content,
+                            timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            type: m.type === 'IMAGE' ? 'image' : 'text',
+                            file: m.type === 'IMAGE' ? m.content : null,
+                            status: String(m.sender_id) === String(currentUserId) ? 'sent' : 'delivered', // Default status for loaded messages
+                          }));
           setMessages(mapped);
           setChatLoading(false);
         } catch (e) {
@@ -946,6 +959,9 @@ function Messages() {
           lastMessageFrom: isSystem ? 'System' : (isSelf ? currentUserId : message.sender_id),
           lastMessageAt: message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date().toISOString(),
           isRead: isSelf || isSystem ? true : false, // Mark as read if it's our own message or system message, otherwise mark as unread
+          lastMessageSenderName: isSystem ? 'System' : (isSelf ? 'You' : (message.sender?.first_name && message.sender?.last_name
+            ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
+            : message.sender?.name || message.sender?.email || 'User'))
         };
         
         // Move to top: return updated group first, then all others except the old position
@@ -980,6 +996,7 @@ function Messages() {
                 id: message.id,
                 senderId: 0,
                 senderImage: message.sender?.image || null,
+                senderName: 'You',
                 text: message.type === 'IMAGE' ? null : message.content,
                 timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
                   hour: '2-digit', 
@@ -1002,6 +1019,11 @@ function Messages() {
             id: message.id,
             senderId: isSystem ? 'system' : String(message.sender_id),
             senderImage: isSystem ? null : (message.sender?.image || null),
+            senderName: isSystem ? 'System' : (
+              message.sender?.first_name && message.sender?.last_name 
+                ? `${message.sender.first_name} ${message.sender.last_name}`.trim()
+                : message.sender?.name || message.sender?.email || 'User'
+            ),
             text: message.type === 'IMAGE' ? null : message.content,
             timestamp: new Date(message.createdAt || message.created_at || message.timeStamp || message.timestamp || new Date()).toLocaleTimeString([], { 
               hour: '2-digit', 
@@ -1058,6 +1080,7 @@ function Messages() {
                 senderId: 0,
                 text: type === 'IMAGE' ? null : message,
                 senderImage: image || null,
+                senderName: 'You',
                 timestamp: new Date().toLocaleTimeString([], { 
                   hour: '2-digit', 
                   minute: '2-digit' 
@@ -1071,6 +1094,11 @@ function Messages() {
         });
       } else {
         // Message from someone else - add as new message
+        // Try to get sender name from friends list or allUsers
+        const currentFriend = friends.find(f => String(f.conversationId || f.id) === String(conversationid));
+        const senderUser = allUsers.find(u => String(u.id) === String(from));
+        const senderName = currentFriend?.name || senderUser?.name || 'User';
+        
         setMessages(prev => [
           ...prev,
           {
@@ -1078,6 +1106,7 @@ function Messages() {
             senderId: String(from),
             text: type === 'IMAGE' ? null : message,
             senderImage: image || null,
+            senderName: senderName,
             timestamp: new Date().toLocaleTimeString([], { 
               hour: '2-digit', 
               minute: '2-digit' 
@@ -1119,6 +1148,7 @@ function Messages() {
           isRead: isOpen ? true : updatePayload.isRead,
           lastMessageFrom: updatePayload.lastMessageFrom,
           lastMessageAt: updatePayload.lastMessageAt,
+          lastMessageSenderName: updatePayload.lastMessageSenderName || null,
         };
         
         if (existingIndex >= 0) {
@@ -1239,6 +1269,9 @@ function Messages() {
                 lastMessageType: lastMsg.type || 'TEXT',
                 lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
                 lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
+                lastMessageSenderName: isSelf ? 'You' : (lastMsg.sender?.first_name && lastMsg.sender?.last_name
+                  ? `${lastMsg.sender.first_name} ${lastMsg.sender.last_name}`.trim()
+                  : lastMsg.sender?.name || lastMsg.sender?.email || 'User'),
               };
             }
             return null;
@@ -1265,6 +1298,7 @@ function Messages() {
                   lastMessageType: lastMsgData.lastMessageType,
                   lastMessageFrom: lastMsgData.lastMessageFrom,
                   lastMessageAt: lastMsgData.lastMessageAt,
+                  lastMessageSenderName: lastMsgData.lastMessageSenderName,
                 };
               }
             }
@@ -1328,6 +1362,7 @@ function Messages() {
             lastMessageFrom: c.lastMessageFrom,
             lastMessageAt: c.lastMessageAt,
             isGroup: c.isGroup || false,
+            lastMessageSenderName: c.lastMessageSenderName || null, // Store sender name if available
           }));
           allConversations = [...allConversations, ...normalizedFriends];
         }
@@ -1350,6 +1385,7 @@ function Messages() {
             isAdmin: true,
             memberCount: privateGroupRes.data.member_count || 1,
             description: privateGroupRes.data.description,
+            lastMessageSenderName: 'System',
           };
           allConversations = [privateGroup, ...allConversations];
         }
@@ -1372,6 +1408,7 @@ function Messages() {
             isAdmin: false,
             memberCount: group.member_count || 1,
             description: group.description,
+            lastMessageSenderName: 'System',
           }));
           allConversations = [...allConversations, ...memberGroups];
         }
@@ -1407,6 +1444,9 @@ function Messages() {
                   lastMessageType: lastMsg.type || 'TEXT',
                   lastMessageFrom: isSelf ? currentUserId : lastMsg.sender_id,
                   lastMessageAt: lastMsg.createdAt || lastMsg.created_at || lastMsg.timeStamp || lastMsg.timestamp || new Date().toISOString(),
+                  lastMessageSenderName: isSelf ? 'You' : (lastMsg.sender?.first_name && lastMsg.sender?.last_name
+                    ? `${lastMsg.sender.first_name} ${lastMsg.sender.last_name}`.trim()
+                    : lastMsg.sender?.name || lastMsg.sender?.email || 'User'),
                 };
               }
               return null;
@@ -1429,6 +1469,7 @@ function Messages() {
                   lastMessageType: lastMsgData.lastMessageType,
                   lastMessageFrom: lastMsgData.lastMessageFrom,
                   lastMessageAt: lastMsgData.lastMessageAt,
+                  lastMessageSenderName: lastMsgData.lastMessageSenderName,
                 };
               }
             }
@@ -1494,6 +1535,7 @@ function Messages() {
           file: pendingImage.previewUrl,
           fileName: pendingImage.name,
           fileType: 'image',
+          senderName: 'You',
           timestamp: new Date().toLocaleTimeString([], { 
             hour: '2-digit', 
             minute: '2-digit' 
@@ -1536,6 +1578,7 @@ function Messages() {
                     lastMessageFrom: localStorage.getItem('userId'),
                     lastMessageAt: response.data.createdAt || response.data.created_at || response.data.timeStamp || response.data.timestamp || new Date().toISOString(),
                     isRead: true,
+                    lastMessageSenderName: 'You',
                   };
                 }
                 return f;
@@ -1571,6 +1614,7 @@ function Messages() {
         senderId: 0,
           text: messageText,
           senderImage: null,
+          senderName: 'You',
         timestamp: new Date().toLocaleTimeString([], { 
           hour: '2-digit', 
           minute: '2-digit' 
@@ -1615,6 +1659,7 @@ function Messages() {
                     lastMessageFrom: localStorage.getItem('userId'),
                     lastMessageAt: response.data.createdAt || response.data.created_at || response.data.timeStamp || response.data.timestamp || new Date().toISOString(),
                     isRead: true,
+                    lastMessageSenderName: 'You',
                   };
                 }
                 return f;
@@ -2148,6 +2193,11 @@ function Messages() {
                                 id: m.id,
                                 senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
                                 senderImage: m?.sender?.image || null,
+                                senderName: String(m.sender_id) === String(currentUserId) 
+                                  ? 'You'
+                                  : (m?.sender?.first_name && m?.sender?.last_name 
+                                    ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
+                                    : m?.sender?.name || m?.sender?.email || 'User'),
                                 text: (m.type || m.message_type) === 'IMAGE' ? null : (m.content || m.message || ''),
                                 timestamp: isNaN(ts.getTime()) 
                                   ? new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -2163,6 +2213,11 @@ function Messages() {
                             id: m.id,
                             senderId: String(m.sender_id) === String(currentUserId) ? 0 : String(m.sender_id),
                             senderImage: m?.sender?.image || null,
+                            senderName: String(m.sender_id) === String(currentUserId) 
+                              ? 'You'
+                              : (m?.sender?.first_name && m?.sender?.last_name 
+                                ? `${m.sender.first_name} ${m.sender.last_name}`.trim()
+                                : m?.sender?.name || m?.sender?.email || 'User'),
                             text: m.type === 'IMAGE' ? null : m.content,
                             timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                             type: m.type === 'IMAGE' ? 'image' : 'text',
@@ -2253,15 +2308,34 @@ function Messages() {
                          
                          // If last message is an image, show icon + Image label
                          if (friend.lastMessageType === 'IMAGE') {
-                           return (
-                             <span className="flex items-center gap-1 sm:gap-1.5">
-                               <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
-                               <span>Image</span>
-                             </span>
-                           );
+                           if (isSentByMe && friend.isPrivateGroup) { // Only for private groups
+                             return (
+                               <span className="flex items-center gap-1 sm:gap-1.5">
+                                 <span>You:</span>
+                                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                 <span>Image</span>
+                                 <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
+                               </span>
+                             );
+                           } else if (!isSentByMe && friend.isPrivateGroup && friend.lastMessageSenderName) { // For others' images in private groups
+                             return (
+                               <span className="flex items-center gap-1 sm:gap-1.5">
+                                 <span className="font-medium text-purple-600">{friend.lastMessageSenderName}:</span>
+                                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                 <span>Image</span>
+                               </span>
+                             );
+                           } else { // Default for non-private group images or if sender name not available
+                             return (
+                               <span className="flex items-center gap-1 sm:gap-1.5">
+                                 <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground" />
+                                 <span>Image</span>
+                               </span>
+                             );
+                           }
                          }
 
-                         if (isSentByMe && friend.lastMessage) {
+                         if (isSentByMe && friend.lastMessage && friend.isPrivateGroup) { // Only for private groups
                            return (
                              <span className="flex items-center gap-1 sm:gap-1.5">
                                <span>You:</span>
@@ -2270,6 +2344,17 @@ function Messages() {
                              </span>
                            );
                          }
+
+                         // For messages from others in private groups, show sender name if available
+                         if (friend.isPrivateGroup && friend.lastMessageFrom && String(friend.lastMessageFrom) !== String(currentUserId) && friend.lastMessageSenderName) {
+                           return (
+                             <span className="flex items-center gap-1 sm:gap-1.5">
+                               <span className="font-medium text-purple-600">{friend.lastMessageSenderName}:</span>
+                               <span>{getHalfPreview(friend.lastMessage)}</span>
+                             </span>
+                           );
+                         }
+
                           return getHalfPreview(friend.lastMessage || 'Start a conversation');
                        })()}
                     </p>
@@ -2380,12 +2465,14 @@ function Messages() {
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         {message.senderId !== 0 && (
-                          <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 mt-1 ring-1 sm:ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110 flex-shrink-0">
-                            <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
-                            <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold text-[10px] sm:text-xs md:text-sm">
-                              {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="flex flex-col items-center gap-0.5 sm:gap-1">
+                            <Avatar className="h-3 w-3 sm:h-4 md:h-5 lg:h-6 xl:h-8 w-3 sm:w-4 md:w-5 lg:w-6 xl:w-8 ring-1 sm:ring-2 ring-white shadow-md hover:ring-purple-200 transition-all duration-200 hover:scale-110 flex-shrink-0">
+                              <AvatarImage src={message.senderImage || friends.find((f) => f.id === selectedFriend)?.avatar} />
+                              <AvatarFallback className="bg-gradient-to-br from-purple-100 to-purple-200 text-purple-700 font-semibold text-[10px] sm:text-xs md:text-sm">
+                                {friends.find((f) => f.id === selectedFriend)?.name?.[0] || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
                         )}
                         
                         {/* Voice message rendering - commented out */}
@@ -2403,6 +2490,12 @@ function Messages() {
                         ) : */} 
                         {message.type === 'image' ? (
                           <div className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group flex-shrink-0 w-fit min-w-0`}>
+                            {/* Sender name - only show for messages from others (not senderId 0) */}
+                            {message.senderId !== 0 && message.senderName && (
+                              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1 mb-1 block">
+                                {message.senderName}
+                              </span>
+                            )}
                             <div className={`relative rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
                               message.senderId === 0 
                                 ? "border-2 border-purple-300/30 shadow-lg shadow-purple-500/25" 
@@ -2460,13 +2553,20 @@ function Messages() {
                             </div>
                           </div>
                         ) : (
-                          <div
-                            className={`max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%] group relative transition-all duration-300 hover:scale-[1.02] flex-shrink-0 w-fit min-w-0 ${
-                              message.senderId === 0
-                                ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40" 
-                                : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
-                            } rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl px-1 sm:px-1.5 md:px-2 lg:px-2.5 xl:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2 xl:py-2.5 shadow-sm backdrop-blur-sm`}
-                          >
+                          <div className="flex flex-col gap-0.5 sm:gap-1 max-w-[95%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[68%]">
+                            {/* Sender name - only show for messages from others (not senderId 0) */}
+                            {message.senderId !== 0 && message.senderName && (
+                              <span className="text-[8px] sm:text-[9px] md:text-[10px] font-semibold text-purple-600 ml-1">
+                                {message.senderName}
+                              </span>
+                            )}
+                            <div
+                              className={`group relative transition-all duration-300 hover:scale-[1.02] flex-shrink-0 w-fit min-w-0 ${
+                                message.senderId === 0
+                                  ? "bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40" 
+                                  : "bg-gradient-to-br from-white to-gray-50 border border-gray-200/80 shadow-md shadow-gray-200/60 hover:shadow-gray-300/60"
+                              } rounded-sm sm:rounded-md md:rounded-lg lg:rounded-xl xl:rounded-2xl px-1 sm:px-1.5 md:px-2 lg:px-2.5 xl:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-2 xl:py-2.5 shadow-sm backdrop-blur-sm`}
+                            >
                             {editingMessageId === message.id ? (
                               <div className="space-y-2">
                                 <Input
@@ -2570,6 +2670,7 @@ function Messages() {
                                   </Button>
                                 )}
                               </div>
+                            </div>
                             </div>
                           </div>
                         )}
