@@ -202,8 +202,8 @@ export function CatalogPage() {
     } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
                (catalogName.includes("remedy") || catalogName.includes("private merchant"))) {
       return 14000; // Business credit + I want Remedy Now + Private Merchant
-    } else if (catalogName.includes("complete financial freedom")) {
-      return 14000; // Complete Financial Freedom
+    } else if (catalogName.includes("financial freedom")) {
+      return 14000; // Financial Freedom
     } else if (catalogName.includes("master class")) {
       return 69; // Master Class
     }
@@ -248,14 +248,14 @@ export function CatalogPage() {
   const isMasterClass = (catalog) => (catalog.name || "").toLowerCase().includes("master class");
   const masterClasses = filteredCatalogs.filter(isMasterClass);
 
-  // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want, Complete Financial Freedom)
+  // 3. Premium Courses (Become Private + SOV 101, Operate Private, Business credit + I want, Financial Freedom)
   const premiumCourseNames = [
     "Become Private",
     "SOV 101", 
     "Operate Private",
     "Business credit",
     "I want",
-    "Complete Financial Freedom"
+    "Financial Freedom"
   ];
   const isPremiumCourse = (catalog) => premiumCourseNames.some(name => 
     (catalog.name || "").toLowerCase().includes(name.toLowerCase())
@@ -270,7 +270,7 @@ export function CatalogPage() {
       return 2; // Second priority
     } else if (name.includes("business credit") || name.includes("i want")) {
       return 3; // Third priority
-    } else if (name.includes("complete financial freedom")) {
+    } else if (name.includes("financial freedom")) {
       return 4; // Fourth priority
     }
     return 5; // Default for any other premium courses
@@ -423,7 +423,7 @@ export function CatalogPage() {
               </Link>
             </Button>
             
-            {catalogPrice > 0 && !isEnrolled && !isMasterClass(catalog) && (
+            {catalogPrice > 0 && !isEnrolled && (!isMasterClass(catalog) || (isMasterClass(catalog) && (catalog.name || "").toLowerCase().includes("private merchant"))) && (
               <Button
                 onClick={(e) => {
                   e.preventDefault();
@@ -478,7 +478,8 @@ export function CatalogPage() {
             </div>
           ) : (
             <div className="space-y-12">
-              {freeCourses.length > 0 && (
+              {/* Free Courses section commented out - courses moved elsewhere */}
+              {/* {freeCourses.length > 0 && (
                 <div>
                   <div className="flex flex-col mb-6">
                     <div className="flex items-center mb-2">
@@ -501,7 +502,7 @@ export function CatalogPage() {
                     ))}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {masterClasses.length > 0 && (
                 <div>

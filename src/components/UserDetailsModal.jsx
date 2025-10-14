@@ -45,13 +45,28 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [coursePrices, setCoursePrices] = React.useState({});
   const [totalModuleCounts, setTotalModuleCounts] = React.useState({});
   const [expandedGrouped, setExpandedGrouped] = React.useState({});
+  const [expandedProgress, setExpandedProgress] = React.useState({
+    completed: false,
+    modules: false,
+    quizzes: false,
+    enrolled: false,
+    pending: false
+  });
+
+  // User progress data from backend
+  const [userProgressData, setUserProgressData] = React.useState(null);
+  const [loadingUserProgress, setLoadingUserProgress] = React.useState(false);
+  const [userProgressError, setUserProgressError] = React.useState(null);
 
   // Fetch courses for the selected user when modal opens or user changes
   React.useEffect(() => {
     if (isOpen && user?.id) {
       fetchCourses();
+      if (isInstructorOrAdmin) {
+        fetchUserProgressData();
+      }
     }
-  }, [isOpen, user?.id]);
+  }, [isOpen, user?.id, isInstructorOrAdmin]);
 
   const fetchCourses = async () => {
     setLoadingCourses(true);
@@ -113,6 +128,27 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       setCoursesError("Failed to load courses");
     } finally {
       setLoadingCourses(false);
+    }
+  };
+
+  // Fetch user progress data for instructors/admins
+  const fetchUserProgressData = async () => {
+    setLoadingUserProgress(true);
+    setUserProgressError(null);
+    try {
+      const { api } = await import('@/services/apiClient');
+      const response = await api.post('/api/instructor/getUserProgressData', {
+        userId: user.id
+      });
+
+      const progressData = response?.data?.data || null;
+      setUserProgressData(progressData);
+      console.log('[UserDetailsModal] User progress data fetched:', progressData);
+    } catch (error) {
+      console.error('[UserDetailsModal] Failed to fetch user progress:', error);
+      setUserProgressError('Failed to load progress data');
+    } finally {
+      setLoadingUserProgress(false);
     }
   };
   
@@ -1051,10 +1087,10 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                           key={module.id || index} 
                                 className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
                         >
-                                <div className="p-4">
+                          <div className="p-4">
                             <div className="flex items-start gap-4">
                                     <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-200">
-                                      <BookOpenCheck className="h-4 w-4 text-white" />
+                                <BookOpenCheck className="h-4 w-4 text-white" />
                               </div>
                               <div className="flex-1 min-w-0">
                                       <h4 className="text-base font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 mb-2">
@@ -1127,6 +1163,409 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
               </CardContent>
             </Card>
           )}
+
+          {/* Progress Overview - Only for instructors/admins */}
+          {isInstructorOrAdmin && (
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
+              <CardHeader className="pb-4 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
+                  Progress Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingUserProgress ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-sm text-gray-600">Loading progress data...</p>
+                    </div>
+                  </div>
+                ) : userProgressError ? (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{userProgressError}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 sm:space-y-4">
+                    {/* Completed Courses */}
+                    <div className="bg-blue-50 rounded-xl border border-blue-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, completed: !prev.completed }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                            <CheckCircle className="text-blue-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-blue-600 font-semibold text-sm block truncate">Completed</span>
+                            <p className="text-blue-600 text-xs mt-0.5 truncate">Courses finished</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-blue-700">
+                            {userProgressData?.completedCoursesCount || 0}
+                          </p>
+                          {expandedProgress.completed ? (
+                            <ChevronDown className="text-blue-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-blue-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.completed && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.completedCourses?.length > 0 ? (
+                              userProgressData.completedCourses.map((courseProgress) => (
+                                <div key={courseProgress.id} className="bg-white rounded-lg p-3 border border-blue-200 hover:shadow-sm transition-all duration-200 hover:border-blue-300">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate">{courseProgress.course?.title || 'Untitled Course'}</h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Completed: {courseProgress.completed_at ? new Date(courseProgress.completed_at).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                      <div className="mt-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                          <div 
+                                            className="bg-green-600 h-1.5 rounded-full transition-all duration-300" 
+                                            style={{ width: `${courseProgress.progress || 0}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-1">{courseProgress.progress || 0}% Complete</span>
+                                      </div>
+                                    </div>
+                                    <Badge className="bg-green-100 text-green-700 border-green-200 flex-shrink-0 text-xs">
+                                      <CheckCircle className="h-3 w-3 mr-1" /> Done
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <CheckCircle className="h-8 w-8 text-gray-300" />
+                                  <p>No completed courses yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Modules Completed */}
+                    <div className="bg-emerald-50 rounded-xl border border-emerald-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, modules: !prev.modules }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+                            <BookOpen className="text-emerald-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-emerald-600 font-semibold text-sm block truncate">Modules</span>
+                            <p className="text-emerald-600 text-xs mt-0.5 truncate">Modules Completed</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-emerald-700">
+                            {userProgressData?.modulesCompletedCount || 0}
+                          </p>
+                          {expandedProgress.modules ? (
+                            <ChevronDown className="text-emerald-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-emerald-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.modules && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.modulesCompleted?.length > 0 ? (
+                              userProgressData.modulesCompleted.map((moduleProgress) => (
+                                <div key={moduleProgress.id} className="bg-white rounded-lg p-3 border border-emerald-200 hover:shadow-sm transition-all duration-200 hover:border-emerald-300">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                        {moduleProgress.module?.title || 'Untitled Module'}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Completed: {moduleProgress.completed_at ? new Date(moduleProgress.completed_at).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                      <div className="mt-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                          <div 
+                                            className="bg-emerald-600 h-1.5 rounded-full transition-all duration-300" 
+                                            style={{ width: `${moduleProgress.progress || 0}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-1">{moduleProgress.progress || 0}% Complete</span>
+                                      </div>
+                                    </div>
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 flex-shrink-0 text-xs">
+                                      <BookOpen className="h-3 w-3 mr-1" /> Done
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <BookOpen className="h-8 w-8 text-gray-300" />
+                                  <p>No completed modules yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quizzes Completed */}
+                    <div className="bg-orange-50 rounded-xl border border-orange-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-orange-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, quizzes: !prev.quizzes }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg flex-shrink-0">
+                            <Award className="text-orange-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-orange-600 font-semibold text-sm block truncate">Quizzes</span>
+                            <p className="text-orange-600 text-xs mt-0.5 truncate">Quiz Completed</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-orange-700">
+                            {userProgressData?.completedQuizzesCount || 0}
+                          </p>
+                          {expandedProgress.quizzes ? (
+                            <ChevronDown className="text-orange-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-orange-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.quizzes && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.completedQuizzes?.length > 0 ? (
+                              userProgressData.completedQuizzes.map((quizAttempt) => (
+                                <div key={quizAttempt.id} className="bg-white rounded-lg p-3 border border-orange-200 hover:shadow-sm transition-all duration-200 hover:border-orange-300">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                        {quizAttempt.quiz?.title || 'Untitled Quiz'}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Type: {quizAttempt.quiz?.type || 'N/A'} • Submitted: {quizAttempt.submitted_at ? new Date(quizAttempt.submitted_at).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                      <div className="mt-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                          <div 
+                                            className={`h-1.5 rounded-full transition-all duration-300 ${quizAttempt.passed ? 'bg-green-600' : 'bg-red-600'}`}
+                                            style={{ width: `${(quizAttempt.score / (quizAttempt.quiz?.max_score || 100)) * 100}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-1">
+                                          Score: {quizAttempt.score}/{quizAttempt.quiz?.max_score || 100} 
+                                          ({quizAttempt.passed ? 'Passed' : 'Failed'})
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <Badge className={`${quizAttempt.passed ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'} flex-shrink-0 text-xs`}>
+                                      {quizAttempt.passed ? (
+                                        <><CheckCircle className="h-3 w-3 mr-1" /> Passed</>
+                                      ) : (
+                                        <><XCircle className="h-3 w-3 mr-1" /> Failed</>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Award className="h-8 w-8 text-gray-300" />
+                                  <p>No completed quizzes yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Enrolled Courses */}
+                    <div className="bg-purple-50 rounded-xl border border-purple-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-purple-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, enrolled: !prev.enrolled }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                            <BookOpen className="text-purple-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-purple-600 font-semibold text-sm block truncate">Enrolled</span>
+                            <p className="text-purple-600 text-xs mt-0.5 truncate">Total Courses</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-purple-700">
+                            {userProgressData?.allEnrolledCoursesCount || 0}
+                          </p>
+                          {expandedProgress.enrolled ? (
+                            <ChevronDown className="text-purple-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-purple-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.enrolled && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.allEnrolledCourses?.length > 0 ? (
+                              userProgressData.allEnrolledCourses.map((enrollment) => {
+                                // Find if this course is completed
+                                const completedCourse = userProgressData.completedCourses?.find(
+                                  c => c.course_id === enrollment.course_id
+                                );
+                                const progress = completedCourse ? completedCourse.progress : 0;
+                                const isCompleted = completedCourse ? completedCourse.completed : false;
+                                
+                                return (
+                                  <div key={enrollment.course_id} className="bg-white rounded-lg p-3 border border-purple-200 hover:shadow-sm transition-all duration-200 hover:border-purple-300">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                          {enrollment.course?.title || 'Untitled Course'}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Enrolled: {enrollment.subscription_start ? new Date(enrollment.subscription_start).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <div className="mt-2">
+                                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                            <div 
+                                              className={`h-1.5 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-600' : 'bg-purple-600'}`}
+                                              style={{ width: `${progress}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-xs text-gray-500 mt-1">
+                                            {progress}% Complete {isCompleted ? '(Finished)' : '(In Progress)'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <Badge className={`${isCompleted ? 'bg-green-100 text-green-700 border-green-200' : 'bg-purple-100 text-purple-700 border-purple-200'} flex-shrink-0 text-xs`}>
+                                        {isCompleted ? (
+                                          <><CheckCircle className="h-3 w-3 mr-1" /> Completed</>
+                                        ) : (
+                                          <>{progress}%</>
+                                        )}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <BookOpen className="h-8 w-8 text-gray-300" />
+                                  <p>No enrolled courses yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pending Courses */}
+                    <div className="bg-yellow-50 rounded-xl border border-yellow-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-yellow-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, pending: !prev.pending }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+                            <Clock className="text-yellow-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-yellow-600 font-semibold text-sm block truncate">Pending</span>
+                            <p className="text-yellow-600 text-xs mt-0.5 truncate">Courses Remaining</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-yellow-700">
+                            {userProgressData?.pendingCourseCount || 0}
+                          </p>
+                          {expandedProgress.pending ? (
+                            <ChevronDown className="text-yellow-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-yellow-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.pending && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.pendingCourse?.length > 0 ? (
+                              userProgressData.pendingCourse.map((enrollment) => {
+                                // Pending courses don't have progress yet
+                                const progress = 0;
+                                
+                                return (
+                                  <div key={enrollment.course_id} className="bg-white rounded-lg p-3 border border-yellow-200 hover:shadow-sm transition-all duration-200 hover:border-yellow-300">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                          {enrollment.course?.title || 'Untitled Course'}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Enrolled: {enrollment.subscription_start ? new Date(enrollment.subscription_start).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <div className="mt-2">
+                                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                            <div 
+                                              className="bg-yellow-600 h-1.5 rounded-full transition-all duration-300" 
+                                              style={{ width: `${progress}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-xs text-gray-500 mt-1">
+                                            {progress}% Complete (Not Started)
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 flex-shrink-0 text-xs">
+                                        <Clock className="h-3 w-3 mr-1" /> Pending
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Clock className="h-8 w-8 text-gray-300" />
+                                  <p>No pending courses</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Payment Status Section - Only for instructors/admins */}
           {isInstructorOrAdmin && ((Array.isArray(user?.payments) && user.payments.length > 0) || (Array.isArray(user?.subscriptions) && user.subscriptions.length > 0)) ? (
             <Card className="shadow-sm border border-gray-100">

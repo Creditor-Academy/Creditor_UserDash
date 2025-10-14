@@ -360,20 +360,20 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       {checkoutOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-3xl p-3">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900">Checkout</h4>
+          <div className="relative bg-white rounded-none sm:rounded-xl shadow-lg border-0 sm:border border-gray-200 w-full h-full sm:w-full sm:h-auto max-w-none sm:max-w-3xl max-h-none sm:max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-4 sm:py-3 border-b sticky top-0 bg-white">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900">Checkout</h4>
               <button aria-label="Close" onClick={()=>setCheckoutOpen(false)} className="px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">Close</button>
             </div>
-            <div className="space-y-4">
+            <div className="overflow-y-auto p-4 sm:p-4 space-y-3 sm:space-y-4 h-[calc(100%-56px)] sm:h-auto">
               {checkoutStep === "packs" && (
                 <>
                   <div>
                     <div className="text-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
-                      <p className="text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       {/* $50 Pack */}
                       <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack50" 
@@ -393,8 +393,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                             : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$50</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">250 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$50</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">250 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -433,8 +433,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                             : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$100</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">500 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$100</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">500 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -473,8 +473,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                             : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$500</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">2,500 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$500</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">2,500 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -513,8 +513,8 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                             : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$2,800</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">14,000 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$2,800</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">14,000 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -539,14 +539,14 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="text-sm text-gray-600">Selected credits</div>
-                        <div className="text-3xl font-bold text-gray-900">{formatNumber(derived.credits)}</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-gray-900">{formatNumber(derived.credits)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-gray-600">Total due</div>
-                        <div className="text-lg font-semibold text-gray-700">${derived.price}</div>
+                        <div className="text-base sm:text-lg font-semibold text-gray-700">${derived.price}</div>
                       </div>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <button 
                         onClick={()=>setCheckoutOpen(false)} 
                         className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"

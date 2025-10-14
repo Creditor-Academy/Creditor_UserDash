@@ -45,7 +45,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const navigate = useNavigate();
 
   // Display helper: format credit points using USD-style units (K, M, B, T)
-  // Clamp the numeric part to a maximum of 100 and append '+' if clamped
+  // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
   const formatCreditPoints = (value) => {
     const num = Number(value) || 0;
     const abs = Math.abs(num);
@@ -86,10 +86,18 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       }
     }
 
-    // For small values, clamp raw number to 100 as well
-    const clampedSmall = Math.min(abs, 100);
-    const suffixPlus = abs > 100 ? '+' : '';
-    return `${sign}${clampedSmall}${suffixPlus}`;
+    // For values 100-999, show exact number without clamping
+    if (abs >= 100 && abs < 1000) {
+      return `${sign}${Math.round(abs)}`;
+    }
+
+    // For small values (< 100), show exact number
+    // For large values (>= 1000), clamp to 100 and add +
+    if (abs < 100) {
+      return `${sign}${Math.round(abs)}`;
+    } else {
+      return `${sign}100+`;
+    }
   };
 
   // Listen for a global request to open the credits modal
@@ -517,7 +525,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 LMS Athena 
               </h1>
             </button>
@@ -706,15 +714,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
-              className="group relative px-3 py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-2 shadow-sm hover:shadow transition-all"
+              className="group relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-1.5 sm:gap-2 shadow-sm hover:shadow transition-all"
               aria-label="Open credits purchase"
               title="Manage credits"
             >
-              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[10px] font-extrabold shadow-inner">
+              <span className="inline-flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[9px] sm:text-[10px] font-extrabold shadow-inner">
                 CP
               </span>
-              <span className="text-sm font-semibold tabular-nums tracking-wide">{formatCreditPoints(balance)}</span>
-              <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
+              <span className="text-xs sm:text-sm font-semibold tabular-nums tracking-wide">{formatCreditPoints(balance)}</span>
+              <span className="ml-1 inline-flex items-center justify-center h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
             </button>
             
             {/* Notification Bell */}
@@ -846,7 +854,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                     <div className="space-y-2">
                       {searchResults.results.users.map((user, index) => {
                         const userRole = user.user_roles?.[0]?.role || 'user';
-                        const roleColor = userRole === 'admin' ; 'bg-red-100 text-red-800' ; 
+                        const roleColor = userRole === 'admin' ? 'bg-red-100 text-red-800' : 
                                         userRole === 'instructor' ? 'bg-blue-100 text-blue-800' : 
                                         'bg-gray-100 text-gray-600';
                         const isSelected = selectedResultIndex === searchResults.results.courses.length + index;

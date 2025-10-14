@@ -8,27 +8,27 @@ function ComingSoonPopover() {
 
   const features = [
     {
-      title: "Private Chat",
-      description: "One‑to‑one private chats are launching to enhance direct communication and user interaction.",
+      title: "User Private Group",
+      description: "Introducing private groups where users can collaborate, share, and interact securely within a closed space.",
       tags: [
-        { label: "Private", color: "amber" },
-        { label: "Chat", color: "blue" },
-        { label: "Direct", color: "indigo" }
+        { label: "Group", color: "amber" },
+        { label: "Private", color: "blue" },
+        { label: "Collaboration", color: "indigo" }
       ],
-      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/P_banner.PNG",
-     
+      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/User+Private+group.jfif",
     },
     {
-      title: "Scenario - Decision Tree Assessment",
-      description: "We're launching scenario-decision tree based assessments for better learning experiences.",
+      title: "Progress Bar",
+      description: "We’re launching progress bars to help users track their learning journey and stay motivated.",
       tags: [
-        { label: "Scenario Assessment", color: "green" },
-        { label: "Learning", color: "purple" }
+        { label: "Progress", color: "green" },
+        { label: "Learning", color: "purple" },
+        { label: "Motivation", color: "blue" }
       ],
-      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/S_banner.PNG",
-     
+      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/progress+bar+banner.png",
     }
   ];
+  
 
   useEffect(() => {
     const onScroll = () => {
@@ -90,9 +90,8 @@ function ComingSoonPopover() {
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          <span className="absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-black/70 text-white border border-white/30 shadow backdrop-blur-sm">
-            Coming Soon
-          </span>
+          
+
           <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] font-medium text-white">
             <span className="inline-block w-2 h-2 bg-emerald-300 rounded-full animate-pulse" /> {feature.badge}
           </span>
