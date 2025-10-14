@@ -688,6 +688,8 @@ function LessonBuilder() {
   const [youTubeTitle, setYouTubeTitle] = useState('');
   const [youTubeDescription, setYouTubeDescription] = useState('');
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
+  const [imageAlignment, setImageAlignment] = useState('left'); // 'left' or 'right' for image & text blocks
+  const [standaloneImageAlignment, setStandaloneImageAlignment] = useState('center'); // 'left', 'center', 'right' for standalone images
   
 
 
@@ -699,6 +701,7 @@ function LessonBuilder() {
       description: 'Image with text content side by side',
       icon: <Image className="h-6 w-6" />,
       layout: 'side-by-side',
+      alignment: 'left', // Default alignment
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
         text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy. The pains of the past are behind us. The future has yet to unfold. But the now is full of beauty always waiting for our attention.'
@@ -721,6 +724,7 @@ function LessonBuilder() {
       description: 'Centered image with optional caption',
       icon: <Image className="h-6 w-6" />,
       layout: 'centered',
+      alignment: 'center', // Default alignment
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
         text: 'A peaceful moment captured in time'
@@ -2777,13 +2781,18 @@ function LessonBuilder() {
           const caption = (block.text || block.imageDescription || block.details?.caption || '').toString();
           const title = block.imageTitle || block.details?.alt_text || 'Image';
           if (layout === 'side-by-side') {
+            const alignment = block.alignment || 'left';
+            const imageFirst = alignment === 'left';
+            const imageOrder = imageFirst ? 'order-1' : 'order-2';
+            const textOrder = imageFirst ? 'order-2' : 'order-1';
+            
             html = `
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                  <div>
+                  <div class="${imageOrder}">
                     <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                   </div>
-                  <div>
+                  <div class="${textOrder}">
                     ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
                   </div>
                 </div>
@@ -3424,12 +3433,17 @@ function LessonBuilder() {
               };
 
               if (layout === 'side-by-side') {
+                const alignment = block.alignment || 'left';
+                const imageFirst = alignment === 'left';
+                const imageOrder = imageFirst ? 'order-1' : 'order-2';
+                const textOrder = imageFirst ? 'order-2' : 'order-1';
+                
                 htmlContent = `
                   <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                    <div>
+                    <div class="${imageOrder}">
                       <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                     </div>
-                    <div>
+                    <div class="${textOrder}">
                       ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
                     </div>
                   </div>
@@ -3449,9 +3463,18 @@ function LessonBuilder() {
                   </div>
                 `;
               } else { // centered or default
+                // Handle standalone image alignment
+                const alignment = block.alignment || 'center';
+                let alignmentClass = 'text-center'; // default
+                if (alignment === 'left') {
+                  alignmentClass = 'text-left';
+                } else if (alignment === 'right') {
+                  alignmentClass = 'text-right';
+                }
+                
                 htmlContent = `
-                  <div class="text-center">
-                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+                  <div class="${alignmentClass}">
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
                     ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                   </div>
                 `;
@@ -3635,13 +3658,18 @@ function LessonBuilder() {
           const layout = block.layout || 'centered';
           const textContent = (block.text || block.imageDescription || '').toString();
           if (layout === 'side-by-side') {
+            const alignment = block.alignment || 'left';
+            const imageFirst = alignment === 'left';
+            const imageOrder = imageFirst ? 'order-1' : 'order-2';
+            const textOrder = imageFirst ? 'order-2' : 'order-1';
+            
             htmlContent = `
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                  <div>
+                  <div class="${imageOrder}">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
                   </div>
-                  <div>
+                  <div class="${textOrder}">
                     ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
                   </div>
                 </div>
@@ -3663,10 +3691,19 @@ function LessonBuilder() {
                 </div>
               </div>`;
           } else {
+            // Handle standalone image alignment
+            const alignment = block.alignment || 'center';
+            let alignmentClass = 'text-center'; // default
+            if (alignment === 'left') {
+              alignmentClass = 'text-left';
+            } else if (alignment === 'right') {
+              alignmentClass = 'text-right';
+            }
+            
             htmlContent = `
               <div class="lesson-image centered">
-                <div class="text-center">
-                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                <div class="${alignmentClass}">
+                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
                   ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                 </div>
               </div>`;
@@ -3756,6 +3793,7 @@ function LessonBuilder() {
       title: template.title,
       layout: template.layout,
       templateType: template.id,
+      alignment: template.alignment || 'left', // Include alignment from template
       imageUrl: imageUrl,
       imageTitle: imageTitle,
       imageDescription: '',
@@ -3768,7 +3806,8 @@ function LessonBuilder() {
         caption: imageText,
         alt_text: imageTitle,
         layout: template.layout,
-        template: template.id
+        template: template.id,
+        alignment: template.alignment || 'left'
       }
     };
 
@@ -3782,11 +3821,18 @@ function LessonBuilder() {
 
   const handleImageBlockEdit = (blockId, field, value) => {
     setContentBlocks(prev =>
-      prev.map(block =>
-        block.id === blockId
-          ? { ...block, [field]: value }
-          : block
-      )
+      prev.map(block => {
+        if (block.id !== blockId) return block;
+        
+        const updatedBlock = { ...block, [field]: value };
+        
+        // If alignment is being changed, regenerate the HTML
+        if (field === 'alignment') {
+          updatedBlock.html_css = generateImageBlockHtml(updatedBlock);
+        }
+        
+        return updatedBlock;
+      })
     );
   };
 
@@ -3874,16 +3920,21 @@ function LessonBuilder() {
     const textContent = (block.text || block.imageDescription || '').toString();
     const imageUrl = block.imageUrl || '';
     const imageTitle = block.imageTitle || '';
+    const alignment = block.alignment || block.details?.alignment || 'left';
 
     if (!imageUrl) return '';
 
     if (layout === 'side-by-side') {
+      const imageFirst = alignment === 'left';
+      const imageOrder = imageFirst ? 'order-1' : 'order-2';
+      const textOrder = imageFirst ? 'order-2' : 'order-1';
+      
       return `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div>
+          <div class="${imageOrder}">
             <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
-          <div>
+          <div class="${textOrder}">
             ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
           </div>
         </div>
@@ -3903,9 +3954,17 @@ function LessonBuilder() {
         </div>
       `;
     } else { // centered or default
+      // Handle standalone image alignment
+      let alignmentClass = 'text-center'; // default
+      if (alignment === 'left') {
+        alignmentClass = 'text-left';
+      } else if (alignment === 'right') {
+        alignmentClass = 'text-right';
+      }
+      
       return `
-        <div class="text-center">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+        <div class="${alignmentClass}">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
           ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
         </div>
       `;
@@ -3935,6 +3994,7 @@ function LessonBuilder() {
             alt_text: block.imageTitle || block.details?.alt_text || '',
             layout: block.layout || block.details?.layout,
             template: block.templateType || block.details?.template,
+            alignment: block.alignment || block.details?.alignment || 'left',
           };
           
           // Create updated block with final image URL for HTML generation
@@ -4537,12 +4597,17 @@ function LessonBuilder() {
     // Build HTML based on layout when applicable
     let htmlContent = '';
     if (layout === 'side-by-side') {
+      const alignment = currentBlock?.alignment || 'left';
+      const imageFirst = alignment === 'left';
+      const imageOrder = imageFirst ? 'order-1' : 'order-2';
+      const textOrder = imageFirst ? 'order-2' : 'order-1';
+      
       htmlContent = `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div>
+          <div class="${imageOrder}">
             <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
-          <div>
+          <div class="${textOrder}">
             ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
           </div>
         </div>
@@ -4583,6 +4648,9 @@ function LessonBuilder() {
       `;
     }
 
+    // Determine which alignment to use based on layout
+    const finalAlignment = layout === 'side-by-side' ? imageAlignment : standaloneImageAlignment;
+    
     const newBlock = {
       id: currentBlock?.id || `image-${Date.now()}`,
       block_id: currentBlock?.id || `image-${Date.now()}`,
@@ -4590,12 +4658,14 @@ function LessonBuilder() {
       title: imageTitle,
       layout: layout || undefined,
       templateType: templateType || undefined,
+      alignment: finalAlignment, // Include appropriate alignment
       details: {
         image_url: imageUrl,
         caption: textContent || '',
         alt_text: imageTitle,
         layout: layout || undefined,
-        template: templateType || undefined
+        template: templateType || undefined,
+        alignment: finalAlignment
       },
       html_css: htmlContent,
       imageTitle: imageTitle,
@@ -4653,6 +4723,15 @@ function LessonBuilder() {
       setImageFile(block.imageFile);
       setImagePreview(block.imageUrl);
       setImageTemplateText(block.text || block.details?.caption || '');
+      
+      // Set appropriate alignment based on layout
+      const blockAlignment = block.alignment || 'left';
+      if (block.layout === 'side-by-side') {
+        setImageAlignment(blockAlignment);
+      } else {
+        setStandaloneImageAlignment(blockAlignment);
+      }
+      
       setShowImageDialog(true);
     }
   };
@@ -6261,6 +6340,39 @@ setContentBlocks(prev => [...prev, newBlock]);
                                         style={{ minHeight: '100px' }}
                                       />
                                     </div>
+                                    
+                                    {/* Image Alignment Options for side-by-side layout */}
+                                    {block.layout === 'side-by-side' && (
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Image Alignment
+                                        </label>
+                                        <div className="flex gap-4">
+                                          <label className="flex items-center">
+                                            <input
+                                              type="radio"
+                                              name={`alignment-${block.id}`}
+                                              value="left"
+                                              checked={block.alignment === 'left'}
+                                              onChange={(e) => handleImageBlockEdit(block.id, 'alignment', e.target.value)}
+                                              className="mr-2"
+                                            />
+                                            <span className="text-sm">Image Left, Text Right</span>
+                                          </label>
+                                          <label className="flex items-center">
+                                            <input
+                                              type="radio"
+                                              name={`alignment-${block.id}`}
+                                              value="right"
+                                              checked={block.alignment === 'right'}
+                                              onChange={(e) => handleImageBlockEdit(block.id, 'alignment', e.target.value)}
+                                              className="mr-2"
+                                            />
+                                            <span className="text-sm">Image Right, Text Left</span>
+                                          </label>
+                                        </div>
+                                      </div>
+                                    )}
                                    
                                     {/* Save and Cancel Buttons */}
                                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
@@ -6294,18 +6406,39 @@ setContentBlocks(prev => [...prev, newBlock]);
                                   <div>
                                     {block.layout === 'side-by-side' && (
                                       <div className="flex gap-3 items-start">
-                                        <div className="w-1/2">
-                                          <img
-                                            src={block.imageUrl}
-                                            alt="Image"
-                                            className="w-full h-20 object-cover rounded"
-                                          />
-                                        </div>
-                                        <div className="w-1/2">
-                                          <p className="text-sm text-gray-600 line-clamp-4">
-                                            {getPlainText(block.text || '').substring(0, 60)}...
-                                          </p>
-                                        </div>
+                                        {block.alignment === 'right' ? (
+                                          // Image Right, Text Left
+                                          <>
+                                            <div className="w-1/2">
+                                              <p className="text-sm text-gray-600 line-clamp-4">
+                                                {getPlainText(block.text || '').substring(0, 60)}...
+                                              </p>
+                                            </div>
+                                            <div className="w-1/2">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-20 object-cover rounded"
+                                              />
+                                            </div>
+                                          </>
+                                        ) : (
+                                          // Image Left, Text Right (default)
+                                          <>
+                                            <div className="w-1/2">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-20 object-cover rounded"
+                                              />
+                                            </div>
+                                            <div className="w-1/2">
+                                              <p className="text-sm text-gray-600 line-clamp-4">
+                                                {getPlainText(block.text || '').substring(0, 60)}...
+                                              </p>
+                                            </div>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                     {block.layout === 'overlay' && (
@@ -6323,11 +6456,11 @@ setContentBlocks(prev => [...prev, newBlock]);
                                       </div>
                                     )}
                                     {block.layout === 'centered' && (
-                                      <div className="text-center space-y-3">
+                                      <div className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}>
                                         <img
                                           src={block.imageUrl}
                                           alt="Image"
-                                          className="mx-auto h-20 object-cover rounded"
+                                          className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
                                         />
                                         <p className="text-sm text-gray-600 italic line-clamp-2">
                                           {getPlainText(block.text || '').substring(0, 40)}...
@@ -7031,6 +7164,77 @@ setContentBlocks(prev => [...prev, newBlock]);
                 style={{ minHeight: '120px' }}
                 placeholder="Enter text to show with or on the image"
               />
+            </div>
+            
+            {/* Image Alignment Options */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Image Alignment
+              </label>
+              <div className="space-y-2">
+                <div className="text-sm text-gray-600 mb-2">For Image & Text blocks:</div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="imageAlignment"
+                      value="left"
+                      checked={imageAlignment === 'left'}
+                      onChange={(e) => setImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Image Left, Text Right</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="imageAlignment"
+                      value="right"
+                      checked={imageAlignment === 'right'}
+                      onChange={(e) => setImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Image Right, Text Left</span>
+                  </label>
+                </div>
+                
+                <div className="text-sm text-gray-600 mb-2 mt-4">For standalone images:</div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="left"
+                      checked={standaloneImageAlignment === 'left'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Left Aligned</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="center"
+                      checked={standaloneImageAlignment === 'center'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Center Aligned</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="right"
+                      checked={standaloneImageAlignment === 'right'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Right Aligned</span>
+                  </label>
+                </div>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
