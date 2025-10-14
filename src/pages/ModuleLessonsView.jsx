@@ -303,7 +303,7 @@ const ModuleLessonsView = () => {
   }, [lessons, searchQuery]);
 
   const handleLessonClick = (lesson) => {
-    // Simply navigate to the builder - we'll fetch content there
+    // Navigate to the builder - DashboardLayout will auto-collapse sidebar for lesson builder pages
     navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`, {
       state: { lessonData: lesson }
     });

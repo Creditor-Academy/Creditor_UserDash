@@ -181,7 +181,7 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   };
 
   // Replace localStorage logic with a constant for testing
-  const isScormAllowed = allowedScormUserIds.includes(currentUserId);
+  // const isScormAllowed = allowedScormUserIds.includes(currentUserId);
 
   // Help section navigation items
   const helpItems = [

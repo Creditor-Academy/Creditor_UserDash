@@ -38,8 +38,9 @@ export function DashboardLayout() {
   // Close mobile sidebar on route change
   useEffect(() => {
     setIsMobileSidebarOpen(false);
-    // Auto-collapse sidebar for immersive pages like ScenarioTakePage
-    const immersive = location.pathname.startsWith('/dashboard/scenario/take/');
+    // Auto-collapse sidebar for immersive pages like ScenarioTakePage and LessonBuilder
+    const immersive = location.pathname.startsWith('/dashboard/scenario/take/') || 
+                     location.pathname.includes('/lesson/') && location.pathname.includes('/builder');
     setSidebarCollapsed(immersive);
   }, [location.pathname]);
 
