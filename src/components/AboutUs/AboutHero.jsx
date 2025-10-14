@@ -176,7 +176,7 @@ const Hero = () => {
             transition={{ duration: 0.6, delay: 0.6 }}
           >
             <a
-              href="/case"
+              href="/product"
               style={{
                 padding: '14px 28px',
                 borderRadius: '9999px',
@@ -202,7 +202,7 @@ const Hero = () => {
                 e.target.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
               }}
             >
-              Explore Work
+              Explore
             </a>
             <a
               href="/contact"

@@ -300,7 +300,7 @@ export default function Features() {
               </motion.button>
             ))}
           </div>
-          <a href="#" style={featuresButtonStyle}>
+          <a href="/product" style={featuresButtonStyle}>
             Explore All Modalities
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" style={{ marginLeft: 8 }}>
               <path fill="#fff" fillRule="evenodd" d="M8.58 13.087a.83.83 0 0 1-1.174-1.174l3.455-3.456H6.332a.83.83 0 0 1 0-1.66h7.222a.83.83 0 0 1 .83.83v7.222a.83.83 0 1 1-1.66 0v-4.53l-3.454 3.456Z" clipRule="evenodd"/></svg>

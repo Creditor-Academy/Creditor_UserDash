@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const KeyCapabilities = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const navigate = useNavigate();
 
   const capabilities = [
     {
@@ -199,7 +201,10 @@ const KeyCapabilities = () => {
           <p className="text-gray-600 mb-6 text-lg">
             Ready to experience the power of Athena?
           </p>
-          <button className="bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-600 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 px-10 rounded-xl shadow-xl shadow-blue-300/50 hover:shadow-blue-400/60 transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+          <button 
+            onClick={() => navigate('/plans')}
+            className="bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-600 hover:via-blue-700 hover:to-indigo-700 text-white font-semibold py-4 px-10 rounded-xl shadow-xl shadow-blue-300/50 hover:shadow-blue-400/60 transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group cursor-pointer"
+          >
             <span className="relative z-10">Start Building Courses Today</span>
             <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
           </button>

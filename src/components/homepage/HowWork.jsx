@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import LMSThumbnail from '../../assets/LMS.png';
 
 const HowAthenaWorks = () => {
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const steps = [
     {
       number: "01",
@@ -47,7 +49,7 @@ const HowAthenaWorks = () => {
       <div className="max-w-6xl mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-sky-500 to-blue-600 bg-clip-text text-transparent mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-blue-900 mb-4">
             How Athena Works
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -112,21 +114,47 @@ const HowAthenaWorks = () => {
 
           {/* Right Column - Demo Video */}
           <div className="relative flex items-center">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 bg-gradient-to-br from-sky-50 to-blue-50 p-4 w-full">
-              <video
-                className="w-full h-auto rounded-xl"
-                controls
-                poster=""
-                preload="metadata"
-              >
-                <source src="/src/assets/homevideo.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-              
-              {/* Video Overlay Pattern */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-4 right-4 w-16 h-16 bg-blue-200 rounded-full opacity-10" />
-                <div className="absolute bottom-4 left-4 w-12 h-12 bg-sky-200 rounded-full opacity-10" />
+            <div className="relative rounded-xl overflow-hidden shadow-2xl shadow-blue-200/50 w-full">
+              <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
+                {/* Video Thumbnail Overlay */}
+                {!isVideoPlaying && (
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full cursor-pointer group z-10"
+                    onClick={() => setIsVideoPlaying(true)}
+                  >
+                    {/* Thumbnail Image */}
+                    <img 
+                      src={LMSThumbnail}
+                      alt="Athena LMS Demo"
+                      className="absolute top-0 left-0 w-full h-full object-cover"
+                    />
+                    
+                    {/* Dark Overlay */}
+                    <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all duration-300"></div>
+                    
+                    {/* Play Button */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-white transition-all duration-300 shadow-2xl">
+                      <svg className="w-10 h-10 text-sky-600 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                    
+                    {/* Watch Demo Text */}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-sm px-6 py-2 rounded-full">
+                      <p className="text-sky-700 font-semibold text-sm">▶ Watch Demo</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Iframe Video */}
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full"
+                  src={isVideoPlaying ? "https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview" : ""}
+                  title="Athena Demo Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
               </div>
             </div>
           </div>
