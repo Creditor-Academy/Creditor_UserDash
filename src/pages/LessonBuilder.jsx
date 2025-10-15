@@ -1216,13 +1216,10 @@ function LessonBuilder() {
     setSidebarCollapsed(true);
   };
 
-
   const handleStatementSelect = (statementBlock) => {
     // Only add to contentBlocks - this is the primary state for managing blocks
     setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
   };
-
-
 
 
   const handleStatementEdit = (blockId, content, htmlContent) => {
