@@ -842,6 +842,10 @@ function LessonBuilder() {
   const [imageToEdit, setImageToEdit] = useState(null);
   const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
   
+  // Inline block insertion state
+  const [insertionPosition, setInsertionPosition] = useState(null);
+  const [showInsertDropdown, setShowInsertDropdown] = useState(null); // block index where dropdown is shown
+  
 
 
   // Image block templates
@@ -1050,7 +1054,13 @@ function LessonBuilder() {
   const dividerComponentRef = React.useRef();
 
 
-  const handleBlockClick = (blockType) => {
+  const handleBlockClick = (blockType, position = null) => {
+    // Store the insertion position for use in subsequent handlers
+    if (position !== null) {
+      setInsertionPosition(position);
+      setShowInsertDropdown(null); // Close the dropdown
+    }
+
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
     } else if (blockType.id === 'statement') {
@@ -1079,7 +1089,13 @@ function LessonBuilder() {
     } else if (blockType.id === 'divider') {
       setShowDividerTemplateSidebar(true);
     } else {
-      addContentBlock(blockType);
+      // For simple blocks that don't need dialogs, insert immediately
+      if (position !== null) {
+        insertContentBlockAt(blockType, position);
+        setInsertionPosition(null);
+      } else {
+        addContentBlock(blockType);
+      }
     }
   };
 
@@ -1106,6 +1122,41 @@ function LessonBuilder() {
     } else {
       // For new lessons, add to contentBlocks
       setContentBlocks([...contentBlocks, newBlock]);
+    }
+  };
+
+  // Insert block at a specific position
+  const insertContentBlockAt = (blockType, position, textType = null) => {
+    const newBlock = {
+      id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
+      type: blockType.id,
+      title: blockType.title,
+      textType: textType,
+      content: '',
+      order: position + 1
+    };
+   
+    // If we have existing lesson content, insert into that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => {
+        const newContent = [...prevLessonContent.data.content];
+        newContent.splice(position, 0, newBlock);
+        return {
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: newContent
+          }
+        };
+      });
+    } else {
+      // For new lessons, insert into contentBlocks
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(position, 0, newBlock);
+        return newBlocks;
+      });
     }
   };
 
@@ -1172,8 +1223,34 @@ function LessonBuilder() {
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
-    // Always add to local edit list so it appears immediately in edit mode
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Always add to local edit list so it appears immediately in edit mode
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
    
     // Close the sidebar
     setShowTextTypeSidebar(false);
@@ -1182,8 +1259,34 @@ function LessonBuilder() {
 
 
   const handleStatementSelect = (statementBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, statementBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, statementBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
+    }
   };
 
 
@@ -1247,14 +1350,66 @@ function LessonBuilder() {
 
   // Quote component callbacks
   const handleQuoteTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
   };
 
   // Table component callbacks
   const handleTableTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
   };
 
   // Interactive component callbacks
@@ -1299,7 +1454,34 @@ function LessonBuilder() {
       html_css: newBlock.html_css,
       order: contentBlocks.length + 1
     };
-    setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+    
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, interactiveBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, interactiveBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+    }
   };
 
   const handleInteractiveUpdate = (blockId, updatedContent) => {
@@ -1321,8 +1503,34 @@ function LessonBuilder() {
 
   // Divider component callbacks
   const handleDividerTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
     setShowDividerTemplateSidebar(false);
   };
 
@@ -1361,8 +1569,34 @@ function LessonBuilder() {
 
   // List component callbacks
   const handleListTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
   };
 
   const handleListUpdate = (blockId, content, updatedHtml = null) => {
@@ -1927,8 +2161,34 @@ function LessonBuilder() {
         }));
       }
     } else {
-      // Add new audio block - only add to contentBlocks like other block handlers
-      setContentBlocks(prevBlocks => [...prevBlocks, audioBlock]);
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, audioBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, audioBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new audio block - only add to contentBlocks like other block handlers
+        setContentBlocks(prevBlocks => [...prevBlocks, audioBlock]);
+      }
     }
 
     // Reset editing state
@@ -1965,8 +2225,34 @@ function LessonBuilder() {
         }));
       }
     } else {
-      // Add new YouTube block - only add to contentBlocks like other block handlers
-      setContentBlocks(prevBlocks => [...prevBlocks, youTubeBlock]);
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, youTubeBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, youTubeBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new YouTube block - only add to contentBlocks like other block handlers
+        setContentBlocks(prevBlocks => [...prevBlocks, youTubeBlock]);
+      }
     }
 
     // Reset editing state
@@ -2007,9 +2293,36 @@ function LessonBuilder() {
         }));
       }
     } else {
-      // Add new video block
-      console.log('Adding new video block');
-      setContentBlocks(prevBlocks => [...prevBlocks, videoBlock]);
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        console.log('Inserting new video block at position:', insertionPosition);
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, videoBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, videoBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new video block
+        console.log('Adding new video block');
+        setContentBlocks(prevBlocks => [...prevBlocks, videoBlock]);
+      }
     }
   
     // Reset editing state
@@ -3966,8 +4279,34 @@ function LessonBuilder() {
     // Generate HTML content immediately for the new block
     newBlock.html_css = generateImageBlockHtml(newBlock);
    
-    // Always add to local edit list so it appears immediately in edit mode
-    setContentBlocks(prev => [...prev, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prev => {
+        const newBlocks = [...prev];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Always add to local edit list so it appears immediately in edit mode
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
     setShowImageTemplateSidebar(false);
   };
 
@@ -5152,8 +5491,33 @@ function LessonBuilder() {
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
-    if (currentBlock) {
-      // Update existing block locally (edit mode), but ensure we strip tags from text first
+    // Check if we're inserting at a specific position first (highest priority)
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prev => {
+        const newBlocks = [...prev];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+      setCurrentBlock(null);
+    } else if (currentBlock && contentBlocks.find(b => b.id === currentBlock.id)) {
+      // Update existing block locally (edit mode) - only if the block actually exists in contentBlocks
       setContentBlocks(prev => prev.map(block => block.id === currentBlock.id ? { ...newBlock, text: getPlainText(newBlock.text || ''), imageDescription: getPlainText(newBlock.imageDescription || '') } : block));
       // If lessonContent exists, also sync the fetched content block
       if (lessonContent?.data?.content) {
@@ -5179,6 +5543,7 @@ function LessonBuilder() {
     } else {
       // Add new block to local edit list immediately
       setContentBlocks(prev => [...prev, newBlock]);
+      setCurrentBlock(null);
     }
    
     handleImageDialogClose();
@@ -5460,9 +5825,34 @@ function LessonBuilder() {
         prev.map(block => block.id === currentLinkBlock.id ? newBlock : block)
       );
     } else {
-  
-      // Add new link block - only add to contentBlocks like other block handlers
-setContentBlocks(prev => [...prev, newBlock]);
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, newBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, newBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new link block - only add to contentBlocks like other block handlers
+        setContentBlocks(prev => [...prev, newBlock]);
+      }
     }
    
     handleLinkDialogClose();
@@ -5566,8 +5956,34 @@ setContentBlocks(prev => [...prev, newBlock]);
         prev.map(block => block.id === currentBlock.id ? pdfBlock : block)
       );
     } else {
-      // Add new block
-      setContentBlocks(prev => [...prev, pdfBlock]);
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, pdfBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, pdfBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new block
+        setContentBlocks(prev => [...prev, pdfBlock]);
+      }
     }
    
     handlePdfDialogClose();
@@ -5979,6 +6395,39 @@ setContentBlocks(prev => [...prev, newBlock]);
 
     loadLessonData();
   }, [courseId, moduleId, lessonId, navigate, location.state]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside the dropdown
+      if (showInsertDropdown !== null) {
+        const dropdowns = document.querySelectorAll('[data-dropdown-menu]');
+        const plusButtons = document.querySelectorAll('[data-plus-button]');
+        let clickedInside = false;
+        
+        dropdowns.forEach(dropdown => {
+          if (dropdown.contains(event.target)) {
+            clickedInside = true;
+          }
+        });
+        
+        plusButtons.forEach(button => {
+          if (button.contains(event.target)) {
+            clickedInside = true;
+          }
+        });
+        
+        if (!clickedInside) {
+          setShowInsertDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showInsertDropdown]);
 
   if (loading) {
     return (
@@ -6982,6 +7431,42 @@ setContentBlocks(prev => [...prev, newBlock]);
                                 )}
                               </div>
                             )}
+                          </div>
+
+                          {/* Inline Block Insertion - Plus Button */}
+                          <div className="flex justify-center items-center py-4">
+                            <div className="relative">
+                              <button
+                                data-plus-button
+                                onClick={() => setShowInsertDropdown(showInsertDropdown === index ? null : index)}
+                                className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                                title="Insert block here"
+                              >
+                                <Plus className="h-5 w-5" />
+                              </button>
+
+                              {/* Dropdown Menu */}
+                              {showInsertDropdown === index && (
+                                <div 
+                                  data-dropdown-menu
+                                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto"
+                                >
+                                  <div className="p-2">
+                                    <div className="text-xs font-semibold text-gray-500 px-3 py-2">INSERT BLOCK</div>
+                                    {contentBlockTypes.map((blockType) => (
+                                      <button
+                                        key={blockType.id}
+                                        onClick={() => handleBlockClick(blockType, index + 1)}
+                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-left"
+                                      >
+                                        <div className="text-gray-600">{blockType.icon}</div>
+                                        <span className="text-sm font-medium text-gray-700">{blockType.title}</span>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         );
