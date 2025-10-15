@@ -845,6 +845,7 @@ function LessonBuilder() {
   // Inline block insertion state
   const [insertionPosition, setInsertionPosition] = useState(null);
   const [showInsertDropdown, setShowInsertDropdown] = useState(null); // block index where dropdown is shown
+  const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false); // Show insert block dialog
   
 
 
@@ -6396,38 +6397,6 @@ function LessonBuilder() {
     loadLessonData();
   }, [courseId, moduleId, lessonId, navigate, location.state]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // Check if click is outside the dropdown
-      if (showInsertDropdown !== null) {
-        const dropdowns = document.querySelectorAll('[data-dropdown-menu]');
-        const plusButtons = document.querySelectorAll('[data-plus-button]');
-        let clickedInside = false;
-        
-        dropdowns.forEach(dropdown => {
-          if (dropdown.contains(event.target)) {
-            clickedInside = true;
-          }
-        });
-        
-        plusButtons.forEach(button => {
-          if (button.contains(event.target)) {
-            clickedInside = true;
-          }
-        });
-        
-        if (!clickedInside) {
-          setShowInsertDropdown(null);
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showInsertDropdown]);
 
   if (loading) {
     return (
@@ -7434,39 +7403,17 @@ function LessonBuilder() {
                           </div>
 
                           {/* Inline Block Insertion - Plus Button */}
-                          <div className="flex justify-center items-center py-4">
-                            <div className="relative">
-                              <button
-                                data-plus-button
-                                onClick={() => setShowInsertDropdown(showInsertDropdown === index ? null : index)}
-                                className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                title="Insert block here"
-                              >
-                                <Plus className="h-5 w-5" />
-                              </button>
-
-                              {/* Dropdown Menu */}
-                              {showInsertDropdown === index && (
-                                <div 
-                                  data-dropdown-menu
-                                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-y-auto"
-                                >
-                                  <div className="p-2">
-                                    <div className="text-xs font-semibold text-gray-500 px-3 py-2">INSERT BLOCK</div>
-                                    {contentBlockTypes.map((blockType) => (
-                                      <button
-                                        key={blockType.id}
-                                        onClick={() => handleBlockClick(blockType, index + 1)}
-                                        className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-100 transition-colors text-left"
-                                      >
-                                        <div className="text-gray-600">{blockType.icon}</div>
-                                        <span className="text-sm font-medium text-gray-700">{blockType.title}</span>
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                          <div className="flex justify-center items-center py-1">
+                            <button
+                              onClick={() => {
+                                setInsertionPosition(index + 1);
+                                setShowInsertBlockDialog(true);
+                              }}
+                              className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                              title="Insert block here"
+                            >
+                              <Plus className="h-5 w-5" />
+                            </button>
                           </div>
                         </div>
                         );
@@ -8599,7 +8546,43 @@ function LessonBuilder() {
         setSidebarCollapsed={setSidebarCollapsed}
       />
 
-
+      {/* Insert Block Dialog */}
+      <Dialog open={showInsertBlockDialog} onOpenChange={setShowInsertBlockDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Insert Content Block</DialogTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              Choose a block type to insert at this position
+            </p>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+            {contentBlockTypes.map((blockType) => (
+              <button
+                key={blockType.id}
+                onClick={() => {
+                  handleBlockClick(blockType, insertionPosition);
+                  setShowInsertBlockDialog(false);
+                }}
+                className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group"
+              >
+                <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-gray-600 group-hover:text-blue-600 mb-3 transition-colors">
+                  {blockType.icon}
+                </div>
+                <h3 className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 text-center transition-colors">
+                  {blockType.title}
+                </h3>
+              </button>
+            ))}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInsertBlockDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </>
   );
