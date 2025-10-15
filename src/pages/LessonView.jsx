@@ -303,29 +303,29 @@ const LessonView = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'PUBLISHED':
-        return 'default';
-      case 'DRAFT':
-        return 'secondary';
-      case 'COMPLETED':
-        return 'success';
-      default:
-        return 'secondary';
-    }
-  };
+  // const getStatusColor = (status) => {
+  //   switch (status?.toUpperCase()) {
+  //     case 'PUBLISHED':
+  //       return 'default';
+  //     case 'DRAFT':
+  //       return 'secondary';
+  //     case 'COMPLETED':
+  //       return 'success';
+  //     default:
+  //       return 'secondary';
+  //   }
+  // };
 
-  const getStatusIcon = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'PUBLISHED':
-        return <Play className="h-4 w-4" />;
-      case 'COMPLETED':
-        return <Clock className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
-    }
-  };
+  // const getStatusIcon = (status) => {
+  //   switch (status?.toUpperCase()) {
+  //     case 'PUBLISHED':
+  //       return <Play className="h-4 w-4" />;
+  //     case 'COMPLETED':
+  //       return <Clock className="h-4 w-4" />;
+  //     default:
+  //       return <FileText className="h-4 w-4" />;
+  //   }
+  // };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -444,12 +444,7 @@ const LessonView = () => {
                 )}
                 
                 {/* Status Badge */}
-                <div className="absolute top-3 right-3">
-                  <Badge variant={getStatusColor(lesson.status)} className="flex items-center gap-1">
-                    {getStatusIcon(lesson.status)}
-                    {lesson.status || 'DRAFT'}
-                  </Badge>
-                </div>
+                
               </div>
 
               <CardHeader className="pb-3">
@@ -463,7 +458,7 @@ const LessonView = () => {
                   {lesson.description}
                 </p>
                 
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                {/* <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
                   <span className="flex items-center gap-1">
                     <FileText className="h-3 w-3" />
                     Order: {lesson.order}
@@ -472,13 +467,13 @@ const LessonView = () => {
                     <Clock className="h-3 w-3" />
                     {lesson.duration}
                   </span>
-                </div>
+                </div> */}
                 
-                {lesson.updatedAt && (
+                {/* {lesson.updatedAt && (
                   <div className="text-xs text-gray-400">
                     Updated: {new Date(lesson.updatedAt).toLocaleDateString()}
                   </div>
-                )}
+                )} */}
               </CardContent>
               
               <CardFooter className="pt-0">

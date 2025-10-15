@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, ArrowLeft, ChevronRight, Lock, Unlock, ShoppingCart } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, ArrowLeft, ChevronRight, ChevronDown, Lock, Unlock, ShoppingCart } from "lucide-react";
 import { fetchCourseModules, fetchCourseById, fetchUserCourses, fetchCoursePrice } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import { useUser } from "@/contexts/UserContext";
@@ -82,6 +82,13 @@ export function CourseView() {
   const [confirmUnlock, setConfirmUnlock] = useState({ open: false, module: null });
   const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const { balance, unlockContent, refreshBalance } = useCredits();
+  // Track locally completed module ids
+  const [completedModuleIds, setCompletedModuleIds] = useState(new Set());
+  // Track modules currently being marked as complete
+  const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
+  
+  // Accordion expansion control for Book/Street sections
+  const [expandedSection, setExpandedSection] = useState(null); // null | 'book' | 'street'
   
   // Course purchase states
   const [showInsufficientCreditsModal, setShowInsufficientCreditsModal] = useState(false);
@@ -96,6 +103,66 @@ export function CourseView() {
   // Sequential unlock modal state
   const [showSequentialModal, setShowSequentialModal] = useState(false);
   const [selectedModuleForSequential, setSelectedModuleForSequential] = useState(null);
+  
+  // View mode and street modules state
+  const [viewMode, setViewMode] = useState("book");
+  const [streetModules, setStreetModules] = useState([]);
+  const [streetLoading, setStreetLoading] = useState(false);
+  const [streetError, setStreetError] = useState("");
+  const [isEnrolledRecording, setIsEnrolledRecording] = useState(false);
+  
+  // Mapping of supported courses to their recordings course IDs (Street Smart)
+  // Source IDs from components/dashboard/ClassRecording.jsx
+  const RECORDING_COURSE_IDS = {
+    becomePrivate: "a188173c-23a6-4cb7-9653-6a1a809e9914",
+    operatePrivate: "7b798545-6f5f-4028-9b1e-e18c7d2b4c47",
+    businessCredit: "199e328d-8366-4af1-9582-9ea545f8b59e",
+    privateMerchant: "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e",
+    sovereignty101: "d5330607-9a45-4298-8ead-976dd8810283",
+    remedy: "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now recording course ID
+  };
+
+  // Check if current course is a recording course
+  const isRecordingCourse = (title) => {
+    const t = (title || "").toLowerCase();
+    return t.includes("recording") || t.includes("recordings");
+  };
+
+  // Determine if current course is one of the eligible courses (with recording course IDs)
+  // But exclude recording courses themselves
+  const isEligibleForTwoModes = (title) => {
+    if (isRecordingCourse(title)) return false; // Don't show Book Smart/Street Smart in recording courses
+    
+    const t = (title || "").toLowerCase();
+    // More specific matching to avoid catching courses like "Tier 1: Optimizing Your Business Credit Profile"
+    return [
+      "become private", // Exact main course
+      "sovereignty 101", // Exact main course
+      "sov 101", // Exact main course
+      "operate private", // Exact main course
+      "business credit", // Only if it's the main "Business Credit" course, not sub-courses
+      "i want remedy now", // Exact main course
+      "private merchant", // Exact main course
+    ].some((k) => {
+      // For "business credit", be more specific to avoid sub-courses like "Tier 1: Optimizing Your Business Credit Profile"
+      if (k === "business credit") {
+        return t.includes("business credit") && !t.includes("tier") && !t.includes("optimizing") && !t.includes("profile");
+      }
+      return t.includes(k);
+    });
+  };
+
+  // Get recording course id for the matching title
+  const getRecordingCourseIdForTitle = (title) => {
+    const t = (title || "").toLowerCase();
+    if (t.includes("become private")) return RECORDING_COURSE_IDS.becomePrivate;
+    if (t.includes("operate private")) return RECORDING_COURSE_IDS.operatePrivate;
+    if (t.includes("business credit")) return RECORDING_COURSE_IDS.businessCredit;
+    if (t.includes("private merchant")) return RECORDING_COURSE_IDS.privateMerchant;
+    if (t.includes("sovereignty 101") || t.includes("sov 101")) return RECORDING_COURSE_IDS.sovereignty101;
+    if (t.includes("i want remedy now")) return RECORDING_COURSE_IDS.remedy;
+    return null;
+  };
 
   // Initialize unlocked modules from backend for this user
   useEffect(() => {
@@ -114,6 +181,37 @@ export function CourseView() {
     };
     initUnlocked();
   }, [userProfile?.id]);
+
+  // Initialize completed modules from backend data
+  useEffect(() => {
+    const completedIds = new Set();
+    
+    // Check main course modules
+    if (modules && modules.length > 0) {
+      modules.forEach(module => {
+        if (module.user_module_progress && 
+            Array.isArray(module.user_module_progress) && 
+            module.user_module_progress.length > 0 &&
+            module.user_module_progress[0].completed === true) {
+          completedIds.add(String(module.id));
+        }
+      });
+    }
+    
+    // Check Street Smart modules
+    if (streetModules && streetModules.length > 0) {
+      streetModules.forEach(module => {
+        if (module.user_module_progress && 
+            Array.isArray(module.user_module_progress) && 
+            module.user_module_progress.length > 0 &&
+            module.user_module_progress[0].completed === true) {
+          completedIds.add(String(module.id));
+        }
+      });
+    }
+    
+    setCompletedModuleIds(completedIds);
+  }, [modules, streetModules]);
 
   const getStableRandomPrice = (moduleObj) => {
     const input = String(moduleObj?.id || "");
@@ -181,9 +279,30 @@ export function CourseView() {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
-    // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
-    // or class recording catalog
-    const freeCatalogKeywords = ["roadmap", "passive income"];
+    // Hide buy option for Master Class courses EXCEPT for Private Merchant
+    const title = (course?.title || "").toLowerCase();
+    const isPrivateMerchantCourse = title.includes("private merchant");
+    
+    // Check if this is a Master Class course (but allow Private Merchant)
+    const isMasterClassCourse = [
+      "formation of business trust",
+      "tier 1: optimizing your business credit profile",
+      "business trust",
+      "credit optimization"
+    ].some(name => title.includes(name));
+    
+    if (isMasterClassCourse && !isPrivateMerchantCourse) return false;
+
+    // Check if this course belongs to a free catalog (Roadmap Series/Start Your Passive Income Now)
+    // or a class recording catalog
+    const freeCatalogKeywords = [
+      "roadmap",
+      "road map",
+      "roadmap series",
+      "road map series",
+      "passive income",
+      "start your passive income"
+    ];
     const classRecordingKeywords = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"];
     const courseTitle = (course?.title || "").toLowerCase();
     const isFromFreeCatalog = freeCatalogKeywords.some(keyword => 
@@ -219,7 +338,14 @@ export function CourseView() {
 
   // Helper function to check if course is from a free catalog or class recording
   const isFromFreeCatalog = (course) => {
-    const freeCatalogKeywords = ["roadmap", "passive income"];
+    const freeCatalogKeywords = [
+      "roadmap",
+      "road map",
+      "roadmap series",
+      "road map series",
+      "passive income",
+      "start your passive income"
+    ];
     const classRecordingKeywords = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"];
     const courseTitle = (course?.title || "").toLowerCase();
     return freeCatalogKeywords.some(keyword => courseTitle.includes(keyword)) ||
@@ -230,6 +356,63 @@ export function CourseView() {
   const handleSequentialUnlockClick = (module) => {
     setSelectedModuleForSequential(module);
     setShowSequentialModal(true);
+  };
+
+  // Check if user is enrolled in the current course
+  const checkEnrollmentStatus = async () => {
+    if (!userProfile?.id || !courseId) {
+      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
+      return;
+    }
+    
+    try {
+      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
+      // Use the same method as Courses.jsx - fetchUserCourses from courseService
+      const userCourses = await fetchUserCourses();
+      console.log(`[CourseView] User courses:`, userCourses);
+      
+      // Check if current course is in user's enrolled courses
+      const enrolled = userCourses.some(course => {
+        const courseIdStr = course.id?.toString();
+        const currentCourseIdStr = courseId?.toString();
+        const match = courseIdStr === currentCourseIdStr;
+        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
+        return match;
+      });
+      
+      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
+      setIsEnrolled(enrolled);
+      
+      // Check recording course enrollment
+      try {
+        if (courseDetails?.title) {
+          const recId = getRecordingCourseIdForTitle(courseDetails.title);
+          console.log(`[CourseView] Recording course ID for ${courseDetails.title}:`, recId);
+          if (recId) {
+            const recEnrolled = userCourses.some(c => {
+              const cId = c.id?.toString?.() || c.id?.toString();
+              const recIdStr = recId.toString();
+              const match = cId === recIdStr;
+              console.log(`[CourseView] Recording enrollment check - course.id: ${cId}, recordingId: ${recIdStr}, match: ${match}`);
+              return match;
+            });
+            console.log(`[CourseView] Is user enrolled in recording course ${recId}:`, recEnrolled);
+            setIsEnrolledRecording(recEnrolled);
+          } else {
+            console.log(`[CourseView] No recording course ID found for ${courseDetails.title}`);
+            setIsEnrolledRecording(false);
+          }
+        } else {
+          setIsEnrolledRecording(false);
+        }
+      } catch (e) { 
+        console.error(`[CourseView] Error checking recording enrollment:`, e);
+        setIsEnrolledRecording(false); 
+      }
+    } catch (error) {
+      console.error('Failed to check enrollment status:', error);
+      setIsEnrolled(false);
+    }
   };
 
   useEffect(() => {
@@ -272,35 +455,38 @@ export function CourseView() {
     if (courseId) fetchData();
   }, [courseId]);
 
-  // Check if user is enrolled in the current course
-  const checkEnrollmentStatus = async () => {
-    if (!userProfile?.id || !courseId) {
-      console.log(`[CourseView] No userProfile.id or courseId available, skipping enrollment check`);
-      return;
-    }
-    
-    try {
-      console.log(`[CourseView] Checking if user is enrolled in course: ${courseId}`);
-      // Use the same method as Courses.jsx - fetchUserCourses from courseService
-      const userCourses = await fetchUserCourses();
-      console.log(`[CourseView] User courses:`, userCourses);
-      
-      // Check if current course is in user's enrolled courses
-      const enrolled = userCourses.some(course => {
-        const courseIdStr = course.id?.toString();
-        const currentCourseIdStr = courseId?.toString();
-        const match = courseIdStr === currentCourseIdStr;
-        console.log(`[CourseView] Comparing course.id: ${courseIdStr} with courseId: ${currentCourseIdStr}, match: ${match}`);
-        return match;
-      });
-      
-      console.log(`[CourseView] Is user enrolled in course ${courseId}:`, enrolled);
-      setIsEnrolled(enrolled);
-    } catch (error) {
-      console.error('Failed to check enrollment status:', error);
-      setIsEnrolled(false);
-    }
-  };
+  // Load Street Smart modules only for eligible courses
+  useEffect(() => {
+    const loadStreetSmart = async () => {
+      if (!courseDetails) return;
+      if (!isEligibleForTwoModes(courseDetails.title)) return;
+      const recordingCourseId = getRecordingCourseIdForTitle(courseDetails.title);
+      if (!recordingCourseId) {
+        setStreetModules([]);
+        setStreetError("");
+        return;
+      }
+      setStreetLoading(true);
+      setStreetError("");
+      try {
+        const recMods = await fetchCourseModules(recordingCourseId);
+        const published = (Array.isArray(recMods) ? recMods : []).filter((m) => {
+          const status = (m.module_status || m.status || "").toString().toUpperCase();
+          return status === "PUBLISHED" || m.published === true;
+        });
+        setStreetModules(published);
+        // Refresh enrollment status after loading Street Smart modules
+        await checkEnrollmentStatus();
+      } catch (e) {
+        setStreetError("Failed to load recordings");
+        setStreetModules([]);
+      } finally {
+        setStreetLoading(false);
+      }
+    };
+    loadStreetSmart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [courseDetails?.title]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -370,11 +556,6 @@ export function CourseView() {
     if (remainingMinutes === 0) return `${hours} hr`;
     return `${hours} hr ${remainingMinutes} min`;
   };
-
-  // Removed handleUnlockClick since we're not using locked state anymore
-
-  // Removed unlock-related functions since we're not using locked state anymore
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
@@ -454,8 +635,8 @@ export function CourseView() {
                       )}
                     </div>
                     
-                    {/* Course Purchase Section */}
-                    {!isEnrolled && canBuyCourse(courseDetails) && (
+                    {/* Course Purchase Section (Book Smart only) */}
+                    {viewMode === "book" && !isEnrolled && canBuyCourse(courseDetails) && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -479,51 +660,72 @@ export function CourseView() {
                       </div>
                     )}
                     
-                    {/* Course Not Available Message */}
-                    {!isEnrolled && !canBuyCourse(courseDetails) && (
+                    {/* Street Smart instructor enrollment note (no payments) */}
+                    {viewMode === "street" && (
                       <div className="mt-6 pt-6 border-t border-gray-100">
-                        {isFromFreeCatalog(courseDetails) ? (
+                        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="p-2 bg-blue-500 rounded-lg shadow-md">
+                            <BookOpen className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-blue-800">Instructor Enrollment</p>
+                            <p className="text-xs text-blue-600 mt-1">Street Smart recordings are available via instructor enrollment only.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Course Not Available Message (Book Smart) */}
+                    {viewMode === "book" && !isEnrolled && !canBuyCourse(courseDetails) && (
+                      <div className="mt-6 pt-6 border-t border-gray-100">
+                        {(() => {
+                          const title = (courseDetails?.title || "").toLowerCase();
+                          const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(k => title.includes(k));
+                          const isMasterClassCourse = [
+                            "formation of business trust",
+                            "tier 1: optimizing your business credit profile",
+                            "business trust",
+                            "credit optimization"
+                          ].some(name => title.includes(name));
+                          if (isFromFreeCatalog(courseDetails) || isMasterClassCourse) {
+                            return (
                           <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <div className="p-2 bg-blue-500 rounded-lg shadow-md">
                               <BookOpen className="h-5 w-5 text-white" />
                             </div>
                             <div>
                               <p className="text-sm font-medium text-blue-800">
-                                {(() => {
-                                  const courseTitle = (courseDetails?.title || "").toLowerCase();
-                                  const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
-                                    courseTitle.includes(keyword)
-                                  );
-                                  return isClassRecording ? "Class Recording - Instructor Enrollment" : "Free Course - Instructor Enrollment";
-                                })()}
+                                {isClassRecording ? "Class Recording - Instructor Enrollment" : (isMasterClassCourse ? "Master Class - Instructor Enrollment" : "Free Course - Instructor Enrollment")}
                               </p>
                               <p className="text-xs text-blue-600 mt-1">
-                                {(() => {
-                                  const courseTitle = (courseDetails?.title || "").toLowerCase();
-                                  const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
-                                    courseTitle.includes(keyword)
-                                  );
-                                  return isClassRecording 
-                                    ? "This is a class recording. Your instructor will enroll you in this course."
-                                    : "This is a free course. Your instructor will enroll you in this course.";
-                                })()}
+                                {isClassRecording 
+                                  ? "This is a class recording. Your instructor will enroll you in this course." 
+                                  : (isMasterClassCourse 
+                                    ? "This is part of Master Class. Your instructor will enroll you in this course." 
+                                    : "This is a free course. Your instructor will enroll you in this course.")}
                               </p>
                             </div>
                           </div>
-                        ) : (
+                            );
+                          }
+                          return (
                           <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
                             <div className="p-2 bg-green-500 rounded-lg shadow-md">
                               <BookOpen className="h-5 w-5 text-white" />
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-green-800">Continue Your Learning Journey</p>
-                              <p className="text-xs text-green-600 mt-1">
-                                You've already started this course with individual lessons! 
-                                Keep building your knowledge by purchasing more lessons.
-                              </p>
-                            </div>
+                              <div>
+                                <p className="text-sm font-medium text-green-800">
+                                  {isMasterClassCourse ? "Master Class - Instructor Enrollment" : "Continue Your Learning Journey"}
+                                </p>
+                                <p className="text-xs text-green-600 mt-1">
+                                  {isMasterClassCourse 
+                                    ? "This is part of Master Class. Your instructor will enroll you in this course." 
+                                    : "You've already started this course with individual lessons! Keep building your knowledge by purchasing more lessons."}
+                                </p>
+                              </div>
                           </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -536,7 +738,7 @@ export function CourseView() {
             <div className="flex items-center gap-3">
               <Clock className="text-muted-foreground" size={20} />
               <span className="font-medium">Total Modules:</span>
-              <span className="font-mono text-lg">{modules.length}</span>
+              <span className="font-mono text-lg">{viewMode === "street" ? streetModules.length : modules.length}</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -552,120 +754,164 @@ export function CourseView() {
             </div>
           </div>
 
-          {filteredModules.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">No modules found</h3>
-              <p className="text-muted-foreground mt-1">
-                {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {filteredModules.map((module) => {
-                const isContentAvailable = !!module.resource_url;
-                const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
-                const isLocked = !hasAccess;
-                const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
+          {/* Module list for all courses */}
+          <div className="mb-4">
+            {filteredModules.length === 0 ? (
+              <div className="text-center py-12">
+                <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">No modules found</h3>
+                <p className="text-muted-foreground mt-1">
+                  {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredModules.map((module) => {
+                  const isContentAvailable = !!module.resource_url;
+                  const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
+                  const isLocked = !hasAccess;
+                  const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
 
-                // Sequential unlock: allow only the first module or next after highest unlocked
-                let canUnlockInOrder = false;
-                if (isLocked) {
-                  const allOrders = modules.map((m) => Number(m.order) || 0).filter((n) => n > 0);
-                  const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
-                  const unlockedOrders = new Set(
-                    modules
-                      .filter((m) => unlockedIds.has(m.id))
-                      .map((m) => Number(m.order) || 0)
-                  );
-                  const highestUnlocked = unlockedOrders.size ? Math.max(...Array.from(unlockedOrders)) : null;
-                  const currentOrder = Number(module.order) || 0;
-                  if (highestUnlocked == null) {
-                    canUnlockInOrder = currentOrder === minOrder;
-                  } else {
-                    canUnlockInOrder = currentOrder === highestUnlocked + 1;
+                  // Sequential unlock: allow only the first module or next after highest unlocked
+                  let canUnlockInOrder = false;
+                  if (isLocked) {
+                    const allOrders = modules.map((m) => Number(m.order) || 0).filter((n) => n > 0);
+                    const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
+                    const unlockedOrders = new Set(
+                      modules
+                        .filter((m) => unlockedIds.has(m.id))
+                        .map((m) => Number(m.order) || 0)
+                    );
+                    const highestUnlocked = unlockedOrders.size ? Math.max(...Array.from(unlockedOrders)) : null;
+                    const currentOrder = Number(module.order) || 0;
+                    if (highestUnlocked == null) {
+                      canUnlockInOrder = currentOrder === minOrder;
+                    } else {
+                      canUnlockInOrder = currentOrder === highestUnlocked + 1;
+                    }
                   }
-                }
-                 
-                
-                return (
-                  <div key={module.id} className="module-card h-full">
-                    {/* <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full"> */}
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                      <div className="aspect-video relative overflow-hidden">
-                        <img 
-                          src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                          alt={module.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {/* Lock overlay for locked modules */}
-                        {isLocked && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
-                              <Lock className="w-5 h-5 text-gray-700" />
-                              <span className="text-sm font-medium text-gray-800">Locked</span>
+                   
+                  
+                  return (
+                    <div key={module.id} className="module-card h-full">
+                      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
+                        <div className="aspect-video relative overflow-hidden">
+                          <img 
+                            src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
+                            alt={module.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Lock overlay for locked modules */}
+                          {isLocked && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
+                                <Lock className="w-5 h-5 text-gray-700" />
+                                <span className="text-sm font-medium text-gray-800">Locked</span>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                      {/* Fixed height for content area, flex-grow to fill space */}
-                      <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                        <CardHeader className="pb-2 px-0 pt-0">
-                          <CardTitle className="text-lg line-clamp-2 min-h-[56px]">{module.title}</CardTitle>
-                          <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">{module.description}</p>
-                        </CardHeader>
-                        <CardContent className="space-y-3 px-0 pt-0 pb-0">
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <BookOpen size={14} />
-                              <span>Order: {module.order || 'N/A'}</span>
+                          )}
+                        </div>
+                        {/* Fixed height for content area, flex-grow to fill space */}
+                        <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
+                          <CardHeader className="pb-2 px-0 pt-0">
+                            <CardTitle className="text-lg line-clamp-2 min-h-[56px]">{module.title}</CardTitle>
+                            <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">{module.description}</p>
+                          </CardHeader>
+                          <CardContent className="space-y-3 px-0 pt-0 pb-0">
+                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <BookOpen size={14} />
+                                <span>Order: {module.order || 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock size={14} />
+                                <span>{module.estimated_duration || 0} min</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Clock size={14} />
-                              <span>{module.estimated_duration || 0} min</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </div>
-                      {/* Footer always at the bottom */}
-                      <div className="mt-auto px-6 pb-4">
-                        <CardFooter className="p-0 flex flex-col gap-2">
-                          <Link 
-                            to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} 
-                            state={{ 
-                              moduleData: {
-                                title: module.title || module.module_title || module.name || 'Module',
-                                description: module.description || module.module_description || '',
-                                duration: module.estimated_duration || module.duration || 0,
-                                totalModules: modules.length || 0
-                              },
-                              courseData: {
-                                title: courseDetails?.title || courseDetails?.course_title || courseDetails?.name || 'Course',
-                                description: courseDetails?.description || courseDetails?.course_description || ''
-                              }
-                            }}
-                            className="w-full">
-                            <Button className="w-full">
-                              <Play size={16} className="mr-2" />
-                              View Lessons
-                            </Button>
-                          </Link>
-                          <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                           <Button variant="outline" className="w-full">
-                              <FileText size={16} className="mr-2" />
-                              View Assessment
-                            </Button> 
-                          </Link>
-                        </CardFooter>
-                      </div>
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                          </CardContent>
+                        </div>
+                        {/* Footer always at the bottom */}
+                        <div className="mt-auto px-6 pb-4">
+                          <CardFooter className="p-0 flex flex-col gap-2">
+                            <Link 
+                              to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} 
+                              state={{ 
+                                moduleData: {
+                                  title: module.title || module.module_title || module.name || 'Module',
+                                  description: module.description || module.module_description || '',
+                                  duration: module.estimated_duration || module.duration || 0,
+                                  totalModules: modules.length || 0
+                                },
+                                courseData: {
+                                  title: courseDetails?.title || courseDetails?.course_title || courseDetails?.name || 'Course',
+                                  description: courseDetails?.description || courseDetails?.course_description || ''
+                                }
+                              }}
+                              className="w-full">
+                              <Button className="w-full">
+                                <Play size={16} className="mr-2" />
+                                View Lessons
+                              </Button>
+                            </Link>
+                            <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
+                             <Button variant="outline" className="w-full">
+                                <FileText size={16} className="mr-2" />
+                                View Assessment
+                              </Button> 
+                            </Link>
+                            {/* Mark as Complete - only show when enrolled in the course */}
+                            {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                              <Button
+                                variant="secondary"
+                                className="w-full disabled:opacity-60"
+                                disabled={markingCompleteIds.has(String(module.id))}
+                                onClick={async () => {
+                                  const idStr = String(module.id);
+                                  if (!courseId || !module?.id) return;
+                                  // Prevent duplicate clicks
+                                  if (markingCompleteIds.has(idStr)) return;
+                                  setMarkingCompleteIds(prev => {
+                                    const next = new Set(prev);
+                                    next.add(idStr);
+                                    return next;
+                                  });
+                                  try {
+                                    await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                    setCompletedModuleIds(prev => {
+                                      const next = new Set(prev);
+                                      next.add(idStr);
+                                      return next;
+                                    });
+                                  } catch (err) {
+                                    console.error('Failed to mark module as complete', err);
+                                  } finally {
+                                    setMarkingCompleteIds(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(idStr);
+                                      return next;
+                                    });
+                                  }
+                                }}
+                              >
+                                {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                              </Button>
+                            ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                              <div className="w-full flex items-center justify-center">
+                                <Badge className="px-3 py-1">Completed</Badge>
+                              </div>
+                            ) : null}
+                          </CardFooter>
+                        </div>
+                      </Card>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </main>
+      
       {/* Confirm Unlock Dialog */}
       {confirmUnlock.open && confirmUnlock.module && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -901,6 +1147,37 @@ export function CourseView() {
                     
                     // Call unlock API for course
                     await unlockContent('COURSE', selectedCourseToBuy.id, selectedCourseToBuy.priceCredits);
+                    
+                    // Also unlock the Street Smart (recording) course when applicable
+                    try {
+                      if (isEligibleForTwoModes(selectedCourseToBuy.title)) {
+                        const recId = getRecordingCourseIdForTitle(selectedCourseToBuy.title);
+                        if (recId) {
+                          await unlockContent('COURSE', recId, 0);
+                          // Frontend guarantee: mark recordings as enrolled to reflect unlocked UI immediately
+                          setIsEnrolledRecording(true);
+                          // Ensure recordings list is loaded so user immediately sees unlocked items
+                          try {
+                            if (!streetModules || streetModules.length === 0) {
+                              const recMods = await fetchCourseModules(recId);
+                              const published = (Array.isArray(recMods) ? recMods : []).filter((m) => {
+                                const status = (m.module_status || m.status || "").toString().toUpperCase();
+                                return status === "PUBLISHED" || m.published === true;
+                              });
+                              setStreetModules(published);
+                            }
+                          } catch {}
+                        }
+                      }
+                    } catch (e) {
+                      console.warn('[CourseView] Optional recording unlock failed:', e?.message || e);
+                      // Even if backend unlock fails, reflect enrollment locally so UI shows access
+                      try {
+                        if (isEligibleForTwoModes(selectedCourseToBuy.title)) {
+                          setIsEnrolledRecording(true);
+                        }
+                      } catch {}
+                    }
                     
                     // Refresh balance to show updated credits
                     if (refreshBalance) {

@@ -62,17 +62,17 @@ export default function PollMessage({ message, currentUserId, onVote, onPinToggl
   const hasVoted = userVotes.length > 0;
 
   const containerClasses = isUser
-    ? "rounded-2xl p-3 shadow-sm min-w-[260px] bg-gradient-to-r from-purple-500 to-purple-600 text-white"
-    : "rounded-2xl border border-gray-200 bg-white p-3 shadow-sm min-w-[260px]";
+    ? "rounded-2xl p-2 sm:p-3 shadow-sm min-w-[200px] sm:min-w-[260px] bg-gradient-to-r from-purple-500 to-purple-600 text-white"
+    : "rounded-2xl border border-gray-200 bg-white p-2 sm:p-3 shadow-sm min-w-[200px] sm:min-w-[260px]";
 
   const optionBase = isUser
-    ? "relative overflow-hidden rounded-lg border px-3 py-2 text-sm border-white/40 hover:bg-white/10"
-    : "relative overflow-hidden rounded-lg border px-3 py-2 text-sm border-gray-200 hover:bg-gray-50";
+    ? "relative overflow-hidden rounded-lg border px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border-white/40 hover:bg-white/10"
+    : "relative overflow-hidden rounded-lg border px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border-gray-200 hover:bg-gray-50";
 
   return (
     <div className={containerClasses}>
       <div className="flex items-start justify-between">
-        <div className={`text-sm font-semibold flex items-center gap-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`text-xs sm:text-sm font-semibold flex items-center gap-2 ${isUser ? 'text-white' : 'text-gray-900'}`}>
           <span>{poll.question}</span>
           {!isLoading && hasVoted && !closed && (
             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] ${isUser ? 'bg-white/20 text-white border border-white/30' : 'bg-green-50 text-green-700 border border-green-200'}`}>
@@ -102,23 +102,23 @@ export default function PollMessage({ message, currentUserId, onVote, onPinToggl
             <button
               key={idx}
               onClick={() => handleVote(idx)}
-              className={`w-full text-left ${optionBase} ${selected ? (isUser ? 'bg-white/20 border-white' : 'border-purple-500 bg-purple-50') : ''} ${closed ? 'cursor-default' : ''}`}
+              className={`w-full text-left whitespace-normal break-words ${optionBase} ${selected ? (isUser ? 'bg-white/20 border-white' : 'border-purple-500 bg-purple-50') : ''} ${closed ? 'cursor-default' : ''}`}
               disabled={closed || isLoading}
             >
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {closed ? (
                     isWinner ? (
-                      <CheckCircle className={`w-4 h-4 ${isUser ? 'text-yellow-300' : 'text-green-600'}`} />
+                      <CheckCircle className={`w-3 h-3 sm:w-4 sm:h-4 ${isUser ? 'text-yellow-300' : 'text-green-600'}`} />
                     ) : (
-                      <Circle className={`w-4 h-4 ${isUser ? 'text-white/40' : 'text-gray-300'}`} />
+                      <Circle className={`w-3 h-3 sm:w-4 sm:h-4 ${isUser ? 'text-white/40' : 'text-gray-300'}`} />
                     )
                   ) : selected ? (
-                    <CheckCircle className={`w-4 h-4 ${isUser ? 'text-white' : 'text-purple-600'}`} />
+                    <CheckCircle className={`w-3 h-3 sm:w-4 sm:h-4 ${isUser ? 'text-white' : 'text-purple-600'}`} />
                   ) : (
-                    <Circle className={`w-4 h-4 ${isUser ? 'text-white/60' : 'text-gray-300'}`} />
+                    <Circle className={`w-3 h-3 sm:w-4 sm:h-4 ${isUser ? 'text-white/60' : 'text-gray-300'}`} />
                   )}
-                  <span className={`${selected ? (isUser ? 'text-white' : 'text-purple-700') : (isUser ? 'text-white' : 'text-gray-800')}`}>{opt}</span>
+                  <span className={`text-xs sm:text-sm ${selected ? (isUser ? 'text-white' : 'text-purple-700') : (isUser ? 'text-white' : 'text-gray-800')}`}>{opt}</span>
                   {closed && isWinner && (
                     <span className={`text-xs font-medium ${isUser ? 'text-yellow-200' : 'text-green-600'}`}>
                       Winner
@@ -126,10 +126,10 @@ export default function PollMessage({ message, currentUserId, onVote, onPinToggl
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`${isUser ? 'text-white/90' : 'text-gray-600'} font-medium tabular-nums`}>
+                  <span className={`text-[11px] sm:text-sm ${isUser ? 'text-white/90' : 'text-gray-600'} font-medium tabular-nums`}>
                     {count} vote{count !== 1 ? 's' : ''}
                   </span>
-                  <span className={`${isUser ? 'text-white/90' : 'text-gray-600'} font-medium tabular-nums`}>
+                  <span className={`text-[11px] sm:text-sm ${isUser ? 'text-white/90' : 'text-gray-600'} font-medium tabular-nums`}>
                     {ratio}%
                   </span>
                 </div>
@@ -141,7 +141,7 @@ export default function PollMessage({ message, currentUserId, onVote, onPinToggl
           );
         })}
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+      <div className="mt-2 flex items-center justify-between text-[10px] sm:text-xs text-gray-500">
         <div className={isUser ? 'text-white/90' : ''}>
           {totalVotes} vote{totalVotes === 1 ? '' : 's'}{multiple ? ' • Multiple choice' : ''}
           {closed && totalVotes > 0 && (
@@ -154,7 +154,7 @@ export default function PollMessage({ message, currentUserId, onVote, onPinToggl
             </span>
           )}
         </div>
-        <div className={isUser ? 'text-white/90' : 'text-gray-500'}>
+        <div className={`${isUser ? 'text-white/90' : 'text-gray-500'} whitespace-nowrap`}>
           {isLoading ? 'Loading…' : (closed ? `Closed ${poll.closedAt ? new Date(poll.closedAt).toLocaleString() : (poll.closesAt ? new Date(poll.closesAt).toLocaleString() : '')}` : (poll.closesAt ? `Ends ${new Date(poll.closesAt).toLocaleString()}` : ''))}
         </div>
       </div>

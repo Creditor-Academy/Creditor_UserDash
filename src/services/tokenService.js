@@ -1,3 +1,5 @@
+import Cookies from 'js-cookie';
+
 export function getAccessToken() {
     const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     return token || '';

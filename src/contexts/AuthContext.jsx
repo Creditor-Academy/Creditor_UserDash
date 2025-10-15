@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
       // clearTokenRefresh(); // Removed this line as it's no longer needed
       clearAccessToken(); // This removes both 'authToken' and 'token' from localStorage
       localStorage.removeItem('userId');
-      Cookies.remove('token');
+      Cookies.remove('Access-Token');
       Cookies.remove('userId');
       
       setUserRoleState('user');

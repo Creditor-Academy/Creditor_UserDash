@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
+import ImageEditor from './ImageEditor';
 
 const QuoteComponent = forwardRef(({
   showQuoteTemplateSidebar,
@@ -27,6 +28,12 @@ const QuoteComponent = forwardRef(({
   const [activeCarouselTab, setActiveCarouselTab] = useState(0);
   const [imageUploading, setImageUploading] = useState(false);
   const [authorImageUploading, setAuthorImageUploading] = useState(false);
+  
+  // Image editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
+  const [imageEditorType, setImageEditorType] = useState('author'); // 'author' or 'background'
 
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -45,50 +52,65 @@ const QuoteComponent = forwardRef(({
       return;
     }
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Image size should be less than 10MB');
+    // Validate file size (100MB max)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Image size should be less than 100MB');
       return;
     }
 
-    // Set appropriate loading state
-    if (imageType === 'background') {
-      setImageUploading(true);
-    } else if (imageType === 'author') {
-      setAuthorImageUploading(true);
-    }
+    // Show image editor instead of directly uploading
+    setImageToEdit(file);
+    setImageEditorType(imageType);
+    setImageEditorTitle(imageType === 'author' ? 'Edit Author Image' : 'Edit Background Image');
+    setShowImageEditor(true);
+  };
 
+  const handleImageEditorSave = async (editedFile) => {
+    // Close image editor immediately to show uploading state
+    setShowImageEditor(false);
+    setImageToEdit(null);
+    
     try {
-      // Upload image to cloud using the same logic as image blocks
-      const uploadResult = await uploadImage(file, {
+      // Set appropriate loading state
+      if (imageEditorType === 'background') {
+        setImageUploading(true);
+      } else if (imageEditorType === 'author') {
+        setAuthorImageUploading(true);
+      }
+
+      // Upload edited image to cloud
+      const uploadResult = await uploadImage(editedFile, {
         folder: 'lesson-images',
         public: true
       });
 
       if (uploadResult.success && uploadResult.imageUrl) {
-        setImage(uploadResult.imageUrl);
-        toast.success('Image uploaded successfully!');
+        // Set the appropriate image state
+        if (imageEditorType === 'background') {
+          setBackgroundImage(uploadResult.imageUrl);
+        } else if (imageEditorType === 'author') {
+          setQuoteImage(uploadResult.imageUrl);
+        }
+        toast.success('Image edited and uploaded successfully!');
       } else {
         throw new Error('Upload failed - no image URL returned');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image. Please try again.');
-      
-      // Fallback to local URL for immediate preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-      };
-      reader.readAsDataURL(file);
+      console.error('Error uploading edited image:', error);
+      toast.error(error.message || 'Failed to upload edited image. Please try again.');
     } finally {
       // Reset appropriate loading state
-      if (imageType === 'background') {
+      if (imageEditorType === 'background') {
         setImageUploading(false);
-      } else if (imageType === 'author') {
+      } else if (imageEditorType === 'author') {
         setAuthorImageUploading(false);
       }
     }
+  };
+
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setImageToEdit(null);
   };
 
   const handleCarouselQuoteChange = (index, field, value) => {
@@ -843,7 +865,7 @@ const QuoteComponent = forwardRef(({
                       )}
                       <div>
                         <label className={`cursor-pointer text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center ${
-                          authorImageUploading 
+                          authorImageUploading
                             ? 'bg-gray-200 cursor-not-allowed' 
                             : 'bg-gray-100 hover:bg-gray-200'
                         }`}>
@@ -912,7 +934,7 @@ const QuoteComponent = forwardRef(({
                       )}
                       <div>
                         <label className={`cursor-pointer text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center ${
-                          imageUploading 
+                          imageUploading
                             ? 'bg-gray-200 cursor-not-allowed' 
                             : 'bg-gray-100 hover:bg-gray-200'
                         }`}>
@@ -965,8 +987,17 @@ const QuoteComponent = forwardRef(({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Editor */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageFile={imageToEdit}
+        onSave={handleImageEditorSave}
+        title={imageEditorTitle}
+      />
     </>
   );
 });
-  
+
 export default QuoteComponent;

@@ -198,14 +198,38 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
           {viewTab === 'overview' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-gray-200 rounded-lg p-4">
-              <div className="text-sm text-gray-600 mb-1">Current Balance</div>
-              <div className="text-3xl font-bold text-gray-900">{balance}</div>
-              <div className="text-xs text-gray-500 mt-1">credits available</div>
-               <div className="mt-3 text-xs">
-                 <span className={`px-2 py-1 rounded ${membership.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{membership.isActive ? 'Membership active' : 'Membership inactive'}</span>
-               </div>
+              <div className="mt-1 text-xs flex items-center justify-between gap-2 flex-wrap">
+                <span className={`px-2 py-1 rounded ${membership.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{membership.isActive ? 'Membership active' : 'Membership inactive'}</span>
+                {/* Enhanced balance pill (right side of row) */}
+                <span className="relative inline-flex">
+                  <span className="absolute -inset-[1px] rounded-md bg-gradient-to-r from-sky-400/25 via-indigo-400/25 to-emerald-400/25" aria-hidden="true" />
+                  <span className="relative px-3 py-1.5 rounded-md bg-white text-slate-900 ring-1 ring-slate-200 shadow-sm inline-flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-indigo-500">
+                      <path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm0 1.5a8.25 8.25 0 1 1 0 16.5 8.25 8.25 0 0 1 0-16.5Zm0 2.25a5.25 5.25 0 1 0 0 10.5 5.25 5.25 0 0 0 0-10.5Z"/>
+                    </svg>
+                    <span className="leading-tight">
+                      <span className="block text-[10px] uppercase tracking-wide text-slate-500">Credits</span>
+                      <span className="block text-sm font-semibold">{formatNumber(balance)}</span>
+                    </span>
+                  </span>
+                </span>
+              </div>
+              {/* Premium card preview (left section) */}
+              <div className="mt-4">
+                {/* Credit card with less curved edges - no background container */}
+                <div className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <img
+                    src="https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/card.png"
+                    alt="Credit preview"
+                    className="w-full h-auto object-contain select-none rounded-xl"
+                    loading="lazy"
+                  />
+                  {/* Subtle shine */}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-white/30 rounded-xl" />
+                </div>
+              </div>
             </div>
-            <div className="border border-gray-200 rounded-lg p-5 flex flex-col justify-between">
+            <div className="border border-gray-200 rounded-lg p-5 flex flex-col gap-4">
               <div>
                 <div className="font-semibold text-gray-900 mb-1 text-lg">Purchase Credits</div>
                 <div className="text-sm text-gray-600 mb-4">Pick a pack or use custom amount in the next step.</div>
@@ -336,20 +360,20 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
       {checkoutOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-3xl p-3">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900">Checkout</h4>
+          <div className="relative bg-white rounded-none sm:rounded-xl shadow-lg border-0 sm:border border-gray-200 w-full h-full sm:w-full sm:h-auto max-w-none sm:max-w-3xl max-h-none sm:max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 sm:px-4 sm:py-3 border-b sticky top-0 bg-white">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-900">Checkout</h4>
               <button aria-label="Close" onClick={()=>setCheckoutOpen(false)} className="px-3 py-1.5 rounded-md border hover:bg-gray-50 text-sm">Close</button>
             </div>
-            <div className="space-y-4">
+            <div className="overflow-y-auto p-4 sm:p-4 space-y-3 sm:space-y-4 h-[calc(100%-56px)] sm:h-auto">
               {checkoutStep === "packs" && (
                 <>
                   <div>
                     <div className="text-center mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
-                      <p className="text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Choose Your Credit Pack</h3>
+                      <p className="text-xs sm:text-sm text-gray-600">Select the amount of credits you'd like to purchase</p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       {/* $50 Pack */}
                       <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack50" 
@@ -366,11 +390,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
                           packType === "pack50" 
                             ? "border-blue-500 bg-blue-50" 
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$50</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">250 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$50</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">250 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -406,11 +430,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
                           packType === "pack100" 
                             ? "border-blue-500 bg-blue-50" 
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$100</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">500 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$100</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">500 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -446,11 +470,11 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
                           packType === "pack500" 
                             ? "border-blue-500 bg-blue-50" 
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$500</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">2,500 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$500</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">2,500 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -473,7 +497,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                       {/* $2,800 Pack */}
                       <label className={`group relative cursor-pointer transition-all duration-200 ${
                         packType === "pack2800" 
-                          ? "ring-2 ring-emerald-500 ring-offset-2" 
+                          ? "ring-2 ring-blue-500 ring-offset-2" 
                           : "hover:shadow-lg"
                       }`}>
                         <input 
@@ -485,17 +509,12 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                         />
                         <div className={`relative p-6 rounded-lg border-2 transition-all duration-200 h-48 flex flex-col ${
                           packType === "pack2800" 
-                            ? "border-emerald-500 bg-emerald-50" 
-                            : "border-gray-200 bg-white hover:border-gray-300"
+                            ? "border-blue-500 bg-blue-50" 
+                            : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50"
                         }`}>
-                          <div className="absolute top-2 right-2">
-                            <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded">
-                              BEST VALUE
-                            </span>
-                          </div>
                           <div className="text-center flex-1 flex flex-col justify-center">
-                            <div className="text-2xl font-bold text-gray-700 mb-2">$2,800</div>
-                            <div className="text-lg font-bold text-gray-900 mb-4">14,000 Credits</div>
+                            <div className="text-xl sm:text-2xl font-bold text-gray-700 mb-2">$2,800</div>
+                            <div className="text-base sm:text-lg font-bold text-gray-900 mb-4">14,000 Credits</div>
                             <div className="space-y-2 text-xs text-gray-500">
                               <div className="flex items-center justify-center">
                                 <svg className="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -506,7 +525,7 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                             </div>
                           </div>
                           {packType === "pack2800" && (
-                            <div className="absolute top-2 left-2 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <div className="absolute top-2 left-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                               <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
@@ -520,14 +539,14 @@ const CreditPurchaseModal = ({ open = false, onClose = () => {}, balance: extern
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="text-sm text-gray-600">Selected credits</div>
-                        <div className="text-3xl font-bold text-gray-900">{formatNumber(derived.credits)}</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-gray-900">{formatNumber(derived.credits)}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-gray-600">Total due</div>
-                        <div className="text-lg font-semibold text-gray-700">${derived.price}</div>
+                        <div className="text-base sm:text-lg font-semibold text-gray-700">${derived.price}</div>
                       </div>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <button 
                         onClick={()=>setCheckoutOpen(false)} 
                         className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"

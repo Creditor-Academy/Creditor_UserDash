@@ -19,6 +19,8 @@ const LessonPreview = () => {
   const [completedSections, setCompletedSections] = useState(new Set());
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     fetchLessonContent();
@@ -67,6 +69,29 @@ const LessonPreview = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lessonData, currentSection]);
+
+  // Header visibility based on scroll direction
+  useEffect(() => {
+    const handleHeaderScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Only hide/show header if scrolled more than 100px
+      if (Math.abs(currentScrollY - lastScrollY) < 5) return;
+      
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down - hide header
+        setIsHeaderVisible(false);
+      } else {
+        // Scrolling up - show header
+        setIsHeaderVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleHeaderScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleHeaderScroll);
+  }, [lastScrollY]);
 
   const fetchLessonContent = async () => {
     try {
@@ -794,7 +819,9 @@ const LessonPreview = () => {
       <div className={`flex-1 transition-all duration-300 ${sidebarVisible ? 'lg:ml-80' : 'lg:ml-0'}`}>
         {/* Fixed Header */}
         <header 
-          className="fixed top-0 right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80 transition-all duration-300" 
+          className={`fixed right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80 transition-all duration-300 ${
+            isHeaderVisible ? 'top-0' : '-top-20'
+          }`}
           style={{ left: sidebarVisible ? '320px' : '0' }}
         >
           <div className="flex items-center justify-between px-6 py-3">

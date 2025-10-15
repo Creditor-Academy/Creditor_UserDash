@@ -49,6 +49,7 @@ const ModuleLessonsView = () => {
     description: "",
     order: 1,
     status: "DRAFT",
+    thumbnail: "",
   });
 
   // Lesson deletion state
@@ -140,6 +141,7 @@ const ModuleLessonsView = () => {
         description: newLesson.description,
         order: parseInt(newLesson.order) || 1,
         lesson_status: newLesson.status,
+        thumbnail: newLesson.thumbnail || null,
       };
       
       const response = await axios.post(
@@ -169,6 +171,7 @@ const ModuleLessonsView = () => {
         description: "",
         order: newLesson.order + 1, // Increment order for next lesson
         status: "DRAFT",
+        thumbnail: "",
       });
       
       setShowCreateDialog(false);
@@ -210,6 +213,7 @@ const ModuleLessonsView = () => {
       if (currentLesson.description) updateData.description = currentLesson.description;
       if (currentLesson.order !== undefined) updateData.order = parseInt(currentLesson.order) || 1;
       if (currentLesson.status !== undefined) updateData.lesson_status = currentLesson.status;
+      if (currentLesson.thumbnail !== undefined) updateData.thumbnail = currentLesson.thumbnail || null;
       
       const response = await axios.patch(
         `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
@@ -261,7 +265,8 @@ const ModuleLessonsView = () => {
     setCurrentLesson({
       ...lesson,
       order: lesson.order || 1,
-      status: lesson.status || 'DRAFT'
+      status: lesson.status || 'DRAFT',
+      thumbnail: lesson.thumbnail || ''
     });
     setShowUpdateDialog(true);
   };
@@ -298,7 +303,7 @@ const ModuleLessonsView = () => {
   }, [lessons, searchQuery]);
 
   const handleLessonClick = (lesson) => {
-    // Simply navigate to the builder - we'll fetch content there
+    // Navigate to the builder - DashboardLayout will auto-collapse sidebar for lesson builder pages
     navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`, {
       state: { lessonData: lesson }
     });
@@ -415,6 +420,23 @@ const ModuleLessonsView = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredLessons.map((lesson, index) => (
             <Card key={lesson.id || `lesson-${index}`} className="hover:shadow-md transition-shadow">
+              {/* Thumbnail */}
+              {lesson.thumbnail && (
+                <div className="relative w-full h-48 bg-gray-100 rounded-t-lg overflow-hidden">
+                  <img 
+                    src={lesson.thumbnail} 
+                    alt={lesson.title || 'Lesson thumbnail'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500 text-sm" style={{display: 'none'}}>
+                    Image failed to load
+                  </div>
+                </div>
+              )}
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start gap-2">
                   <CardTitle className="text-lg line-clamp-2">
@@ -546,6 +568,40 @@ const ModuleLessonsView = () => {
               />
             </div>
             
+            <div className="space-y-2">
+              <Label htmlFor="thumbnail">Thumbnail URL</Label>
+              <Input
+                id="thumbnail"
+                name="thumbnail"
+                value={newLesson.thumbnail}
+                onChange={handleInputChange}
+                placeholder="Enter thumbnail image URL (optional)"
+                type="url"
+              />
+              <p className="text-xs text-gray-500">
+                Enter a URL to an image file. Maximum file size: 100MB. Supported formats: JPG, PNG, GIF, WebP.
+              </p>
+              {newLesson.thumbnail && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-600 mb-2">Preview:</p>
+                  <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
+                    <img 
+                      src={newLesson.thumbnail} 
+                      alt="Thumbnail preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm" style={{display: 'none'}}>
+                      Invalid image URL
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               
               <div className="space-y-2">
@@ -639,6 +695,40 @@ const ModuleLessonsView = () => {
                 rows={3}
                 required
               />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="thumbnail">Thumbnail URL</Label>
+              <Input
+                id="thumbnail"
+                name="thumbnail"
+                value={currentLesson?.thumbnail || ''}
+                onChange={(e) => setCurrentLesson(prev => ({ ...prev, thumbnail: e.target.value }))}
+                placeholder="Enter thumbnail image URL (optional)"
+                type="url"
+              />
+              <p className="text-xs text-gray-500">
+                Enter a URL to an image file. Maximum file size: 100MB. Supported formats: JPG, PNG, GIF, WebP.
+              </p>
+              {currentLesson?.thumbnail && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-600 mb-2">Preview:</p>
+                  <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
+                    <img 
+                      src={currentLesson.thumbnail} 
+                      alt="Thumbnail preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm" style={{display: 'none'}}>
+                      Invalid image URL
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="grid grid-cols-2 gap-4">

@@ -1,67 +1,60 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import AthenaDash from "../../assets/AthenaDash.png";
-import capybilities1 from "../../assets/capybilities1.jpeg";
-import capybilities2 from "../../assets/capybilities2.jpeg";
-import capybilities3 from "../../assets/capybilities3.jpeg";
-import capybilities4 from "../../assets/capybilities4.jpeg";
-import capybilities5 from "../../assets/capybilities5.jpeg";
-import chelengeBg from "../../assets/chelengeBg.jpeg";
-import latest2 from "../../assets/latest2.jpeg";
 
 
-// FEATURES DATA
+// LEARNING MODALITIES DATA
 const features = [
   {
-    title: "Content Authoring & Learning Design Studio",
-    desc: "Create, edit, and organize course content with advanced tools that empower educators to build engaging learning journeys.",
-    image: capybilities1,
+    title: "eLearning",
+    desc: "Self-paced digital courses with interactive content, multimedia elements, and adaptive learning paths for maximum engagement.",
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=300&fit=crop&crop=center",
   },
   {
-    title: "Collaborative Communities & Intelligent Communication Hub",
-    desc: "Connect learners and instructors seamlessly with messaging, discussion forums, and collaborative study tools.",
-    image: AthenaDash,
+    title: "Web-Based Training (WBT)",
+    desc: "Browser-accessible training modules with real-time collaboration tools and cloud-based content delivery.",
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop&crop=center",
   },
   {
-    title: "AI-Powered Content Personalization & Co-Creation",
-    desc: "Leverage AI to tailor learning materials for each student and enable collaborative content creation.",
-    image: capybilities2,
+    title: "Virtual Instructor-Led Training (VILT)",
+    desc: "Live online sessions with interactive features, breakout rooms, and real-time feedback for immersive learning experiences.",
+    image: "https://images.unsplash.com/photo-1587560699334-cc4ff634909a?w=400&h=300&fit=crop&crop=center",
   },
   {
-    title: "Comprehensive Learning Analytics & Actionable Insights",
-    desc: "Gain deep understanding of learner progress and engagement with insightful dashboards and reports.",
-    image: capybilities3,
+    title: "Instructor-Led Training (ILT)",
+    desc: "Traditional classroom settings enhanced with digital tools, blended learning approaches, and comprehensive instructor support.",
+    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop&crop=center",
   },
   {
-    title: "All-in-One SaaS Ecosystem for Learning & Growth",
-    desc: "Manage courses, users, payments, and more from a unified cloud-based platform.",
-    image: capybilities4,
+    title: "Microlearning",
+    desc: "Bite-sized learning modules designed for quick consumption, perfect for busy schedules and just-in-time knowledge delivery.",
+    image: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=300&fit=crop&crop=center",
   },
   {
-    title: "Interactive Assessments & Smart Evaluation Engine",
-    desc: "Create dynamic quizzes and assignments with automated grading to boost learner success.",
-    image: capybilities5,
-  },
-  {
-    title: "Mobile Learning Support",
-    desc: "Seamless learning across devices with offline access and responsive design.",
-    image: chelengeBg,
-  },
-  {
-    title: "Third-Party Integration",
-    desc: "Connect your LMS to Zoom, Google Drive, and more, automating workflows for teachers and students.",
-    image: latest2,
+    title: "Gamified Learning",
+    desc: "Interactive learning experiences with points, badges, leaderboards, and challenges that motivate learners through game mechanics.",
+    image: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400&h=300&fit=crop&crop=center",
   },
 ];
 
+
 export default function Features() {
   const [activeIdx, setActiveIdx] = useState(4);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const ref = useRef(null);
   useInView(ref, { once: true, margin: "-20%" });
 
-  // Card size variables
-  const cardWidth = 120;
-  const cardHeight = 140;
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Card size variables - responsive
+  const cardWidth = windowWidth < 768 ? 80 : windowWidth < 1024 ? 100 : 120;
+  const cardHeight = windowWidth < 768 ? 100 : windowWidth < 1024 ? 120 : 140;
   const selectedScale = 1.14;
   const hoverScale = 1.09;
 
@@ -71,14 +64,14 @@ export default function Features() {
     selected: { scale: selectedScale },
   };
 
-  // Main styles
+  // Main styles - responsive
   const sectionStyle = {
     position: "relative",
     width: "100%",
-    minHeight: "520px",
+    minHeight: windowWidth < 768 ? "400px" : "520px",
     boxShadow: "0 6px 32px rgba(80,120,210,0.07)",
-    padding: "60px 20px 40px 20px",
-    background: "linear-gradient(135deg,#8fd6ff 0%,#f7faff 75%)",
+    padding: windowWidth < 768 ? "40px 16px 30px 16px" : windowWidth < 1024 ? "50px 20px 35px 20px" : "60px 20px 40px 20px",
+    background: "white",
     overflow: "hidden",
     boxSizing: "border-box"
   };
@@ -107,7 +100,7 @@ export default function Features() {
     letterSpacing: "0.04em"
   };
   const titleStyle = {
-    fontSize: "2.13rem",
+    fontSize: windowWidth < 768 ? "1.5rem" : windowWidth < 1024 ? "1.8rem" : "2.13rem",
     fontWeight: 700,
     color: "#17183a",
     margin: "8px 0 0 0",
@@ -123,28 +116,31 @@ export default function Features() {
     borderRadius: "8px",
   };
   const subtitleStyle = {
-    fontSize: "1.19rem",
+    fontSize: windowWidth < 768 ? "1rem" : windowWidth < 1024 ? "1.1rem" : "1.19rem",
     fontWeight: 600,
     color: "#363d51",
     margin: "19px 0 7px 0"
   };
   const descStyle = {
     color: "#565779",
-    fontSize: "1.05rem",
-    lineHeight: 1.52
+    fontSize: windowWidth < 768 ? "0.9rem" : windowWidth < 1024 ? "0.95rem" : "1.05rem",
+    lineHeight: 1.52,
+    padding: windowWidth < 768 ? "0 16px" : "0"
   };
   const flexWrapStyle = {
     display: "flex",
     flexWrap: "wrap",
-    gap: "26px",
+    gap: windowWidth < 768 ? "16px" : "26px",
     justifyContent: "center",
-    alignItems: "flex-start"
+    alignItems: "flex-start",
+    flexDirection: windowWidth < 768 ? "column" : "row"
   };
   const gridStyle = {
     display: "grid",
-    gridTemplateColumns: `repeat(4, ${cardWidth}px)`,
-    gap: "12px",
-    marginBottom: "30px",
+    gridTemplateColumns: windowWidth < 768 ? `repeat(2, ${cardWidth}px)` : windowWidth < 1024 ? `repeat(3, ${cardWidth}px)` : `repeat(3, ${cardWidth}px)`,
+    gap: windowWidth < 768 ? "8px" : "12px",
+    marginBottom: windowWidth < 768 ? "20px" : "30px",
+    justifyContent: "center"
   };
   const thumbButton = (selected) => ({
     width: cardWidth,
@@ -166,8 +162,8 @@ export default function Features() {
     padding: 0,
   });
   const thumbImageStyle = {
-    width: "96px",
-    height: "106px",
+    width: windowWidth < 768 ? "70px" : windowWidth < 1024 ? "85px" : "96px",
+    height: windowWidth < 768 ? "80px" : windowWidth < 1024 ? "95px" : "106px",
     objectFit: "cover",
     borderRadius: "14px",
     display: "block",
@@ -176,36 +172,38 @@ export default function Features() {
     display: "inline-flex",
     alignItems: "center",
     fontWeight: 700,
-    fontSize: "1.25rem",
+    fontSize: windowWidth < 768 ? "1rem" : "1.25rem",
     background: "#574ff2",
     color: "#fff",
     borderRadius: "14px",
-    padding: "17px 42px",
+    padding: windowWidth < 768 ? "12px 24px" : "17px 42px",
     textDecoration: "none",
     letterSpacing: "0.02em",
     boxShadow: "0 4px 24px rgba(87,77,242,0.09)"
   };
   const rightPanelStyle = {
     flex: 1,
-    minWidth: 420,
+    minWidth: windowWidth < 768 ? "100%" : windowWidth < 1024 ? "350px" : "420px",
     borderRadius: "28px",
     background: "linear-gradient(135deg,rgba(127,177,255,0.13) 0%,rgba(255,255,255,0.82) 80%)",
     boxShadow: "0 8px 36px rgba(58,82,180,0.06)",
-    padding: "44px 40px",
+    padding: windowWidth < 768 ? "24px 20px" : windowWidth < 1024 ? "32px 28px" : "44px 40px",
     display: "flex",
     alignItems: "center",
-    gap: "40px",
-    marginLeft: 24,
-    marginTop: 3,
-    maxWidth: "680px"
+    gap: windowWidth < 768 ? "20px" : "40px",
+    marginLeft: windowWidth < 768 ? 0 : 24,
+    marginTop: windowWidth < 768 ? "20px" : 3,
+    maxWidth: windowWidth < 768 ? "100%" : "680px",
+    flexDirection: windowWidth < 768 ? "column" : "row"
   };
   const squareImageWrap = {
-    minWidth: 180,
-    maxWidth: 200,
+    minWidth: windowWidth < 768 ? "120px" : windowWidth < 1024 ? "150px" : "180px",
+    maxWidth: windowWidth < 768 ? "140px" : windowWidth < 1024 ? "170px" : "200px",
     aspectRatio: "1 / 1",
     borderRadius: "19px",
     overflow: "hidden",
-    marginRight: 36,
+    marginRight: windowWidth < 768 ? 0 : windowWidth < 1024 ? "24px" : "36px",
+    marginBottom: windowWidth < 768 ? "16px" : 0,
     background: "linear-gradient(135deg,#f7fcff 0 63%,rgba(139,214,255,0.08) 100%)",
     display: "flex",
     alignItems: "center",
@@ -261,23 +259,30 @@ export default function Features() {
 
       {/* Header */}
       <div style={headerStyle}>
-        <span style={badgeStyle}>POWERFUL CAPABILITIES</span>
+        <span style={badgeStyle}>LEARNING MODALITIES</span>
         <h2 style={titleStyle}>
-          Transformative Learning <span style={{ color: "#5956e9" }}>Experiences</span>
+          Designed for <span style={{ color: "#5956e9" }}>All Learning Modalities</span>
         </h2>
         <div style={underlineStyle}></div>
-        <div style={subtitleStyle}>All-in-One SaaS Ecosystem for Learning & Growth</div>
+        <div style={subtitleStyle}>Comprehensive Learning Solutions for Every Need</div>
         <div style={descStyle}>
-          Next-generation LMS capabilities designed to <span style={{ color: "#5956e9", fontWeight: 600 }}>engage</span> learners,&nbsp;
-          <span style={{ color: "#5956e9", fontWeight: 600 }}>empower</span> educators, and&nbsp;
-          <span style={{ color: "#5956e9", fontWeight: 600 }}>analyze</span> outcomes.
+          From traditional classroom settings to cutting-edge digital experiences, Athena supports <span style={{ color: "#5956e9", fontWeight: 600 }}>every learning style</span> and&nbsp;
+          <span style={{ color: "#5956e9", fontWeight: 600 }}>delivery method</span> to ensure maximum&nbsp;
+          <span style={{ color: "#5956e9", fontWeight: 600 }}>engagement</span> and retention.
         </div>
       </div>
 
       {/* Layout */}
       <div style={flexWrapStyle}>
         {/* Thumbnails */}
-        <div style={{ flex: "0 0 auto", maxWidth: "600px", minWidth: "450px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ 
+          flex: "0 0 auto", 
+          maxWidth: windowWidth < 768 ? "100%" : "600px", 
+          minWidth: windowWidth < 768 ? "100%" : "450px", 
+          display: "flex", 
+          flexDirection: "column", 
+          alignItems: "center" 
+        }}>
           <div style={gridStyle}>
             {features.map((feature, idx) => (
               <motion.button
@@ -295,8 +300,8 @@ export default function Features() {
               </motion.button>
             ))}
           </div>
-          <a href="#" style={featuresButtonStyle}>
-            Explore All Features
+          <a href="/product" style={featuresButtonStyle}>
+            Explore All Modalities
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" style={{ marginLeft: 8 }}>
               <path fill="#fff" fillRule="evenodd" d="M8.58 13.087a.83.83 0 0 1-1.174-1.174l3.455-3.456H6.332a.83.83 0 0 1 0-1.66h7.222a.83.83 0 0 1 .83.83v7.222a.83.83 0 1 1-1.66 0v-4.53l-3.454 3.456Z" clipRule="evenodd"/></svg>
           </a>

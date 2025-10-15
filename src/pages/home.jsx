@@ -1,24 +1,35 @@
 import React from 'react'
-import Navbar from '@/components/navbar.jsx';
-import Footer from '@/components/Footer.jsx';
-import Hero from '@/components/homepage/hero.jsx';
-import About from '@/components/homepage/about.jsx';
-import AboutHero from '@/components/homepage/AboutHero.jsx';
-import AboutFeatures from '@/components/homepage/AboutFeatures.jsx';
-//import Ready from '@/components/Ready.jsx';
-import Features from '@/components/homepage/features.jsx';
-import LearningSection from '@/components/homepage/learningsection.jsx';
+import Navbar from '../components/navbar.jsx';
+import Footer from '../components/Footer.jsx';
+import Hero from '../components/homepage/herosection.jsx';
+import About from '../components/homepage/about.jsx';
+// import AboutHero from '../../components/homepage/AboutHero';
+// import AboutFeatures from '../../components/homepage/AboutFeatures';
+import Ready from '../components/homepage/readysection.jsx';
+import Features from '../components/homepage/features.jsx';
+import LearningSection from '../components/homepage/learningsection.jsx';
+import Testimonial from '../components/homepage/Testimonial.jsx';
+import HowWork from '../components/homepage/HowWork.jsx';
+import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
+import LearningPathways from '../components/homepage/LearningPathways.jsx';
+import CTA from '../components/homepage/cta.jsx';
+
 
 const Home = () => {
   return (
     <>
       <Navbar />
       <Hero />
-      <About/>
+      {/* <About/> */}
+      <KeyCapabilities />
+      <HowWork />
       <Features />
-      <LearningSection />
+      {/* <LearningSection /> */}
+      <LearningPathways />
+      {/* <Testimonial />
+      <CTA /> */}
+      <Ready />
       <Footer />
-      {/* <Ready /> */}
     </>
   );
 };

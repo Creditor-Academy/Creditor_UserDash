@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { getAccessToken, setAccessToken, clearAccessToken } from './tokenService';
+import { getAccessToken, clearAccessToken } from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
 export const api = axios.create({
 	baseURL: API_BASE,
@@ -110,69 +110,30 @@ async function refreshAccessToken() {
 api.interceptors.response.use(
 	(res) => res,
 	async (error) => {
-		const original = error.config;
-		if (!original) throw error;
-
 		const status = error.response?.status;
 		const isAuthError = status === 401 || status === 403;
-		const notRetried = !original._retry;
+		const url = error.config?.url;
 
-		if (isAuthError && notRetried) {
-			console.warn('[Auth] Received', status, 'for', original.url, '- attempting refresh');
-			original._retry = true;
-			if (isRefreshing) {
-				console.log('[Auth] Refresh already in progress. Queuing request.');
-				return new Promise((resolve, reject) => {
-					pendingQueue.push({ resolve, reject });
-				})
-				.then((token) => {
-					original.headers = original.headers || {};
-					original.headers['Authorization'] = `Bearer ${token}`;
-					return api(original);
-				});
+		// Only force logout for specific auth-related endpoints, not login attempts or general API calls
+		if (isAuthError && url && (
+			url.includes('/user/getUserProfile') || 
+			url.includes('/auth/refresh') ||
+			url.includes('/auth/logout')
+		)) {
+			console.warn('[Auth] Received', status, 'for', url, '- clearing tokens and forcing logout');
+			clearAccessToken();
+			// Broadcast logout event
+			window.dispatchEvent(new CustomEvent('userLoggedOut'));
+			// Navigate to login page
+			if (typeof window !== 'undefined') {
+				setTimeout(() => { window.location.href = '/login'; }, 0);
 			}
-
-			isRefreshing = true;
-			try {
-				const token = await refreshAccessToken();
-				pendingQueue.forEach(({ resolve }) => resolve(token));
-				pendingQueue = [];
-				original.headers = original.headers || {};
-				original.headers['Authorization'] = `Bearer ${token}`;
-				console.log('[Auth] Retrying original request after refresh:', original.url);
-				return api(original);
-			} catch (err) {
-				pendingQueue.forEach(({ reject }) => reject(err));
-				pendingQueue = [];
-				return Promise.reject(err);
-			} finally {
-				isRefreshing = false;
-			}
-		}
-
-		// If refresh failed due to refresh token expired (e.g., 401/403/419 with a specific code), perform logout
-		// Only force logout for specific endpoints or after multiple failed attempts
-		// Don't force logout for group operations as they might have different permission requirements
-		if ((status === 401 || status === 403 || status === 419) && 
-			(original.url?.includes('/auth/') || original.url?.includes('/user/') || original.url?.includes('/profile')) &&
-			!original.url?.includes('/groups/')) {
-			console.warn('[Auth] Authorization failed after refresh for auth endpoint. Forcing logout.');
-			try {
-				const { clearAccessToken } = await import('./tokenService');
-				clearAccessToken();
-				// Broadcast and redirect if app desires
-				window.dispatchEvent(new CustomEvent('userLoggedOut'));
-				// Optional: navigate to login page
-				if (typeof window !== 'undefined') {
-					setTimeout(() => { window.location.href = '/login'; }, 0);
-				}
-			} catch {}
-		} else if ((status === 401 || status === 403 || status === 419) && original.url?.includes('/groups/')) {
-			console.warn('[Auth] Authorization failed for group operation. Not forcing logout, letting component handle error.');
+		} else if (isAuthError) {
+			console.warn('[Auth] Received', status, 'for', url, '- not forcing logout, letting component handle error');
 		}
 
 		return Promise.reject(error);
 	}
 );
 
-export default api; 
+export default api;

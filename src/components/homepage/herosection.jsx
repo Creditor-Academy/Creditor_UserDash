@@ -32,24 +32,23 @@ export default function Hero() {
             z-index: 0;
           }
           .hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(30, 58, 138, 0.4),  /* from-blue-900/40 */
-    rgba(30, 64, 175, 0.3),  /* via-blue-800/30 */
-    rgba(30, 58, 138, 0.4)   /* to-blue-900/40 */
-  );
-  z-index: 1;
-}
-
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+              to bottom,
+              rgba(30, 58, 138, 0.4),
+              rgba(30, 64, 175, 0.3),
+              rgba(30, 58, 138, 0.4)
+            );
+            z-index: 1;
+          }
           .hero-content {
             position: relative;
             z-index: 2;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 80px 3rem 0 3rem;
+            padding: 120px 3rem 0 3rem; /* Increased top padding (was 80px) */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -143,11 +142,13 @@ export default function Hero() {
           .start-btn:hover + .arrow-icon svg {
             color: #18326b;
           }
+
           /* Large Desktop */
           @media (min-width: 1400px) {
             .hero-content {
               max-width: 1400px;
               padding: 0 4rem;
+              padding-top: 120px; /* Ensures larger top padding */
             }
           }
           
@@ -155,7 +156,7 @@ export default function Hero() {
           @media (max-width: 1200px) {
             .hero-content {
               max-width: 100%;
-              padding: 70px 2.5rem 0 2.5rem;
+              padding: 100px 2.5rem 0 2.5rem; /* Was 70px, now 100px */
             }
             .hero-heading {
               font-size: 4.2vw;
@@ -167,7 +168,7 @@ export default function Hero() {
             .hero-content {
               margin: 0 auto;
               max-width: 100%;
-              padding: 60px 2rem 0 2rem;
+              padding: 100px 2rem 0 2rem; /* Was 60px, now 100px */
             }
             .hero-heading {
               font-size: 6.5vw;
@@ -186,7 +187,7 @@ export default function Hero() {
           @media (max-width: 768px) {
             .hero-content {
               margin: 0 auto;
-              padding: 80px 1.5rem 0 1.5rem;
+              padding: 120px 1.5rem 0 1.5rem; /* Was 80px, now 120px */
             }
             .hero-heading {
               font-size: 8vw;
@@ -198,11 +199,10 @@ export default function Hero() {
               font-size: 0.95em;
             }
           }
-          
           @media (max-width: 600px) {
             .hero-content {
               margin: 0 auto;
-              padding: 80px 1rem 0 1rem;
+              padding: 120px 1rem 0 1rem; /* Was 80px, now 120px */
             }
             .hero-heading {
               font-size: 10vw;
@@ -223,11 +223,9 @@ export default function Hero() {
               justify-content: flex-start;
             }
           }
-          
-          /* Small Mobile */
           @media (max-width: 480px) {
             .hero-content {
-              padding: 80px 0.8rem 0 0.8rem;
+              padding: 110px 0.8rem 0 0.8rem; /* Was 80px, now 110px */
             }
             .hero-heading {
               font-size: 12vw;
@@ -248,11 +246,9 @@ export default function Hero() {
               height: 30px;
             }
           }
-          
-          /* Extra Small Mobile */
           @media (max-width: 360px) {
             .hero-content {
-              padding: 80px 0.6rem 0 0.6rem;
+              padding: 100px 0.6rem 0 0.6rem; /* Was 80px, now 100px */
             }
             .hero-heading {
               font-size: 13vw;
@@ -275,7 +271,7 @@ export default function Hero() {
       <div className="hero-overlay" />
       <div className="hero-content">
         <h1 className="hero-heading">
-          Transform Your Learning
+          Reimagine Learning
           <br/>
           <span className="inline-img" style={{ display: 'inline-flex', alignItems: 'center' }}>
             <motion.span
@@ -287,16 +283,16 @@ export default function Hero() {
               <img src={athenadash} alt="Athena Logo" />
             </motion.span>
           </span>
-          Skill Enhancing
+          Build, Design, and Deliver
           <br/>
-          Experience
+          With AI Intelligence
         </h1>
         <div className="hero-sub-links">
-          <span className="hero-desc">For students, educators, and lifelong learners</span>
+          <span className="hero-desc">Athena LMS: Where Instructional Design meets Artificial Intelligence</span>
           <div className="hero-action">
-            <span className="hero-desc">From first lesson to mastery</span>
+            <span className="hero-desc">Create engaging, research-backed courses in minutes</span>
             <a href="/contact" className="start-btn">
-              Start Learning
+              Start Creating
             </a>
             <span className="arrow-icon">
               <ArrowUpRight size={22} strokeWidth={1.35} />
