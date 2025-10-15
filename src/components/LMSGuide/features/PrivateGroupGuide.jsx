@@ -1,13 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, MessageCircle, UserPlus, Settings, Layout, Calendar, Star, Zap } from 'lucide-react';
+import { Users, UserPlus, Settings, Layout, Calendar, Edit, Trash2, UserMinus, Info, Star } from 'lucide-react';
 import { BaseFeature } from '../FeatureComponents';
 
+// 💡 Pro Tip Component
 const ProTip = ({ children, emoji = "💡" }) => (
   <div className="relative bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-100 rounded-2xl p-8 border border-amber-300/50 shadow-lg overflow-hidden">
-    {/* Background pattern */}
     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-y-16 translate-x-16"></div>
-    
     <div className="relative z-10 flex items-start gap-4">
       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg flex-shrink-0">
         <span className="text-xl">{emoji}</span>
@@ -25,17 +24,20 @@ const ProTip = ({ children, emoji = "💡" }) => (
   </div>
 );
 
-const StepCard = ({ icon: Icon, title, items, color, index }) => (
-  <div className={`
-    relative bg-white rounded-2xl p-8 shadow-xl border-l-4 border-${color}-500 
-    hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300
-    group overflow-hidden
-  `}>
-    {/* Background decoration */}
+// 🎯 Step Card Component
+const StepCard = ({ icon: Icon, title, color, items, index }) => (
+  <div
+    className={`
+      relative bg-white rounded-2xl p-8 shadow-xl border-l-4 border-${color}-500
+      hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300
+      group overflow-hidden
+    `}
+  >
     <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-50 rounded-full -translate-y-16 translate-x-16`}></div>
-    
     <div className="relative z-10 flex items-center gap-4 mb-6">
-      <div className={`relative w-12 h-12 rounded-xl bg-gradient-to-br from-${color}-500 to-${color}-600 flex items-center justify-center shadow-lg`}>
+      <div
+        className={`relative w-12 h-12 rounded-xl bg-gradient-to-br from-${color}-500 to-${color}-600 flex items-center justify-center shadow-lg`}
+      >
         <Icon className="w-6 h-6 text-white" />
         <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center">
           <span className={`text-${color}-600 text-xs font-bold`}>{index + 1}</span>
@@ -43,190 +45,56 @@ const StepCard = ({ icon: Icon, title, items, color, index }) => (
       </div>
       <h4 className={`text-xl font-bold text-${color}-800`}>{title}</h4>
     </div>
-    
     <ul className="relative z-10 space-y-4">
-      {items.map((item, itemIndex) => (
-        <li key={itemIndex} className="flex items-start gap-4 group/item hover:transform hover:translate-x-1 transition-transform duration-200">
+      {items.map((item, i) => (
+        <li key={i} className="flex items-start gap-4 group/item">
           <div className={`w-2 h-2 rounded-full bg-${color}-400 mt-2 flex-shrink-0`}></div>
           <span className="text-gray-700 leading-relaxed font-medium">{item}</span>
         </li>
       ))}
     </ul>
-    
-    {/* Hover effect */}
-    <div className={`absolute inset-0 bg-gradient-to-br from-${color}-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+    <div
+      className={`absolute inset-0 bg-gradient-to-br from-${color}-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+    ></div>
   </div>
 );
 
-const FeatureCard = ({ icon: Icon, title, description, color, delay }) => (
-  <motion.div 
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: delay * 0.1 }}
-    className={`
-      relative overflow-hidden bg-gradient-to-br from-${color}-50 via-white to-${color}-50/50 
-      p-8 rounded-2xl border border-${color}-200/60 backdrop-blur-sm
-      transform hover:scale-105 hover:shadow-2xl transition-all duration-500
-      shadow-lg
-    `}
-  >
-    {/* Animated background elements */}
-    <motion.div 
-      className={`absolute -top-12 -right-12 w-24 h-24 bg-${color}-200/20 rounded-full`}
-      animate={{ 
-        rotate: 360,
-        scale: [1, 1.1, 1],
-      }}
-      transition={{ 
-        duration: 20,
-        repeat: Infinity,
-        ease: "linear" 
-      }}
-    />
-    <motion.div 
-      className={`absolute -bottom-8 -left-8 w-16 h-16 bg-${color}-300/10 rounded-full`}
-      animate={{ 
-        rotate: -360,
-        scale: [1, 1.2, 1],
-      }}
-      transition={{ 
-        duration: 15,
-        repeat: Infinity,
-        ease: "linear" 
-      }}
-    />
-    
-    <div className={`relative z-10 w-16 h-16 rounded-2xl bg-gradient-to-br from-${color}-400 to-${color}-600 flex items-center justify-center mb-6 shadow-lg`}>
-      <Icon className="w-8 h-8 text-white" />
-    </div>
-    
-    <h4 className={`relative z-10 text-${color}-800 font-bold text-xl mb-3`}>{title}</h4>
-    <p className="relative z-10 text-gray-700 leading-relaxed">{description}</p>
-  </motion.div>
-);
-
+// ✨ Intro Section
 const IntroSection = () => (
   <div className="space-y-10">
-    {/* Enhanced Header Section */}
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-10 rounded-3xl shadow-2xl"
     >
-      {/* Background pattern */}
-      <motion.div 
+      <motion.div
         className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]"
-        animate={{ 
-          scale: [1, 1.1, 1],
-          opacity: [0.5, 0.7, 0.5] 
-        }}
-        transition={{ 
-          duration: 8,
-          repeat: Infinity,
-          ease: "linear"
-        }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.7, 0.5] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
       />
-      <motion.div 
+      <motion.div
         className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"
-        animate={{ 
-          rotate: 360,
-          scale: [1, 1.1, 1]
-        }}
-        transition={{ 
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear"
-        }}
+        animate={{ rotate: 360, scale: [1, 1.1, 1] }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
       />
-      
       <div className="relative z-10 flex items-center gap-6 mb-8">
-        <motion.div 
-          className="relative"
-          whileHover={{ scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl">
-            <Users className="w-10 h-10 text-white" />
-          </div>
-          <motion.div 
-            className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg"
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Star className="w-4 h-4 text-white" />
-          </motion.div>
-        </motion.div>
+        <div className="relative w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl">
+          <Users className="w-10 h-10 text-white" />
+        </div>
         <div>
-          <h3 className="text-3xl font-bold text-white mb-2">
-            Welcome to Private User Groups
-          </h3>
+          <h3 className="text-3xl font-bold text-white mb-2">Welcome to Private User Groups</h3>
           <div className="flex items-center gap-2">
-            <motion.div 
-              className="w-2 h-2 bg-green-400 rounded-full"
-              animate={{ scale: [1, 1.5, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
             <span className="text-blue-100 text-sm font-medium">Collaborative Learning Space</span>
           </div>
         </div>
       </div>
-      
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Your dedicated space for <span className="text-yellow-300 font-semibold">collaborative learning</span> and knowledge sharing in Athena LMS. 
-        Create exclusive communities where you can connect, share, and grow together in a secure environment.
+        Your dedicated space for <span className="text-yellow-300 font-semibold">collaborative learning</span> and
+        knowledge sharing in Athena LMS. Create exclusive communities where you can connect, share, and grow together
+        in a secure environment.
       </p>
-      
-      {/* Stats */}
-      <div className="relative z-10 flex gap-8 mt-8">
-        {[
-          { color: "bg-green-400", text: "Secure" },
-          { color: "bg-blue-400", text: "Collaborative" },
-          { color: "bg-purple-400", text: "Engaging" }
-        ].map((stat, index) => (
-          <motion.div 
-            key={index}
-            className="flex items-center gap-2"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.2 }}
-          >
-            <motion.div 
-              className={`w-3 h-3 ${stat.color} rounded-full`}
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
-            />
-            <span className="text-white/90 font-medium">{stat.text}</span>
-          </motion.div>
-        ))}
-      </div>
     </motion.div>
-
-    {/* Enhanced Feature Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <FeatureCard
-        icon={UserPlus}
-        title="Connect & Network"
-        description="Build meaningful connections with fellow learners and industry professionals in your field of interest."
-        color="emerald"
-        delay={0}
-      />
-      
-      <FeatureCard
-        icon={MessageCircle}
-        title="Share Knowledge"
-        description="Exchange valuable insights, resources, and experiences securely within your trusted community."
-        color="blue"
-        delay={1}
-      />
-      
-      <FeatureCard
-        icon={Zap}
-        title="Grow Together"
-        description="Accelerate your learning journey through collaborative projects and peer-to-peer feedback."
-        color="amber"
-        delay={2}
-      />
-    </div>
   </div>
 );
 
@@ -240,134 +108,126 @@ const PrivateGroupGuide = () => {
       {
         url: 'https://www.youtube.com/embed/example1',
         title: 'Creating and Managing Private Groups',
-        description: 'Learn how to build and nurture thriving learning communities with our comprehensive guide to private groups.'
+        description:
+          'Learn how to build and nurture thriving learning communities with our comprehensive guide to private groups.'
       }
     ],
     steps: [
       {
-        title: 'Creating Your Private Group',
+        title: 'Part 1: Creating a Private Group',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <StepCard
-                icon={UserPlus}
-                title="Initial Setup & Foundation"
-                color="blue"
-                items={[
-                  'Navigate to the Messages section from your dashboard sidebar',
-                  'Click the "Create Group" button with the plus icon in top-right corner',
-                  'Fill in the comprehensive group details form with all required information'
-                ]}
-                index={0}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StepCard
-                icon={Settings}
-                title="Essential Configuration"
-                color="emerald"
-                items={[
-                  'Choose a descriptive and engaging group name that reflects your purpose',
-                  'Upload a high-quality, distinctive group image or logo for brand identity',
-                  'Write a clear and inviting group description that outlines goals and expectations'
-                ]}
-                index={1}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <ProTip emoji="🚀">
-                <span className="font-bold">Naming Strategy:</span> Keep your group name concise but descriptive. 
-                A proven format is: <span className="text-amber-700">[Topic] + [Purpose] + [Community]</span> 
-                (e.g., 'JavaScript Study Group' or 'Data Science Projects Team - Collaborative Learning')
-              </ProTip>
-            </motion.div>
+            <StepCard
+              icon={Info}
+              title="Step 1 → Open the Messages Section"
+              color="blue"
+              items={['From the sidebar, click on “Messages.” → This is where you can access your chats and group options.']}
+              index={0}
+            />
+            <StepCard
+              icon={UserPlus}
+              title="Step 2 → Start the Group Creation Process"
+              color="cyan"
+              items={[
+                'At the top-right corner of the Messages page, click on “Create Group.”',
+                '→ A pop-up window will appear prompting you to enter your group details.'
+              ]}
+              index={1}
+            />
+            <StepCard
+              icon={Settings}
+              title="Step 3 → Enter Group Information"
+              color="emerald"
+              items={[
+                'Fill in the following fields in the pop-up:',
+                '→ Group Name (Mandatory): Enter a suitable name for your group.',
+                '→ Group Image (Optional): Upload a local image or use an image URL.',
+                '→ Description (Optional): Add a short description about your group’s purpose or topic.'
+              ]}
+              index={2}
+            />
+            <StepCard
+              icon={Users}
+              title="Step 4 → Choose Group Members"
+              color="indigo"
+              items={[
+                'Use the Admin or Instructor filters to view users.',
+                '→ Click on desired users to add them as group members.'
+              ]}
+              index={3}
+            />
+            <StepCard
+              icon={Layout}
+              title="Step 5 → Create the Group"
+              color="purple"
+              items={[
+                'Once all details are entered and members selected, click on “Create Group.”',
+                '✅ Your Private Group is now successfully created.'
+              ]}
+              index={4}
+            />
           </div>
         )
       },
       {
-        title: 'Managing Your Community',
+        title: 'Part 2: Updating Group Information',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <StepCard
-                icon={Users}
-                title="Member Management & Growth"
-                color="purple"
-                items={[
-                  'Send personalized invites to potential members with custom messages',
-                  'Generate and share secure invitation links with expiration controls',
-                  'Set appropriate member roles and permissions for organized management'
-                ]}
-                index={2}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StepCard
-                icon={Layout}
-                title="Content Organization & Structure"
-                color="indigo"
-                items={[
-                  'Create focused channels for different topics and discussion threads',
-                  'Pin important announcements and essential resources for easy access',
-                  'Set up dedicated spaces for specific discussions and project collaborations'
-                ]}
-                index={3}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <StepCard
-                icon={Calendar}
-                title="Engagement & Activity Planning"
-                color="cyan"
-                items={[
-                  'Schedule regular group meetings with calendar integration',
-                  'Create learning milestones and progress tracking systems',
-                  'Organize collaborative projects with clear timelines and goals'
-                ]}
-                index={4}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.6 }}
-            >
-              <ProTip emoji="🌟">
-                <span className="font-bold">Engagement Strategy:</span> Maintain active community participation by 
-                scheduling regular activities like weekly discussion topics or study sessions. 
-                Consider creating a <span className="text-amber-700">content calendar</span> to ensure consistent 
-                engagement and varied interaction formats.
-              </ProTip>
-            </motion.div>
+            <StepCard
+              icon={Info}
+              title="Step 1 → Open Group Information"
+              color="orange"
+              items={[
+                'Go to your group and click on “Group Info.”',
+                '→ A modal window will open showing all details about your group.'
+              ]}
+              index={0}
+            />
+            <StepCard
+              icon={Edit}
+              title="Step 2 → Edit Group Details"
+              color="teal"
+              items={[
+                'Click on “Edit” to update the group name, image, or description.',
+                '→ Make your desired changes and save them.'
+              ]}
+              index={1}
+            />
+            <StepCard
+              icon={UserPlus}
+              title="Step 3 → Add New Members"
+              color="blue"
+              items={[
+                'Click on the “Add Member” button.',
+                '→ Select users you want to invite and send invitations.',
+                '→ If accepted within 7 days, they will join automatically; else, the invite expires.'
+              ]}
+              index={2}
+            />
+            <StepCard
+              icon={UserMinus}
+              title="Step 4 → Remove Existing Members"
+              color="rose"
+              items={[
+                'To remove a member, click the Delete icon or button beside their name.',
+                '→ The selected user will be removed from the group immediately.'
+              ]}
+              index={3}
+            />
+            <StepCard
+              icon={Trash2}
+              title="Step 5 → Delete the Entire Group (If Needed)"
+              color="red"
+              items={[
+                'If you want to permanently delete the group, click on “Delete Group.”',
+                '⚠️ Note: This action cannot be undone.'
+              ]}
+              index={4}
+            />
+            <ProTip emoji="💡">
+              Keep your group’s <strong>name</strong>, <strong>image</strong>, and <strong>description</strong> concise
+              and professional. → It helps members clearly understand the group’s purpose and keeps your LMS organized.
+            </ProTip>
           </div>
         )
       }
