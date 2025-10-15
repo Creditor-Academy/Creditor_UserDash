@@ -378,7 +378,7 @@ const Size = Quill.import('formats/size');
 Size.whitelist = ['small', 'normal', 'large', 'huge'];
 Quill.register(Size, true);
 
-// Add CSS for Quill editor overflow handling
+// Add CSS for Quill editor overflow handling and improved alignment display
 const quillOverflowCSS = `
   .quill-editor-overflow-visible .ql-toolbar {
     overflow: visible !important;
@@ -406,6 +406,88 @@ const quillOverflowCSS = `
     min-width: 200px !important;
     max-width: 300px !important;
   }
+  
+  /* Improve alignment picker display */
+  .ql-align .ql-picker-options .ql-picker-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    position: relative !important;
+  }
+  
+  /* Completely hide all horizontal line icons and replace with text */
+  .ql-align .ql-picker-options .ql-picker-item {
+    position: relative !important;
+    min-height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item svg,
+  .ql-align .ql-picker-options .ql-picker-item .ql-stroke,
+  .ql-align .ql-picker-options .ql-picker-item .ql-stroke-miter,
+  .ql-align .ql-picker-options .ql-picker-item .ql-fill {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  /* Replace with clear text labels */
+  .ql-align .ql-picker-options .ql-picker-item[data-value=""] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value=""]:after {
+    content: "⬅️ Left Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="center"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="center"]:after {
+    content: "↔️ Center Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="right"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="right"]:after {
+    content: "➡️ Right Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"]:after {
+    content: "⬌ Justify";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
 `;
 
 // Inject the CSS
@@ -425,6 +507,21 @@ const paragraphToolbar = [
   [{ 'list': 'ordered'}, { 'list': 'bullet' }],
   [{ 'align': [] }],
   ['link', 'image'],
+  ['clean']
+];
+
+// Custom alignment toolbar with clear labels
+const customAlignToolbar = [
+  [{ 'font': Font.whitelist }],
+  [{ 'size': Size.whitelist }],
+  ['bold', 'italic', 'underline'],
+  [{ 'color': [] }, { 'background': [] }],
+  [
+    { 'align': '' },
+    { 'align': 'center' },
+    { 'align': 'right' },
+    { 'align': 'justify' }
+  ],
   ['clean']
 ];
 
@@ -449,14 +546,20 @@ const getToolbarModules = (type = 'full') => {
     [{ 'align': [] }]
   ];
 
-  // For heading-only and subheading-only editors, include size picker
+  // For heading-only and subheading-only editors, include size picker and custom alignment
   if (type === 'heading' || type === 'subheading') {
     return {
       toolbar: [
         [{ 'font': Font.whitelist }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline'],
-        [{ 'color': [] }, { 'background': [] }]
+        [{ 'color': [] }, { 'background': [] }],
+        [
+          { 'align': '' },
+          { 'align': 'center' },
+          { 'align': 'right' },
+          { 'align': 'justify' }
+        ]
       ]
     };
   }
@@ -639,6 +742,47 @@ function LessonBuilder() {
   const [editorHeading, setEditorHeading] = useState('');
   const [editorSubheading, setEditorSubheading] = useState('');
   const [editorContent, setEditorContent] = useState('');
+  const [masterHeadingGradient, setMasterHeadingGradient] = useState('gradient1');
+  
+  // Gradient color options for master heading
+  const gradientOptions = [
+    {
+      id: 'gradient1',
+      name: 'Purple to Blue',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      preview: 'from-indigo-500 to-purple-600'
+    },
+    {
+      id: 'gradient2', 
+      name: 'Blue to Pink',
+      gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+      preview: 'from-blue-500 via-purple-500 to-pink-500'
+    },
+    {
+      id: 'gradient3',
+      name: 'Green to Blue',
+      gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+      preview: 'from-emerald-500 to-blue-500'
+    },
+    {
+      id: 'gradient4',
+      name: 'Orange to Red',
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+      preview: 'from-amber-500 to-red-500'
+    },
+    {
+      id: 'gradient5',
+      name: 'Pink to Purple',
+      gradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+      preview: 'from-pink-500 to-purple-500'
+    },
+    {
+      id: 'gradient6',
+      name: 'Teal to Cyan',
+      gradient: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+      preview: 'from-teal-500 to-cyan-500'
+    }
+  ];
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -4159,8 +4303,26 @@ function LessonBuilder() {
             } else {
               setEditorHtml('Master Heading');
             }
+            
+            // Detect gradient from existing content
+            const gradientDiv = tempDiv.querySelector('div[style*="linear-gradient"]');
+            if (gradientDiv) {
+              const style = gradientDiv.getAttribute('style') || '';
+              // Try to match with our gradient options
+              const matchedGradient = gradientOptions.find(option => 
+                style.includes(option.gradient.replace('linear-gradient(', '').replace(')', ''))
+              );
+              if (matchedGradient) {
+                setMasterHeadingGradient(matchedGradient.id);
+              } else {
+                setMasterHeadingGradient('gradient1'); // Default fallback
+              }
+            } else {
+              setMasterHeadingGradient('gradient1'); // Default
+            }
           } else {
             setEditorHtml(htmlContent || 'Master Heading');
+            setMasterHeadingGradient('gradient1'); // Default
           }
         } else {
           // Extract the inner content while preserving rich text formatting for other types
@@ -4225,8 +4387,54 @@ function LessonBuilder() {
           const headingFontWeight = effectiveTextType === 'heading_paragraph' ? 'bold' : '600';
           
           // Use the correct content variables for each template type
-          const headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
-          const paragraphContent = editorContent;
+          let headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
+          let paragraphContent = editorContent;
+          
+          console.log(`${effectiveTextType} - Original heading content:`, headingContent);
+          console.log(`${effectiveTextType} - Original paragraph content:`, paragraphContent);
+          
+          // Process heading content for alignment
+          if (headingContent) {
+            const hasHeadingAlignment = headingContent.includes('ql-align-center') || 
+                                      headingContent.includes('ql-align-right') || 
+                                      headingContent.includes('ql-align-justify') ||
+                                      headingContent.includes('text-align: center') ||
+                                      headingContent.includes('text-align: right') ||
+                                      headingContent.includes('text-align: justify');
+            
+            console.log(`${effectiveTextType} - Has heading alignment classes:`, hasHeadingAlignment);
+            
+            if (hasHeadingAlignment) {
+              headingContent = headingContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+          }
+          
+          // Process paragraph content for alignment
+          if (paragraphContent) {
+            const hasParagraphAlignment = paragraphContent.includes('ql-align-center') || 
+                                        paragraphContent.includes('ql-align-right') || 
+                                        paragraphContent.includes('ql-align-justify') ||
+                                        paragraphContent.includes('text-align: center') ||
+                                        paragraphContent.includes('text-align: right') ||
+                                        paragraphContent.includes('text-align: justify');
+            
+            console.log(`${effectiveTextType} - Has paragraph alignment classes:`, hasParagraphAlignment);
+            
+            if (hasParagraphAlignment) {
+              paragraphContent = paragraphContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+          }
+          
+          console.log(`${effectiveTextType} - Final heading content:`, headingContent);
+          console.log(`${effectiveTextType} - Final paragraph content:`, paragraphContent);
           
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
@@ -4239,81 +4447,254 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, preserve Quill editor styling but ensure proper heading size
+          // For heading blocks, preserve Quill editor styling including alignment
           let styledContent = editorHtml || '<h1>Heading</h1>';
+          
+          console.log('Original editorHtml:', editorHtml);
           
           // If the content doesn't have proper heading tags, wrap it in h1 with default styling
           if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
             styledContent = `<h1 style="font-size: 24px; font-weight: bold; margin: 0;">${styledContent}</h1>`;
           } else {
-            // Ensure h1 tags have proper default size if no size is specified
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Has alignment classes:', hasAlignment);
+            console.log('Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Preserve existing styles but ensure proper default size if no size is specified
             styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h1${attrs} style="font-size: 24px; font-weight: bold; margin: 0;">`;
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 24px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: bold';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: #1F2937';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
               }
               return match;
             });
           }
           
+          console.log('Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <div class="prose prose-lg max-w-none">
-                  ${styledContent}
-                </div>
+                ${styledContent}
               </article>
             </div>
           `;
         } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, preserve Quill editor styling but ensure proper subheading size
+          // For subheading blocks, preserve Quill editor styling including alignment
           let styledContent = editorHtml || '<h2>Subheading</h2>';
+          
+          console.log('Subheading - Original editorHtml:', editorHtml);
           
           // If the content doesn't have proper heading tags, wrap it in h2 with default styling
           if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
             styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
           } else {
-            // Ensure h2 tags have proper default size if no size is specified
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Subheading - Has alignment classes:', hasAlignment);
+            console.log('Subheading - Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Preserve existing styles but ensure proper default size if no size is specified
             styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 20px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: 600';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: #1F2937';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h2${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0; line-height: 1.2;">`;
               }
               return match;
             });
           }
           
+          console.log('Subheading - Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <div class="prose prose-lg max-w-none">
-                  ${styledContent}
-                </div>
+                ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextType === 'master_heading') {
-          // For master heading, preserve Quill editor styling but keep the gradient background and proper size
+          // For master heading, preserve Quill editor styling including alignment and use selected gradient
           let styledContent = editorHtml || 'Master Heading';
+          
+          // Get the selected gradient
+          const selectedGradient = gradientOptions.find(g => g.id === masterHeadingGradient) || gradientOptions[0];
+          
+          console.log('Master Heading - Original editorHtml:', editorHtml);
+          console.log('Master Heading - Selected gradient:', selectedGradient.name);
           
           // Ensure master heading has proper size if no size is specified
           if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
             styledContent = `<h1 style="font-size: 40px; font-weight: 600; margin: 0;">${styledContent}</h1>`;
           } else {
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Master Heading - Has alignment classes:', hasAlignment);
+            console.log('Master Heading - Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
             // Ensure h1 tags have proper default size for master heading if no size is specified
             styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h1${attrs} style="font-size: 40px; font-weight: 600; margin: 0;">`;
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 40px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: 600';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: white';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h1${attrs} style="font-size: 40px; font-weight: 600; color: white; margin: 0; line-height: 1.2;">`;
               }
               return match;
             });
           }
           
-          updatedContent = `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
+          console.log('Master Heading - Final styled content:', styledContent);
+          
+          updatedContent = `<div style="background: ${selectedGradient.gradient}; padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
         } else {
-          // For paragraph and other single content blocks - use same styled container as heading/subheading
+          // For paragraph and other single content blocks - preserve alignment
+          let styledContent = editorHtml || 'Enter your content here...';
+          
+          console.log('Paragraph - Original editorHtml:', editorHtml);
+          
+          // Check if content has alignment classes from Quill
+          const hasAlignment = styledContent.includes('ql-align-center') || 
+                             styledContent.includes('ql-align-right') || 
+                             styledContent.includes('ql-align-justify') ||
+                             styledContent.includes('text-align: center') ||
+                             styledContent.includes('text-align: right') ||
+                             styledContent.includes('text-align: justify');
+          
+          console.log('Paragraph - Has alignment classes:', hasAlignment);
+          console.log('Paragraph - Styled content before processing:', styledContent);
+          
+          // If content has Quill alignment classes, convert them to inline styles
+          if (hasAlignment) {
+            styledContent = styledContent
+              .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+              .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+              .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+              .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+          }
+          
+          console.log('Paragraph - Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
-                  ${editorHtml || 'Enter your content here...'}
+                  ${styledContent}
                 </div>
               </article>
             </div>
@@ -4391,22 +4772,53 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextTypeForNew === 'heading') {
-          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // Preserve Quill editor styling including alignment
+          let styledContent = editorHtml || 'Heading';
+          
+          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${styledContent}</h1>`;
+          } else {
+            // Ensure h1 tags have proper default size if no size is specified, but preserve alignment
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
+              }
+              return match;
+            });
+          }
+          
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+                ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextTypeForNew === 'subheading') {
-          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // Preserve Quill editor styling including alignment
+          let styledContent = editorHtml || 'Subheading';
+          
+          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
+          } else {
+            // Ensure h2 tags have proper default size if no size is specified, but preserve alignment
+            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
+              }
+              return match;
+            });
+          }
+          
           newBlockContent = `
-                <div class="prose prose-lg max-w-none text-gray-700">
-                  ${editorHtml || 'Enter your content here...'}
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <article class="max-w-none">
+                <div class="prose prose-lg max-w-none">
+                  ${styledContent}
                 </div>
               </article>
-            </div>
-          `;
+            </div>`;
         }
         
         const newBlock = {
@@ -4457,6 +4869,10 @@ function LessonBuilder() {
     setEditorHtml('');
     setCurrentTextBlockId(null);
     setCurrentTextType(null);
+    setEditorHeading('');
+    setEditorSubheading('');
+    setEditorContent('');
+    setMasterHeadingGradient('gradient1');
   };
 
   const handleEditorSave = () => {
@@ -6771,6 +7187,66 @@ setContentBlocks(prev => [...prev, newBlock]);
                           placeholder="Edit your table content..."
                           className="flex-1"
                         />
+                      </div>
+                    </div>
+                  );
+                }
+               
+                // Master Heading with gradient options
+                if (textType === 'master_heading') {
+                  return (
+                    <div className="flex-1 flex flex-col gap-4 h-full">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Master Heading
+                        </label>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorHtml}
+                            onChange={setEditorHtml}
+                            modules={getToolbarModules('heading')}
+                            placeholder="Enter your master heading text..."
+                            style={{ height: '80px' }}
+                            className="quill-editor-overflow-visible"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex-shrink-0">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Gradient Color
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {gradientOptions.map((option) => (
+                            <div
+                              key={option.id}
+                              className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all ${
+                                masterHeadingGradient === option.id
+                                  ? 'border-blue-500 ring-2 ring-blue-200'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => setMasterHeadingGradient(option.id)}
+                            >
+                              <div 
+                                className={`h-8 w-full rounded bg-gradient-to-r ${option.preview} mb-2`}
+                                style={{ background: option.gradient }}
+                              />
+                              <p className="text-xs text-center text-gray-600 font-medium">
+                                {option.name}
+                              </p>
+                              {masterHeadingGradient === option.id && (
+                                <div className="absolute top-1 right-1">
+                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
