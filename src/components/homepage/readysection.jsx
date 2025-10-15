@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Ready() {
+  const navigate = useNavigate();
   const sectionRef = useRef();
   const leftPupil = useRef();
   const rightPupil = useRef();
@@ -261,7 +263,7 @@ export default function Ready() {
         TO START<br />YOUR JOURNEY
       </div>
 
-      <button className="ready-btn">START THE PROJECT</button>
+      <button className="ready-btn" onClick={() => navigate('/contact')}>START FREE TRIAL</button>
     </section>
   );
 }

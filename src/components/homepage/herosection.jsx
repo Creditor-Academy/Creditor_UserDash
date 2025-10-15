@@ -271,7 +271,7 @@ export default function Hero() {
       <div className="hero-overlay" />
       <div className="hero-content">
         <h1 className="hero-heading">
-          Transform Your Learning
+          Reimagine Learning
           <br/>
           <span className="inline-img" style={{ display: 'inline-flex', alignItems: 'center' }}>
             <motion.span
@@ -283,16 +283,16 @@ export default function Hero() {
               <img src={athenadash} alt="Athena Logo" />
             </motion.span>
           </span>
-          Skill Enhancing
+          Build, Design, and Deliver
           <br/>
-          Experience
+          With AI Intelligence
         </h1>
         <div className="hero-sub-links">
-          <span className="hero-desc">For students, educators, and lifelong learners</span>
+          <span className="hero-desc">Athena LMS: Where Instructional Design meets Artificial Intelligence</span>
           <div className="hero-action">
-            <span className="hero-desc">From first lesson to mastery</span>
+            <span className="hero-desc">Create engaging, research-backed courses in minutes</span>
             <a href="/contact" className="start-btn">
-              Start Learning
+              Start Creating
             </a>
             <span className="arrow-icon">
               <ArrowUpRight size={22} strokeWidth={1.35} />

@@ -13,30 +13,30 @@ const Principles = () => {
         {/* Section Heading */}
         <div className="principles-heading animate-fadeInUp">
           <h4 className="principles-subtitle">
-            Principles & Values
+            Our Foundation
           </h4>
           <h1 className="principles-title">
-            The foundation of Athena LMS
+            Mission & Vision
           </h1>
           <p className="principles-description">
-            Two timeless principles that guide our learning philosophy —
-            making education transformative and deeply insightful.
+            Guided by a clear vision and mission, we're building the future of intelligent learning — 
+            where AI, design, and learning science converge to create transformative educational experiences.
           </p>
         </div>
 
-        {/* Principles Grid */}
+        {/* Mission & Vision Cards */}
         <div className="principles-grid">
           {[{
             img: principles1,
-            title: "Learning with a purpose",
-            desc: "Learning should spark transformation — shifting perception, building clarity, and empowering learners with practical knowledge.",
-            link: "Discover our journey",
+            title: "Our Vision",
+            desc: "Empowering the world to create intelligent learning ecosystems.",
+            link: "Explore our vision",
           },
           {
             img: principles2,
-            title: "Revealing the unseen",
-            desc: "Great learning uncovers what's hidden — guiding focus, sparking curiosity, and delivering lasting understanding.",
-            link: "Explore our approach",
+            title: "Our Mission", 
+            desc: "To combine AI, design, and learning science into one intuitive platform.",
+            link: "Discover our mission",
           }].map((p, i) => (
             <div
               key={i}
@@ -55,7 +55,7 @@ const Principles = () => {
                 <div className={`shine-effect ${hoverIndex === i ? 'shine-active' : ''}`} />
               </div>
 
-              {/* Slide-up Overlay Content - TEXT WILL BE WHITE */}
+              {/* Slide-up Overlay Content */}
               <div className={`card-overlay ${hoverIndex === i ? 'overlay-active' : ''}`}>
                 <h2 className="overlay-title">
                   {p.title}

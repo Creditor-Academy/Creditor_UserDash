@@ -77,8 +77,10 @@ import Home from "@/pages/home";
 import About from "@/pages/AboutUsPage/About";
 import Contact from "@/pages/contactpage/contact";
 import FAQPage from "@/pages/faqpages/faqpage";
+import Product from "@/pages/Product/Product";
 import Features from "@/pages/FeaturesPage/Features";
 import WhyUs from "@/pages/WhyusPage/WhyUs";
+import Plans from "@/pages/Plans";
 import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
 import Sov from "./coursesL/Sov";
@@ -126,6 +128,8 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/features" element={<Features />} />
+          <Route path="/product" element={<Product />} />
+          <Route path="/plans" element={<Plans />} />
           <Route path="/whyus" element={<WhyUs />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
