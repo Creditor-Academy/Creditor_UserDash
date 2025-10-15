@@ -28,7 +28,9 @@ import {
   Minus,
   Volume2,
   Youtube,
-  Crop
+  Crop,
+  CheckCircle,
+  X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
@@ -842,6 +844,11 @@ function LessonBuilder() {
   const [imageToEdit, setImageToEdit] = useState(null);
   const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
   
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error', 'changes_detected'
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const autoSaveTimerRef = React.useRef(null);
+  
 
 
   // Image block templates
@@ -1048,6 +1055,35 @@ function LessonBuilder() {
   const listComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
   const dividerComponentRef = React.useRef();
+
+
+  // Cleanup timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Warn user before leaving page with unsaved changes
+  React.useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges || autoSaveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, autoSaveStatus]);
+
+  // Track previous contentBlocks to detect actual changes
+  const prevContentBlocksRef = React.useRef([]);
+  const isInitialLoadRef = React.useRef(true);
+
 
 
   const handleBlockClick = (blockType) => {
@@ -3372,6 +3408,7 @@ function LessonBuilder() {
 
     try {
       setIsUploading(true);
+      setAutoSaveStatus('saving');
 
       // Merge contentBlocks (newly added) with lessonContent (existing/updated)
       // For existing lessons, we need to use the updated lessonContent.data.content
@@ -3898,6 +3935,13 @@ function LessonBuilder() {
 
       if (response.data && response.data.success) {
         toast.success('Lesson updated successfully!');
+        setAutoSaveStatus('saved');
+        setHasUnsavedChanges(false);
+        
+        // Reset to neutral after 2 seconds
+        setTimeout(() => {
+          setAutoSaveStatus('saved');
+        }, 2000);
       } else {
         throw new Error(response.data?.errorMessage || 'Failed to update lesson content');
       }
@@ -3905,10 +3949,67 @@ function LessonBuilder() {
     } catch (error) {
       console.error('Error updating lesson:', error);
       toast.error(error.response?.data?.errorMessage || 'Failed to update lesson. Please try again.');
+      setAutoSaveStatus('error');
     } finally {
       setIsUploading(false);
     }
   };
+
+  // Auto-save function with optimized debounce
+  const triggerAutoSave = React.useCallback(() => {
+    // Clear any existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new timer for auto-save (800ms debounce for faster response)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      // Only save if we have unsaved changes and a lesson ID
+      if (!lessonId || !hasUnsavedChanges) {
+        return;
+      }
+
+      try {
+        setAutoSaveStatus('saving');
+        await handleUpdate();
+        setAutoSaveStatus('saved');
+        setHasUnsavedChanges(false);
+        
+        // Reset to neutral state after 1.5 seconds
+        setTimeout(() => {
+          setAutoSaveStatus('saved');
+        }, 1500);
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        setAutoSaveStatus('error');
+        toast.error('Auto-save failed. Please try saving manually.');
+      }
+    }, 800); // 800ms debounce for faster response
+  }, [lessonId, hasUnsavedChanges, handleUpdate]);
+
+  // Auto-save when content blocks change
+  React.useEffect(() => {
+    // Don't auto-save on initial load or when loading lesson content
+    if (loading || fetchingContent) return;
+
+    // Skip auto-save on initial load
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      prevContentBlocksRef.current = [...contentBlocks];
+      return;
+    }
+
+    // Check if contentBlocks actually changed
+    const hasChanged = JSON.stringify(prevContentBlocksRef.current) !== JSON.stringify(contentBlocks);
+    
+    if (hasChanged && contentBlocks.length > 0) {
+      setHasUnsavedChanges(true);
+      // Show immediate feedback that changes are detected
+      setAutoSaveStatus('changes_detected');
+      triggerAutoSave();
+      prevContentBlocksRef.current = [...contentBlocks];
+    }
+  }, [contentBlocks, loading, fetchingContent, triggerAutoSave]);
 
   const toggleViewMode = () => {
     // View mode functionality removed - now using Modern Preview only
@@ -6078,7 +6179,40 @@ setContentBlocks(prev => [...prev, newBlock]);
                 <h1 className="text-lg font-bold">{lessonData?.title || lessonTitle || 'Untitled Lesson'}</h1>
               </div>
              
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
+                {/* Auto-save status indicator */}
+                <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-2 text-sm">
+                    {autoSaveStatus === 'changes_detected' && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-yellow-500 animate-pulse"></div>
+                        <span className="text-yellow-600 font-medium">Changes detected...</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <span className="text-blue-600 font-medium">Saving...</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && hasUnsavedChanges === false && (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-green-600 font-medium">All changes saved</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <X className="h-4 w-4 text-red-600" />
+                        <span className="text-red-600 font-medium">Save failed</span>
+                      </>
+                    )}
+                  </div>
+                  {autoSaveStatus !== 'saving' && autoSaveStatus !== 'changes_detected' && (
+                    <span className="text-xs text-gray-500 mt-0.5">Auto-save enabled</span>
+                  )}
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -6093,15 +6227,16 @@ setContentBlocks(prev => [...prev, newBlock]);
                 <Button
                   size="sm"
                   onClick={handleUpdate}
-                  disabled={isUploading}
+                  disabled={isUploading || autoSaveStatus === 'saving'}
+                  title="Manually save changes now"
                 >
-                  {isUploading ? (
+                  {isUploading || autoSaveStatus === 'saving' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Updating...
+                      Saving...
                     </>
                   ) : (
-                    'Update'
+                    'Save Now'
                   )}
                 </Button>
               </div>
