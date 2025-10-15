@@ -1750,6 +1750,13 @@ function Messages() {
       const selectedFriendData = friends.find(f => f.id === selectedFriend);
       if (selectedFriendData?.isPrivateGroup) {
         await deletePrivateGroupMessage(conversationId, deleteMessageId);
+        // Emit socket event to notify other users in real-time
+        try {
+          const socket = getSocket();
+          socket.emit('deleteGroupMessage', { groupId: conversationId, messageId: deleteMessageId });
+        } catch (socketErr) {
+          console.warn('Failed to emit delete socket event:', socketErr);
+        }
       } else {
       await deleteConversationMessage({ messageid: deleteMessageId, conversation_id: conversationId, roomId });
       }
