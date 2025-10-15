@@ -1209,9 +1209,9 @@ const LessonPreview = () => {
                     {block.type === 'table' && (
                       <>
                         {block.htmlCss ? (
-                          <div className="max-w-none -mx-4 sm:-mx-6 lg:-mx-8" dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
+                          <div dangerouslySetInnerHTML={{ __html: block.htmlCss }} />
                         ) : (
-                          <div className="overflow-x-auto max-w-none">
+                          <div className="overflow-x-auto">
                             <div dangerouslySetInnerHTML={{ __html: block.content }} />
                           </div>
                         )}

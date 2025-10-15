@@ -227,19 +227,17 @@ const TableComponent = ({
       const headerSize = isPreview ? 'text-xs' : 'text-lg';
       
       return `
-        <div class="overflow-x-auto">
-          <div class="grid ${colClass} ${gridGap} min-w-max">
-            ${data.data[0].map((content, index) => `
-              <div class="group relative ${padding} rounded-lg border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 min-h-fit min-w-0">
-                <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-lg"></div>
-                <div class="flex items-start mb-2">
-                  <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
-                  <h3 class="font-bold ${headerSize} text-gray-900 break-words leading-tight">${data.headers[index]}</h3>
-                </div>
-                <div class="text-gray-700 leading-relaxed ${textSize} break-words whitespace-pre-wrap overflow-wrap-anywhere">${content}</div>
+        <div class="grid ${colClass} ${gridGap}">
+          ${data.data[0].map((content, index) => `
+            <div class="group relative ${padding} rounded-lg border border-gray-100 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 min-h-fit">
+              <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-lg"></div>
+              <div class="flex items-start mb-2">
+                <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                <h3 class="font-bold ${headerSize} text-gray-900 break-words leading-tight">${data.headers[index]}</h3>
               </div>
-            `).join('')}
-          </div>
+              <div class="text-gray-700 leading-relaxed ${textSize} break-words whitespace-pre-wrap overflow-wrap-anywhere">${content}</div>
+            </div>
+          `).join('')}
         </div>
       `;
     } else {
@@ -250,32 +248,32 @@ const TableComponent = ({
       const tableClass = isPreview ? 'w-full text-xs' : 'min-w-full';
       
       return `
-        <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-          <div class="min-w-full inline-block align-middle">
+        <div class="relative">
+          <div class="overflow-x-auto border border-gray-200 rounded-lg shadow-sm table-scrollbar">
             <table class="${tableClass} divide-y divide-gray-200 min-w-full">
-              <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
-                <tr>
-                  ${data.headers.map((header, index) => `
-                    <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top whitespace-nowrap">
-                      <div class="flex items-start">
-                        <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
-                        <span class="break-words leading-tight">${header}</span>
-                      </div>
-                    </th>
+            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+              <tr>
+                ${data.headers.map((header, index) => `
+                  <th class="${padding} text-left ${headerTextSize} font-bold text-gray-700 uppercase tracking-tight border-r border-gray-200 last:border-r-0 align-top" style="min-width: 150px; max-width: 300px;">
+                    <div class="flex items-start">
+                      <div class="w-1 h-1 bg-blue-500 rounded-full mr-2 mt-2 flex-shrink-0"></div>
+                      <span class="break-words leading-tight">${header}</span>
+                    </div>
+                  </th>
+                `).join('')}
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+              ${data.data.map((row, rowIndex) => `
+                <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'}">
+                  ${row.map((cell, cellIndex) => `
+                    <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top" style="min-width: 150px; max-width: 300px;">
+                      <div class="font-medium ${textSize} break-words whitespace-pre-wrap leading-relaxed">${cell}</div>
+                    </td>
                   `).join('')}
                 </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-100">
-                ${data.data.map((row, rowIndex) => `
-                  <tr class="hover:bg-gray-50 transition-colors duration-200 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-25'}">
-                    ${row.map((cell, cellIndex) => `
-                      <td class="${padding} text-gray-800 border-r border-gray-100 last:border-r-0 align-top">
-                        <div class="font-medium ${textSize} break-words whitespace-pre-wrap leading-relaxed">${cell}</div>
-                      </td>
-                    `).join('')}
-                  </tr>
-                `).join('')}
-              </tbody>
+              `).join('')}
+            </tbody>
             </table>
           </div>
         </div>

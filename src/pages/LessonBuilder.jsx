@@ -6772,12 +6772,12 @@ setContentBlocks(prev => [...prev, newBlock]);
                                 
                                 {block.html_css ? (
                                   <div
-                                    className="max-w-none -mx-4 sm:-mx-6 lg:-mx-8"
+                                    className="max-w-none"
                                     dangerouslySetInnerHTML={{ __html: block.html_css }}
                                   />
                                 ) : (
                                   <div className="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-                                    <div className="prose max-w-none overflow-x-auto" dangerouslySetInnerHTML={{ __html: block.content }} />
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: block.content }} />
                                   </div>
                                 )}
                               </div>
