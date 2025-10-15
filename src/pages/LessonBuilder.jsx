@@ -4613,7 +4613,7 @@ function LessonBuilder() {
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                ${styledContent}
+                  ${styledContent}
               </article>
             </div>
           `;
@@ -4686,7 +4686,7 @@ function LessonBuilder() {
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                ${styledContent}
+                  ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextType === 'master_heading') {
@@ -5222,7 +5222,7 @@ function LessonBuilder() {
 
     // Determine which alignment to use based on layout
     const finalAlignment = layout === 'side-by-side' ? imageAlignment : standaloneImageAlignment;
-    
+
     const newBlock = {
       id: currentBlock?.id || `image-${Date.now()}`,
       block_id: currentBlock?.id || `image-${Date.now()}`,
@@ -7032,18 +7032,18 @@ setContentBlocks(prev => [...prev, newBlock]);
                                         ) : (
                                           // Image Left, Text Right (default)
                                           <>
-                                            <div className="w-1/2">
-                                              <img
-                                                src={block.imageUrl}
-                                                alt="Image"
-                                                className="w-full h-20 object-cover rounded"
-                                              />
-                                            </div>
-                                            <div className="w-1/2">
-                                              <p className="text-sm text-gray-600 line-clamp-4">
-                                                {getPlainText(block.text || '').substring(0, 60)}...
-                                              </p>
-                                            </div>
+                                        <div className="w-1/2">
+                                          <img
+                                            src={block.imageUrl}
+                                            alt="Image"
+                                            className="w-full h-20 object-cover rounded"
+                                          />
+                                        </div>
+                                        <div className="w-1/2">
+                                          <p className="text-sm text-gray-600 line-clamp-4">
+                                            {getPlainText(block.text || '').substring(0, 60)}...
+                                          </p>
+                                        </div>
                                           </>
                                         )}
                                       </div>
@@ -7958,7 +7958,7 @@ setContentBlocks(prev => [...prev, newBlock]);
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+      
       {/* Image Editor */}
       <ImageEditor
         isOpen={showImageEditor}
