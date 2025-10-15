@@ -28,9 +28,9 @@ export async function uploadImage(file, options = {}) {
       if (!validImageTypes.includes(file.type)) {
         throw new Error('Please upload only JPG, PNG, GIF, or WebP images');
       }
-      // Image size limit (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Image size should be less than 5MB');
+      // Image size limit (50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        throw new Error('Image size should be less than 50MB');
       }
     }
 
@@ -45,7 +45,7 @@ export async function uploadImage(file, options = {}) {
 
     // Let the browser set the correct Content-Type with boundary
     const response = await api.post(RESOURCE_UPLOAD_API, formData, {
-      timeout: 30000,
+      timeout: 120000, // 120 seconds for larger files
       withCredentials: true,
     });
 

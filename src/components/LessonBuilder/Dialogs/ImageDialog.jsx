@@ -87,7 +87,7 @@ const ImageDialog = ({
                   <p className="pl-1">or drag and drop</p>
                 </div>
                 <p className="text-xs text-gray-500">
-                  JPG, PNG up to 10MB
+                  JPG, PNG up to 50MB
                 </p>
               </div>
             </div>

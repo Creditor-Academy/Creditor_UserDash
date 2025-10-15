@@ -308,6 +308,7 @@ const LessonPreview = () => {
           imageDescription: block.imageDescription || block.image_description || block.details?.imageDescription || '',
           imageUrl: block.imageUrl || block.image_url || block.details?.imageUrl || block.url || '',
           layout: block.layout || block.details?.layout || 'centered',
+          alignment: block.alignment || block.details?.alignment || 'left', // Extract alignment from details
           htmlCss: block.html_css || '',
         });
       } else if (block.type === 'video') {
@@ -693,7 +694,25 @@ const LessonPreview = () => {
   const derivedProgress = totalSections > 0 ? Math.round((completedCount / totalSections) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+    <>
+      {/* Custom scrollbar styles for the sidebar */}
+      <style jsx>{`
+        .sidebar-nav::-webkit-scrollbar {
+          width: 8px;
+        }
+        .sidebar-nav::-webkit-scrollbar-track {
+          background: #1e40af;
+          border-radius: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb {
+          background: #60a5fa;
+          border-radius: 4px;
+        }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover {
+          background: #93c5fd;
+        }
+      `}</style>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
       {/* Fixed Sidebar */}
       {sidebarVisible && (
         <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-blue-600 to-blue-800 text-white transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-hidden`}>
@@ -709,9 +728,9 @@ const LessonPreview = () => {
           </Button>
         </div>
 
-        <div className="p-6 h-screen flex flex-col overflow-hidden">
-          {/* Lesson Header */}
-          <div className="mb-6 flex-shrink-0">
+        <div className="h-screen flex flex-col overflow-hidden">
+          {/* Lesson Header - Fixed at top */}
+          <div className="p-6 pb-4 flex-shrink-0">
             <div className="text-sm opacity-75 mb-1">Lesson {lessonData.lessonOrder}</div>
             <h1 className="text-xl font-bold leading-tight mb-3">{lessonData.title}</h1>
             
@@ -731,8 +750,11 @@ const LessonPreview = () => {
             <div className="text-sm opacity-75">{derivedProgress}% COMPLETE</div>
           </div>
 
-          {/* Navigation Menu - Only show master heading sections */}
-          <nav className="space-y-2 flex-1 overflow-hidden">
+          {/* Navigation Menu - Scrollable area */}
+          <nav className="sidebar-nav flex-1 overflow-y-auto px-6 pb-6 space-y-2" style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#60a5fa #1e40af'
+          }}>
             {lessonData.headingSections && lessonData.headingSections.length > 0 ? (
               lessonData.headingSections.map((section, index) => (
                 <button
@@ -1309,7 +1331,8 @@ const LessonPreview = () => {
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

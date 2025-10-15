@@ -450,8 +450,8 @@ const InteractiveComponent = forwardRef(({
   const handleImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size should be less than 5MB');
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast.error('Image size should be less than 50MB');
         return;
       }
       
@@ -569,8 +569,8 @@ const InteractiveComponent = forwardRef(({
   const handleTabImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size should be less than 5MB');
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast.error('Image size should be less than 50MB');
         return;
       }
       
@@ -688,8 +688,8 @@ const InteractiveComponent = forwardRef(({
   const handleLabeledGraphicImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size should be less than 5MB');
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast.error('Image size should be less than 50MB');
         return;
       }
       
@@ -1339,7 +1339,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 5MB
+                                  PNG, JPG, GIF up to 50MB
                                 </span>
                               </label>
                             </div>
@@ -1500,7 +1500,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 5MB
+                                  PNG, JPG, GIF up to 50MB
                                 </span>
                               </label>
                             </div>

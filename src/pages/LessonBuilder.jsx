@@ -27,7 +27,8 @@ import {
   Layers,
   Minus,
   Volume2,
-  Youtube
+  Youtube,
+  Crop
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
@@ -41,6 +42,7 @@ import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
+import ImageEditor from '@/components/ImageEditor';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -376,7 +378,7 @@ const Size = Quill.import('formats/size');
 Size.whitelist = ['small', 'normal', 'large', 'huge'];
 Quill.register(Size, true);
 
-// Add CSS for Quill editor overflow handling
+// Add CSS for Quill editor overflow handling and improved alignment display
 const quillOverflowCSS = `
   .quill-editor-overflow-visible .ql-toolbar {
     overflow: visible !important;
@@ -404,6 +406,88 @@ const quillOverflowCSS = `
     min-width: 200px !important;
     max-width: 300px !important;
   }
+  
+  /* Improve alignment picker display */
+  .ql-align .ql-picker-options .ql-picker-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    position: relative !important;
+  }
+  
+  /* Completely hide all horizontal line icons and replace with text */
+  .ql-align .ql-picker-options .ql-picker-item {
+    position: relative !important;
+    min-height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item svg,
+  .ql-align .ql-picker-options .ql-picker-item .ql-stroke,
+  .ql-align .ql-picker-options .ql-picker-item .ql-stroke-miter,
+  .ql-align .ql-picker-options .ql-picker-item .ql-fill {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  /* Replace with clear text labels */
+  .ql-align .ql-picker-options .ql-picker-item[data-value=""] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value=""]:after {
+    content: "⬅️ Left Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="center"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="center"]:after {
+    content: "↔️ Center Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="right"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="right"]:after {
+    content: "➡️ Right Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"]:after {
+    content: "⬌ Justify";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
 `;
 
 // Inject the CSS
@@ -423,6 +507,21 @@ const paragraphToolbar = [
   [{ 'list': 'ordered'}, { 'list': 'bullet' }],
   [{ 'align': [] }],
   ['link', 'image'],
+  ['clean']
+];
+
+// Custom alignment toolbar with clear labels
+const customAlignToolbar = [
+  [{ 'font': Font.whitelist }],
+  [{ 'size': Size.whitelist }],
+  ['bold', 'italic', 'underline'],
+  [{ 'color': [] }, { 'background': [] }],
+  [
+    { 'align': '' },
+    { 'align': 'center' },
+    { 'align': 'right' },
+    { 'align': 'justify' }
+  ],
   ['clean']
 ];
 
@@ -447,13 +546,31 @@ const getToolbarModules = (type = 'full') => {
     [{ 'align': [] }]
   ];
 
-  // For heading-only and subheading-only editors, include size picker
+  // For heading-only and subheading-only editors, include size picker and custom alignment
   if (type === 'heading' || type === 'subheading') {
     return {
       toolbar: [
         [{ 'font': Font.whitelist }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline'],
+        [{ 'color': [] }, { 'background': [] }],
+        [
+          { 'align': '' },
+          { 'align': 'center' },
+          { 'align': 'right' },
+          { 'align': 'justify' }
+        ]
+      ]
+    };
+  }
+  
+  // Simplified toolbar for paragraph blocks (no alignment, lists, links, images, clean)
+  if (type === 'paragraph') {
+    return {
+      toolbar: [
+        [{ 'font': Font.whitelist }],
+        [{ 'size': Size.whitelist }],
+        ['bold', 'italic', 'underline', 'strike'],
         [{ 'color': [] }, { 'background': [] }]
       ]
     };
@@ -625,6 +742,47 @@ function LessonBuilder() {
   const [editorHeading, setEditorHeading] = useState('');
   const [editorSubheading, setEditorSubheading] = useState('');
   const [editorContent, setEditorContent] = useState('');
+  const [masterHeadingGradient, setMasterHeadingGradient] = useState('gradient1');
+  
+  // Gradient color options for master heading
+  const gradientOptions = [
+    {
+      id: 'gradient1',
+      name: 'Purple to Blue',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      preview: 'from-indigo-500 to-purple-600'
+    },
+    {
+      id: 'gradient2', 
+      name: 'Blue to Pink',
+      gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+      preview: 'from-blue-500 via-purple-500 to-pink-500'
+    },
+    {
+      id: 'gradient3',
+      name: 'Green to Blue',
+      gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+      preview: 'from-emerald-500 to-blue-500'
+    },
+    {
+      id: 'gradient4',
+      name: 'Orange to Red',
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+      preview: 'from-amber-500 to-red-500'
+    },
+    {
+      id: 'gradient5',
+      name: 'Pink to Purple',
+      gradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+      preview: 'from-pink-500 to-purple-500'
+    },
+    {
+      id: 'gradient6',
+      name: 'Teal to Cyan',
+      gradient: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+      preview: 'from-teal-500 to-cyan-500'
+    }
+  ];
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -676,6 +834,13 @@ function LessonBuilder() {
   const [youTubeTitle, setYouTubeTitle] = useState('');
   const [youTubeDescription, setYouTubeDescription] = useState('');
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
+  const [imageAlignment, setImageAlignment] = useState('left'); // 'left' or 'right' for image & text blocks
+  const [standaloneImageAlignment, setStandaloneImageAlignment] = useState('center'); // 'left', 'center', 'right' for standalone images
+  
+  // Image Editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
   
 
 
@@ -687,6 +852,7 @@ function LessonBuilder() {
       description: 'Image with text content side by side',
       icon: <Image className="h-6 w-6" />,
       layout: 'side-by-side',
+      alignment: 'left', // Default alignment
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
         text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy. The pains of the past are behind us. The future has yet to unfold. But the now is full of beauty always waiting for our attention.'
@@ -709,6 +875,7 @@ function LessonBuilder() {
       description: 'Centered image with optional caption',
       icon: <Image className="h-6 w-6" />,
       layout: 'centered',
+      alignment: 'center', // Default alignment
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
         text: 'A peaceful moment captured in time'
@@ -2765,13 +2932,18 @@ function LessonBuilder() {
           const caption = (block.text || block.imageDescription || block.details?.caption || '').toString();
           const title = block.imageTitle || block.details?.alt_text || 'Image';
           if (layout === 'side-by-side') {
+            const alignment = block.alignment || 'left';
+            const imageFirst = alignment === 'left';
+            const imageOrder = imageFirst ? 'order-1' : 'order-2';
+            const textOrder = imageFirst ? 'order-2' : 'order-1';
+            
             html = `
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                  <div>
+                  <div class="${imageOrder}">
                     <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                   </div>
-                  <div>
+                  <div class="${textOrder}">
                     ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
                   </div>
                 </div>
@@ -3163,7 +3335,7 @@ function LessonBuilder() {
         } else {
           // Fallback: generate HTML from video block properties
           const videoUrl = block.videoUrl || block.details?.video_url || '';
-          const videoTitle = block.videoTitle || block.details?.caption || 'Video';
+          const videoTitle = (block.videoTitle || block.details?.caption || 'Video').replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
           const videoDescription = block.videoDescription || block.details?.description || '';
           
           html = `
@@ -3409,15 +3581,21 @@ function LessonBuilder() {
                 alt_text: block.imageTitle || '',
                 layout: layout,
                 template: block.templateType || block.template || undefined,
+                alignment: block.alignment || 'left', // Include alignment in details
               };
 
               if (layout === 'side-by-side') {
+                const alignment = block.alignment || 'left';
+                const imageFirst = alignment === 'left';
+                const imageOrder = imageFirst ? 'order-1' : 'order-2';
+                const textOrder = imageFirst ? 'order-2' : 'order-1';
+                
                 htmlContent = `
                   <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                    <div>
+                    <div class="${imageOrder}">
                       <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                     </div>
-                    <div>
+                    <div class="${textOrder}">
                       ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
                     </div>
                   </div>
@@ -3437,9 +3615,18 @@ function LessonBuilder() {
                   </div>
                 `;
               } else { // centered or default
+                // Handle standalone image alignment
+                const alignment = block.alignment || 'center';
+                let alignmentClass = 'text-center'; // default
+                if (alignment === 'left') {
+                  alignmentClass = 'text-left';
+                } else if (alignment === 'right') {
+                  alignmentClass = 'text-right';
+                }
+                
                 htmlContent = `
-                  <div class="text-center">
-                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+                  <div class="${alignmentClass}">
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
                     ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                   </div>
                 `;
@@ -3623,13 +3810,18 @@ function LessonBuilder() {
           const layout = block.layout || 'centered';
           const textContent = (block.text || block.imageDescription || '').toString();
           if (layout === 'side-by-side') {
+            const alignment = block.alignment || 'left';
+            const imageFirst = alignment === 'left';
+            const imageOrder = imageFirst ? 'order-1' : 'order-2';
+            const textOrder = imageFirst ? 'order-2' : 'order-1';
+            
             htmlContent = `
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                  <div>
+                  <div class="${imageOrder}">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
                   </div>
-                  <div>
+                  <div class="${textOrder}">
                     ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
                   </div>
                 </div>
@@ -3651,10 +3843,19 @@ function LessonBuilder() {
                 </div>
               </div>`;
           } else {
+            // Handle standalone image alignment
+            const alignment = block.alignment || 'center';
+            let alignmentClass = 'text-center'; // default
+            if (alignment === 'left') {
+              alignmentClass = 'text-left';
+            } else if (alignment === 'right') {
+              alignmentClass = 'text-right';
+            }
+            
             htmlContent = `
               <div class="lesson-image centered">
-                <div class="text-center">
-                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                <div class="${alignmentClass}">
+                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
                   ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                 </div>
               </div>`;
@@ -3744,6 +3945,7 @@ function LessonBuilder() {
       title: template.title,
       layout: template.layout,
       templateType: template.id,
+      alignment: template.alignment || 'left', // Include alignment from template
       imageUrl: imageUrl,
       imageTitle: imageTitle,
       imageDescription: '',
@@ -3756,7 +3958,8 @@ function LessonBuilder() {
         caption: imageText,
         alt_text: imageTitle,
         layout: template.layout,
-        template: template.id
+        template: template.id,
+        alignment: template.alignment || 'left'
       }
     };
 
@@ -3770,11 +3973,18 @@ function LessonBuilder() {
 
   const handleImageBlockEdit = (blockId, field, value) => {
     setContentBlocks(prev =>
-      prev.map(block =>
-        block.id === blockId
-          ? { ...block, [field]: value }
-          : block
-      )
+      prev.map(block => {
+        if (block.id !== blockId) return block;
+        
+        const updatedBlock = { ...block, [field]: value };
+        
+        // If alignment is being changed, regenerate the HTML
+        if (field === 'alignment') {
+          updatedBlock.html_css = generateImageBlockHtml(updatedBlock);
+        }
+        
+        return updatedBlock;
+      })
     );
   };
 
@@ -3862,16 +4072,21 @@ function LessonBuilder() {
     const textContent = (block.text || block.imageDescription || '').toString();
     const imageUrl = block.imageUrl || '';
     const imageTitle = block.imageTitle || '';
+    const alignment = block.alignment || block.details?.alignment || 'left';
 
     if (!imageUrl) return '';
 
     if (layout === 'side-by-side') {
+      const imageFirst = alignment === 'left';
+      const imageOrder = imageFirst ? 'order-1' : 'order-2';
+      const textOrder = imageFirst ? 'order-2' : 'order-1';
+      
       return `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div>
+          <div class="${imageOrder}">
             <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
-          <div>
+          <div class="${textOrder}">
             ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
           </div>
         </div>
@@ -3891,9 +4106,17 @@ function LessonBuilder() {
         </div>
       `;
     } else { // centered or default
+      // Handle standalone image alignment
+      let alignmentClass = 'text-center'; // default
+      if (alignment === 'left') {
+        alignmentClass = 'text-left';
+      } else if (alignment === 'right') {
+        alignmentClass = 'text-right';
+      }
+      
       return `
-        <div class="text-center">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+        <div class="${alignmentClass}">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
           ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
         </div>
       `;
@@ -3923,6 +4146,7 @@ function LessonBuilder() {
             alt_text: block.imageTitle || block.details?.alt_text || '',
             layout: block.layout || block.details?.layout,
             template: block.templateType || block.details?.template,
+            alignment: block.alignment || block.details?.alignment || 'left',
           };
           
           // Create updated block with final image URL for HTML generation
@@ -4079,8 +4303,26 @@ function LessonBuilder() {
             } else {
               setEditorHtml('Master Heading');
             }
+            
+            // Detect gradient from existing content
+            const gradientDiv = tempDiv.querySelector('div[style*="linear-gradient"]');
+            if (gradientDiv) {
+              const style = gradientDiv.getAttribute('style') || '';
+              // Try to match with our gradient options
+              const matchedGradient = gradientOptions.find(option => 
+                style.includes(option.gradient.replace('linear-gradient(', '').replace(')', ''))
+              );
+              if (matchedGradient) {
+                setMasterHeadingGradient(matchedGradient.id);
+              } else {
+                setMasterHeadingGradient('gradient1'); // Default fallback
+              }
+            } else {
+              setMasterHeadingGradient('gradient1'); // Default
+            }
           } else {
             setEditorHtml(htmlContent || 'Master Heading');
+            setMasterHeadingGradient('gradient1'); // Default
           }
         } else {
           // Extract the inner content while preserving rich text formatting for other types
@@ -4145,8 +4387,54 @@ function LessonBuilder() {
           const headingFontWeight = effectiveTextType === 'heading_paragraph' ? 'bold' : '600';
           
           // Use the correct content variables for each template type
-          const headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
-          const paragraphContent = editorContent;
+          let headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
+          let paragraphContent = editorContent;
+          
+          console.log(`${effectiveTextType} - Original heading content:`, headingContent);
+          console.log(`${effectiveTextType} - Original paragraph content:`, paragraphContent);
+          
+          // Process heading content for alignment
+          if (headingContent) {
+            const hasHeadingAlignment = headingContent.includes('ql-align-center') || 
+                                      headingContent.includes('ql-align-right') || 
+                                      headingContent.includes('ql-align-justify') ||
+                                      headingContent.includes('text-align: center') ||
+                                      headingContent.includes('text-align: right') ||
+                                      headingContent.includes('text-align: justify');
+            
+            console.log(`${effectiveTextType} - Has heading alignment classes:`, hasHeadingAlignment);
+            
+            if (hasHeadingAlignment) {
+              headingContent = headingContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+          }
+          
+          // Process paragraph content for alignment
+          if (paragraphContent) {
+            const hasParagraphAlignment = paragraphContent.includes('ql-align-center') || 
+                                        paragraphContent.includes('ql-align-right') || 
+                                        paragraphContent.includes('ql-align-justify') ||
+                                        paragraphContent.includes('text-align: center') ||
+                                        paragraphContent.includes('text-align: right') ||
+                                        paragraphContent.includes('text-align: justify');
+            
+            console.log(`${effectiveTextType} - Has paragraph alignment classes:`, hasParagraphAlignment);
+            
+            if (hasParagraphAlignment) {
+              paragraphContent = paragraphContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+          }
+          
+          console.log(`${effectiveTextType} - Final heading content:`, headingContent);
+          console.log(`${effectiveTextType} - Final paragraph content:`, paragraphContent);
           
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
@@ -4159,81 +4447,254 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, preserve Quill editor styling but ensure proper heading size
+          // For heading blocks, preserve Quill editor styling including alignment
           let styledContent = editorHtml || '<h1>Heading</h1>';
+          
+          console.log('Original editorHtml:', editorHtml);
           
           // If the content doesn't have proper heading tags, wrap it in h1 with default styling
           if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
             styledContent = `<h1 style="font-size: 24px; font-weight: bold; margin: 0;">${styledContent}</h1>`;
           } else {
-            // Ensure h1 tags have proper default size if no size is specified
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Has alignment classes:', hasAlignment);
+            console.log('Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Preserve existing styles but ensure proper default size if no size is specified
             styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h1${attrs} style="font-size: 24px; font-weight: bold; margin: 0;">`;
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 24px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: bold';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: #1F2937';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
               }
               return match;
             });
           }
           
+          console.log('Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <div class="prose prose-lg max-w-none">
-                  ${styledContent}
-                </div>
+                ${styledContent}
               </article>
             </div>
           `;
         } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, preserve Quill editor styling but ensure proper subheading size
+          // For subheading blocks, preserve Quill editor styling including alignment
           let styledContent = editorHtml || '<h2>Subheading</h2>';
+          
+          console.log('Subheading - Original editorHtml:', editorHtml);
           
           // If the content doesn't have proper heading tags, wrap it in h2 with default styling
           if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
             styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
           } else {
-            // Ensure h2 tags have proper default size if no size is specified
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Subheading - Has alignment classes:', hasAlignment);
+            console.log('Subheading - Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Preserve existing styles but ensure proper default size if no size is specified
             styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 20px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: 600';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: #1F2937';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h2${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0; line-height: 1.2;">`;
               }
               return match;
             });
           }
           
+          console.log('Subheading - Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <div class="prose prose-lg max-w-none">
-                  ${styledContent}
-                </div>
+                ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextType === 'master_heading') {
-          // For master heading, preserve Quill editor styling but keep the gradient background and proper size
+          // For master heading, preserve Quill editor styling including alignment and use selected gradient
           let styledContent = editorHtml || 'Master Heading';
+          
+          // Get the selected gradient
+          const selectedGradient = gradientOptions.find(g => g.id === masterHeadingGradient) || gradientOptions[0];
+          
+          console.log('Master Heading - Original editorHtml:', editorHtml);
+          console.log('Master Heading - Selected gradient:', selectedGradient.name);
           
           // Ensure master heading has proper size if no size is specified
           if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
             styledContent = `<h1 style="font-size: 40px; font-weight: 600; margin: 0;">${styledContent}</h1>`;
           } else {
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Master Heading - Has alignment classes:', hasAlignment);
+            console.log('Master Heading - Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
             // Ensure h1 tags have proper default size for master heading if no size is specified
             styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h1${attrs} style="font-size: 40px; font-weight: 600; margin: 0;">`;
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 40px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: 600';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: white';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h1${attrs} style="font-size: 40px; font-weight: 600; color: white; margin: 0; line-height: 1.2;">`;
               }
               return match;
             });
           }
           
-          updatedContent = `<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
+          console.log('Master Heading - Final styled content:', styledContent);
+          
+          updatedContent = `<div style="background: ${selectedGradient.gradient}; padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
         } else {
-          // For paragraph and other single content blocks - use same styled container as heading/subheading
+          // For paragraph and other single content blocks - preserve alignment
+          let styledContent = editorHtml || 'Enter your content here...';
+          
+          console.log('Paragraph - Original editorHtml:', editorHtml);
+          
+          // Check if content has alignment classes from Quill
+          const hasAlignment = styledContent.includes('ql-align-center') || 
+                             styledContent.includes('ql-align-right') || 
+                             styledContent.includes('ql-align-justify') ||
+                             styledContent.includes('text-align: center') ||
+                             styledContent.includes('text-align: right') ||
+                             styledContent.includes('text-align: justify');
+          
+          console.log('Paragraph - Has alignment classes:', hasAlignment);
+          console.log('Paragraph - Styled content before processing:', styledContent);
+          
+          // If content has Quill alignment classes, convert them to inline styles
+          if (hasAlignment) {
+            styledContent = styledContent
+              .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+              .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+              .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+              .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+          }
+          
+          console.log('Paragraph - Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
-                  ${editorHtml || 'Enter your content here...'}
+                  ${styledContent}
                 </div>
               </article>
             </div>
@@ -4311,22 +4772,53 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextTypeForNew === 'heading') {
-          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // Preserve Quill editor styling including alignment
+          let styledContent = editorHtml || 'Heading';
+          
+          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${styledContent}</h1>`;
+          } else {
+            // Ensure h1 tags have proper default size if no size is specified, but preserve alignment
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
+              }
+              return match;
+            });
+          }
+          
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+                ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextTypeForNew === 'subheading') {
-          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // Preserve Quill editor styling including alignment
+          let styledContent = editorHtml || 'Subheading';
+          
+          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
+          } else {
+            // Ensure h2 tags have proper default size if no size is specified, but preserve alignment
+            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
+              }
+              return match;
+            });
+          }
+          
           newBlockContent = `
-                <div class="prose prose-lg max-w-none text-gray-700">
-                  ${editorHtml || 'Enter your content here...'}
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <article class="max-w-none">
+                <div class="prose prose-lg max-w-none">
+                  ${styledContent}
                 </div>
               </article>
-            </div>
-          `;
+            </div>`;
         }
         
         const newBlock = {
@@ -4377,6 +4869,10 @@ function LessonBuilder() {
     setEditorHtml('');
     setCurrentTextBlockId(null);
     setCurrentTextType(null);
+    setEditorHeading('');
+    setEditorSubheading('');
+    setEditorContent('');
+    setMasterHeadingGradient('gradient1');
   };
 
   const handleEditorSave = () => {
@@ -4459,19 +4955,69 @@ function LessonBuilder() {
         return;
       }
      
-      // Check file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size should be less than 10MB');
+      // Check file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('Image size should be less than 50MB');
         return;
       }
      
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      // Show image editor instead of directly setting the file
+      setImageToEdit(file);
+      setImageEditorTitle('Edit Image');
+      setShowImageEditor(true);
     } else if (name === 'title') {
       setImageTitle(value);
     } else if (name === 'description') {
       setImageDescription(value);
     }
+  };
+
+  // Image Editor callbacks
+  const handleImageEditorSave = (editedFile) => {
+    // Check if this is inline editing (currentBlock has an id)
+    if (currentBlock && currentBlock.id) {
+      // Inline editing - upload the edited file directly
+      handleImageFileUpload(currentBlock.id, editedFile);
+    } else {
+      // Regular image dialog editing
+      setImageFile(editedFile);
+      setImagePreview(URL.createObjectURL(editedFile));
+    }
+    
+    setShowImageEditor(false);
+    setImageToEdit(null);
+    setCurrentBlock(null);
+  };
+
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setImageToEdit(null);
+  };
+
+  // Inline image editing with image editor
+  const handleInlineImageFileUpload = (blockId, file) => {
+    if (!file) return;
+
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload only JPG or PNG images');
+      return;
+    }
+   
+    // Check file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Image size should be less than 50MB');
+      return;
+    }
+
+    // Show image editor for inline editing
+    setImageToEdit(file);
+    setImageEditorTitle('Edit Image');
+    setShowImageEditor(true);
+    
+    // Store the block ID for when the editor saves
+    setCurrentBlock({ id: blockId });
   };
 
   const handleAddImage = async () => {
@@ -4525,12 +5071,17 @@ function LessonBuilder() {
     // Build HTML based on layout when applicable
     let htmlContent = '';
     if (layout === 'side-by-side') {
+      const alignment = currentBlock?.alignment || 'left';
+      const imageFirst = alignment === 'left';
+      const imageOrder = imageFirst ? 'order-1' : 'order-2';
+      const textOrder = imageFirst ? 'order-2' : 'order-1';
+      
       htmlContent = `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div>
+          <div class="${imageOrder}">
             <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
-          <div>
+          <div class="${textOrder}">
             ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
           </div>
         </div>
@@ -4571,6 +5122,9 @@ function LessonBuilder() {
       `;
     }
 
+    // Determine which alignment to use based on layout
+    const finalAlignment = layout === 'side-by-side' ? imageAlignment : standaloneImageAlignment;
+    
     const newBlock = {
       id: currentBlock?.id || `image-${Date.now()}`,
       block_id: currentBlock?.id || `image-${Date.now()}`,
@@ -4578,12 +5132,14 @@ function LessonBuilder() {
       title: imageTitle,
       layout: layout || undefined,
       templateType: templateType || undefined,
+      alignment: finalAlignment, // Include appropriate alignment
       details: {
         image_url: imageUrl,
         caption: textContent || '',
         alt_text: imageTitle,
         layout: layout || undefined,
-        template: templateType || undefined
+        template: templateType || undefined,
+        alignment: finalAlignment
       },
       html_css: htmlContent,
       imageTitle: imageTitle,
@@ -4641,6 +5197,15 @@ function LessonBuilder() {
       setImageFile(block.imageFile);
       setImagePreview(block.imageUrl);
       setImageTemplateText(block.text || block.details?.caption || '');
+      
+      // Set appropriate alignment based on layout
+      const blockAlignment = block.alignment || 'left';
+      if (block.layout === 'side-by-side') {
+        setImageAlignment(blockAlignment);
+      } else {
+        setStandaloneImageAlignment(blockAlignment);
+      }
+      
       setShowImageDialog(true);
     }
   };
@@ -5092,6 +5657,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                       title: 'Image',
                       layout: b.details?.layout || 'centered',
                       templateType: b.details?.template || undefined,
+                      alignment: b.details?.alignment || 'left', // Extract alignment from details
                       imageUrl: b.details?.image_url || '',
                       imageTitle: b.details?.alt_text || 'Image',
                       imageDescription: b.details?.caption || '',
@@ -5786,7 +6352,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             {block.type === 'video' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Video'}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title?.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim() || 'Video'}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Video
                                   </Badge>
@@ -5795,7 +6361,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                                 {(() => {
                                   // First try to get video URL from block properties (for newly created blocks)
                                   let videoUrl = block.videoUrl || block.details?.video_url || '';
-                                  let videoTitle = block.videoTitle || block.details?.caption || 'Video';
+                                  let videoTitle = (block.videoTitle || block.details?.caption || 'Video').replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
                                   let videoDescription = block.videoDescription || block.details?.description || '';
                                   
                                   console.log('Video block edit rendering:', {
@@ -5840,10 +6406,6 @@ setContentBlocks(prev => [...prev, newBlock]);
                                             </video>
                                           )}
                                           
-                                          <div className="mt-2 text-xs text-gray-500 flex items-center">
-                                            <Video className="h-3 w-3 mr-1" />
-                                            <span>{videoTitle}</span>
-                                          </div>
                                         </div>
                                       </>
                                     );
@@ -6195,7 +6757,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                                             onChange={(e) => {
                                               const file = e.target.files[0];
                                               if (file) {
-                                                handleImageFileUpload(block.id, file);
+                                                handleInlineImageFileUpload(block.id, file);
                                               }
                                             }}
                                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -6227,6 +6789,10 @@ setContentBlocks(prev => [...prev, newBlock]);
                                         {/* Image Preview */}
                                         {(block.imageUrl || block.defaultContent?.imageUrl) && (
                                           <div className="mt-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="text-sm font-medium text-gray-700">Current Image:</span>
+                                              
+                                            </div>
                                             <img
                                             src={block.imageUrl || block.defaultContent?.imageUrl}
                                             alt="Preview"
@@ -6249,6 +6815,39 @@ setContentBlocks(prev => [...prev, newBlock]);
                                         style={{ minHeight: '100px' }}
                                       />
                                     </div>
+                                    
+                                    {/* Image Alignment Options for side-by-side layout */}
+                                    {block.layout === 'side-by-side' && (
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Image Alignment
+                                        </label>
+                                        <div className="flex gap-4">
+                                          <label className="flex items-center">
+                                            <input
+                                              type="radio"
+                                              name={`alignment-${block.id}`}
+                                              value="left"
+                                              checked={block.alignment === 'left'}
+                                              onChange={(e) => handleImageBlockEdit(block.id, 'alignment', e.target.value)}
+                                              className="mr-2"
+                                            />
+                                            <span className="text-sm">Image Left, Text Right</span>
+                                          </label>
+                                          <label className="flex items-center">
+                                            <input
+                                              type="radio"
+                                              name={`alignment-${block.id}`}
+                                              value="right"
+                                              checked={block.alignment === 'right'}
+                                              onChange={(e) => handleImageBlockEdit(block.id, 'alignment', e.target.value)}
+                                              className="mr-2"
+                                            />
+                                            <span className="text-sm">Image Right, Text Left</span>
+                                          </label>
+                                        </div>
+                                      </div>
+                                    )}
                                    
                                     {/* Save and Cancel Buttons */}
                                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
@@ -6282,18 +6881,39 @@ setContentBlocks(prev => [...prev, newBlock]);
                                   <div>
                                     {block.layout === 'side-by-side' && (
                                       <div className="flex gap-3 items-start">
-                                        <div className="w-1/2">
-                                          <img
-                                            src={block.imageUrl}
-                                            alt="Image"
-                                            className="w-full h-20 object-cover rounded"
-                                          />
-                                        </div>
-                                        <div className="w-1/2">
-                                          <p className="text-sm text-gray-600 line-clamp-4">
-                                            {getPlainText(block.text || '').substring(0, 60)}...
-                                          </p>
-                                        </div>
+                                        {block.alignment === 'right' ? (
+                                          // Image Right, Text Left
+                                          <>
+                                            <div className="w-1/2">
+                                              <p className="text-sm text-gray-600 line-clamp-4">
+                                                {getPlainText(block.text || '').substring(0, 60)}...
+                                              </p>
+                                            </div>
+                                            <div className="w-1/2">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-20 object-cover rounded"
+                                              />
+                                            </div>
+                                          </>
+                                        ) : (
+                                          // Image Left, Text Right (default)
+                                          <>
+                                            <div className="w-1/2">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-20 object-cover rounded"
+                                              />
+                                            </div>
+                                            <div className="w-1/2">
+                                              <p className="text-sm text-gray-600 line-clamp-4">
+                                                {getPlainText(block.text || '').substring(0, 60)}...
+                                              </p>
+                                            </div>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                     {block.layout === 'overlay' && (
@@ -6311,11 +6931,11 @@ setContentBlocks(prev => [...prev, newBlock]);
                                       </div>
                                     )}
                                     {block.layout === 'centered' && (
-                                      <div className="text-center space-y-3">
+                                      <div className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}>
                                         <img
                                           src={block.imageUrl}
                                           alt="Image"
-                                          className="mx-auto h-20 object-cover rounded"
+                                          className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
                                         />
                                         <p className="text-sm text-gray-600 italic line-clamp-2">
                                           {getPlainText(block.text || '').substring(0, 40)}...
@@ -6464,7 +7084,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={getToolbarModules('full')}
+                          modules={getToolbarModules('paragraph')}
                           placeholder="Enter your paragraph text..."
                           style={{ height: '300px' }}
                         />
@@ -6502,7 +7122,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={getToolbarModules('full')}
+                            modules={getToolbarModules('paragraph')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                             className="quill-editor-overflow-visible"
@@ -6541,7 +7161,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={getToolbarModules('full')}
+                            modules={getToolbarModules('paragraph')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                           />
@@ -6567,6 +7187,66 @@ setContentBlocks(prev => [...prev, newBlock]);
                           placeholder="Edit your table content..."
                           className="flex-1"
                         />
+                      </div>
+                    </div>
+                  );
+                }
+               
+                // Master Heading with gradient options
+                if (textType === 'master_heading') {
+                  return (
+                    <div className="flex-1 flex flex-col gap-4 h-full">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Master Heading
+                        </label>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorHtml}
+                            onChange={setEditorHtml}
+                            modules={getToolbarModules('heading')}
+                            placeholder="Enter your master heading text..."
+                            style={{ height: '80px' }}
+                            className="quill-editor-overflow-visible"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex-shrink-0">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Gradient Color
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {gradientOptions.map((option) => (
+                            <div
+                              key={option.id}
+                              className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all ${
+                                masterHeadingGradient === option.id
+                                  ? 'border-blue-500 ring-2 ring-blue-200'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => setMasterHeadingGradient(option.id)}
+                            >
+                              <div 
+                                className={`h-8 w-full rounded bg-gradient-to-r ${option.preview} mb-2`}
+                                style={{ background: option.gradient }}
+                              />
+                              <p className="text-xs text-center text-gray-600 font-medium">
+                                {option.name}
+                              </p>
+                              {masterHeadingGradient === option.id && (
+                                <div className="absolute top-1 right-1">
+                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
@@ -6683,7 +7363,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={getToolbarModules('full')}
+                      modules={getToolbarModules('paragraph')}
                       placeholder="Type and format your content here"
                       style={{ height: '300px' }}
                     />
@@ -7020,6 +7700,77 @@ setContentBlocks(prev => [...prev, newBlock]);
                 placeholder="Enter text to show with or on the image"
               />
             </div>
+            
+            {/* Image Alignment Options */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Image Alignment
+              </label>
+              <div className="space-y-2">
+                <div className="text-sm text-gray-600 mb-2">For Image & Text blocks:</div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="imageAlignment"
+                      value="left"
+                      checked={imageAlignment === 'left'}
+                      onChange={(e) => setImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Image Left, Text Right</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="imageAlignment"
+                      value="right"
+                      checked={imageAlignment === 'right'}
+                      onChange={(e) => setImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Image Right, Text Left</span>
+                  </label>
+                </div>
+                
+                <div className="text-sm text-gray-600 mb-2 mt-4">For standalone images:</div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="left"
+                      checked={standaloneImageAlignment === 'left'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Left Aligned</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="center"
+                      checked={standaloneImageAlignment === 'center'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Center Aligned</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="right"
+                      checked={standaloneImageAlignment === 'right'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Right Aligned</span>
+                  </label>
+                </div>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Image File <span className="text-red-500">*</span>
@@ -7040,7 +7791,7 @@ setContentBlocks(prev => [...prev, newBlock]);
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    JPG, PNG up to 10MB
+                    JPG, PNG up to 50MB
                   </p>
                 </div>
               </div>
@@ -7075,7 +7826,16 @@ setContentBlocks(prev => [...prev, newBlock]);
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
+      {/* Image Editor */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageFile={imageToEdit}
+        onSave={handleImageEditorSave}
+        title={imageEditorTitle}
+      />
+
 
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
