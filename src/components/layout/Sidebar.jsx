@@ -384,6 +384,18 @@ export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
               onNavigate={handleCreditorCardClick}
             />
           </motion.div>
+
+          {/* LMS Guide */}
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={HelpCircle}
+              label="LMS Guide"
+              href="/dashboard/guide"
+              active={isActive("/dashboard/guide")}
+              collapsed={collapsed}
+              onNavigate={handleNavigate}
+            />
+          </motion.div>
           </>
           )}
 

@@ -99,6 +99,7 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import { LMSGuide, FeatureGuideContainer } from "@/components/LMSGuide";
 import CreateScenario from "@/pages/CreateScenario";
 import PreviewScenario from "@/pages/PreviewScenario";
 import ScenarioTakePage from "@/pages/ScenarioTakePage";
@@ -303,6 +304,8 @@ function App() {
             <Route path="faqs" element={<FAQs />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="guides" element={<Guides />} />
+            <Route path="guide" element={<LMSGuide />} />
+            <Route path="guide/:featureId" element={<FeatureGuideContainer />} />
             <Route path="termcondition" element={<TermsAndConditions />} />
             
             {/* Support routes */}
