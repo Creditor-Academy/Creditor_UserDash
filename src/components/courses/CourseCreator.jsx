@@ -11,7 +11,7 @@ import {
   Users,
   Target
 } from 'lucide-react';
-import Bytez from 'bytez.js';
+// import Bytez from 'bytez.js'; // Removed - dependency not available
 
 const CourseCreator = () => {
   const [courseData, setCourseData] = useState({
@@ -55,18 +55,11 @@ const CourseCreator = () => {
     isAIGenerated: true
   });
 
-  // Generate AI-powered lesson content using Bytez
+  // Generate AI-powered lesson content (dependency removed)
   const generateLessonContent = async (moduleTitle, lessonTitle) => {
     try {
-      const bytezKey = import.meta.env.VITE_BYTEZ_KEY || localStorage.getItem('BYTEZ_API_KEY');
-      
-      if (!bytezKey) {
-        return generateFallbackLesson(lessonTitle);
-      }
-
-      const sdk = new Bytez(bytezKey);
-      const model = sdk.model("google/flan-t5-base");
-      await model.create();
+      // Use fallback lesson generation (dependency removed)
+      return generateFallbackLesson(lessonTitle);
 
       const prompt = `Create a lesson about "${lessonTitle}" for the module "${moduleTitle}".
 
@@ -237,7 +230,7 @@ Summary: [Write 2-3 sentences summarizing what was learned]`;
           <BookOpen className="w-6 h-6 text-blue-600" />
           <h2 className="text-2xl font-bold text-gray-800">AI Course Creator</h2>
           <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-            Bytez AI Powered
+            AI Powered
           </div>
         </div>
 

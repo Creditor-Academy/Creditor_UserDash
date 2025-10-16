@@ -12,7 +12,6 @@ class ApiKeyManager {
     this.fallbackKeys = {
       // Demo/test keys for development (limited functionality)
       openai: null, // Will use rate-limited free tier if available
-      bytez: null,
       huggingface: null,
       deepai: null
     };
@@ -20,7 +19,7 @@ class ApiKeyManager {
 
   /**
    * Get API key with multiple fallback sources
-   * @param {string} service - Service name (openai, bytez, huggingface, deepai)
+   * @param {string} service - Service name (openai, huggingface, deepai)
    * @param {number} keyIndex - Key index for multi-key services (0-3)
    * @returns {string|null} API key or null
    */
@@ -71,29 +70,7 @@ class ApiKeyManager {
         );
         break;
 
-      case 'bytez':
-        const bytezKeys = [
-          'VITE_BYTEZ_KEY',
-          'VITE_BYTEZ_KEY_2', 
-          'VITE_BYTEZ_KEY_3',
-          'VITE_BYTEZ_KEY_4',
-          'VITE_BYTEZ_API_KEY',
-          'VITE_BYTEZ_API_KEY_2',
-          'VITE_BYTEZ_API_KEY_3',
-          'VITE_BYTEZ_API_KEY_4'
-        ];
-        
-        if (keyIndex < bytezKeys.length) {
-          const envKey = bytezKeys[keyIndex];
-          sources.push(
-            () => import.meta.env[envKey],
-            () => localStorage.getItem(`bytez_api_key_${keyIndex + 1}`),
-            () => localStorage.getItem('bytez_api_key')
-          );
-        }
-        
-        sources.push(() => this.fallbackKeys.bytez);
-        break;
+      // bytez case removed - dependency not available
 
       case 'huggingface':
         const hfKeys = [
@@ -159,10 +136,6 @@ class ApiKeyManager {
     // Check for placeholder values
     const placeholders = [
       'your_api_key_here',
-      'your_primary_bytez_key_here',
-      'your_secondary_bytez_key_here',
-      'your_third_bytez_key_here',
-      'your_fourth_bytez_key_here',
       'sk-placeholder',
       'hf_placeholder',
       'test_key',
@@ -190,15 +163,7 @@ class ApiKeyManager {
   getAllKeys(service) {
     const keys = [];
     
-    if (service === 'bytez') {
-      // For Bytez, try to get up to 8 keys
-      for (let i = 0; i < 8; i++) {
-        const key = this.getApiKey(service, i);
-        if (key) {
-          keys.push(key);
-        }
-      }
-    } else if (service === 'huggingface') {
+    if (service === 'huggingface') {
       // For HuggingFace, try to get up to 6 keys (multiple accounts)
       for (let i = 0; i < 6; i++) {
         const key = this.getApiKey(service, i);
@@ -238,7 +203,7 @@ class ApiKeyManager {
    * @returns {Object} Overall status
    */
   getOverallStatus() {
-    const services = ['openai', 'bytez', 'huggingface', 'deepai'];
+    const services = ['openai', 'huggingface', 'deepai'];
     const status = {};
     let availableServices = 0;
 
@@ -270,11 +235,7 @@ class ApiKeyManager {
     }
 
     let storageKey;
-    if (service === 'bytez' && keyIndex > 0) {
-      storageKey = `bytez_api_key_${keyIndex + 1}`;
-    } else {
-      storageKey = `${service}_api_key`;
-    }
+    storageKey = `${service}_api_key`;
 
     localStorage.setItem(storageKey, key);
     
@@ -344,7 +305,7 @@ class ApiKeyManager {
       if (shouldPrompt) {
         // Prompt for the most important keys
         await this.promptForApiKey('openai');
-        await this.promptForApiKey('bytez');
+        // bytez prompting removed
         
         return { success: true, status: this.getOverallStatus() };
       }

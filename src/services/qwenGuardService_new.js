@@ -1,8 +1,9 @@
-// QwenGuardService - Content moderation disabled (dependency removed)
+// QwenGuardService - Bytez dependency removed
+// Content moderation functionality disabled
 
 class QwenGuardService {
   constructor() {
-    console.warn('QwenGuardService: Content moderation disabled - dependency removed');
+    console.warn('QwenGuardService: Bytez dependency removed - content moderation disabled');
   }
 
   // Stub methods that return safe defaults

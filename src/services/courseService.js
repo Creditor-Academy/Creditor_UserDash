@@ -385,41 +385,13 @@ export async function createAIModulesAndLessons(courseId, outlines) {
           let cleanDescription = lessonData.introduction || lessonData.content?.introduction;
           
           if (!cleanDescription) {
-            try {
-              // Use Bytez AI to generate contextual description
-              const apiKey = import.meta.env.VITE_BYTEZ_API_KEY || import.meta.env.VITE_BYTEZ_API_KEY_2;
-              if (apiKey) {
-                const { Bytez } = await import('bytez.js');
-                const sdk = new Bytez(apiKey);
-                const model = sdk.model('openai-community/gpt2');
-                
-                await model.create();
-                
-                const prompt = `Write a brief, professional description for a lesson titled "${lessonData.title}". Keep it under 15 words and focus on what students will learn.`;
-                
-                const result = await model.run(prompt, {
-                  max_length: 50,
-                  temperature: 0.7,
-                  do_sample: true
-                });
-                
-                if (result.output) {
-                  cleanDescription = result.output.trim().replace(/['"]/g, '').split('.')[0] + '.';
-                }
-              }
-            } catch (aiError) {
-              console.warn('AI description generation failed:', aiError);
-            }
-            
-            // Fallback to smart template-based descriptions
-            if (!cleanDescription) {
-              cleanDescription = lessonData.title.includes('React') ? 'React is a frontend framework for building user interfaces.' :
-                lessonData.title.includes('JavaScript') ? 'JavaScript is a programming language for web development.' :
-                lessonData.title.includes('Python') ? 'Python is a versatile programming language.' :
-                lessonData.title.includes('CSS') ? 'CSS is used for styling web pages.' :
-                lessonData.title.includes('HTML') ? 'HTML is the markup language for web pages.' :
-                `${lessonData.title} fundamentals and concepts.`;
-            }
+            // Fallback to smart template-based descriptions (removed Bytez dependency)
+            cleanDescription = lessonData.title.includes('React') ? 'React is a frontend framework for building user interfaces.' :
+              lessonData.title.includes('JavaScript') ? 'JavaScript is a programming language for web development.' :
+              lessonData.title.includes('Python') ? 'Python is a versatile programming language.' :
+              lessonData.title.includes('CSS') ? 'CSS is used for styling web pages.' :
+              lessonData.title.includes('HTML') ? 'HTML is the markup language for web pages.' :
+              `${lessonData.title} fundamentals and concepts.`;
           }
 
           // Auto-generate Q&A pairs and an illustrative image for the lesson

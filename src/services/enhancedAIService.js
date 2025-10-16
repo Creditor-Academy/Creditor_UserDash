@@ -664,15 +664,14 @@ class EnhancedAIService {
   }
 
   /**
-   * Generate with Bytez (simplified version)
+   * Generate with removed service (stub method)
    */
   async generateWithBytez(prompt, model, options = {}) {
-    // This would use your existing Bytez implementation
-    // For now, return a placeholder that indicates Bytez integration needed
+    // Service removed - dependency not available
     return {
       success: false,
-      error: 'Bytez integration pending',
-      provider: 'bytez'
+      error: 'Integration removed - dependency not available',
+      provider: 'removed'
     };
   }
 

@@ -1080,16 +1080,13 @@ export async function summarizeContent(content, options = {}) {
       
       summary = response;
     } catch (summarizeError) {
-      console.warn('OpenAI summarization failed, falling back to Bytez:', summarizeError.message);
+      console.warn('OpenAI summarization failed, using fallback:', summarizeError.message);
       
-      // Fallback to Bytez API
-      const response = await bytezAPI.summarizeText(content, {
-        length: options.length || 'medium',
-        type: options.type || 'bullet',
-        ...options
-      });
+      // Simple fallback summarization (dependency removed)
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      const summary = sentences.slice(0, 3).join('. ') + '.';
       
-      summary = response.summary;
+      // Removed the incorrect line: summary = response.summary;
     }
     
     return {
@@ -1144,12 +1141,10 @@ export async function searchCourseContent(question, context = '') {
       
       answer = response;
     } catch (qaError) {
-      console.warn('OpenAI QA failed, falling back to Bytez:', qaError.message);
+      console.warn('OpenAI QA failed, using fallback:', qaError.message);
       
-      // Fallback to Bytez API
-      const response = await bytezAPI.answerQuestion(question, context);
-      
-      answer = response.answer;
+      // Simple fallback answer (dependency removed)
+      answer = `This is an educational topic related to ${question}. Please refer to course materials for detailed information.`;
     }
     
     return {
@@ -1413,8 +1408,8 @@ export async function saveAICourse(courseData) {
         isAIGenerated: true,
         aiMetadata: {
           generatedAt: new Date().toISOString(),
-          bytezModelsUsed: ['course-outline', 'image-generation', 'summarization'],
-          generationMethod: 'langchain-bytez'
+          modelsUsed: ['course-outline', 'image-generation', 'summarization'],
+          generationMethod: 'ai-service'
         }
       })
     });

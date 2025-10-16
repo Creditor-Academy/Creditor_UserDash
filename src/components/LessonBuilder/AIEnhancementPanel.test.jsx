@@ -3,17 +3,17 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AIEnhancementPanel from './AIEnhancementPanel';
 
-// Mock the Bytez SDK
-jest.mock('bytez.js', () => {
-  return jest.fn().mockImplementation(() => {
-    return {
-      model: jest.fn().mockReturnValue({
-        create: jest.fn().mockResolvedValue(),
-        run: jest.fn().mockResolvedValue({ output: 'Generated content' })
-      })
-    };
-  });
-});
+// Mock removed - Bytez SDK dependency removed
+// jest.mock('bytez.js', () => {
+//   return jest.fn().mockImplementation(() => {
+//     return {
+//       model: jest.fn().mockReturnValue({
+//         create: jest.fn().mockResolvedValue(),
+//         run: jest.fn().mockResolvedValue({ output: 'Generated content' })
+//       })
+//     };
+//   });
+// });
 
 describe('AIEnhancementPanel', () => {
   const mockOnContentGenerated = jest.fn();

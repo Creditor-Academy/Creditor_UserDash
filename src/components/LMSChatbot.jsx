@@ -114,7 +114,7 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
         { role: 'user', content: userMessage.content }
       ];
 
-      // AI chat functionality removed - Bytez API no longer used
+      // AI chat functionality removed - dependency no longer used
       // Provide helpful fallback response
       const botMessage = {
         id: Date.now() + 1,

@@ -3,7 +3,7 @@ import { Wand2, Sparkles, BookOpen, Image, FileText, Search, Loader2, Check, X }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Bytez from 'bytez.js';
+// import Bytez from 'bytez.js'; // Removed - dependency not available
 
 const AIEnhancementPanel = ({ 
   lessonData, 
@@ -23,20 +23,21 @@ const AIEnhancementPanel = ({
     setIsGenerating(true);
     try {
       // Get API key from environment variables
-      const apiKey = import.meta.env.VITE_BYTEZ_API_KEY || localStorage.getItem('BYTEZ_API_KEY');
-      
-      if (!apiKey) {
-        throw new Error('No API key found. Please configure your Bytez API key.');
-      }
+      // AI enhancement functionality removed - dependency not available
+      throw new Error('AI enhancement service is currently unavailable.');
       
       // Initialize Bytez SDK
-      const sdk = new Bytez(apiKey);
-      const model = sdk.model("google/flan-t5-base");
+      // const sdk = new Bytez(apiKey);
+      // const model = sdk.model("google/flan-t5-base");
       
       // Create model instance
-      await model.create();
+      // await model.create();
       
       // Generate content
+      // const result = await model.run(prompt, {
+      //   max_new_tokens: 500,
+      //   temperature: 0.7
+      // });
       const result = await model.run(prompt, {
         max_new_tokens: 500,
         temperature: 0.7
