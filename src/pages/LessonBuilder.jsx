@@ -1983,7 +1983,7 @@ function LessonBuilder() {
         newHtmlContent = `
           <div class="relative bg-white py-16 px-8 max-w-5xl mx-auto">
             <div class="text-center">
-              <blockquote class="text-3xl md:text-4xl text-gray-800 mb-12 leading-relaxed font-thin tracking-wide">
+              <blockquote class="text-xl md:text-2xl text-gray-800 mb-12 leading-relaxed font-light tracking-wide">
                 ${updatedQuoteContent.quote}
               </blockquote>
               <cite class="text-lg font-medium text-orange-500 not-italic tracking-wider">${updatedQuoteContent.author}</cite>
@@ -2016,7 +2016,7 @@ function LessonBuilder() {
                 <svg class="w-12 h-12 text-slate-300 mb-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
                 </svg>
-                <blockquote class="text-2xl md:text-3xl text-slate-700 leading-relaxed font-light mb-8">
+                <blockquote class="text-lg md:text-xl text-slate-700 leading-relaxed font-light mb-8">
                   ${updatedQuoteContent.quote}
                 </blockquote>
               </div>
@@ -2030,22 +2030,22 @@ function LessonBuilder() {
         break;
       case 'quote_on_image':
         newHtmlContent = `
-          <div class="relative rounded-3xl overflow-hidden shadow-2xl max-w-6xl mx-auto min-h-[600px]" style="background-image: url('${updatedQuoteContent.backgroundImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}'); background-size: cover; background-position: center;">
+          <div class="relative rounded-2xl overflow-hidden shadow-2xl max-w-3xl mx-auto h-[300px]" style="background-image: url('${updatedQuoteContent.backgroundImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}'); background-size: cover; background-position: center;">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20"></div>
-            <div class="relative z-10 flex items-center justify-center h-full p-16">
-              <div class="text-center max-w-4xl">
-                <div class="mb-8">
-                  <svg class="w-16 h-16 text-white/30 mx-auto mb-8" fill="currentColor" viewBox="0 0 24 24">
+            <div class="relative z-10 flex items-center justify-center h-full p-4 md:p-6">
+              <div class="text-center max-w-xl w-full">
+                <div class="mb-3">
+                  <svg class="w-6 h-6 text-white/30 mx-auto mb-3" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
                   </svg>
-                  <blockquote class="text-4xl md:text-5xl lg:text-6xl text-white leading-tight font-extralight mb-12 tracking-wide">
+                  <blockquote class="text-base md:text-lg lg:text-xl text-white leading-tight font-extralight mb-4 tracking-wide">
                     ${updatedQuoteContent.quote}
                   </blockquote>
                 </div>
                 <div class="flex items-center justify-center">
-                  <div class="w-12 h-px bg-white/60 mr-6"></div>
-                  <cite class="text-xl font-light text-white/95 not-italic uppercase tracking-[0.2em]">${updatedQuoteContent.author}</cite>
-                  <div class="w-12 h-px bg-white/60 ml-6"></div>
+                  <div class="w-8 h-px bg-white/60 mr-4"></div>
+                  <cite class="text-lg font-light text-white/95 not-italic uppercase tracking-[0.2em]">${updatedQuoteContent.author}</cite>
+                  <div class="w-8 h-px bg-white/60 ml-4"></div>
                 </div>
               </div>
             </div>
