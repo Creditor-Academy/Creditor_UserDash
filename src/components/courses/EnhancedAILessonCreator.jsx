@@ -4,55 +4,17 @@ import {
   X, 
   Sparkles, 
   BookOpen, 
-  FileText, 
-  Image as ImageIcon, 
-  Video, 
-  AudioLines, 
-  Users, 
-  BarChart3, 
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   Check,
-  Upload,
-  Plus,
-  Edit3,
-  Save,
-  Trash2,
-  Copy,
-  ChevronUp,
-  ChevronDown,
-  ArrowLeft,
-  GripVertical,
-  Type,
-  Square,
-  Circle,
-  MessageSquare,
-  Quote,
-  Volume2,
-  Youtube,
-  Link as LinkIcon,
-  Table,
-  Box,
-  Layers,
-  RefreshCw,
-  Globe,
   Database,
-  Settings,
-  Eye,
-  EyeOff,
-  RotateCcw,
-  RotateCw
+  Save,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { saveAILessons, updateEnhancedLessonContent } from '../../services/aiCourseService';
 import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
 import OutlineTab from './LessonCreatorTabs/OutlineTab';
-import LessonsTab from './LessonCreatorTabs/LessonsTab';
-import BlockEditorTab from './LessonCreatorTabs/BlockEditorTab';
-import PreviewTab from './LessonCreatorTabs/PreviewTab';
-import UnifiedAIBlockEditor from './UnifiedAIBlockEditor';
 
 const EnhancedAILessonCreator = ({ 
   isOpen, 
@@ -62,7 +24,6 @@ const EnhancedAILessonCreator = ({
   aiOutline,
   onLessonsCreated 
 }) => {
-  const [activeTab, setActiveTab] = useState('outline');
   const [lessons, setLessons] = useState([]);
   const [modules, setModules] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -73,17 +34,10 @@ const EnhancedAILessonCreator = ({
   const [globalContent, setGlobalContent] = useState({});
   const [showBlockEditor, setShowBlockEditor] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
-  const [previewMode, setPreviewMode] = useState(false);
+  const [modifyPrompt, setModifyPrompt] = useState('');
+  const [showPromptInput, setShowPromptInput] = useState(false);
   
   const editorRef = useRef(null);
-
-  const tabs = [
-    { id: 'outline', label: 'Course Outline', icon: BookOpen },
-    { id: 'lessons', label: 'AI Lessons', icon: FileText },
-    { id: 'blocks', label: 'Block Editor', icon: Square },
-    { id: 'unified', label: 'AI Block Editor', icon: Sparkles },
-    { id: 'preview', label: 'Preview', icon: Eye }
-  ];
 
   // Initialize from course outline
   useEffect(() => {
@@ -254,7 +208,8 @@ const EnhancedAILessonCreator = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-white z-[9999] overflow-hidden flex flex-col">
+    <AnimatePresence>
+      <div className="fixed inset-0 w-full h-full bg-white z-[9999] overflow-hidden flex flex-col" style={{ margin: 0, padding: 0 }}>
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -266,7 +221,7 @@ const EnhancedAILessonCreator = ({
           </button>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Enhanced AI Lesson Creator</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Course Editor</h2>
             <span className="text-sm text-gray-500 hidden md:inline">
               {courseTitle ? `for "${courseTitle}"` : '(No course selected)'}
             </span>
@@ -275,12 +230,13 @@ const EnhancedAILessonCreator = ({
         
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => setPreviewMode(!previewMode)}
+            onClick={() => setShowPromptInput(!showPromptInput)}
             variant="outline"
             size="sm"
+            className="flex items-center gap-2"
           >
-            {previewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {previewMode ? 'Edit' : 'Preview'}
+            <Sparkles className="w-4 h-4" />
+            {showPromptInput ? 'Hide Prompt' : 'Modify Outline'}
           </Button>
           <button
             onClick={onClose}
@@ -291,95 +247,60 @@ const EnhancedAILessonCreator = ({
         </div>
       </div>
       
-      {/* Tab Navigation */}
-      <div className="bg-gray-100 flex border-b border-gray-200 overflow-x-auto flex-shrink-0">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-white text-purple-600 border-b-2 border-purple-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Prompt Input Section */}
+      {showPromptInput && (
+        <div className="bg-purple-50 border-b border-purple-200 px-6 py-4">
+          <div className="max-w-4xl mx-auto">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Modify Course Outline with AI
+            </label>
+            <p className="text-xs text-gray-600 mb-3">
+              Describe what you want to change, add, or remove from the course outline
+            </p>
+            <div className="flex gap-2">
+              <textarea
+                value={modifyPrompt}
+                onChange={(e) => setModifyPrompt(e.target.value)}
+                placeholder="e.g., 'Add a lesson about advanced React hooks in Module 1' or 'Add a new module about TypeScript basics'"
+                className="flex-1 px-4 py-3 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none text-sm"
+                rows="2"
+                disabled={isGenerating}
+              />
+              <Button
+                onClick={() => {
+                  if (modifyPrompt.trim()) {
+                    alert('AI regeneration will be implemented soon!');
+                    // TODO: Implement regeneration logic
+                  }
+                }}
+                disabled={!modifyPrompt.trim() || isGenerating}
+                className="bg-purple-600 hover:bg-purple-700 px-6"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Apply Changes
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'outline' && (
-          <OutlineTab 
-            modules={modules}
-            lessons={lessons}
-            onModuleSelect={setEditingModuleId}
-            onLessonSelect={setEditingLessonId}
-          />
-        )}
-        
-        {activeTab === 'lessons' && (
-          <LessonsTab 
-            lessons={lessons}
-            setLessons={setLessons}
-            editingLessonId={editingLessonId}
-            setEditingLessonId={setEditingLessonId}
-            isGenerating={isGenerating}
-            courseTitle={courseTitle}
-          />
-        )}
-        
-        {activeTab === 'blocks' && (
-          <BlockEditorTab 
-            lessons={lessons}
-            contentBlocks={contentBlocks}
-            setContentBlocks={setContentBlocks}
-            editingLessonId={editingLessonId}
-            setEditingLessonId={setEditingLessonId}
-            onContentSync={(syncData) => {
-              console.log('Content sync requested:', syncData);
-              // Handle content synchronization across modules
-            }}
-            syncSettings={{
-              syncAcrossModules: true,
-              autoSave: true
-            }}
-          />
-        )}
-        
-        {activeTab === 'unified' && (
-          <UnifiedAIBlockEditor
-            lessons={lessons}
-            contentBlocks={contentBlocks}
-            setContentBlocks={setContentBlocks}
-            editingLessonId={editingLessonId}
-            setEditingLessonId={setEditingLessonId}
-            courseTitle={courseTitle}
-            onContentSync={(syncData) => {
-              console.log('AI Content sync requested:', syncData);
-              // Handle AI-powered content synchronization
-              if (syncData.type === 'ai_block_add') {
-                // Auto-save when AI generates content
-                setTimeout(() => {
-                  console.log('Auto-saving AI generated content...');
-                }, 1000);
-              }
-            }}
-          />
-        )}
-        
-        {activeTab === 'preview' && (
-          <PreviewTab 
-            lessons={lessons}
-            contentBlocks={contentBlocks}
-            modules={modules}
-          />
-        )}
+        <OutlineTab 
+          modules={modules}
+          lessons={lessons}
+          onModuleSelect={setEditingModuleId}
+          onLessonSelect={setEditingLessonId}
+        />
       </div>
       
       {/* Footer Actions */}
@@ -457,6 +378,7 @@ const EnhancedAILessonCreator = ({
         </div>
       </div>
     </div>
+    </AnimatePresence>
   );
 };
 

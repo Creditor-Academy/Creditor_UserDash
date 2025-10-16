@@ -492,28 +492,28 @@ const DedicatedAICourseCreator = () => {
                         {activeContentTab === 'file' ? (
                           <div className="space-y-3">
                             {/* File Upload Area */}
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors bg-gray-50">
+                            <input
+                              type="file"
+                              multiple
+                              onChange={handleSourceFileUpload}
+                              className="hidden"
+                              id="source-file-upload"
+                              accept=".doc,.docx,.m4a,.mp3,.mp4,.ogg,.pdf,.ppt,.pptx,.sbv,.srt,.story,.sub,.text,.txt,.vtt,.wav,.webm"
+                            />
+                            <label 
+                              htmlFor="source-file-upload"
+                              className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors bg-gray-50 cursor-pointer"
+                            >
                               <div className="flex flex-col items-center">
                                 <Upload className="w-8 h-8 text-gray-400 mb-3" />
                                 <p className="text-sm text-gray-600 mb-1">
-                                  Drag & drop any source materials or <span className="text-purple-600 font-medium cursor-pointer">choose file</span>
+                                  Drag & drop any source materials or <span className="text-purple-600 font-medium">choose file</span>
                                 </p>
-                                <input
-                                  type="file"
-                                  multiple
-                                  onChange={handleSourceFileUpload}
-                                  className="hidden"
-                                  id="source-file-upload"
-                                  accept=".doc,.docx,.m4a,.mp3,.mp4,.ogg,.pdf,.ppt,.pptx,.sbv,.srt,.story,.sub,.text,.txt,.vtt,.wav,.webm"
-                                />
-                                <label 
-                                  htmlFor="source-file-upload"
-                                  className="text-xs text-gray-500 cursor-pointer hover:text-purple-700 mt-2"
-                                >
+                                <p className="text-xs text-gray-500 mt-2">
                                   Supported file types and sizes
-                                </label>
+                                </p>
                               </div>
-                            </div>
+                            </label>
                             
                             {/* File Types and Sizes Info */}
                             <div className="text-xs text-gray-500 space-y-1">
