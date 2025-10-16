@@ -9,7 +9,10 @@ import Ready from '../components/homepage/readysection.jsx';
 import Features from '../components/homepage/features.jsx';
 import LearningSection from '../components/homepage/learningsection.jsx';
 import Testimonial from '../components/homepage/Testimonial.jsx';
-
+import HowWork from '../components/homepage/HowWork.jsx';
+import KeyCapabilities from '../components/homepage/KeyCapabilities.jsx';
+import LearningPathways from '../components/homepage/LearningPathways.jsx';
+import CTA from '../components/homepage/cta.jsx';
 
 
 const Home = () => {
@@ -17,11 +20,15 @@ const Home = () => {
     <>
       <Navbar />
       <Hero />
-      <About/>
+      {/* <About/> */}
+      <KeyCapabilities />
+      <HowWork />
       <Features />
-      <LearningSection />
+      {/* <LearningSection /> */}
+      <LearningPathways />
+      {/* <Testimonial />
+      <CTA /> */}
       <Ready />
-      <Testimonial />
       <Footer />
     </>
   );

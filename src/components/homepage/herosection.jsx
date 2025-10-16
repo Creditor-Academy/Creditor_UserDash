@@ -1,7 +1,6 @@
-import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import athenadash from "../../assets/AthenaDash.png";
-import interactive from "../../assets/interactive.mp4";
+// import interactive from "../../assets/interactive.mp4";
+import Elearning from "../../assets/Elearning.mp4";
 
 export default function Hero() {
   return (
@@ -35,10 +34,10 @@ export default function Hero() {
             position: absolute;
             inset: 0;
             background: linear-gradient(
-              to bottom,
-              rgba(30, 58, 138, 0.4),
-              rgba(30, 64, 175, 0.3),
-              rgba(30, 58, 138, 0.4)
+              135deg,
+              rgba(15, 23, 42, 0.75) 0%,
+              rgba(30, 41, 59, 0.65) 50%,
+              rgba(51, 65, 85, 0.75) 100%
             );
             z-index: 1;
           }
@@ -57,25 +56,14 @@ export default function Hero() {
           }
           .hero-heading {
             font-family: 'Founders Grotesk', Arial, sans-serif;
-            font-size: 4.7vw;
-            font-weight: 600;
+            font-size: 6.5vw;
+            font-weight: 700;
             text-transform: uppercase;
             color: #fff;
-            line-height: 0.95;
-            letter-spacing: -2px;
-          }
-          .hero-heading .inline-img {
-            display: inline-flex;
-            align-items: center;
-            vertical-align: middle;
-            margin: 0 8px;
-          }
-          .hero-heading img {
-            height: 90px;
-            object-fit: cover;
-            border-radius: 6px;
-            margin-top: 0.5rem;
-            margin-right: 12px;
+            line-height: 1.05;
+            letter-spacing: -3px;
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 0.3em;
           }
           .hero-sub-links {
             margin-top: 2.2em;
@@ -107,8 +95,8 @@ export default function Hero() {
             flex: 1 1 320px;
           }
           .start-btn {
-            background: rgba(255,255,255,0.13);
-            border: 1.3px solid rgba(255,255,255,0.63);
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            border: 1.3px solid rgba(59, 130, 246, 0.5);
             color: #fff;
             padding: 7px 26px;
             border-radius: 40px;
@@ -118,29 +106,37 @@ export default function Hero() {
             font-family: 'Neue Montreal', Arial, sans-serif;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s, color 0.2s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.4);
           }
           .start-btn:hover {
-            background: #fff;
-            color: #18326b;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            border-color: rgba(59, 130, 246, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
           }
           .arrow-icon {
             display: flex;
             align-items: center;
             justify-content: center;
             margin-left: 6px;
-            border: 1.3px solid rgba(255,255,255,0.63);
+            border: 1.3px solid rgba(59, 130, 246, 0.5);
             border-radius: 100%;
             width: 35px;
             height: 35px;
-            background: rgba(255,255,255,0.11);
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.4);
+            transition: all 0.3s ease;
           }
           .arrow-icon svg {
             color: #fff;
-            transition: color 0.2s;
+            transition: all 0.3s ease;
           }
-          .start-btn:hover + .arrow-icon svg {
-            color: #18326b;
+          .start-btn:hover + .arrow-icon {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            border-color: rgba(59, 130, 246, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
           }
 
           /* Large Desktop */
@@ -149,6 +145,10 @@ export default function Hero() {
               max-width: 1400px;
               padding: 0 4rem;
               padding-top: 120px; /* Ensures larger top padding */
+            }
+            .hero-heading {
+              font-size: 5.8vw;
+              letter-spacing: -4px;
             }
           }
           
@@ -159,7 +159,8 @@ export default function Hero() {
               padding: 100px 2.5rem 0 2.5rem; /* Was 70px, now 100px */
             }
             .hero-heading {
-              font-size: 4.2vw;
+              font-size: 6vw;
+              letter-spacing: -3px;
             }
           }
           
@@ -171,10 +172,8 @@ export default function Hero() {
               padding: 100px 2rem 0 2rem; /* Was 60px, now 100px */
             }
             .hero-heading {
-              font-size: 6.5vw;
-            }
-            .hero-heading img {
-              height: 60px;
+              font-size: 7.5vw;
+              letter-spacing: -2.5px;
             }
             .hero-sub-links {
               font-size: 0.98em;
@@ -190,10 +189,9 @@ export default function Hero() {
               padding: 120px 1.5rem 0 1.5rem; /* Was 80px, now 120px */
             }
             .hero-heading {
-              font-size: 8vw;
-            }
-            .hero-heading img {
-              height: 45px;
+              font-size: 9.5vw;
+              letter-spacing: -2px;
+              line-height: 1.08;
             }
             .hero-sub-links {
               font-size: 0.95em;
@@ -205,10 +203,9 @@ export default function Hero() {
               padding: 120px 1rem 0 1rem; /* Was 80px, now 120px */
             }
             .hero-heading {
-              font-size: 10vw;
-            }
-            .hero-heading img {
-              height: 35px;
+              font-size: 11.5vw;
+              letter-spacing: -1.8px;
+              line-height: 1.1;
             }
             .hero-sub-links {
               flex-direction: column;
@@ -228,10 +225,9 @@ export default function Hero() {
               padding: 110px 0.8rem 0 0.8rem; /* Was 80px, now 110px */
             }
             .hero-heading {
-              font-size: 12vw;
-            }
-            .hero-heading img {
-              height: 28px;
+              font-size: 13vw;
+              letter-spacing: -1.5px;
+              line-height: 1.12;
             }
             .hero-sub-links {
               font-size: 0.85em;
@@ -251,10 +247,9 @@ export default function Hero() {
               padding: 100px 0.6rem 0 0.6rem; /* Was 80px, now 100px */
             }
             .hero-heading {
-              font-size: 13vw;
-            }
-            .hero-heading img {
-              height: 24px;
+              font-size: 14.5vw;
+              letter-spacing: -1.2px;
+              line-height: 1.15;
             }
             .hero-sub-links {
               font-size: 0.8em;
@@ -267,32 +262,22 @@ export default function Hero() {
         `}
       </style>
 
-      <video className="hero-bg-video" autoPlay muted loop playsInline src={interactive} />
+      <video className="hero-bg-video" autoPlay muted loop playsInline src={Elearning} />
       <div className="hero-overlay" />
       <div className="hero-content">
         <h1 className="hero-heading">
-          Transform Your Learning
+          Reimagine Learning
           <br/>
-          <span className="inline-img" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <motion.span
-              initial={{ width: 0 }}
-              animate={{ width: 'auto' }}
-              transition={{ ease: [0.86, 0, 0.07, 0.995], duration: 1, delay: 1.5 }}
-              style={{ display: 'inline-block', overflow: 'hidden' }}
-            >
-              <img src={athenadash} alt="Athena Logo" />
-            </motion.span>
-          </span>
-          Skill Enhancing
+          Build, Design, and 
           <br/>
-          Experience
+          Deliver With AI
         </h1>
         <div className="hero-sub-links">
-          <span className="hero-desc">For students, educators, and lifelong learners</span>
+          <span className="hero-desc">Athena LMS: Where Instructional Design Meets Artificial Intelligence</span>
           <div className="hero-action">
-            <span className="hero-desc">From first lesson to mastery</span>
+            <span className="hero-desc">Create Smart Courses In Minutes.</span>
             <a href="/contact" className="start-btn">
-              Start Learning
+              Start Creating
             </a>
             <span className="arrow-icon">
               <ArrowUpRight size={22} strokeWidth={1.35} />
