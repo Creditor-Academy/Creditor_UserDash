@@ -36,11 +36,12 @@ export default defineConfig(({ mode }) => ({
     },
     strictPort: true,
     hmr: {
-      port: 3001, // Use different port for HMR to avoid conflicts
-      protocol: 'ws',
-      host: 'localhost',
-      clientPort: 3001,
-      overlay: false // Disable error overlay to prevent connection issues
+      overlay: false,
+      port: 3001
+    },
+    watch: {
+      usePolling: false,
+      ignored: ['**/node_modules/**', '**/.git/**']
     }
   },
   preview: {
@@ -50,15 +51,18 @@ export default defineConfig(({ mode }) => ({
       "www.lmsathena.com",
       "lmsathena.com",
       "api.lmsathena.com",
-      "54.198.69.32"
+      "54.198.69.32",
+      "https://creditor.onrender.com",
+      "https://creditor-frontend-p6lt.onrender.com"
     ],
     cors: true
   },
   base: '/',
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    // Temporarily disabled componentTagger to fix infinite refresh
+    // mode === 'development' &&
+    // componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -70,7 +74,15 @@ export default defineConfig(({ mode }) => ({
   },
 }));
 
-// # VITE_API_BASE_URL= https://creditor-backend-xpcn.onrender.com
-// # VITE_API_BASE_URL= https://creditor-backend-1-iijy.onrender.com
-// # VITE_API_BASE_URL= https://creditor-backend-9upi.onrender.com
+
+// #(Testing Backend)
+// VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
+
+// #(development Backend)
+// VITE_API_BASE_URL=https://creditor.onrender.com
+
+// #(local Backend)
 // # VITE_API_BASE_URL= http://localhost:9000
+
+// #(Main Backend)
+// # VITE_API_BASE_URL= https://creditor-backend-lfre.onrender.com

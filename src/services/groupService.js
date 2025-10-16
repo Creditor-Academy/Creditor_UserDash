@@ -1,6 +1,6 @@
 import api from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
 
 // Get group by ID
 export const getGroupById = async (groupId) => {
@@ -35,8 +35,20 @@ export const getGroupMembers = async (groupId) => {
  */
 export async function createCourseGroup(payload) {
   try {
-    console.log("📤 groupService: Creating course group:", payload);
-    const response = await api.post('/groups/course', payload, {
+    // Normalize possible image field aliases so backend variants capture it
+    const image = payload.thumbnail || payload.banner || payload.image_url || payload.imageUrl || payload.image;
+    const body = {
+      ...payload,
+      ...(image ? {
+        thumbnail: image,
+        banner: image,
+        image_url: image,
+        imageUrl: image,
+        image: image,
+      } : {}),
+    };
+    console.log("📤 groupService: Creating course group:", body);
+    const response = await api.post('/groups/course', body, {
       withCredentials: true,
     });
     console.log("✅ groupService: Course group created successfully:", response.data);
@@ -82,10 +94,44 @@ export const addGroupMember = async (groupId, userId = null) => {
 // Create new group
 export const createGroup = async (groupData) => {
   try {
-    const response = await api.post(`/groups`, groupData);
+    // send common aliases for the image so backend variations still capture it
+    const image = groupData.thumbnail || groupData.banner || groupData.image_url || groupData.imageUrl || groupData.image;
+    const payload = {
+      ...groupData,
+      ...(image ? {
+        thumbnail: image,
+        banner: image,
+        image_url: image,
+        imageUrl: image,
+        image: image,
+      } : {}),
+    };
+    const response = await api.post(`/groups`, payload);
     return response.data;
   } catch (error) {
     console.error('Error creating group:', error);
+    throw error;
+  }
+};
+
+// Update an existing group
+export const updateGroup = async (groupId, update) => {
+  try {
+    const image = update.thumbnail || update.banner || update.image_url || update.imageUrl || update.image;
+    const payload = {
+      ...update,
+      ...(image ? {
+        thumbnail: image,
+        banner: image,
+        image_url: image,
+        imageUrl: image,
+        image: image,
+      } : {}),
+    };
+    const response = await api.put(`/groups/${groupId}`, payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating group:', error);
     throw error;
   }
 };
@@ -117,6 +163,140 @@ export const sendGroupMessage = async (groupId, payload, isMultipart = false) =>
     return response.data;
   } catch (error) {
     console.error('Error sending group message:', error);
+    throw error;
+  }
+};
+
+// POLLSssssss
+export const createGroupPoll = async (groupId, poll) => {
+  try {
+    // Backend expects poll_question, poll_expires_at, poll_allow_multiple, poll_is_anonymous, options: string[]
+    const pollExpiresAt = poll.durationMinutes && Number(poll.durationMinutes) > 0
+      ? new Date(Date.now() + Number(poll.durationMinutes) * 60 * 1000).toISOString()
+      : undefined;
+
+    const payload = {
+      poll_question: poll.question,
+      poll_expires_at: pollExpiresAt,
+      poll_allow_multiple: !!poll.allowMultiple,
+      poll_is_anonymous: !!poll.isAnonymous,
+      options: (poll.options || []).map(String),
+    };
+
+    // Prefer /groups prefix, fallback to no prefix
+    try {
+      const response = await api.post(`/groups/${groupId}/polls`, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.post(`/${groupId}/polls`, payload, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    const status = error?.response?.status;
+    const msg = error?.response?.data?.message || error?.message || 'Unknown error';
+    console.error('Error creating poll:', status, msg);
+    // Fallback: some backends accept polls as a message with type POLL
+    if (status === 404) {
+      try {
+        const body = { type: 'POLL', poll: payload };
+        const response = await api.post(`/groups/${groupId}/messages`, body, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        return response.data;
+      } catch (fallbackErr) {
+        console.error('Fallback create poll via messages failed:', fallbackErr?.response?.status, fallbackErr?.response?.data?.message || fallbackErr?.message);
+        throw fallbackErr;
+      }
+    }
+    throw error;
+  }
+};
+
+export const voteGroupPoll = async (groupId, pollId, { messageId, optionId }) => {
+  try {
+    try {
+      const response = await api.post(`/groups/${groupId}/polls/${pollId}/vote`, { message_id: messageId, option_id: optionId });
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.post(`/${groupId}/polls/${pollId}/vote`, { message_id: messageId, option_id: optionId });
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    console.error('Error voting poll:', error);
+    throw error;
+  }
+};
+
+export const getGroupPoll = async (groupId, pollId) => {
+  try {
+    try {
+      const response = await api.get(`/groups/${groupId}/polls/${pollId}`);
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.get(`/${groupId}/polls/${pollId}`);
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    console.error('Error fetching poll:', error);
+    throw error;
+  }
+};
+
+// PIN
+export const pinGroupMessage = async (groupId, messageId, pinned) => {
+  try {
+    const response = await api.post(`/groups/${groupId}/messages/${messageId}/pin`, { pinned });
+    return response.data;
+  } catch (error) {
+    console.error('Error pinning message:', error);
+    throw error;
+  }
+};
+
+// PIN POLL
+export const pinGroupPoll = async (groupId, pollId) => {
+  // Prefer /groups prefix (observed 200), fallback to no prefix
+  try {
+    const response = await api.post(`/groups/${groupId}/polls/${pollId}/pin`);
+    return response.data;
+  } catch (err1) {
+    if (err1?.response?.status === 404) {
+      const response = await api.post(`/${groupId}/polls/${pollId}/pin`);
+      return response.data;
+    }
+    throw err1;
+  }
+};
+
+// GET PINNED POLLS
+export const getPinnedPolls = async (groupId) => {
+  try {
+    // Prefer /groups prefix, fallback to no prefix
+    try {
+      const response = await api.get(`/groups/${groupId}/polls/pinned`);
+      return response.data;
+    } catch (err1) {
+      if (err1?.response?.status === 404) {
+        const response = await api.get(`/${groupId}/polls/pinned`);
+        return response.data;
+      }
+      throw err1;
+    }
+  } catch (error) {
+    console.error('Error fetching pinned polls:', error);
     throw error;
   }
 };

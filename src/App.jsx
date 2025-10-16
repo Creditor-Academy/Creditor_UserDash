@@ -67,8 +67,6 @@ import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
-import ScormPage from "@/pages/ScormPage";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
@@ -76,8 +74,15 @@ import LessonBuilder from "./pages/LessonBuilder";
 import LessonPreview from "./pages/LessonPreview";
 import LandingPage from "@/pages/LandingPage";
 import Home from "@/pages/home";
+import About from "@/pages/AboutUsPage/About";
+import Contact from "@/pages/contactpage/contact";
+import FAQPage from "@/pages/faqpages/faqpage";
+import Product from "@/pages/Product/Product";
+import Features from "@/pages/FeaturesPage/Features";
+import WhyUs from "@/pages/WhyusPage/WhyUs";
+import Plans from "@/pages/Plans";
+import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
-import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
 import Sophomore from "./coursesL/Sophomore";
 import OperatePrivate from './coursesL/OperatePrivate'; 
@@ -97,19 +102,16 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import CreateScenario from "@/pages/CreateScenario";
+import PreviewScenario from "@/pages/PreviewScenario";
+import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
-import  ModuleView  from "@/pages/ModuleView";
+// import  ModuleView  from "@/pages/ModuleView";
 import LessonView from "./pages/LessonView";
 import AICourseCreator from "@/pages/AICourseCreator";
 
-function ProtectedScormRoute() {
-  if (!allowedScormUserIds.includes(currentUserId)) {
-    return <div style={{padding: 24}}><h2>Access Denied</h2><p>You do not have permission to view this page.</p></div>;
-  }
-  return <ScormPage />;
-}
 
 function App() {
   return (
@@ -122,6 +124,13 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/product" element={<Product />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/whyus" element={<WhyUs />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -139,7 +148,19 @@ function App() {
                 <Instructorpage />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Instructorpage />} />
+            <Route path="course-management" element={<Instructorpage />} />
+            <Route path="user-management" element={<Instructorpage />} />
+            <Route path="course-catalog" element={<Instructorpage />} />
+            <Route path="create-quiz" element={<Instructorpage />} />
+            <Route path="course-lessons" element={<Instructorpage />} />
+            <Route path="group-management" element={<Instructorpage />} />
+            <Route path="event-management" element={<Instructorpage />} />
+            <Route path="support-tickets" element={<Instructorpage />} />
+            <Route path="assets" element={<Instructorpage />} />
+            <Route path="payments" element={<Instructorpage />} />
+          </Route>
           <Route
             path="/instructor/courses/:courseId/modules"
             element={
@@ -169,6 +190,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <AddUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-quiz"
+            element={
+              <ProtectedRoute>
+                <Instructorpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-scenario"
+            element={
+              <ProtectedRoute>
+                <CreateScenario />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/preview-scenario"
+            element={
+              <ProtectedRoute>
+                <PreviewScenario />
               </ProtectedRoute>
             }
           />
@@ -202,7 +247,7 @@ function App() {
                   </CourseTimerProvider>
                 } />
                 <Route path="modules" element={<ModulesList />} />
-                <Route path="modules/:moduleId/view" element={<ModuleView />} />
+                {/* <Route path="modules/:moduleId/view" element={<ModuleView />} /> */}
                 <Route path="modules/:moduleId/lessons" element={<LessonView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
@@ -225,6 +270,11 @@ function App() {
               <Route path="instruction/:quizId" element={<QuizInstructionPage />} />
               <Route path="take/:quizId" element={<QuizTakePage />} />
               <Route path="results/:quizId" element={<QuizResultsPage />} />
+            </Route>
+
+            {/* Scenario routes */}
+            <Route path="scenario">
+              <Route path="take/:scenarioId" element={<ScenarioTakePage />} />
             </Route>
 
             <Route path="assignment">
@@ -299,11 +349,6 @@ function App() {
               <Route path="tickets" element={<MyTickets />} />
             </Route>
 
-            {/* SCORM routes - inside dashboard to keep sidebar */}
-            <Route path="scorm">
-              <Route index element={<ProtectedScormRoute />} />
-              <Route path=":courseId/:moduleId" element={<Scrompack />} />
-            </Route>
           </Route>
 
           {/* Catalog and enrollment */}
@@ -315,7 +360,8 @@ function App() {
           <Route path="payment-success/:courseId" element={<PaymentSuccess />} />
           <Route path="payment-failed/:courseId" element={<PaymentFailed />} />
           <Route path="progress" element={<Progress />} />
-          <Route path="messages" element={<Messages />} />
+          {/* Duplicate top-level messages route removed to keep messages inside dashboard layout */}
+           
           <Route path="profile" element={<Profile />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="avatar-picker" element={<AvatarPickerPage />} />
@@ -327,7 +373,6 @@ function App() {
           <Route path="guides" element={<Guides />} />
           <Route path="support/ticket" element={<SupportTicket />} />
           <Route path="support/tickets" element={<MyTickets />} />
-          <Route path="scorm" element={<ProtectedScormRoute />} />
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
           
@@ -335,11 +380,11 @@ function App() {
           <Route path="/ai-course-creator" element={<ProtectedRoute><AICourseCreator /></ProtectedRoute>} />
           
           <Route path="*" element={<NotFound />} />
-          <Route path="/scorm/:courseId" element={<Scrompack />} />
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
           <Route path="/modern-lesson-demo" element={<ModernLessonDemo />} />
           <Route path="/games" element={<Games />} />
           </Routes>
+          <PageTransitionOverlay />
           <Toaster />
           </CreditsProvider>
         </UserProvider>

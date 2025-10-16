@@ -20,9 +20,9 @@ import {
   GraduationCap,
   Library,
   School,
-  Bot
+  Bot,
+  CreditCard
 } from "lucide-react";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import { getUserRole } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -138,10 +138,11 @@ const SidebarItem = ({ icon: Icon, label, href, active, collapsed, dropdownConte
   );
 };
 
-export function Sidebar({ collapsed, setCollapsed }) {
+export function Sidebar({ collapsed, setCollapsed, onCreditorCardClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { userRole, isInstructorOrAdmin } = useAuth();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const isActive = (path) => {
     if (path === "/dashboard") {
@@ -173,8 +174,14 @@ export function Sidebar({ collapsed, setCollapsed }) {
     }
   };
 
+  const handleCreditorCardClick = () => {
+    if (onCreditorCardClick) {
+      onCreditorCardClick();
+    }
+  };
+
   // Replace localStorage logic with a constant for testing
-  const isScormAllowed = allowedScormUserIds.includes(currentUserId);
+  // const isScormAllowed = allowedScormUserIds.includes(currentUserId);
 
   // Help section navigation items
   const helpItems = [
@@ -214,7 +221,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
 
   return (
     <motion.div
-      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20 overflow-hidden"
+      className="h-screen sticky top-0 flex flex-col bg-white border-r border-gray-200 shadow-lg z-20"
       variants={sidebarVariants}
       animate={collapsed ? "collapsed" : "expanded"}
       initial={false}
@@ -300,13 +307,15 @@ export function Sidebar({ collapsed, setCollapsed }) {
       </div>
 
       {/* Navigation Items */}
-      <div className="flex-1 overflow-hidden py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white">
+      <div className="flex-1 overflow-y-auto py-6 flex flex-col bg-gradient-to-b from-gray-50 to-white custom-scrollbar">
         <motion.div 
-          className="space-y-2 overflow-hidden px-2"
+          className="space-y-2 px-2"
           variants={listVariants}
           initial="hidden"
           animate="show"
         >
+          {!moreOpen && (
+          <>
           <motion.div variants={itemVariants}>
             <SidebarItem
               icon={Home}
@@ -350,17 +359,86 @@ export function Sidebar({ collapsed, setCollapsed }) {
               onNavigate={handleNavigate}
             />
           </motion.div>
-
+          
+          {/* Messages moved above More toggle */}
           <motion.div variants={itemVariants}>
             <SidebarItem
-              icon={Bot}
-              label="Credit chatbot"
-              href="/dashboard/chatbot"
-              active={isActive("/dashboard/chatbot")}
+              icon={MessageSquare}
+              label="Messages"
+              href="/dashboard/messages"
+              active={isActive("/dashboard/messages")}
               collapsed={collapsed}
               onNavigate={handleNavigate}
             />
           </motion.div>
+
+          {/* Creditor Card */}
+          <motion.div variants={itemVariants}>
+            <SidebarItem
+              icon={CreditCard}
+              label="Creditor Card"
+              href="#"
+              active={false}
+              collapsed={collapsed}
+              onNavigate={handleCreditorCardClick}
+            />
+          </motion.div>
+          </>
+          )}
+
+          {/* More section toggle */}
+          {!collapsed && (
+            <motion.div variants={itemVariants}>
+              <div className="px-3 pt-2">
+                <motion.button
+                  onClick={() => setMoreOpen((v) => !v)}
+                  aria-label={moreOpen ? "Show less options" : "Show more options"}
+                  className={cn(
+                    "w-full flex items-center justify-between rounded-full px-3 py-2 text-xs font-medium transition-colors",
+                    moreOpen
+                      ? "bg-blue-50 text-blue-700"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  )}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <span>{moreOpen ? "Less" : "More"}</span>
+                  <ChevronDown size={14} className={cn("transition-transform", moreOpen ? "-rotate-180" : "rotate-0")} />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Collapsible More items – when open, hide others */}
+          {moreOpen && (
+            <motion.div
+              key="more-open"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="mt-1"
+            >
+              <div className="space-y-2">
+                <SidebarItem
+                  icon={Bot}
+                  label="Credit chatbot"
+                  href="/dashboard/chatbot"
+                  active={isActive("/dashboard/chatbot")}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                />
+                <SidebarItem
+                  icon={Gamepad2}
+                  label="Games"
+                  href="https://game-open-scene.vercel.app/"
+                  active={false}
+                  collapsed={collapsed}
+                  onNavigate={handleNavigate}
+                  external={true}
+                />
+                {/* Less control now unified with the More link above; hide duplicate */}
+              </div>
+            </motion.div>
+          )}
 
           {/* <motion.div variants={itemVariants}>
             <SidebarItem
@@ -373,31 +451,9 @@ export function Sidebar({ collapsed, setCollapsed }) {
             />
           </motion.div> */}
 
-          {/* <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={MessageSquare}
-              label="Messages"
-              href="/messages"
-              active={isActive("/messages")}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-            />
-          </motion.div> */}
-
-          <motion.div variants={itemVariants}>
-            <SidebarItem
-              icon={Gamepad2}
-              label="Games"
-              href="https://game-open-scene.vercel.app/"
-              active={false}
-              collapsed={collapsed}
-              onNavigate={handleNavigate}
-              external={true}
-            />
-          </motion.div>
-
+          
           {/* Instructor Portal - only for admin or instructor */}
-          {isInstructorOrAdmin() && (
+          {!moreOpen && isInstructorOrAdmin() && (
             <motion.div variants={itemVariants}>
               <SidebarItem
                 icon={GraduationCap}
@@ -486,6 +542,7 @@ export function Sidebar({ collapsed, setCollapsed }) {
           </DropdownMenu>
         )}
       </motion.div> 
+
     </motion.div>
   );
 }

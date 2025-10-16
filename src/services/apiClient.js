@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { getAccessToken, setAccessToken, clearAccessToken } from './tokenService';
+import { getAccessToken, clearAccessToken } from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
 export const api = axios.create({
 	baseURL: API_BASE,
@@ -12,13 +12,43 @@ export const api = axios.create({
 function isJwtExpired(token) {
 	try {
 		const base64Url = token.split('.')[1];
-		if (!base64Url) return true;
+		if (!base64Url) {
+			console.warn('[Auth] JWT token missing payload section');
+			return true;
+		}
+		
+		// Fix base64 padding
 		const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
 		const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-		const jsonPayload = JSON.parse(decodeURIComponent(atob(padded).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
-		if (!jsonPayload?.exp) return true;
-		return Date.now() >= jsonPayload.exp * 1000;
-	} catch {
+		
+		// Decode base64
+		const decoded = atob(padded);
+		const jsonPayload = JSON.parse(decoded);
+		
+		if (!jsonPayload?.exp) {
+			console.warn('[Auth] JWT token missing expiration claim');
+			return true;
+		}
+		
+		const expirationTime = jsonPayload.exp * 1000;
+		const currentTime = Date.now();
+		const isExpired = currentTime >= expirationTime;
+		
+		// Add some buffer (5 minutes) to avoid edge cases
+		const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+		const isExpiredWithBuffer = currentTime >= (expirationTime - bufferTime);
+		
+		if (isExpiredWithBuffer) {
+			console.log('[Auth] JWT token is expired or will expire soon:', {
+				expiresAt: new Date(expirationTime).toISOString(),
+				currentTime: new Date(currentTime).toISOString(),
+				timeUntilExpiry: Math.round((expirationTime - currentTime) / 1000) + ' seconds'
+			});
+		}
+		
+		return isExpiredWithBuffer;
+	} catch (error) {
+		console.error('[Auth] Error parsing JWT token:', error.message);
 		return true;
 	}
 }
@@ -27,19 +57,14 @@ function isJwtExpired(token) {
 api.interceptors.request.use(async (config) => {
 	const token = getAccessToken();
 	if (token) {
+		// Temporarily disable aggressive token refresh to prevent token clearing
+		// TODO: Re-enable once JWT expiration logic is properly tested
 		const expired = isJwtExpired(token);
 		if (expired) {
-			console.warn('[Auth] Access token expired (validation). Attempting refresh before request:', config?.url);
-			try {
-				const newToken = await refreshAccessToken();
-				config.headers = config.headers || {};
-				config.headers['Authorization'] = `Bearer ${newToken}`;
-				console.debug('[Auth] Attached refreshed token to request:', { url: config?.url });
-				return config;
-			} catch (e) {
-				console.error('[Auth] Pre-request refresh failed. Proceeding without token.');
-			}
+			console.warn('[Auth] Access token appears expired, but skipping refresh to prevent token clearing:', config?.url);
+			// Don't attempt refresh for now - let the server handle it
 		}
+		
 		config.headers = config.headers || {};
 		config.headers['Authorization'] = `Bearer ${token}`;
 		console.debug('[Auth] Attached access token to request:', { url: config?.url });
@@ -68,7 +93,16 @@ async function refreshAccessToken() {
 			data: err?.response?.data,
 			message: err?.message,
 		});
-		clearAccessToken();
+		
+		// Only clear tokens if it's a definitive authentication failure
+		// Don't clear tokens for network errors or temporary server issues
+		if (err?.response?.status === 401 || err?.response?.status === 403) {
+			console.warn('[Auth] Authentication failed during refresh, clearing tokens');
+			clearAccessToken();
+		} else {
+			console.warn('[Auth] Refresh failed due to network/server error, keeping tokens');
+		}
+		
 		throw err;
 	}
 }
@@ -76,69 +110,30 @@ async function refreshAccessToken() {
 api.interceptors.response.use(
 	(res) => res,
 	async (error) => {
-		const original = error.config;
-		if (!original) throw error;
-
 		const status = error.response?.status;
 		const isAuthError = status === 401 || status === 403;
-		const notRetried = !original._retry;
+		const url = error.config?.url;
 
-		if (isAuthError && notRetried) {
-			console.warn('[Auth] Received', status, 'for', original.url, '- attempting refresh');
-			original._retry = true;
-			if (isRefreshing) {
-				console.log('[Auth] Refresh already in progress. Queuing request.');
-				return new Promise((resolve, reject) => {
-					pendingQueue.push({ resolve, reject });
-				})
-				.then((token) => {
-					original.headers = original.headers || {};
-					original.headers['Authorization'] = `Bearer ${token}`;
-					return api(original);
-				});
+		// Only force logout for specific auth-related endpoints, not login attempts or general API calls
+		if (isAuthError && url && (
+			url.includes('/user/getUserProfile') || 
+			url.includes('/auth/refresh') ||
+			url.includes('/auth/logout')
+		)) {
+			console.warn('[Auth] Received', status, 'for', url, '- clearing tokens and forcing logout');
+			clearAccessToken();
+			// Broadcast logout event
+			window.dispatchEvent(new CustomEvent('userLoggedOut'));
+			// Navigate to login page
+			if (typeof window !== 'undefined') {
+				setTimeout(() => { window.location.href = '/login'; }, 0);
 			}
-
-			isRefreshing = true;
-			try {
-				const token = await refreshAccessToken();
-				pendingQueue.forEach(({ resolve }) => resolve(token));
-				pendingQueue = [];
-				original.headers = original.headers || {};
-				original.headers['Authorization'] = `Bearer ${token}`;
-				console.log('[Auth] Retrying original request after refresh:', original.url);
-				return api(original);
-			} catch (err) {
-				pendingQueue.forEach(({ reject }) => reject(err));
-				pendingQueue = [];
-				return Promise.reject(err);
-			} finally {
-				isRefreshing = false;
-			}
-		}
-
-		// If refresh failed due to refresh token expired (e.g., 401/403/419 with a specific code), perform logout
-		// Only force logout for specific endpoints or after multiple failed attempts
-		// Don't force logout for group operations as they might have different permission requirements
-		if ((status === 401 || status === 403 || status === 419) && 
-			(original.url?.includes('/auth/') || original.url?.includes('/user/') || original.url?.includes('/profile')) &&
-			!original.url?.includes('/groups/')) {
-			console.warn('[Auth] Authorization failed after refresh for auth endpoint. Forcing logout.');
-			try {
-				const { clearAccessToken } = await import('./tokenService');
-				clearAccessToken();
-				// Broadcast and redirect if app desires
-				window.dispatchEvent(new CustomEvent('userLoggedOut'));
-				// Optional: navigate to login page
-				if (typeof window !== 'undefined') {
-					setTimeout(() => { window.location.href = '/login'; }, 0);
-				}
-			} catch {}
-		} else if ((status === 401 || status === 403 || status === 419) && original.url?.includes('/groups/')) {
-			console.warn('[Auth] Authorization failed for group operation. Not forcing logout, letting component handle error.');
+		} else if (isAuthError) {
+			console.warn('[Auth] Received', status, 'for', url, '- not forcing logout, letting component handle error');
 		}
 
 		return Promise.reject(error);
 	}
 );
 
-export default api; 
+export default api;

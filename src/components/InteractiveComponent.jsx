@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2 } from 'lucide-react';
+import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
@@ -27,6 +27,13 @@ const InteractiveComponent = forwardRef(({
     { title: 'Section 2', content: 'Content for section 2', image: null, audio: null },
     { title: 'Section 3', content: 'Content for section 3', image: null, audio: null }
   ]);
+  const [labeledGraphicData, setLabeledGraphicData] = useState({
+    image: null,
+    hotspots: []
+  });
+  const [editingHotspot, setEditingHotspot] = useState(null);
+  const [showHotspotDialog, setShowHotspotDialog] = useState(false);
+  const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] = useState(false);
    
   // Helper function to extract accordion data from HTML
   const extractAccordionFromHTML = (htmlContent) => {
@@ -67,6 +74,120 @@ const InteractiveComponent = forwardRef(({
       console.error('Error extracting accordion data from HTML:', error);
     }
     
+    return extractedData;
+  };
+
+  // Helper function to extract labeled graphic data from HTML
+  const extractLabeledGraphicFromHTML = (htmlContent) => {
+    console.log('Extracting labeled graphic from HTML:', htmlContent.substring(0, 500) + '...');
+    const extractedData = {
+      image: null,
+      hotspots: []
+    };
+    
+    try {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      // Extract image from the labeled graphic container
+      const imageElement = tempDiv.querySelector('.labeled-graphic-container img');
+      if (imageElement) {
+        extractedData.image = {
+          src: imageElement.src,
+          name: imageElement.alt || 'Labeled graphic image',
+          size: 0 // Size not available from HTML
+        };
+      }
+      
+      // Extract hotspots
+      const hotspotElements = tempDiv.querySelectorAll('.hotspot');
+      console.log('Found hotspot elements:', hotspotElements.length);
+      hotspotElements.forEach((hotspot, index) => {
+        const hotspotId = hotspot.getAttribute('data-hotspot-id') || (index + 1).toString();
+        const style = hotspot.getAttribute('style') || '';
+        
+        // Extract position from style attribute
+        const leftMatch = style.match(/left:\s*([0-9.]+)%/);
+        const topMatch = style.match(/top:\s*([0-9.]+)%/);
+        
+        if (leftMatch && topMatch) {
+          // Try to find corresponding content overlay using more flexible selector
+          let contentElement = tempDiv.querySelector(`[id*="content-"][id*="-${hotspotId}"]`);
+          let label = 'Hotspot';
+          let description = 'Click to edit description';
+          let audio = null;
+          
+          if (contentElement) {
+            const labelElement = contentElement.querySelector('h3');
+            const descElement = contentElement.querySelector('p');
+            if (labelElement) label = labelElement.textContent.trim();
+            if (descElement) description = descElement.textContent.trim();
+            
+            // Try to extract audio information
+            const audioElement = contentElement.querySelector('audio source');
+            if (audioElement) {
+              const audioSrc = audioElement.getAttribute('src');
+              const audioType = audioElement.getAttribute('type');
+              // Try to get audio name from the file info display
+              const audioNameElement = contentElement.querySelector('.text-xs.font-medium.text-gray-800');
+              const audioSizeElement = contentElement.querySelector('.text-xs.text-gray-500');
+              
+              if (audioSrc) {
+                audio = {
+                  src: audioSrc,
+                  type: audioType || 'audio/mpeg',
+                  name: audioNameElement ? audioNameElement.textContent.trim() : 'Audio file',
+                  size: audioSizeElement ? parseInt(audioSizeElement.textContent.replace(/[^\d]/g, '')) * 1024 : 0
+                };
+              }
+            }
+          } else {
+            // Fallback: try to find content by index if ID-based search fails
+            const allContentElements = tempDiv.querySelectorAll('.hotspot-content');
+            if (allContentElements[index]) {
+              const labelElement = allContentElements[index].querySelector('h3');
+              const descElement = allContentElements[index].querySelector('p');
+              if (labelElement) label = labelElement.textContent.trim();
+              if (descElement) description = descElement.textContent.trim();
+              
+              // Try to extract audio from fallback element
+              const audioElement = allContentElements[index].querySelector('audio source');
+              if (audioElement) {
+                const audioSrc = audioElement.getAttribute('src');
+                const audioType = audioElement.getAttribute('type');
+                const audioNameElement = allContentElements[index].querySelector('.text-xs.font-medium.text-gray-800');
+                const audioSizeElement = allContentElements[index].querySelector('.text-xs.text-gray-500');
+                
+                if (audioSrc) {
+                  audio = {
+                    src: audioSrc,
+                    type: audioType || 'audio/mpeg',
+                    name: audioNameElement ? audioNameElement.textContent.trim() : 'Audio file',
+                    size: audioSizeElement ? parseInt(audioSizeElement.textContent.replace(/[^\d]/g, '')) * 1024 : 0
+                  };
+                }
+              }
+            }
+          }
+          
+          const hotspotData = {
+            id: hotspotId,
+            x: parseFloat(leftMatch[1]),
+            y: parseFloat(topMatch[1]),
+            label: label,
+            description: description,
+            audio: audio
+          };
+          console.log('Extracted hotspot:', hotspotData);
+          extractedData.hotspots.push(hotspotData);
+        }
+      });
+    } catch (error) {
+      console.error('Error extracting labeled graphic data from HTML:', error);
+    }
+    
+    console.log('Final extracted data:', extractedData);
     return extractedData;
   };
 
@@ -112,6 +233,22 @@ const InteractiveComponent = forwardRef(({
           </div>
         </div>
       )
+    },
+    {
+      id: 'labeled-graphic',
+      title: 'Labeled Graphic',
+      description: 'Interactive image with clickable hotspots',
+      icon: <Target className="h-6 w-6" />,
+      preview: (
+        <div className="w-full h-32 bg-white rounded-lg border p-3 relative">
+          <div className="w-full h-20 bg-gray-100 rounded border-2 border-dashed border-gray-300 flex items-center justify-center">
+            <ImageIcon className="h-8 w-8 text-gray-400" />
+          </div>
+          <div className="absolute top-8 left-8 w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-lg flex items-center justify-center text-white font-bold text-sm">+</div>
+          <div className="absolute top-12 right-8 w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-lg flex items-center justify-center text-white font-bold text-sm">+</div>
+          <div className="text-xs text-gray-600 mt-1">Image with interactive hotspots</div>
+        </div>
+      )
     }
   ];
 
@@ -145,6 +282,9 @@ const InteractiveComponent = forwardRef(({
         } else if (htmlContent.includes('data-template="tabs"') || 
                    htmlContent.includes('tab-button')) {
           template = 'tabs';
+        } else if (htmlContent.includes('data-template="labeled-graphic"') || 
+                   htmlContent.includes('labeled-graphic-container')) {
+          template = 'labeled-graphic';
         }
       }
       
@@ -156,18 +296,30 @@ const InteractiveComponent = forwardRef(({
         // Load existing data
         try {
           if (editingInteractiveBlock.content) {
+            console.log('Raw content from database:', editingInteractiveBlock.content);
             const content = JSON.parse(editingInteractiveBlock.content);
+            console.log('Parsed content:', content);
             if (template === 'tabs' && content.tabsData) {
               setTabsData(content.tabsData);
             } else if (template === 'accordion' && content.accordionData) {
               setAccordionData(content.accordionData);
+            } else if (template === 'labeled-graphic' && content.labeledGraphicData) {
+              console.log('Loading labeled graphic data:', content.labeledGraphicData);
+              setLabeledGraphicData(content.labeledGraphicData);
             }
           } else {
+            console.log('No JSON content found, trying to extract from HTML');
             // If no structured content, try to extract from HTML
             if (template === 'accordion' && editingInteractiveBlock.html_css) {
               const extractedData = extractAccordionFromHTML(editingInteractiveBlock.html_css);
               if (extractedData.length > 0) {
                 setAccordionData(extractedData);
+              }
+            } else if (template === 'labeled-graphic' && editingInteractiveBlock.html_css) {
+              const extractedData = extractLabeledGraphicFromHTML(editingInteractiveBlock.html_css);
+              if (extractedData.image) {
+                console.log('Extracted labeled graphic data from HTML:', extractedData);
+                setLabeledGraphicData(extractedData);
               }
             }
           }
@@ -180,6 +332,11 @@ const InteractiveComponent = forwardRef(({
               { title: 'Section 2', content: 'Content for section 2', image: null, audio: null },
               { title: 'Section 3', content: 'Content for section 3', image: null, audio: null }
             ]);
+          } else if (template === 'labeled-graphic') {
+            setLabeledGraphicData({
+              image: null,
+              hotspots: []
+            });
           }
         }
       }
@@ -200,11 +357,47 @@ const InteractiveComponent = forwardRef(({
       { title: 'Section 2', content: 'Content for section 2', image: null, audio: null },
       { title: 'Section 3', content: 'Content for section 3', image: null, audio: null }
     ];
+    const defaultLabeledGraphicData = {
+      image: {
+        src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+        name: 'sample-landscape.jpg',
+        size: 245760
+      },
+      hotspots: [
+        {
+          id: '1',
+          x: 25,
+          y: 30,
+          label: 'Mountain Peak',
+          description: 'The highest point in the landscape',
+          audio: null
+        },
+        {
+          id: '2',
+          x: 70,
+          y: 60,
+          label: 'Forest Area',
+          description: 'Dense woodland with various tree species',
+          audio: null
+        }
+      ]
+    };
     
-    const defaultData = template.id === 'tabs' ? defaultTabsData : defaultAccordionData;
+    let defaultData, dataKey;
+    if (template.id === 'tabs') {
+      defaultData = defaultTabsData;
+      dataKey = 'tabsData';
+    } else if (template.id === 'accordion') {
+      defaultData = defaultAccordionData;
+      dataKey = 'accordionData';
+    } else if (template.id === 'labeled-graphic') {
+      defaultData = defaultLabeledGraphicData;
+      dataKey = 'labeledGraphicData';
+    }
+    
     const interactiveContent = {
       template: template.id,
-      [template.id === 'tabs' ? 'tabsData' : 'accordionData']: defaultData
+      [dataKey]: defaultData
     };
 
     const htmlContent = generateInteractiveHTML(template.id, defaultData);
@@ -257,8 +450,8 @@ const InteractiveComponent = forwardRef(({
   const handleImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size should be less than 5MB');
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast.error('Image size should be less than 50MB');
         return;
       }
       
@@ -376,8 +569,8 @@ const InteractiveComponent = forwardRef(({
   const handleTabImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Image size should be less than 5MB');
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast.error('Image size should be less than 50MB');
         return;
       }
       
@@ -488,6 +681,199 @@ const InteractiveComponent = forwardRef(({
 
   const removeTabAudio = (index) => {
     updateTabsItem(index, 'audio', null);
+    toast.success('Audio removed successfully!');
+  };
+
+  // Labeled Graphic functions
+  const handleLabeledGraphicImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) { // 50MB limit
+        toast.error('Image size should be less than 50MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload only JPG, PNG, GIF, or WebP images');
+        return;
+      }
+      
+      setLabeledGraphicImageUploading(true);
+      
+      try {
+        // Upload image to cloud API
+        const uploadResult = await uploadImage(file, {
+          folder: 'lesson-images',
+          public: true
+        });
+        
+        if (uploadResult.success && uploadResult.imageUrl) {
+          setLabeledGraphicData(prev => ({
+            ...prev,
+            image: {
+              src: uploadResult.imageUrl,
+              name: file.name,
+              size: file.size,
+              uploadedData: uploadResult
+            }
+          }));
+          toast.success('Image uploaded successfully!');
+        } else {
+          throw new Error('Upload failed - no image URL returned');
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        toast.error(error.message || 'Failed to upload image. Please try again.');
+        
+        // Fallback to local URL for immediate preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setLabeledGraphicData(prev => ({
+            ...prev,
+            image: {
+              src: e.target.result,
+              name: file.name,
+              size: file.size,
+              isLocal: true
+            }
+          }));
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setLabeledGraphicImageUploading(false);
+      }
+    }
+  };
+
+  const removeLabeledGraphicImage = () => {
+    setLabeledGraphicData(prev => ({
+      ...prev,
+      image: null,
+      hotspots: [] // Clear hotspots when image is removed
+    }));
+    toast.success('Image removed successfully!');
+  };
+
+  const addHotspot = (event) => {
+    if (!labeledGraphicData.image) return;
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    
+    const newHotspot = {
+      id: Date.now().toString(),
+      x: Math.round(x),
+      y: Math.round(y),
+      label: 'New Hotspot',
+      description: 'Click to edit description',
+      audio: null
+    };
+    
+    setLabeledGraphicData(prev => ({
+      ...prev,
+      hotspots: [...prev.hotspots, newHotspot]
+    }));
+    
+    // Open edit dialog for the new hotspot
+    setEditingHotspot(newHotspot);
+    setShowHotspotDialog(true);
+  };
+
+  const editHotspot = (hotspot) => {
+    setEditingHotspot(hotspot);
+    setShowHotspotDialog(true);
+  };
+
+  const updateHotspot = (updatedHotspot) => {
+    setLabeledGraphicData(prev => ({
+      ...prev,
+      hotspots: prev.hotspots.map(h => 
+        h.id === updatedHotspot.id ? updatedHotspot : h
+      )
+    }));
+    setShowHotspotDialog(false);
+    setEditingHotspot(null);
+    toast.success('Hotspot updated successfully!');
+  };
+
+  const removeHotspot = (hotspotId) => {
+    setLabeledGraphicData(prev => ({
+      ...prev,
+      hotspots: prev.hotspots.filter(h => h.id !== hotspotId)
+    }));
+    toast.success('Hotspot removed successfully!');
+  };
+
+  // Hotspot audio handling functions
+  const handleHotspotAudioUpload = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
+        toast.error('Audio file size should be less than 10MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/m4a'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+        return;
+      }
+      
+      try {
+        // Upload audio to cloud API
+        const uploadResult = await uploadAudioResource(file, {
+          folder: 'lesson-audio',
+          public: true,
+          type: 'audio'
+        });
+        
+        if (uploadResult.success && uploadResult.audioUrl) {
+          setEditingHotspot(prev => ({
+            ...prev,
+            audio: {
+              src: uploadResult.audioUrl, // Use cloud URL
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              uploadedData: uploadResult
+            }
+          }));
+          toast.success('Audio uploaded successfully!');
+        } else {
+          throw new Error('Audio upload failed');
+        }
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+        toast.error(error.message || 'Failed to upload audio. Please try again.');
+        
+        // Fallback to local URL for immediate preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setEditingHotspot(prev => ({
+            ...prev,
+            audio: {
+              src: e.target.result,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              isLocal: true
+            }
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const removeHotspotAudio = () => {
+    setEditingHotspot(prev => ({
+      ...prev,
+      audio: null
+    }));
     toast.success('Audio removed successfully!');
   };
 
@@ -614,6 +1000,111 @@ const InteractiveComponent = forwardRef(({
         </div>
       `;
       return accordionHTML;
+    } else if (template === 'labeled-graphic') {
+      const labeledGraphicId = `labeled-graphic-${Date.now()}`;
+      const labeledGraphicHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-orange-500 to-red-600">
+          <div class="labeled-graphic-container" data-template="labeled-graphic" id="${labeledGraphicId}">
+            <div class="relative inline-block w-full max-w-4xl mx-auto">
+              <img src="${data.image.src}" alt="${data.image.name || 'Labeled graphic'}" 
+                   class="w-full h-auto rounded-lg shadow-sm" 
+                   style="max-height: 600px; object-fit: contain;" />
+              ${data.hotspots.map(hotspot => `
+                <div class="hotspot absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer" 
+                     style="left: ${hotspot.x}%; top: ${hotspot.y}%;"
+                     data-hotspot-id="${hotspot.id}"
+                     onclick="window.toggleHotspotContent && window.toggleHotspotContent('${labeledGraphicId}', '${hotspot.id}')">
+                  <div class="w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-lg hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center text-white font-bold text-sm cursor-pointer">+</div>
+                </div>
+              `).join('')}
+              
+              <!-- Content overlays for each hotspot -->
+              ${data.hotspots.map(hotspot => {
+                // Smart positioning logic
+                const isLeftSide = hotspot.x < 30;  // Left 30% of image
+                const isRightSide = hotspot.x > 70; // Right 30% of image
+                const isTopSide = hotspot.y < 30;   // Top 30% of image
+                const isBottomSide = hotspot.y > 70; // Bottom 30% of image
+                
+                // Calculate overlay position based on hotspot location
+                let overlayLeft, overlayTop, arrowPosition, arrowDirection;
+                
+                if (isLeftSide) {
+                  // Hotspot on left - show overlay to the right
+                  overlayLeft = Math.min(hotspot.x + 8, 75);
+                  arrowPosition = '15px'; // Arrow on left side of overlay
+                  arrowDirection = 'left';
+                } else if (isRightSide) {
+                  // Hotspot on right - show overlay to the left
+                  overlayLeft = Math.max(hotspot.x - 25, 5);
+                  arrowPosition = 'calc(100% - 35px)'; // Arrow on right side of overlay
+                  arrowDirection = 'right';
+                } else {
+                  // Hotspot in center - default positioning
+                  overlayLeft = Math.min(hotspot.x + 5, 70);
+                  arrowPosition = '25px';
+                  arrowDirection = 'center';
+                }
+                
+                if (isTopSide) {
+                  // Hotspot at top - show overlay below
+                  overlayTop = Math.min(hotspot.y + 8, 85);
+                } else if (isBottomSide) {
+                  // Hotspot at bottom - show overlay above
+                  overlayTop = Math.max(hotspot.y - 25, 5);
+                } else {
+                  // Default vertical positioning
+                  overlayTop = Math.max(hotspot.y - 10, 5);
+                }
+                
+                return `
+                <div id="content-${labeledGraphicId}-${hotspot.id}" 
+                     class="hotspot-content absolute bg-white border-2 border-blue-500 rounded-lg shadow-xl p-4 min-w-64 max-w-80 z-20 hidden"
+                     style="left: ${overlayLeft}%; top: ${overlayTop}%;"
+                     data-arrow-direction="${arrowDirection}">
+                  <div class="flex items-start justify-between mb-2">
+                    <h3 class="font-semibold text-gray-800 text-sm">${hotspot.label}</h3>
+                    <button onclick="window.hideHotspotContent && window.hideHotspotContent('${labeledGraphicId}', '${hotspot.id}')" 
+                            class="text-gray-400 hover:text-gray-600 ml-2 text-lg leading-none">&times;</button>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed mb-3">${hotspot.description}</p>
+                  ${hotspot.audio ? `
+                    <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                          <svg class="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.814L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.314a1 1 0 011.617.814zM12 8a1 1 0 011.414 0L15 9.586l1.586-1.586A1 1 0 1118 9.414L16.414 11 18 12.586A1 1 0 0116.586 14L15 12.414 13.414 14A1 1 0 0112 12.586L13.586 11 12 9.414A1 1 0 0112 8z" clip-rule="evenodd"></path>
+                          </svg>
+                        </div>
+                        <div class="flex-1">
+                          <p class="text-xs font-medium text-gray-800">${hotspot.audio.name}</p>
+                          <p class="text-xs text-gray-500">${Math.round(hotspot.audio.size / 1024)} KB</p>
+                        </div>
+                      </div>
+                      <audio controls class="w-full" preload="metadata" style="height: 28px;">
+                        <source src="${hotspot.audio.src}" type="${hotspot.audio.type}">
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  ` : ''}
+                  <!-- Smart arrow positioning -->
+                  ${arrowDirection === 'left' ? `
+                    <div class="absolute w-0 h-0 border-t-8 border-b-8 border-r-8 border-transparent border-r-blue-500"
+                         style="left: -8px; top: 20px;"></div>
+                  ` : arrowDirection === 'right' ? `
+                    <div class="absolute w-0 h-0 border-t-8 border-b-8 border-l-8 border-transparent border-l-blue-500"
+                         style="right: -8px; top: 20px;"></div>
+                  ` : `
+                    <div class="absolute w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-blue-500"
+                         style="left: ${arrowPosition}; top: 100%;"></div>
+                  `}
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      return labeledGraphicHTML;
     }
     return '';
   };
@@ -624,18 +1115,38 @@ const InteractiveComponent = forwardRef(({
       return;
     }
 
-    const data = selectedTemplate === 'tabs' ? tabsData : accordionData;
-    
-    // Validate that all items have content
-    const hasEmptyItems = data.some(item => !item.title.trim() || !item.content.trim());
-    if (hasEmptyItems) {
-      toast.error('Please fill in all titles and content');
-      return;
+    let data, dataKey;
+    if (selectedTemplate === 'tabs') {
+      data = tabsData;
+      dataKey = 'tabsData';
+      // Validate that all items have content
+      const hasEmptyItems = data.some(item => !item.title.trim() || !item.content.trim());
+      if (hasEmptyItems) {
+        toast.error('Please fill in all titles and content');
+        return;
+      }
+    } else if (selectedTemplate === 'accordion') {
+      data = accordionData;
+      dataKey = 'accordionData';
+      // Validate that all items have content
+      const hasEmptyItems = data.some(item => !item.title.trim() || !item.content.trim());
+      if (hasEmptyItems) {
+        toast.error('Please fill in all titles and content');
+        return;
+      }
+    } else if (selectedTemplate === 'labeled-graphic') {
+      data = labeledGraphicData;
+      dataKey = 'labeledGraphicData';
+      // Validate that image is uploaded
+      if (!data.image) {
+        toast.error('Please upload an image for the labeled graphic');
+        return;
+      }
     }
 
     const interactiveContent = {
       template: selectedTemplate,
-      [selectedTemplate === 'tabs' ? 'tabsData' : 'accordionData']: data
+      [dataKey]: data
     };
 
     const htmlContent = generateInteractiveHTML(selectedTemplate, data);
@@ -673,6 +1184,12 @@ const InteractiveComponent = forwardRef(({
       { title: 'Section 2', content: 'Content for section 2', image: null, audio: null },
       { title: 'Section 3', content: 'Content for section 3', image: null, audio: null }
     ]);
+    setLabeledGraphicData({
+      image: null,
+      hotspots: []
+    });
+    setEditingHotspot(null);
+    setShowHotspotDialog(false);
   };
 
   return (
@@ -822,7 +1339,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 5MB
+                                  PNG, JPG, GIF up to 50MB
                                 </span>
                               </label>
                             </div>
@@ -983,7 +1500,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 5MB
+                                  PNG, JPG, GIF up to 50MB
                                 </span>
                               </label>
                             </div>
@@ -1050,6 +1567,166 @@ const InteractiveComponent = forwardRef(({
                 </div>
               </div>
             )}
+
+            {selectedTemplate === 'labeled-graphic' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Labeled Graphic Configuration</h3>
+                </div>
+                
+                <div className="space-y-6">
+                  {/* Image Upload Section */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Background Image
+                    </label>
+                    {labeledGraphicData.image ? (
+                      <div className="space-y-4">
+                        <div className="relative inline-block max-w-full">
+                          <div 
+                            className="relative cursor-crosshair border-2 border-dashed border-blue-300 rounded-lg overflow-hidden"
+                            onClick={addHotspot}
+                            style={{ maxWidth: '600px', maxHeight: '400px' }}
+                          >
+                            <img
+                              src={labeledGraphicData.image.src}
+                              alt={labeledGraphicData.image.name}
+                              className="w-full h-auto rounded-lg"
+                              style={{ maxHeight: '400px', objectFit: 'contain' }}
+                            />
+                            {/* Render hotspots */}
+                            {labeledGraphicData.hotspots.map(hotspot => (
+                              <div
+                                key={hotspot.id}
+                                className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                                style={{ left: `${hotspot.x}%`, top: `${hotspot.y}%` }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  editHotspot(hotspot);
+                                }}
+                              >
+                                <div className="w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-lg hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center text-white font-bold text-sm cursor-pointer">+</div>
+                                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white p-2 rounded shadow-xl min-w-32 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                  <div className="text-xs font-semibold">{hotspot.label}</div>
+                                </div>
+                              </div>
+                            ))}
+                            {/* Click instruction overlay */}
+                            <div className="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-xs opacity-75">
+                              Click to add hotspots
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={removeLabeledGraphicImage}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {labeledGraphicData.image.name} ({Math.round(labeledGraphicData.image.size / 1024)} KB)
+                        </p>
+                      </div>
+                    ) : labeledGraphicImageUploading ? (
+                      <div className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden">
+                        {/* Animated background pulse */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-transparent opacity-50 animate-pulse"></div>
+                        
+                        <div className="relative flex flex-col items-center space-y-4">
+                          <div className="relative">
+                            <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />
+                            <div className="absolute inset-0 rounded-full border-4 border-blue-200 animate-ping"></div>
+                          </div>
+                          
+                          <div className="text-center space-y-2">
+                            <span className="text-xl font-semibold text-blue-700 animate-pulse">
+                              Uploading Image...
+                            </span>
+                            <p className="text-sm text-blue-600">
+                              Please wait while we process your image
+                            </p>
+                            
+                            {/* Progress bar animation */}
+                            <div className="w-48 h-2 bg-blue-200 rounded-full overflow-hidden mt-3">
+                              <div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full animate-pulse"></div>
+                            </div>
+                            
+                            <p className="text-xs text-blue-500 mt-2">
+                              This may take a few seconds...
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLabeledGraphicImageUpload}
+                          className="hidden"
+                          id="labeled-graphic-image-upload"
+                          disabled={labeledGraphicImageUploading}
+                        />
+                        <label
+                          htmlFor="labeled-graphic-image-upload"
+                          className={`cursor-pointer flex flex-col items-center space-y-3 ${labeledGraphicImageUploading ? 'pointer-events-none opacity-50' : ''}`}
+                        >
+                          <Target className="h-12 w-12 text-gray-400" />
+                          <div className="text-center">
+                            <span className="text-lg font-medium text-gray-600">
+                              Upload Background Image
+                            </span>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Click to upload an image for your labeled graphic
+                            </p>
+                            <span className="text-xs text-gray-400 mt-2 block">
+                              PNG, JPG, GIF up to 5MB
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hotspots List */}
+                  {labeledGraphicData.hotspots.length > 0 && (
+                    <div>
+                      <h4 className="text-md font-medium text-gray-700 mb-3">Hotspots ({labeledGraphicData.hotspots.length})</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {labeledGraphicData.hotspots.map(hotspot => (
+                          <div key={hotspot.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center gap-3">
+                              <div className="w-4 h-4 bg-blue-500 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-xs">+</div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-800">{hotspot.label}</p>
+                                <p className="text-xs text-gray-500">Position: {hotspot.x}%, {hotspot.y}%</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => editHotspot(hotspot)}
+                                className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeHotspot(hotspot.id)}
+                                className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -1058,6 +1735,136 @@ const InteractiveComponent = forwardRef(({
             </Button>
             <Button onClick={handleSave}>
               {editingInteractiveBlock ? 'Update' : 'Create'} Interactive Content
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hotspot Edit Dialog */}
+      <Dialog open={showHotspotDialog} onOpenChange={setShowHotspotDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Hotspot</DialogTitle>
+          </DialogHeader>
+          
+          {editingHotspot && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hotspot Label
+                </label>
+                <input
+                  type="text"
+                  value={editingHotspot.label}
+                  onChange={(e) => setEditingHotspot(prev => ({ ...prev, label: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter hotspot label"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editingHotspot.description}
+                  onChange={(e) => setEditingHotspot(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter hotspot description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hotspot Audio (Optional)
+                </label>
+                {editingHotspot.audio ? (
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Volume2 className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-800">{editingHotspot.audio.name}</p>
+                            <p className="text-xs text-gray-500">{Math.round(editingHotspot.audio.size / 1024)} KB</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeHotspotAudio}
+                          className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <audio controls className="w-full" preload="metadata">
+                        <source src={editingHotspot.audio.src} type={editingHotspot.audio.type} />
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleHotspotAudioUpload}
+                      className="hidden"
+                      id="hotspot-audio-upload"
+                    />
+                    <label
+                      htmlFor="hotspot-audio-upload"
+                      className="cursor-pointer flex flex-col items-center space-y-2"
+                    >
+                      <Volume2 className="h-8 w-8 text-gray-400" />
+                      <span className="text-sm text-gray-600">
+                        Click to upload audio
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        MP3, WAV, OGG up to 10MB
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    X Position (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editingHotspot.x}
+                    onChange={(e) => setEditingHotspot(prev => ({ ...prev, x: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Y Position (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editingHotspot.y}
+                    onChange={(e) => setEditingHotspot(prev => ({ ...prev, y: parseInt(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHotspotDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => updateHotspot(editingHotspot)}>
+              Save Hotspot
             </Button>
           </DialogFooter>
         </DialogContent>

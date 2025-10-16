@@ -44,6 +44,62 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  // Display helper: format credit points using USD-style units (K, M, B, T)
+  // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
+  const formatCreditPoints = (value) => {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+
+    const formatWithClamp = (val, suffix) => {
+      let display = val;
+      let clamped = false;
+      if (display > 100) {
+        display = 100;
+        clamped = true;
+      }
+      // Keep at most one decimal place; strip trailing .0
+      const rounded = Math.round(display * 10) / 10;
+      const text = (rounded % 1 === 0) ? String(rounded) : rounded.toFixed(1);
+      return `${sign}${text}${suffix}${clamped ? '+' : ''}`;
+    };
+
+    // Units in descending order for easy promotion (e.g., 100M -> 1B)
+    const units = [
+      { value: 1_000_000_000_000, suffix: 'T' },
+      { value: 1_000_000_000, suffix: 'B' },
+      { value: 1_000_000, suffix: 'M' },
+      { value: 1_000, suffix: 'K' },
+    ];
+
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (abs >= u.value) {
+        const val = abs / u.value;
+        // If value is at least 100 of this unit, promote to the next higher unit
+        if (val >= 100 && i > 0) {
+          const higher = units[i - 1];
+          const hasPlus = abs > 100 * u.value; // strictly greater than the threshold
+          return `${sign}1${higher.suffix}${hasPlus ? '+' : ''}`;
+        }
+        return formatWithClamp(val, u.suffix);
+      }
+    }
+
+    // For values 100-999, show exact number without clamping
+    if (abs >= 100 && abs < 1000) {
+      return `${sign}${Math.round(abs)}`;
+    }
+
+    // For small values (< 100), show exact number
+    // For large values (>= 1000), clamp to 100 and add +
+    if (abs < 100) {
+      return `${sign}${Math.round(abs)}`;
+    } else {
+      return `${sign}100+`;
+    }
+  };
+
   // Listen for a global request to open the credits modal
   useEffect(() => {
     const handler = () => setCreditsModalOpen(true);
@@ -81,12 +137,30 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     } catch {}
   };
 
-  // Fetch enrolled courses on component mount
+  // Fetch enrolled courses on component mount with caching
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       try {
+        // Check if we have cached enrolled courses (valid for 5 minutes)
+        const cached = localStorage.getItem('enrolledCourses');
+        const cacheTime = localStorage.getItem('enrolledCoursesTime');
+        const now = Date.now();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+        
+        if (cached && cacheTime && (now - parseInt(cacheTime)) < CACHE_DURATION) {
+          console.log('✅ Using cached enrolled courses - avoiding getCourses API call!');
+          setEnrolledCourses(JSON.parse(cached));
+          setIsLoadingEnrolled(false);
+          return;
+        }
+        
+        console.log('🔄 Fetching enrolled courses from API...');
         const courses = await fetchUserCourses();
         setEnrolledCourses(courses);
+        
+        // Cache the results
+        localStorage.setItem('enrolledCourses', JSON.stringify(courses));
+        localStorage.setItem('enrolledCoursesTime', now.toString());
       } catch (error) {
         console.error('Failed to fetch enrolled courses:', error);
         setEnrolledCourses([]);
@@ -469,7 +543,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 LMS Athena 
               </h1>
             </button>
@@ -658,15 +732,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             {/* Credits Badge */}
             <button
               onClick={() => setCreditsModalOpen(true)}
-              className="group relative px-3 py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-2 shadow-sm hover:shadow transition-all"
+              className="group relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-1.5 sm:gap-2 shadow-sm hover:shadow transition-all"
               aria-label="Open credits purchase"
               title="Manage credits"
             >
-              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[10px] font-extrabold shadow-inner">
+              <span className="inline-flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[9px] sm:text-[10px] font-extrabold shadow-inner">
                 CP
               </span>
-              <span className="text-sm font-semibold tabular-nums tracking-wide">{balance}</span>
-              <span className="ml-1 inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
+              <span className="text-xs sm:text-sm font-semibold tabular-nums tracking-wide">{formatCreditPoints(balance)}</span>
+              <span className="ml-1 inline-flex items-center justify-center h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
             </button>
             
             {/* Notification Bell */}

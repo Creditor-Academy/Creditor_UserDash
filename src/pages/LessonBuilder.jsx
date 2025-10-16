@@ -6,13 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getAuthHeader } from '@/services/authHeader';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
-import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
+import VideoComponent from '@/components/VideoComponent';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
   ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
-  Volume2, Play, Youtube, Link2, File, BookOpen, Image, Video,
+  Play, Link2, File, BookOpen, Image, Video,
   HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon,
   Type,
   Heading1,
@@ -25,7 +25,13 @@ import {
   MessageSquare,
   Quote,
   Layers,
-  Sparkles
+  Sparkles,
+  Minus,
+  Volume2,
+  Youtube,
+  Crop,
+  CheckCircle,
+  X
 } from 'lucide-react';
 import AIEnhancementPanel from '@/components/LessonBuilder/AIEnhancementPanel';
 import { toast } from 'react-hot-toast';
@@ -37,6 +43,10 @@ import axios from 'axios';
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
+import DividerComponent from '@/components/DividerComponent';
+import AudioComponent from '@/components/AudioComponent';
+import YouTubeComponent from '@/components/YouTubeComponent';
+import ImageEditor from '@/components/ImageEditor';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -49,7 +59,7 @@ const slideInLeftStyle = `
       transform: translateX(0);
       opacity: 1;
     }
-  }
+  } 
   .animate-slide-in-left {
     animation: slide-in-left 0.3s ease-out;
   }
@@ -254,6 +264,63 @@ if (typeof window !== 'undefined') {
       icon.classList.remove('rotate-180');
     }
   };
+
+  // Labeled Graphic functions
+  window.toggleHotspotContent = function(containerId, hotspotId) {
+    // Hide all other content overlays in this container
+    const container = document.getElementById(containerId);
+    if (container) {
+      const allContents = container.querySelectorAll('.hotspot-content');
+      allContents.forEach(content => {
+        if (content.id !== 'content-' + containerId + '-' + hotspotId) {
+          content.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Toggle the clicked hotspot content
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      if (contentElement.classList.contains('hidden')) {
+        contentElement.classList.remove('hidden');
+        // Add fade-in animation
+        contentElement.style.opacity = '0';
+        contentElement.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          contentElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          contentElement.style.opacity = '1';
+          contentElement.style.transform = 'scale(1)';
+        }, 10);
+      } else {
+        contentElement.classList.add('hidden');
+      }
+    }
+  };
+  
+  window.hideHotspotContent = function(containerId, hotspotId) {
+    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
+    if (contentElement) {
+      contentElement.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+      contentElement.style.opacity = '0';
+      contentElement.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        contentElement.classList.add('hidden');
+      }, 200);
+    }
+  };
+  
+  // Close hotspot content when clicking outside (only add once)
+  if (!window.labeledGraphicClickHandler) {
+    window.labeledGraphicClickHandler = function(event) {
+      if (!event.target.closest('.hotspot') && !event.target.closest('.hotspot-content')) {
+        const allContents = document.querySelectorAll('.hotspot-content');
+        allContents.forEach(content => {
+          content.classList.add('hidden');
+        });
+      }
+    };
+    document.addEventListener('click', window.labeledGraphicClickHandler);
+  }
 }
 
 // Register font families with proper display names
@@ -261,11 +328,179 @@ const Font = Quill.import('formats/font');
 Font.whitelist = ['arial', 'helvetica', 'times', 'courier', 'verdana', 'georgia', 'impact', 'roboto'];
 Quill.register(Font, true);
 
+// Override font display names for better readability
+const fontNames = {
+  'arial': 'Arial',
+  'helvetica': 'Helvetica', 
+  'times': 'Times Roman',
+  'courier': 'Courier New',
+  'verdana': 'Verdana',
+  'georgia': 'Georgia',
+  'impact': 'Impact',
+  'roboto': 'Roboto'
+};
+
+// Apply custom font names and override Quill's font labels
+if (typeof document !== 'undefined') {
+  const fontCSS = Object.entries(fontNames).map(([key, value]) => 
+    `.ql-font-${key} { font-family: "${value}"; }`
+  ).join('\n');
+  
+  if (!document.getElementById('custom-font-names')) {
+    const style = document.createElement('style');
+    style.id = 'custom-font-names';
+    style.textContent = fontCSS + `
+      /* Override dropdown options text only - not content */
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="arial"]::before { content: "Arial"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="helvetica"]::before { content: "Helvetica"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="times"]::before { content: "Times Roman"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="courier"]::before { content: "Courier New"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="verdana"]::before { content: "Verdana"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="georgia"]::before { content: "Georgia"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="impact"]::before { content: "Impact"; }
+      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="roboto"]::before { content: "Roboto"; }
+      
+      /* Ensure font names don't appear in content area */
+      .ql-editor .ql-font-arial::before,
+      .ql-editor .ql-font-helvetica::before,
+      .ql-editor .ql-font-times::before,
+      .ql-editor .ql-font-courier::before,
+      .ql-editor .ql-font-verdana::before,
+      .ql-editor .ql-font-georgia::before,
+      .ql-editor .ql-font-impact::before,
+      .ql-editor .ql-font-roboto::before {
+        content: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
 
 // Register font sizes - simplified to 4 options
 const Size = Quill.import('formats/size');
 Size.whitelist = ['small', 'normal', 'large', 'huge'];
 Quill.register(Size, true);
+
+// Add CSS for Quill editor overflow handling and improved alignment display
+const quillOverflowCSS = `
+  .quill-editor-overflow-visible .ql-toolbar {
+    overflow: visible !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker {
+    overflow: visible !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker-options {
+    z-index: 9999 !important;
+    position: absolute !important;
+    overflow: visible !important;
+    min-width: 180px !important;
+    max-width: 250px !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker-label {
+    overflow: visible !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-picker-options .ql-picker-item {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    padding: 5px 10px !important;
+    min-width: 160px !important;
+  }
+  .quill-editor-overflow-visible .ql-toolbar .ql-font .ql-picker-options {
+    min-width: 200px !important;
+    max-width: 300px !important;
+  }
+  
+  /* Improve alignment picker display */
+  .ql-align .ql-picker-options .ql-picker-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+    position: relative !important;
+  }
+  
+  /* Completely hide all horizontal line icons and replace with text */
+  .ql-align .ql-picker-options .ql-picker-item {
+    position: relative !important;
+    min-height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item svg,
+  .ql-align .ql-picker-options .ql-picker-item .ql-stroke,
+  .ql-align .ql-picker-options .ql-picker-item .ql-stroke-miter,
+  .ql-align .ql-picker-options .ql-picker-item .ql-fill {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  
+  /* Replace with clear text labels */
+  .ql-align .ql-picker-options .ql-picker-item[data-value=""] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value=""]:after {
+    content: "⬅️ Left Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="center"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="center"]:after {
+    content: "↔️ Center Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="right"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="right"]:after {
+    content: "➡️ Right Align";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+  
+  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"] {
+    background-image: none !important;
+  }
+  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"]:after {
+    content: "⬌ Justify";
+    display: block !important;
+    width: 100% !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    padding: 6px 8px !important;
+  }
+`;
+
+// Inject the CSS
+if (typeof document !== 'undefined' && !document.getElementById('quill-overflow-css')) {
+  const style = document.createElement('style');
+  style.id = 'quill-overflow-css';
+  style.textContent = quillOverflowCSS;
+  document.head.appendChild(style);
+}
 
 // Universal toolbar for paragraph/content
 const paragraphToolbar = [
@@ -276,6 +511,21 @@ const paragraphToolbar = [
   [{ 'list': 'ordered'}, { 'list': 'bullet' }],
   [{ 'align': [] }],
   ['link', 'image'],
+  ['clean']
+];
+
+// Custom alignment toolbar with clear labels
+const customAlignToolbar = [
+  [{ 'font': Font.whitelist }],
+  [{ 'size': Size.whitelist }],
+  ['bold', 'italic', 'underline'],
+  [{ 'color': [] }, { 'background': [] }],
+  [
+    { 'align': '' },
+    { 'align': 'center' },
+    { 'align': 'right' },
+    { 'align': 'justify' }
+  ],
   ['clean']
 ];
 
@@ -300,15 +550,32 @@ const getToolbarModules = (type = 'full') => {
     [{ 'align': [] }]
   ];
 
-  // For heading-only and subheading-only editors, REMOVE size picker
+  // For heading-only and subheading-only editors, include size picker and custom alignment
   if (type === 'heading' || type === 'subheading') {
     return {
       toolbar: [
         [{ 'font': Font.whitelist }],
+        [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline'],
         [{ 'color': [] }, { 'background': [] }],
-        [{ 'align': [] }],
-        ['clean']
+        [
+          { 'align': '' },
+          { 'align': 'center' },
+          { 'align': 'right' },
+          { 'align': 'justify' }
+        ]
+      ]
+    };
+  }
+  
+  // Simplified toolbar for paragraph blocks (no alignment, lists, links, images, clean)
+  if (type === 'paragraph') {
+    return {
+      toolbar: [
+        [{ 'font': Font.whitelist }],
+        [{ 'size': Size.whitelist }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }]
       ]
     };
   }
@@ -344,8 +611,22 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
     }
 
     const handleCheckboxClick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
       console.log('Checkbox click detected:', e.target);
-      const checkboxContainer = e.target.closest('.checkbox-container');
+      
+      // Find the checkbox container - could be the clicked element or a parent
+      let checkboxContainer = e.target.closest('.checkbox-container');
+      
+      // If not found, try looking for checkbox wrapper or checkbox item
+      if (!checkboxContainer) {
+        const checkboxWrapper = e.target.closest('.checkbox-wrapper');
+        if (checkboxWrapper) {
+          checkboxContainer = checkboxWrapper.closest('.checkbox-container');
+        }
+      }
+      
       if (!checkboxContainer) {
         console.log('No checkbox-container found');
         return;
@@ -354,24 +635,31 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
       const itemIndex = parseInt(checkboxContainer.dataset.index);
       const hiddenCheckbox = checkboxContainer.querySelector('.checkbox-item');
       const visualCheckbox = checkboxContainer.querySelector('.checkbox-visual');
+      const textElement = checkboxContainer.querySelector('.flex-1');
 
       console.log('Checkbox elements found:', {
         itemIndex,
         hiddenCheckbox: !!hiddenCheckbox,
-        visualCheckbox: !!visualCheckbox
+        visualCheckbox: !!visualCheckbox,
+        textElement: !!textElement
       });
 
       if (hiddenCheckbox && visualCheckbox) {
         const newChecked = !hiddenCheckbox.checked;
-        hiddenCheckbox.checked = newChecked;
         
         // Update visual state immediately for better UX
         if (newChecked) {
           visualCheckbox.classList.remove('opacity-0');
           visualCheckbox.classList.add('opacity-100');
+          if (textElement) {
+            textElement.classList.add('line-through', 'text-gray-500');
+          }
         } else {
           visualCheckbox.classList.remove('opacity-100');
           visualCheckbox.classList.add('opacity-0');
+          if (textElement) {
+            textElement.classList.remove('line-through', 'text-gray-500');
+          }
         }
 
         console.log('Calling onCheckboxToggle:', {
@@ -385,19 +673,32 @@ const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
       }
     };
 
-    // Add click event listeners to all checkbox containers
+    // Add click event listeners to all checkbox containers and their children
     const checkboxContainers = containerRef.current.querySelectorAll('.checkbox-container');
-    console.log('Found checkbox containers:', checkboxContainers.length);
+    const checkboxWrappers = containerRef.current.querySelectorAll('.checkbox-wrapper');
     
+    console.log('Found checkbox containers:', checkboxContainers.length);
+    console.log('Found checkbox wrappers:', checkboxWrappers.length);
+    
+    // Add listeners to containers
     checkboxContainers.forEach((container, index) => {
       console.log(`Adding listener to container ${index}:`, container);
       container.addEventListener('click', handleCheckboxClick);
+    });
+
+    // Add listeners to wrappers for more precise clicking
+    checkboxWrappers.forEach((wrapper, index) => {
+      console.log(`Adding listener to wrapper ${index}:`, wrapper);
+      wrapper.addEventListener('click', handleCheckboxClick);
     });
 
     // Cleanup
     return () => {
       checkboxContainers.forEach(container => {
         container.removeEventListener('click', handleCheckboxClick);
+      });
+      checkboxWrappers.forEach(wrapper => {
+        wrapper.removeEventListener('click', handleCheckboxClick);
       });
     };
   }, [block.html_css, onCheckboxToggle, block.id, block.block_id]);
@@ -431,6 +732,7 @@ function LessonBuilder() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [currentBlock, setCurrentBlock] = useState(null);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
+  const [editingVideoBlock, setEditingVideoBlock] = useState(null);
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
   const [videoFile, setVideoFile] = useState(null);
@@ -444,6 +746,47 @@ function LessonBuilder() {
   const [editorHeading, setEditorHeading] = useState('');
   const [editorSubheading, setEditorSubheading] = useState('');
   const [editorContent, setEditorContent] = useState('');
+  const [masterHeadingGradient, setMasterHeadingGradient] = useState('gradient1');
+  
+  // Gradient color options for master heading
+  const gradientOptions = [
+    {
+      id: 'gradient1',
+      name: 'Purple to Blue',
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      preview: 'from-indigo-500 to-purple-600'
+    },
+    {
+      id: 'gradient2', 
+      name: 'Blue to Pink',
+      gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+      preview: 'from-blue-500 via-purple-500 to-pink-500'
+    },
+    {
+      id: 'gradient3',
+      name: 'Green to Blue',
+      gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+      preview: 'from-emerald-500 to-blue-500'
+    },
+    {
+      id: 'gradient4',
+      name: 'Orange to Red',
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+      preview: 'from-amber-500 to-red-500'
+    },
+    {
+      id: 'gradient5',
+      name: 'Pink to Purple',
+      gradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+      preview: 'from-pink-500 to-purple-500'
+    },
+    {
+      id: 'gradient6',
+      name: 'Teal to Cyan',
+      gradient: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+      preview: 'from-teal-500 to-cyan-500'
+    }
+  ];
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
   const [showImageDialog, setShowImageDialog] = useState(false);
@@ -451,19 +794,7 @@ function LessonBuilder() {
   const [imageDescription, setImageDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-  const [showAudioDialog, setShowAudioDialog] = useState(false);
-  const [audioTitle, setAudioTitle] = useState('');
-  const [audioDescription, setAudioDescription] = useState('');
-  const [audioFile, setAudioFile] = useState(null);
-  const [audioPreview, setAudioPreview] = useState('');
-  const [audioUrl, setAudioUrl] = useState('');
-  const [audioUploadMethod, setAudioUploadMethod] = useState('file'); // 'file' or 'url'
-  const [showYoutubeDialog, setShowYoutubeDialog] = useState(false);
-  const [youtubeTitle, setYoutubeTitle] = useState('');
-  const [youtubeDescription, setYoutubeDescription] = useState('');
-  const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [youtubeError, setYoutubeError] = useState('');
-  const [currentYoutubeBlock, setCurrentYoutubeBlock] = useState(null);
+  
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -481,10 +812,6 @@ function LessonBuilder() {
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
   const [showStatementSidebar, setShowStatementSidebar] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
-  const [showAiImageDialog, setShowAiImageDialog] = useState(false);
-  const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [aiImageGenerating, setAiImageGenerating] = useState(false);
-  const [generatedAiImage, setGeneratedAiImage] = useState('');
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfDescription, setPdfDescription] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
@@ -503,6 +830,33 @@ function LessonBuilder() {
   const [showInteractiveTemplateSidebar, setShowInteractiveTemplateSidebar] = useState(false);
   const [showInteractiveEditDialog, setShowInteractiveEditDialog] = useState(false);
   const [editingInteractiveBlock, setEditingInteractiveBlock] = useState(null);
+  const [showDividerTemplateSidebar, setShowDividerTemplateSidebar] = useState(false);
+  const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [editingAudioBlock, setEditingAudioBlock] = useState(null);
+  const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
+  const [youTubeUrl, setYouTubeUrl] = useState('');
+  const [youTubeTitle, setYouTubeTitle] = useState('');
+  const [youTubeDescription, setYouTubeDescription] = useState('');
+  const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
+  const [imageAlignment, setImageAlignment] = useState('left'); // 'left' or 'right' for image & text blocks
+  const [standaloneImageAlignment, setStandaloneImageAlignment] = useState('center'); // 'left', 'center', 'right' for standalone images
+  
+  // Image Editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
+  
+  // Auto-save state
+  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error', 'changes_detected'
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const autoSaveTimerRef = React.useRef(null);
+  
+  // Inline block insertion state
+  const [insertionPosition, setInsertionPosition] = useState(null);
+  const [showInsertDropdown, setShowInsertDropdown] = useState(null); // block index where dropdown is shown
+  const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false); // Show insert block dialog
+  
+
 
   // Image block templates
   const imageTemplates = [
@@ -512,6 +866,7 @@ function LessonBuilder() {
       description: 'Image with text content side by side',
       icon: <Image className="h-6 w-6" />,
       layout: 'side-by-side',
+      alignment: 'left', // Default alignment
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
         text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy. The pains of the past are behind us. The future has yet to unfold. But the now is full of beauty always waiting for our attention.'
@@ -534,6 +889,7 @@ function LessonBuilder() {
       description: 'Centered image with optional caption',
       icon: <Image className="h-6 w-6" />,
       layout: 'centered',
+      alignment: 'center', // Default alignment
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
         text: 'A peaceful moment captured in time'
@@ -548,18 +904,6 @@ function LessonBuilder() {
       defaultContent: {
         imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
         text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy.'
-      }
-    },
-    {
-      id: 'ai-generated',
-      title: 'AI Generated Image',
-      description: 'Generate custom images using AI prompts',
-      icon: <Image className="h-6 w-6" />,
-      layout: 'ai-generated',
-      defaultContent: {
-        imageUrl: '',
-        text: 'AI generated image will appear here',
-        prompt: ''
       }
     }
   ];
@@ -587,6 +931,11 @@ function LessonBuilder() {
       icon: <Image className="h-5 w-5" />
     },
     {
+      id: 'youtube',
+      title: 'YouTube',
+      icon: <Youtube className="h-5 w-5" />
+    },
+    {
       id: 'video',
       title: 'Video',
       icon: <Video className="h-5 w-5" />
@@ -595,11 +944,6 @@ function LessonBuilder() {
       id: 'audio',
       title: 'Audio',
       icon: <Volume2 className="h-5 w-5" />
-    },
-    {
-      id: 'youtube',
-      title: 'YouTube',
-      icon: <Youtube className="h-5 w-5" />
     },
     {
       id: 'link',
@@ -622,18 +966,18 @@ function LessonBuilder() {
       icon: <Table className="h-5 w-5" />
     },
     {
-      id: 'scorm',
-      title: 'SCORM',
-      icon: <Box className="h-5 w-5" />
-    },
-    {
       id: 'interactive',
       title: 'Interactive',
       icon: <Layers className="h-5 w-5" />
+    },
+    {
+      id: 'divider',
+      title: 'Divider',
+      icon: <Minus className="h-5 w-5" />
     }
   ];
 
-  // Modify the text types array to include specific styles
+
   const textTypes = [
     {
       id: 'heading',
@@ -717,8 +1061,45 @@ function LessonBuilder() {
   const statementComponentRef = React.useRef();
   const listComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
+  const dividerComponentRef = React.useRef();
 
-  const handleBlockClick = (blockType) => {
+
+  // Cleanup timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Warn user before leaving page with unsaved changes
+  React.useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges || autoSaveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, autoSaveStatus]);
+
+  // Track previous contentBlocks to detect actual changes
+  const prevContentBlocksRef = React.useRef([]);
+  const isInitialLoadRef = React.useRef(true);
+
+
+
+  const handleBlockClick = (blockType, position = null) => {
+    // Store the insertion position for use in subsequent handlers
+    if (position !== null) {
+      setInsertionPosition(position);
+      setShowInsertDropdown(null); // Close the dropdown
+    }
+
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
     } else if (blockType.id === 'statement') {
@@ -729,22 +1110,31 @@ function LessonBuilder() {
       setShowListTemplateSidebar(true);
     } else if (blockType.id === 'video') {
       setShowVideoDialog(true);
+    } else if (blockType.id === 'youtube') {
+      setShowYouTubeDialog(true);
+    } else if (blockType.id === 'audio') {
+      setShowAudioDialog(true);
     } else if (blockType.id === 'image') {
       setShowImageTemplateSidebar(true);
     } else if (blockType.id === 'tables') {
       setShowTableComponent(true);
-    } else if (blockType.id === 'audio') {
-      setShowAudioDialog(true);
-    } else if (blockType.id === 'youtube') {
-      setShowYoutubeDialog(true);
+    
     } else if (blockType.id === 'link') {
       setShowLinkDialog(true);
     } else if (blockType.id === 'pdf') {
       setShowPdfDialog(true);
     } else if (blockType.id === 'interactive') {
       setShowInteractiveTemplateSidebar(true);
+    } else if (blockType.id === 'divider') {
+      setShowDividerTemplateSidebar(true);
     } else {
-      addContentBlock(blockType);
+      // For simple blocks that don't need dialogs, insert immediately
+      if (position !== null) {
+        insertContentBlockAt(blockType, position);
+        setInsertionPosition(null);
+      } else {
+        addContentBlock(blockType);
+      }
     }
   };
 
@@ -771,6 +1161,41 @@ function LessonBuilder() {
     } else {
       // For new lessons, add to contentBlocks
       setContentBlocks([...contentBlocks, newBlock]);
+    }
+  };
+
+  // Insert block at a specific position
+  const insertContentBlockAt = (blockType, position, textType = null) => {
+    const newBlock = {
+      id: `block_${Date.now()}`,
+      block_id: `block_${Date.now()}`,
+      type: blockType.id,
+      title: blockType.title,
+      textType: textType,
+      content: '',
+      order: position + 1
+    };
+   
+    // If we have existing lesson content, insert into that structure
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => {
+        const newContent = [...prevLessonContent.data.content];
+        newContent.splice(position, 0, newBlock);
+        return {
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: newContent
+          }
+        };
+      });
+    } else {
+      // For new lessons, insert into contentBlocks
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(position, 0, newBlock);
+        return newBlocks;
+      });
     }
   };
 
@@ -837,21 +1262,70 @@ function LessonBuilder() {
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
-    // Always add to local edit list so it appears immediately in edit mode
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Always add to local edit list so it appears immediately in edit mode
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
    
     // Close the sidebar
     setShowTextTypeSidebar(false);
     setSidebarCollapsed(true);
   };
 
-
   const handleStatementSelect = (statementBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, statementBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, statementBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, statementBlock]);
+    }
   };
-
-
 
 
   const handleStatementEdit = (blockId, content, htmlContent) => {
@@ -912,14 +1386,66 @@ function LessonBuilder() {
 
   // Quote component callbacks
   const handleQuoteTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
   };
 
   // Table component callbacks
   const handleTableTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
   };
 
   // Interactive component callbacks
@@ -964,7 +1490,34 @@ function LessonBuilder() {
       html_css: newBlock.html_css,
       order: contentBlocks.length + 1
     };
-    setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+    
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, interactiveBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, interactiveBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
+    }
   };
 
   const handleInteractiveUpdate = (blockId, updatedContent) => {
@@ -984,10 +1537,102 @@ function LessonBuilder() {
     setEditingInteractiveBlock(null);
   };
 
+  // Divider component callbacks
+  const handleDividerTemplateSelect = (newBlock) => {
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
+    setShowDividerTemplateSidebar(false);
+  };
+
+  const handleDividerUpdate = (blockId, updatedContent) => {
+    // Update contentBlocks for new lessons
+    setContentBlocks(blocks =>
+      blocks.map(block =>
+        block.id === blockId ? {
+          ...block,
+          content: updatedContent.content,
+          html_css: updatedContent.html_css,
+          updatedAt: new Date().toISOString()
+        } : block
+      )
+    );
+
+    // Also update lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.map(block =>
+            (block.block_id === blockId || block.id === blockId) ? {
+              ...block,
+              content: updatedContent.content,
+              html_css: updatedContent.html_css,
+              updatedAt: new Date().toISOString()
+            } : block
+          )
+        }
+      }));
+    }
+  };
+
+
   // List component callbacks
   const handleListTemplateSelect = (newBlock) => {
-    // Only add to contentBlocks - this is the primary state for managing blocks
-    setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prevBlocks => {
+        const newBlocks = [...prevBlocks];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Only add to contentBlocks - this is the primary state for managing blocks
+      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    }
   };
 
   const handleListUpdate = (blockId, content, updatedHtml = null) => {
@@ -1058,9 +1703,9 @@ function LessonBuilder() {
             <div class="bg-gradient-to-br from-pink-50 to-rose-50 p-6 rounded-xl border border-pink-200">
               <div class="space-y-4">
                 ${items.map((item, index) => `
-                  <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+                  <div class="checkbox-container flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200 cursor-pointer" data-index="${index}">
                     <div class="flex-shrink-0 mt-1">
-                      <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors">
+                      <div class="checkbox-wrapper w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center hover:border-pink-500 transition-colors">
                         <input type="checkbox" ${checkedItems[index] ? 'checked' : ''} class="hidden checkbox-item" data-index="${index}" />
                         <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
                       </div>
@@ -1166,6 +1811,7 @@ function LessonBuilder() {
         const container = checkboxContainers[itemIndex];
         const hiddenCheckbox = container.querySelector('.checkbox-item');
         const visualCheckbox = container.querySelector('.checkbox-visual');
+        const textElement = container.querySelector('.flex-1');
         
         if (hiddenCheckbox && visualCheckbox) {
           // Update the hidden checkbox
@@ -1184,6 +1830,25 @@ function LessonBuilder() {
             visualCheckbox.classList.remove('opacity-100');
             visualCheckbox.classList.add('opacity-0');
           }
+
+          // Update text styling based on checkbox state
+          if (textElement) {
+            if (checked) {
+              // Add line-through and gray text for checked items
+              if (!textElement.classList.contains('line-through')) {
+                textElement.classList.add('line-through', 'text-gray-500');
+              }
+              // Remove normal text color classes
+              textElement.classList.remove('text-gray-800');
+            } else {
+              // Remove line-through and gray text for unchecked items
+              textElement.classList.remove('line-through', 'text-gray-500');
+              // Add back normal text color
+              if (!textElement.classList.contains('text-gray-800')) {
+                textElement.classList.add('text-gray-800');
+              }
+            }
+          }
           
           console.log('Updated checkbox state in DOM');
         }
@@ -1193,9 +1858,24 @@ function LessonBuilder() {
       const updatedHtml = doc.body.innerHTML;
       console.log('Updated HTML:', updatedHtml.substring(0, 200));
       
+      // Update the content JSON to reflect checkbox state changes
+      let updatedContent = targetBlock.content;
+      try {
+        if (targetBlock.content) {
+          const contentObj = JSON.parse(targetBlock.content);
+          if (contentObj.checkedItems) {
+            contentObj.checkedItems[itemIndex] = checked;
+            updatedContent = JSON.stringify(contentObj);
+          }
+        }
+      } catch (e) {
+        console.log('Could not update content JSON:', e);
+      }
+
       // Update the block in state
       const updatedBlock = {
         ...targetBlock,
+        content: updatedContent,
         html_css: updatedHtml,
         updatedAt: new Date().toISOString()
       };
@@ -1232,7 +1912,7 @@ function LessonBuilder() {
         },
         body: JSON.stringify({
           html_css: updatedHtml,
-          content: targetBlock.content,
+          content: updatedContent,
           type: targetBlock.type,
           listType: targetBlock.listType || targetBlock.details?.listType || 'checkbox',
           details: {
@@ -1487,6 +2167,207 @@ function LessonBuilder() {
     setEditingQuoteBlock(null);
   };
 
+  const handleAudioUpdate = (audioBlock) => {
+    if (editingAudioBlock) {
+      // Update existing audio block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingAudioBlock.id ? {
+            ...block,
+            ...audioBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingAudioBlock.id || block.id === editingAudioBlock.id) ? {
+                ...block,
+                ...audioBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, audioBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, audioBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new audio block - only add to contentBlocks like other block handlers
+        setContentBlocks(prevBlocks => [...prevBlocks, audioBlock]);
+      }
+    }
+
+    // Reset editing state
+    setEditingAudioBlock(null);
+  };
+
+  const handleYouTubeUpdate = (youTubeBlock) => {
+    if (editingYouTubeBlock) {
+      // Update existing YouTube block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingYouTubeBlock.id ? {
+            ...block,
+            ...youTubeBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingYouTubeBlock.id || block.id === editingYouTubeBlock.id) ? {
+                ...block,
+                ...youTubeBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, youTubeBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, youTubeBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new YouTube block - only add to contentBlocks like other block handlers
+        setContentBlocks(prevBlocks => [...prevBlocks, youTubeBlock]);
+      }
+    }
+
+    // Reset editing state
+    setEditingYouTubeBlock(null);
+  };
+
+  const handleVideoUpdate = (videoBlock) => {
+    console.log('handleVideoUpdate called with:', videoBlock);
+    console.log('editingVideoBlock:', editingVideoBlock);
+    
+    if (editingVideoBlock) {
+      // Update existing video block
+      console.log('Updating existing video block');
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingVideoBlock.id ? {
+            ...block,
+            ...videoBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
+      );
+  
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingVideoBlock.id || block.id === editingVideoBlock.id) ? {
+                ...block,
+                ...videoBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
+    } else {
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        console.log('Inserting new video block at position:', insertionPosition);
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, videoBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, videoBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new video block
+        console.log('Adding new video block');
+        setContentBlocks(prevBlocks => [...prevBlocks, videoBlock]);
+      }
+    }
+  
+    // Reset editing state
+    setEditingVideoBlock(null);
+  };
+
+
+
+
   const handleTableUpdate = (blockId, content, htmlContent, templateId) => {
     // Update contentBlocks for new lessons
     setContentBlocks(blocks =>
@@ -1533,7 +2414,21 @@ function LessonBuilder() {
   };
 
   const removeContentBlock = (blockId) => {
+    // Remove from contentBlocks
     setContentBlocks(contentBlocks.filter(block => block.id !== blockId));
+    
+    // Also remove from lessonContent if it exists (for fetched lessons)
+    if (lessonContent?.data?.content) {
+      setLessonContent(prevLessonContent => ({
+        ...prevLessonContent,
+        data: {
+          ...prevLessonContent.data,
+          content: prevLessonContent.data.content.filter(block => 
+            block.block_id !== blockId && block.id !== blockId
+          )
+        }
+      }));
+    }
   };
 
   const updateBlockContent = (blockId, content, heading = null, subheading = null) => {
@@ -1942,12 +2837,12 @@ function LessonBuilder() {
     // Enhanced interactive block detection - check subtype, content structure and HTML patterns
     const isInteractiveBlock = block.type === 'interactive' || 
                               // Check subtype for accordion or tabs
-                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs')) ||
+                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs' || block.subtype === 'labeled-graphic')) ||
                               // Check if content has interactive structure (JSON with template)
                               (() => {
                                 try {
                                   const content = JSON.parse(block.content || '{}');
-                                  return content.template && (content.tabsData || content.accordionData);
+                                  return content.template && (content.tabsData || content.accordionData || content.labeledGraphicData);
                                 } catch {
                                   return false;
                                 }
@@ -1960,7 +2855,9 @@ function LessonBuilder() {
                                 block.html_css.includes('tab-button') ||
                                 block.html_css.includes('accordion-header') ||
                                 block.html_css.includes('data-template="tabs"') ||
-                                block.html_css.includes('data-template="accordion"')
+                                block.html_css.includes('data-template="accordion"') ||
+                                block.html_css.includes('data-template="labeled-graphic"') ||
+                                block.html_css.includes('labeled-graphic-container')
                               ));
 
     if (isInteractiveBlock) {
@@ -2063,6 +2960,9 @@ function LessonBuilder() {
       // Set the editing table block and show the table component in edit mode
       setEditingTableBlock(blockWithType);
       setShowTableComponent(true);
+
+      
+
     } else if (block.type === 'list') {
       // Handle list block editing - open edit dialog directly
       console.log('List block detected for editing:', block);
@@ -2103,6 +3003,39 @@ function LessonBuilder() {
       // Set the editing list block and show the list edit dialog
       setEditingListBlock(blockWithType);
       setShowListEditDialog(true);
+    } else if (block.type === 'audio') {
+      // Handle audio block editing
+      console.log('Audio block detected for editing:', block);
+      setEditingAudioBlock(block);
+      setShowAudioDialog(true);
+    } else if (block.type === 'youtube') {
+      // Handle YouTube block editing
+      console.log('YouTube block detected for editing:', block);
+      setEditingYouTubeBlock(block);
+      setShowYouTubeDialog(true);
+
+    } else if (block.type === 'video') {
+      // Handle video block editing
+      console.log('Video block detected for editing:', block);
+      setEditingVideoBlock(block);
+      setShowVideoDialog(true);
+    } else if (block.type === 'divider') {
+      // Handle divider block editing
+      console.log('Divider block detected for editing:', block);
+      if (dividerComponentRef.current) {
+        dividerComponentRef.current.editDivider(block);
+      }
+    } else if (block.type === 'link') {
+      // Handle link block editing
+      console.log('Link block detected for editing:', block);
+      setCurrentLinkBlock(block);
+      setLinkTitle(block.linkTitle || '');
+      setLinkUrl(block.linkUrl || '');
+      setLinkDescription(block.linkDescription || '');
+      setLinkButtonText(block.linkButtonText || 'Visit Link');
+      setLinkButtonStyle(block.linkButtonStyle || 'primary');
+      setLinkError('');
+      setShowLinkDialog(true);
     } else {
       setCurrentBlock(block);
       setEditModalOpen(true);
@@ -2192,28 +3125,42 @@ function LessonBuilder() {
     e.preventDefault();
     if (draggedBlockId === null || draggedBlockId === targetBlockId) return;
 
-    // Update lesson content order
-    const content = lessonContent.data.content;
-    const sourceIndex = content.findIndex(b => b.block_id === draggedBlockId);
-    const targetIndex = content.findIndex(b => b.block_id === targetBlockId);
+    // Update lesson content order - handle both lessonContent and contentBlocks
+    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
+      const content = lessonContent.data.content;
+      const sourceIndex = content.findIndex(b => (b.block_id || b.id) === draggedBlockId);
+      const targetIndex = content.findIndex(b => (b.block_id || b.id) === targetBlockId);
    
-    if (sourceIndex === -1 || targetIndex === -1) return;
-   
-    const updatedContent = [...content];
-    const [moved] = updatedContent.splice(sourceIndex, 1);
-    updatedContent.splice(targetIndex, 0, moved);
-   
-    // Update the state with new order
-    setLessonContent({
-      ...lessonContent,
-      data: {
-        ...lessonContent.data,
-        content: updatedContent.map((block, index) => ({
-          ...block,
-          order: index + 1
-        }))
-      }
-    });
+      if (sourceIndex === -1 || targetIndex === -1) return;
+     
+      const updatedContent = [...content];
+      const [moved] = updatedContent.splice(sourceIndex, 1);
+      updatedContent.splice(targetIndex, 0, moved);
+     
+      // Update the state with new order
+      setLessonContent({
+        ...lessonContent,
+        data: {
+          ...lessonContent.data,
+          content: updatedContent.map((block, index) => ({
+            ...block,
+            order: index + 1
+          }))
+        }
+      });
+    } else {
+      // Handle contentBlocks drag and drop
+      const sourceIndex = contentBlocks.findIndex(b => (b.id || b.block_id) === draggedBlockId);
+      const targetIndex = contentBlocks.findIndex(b => (b.id || b.block_id) === targetBlockId);
+      
+      if (sourceIndex === -1 || targetIndex === -1) return;
+      
+      const updatedBlocks = [...contentBlocks];
+      const [moved] = updatedBlocks.splice(sourceIndex, 1);
+      updatedBlocks.splice(targetIndex, 0, moved);
+      
+      setContentBlocks(updatedBlocks);
+    }
 
     // Reset drag state
     setDraggedBlockId(null);
@@ -2334,13 +3281,18 @@ function LessonBuilder() {
           const caption = (block.text || block.imageDescription || block.details?.caption || '').toString();
           const title = block.imageTitle || block.details?.alt_text || 'Image';
           if (layout === 'side-by-side') {
+            const alignment = block.alignment || 'left';
+            const imageFirst = alignment === 'left';
+            const imageOrder = imageFirst ? 'order-1' : 'order-2';
+            const textOrder = imageFirst ? 'order-2' : 'order-1';
+            
             html = `
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                  <div>
+                  <div class="${imageOrder}">
                     <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                   </div>
-                  <div>
+                  <div class="${textOrder}">
                     ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
                   </div>
                 </div>
@@ -2674,6 +3626,86 @@ function LessonBuilder() {
             html = '<div class="text-red-500">Error loading interactive content</div>';
           }
         }
+      } else if (block.type === 'audio') {
+        // For audio blocks, use the saved html_css content if available
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from audio content
+          try {
+            const audioContent = JSON.parse(block.content || '{}');
+            html = `
+              <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+                <div class="flex items-start space-x-4">
+                  <div class="flex-shrink-0">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 12a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1v2a1 1 0 01-1 1H9z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="mb-3">
+                      <h3 class="text-lg font-semibold text-gray-900 mb-1">${audioContent.title || 'Audio'}</h3>
+                      ${audioContent.description ? `<p class="text-sm text-gray-600">${audioContent.description}</p>` : ''}
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4">
+                      <audio controls class="w-full" preload="metadata">
+                        <source src="${audioContent.url}" type="audio/mpeg">
+                        <source src="${audioContent.url}" type="audio/wav">
+                        <source src="${audioContent.url}" type="audio/ogg">
+                        Your browser does not support the audio element.
+                      </audio>
+                      ${audioContent.uploadedData ? `
+                        <div class="mt-2 text-xs text-gray-500">
+                          <span class="inline-flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            ${audioContent.uploadedData.fileName}
+                          </span>
+                          <span class="ml-2">${(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          } catch (error) {
+            console.error('Error parsing audio content:', error);
+            html = '<div class="text-red-500">Error loading audio content</div>';
+          }
+        }
+      } else if (block.type === 'video') {
+        // For video blocks, use the saved html_css content if available
+        if (block.html_css && block.html_css.trim()) {
+          html = block.html_css;
+        } else {
+          // Fallback: generate HTML from video block properties
+          const videoUrl = block.videoUrl || block.details?.video_url || '';
+          const videoTitle = (block.videoTitle || block.details?.caption || 'Video').replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+          const videoDescription = block.videoDescription || block.details?.description || '';
+          
+          html = `
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+              <div class="space-y-4">
+                ${videoTitle ? `<h3 class="text-lg font-semibold text-gray-900">${videoTitle}</h3>` : ''}
+                ${videoDescription ? `<p class="text-sm text-gray-600">${videoDescription}</p>` : ''}
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <video controls style="width: 100%; height: auto; border-radius: 8px;">
+                    <source src="${videoUrl}" type="video/mp4">
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } else if (block.type === 'youtube') {
+        // Skip YouTube blocks in convertBlocksToHtml to prevent duplication
+        // YouTube blocks are handled by their own custom rendering logic
+        html = '';
       }
 
       return { html, css, js };
@@ -2681,6 +3713,7 @@ function LessonBuilder() {
   };
 
   const handleUpdate = async () => {
+    // ... (rest of the code remains the same)
     if (!lessonId) {
       toast.error('No lesson ID found. Please save the lesson first.');
       return;
@@ -2688,23 +3721,60 @@ function LessonBuilder() {
 
     try {
       setIsUploading(true);
+      setAutoSaveStatus('saving');
 
       // Merge contentBlocks (newly added) with lessonContent (existing/updated)
       // For existing lessons, we need to use the updated lessonContent.data.content
       // For new lessons, we use contentBlocks
       let blocksToUpdate = [];
       
+      // Use a single source of truth - prioritize contentBlocks for new content
+      // and merge with existing lessonContent only when necessary
       if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-        // For existing lessons, use lessonContent which contains the updated content
-        blocksToUpdate = lessonContent.data.content;
+        console.log('Existing lesson - merging content');
         
-        // Add any new blocks from contentBlocks that aren't in lessonContent
-        const existingBlockIds = new Set(lessonContent.data.content.map(b => b.block_id || b.id));
+        // Start with existing lesson content
+        const existingBlocks = lessonContent.data.content;
+        const existingBlockIds = new Set(existingBlocks.map(b => b.block_id || b.id));
+        
+        // Only add truly new blocks from contentBlocks
         const newBlocks = contentBlocks.filter(b => !existingBlockIds.has(b.id));
-        blocksToUpdate = [...blocksToUpdate, ...newBlocks];
+        
+        console.log('Content merge analysis:', {
+          existingBlocks: existingBlocks.length,
+          newBlocks: newBlocks.length,
+          existingIds: Array.from(existingBlockIds),
+          newIds: newBlocks.map(b => b.id),
+
+        });
+        
+        // Combine existing and new blocks
+        blocksToUpdate = [...existingBlocks, ...newBlocks];
       } else {
-        // For new lessons, use contentBlocks
+        // For new lessons, use contentBlocks as the single source
+        console.log('New lesson - using contentBlocks:', {
+          totalBlocks: contentBlocks.length,
+
+        });
         blocksToUpdate = contentBlocks;
+      }
+      
+      // Remove any duplicate blocks based on ID
+      const uniqueBlocks = [];
+      const seenIds = new Set();
+      blocksToUpdate.forEach(block => {
+        const blockId = block.block_id || block.id;
+        if (!seenIds.has(blockId)) {
+          uniqueBlocks.push(block);
+          seenIds.add(blockId);
+        } else {
+          console.warn('Removing duplicate block during update:', blockId, block.type);
+        }
+      });
+      
+      if (uniqueBlocks.length !== blocksToUpdate.length) {
+        console.warn(`Removed ${blocksToUpdate.length - uniqueBlocks.length} duplicate blocks during update`);
+        blocksToUpdate = uniqueBlocks;
       }
 
       // Allow empty content blocks for deletion operations
@@ -2750,12 +3820,12 @@ function LessonBuilder() {
             };
           }
           
-          // For quote blocks, include explicit quote type metadata
-          if (block.type === 'quote') {
-            blockData.quoteType = block.textType || block.quoteType || 'quote_a';
+          // For divider blocks, include explicit divider type metadata
+          if (block.type === 'divider') {
+            blockData.dividerType = block.subtype || 'continue';
             blockData.details = {
               ...blockData.details,
-              quote_type: block.textType || block.quoteType || 'quote_a',
+              divider_type: block.subtype || 'continue',
               content: block.content || ''
             };
           }
@@ -2770,6 +3840,9 @@ function LessonBuilder() {
               content: block.content || ''
             };
           }
+          
+
+
           
           return blockData;
         }
@@ -2858,15 +3931,21 @@ function LessonBuilder() {
                 alt_text: block.imageTitle || '',
                 layout: layout,
                 template: block.templateType || block.template || undefined,
+                alignment: block.alignment || 'left', // Include alignment in details
               };
 
               if (layout === 'side-by-side') {
+                const alignment = block.alignment || 'left';
+                const imageFirst = alignment === 'left';
+                const imageOrder = imageFirst ? 'order-1' : 'order-2';
+                const textOrder = imageFirst ? 'order-2' : 'order-1';
+                
                 htmlContent = `
                   <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                    <div>
+                    <div class="${imageOrder}">
                       <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                     </div>
-                    <div>
+                    <div class="${textOrder}">
                       ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
                     </div>
                   </div>
@@ -2886,9 +3965,18 @@ function LessonBuilder() {
                   </div>
                 `;
               } else { // centered or default
+                // Handle standalone image alignment
+                const alignment = block.alignment || 'center';
+                let alignmentClass = 'text-center'; // default
+                if (alignment === 'left') {
+                  alignmentClass = 'text-left';
+                } else if (alignment === 'right') {
+                  alignmentClass = 'text-right';
+                }
+                
                 htmlContent = `
-                  <div class="text-center">
-                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
+                  <div class="${alignmentClass}">
+                    <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
                     ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                   </div>
                 `;
@@ -2901,6 +3989,87 @@ function LessonBuilder() {
             details = {
               statement_type: block.statementType || 'statement-a',
               content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'divider':
+            // For divider blocks, include explicit type metadata
+            details = {
+              divider_type: block.subtype || 'continue',
+              content: blockContent
+            };
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'audio':
+            // For audio blocks, extract details from content JSON
+            try {
+              const audioContent = JSON.parse(blockContent || '{}');
+              details = {
+                audioTitle: audioContent.title || 'Audio',
+                audioDescription: audioContent.description || '',
+                audioUrl: audioContent.url || '',
+                audio_url: audioContent.url || '', // Alternative field name
+                uploadMethod: audioContent.uploadMethod || 'url',
+                uploadedData: audioContent.uploadedData || null,
+                title: audioContent.title || 'Audio'
+              };
+            } catch (e) {
+              console.warn('Could not parse audio content for saving:', e);
+              details = {
+                audioTitle: 'Audio',
+                audioDescription: '',
+                audioUrl: '',
+                audio_url: '',
+                uploadMethod: 'url',
+                uploadedData: null,
+                title: 'Audio'
+              };
+            }
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'youtube':
+            // For YouTube blocks, extract details from content JSON
+            try {
+              const youTubeContent = JSON.parse(blockContent || '{}');
+              details = {
+                youTubeTitle: youTubeContent.title || 'YouTube Video',
+                youTubeDescription: youTubeContent.description || '',
+                youTubeUrl: youTubeContent.url || '',
+                youtube_url: youTubeContent.url || '', // Alternative field name
+                videoId: youTubeContent.videoId || '',
+                embedUrl: youTubeContent.embedUrl || '',
+                title: youTubeContent.title || 'YouTube Video'
+              };
+            } catch (e) {
+              console.warn('Could not parse YouTube content for saving:', e);
+              details = {
+                youTubeTitle: 'YouTube Video',
+                youTubeDescription: '',
+                youTubeUrl: '',
+                youtube_url: '',
+                videoId: '',
+                embedUrl: '',
+                title: 'YouTube Video'
+              };
+            }
+            htmlContent = block.html_css || blockContent;
+            break;
+
+          case 'video':
+            // For video blocks, extract details from block properties
+            details = {
+              video_url: block.videoUrl || '',
+              caption: block.videoTitle || 'Video',
+              description: block.videoDescription || '',
+              videoTitle: block.videoTitle || 'Video',
+              videoDescription: block.videoDescription || '',
+              videoUrl: block.videoUrl || '',
+              uploadMethod: block.uploadMethod || 'url',
+              originalUrl: block.originalUrl || '',
+              title: block.videoTitle || 'Video'
             };
             htmlContent = block.html_css || blockContent;
             break;
@@ -2991,13 +4160,18 @@ function LessonBuilder() {
           const layout = block.layout || 'centered';
           const textContent = (block.text || block.imageDescription || '').toString();
           if (layout === 'side-by-side') {
+            const alignment = block.alignment || 'left';
+            const imageFirst = alignment === 'left';
+            const imageOrder = imageFirst ? 'order-1' : 'order-2';
+            const textOrder = imageFirst ? 'order-2' : 'order-1';
+            
             htmlContent = `
               <div class="lesson-image side-by-side">
                 <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-                  <div>
+                  <div class="${imageOrder}">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-auto rounded-lg shadow-lg" />
                   </div>
-                  <div>
+                  <div class="${textOrder}">
                     ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
                   </div>
                 </div>
@@ -3019,10 +4193,19 @@ function LessonBuilder() {
                 </div>
               </div>`;
           } else {
+            // Handle standalone image alignment
+            const alignment = block.alignment || 'center';
+            let alignmentClass = 'text-center'; // default
+            if (alignment === 'left') {
+              alignmentClass = 'text-left';
+            } else if (alignment === 'right') {
+              alignmentClass = 'text-right';
+            }
+            
             htmlContent = `
               <div class="lesson-image centered">
-                <div class="text-center">
-                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg mx-auto" />
+                <div class="${alignmentClass}">
+                  <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full h-auto rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
                   ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
                 </div>
               </div>`;
@@ -3065,6 +4248,13 @@ function LessonBuilder() {
 
       if (response.data && response.data.success) {
         toast.success('Lesson updated successfully!');
+        setAutoSaveStatus('saved');
+        setHasUnsavedChanges(false);
+        
+        // Reset to neutral after 2 seconds
+        setTimeout(() => {
+          setAutoSaveStatus('saved');
+        }, 2000);
       } else {
         throw new Error(response.data?.errorMessage || 'Failed to update lesson content');
       }
@@ -3072,25 +4262,73 @@ function LessonBuilder() {
     } catch (error) {
       console.error('Error updating lesson:', error);
       toast.error(error.response?.data?.errorMessage || 'Failed to update lesson. Please try again.');
+      setAutoSaveStatus('error');
     } finally {
       setIsUploading(false);
     }
   };
 
+  // Auto-save function with optimized debounce
+  const triggerAutoSave = React.useCallback(() => {
+    // Clear any existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new timer for auto-save (800ms debounce for faster response)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      // Only save if we have unsaved changes and a lesson ID
+      if (!lessonId || !hasUnsavedChanges) {
+        return;
+      }
+
+      try {
+        setAutoSaveStatus('saving');
+        await handleUpdate();
+        setAutoSaveStatus('saved');
+        setHasUnsavedChanges(false);
+        
+        // Reset to neutral state after 1.5 seconds
+        setTimeout(() => {
+          setAutoSaveStatus('saved');
+        }, 1500);
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        setAutoSaveStatus('error');
+        toast.error('Auto-save failed. Please try saving manually.');
+      }
+    }, 800); // 800ms debounce for faster response
+  }, [lessonId, hasUnsavedChanges, handleUpdate]);
+
+  // Auto-save when content blocks change
+  React.useEffect(() => {
+    // Don't auto-save on initial load or when loading lesson content
+    if (loading || fetchingContent) return;
+
+    // Skip auto-save on initial load
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      prevContentBlocksRef.current = [...contentBlocks];
+      return;
+    }
+
+    // Check if contentBlocks actually changed
+    const hasChanged = JSON.stringify(prevContentBlocksRef.current) !== JSON.stringify(contentBlocks);
+    
+    if (hasChanged && contentBlocks.length > 0) {
+      setHasUnsavedChanges(true);
+      // Show immediate feedback that changes are detected
+      setAutoSaveStatus('changes_detected');
+      triggerAutoSave();
+      prevContentBlocksRef.current = [...contentBlocks];
+    }
+  }, [contentBlocks, loading, fetchingContent, triggerAutoSave]);
+
   const toggleViewMode = () => {
     // View mode functionality removed - now using Modern Preview only
   };
 
-  const handleVideoDialogClose = () => {
-    setShowVideoDialog(false);
-    setVideoTitle('');
-    setVideoDescription('');
-    setVideoFile(null);
-    setVideoPreview('');
-    setVideoUrl('');
-    setVideoUploadMethod('file');
-    setCurrentBlock(null);
-  };
+   
 
   const handleVideoInputChange = (e) => {
     const { name, value } = e.target;
@@ -3108,297 +4346,7 @@ function LessonBuilder() {
     }
   };
 
-  const handleAddVideo = async () => {
-    // Validate required fields based on upload method
-    if (!videoTitle) {
-      alert('Please enter a video title');
-      return;
-    }
-   
-    if (videoUploadMethod === 'file' && !videoFile) {
-      alert('Please select a video file');
-      return;
-    }
-   
-    if (videoUploadMethod === 'url' && !videoUrl) {
-      alert('Please enter a video URL');
-      return;
-    }
-
-    // Create video URL based on upload method
-    let finalVideoUrl = '';
-    if (videoUploadMethod === 'file') {
-      try {
-        setIsUploading(true);
-        const upload = await uploadVideoResource(videoFile, { folder: 'lesson-videos', public: true, type: 'video' });
-        if (!upload?.success || !upload?.videoUrl) {
-          throw new Error('Video upload failed');
-        }
-        finalVideoUrl = upload.videoUrl;
-      } catch (e) {
-        setIsUploading(false);
-        toast.error(e.message || 'Video upload failed');
-        return;
-      } finally {
-        setIsUploading(false);
-      }
-    } else {
-      finalVideoUrl = videoUrl;
-    }
-
-    // Generate HTML content for display
-    const htmlContent = `
-      <video controls style="width: 100%; max-width: 600px; height: auto; border-radius: 8px;">
-        <source src="${finalVideoUrl}" type="video/mp4">
-        Your browser does not support the video tag.
-      </video>
-      ${videoTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${videoTitle}</p>` : ''}
-      ${videoDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${videoDescription}</p>` : ''}
-    `;
-
-    const videoBlock = {
-      id: currentBlock?.id || `video-${Date.now()}`,
-      block_id: currentBlock?.id || `video-${Date.now()}`,
-      type: 'video',
-      title: 'Video',
-      videoTitle: videoTitle,
-      videoDescription: videoDescription,
-      videoFile: videoUploadMethod === 'file' ? videoFile : null,
-      videoUrl: finalVideoUrl,
-      uploadMethod: videoUploadMethod,
-      originalUrl: videoUploadMethod === 'url' ? videoUrl : null,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentBlock) {
-      // Update existing block
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentBlock.id ? videoBlock : block)
-      );
-      
-      // Also update lessonContent if it exists (for fetched lessons)
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: prevLessonContent.data.content.map(block =>
-              block.block_id === currentBlock.id ? {
-                ...videoBlock,
-                block_id: currentBlock.id,
-                details: {
-                  video_url: finalVideoUrl,
-                  caption: videoTitle,
-                  description: videoDescription
-                }
-              } : block
-            )
-          }
-        }));
-      }
-    } else {
-      // Add new block to local edit list
-      setContentBlocks(prev => [...prev, videoBlock]);
-      
-      // Also add to lessonContent if it exists (for fetched lessons)
-      if (lessonContent?.data?.content) {
-        const newVideoBlock = {
-          ...videoBlock,
-          details: {
-            video_url: finalVideoUrl,
-            caption: videoTitle,
-            description: videoDescription
-          }
-        };
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newVideoBlock]
-          }
-        }));
-      }
-    }
-   
-    handleVideoDialogClose();
-  };
-
-  // AI Image Generation Functions
-  const generateAiImage = async (prompt) => {
-    setAiImageGenerating(true);
-    try {
-      console.log('Generating AI image with prompt:', prompt);
-      
-      // Try Pollinations AI (free alternative)
-      try {
-        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=600&seed=${Date.now()}`;
-        
-        // Test if the URL is accessible
-        const testResponse = await fetch(pollinationsUrl, { method: 'HEAD' });
-        if (testResponse.ok) {
-          console.log('Successfully generated image via Pollinations AI:', pollinationsUrl);
-          setGeneratedAiImage(pollinationsUrl);
-          toast.success('AI image generated successfully!');
-          return pollinationsUrl;
-        }
-      } catch (pollinationsError) {
-        console.log('Pollinations AI not available, trying other options:', pollinationsError);
-      }
-
-      // Try calling through your backend API
-      try {
-        const backendResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/generate-ai-image`, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            prompt: prompt,
-          }),
-        });
-
-        if (backendResponse.ok) {
-          const backendResult = await backendResponse.json();
-          if (backendResult.imageUrl) {
-            console.log('Successfully generated image via backend:', backendResult.imageUrl);
-            setGeneratedAiImage(backendResult.imageUrl);
-            toast.success('AI image generated successfully!');
-            return backendResult.imageUrl;
-          }
-        }
-      } catch (backendError) {
-        console.log('Backend API not available:', backendError);
-      }
-
-      // Try DeepAI (will likely fail due to credits)
-      try {
-        const response = await fetch("https://api.deepai.org/api/text2img", {
-          method: "POST",
-          headers: { 
-            "api-key": "1293f249-b3b7-471b-b69f-8ee0fe482df7",
-            "Content-Type": "application/x-www-form-urlencoded"
-          },
-          body: new URLSearchParams({
-            text: prompt,
-          }),
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.output_url) {
-            console.log('Successfully generated image via DeepAI:', result.output_url);
-            setGeneratedAiImage(result.output_url);
-            toast.success('AI image generated successfully!');
-            return result.output_url;
-          }
-        }
-      } catch (deepaiError) {
-        console.log('DeepAI not available:', deepaiError);
-      }
-
-      // Fallback to related images
-      throw new Error('All AI services unavailable');
-      
-    } catch (error) {
-      console.error('Error generating AI image:', error);
-      
-      // Enhanced fallback: Use Unsplash with prompt keywords
-      try {
-        const keywords = prompt.split(' ').slice(0, 3).join(',');
-        const unsplashUrl = `https://source.unsplash.com/800x600/?${encodeURIComponent(keywords)}`;
-        setGeneratedAiImage(unsplashUrl);
-        toast.info(`Using related image for: ${keywords}`);
-        return unsplashUrl;
-      } catch (fallbackError) {
-        // Final fallback to random image
-        const fallbackUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
-        setGeneratedAiImage(fallbackUrl);
-        toast.warning('Using placeholder image - AI generation unavailable');
-        return fallbackUrl;
-      }
-    } finally {
-      setAiImageGenerating(false);
-    }
-  };
-
-  const handleAiImageGenerate = async () => {
-    if (!aiImagePrompt.trim()) {
-      toast.error('Please enter a prompt for image generation');
-      return;
-    }
-
-    const generatedImageUrl = await generateAiImage(aiImagePrompt);
-    
-    const newBlock = {
-      id: `ai-image-${Date.now()}`,
-      block_id: `ai-image-${Date.now()}`,
-      type: 'image',
-      title: 'AI Generated Image',
-      layout: 'centered',
-      templateType: 'ai-generated',
-      imageUrl: generatedImageUrl,
-      imageTitle: `AI Generated: ${aiImagePrompt.substring(0, 50)}...`,
-      imageDescription: `Generated from prompt: "${aiImagePrompt}"`,
-      text: `AI generated image: ${aiImagePrompt}`,
-      isEditing: false,
-      timestamp: new Date().toISOString(),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1,
-      details: {
-        image_url: generatedImageUrl,
-        caption: `AI generated image: ${aiImagePrompt}`,
-        alt_text: `AI Generated: ${aiImagePrompt.substring(0, 50)}...`,
-        layout: 'centered',
-        template: 'ai-generated',
-        prompt: aiImagePrompt
-      },
-      html_css: `
-        <div class="lesson-image centered">
-          <div class="text-center space-y-4 max-w-4xl mx-auto">
-            <img src="${generatedImageUrl}" alt="AI Generated: ${aiImagePrompt.substring(0, 50)}..." class="mx-auto max-h-96 object-contain rounded-lg shadow-lg border border-gray-200" />
-            <div class="text-sm text-gray-600 italic">
-              <p>AI generated image: ${aiImagePrompt}</p>
-            </div>
-          </div>
-        </div>
-      `
-    };
-
-    // Add to local edit list
-    setContentBlocks(prev => [...prev, newBlock]);
-
-    // Add to lesson content if it exists
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
-      }));
-    }
-
-    handleAiImageDialogClose();
-    toast.success('AI image generated and added to lesson!');
-  };
-
-  const handleAiImageDialogClose = () => {
-    setShowAiImageDialog(false);
-    setAiImagePrompt('');
-    setGeneratedAiImage('');
-    setSelectedImageTemplate(null);
-  };
-
   const handleImageTemplateSelect = (template) => {
-    // Handle AI Generated Image template differently
-    if (template.id === 'ai-generated') {
-      setSelectedImageTemplate(template);
-      setShowImageTemplateSidebar(false);
-      setShowAiImageDialog(true);
-      return;
-    }
 
     const imageUrl = template.defaultContent?.imageUrl || '';
     const imageTitle = template.title;
@@ -3411,6 +4359,7 @@ function LessonBuilder() {
       title: template.title,
       layout: template.layout,
       templateType: template.id,
+      alignment: template.alignment || 'left', // Include alignment from template
       imageUrl: imageUrl,
       imageTitle: imageTitle,
       imageDescription: '',
@@ -3423,32 +4372,77 @@ function LessonBuilder() {
         caption: imageText,
         alt_text: imageTitle,
         layout: template.layout,
-        template: template.id
+        template: template.id,
+        alignment: template.alignment || 'left'
       }
     };
+
+    // Generate HTML content immediately for the new block
+    newBlock.html_css = generateImageBlockHtml(newBlock);
    
-    // Always add to local edit list so it appears immediately in edit mode
-    setContentBlocks(prev => [...prev, newBlock]);
+    // Check if we're inserting at a specific position
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prev => {
+        const newBlocks = [...prev];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+    } else {
+      // Always add to local edit list so it appears immediately in edit mode
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
     setShowImageTemplateSidebar(false);
   };
 
   const handleImageBlockEdit = (blockId, field, value) => {
     setContentBlocks(prev =>
-      prev.map(block =>
-        block.id === blockId
-          ? { ...block, [field]: value }
-          : block
-      )
+      prev.map(block => {
+        if (block.id !== blockId) return block;
+        
+        const updatedBlock = { ...block, [field]: value };
+        
+        // If alignment is being changed, regenerate the HTML
+        if (field === 'alignment') {
+          updatedBlock.html_css = generateImageBlockHtml(updatedBlock);
+        }
+        
+        return updatedBlock;
+      })
     );
   };
 
-  const handleImageFileUpload = async (blockId, file) => {
+  const handleImageFileUpload = async (blockId, file, retryCount = 0) => {
     if (!file) return;
 
     // Set loading state for this specific block
     setImageUploading(prev => ({ ...prev, [blockId]: true }));
 
     try {
+      console.log('Attempting to upload image to AWS S3:', {
+        blockId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        retryCount
+      });
+
       // Upload image to API
       const uploadResult = await uploadImage(file, {
         folder: 'lesson-images', // Optional: organize images in a specific folder
@@ -3456,26 +4450,116 @@ function LessonBuilder() {
       });
 
       if (uploadResult.success && uploadResult.imageUrl) {
-        // Update the block with the uploaded image URL
+        // Update the block with the uploaded AWS S3 image URL
         handleImageBlockEdit(blockId, 'imageUrl', uploadResult.imageUrl);
         handleImageBlockEdit(blockId, 'imageFile', file);
         handleImageBlockEdit(blockId, 'uploadedImageData', uploadResult);
         
-        toast.success('Image uploaded successfully!');
+        // Clear any local URL flag
+        handleImageBlockEdit(blockId, 'isUsingLocalUrl', false);
+        
+        console.log('Image uploaded successfully to AWS S3:', {
+          blockId,
+          awsUrl: uploadResult.imageUrl,
+          uploadResult
+        });
+        
+        toast.success('Image uploaded successfully to AWS S3!');
       } else {
         throw new Error('Upload failed - no image URL returned');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error(error.message || 'Failed to upload image. Please try again.');
+      console.error('Error uploading image to AWS S3:', error);
+      console.error('Upload error details:', {
+        blockId,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        error: error.message,
+        retryCount
+      });
       
-      // Fallback to local URL for immediate preview (optional)
+      // Retry up to 2 times for network errors
+      if (retryCount < 2 && (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('fetch'))) {
+        console.log(`Retrying upload (attempt ${retryCount + 1}/2)...`);
+        // Don't clear loading state, keep it active for retry
+        setTimeout(() => {
+          handleImageFileUpload(blockId, file, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // Exponential backoff
+        return; // Exit early, don't execute finally block
+      }
+      
+      toast.error(`Failed to upload image to AWS S3: ${error.message || 'Unknown error'}. Using local preview.`);
+      
+      // Fallback to local URL for immediate preview (but warn user)
       const localImageUrl = URL.createObjectURL(file);
       handleImageBlockEdit(blockId, 'imageUrl', localImageUrl);
       handleImageBlockEdit(blockId, 'imageFile', file);
+      
+      // Mark that this is using local URL so save function can warn
+      handleImageBlockEdit(blockId, 'isUsingLocalUrl', true);
+      
+      console.warn('Using local blob URL as fallback:', localImageUrl);
     } finally {
       // Clear loading state
       setImageUploading(prev => ({ ...prev, [blockId]: false }));
+    }
+  };
+
+  // Generate HTML content for image blocks
+  const generateImageBlockHtml = (block) => {
+    const layout = block.layout || 'centered';
+    const textContent = (block.text || block.imageDescription || '').toString();
+    const imageUrl = block.imageUrl || '';
+    const imageTitle = block.imageTitle || '';
+    const alignment = block.alignment || block.details?.alignment || 'left';
+
+    if (!imageUrl) return '';
+
+    if (layout === 'side-by-side') {
+      const imageFirst = alignment === 'left';
+      const imageOrder = imageFirst ? 'order-1' : 'order-2';
+      const textOrder = imageFirst ? 'order-2' : 'order-1';
+      
+      return `
+        <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
+          <div class="${imageOrder}">
+            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
+          </div>
+          <div class="${textOrder}">
+            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+          </div>
+        </div>
+      `;
+    } else if (layout === 'overlay') {
+      return `
+        <div class="relative rounded-xl overflow-hidden">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
+          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+        </div>
+      `;
+    } else if (layout === 'full-width') {
+      return `
+        <div class="space-y-3">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
+          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+        </div>
+      `;
+    } else { // centered or default
+      // Handle standalone image alignment
+      let alignmentClass = 'text-center'; // default
+      if (alignment === 'left') {
+        alignmentClass = 'text-left';
+      } else if (alignment === 'right') {
+        alignmentClass = 'text-right';
+      }
+      
+      return `
+        <div class="${alignmentClass}">
+          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
+          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+        </div>
+      `;
     }
   };
 
@@ -3485,16 +4569,59 @@ function LessonBuilder() {
         if (block.id !== blockId) return block;
         if (block.type === 'image') {
           const captionPlainText = getPlainText(block.text || '');
+          
+          // Ensure we're using the uploaded AWS URL, not local URL
+          let finalImageUrl = block.imageUrl || block.details?.image_url || '';
+          
+          // If imageUrl is a local blob URL, try to get the uploaded URL from uploadedImageData
+          if (finalImageUrl.startsWith('blob:') && block.uploadedImageData?.imageUrl) {
+            finalImageUrl = block.uploadedImageData.imageUrl;
+            console.log('Using uploaded AWS URL instead of local blob URL:', finalImageUrl);
+          }
+          
           const updatedDetails = {
             ...(block.details || {}),
-            image_url: block.imageUrl || block.details?.image_url || '',
+            image_url: finalImageUrl,
             caption: (captionPlainText || block.details?.caption || ''),
             alt_text: block.imageTitle || block.details?.alt_text || '',
             layout: block.layout || block.details?.layout,
             template: block.templateType || block.details?.template,
+            alignment: block.alignment || block.details?.alignment || 'left',
           };
-          // Clear html_css so the save/update pipeline regenerates with the latest URL
-          return { ...block, isEditing: false, html_css: '', imageDescription: captionPlainText, details: updatedDetails };
+          
+          // Create updated block with final image URL for HTML generation
+          const updatedBlock = {
+            ...block,
+            imageUrl: finalImageUrl,
+            details: updatedDetails
+          };
+          
+          // Generate HTML content with the correct AWS URL
+          const htmlContent = generateImageBlockHtml(updatedBlock);
+          
+          console.log('Saving image block:', {
+            blockId,
+            layout: block.layout,
+            originalUrl: block.imageUrl,
+            finalUrl: finalImageUrl,
+            isLocalUrl: finalImageUrl.startsWith('blob:'),
+            hasUploadedData: !!block.uploadedImageData,
+            isUsingLocalUrl: block.isUsingLocalUrl
+          });
+          
+          // Warn if still using local URL
+          if (finalImageUrl.startsWith('blob:') || block.isUsingLocalUrl) {
+            console.warn('WARNING: Image block is using local URL instead of AWS S3 URL');
+            toast.warning('Warning: Image is stored locally and may not be accessible after page refresh. Please re-upload the image.');
+          }
+          
+          return { 
+            ...updatedBlock,
+            isEditing: false, 
+            html_css: htmlContent, 
+            imageDescription: captionPlainText, 
+            details: updatedDetails 
+          };
         }
         return { ...block, isEditing: false };
       })
@@ -3616,8 +4743,26 @@ function LessonBuilder() {
             } else {
               setEditorHtml('Master Heading');
             }
+            
+            // Detect gradient from existing content
+            const gradientDiv = tempDiv.querySelector('div[style*="linear-gradient"]');
+            if (gradientDiv) {
+              const style = gradientDiv.getAttribute('style') || '';
+              // Try to match with our gradient options
+              const matchedGradient = gradientOptions.find(option => 
+                style.includes(option.gradient.replace('linear-gradient(', '').replace(')', ''))
+              );
+              if (matchedGradient) {
+                setMasterHeadingGradient(matchedGradient.id);
+              } else {
+                setMasterHeadingGradient('gradient1'); // Default fallback
+              }
+            } else {
+              setMasterHeadingGradient('gradient1'); // Default
+            }
           } else {
             setEditorHtml(htmlContent || 'Master Heading');
+            setMasterHeadingGradient('gradient1'); // Default
           }
         } else {
           // Extract the inner content while preserving rich text formatting for other types
@@ -3682,8 +4827,54 @@ function LessonBuilder() {
           const headingFontWeight = effectiveTextType === 'heading_paragraph' ? 'bold' : '600';
           
           // Use the correct content variables for each template type
-          const headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
-          const paragraphContent = editorContent;
+          let headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
+          let paragraphContent = editorContent;
+          
+          console.log(`${effectiveTextType} - Original heading content:`, headingContent);
+          console.log(`${effectiveTextType} - Original paragraph content:`, paragraphContent);
+          
+          // Process heading content for alignment
+          if (headingContent) {
+            const hasHeadingAlignment = headingContent.includes('ql-align-center') || 
+                                      headingContent.includes('ql-align-right') || 
+                                      headingContent.includes('ql-align-justify') ||
+                                      headingContent.includes('text-align: center') ||
+                                      headingContent.includes('text-align: right') ||
+                                      headingContent.includes('text-align: justify');
+            
+            console.log(`${effectiveTextType} - Has heading alignment classes:`, hasHeadingAlignment);
+            
+            if (hasHeadingAlignment) {
+              headingContent = headingContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+          }
+          
+          // Process paragraph content for alignment
+          if (paragraphContent) {
+            const hasParagraphAlignment = paragraphContent.includes('ql-align-center') || 
+                                        paragraphContent.includes('ql-align-right') || 
+                                        paragraphContent.includes('ql-align-justify') ||
+                                        paragraphContent.includes('text-align: center') ||
+                                        paragraphContent.includes('text-align: right') ||
+                                        paragraphContent.includes('text-align: justify');
+            
+            console.log(`${effectiveTextType} - Has paragraph alignment classes:`, hasParagraphAlignment);
+            
+            if (hasParagraphAlignment) {
+              paragraphContent = paragraphContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+          }
+          
+          console.log(`${effectiveTextType} - Final heading content:`, headingContent);
+          console.log(`${effectiveTextType} - Final paragraph content:`, paragraphContent);
           
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
@@ -3696,43 +4887,254 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextType === 'heading') {
-          // For heading blocks, use same styled container as other blocks
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Heading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Heading') : (editorHtml || 'Heading');
-          const cleanedContent = (extracted || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For heading blocks, preserve Quill editor styling including alignment
+          let styledContent = editorHtml || '<h1>Heading</h1>';
+          
+          console.log('Original editorHtml:', editorHtml);
+          
+          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 24px; font-weight: bold; margin: 0;">${styledContent}</h1>`;
+          } else {
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Has alignment classes:', hasAlignment);
+            console.log('Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Preserve existing styles but ensure proper default size if no size is specified
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 24px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: bold';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: #1F2937';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
+              }
+              return match;
+            });
+          }
+          
+          console.log('Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+                  ${styledContent}
               </article>
             </div>
           `;
         } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, enforce true h2 with fixed size (strip Quill wrappers and inline font-sizes)
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Subheading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Subheading') : (editorHtml || 'Subheading');
-          const cleanedContent = (extracted || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // For subheading blocks, preserve Quill editor styling including alignment
+          let styledContent = editorHtml || '<h2>Subheading</h2>';
+          
+          console.log('Subheading - Original editorHtml:', editorHtml);
+          
+          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
+          } else {
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Subheading - Has alignment classes:', hasAlignment);
+            console.log('Subheading - Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Preserve existing styles but ensure proper default size if no size is specified
+            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 20px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: 600';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: #1F2937';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h2${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0; line-height: 1.2;">`;
+              }
+              return match;
+            });
+          }
+          
+          console.log('Subheading - Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h2 style="font-size: 20px !important; font-weight: 600; color: #374151; margin: 0; line-height: 1.2;">${cleanedContent}</h2>
+                  ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextType === 'master_heading') {
-          const tmp = typeof document !== 'undefined' ? document.createElement('div') : null;
-          if (tmp) { tmp.innerHTML = editorHtml || 'Master Heading'; }
-          const extracted = tmp ? (tmp.textContent || tmp.innerText || 'Master Heading') : (editorHtml || 'Master Heading');
-          const cleanedContent = (extracted || 'Master Heading');
-          updatedContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${cleanedContent}</h1>`;
+          // For master heading, preserve Quill editor styling including alignment and use selected gradient
+          let styledContent = editorHtml || 'Master Heading';
+          
+          // Get the selected gradient
+          const selectedGradient = gradientOptions.find(g => g.id === masterHeadingGradient) || gradientOptions[0];
+          
+          console.log('Master Heading - Original editorHtml:', editorHtml);
+          console.log('Master Heading - Selected gradient:', selectedGradient.name);
+          
+          // Ensure master heading has proper size if no size is specified
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 40px; font-weight: 600; margin: 0;">${styledContent}</h1>`;
+          } else {
+            // Check if content has alignment classes from Quill
+            const hasAlignment = styledContent.includes('ql-align-center') || 
+                               styledContent.includes('ql-align-right') || 
+                               styledContent.includes('ql-align-justify') ||
+                               styledContent.includes('text-align: center') ||
+                               styledContent.includes('text-align: right') ||
+                               styledContent.includes('text-align: justify');
+            
+            console.log('Master Heading - Has alignment classes:', hasAlignment);
+            console.log('Master Heading - Styled content before processing:', styledContent);
+            
+            // If content has Quill alignment classes, convert them to inline styles
+            if (hasAlignment) {
+              styledContent = styledContent
+                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+            }
+            
+            // Ensure h1 tags have proper default size for master heading if no size is specified
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              // Check if style attribute exists
+              if (attrs.includes('style=')) {
+                // Extract existing styles and add default size if not present
+                const styleMatch = attrs.match(/style="([^"]*)"/);
+                if (styleMatch) {
+                  let existingStyles = styleMatch[1];
+                  // Only add font-size if it's not already present
+                  if (!existingStyles.includes('font-size')) {
+                    existingStyles += '; font-size: 40px';
+                  }
+                  if (!existingStyles.includes('font-weight')) {
+                    existingStyles += '; font-weight: 600';
+                  }
+                  if (!existingStyles.includes('color')) {
+                    existingStyles += '; color: white';
+                  }
+                  if (!existingStyles.includes('margin')) {
+                    existingStyles += '; margin: 0';
+                  }
+                  if (!existingStyles.includes('line-height')) {
+                    existingStyles += '; line-height: 1.2';
+                  }
+                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
+                }
+              } else {
+                // No style attribute, add default styles
+                return `<h1${attrs} style="font-size: 40px; font-weight: 600; color: white; margin: 0; line-height: 1.2;">`;
+              }
+              return match;
+            });
+          }
+          
+          console.log('Master Heading - Final styled content:', styledContent);
+          
+          updatedContent = `<div style="background: ${selectedGradient.gradient}; padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
         } else {
-          // For paragraph and other single content blocks - use same styled container as heading/subheading
+          // For paragraph and other single content blocks - preserve alignment
+          let styledContent = editorHtml || 'Enter your content here...';
+          
+          console.log('Paragraph - Original editorHtml:', editorHtml);
+          
+          // Check if content has alignment classes from Quill
+          const hasAlignment = styledContent.includes('ql-align-center') || 
+                             styledContent.includes('ql-align-right') || 
+                             styledContent.includes('ql-align-justify') ||
+                             styledContent.includes('text-align: center') ||
+                             styledContent.includes('text-align: right') ||
+                             styledContent.includes('text-align: justify');
+          
+          console.log('Paragraph - Has alignment classes:', hasAlignment);
+          console.log('Paragraph - Styled content before processing:', styledContent);
+          
+          // If content has Quill alignment classes, convert them to inline styles
+          if (hasAlignment) {
+            styledContent = styledContent
+              .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
+              .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
+              .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
+              .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
+          }
+          
+          console.log('Paragraph - Final styled content:', styledContent);
+          
           updatedContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
                 <div class="prose prose-lg max-w-none text-gray-700">
-                  ${editorHtml || 'Enter your content here...'}
+                  ${styledContent}
                 </div>
               </article>
             </div>
@@ -3810,22 +5212,53 @@ function LessonBuilder() {
             </div>
           `;
         } else if (effectiveTextTypeForNew === 'heading') {
-          const cleanedContent = (editorHtml || 'Heading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // Preserve Quill editor styling including alignment
+          let styledContent = editorHtml || 'Heading';
+          
+          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${styledContent}</h1>`;
+          } else {
+            // Ensure h1 tags have proper default size if no size is specified, but preserve alignment
+            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
+              }
+              return match;
+            });
+          }
+          
           newBlockContent = `
             <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
               <article class="max-w-none">
-                <h1 style="font-size: 24px !important; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${cleanedContent}</h1>
+                ${styledContent}
               </article>
             </div>`;
         } else if (effectiveTextTypeForNew === 'subheading') {
-          const cleanedContent = (editorHtml || 'Subheading').replace(/style="[^"]*font-size[^"]*"/gi, '').replace(/font-size:\s*[^;]+;?/gi, '');
+          // Preserve Quill editor styling including alignment
+          let styledContent = editorHtml || 'Subheading';
+          
+          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
+          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
+            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
+          } else {
+            // Ensure h2 tags have proper default size if no size is specified, but preserve alignment
+            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
+              if (!attrs.includes('style') || !attrs.includes('font-size')) {
+                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
+              }
+              return match;
+            });
+          }
+          
           newBlockContent = `
-                <div class="prose prose-lg max-w-none text-gray-700">
-                  ${editorHtml || 'Enter your content here...'}
+            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+              <article class="max-w-none">
+                <div class="prose prose-lg max-w-none">
+                  ${styledContent}
                 </div>
               </article>
-            </div>
-          `;
+            </div>`;
         }
         
         const newBlock = {
@@ -3876,6 +5309,10 @@ function LessonBuilder() {
     setEditorHtml('');
     setCurrentTextBlockId(null);
     setCurrentTextType(null);
+    setEditorHeading('');
+    setEditorSubheading('');
+    setEditorContent('');
+    setMasterHeadingGradient('gradient1');
   };
 
   const handleEditorSave = () => {
@@ -3958,19 +5395,69 @@ function LessonBuilder() {
         return;
       }
      
-      // Check file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Image size should be less than 10MB');
+      // Check file size (50MB max)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('Image size should be less than 50MB');
         return;
       }
      
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      // Show image editor instead of directly setting the file
+      setImageToEdit(file);
+      setImageEditorTitle('Edit Image');
+      setShowImageEditor(true);
     } else if (name === 'title') {
       setImageTitle(value);
     } else if (name === 'description') {
       setImageDescription(value);
     }
+  };
+
+  // Image Editor callbacks
+  const handleImageEditorSave = (editedFile) => {
+    // Check if this is inline editing (currentBlock has an id)
+    if (currentBlock && currentBlock.id) {
+      // Inline editing - upload the edited file directly
+      handleImageFileUpload(currentBlock.id, editedFile);
+    } else {
+      // Regular image dialog editing
+      setImageFile(editedFile);
+      setImagePreview(URL.createObjectURL(editedFile));
+    }
+    
+    setShowImageEditor(false);
+    setImageToEdit(null);
+    setCurrentBlock(null);
+  };
+
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setImageToEdit(null);
+  };
+
+  // Inline image editing with image editor
+  const handleInlineImageFileUpload = (blockId, file) => {
+    if (!file) return;
+
+    // Check file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload only JPG or PNG images');
+      return;
+    }
+   
+    // Check file size (50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Image size should be less than 50MB');
+      return;
+    }
+
+    // Show image editor for inline editing
+    setImageToEdit(file);
+    setImageEditorTitle('Edit Image');
+    setShowImageEditor(true);
+    
+    // Store the block ID for when the editor saves
+    setCurrentBlock({ id: blockId });
   };
 
   const handleAddImage = async () => {
@@ -4024,12 +5511,17 @@ function LessonBuilder() {
     // Build HTML based on layout when applicable
     let htmlContent = '';
     if (layout === 'side-by-side') {
+      const alignment = currentBlock?.alignment || 'left';
+      const imageFirst = alignment === 'left';
+      const imageOrder = imageFirst ? 'order-1' : 'order-2';
+      const textOrder = imageFirst ? 'order-2' : 'order-1';
+      
       htmlContent = `
         <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div>
+          <div class="${imageOrder}">
             <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
-          <div>
+          <div class="${textOrder}">
             ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
           </div>
         </div>
@@ -4070,6 +5562,9 @@ function LessonBuilder() {
       `;
     }
 
+    // Determine which alignment to use based on layout
+    const finalAlignment = layout === 'side-by-side' ? imageAlignment : standaloneImageAlignment;
+
     const newBlock = {
       id: currentBlock?.id || `image-${Date.now()}`,
       block_id: currentBlock?.id || `image-${Date.now()}`,
@@ -4077,12 +5572,14 @@ function LessonBuilder() {
       title: imageTitle,
       layout: layout || undefined,
       templateType: templateType || undefined,
+      alignment: finalAlignment, // Include appropriate alignment
       details: {
         image_url: imageUrl,
         caption: textContent || '',
         alt_text: imageTitle,
         layout: layout || undefined,
-        template: templateType || undefined
+        template: templateType || undefined,
+        alignment: finalAlignment
       },
       html_css: htmlContent,
       imageTitle: imageTitle,
@@ -4095,8 +5592,33 @@ function LessonBuilder() {
       order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
     };
 
-    if (currentBlock) {
-      // Update existing block locally (edit mode), but ensure we strip tags from text first
+    // Check if we're inserting at a specific position first (highest priority)
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      setContentBlocks(prev => {
+        const newBlocks = [...prev];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
+      });
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
+        });
+      }
+      setInsertionPosition(null);
+      setCurrentBlock(null);
+    } else if (currentBlock && contentBlocks.find(b => b.id === currentBlock.id)) {
+      // Update existing block locally (edit mode) - only if the block actually exists in contentBlocks
       setContentBlocks(prev => prev.map(block => block.id === currentBlock.id ? { ...newBlock, text: getPlainText(newBlock.text || ''), imageDescription: getPlainText(newBlock.imageDescription || '') } : block));
       // If lessonContent exists, also sync the fetched content block
       if (lessonContent?.data?.content) {
@@ -4122,6 +5644,7 @@ function LessonBuilder() {
     } else {
       // Add new block to local edit list immediately
       setContentBlocks(prev => [...prev, newBlock]);
+      setCurrentBlock(null);
     }
    
     handleImageDialogClose();
@@ -4140,6 +5663,15 @@ function LessonBuilder() {
       setImageFile(block.imageFile);
       setImagePreview(block.imageUrl);
       setImageTemplateText(block.text || block.details?.caption || '');
+      
+      // Set appropriate alignment based on layout
+      const blockAlignment = block.alignment || 'left';
+      if (block.layout === 'side-by-side') {
+        setImageAlignment(blockAlignment);
+      } else {
+        setStandaloneImageAlignment(blockAlignment);
+      }
+      
       setShowImageDialog(true);
     }
   };
@@ -4314,91 +5846,7 @@ function LessonBuilder() {
     }
   };
 
-  const handleAddYoutubeVideo = () => {
-    if (!youtubeTitle || !youtubeUrl) {
-      setYoutubeError('Please fill in all required fields');
-      return;
-    }
-
-    const videoId = extractYoutubeId(youtubeUrl);
-    if (!videoId) {
-      setYoutubeError('Please enter a valid YouTube URL');
-      return;
-    }
-
-    // Generate HTML content for display
-    const htmlContent = `
-      <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%; overflow: hidden; border-radius: 8px;">
-        <iframe
-          src="https://www.youtube.com/embed/${videoId}"
-          title="${youtubeTitle || 'YouTube video'}"
-          allowfullscreen
-          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
-        ></iframe>
-      </div>
-      ${youtubeTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${youtubeTitle}</p>` : ''}
-      ${youtubeDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${youtubeDescription}</p>` : ''}
-    `;
-
-    const newBlock = {
-      id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
-      block_id: currentYoutubeBlock?.id || `youtube-${Date.now()}`,
-      type: 'youtube',
-      title: 'YouTube Video',
-      youtubeTitle: youtubeTitle,
-      youtubeDescription: youtubeDescription,
-      youtubeUrl: youtubeUrl,
-      youtubeId: videoId,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentYoutubeBlock) {
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentYoutubeBlock.id ? newBlock : block)
-      );
-    } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
-          }
-        }));
-      } else {
-        setContentBlocks(prev => [...prev, newBlock]);
-      }
-    }
-   
-    handleYoutubeDialogClose();
-  };
-
-  const extractYoutubeId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const handleYoutubeDialogClose = () => {
-    setShowYoutubeDialog(false);
-    setYoutubeTitle('');
-    setYoutubeDescription('');
-    setYoutubeUrl('');
-    setYoutubeError('');
-    setCurrentYoutubeBlock(null);
-  };
-
-  const handleEditYoutubeVideo = (block) => {
-    setCurrentYoutubeBlock(block);
-    setYoutubeTitle(block.youtubeTitle);
-    setYoutubeDescription(block.youtubeDescription || '');
-    setYoutubeUrl(block.youtubeUrl);
-    setShowYoutubeDialog(true);
-  };
+  
 
   const handleLinkDialogClose = () => {
     setShowLinkDialog(false);
@@ -4478,17 +5926,32 @@ function LessonBuilder() {
         prev.map(block => block.id === currentLinkBlock.id ? newBlock : block)
       );
     } else {
-      // Add new block
-      // If we have existing lesson content, add to that structure
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newBlock]
-          }
-        }));
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, newBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, newBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
       } else {
+        // Add new link block - only add to contentBlocks like other block handlers
         setContentBlocks(prev => [...prev, newBlock]);
       }
     }
@@ -4594,8 +6057,34 @@ function LessonBuilder() {
         prev.map(block => block.id === currentBlock.id ? pdfBlock : block)
       );
     } else {
-      // Add new block
-      setContentBlocks(prev => [...prev, pdfBlock]);
+      // Check if we're inserting at a specific position
+      if (insertionPosition !== null) {
+        // Insert at specific position in contentBlocks (always update this for immediate UI)
+        setContentBlocks(prevBlocks => {
+          const newBlocks = [...prevBlocks];
+          newBlocks.splice(insertionPosition, 0, pdfBlock);
+          return newBlocks;
+        });
+        
+        // Also update lessonContent if it exists
+        if (lessonContent?.data?.content) {
+          setLessonContent(prevLessonContent => {
+            const newContent = [...prevLessonContent.data.content];
+            newContent.splice(insertionPosition, 0, pdfBlock);
+            return {
+              ...prevLessonContent,
+              data: {
+                ...prevLessonContent.data,
+                content: newContent
+              }
+            };
+          });
+        }
+        setInsertionPosition(null);
+      } else {
+        // Add new block
+        setContentBlocks(prev => [...prev, pdfBlock]);
+      }
     }
    
     handlePdfDialogClose();
@@ -4685,22 +6174,14 @@ function LessonBuilder() {
                       title: 'Image',
                       layout: b.details?.layout || 'centered',
                       templateType: b.details?.template || undefined,
+                      alignment: b.details?.alignment || 'left', // Extract alignment from details
                       imageUrl: b.details?.image_url || '',
                       imageTitle: b.details?.alt_text || 'Image',
                       imageDescription: b.details?.caption || '',
                       text: b.details?.caption || ''
                     };
                   }
-                  if (b.type === 'audio') {
-                    return {
-                      ...base,
-                      type: 'audio',
-                      title: 'Audio',
-                      audioUrl: b.details?.audio_url || '',
-                      audioTitle: b.details?.caption || 'Audio',
-                      audioDescription: b.details?.description || ''
-                    };
-                  }
+                  
                   if (b.type === 'pdf') {
                     return {
                       ...base,
@@ -4750,6 +6231,30 @@ function LessonBuilder() {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'divider') {
+                    // Determine divider subtype from details, subtype, or HTML
+                    let dividerSubtype = b.details?.divider_type || b.subtype;
+                    if (!dividerSubtype && typeof b.html_css === 'string') {
+                      const html = b.html_css;
+                      if ((html.includes('cursor-pointer') || html.includes('letter-spacing')) && (html.includes('background-color') || html.includes('bg-blue'))) {
+                        dividerSubtype = 'continue';
+                      } else if ((html.includes('rounded-full') || html.includes('border-radius: 50%')) && (html.includes('<hr') || html.includes('border-top'))) {
+                        dividerSubtype = 'numbered_divider';
+                      } else if (html.includes('<hr')) {
+                        dividerSubtype = 'divider';
+                      } else {
+                        dividerSubtype = 'continue';
+                      }
+                    }
+                    return {
+                      ...base,
+                      type: 'divider',
+                      title: 'Divider',
+                      subtype: dividerSubtype || 'continue',
+                      content: b.details?.content || b.content || '',
+                      html_css: b.html_css || ''
+                    };
+                  }
                   if (b.type === 'interactive') {
                     // Detect interactive template type from subtype, content, or HTML patterns
                     let template = b.subtype || b.details?.template;
@@ -4776,6 +6281,9 @@ function LessonBuilder() {
                                  htmlContent.includes('tab-button') ||
                                  htmlContent.includes('interactive-tabs')) {
                         template = 'tabs';
+                      } else if (htmlContent.includes('data-template="labeled-graphic"') || 
+                                 htmlContent.includes('labeled-graphic-container')) {
+                        template = 'labeled-graphic';
                       }
                     }
                     
@@ -4789,6 +6297,106 @@ function LessonBuilder() {
                       html_css: b.html_css || ''
                     };
                   }
+                  if (b.type === 'audio') {
+                    // Reconstruct audio content JSON from database fields
+                    let audioContent = {};
+                    
+                    // Try to parse existing content first
+                    if (b.content) {
+                      try {
+                        audioContent = JSON.parse(b.content);
+                      } catch (e) {
+                        console.log('Could not parse existing audio content, reconstructing from details');
+                      }
+                    }
+                    
+                    // If content is empty or parsing failed, reconstruct from details
+                    if (!audioContent.title && !audioContent.url) {
+                      audioContent = {
+                        title: b.details?.audioTitle || b.details?.title || b.title || 'Audio',
+                        description: b.details?.audioDescription || b.details?.description || '',
+                        uploadMethod: b.details?.uploadMethod || 'url',
+                        url: b.details?.audioUrl || b.details?.audio_url || '',
+                        uploadedData: b.details?.uploadedData || null,
+                        createdAt: b.createdAt || new Date().toISOString()
+                      };
+                    }
+                    
+                    return {
+                      ...base,
+                      type: 'audio',
+                      title: audioContent.title || 'Audio',
+                      content: JSON.stringify(audioContent),
+                      html_css: b.html_css || ''
+                    };
+                  }
+                  if (b.type === 'youtube') {
+                    // Reconstruct YouTube content JSON from database fields
+                    let youTubeContent = {};
+                    
+                    // Try to parse existing content first
+                    if (b.content) {
+                      try {
+                        youTubeContent = JSON.parse(b.content);
+                      } catch (e) {
+                        console.log('Could not parse existing YouTube content, reconstructing from details');
+                      }
+                    }
+                    
+                    // If content is empty or parsing failed, reconstruct from details
+                    if (!youTubeContent.url || youTubeContent.url.trim() === '') {
+                      console.log('Reconstructing YouTube content from details:', b.details);
+                      console.log('Available block data:', {
+                        details: b.details,
+                        content: b.content,
+                        html_css: b.html_css ? 'Present' : 'Missing'
+                      });
+                      
+                      youTubeContent = {
+                        title: b.details?.youTubeTitle || b.details?.title || b.title || 'YouTube Video',
+                        description: b.details?.youTubeDescription || b.details?.description || '',
+                        url: b.details?.youTubeUrl || b.details?.youtube_url || '',
+                        videoId: b.details?.videoId || '',
+                        embedUrl: b.details?.embedUrl || '',
+                        createdAt: b.createdAt || new Date().toISOString()
+                      };
+                      
+                      // If still no URL found, try to extract from html_css as last resort
+                      if (!youTubeContent.url && b.html_css) {
+                        const srcMatch = b.html_css.match(/src="([^"]*youtube\.com\/embed\/[^"]*)"/) || 
+                                        b.html_css.match(/src="([^"]*youtu\.be\/[^"]*)"/) ||
+                                        b.html_css.match(/src="([^"]*youtube\.com\/watch\?v=[^"]*)"/) ;
+                        if (srcMatch) {
+                          const extractedUrl = srcMatch[1];
+                          console.log('Extracted URL from html_css:', extractedUrl);
+                          
+                          // Convert embed URL back to watch URL if needed
+                          let watchUrl = extractedUrl;
+                          if (extractedUrl.includes('/embed/')) {
+                            const videoId = extractedUrl.split('/embed/')[1].split('?')[0];
+                            watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                            youTubeContent.videoId = videoId;
+                            youTubeContent.embedUrl = extractedUrl;
+                          }
+                          youTubeContent.url = watchUrl;
+                        }
+                      }
+                    }
+                    
+                    console.log('YouTube block loading result:', {
+                      blockId: b.id,
+                      finalContent: youTubeContent,
+                      hasUrl: !!youTubeContent.url
+                    });
+                    
+                    return {
+                      ...base,
+                      type: 'youtube',
+                      title: youTubeContent.title || 'YouTube Video',
+                      content: JSON.stringify(youTubeContent),
+                      html_css: b.html_css || ''
+                    };
+                  }
                   // Default map to text block with preserved HTML
                   {
                     const html = b.html_css || '';
@@ -4796,15 +6404,20 @@ function LessonBuilder() {
                     const hasH1 = lowered.includes('<h1');
                     const hasH2 = lowered.includes('<h2');
                     const hasP = lowered.includes('<p');
-                    const detectedType = hasH1 && hasP
-                      ? 'heading_paragraph'
-                      : hasH2 && hasP
-                        ? 'subheading_paragraph'
-                        : hasH1
-                          ? 'heading'
-                          : hasH2
-                            ? 'subheading'
-                            : 'paragraph';
+                    // Check for master heading first (has gradient background)
+                    const isMasterHeading = hasH1 && (lowered.includes('linear-gradient') || lowered.includes('gradient'));
+                    
+                    const detectedType = isMasterHeading
+                      ? 'master_heading'
+                      : hasH1 && hasP
+                        ? 'heading_paragraph'
+                        : hasH2 && hasP
+                          ? 'subheading_paragraph'
+                          : hasH1
+                            ? 'heading'
+                            : hasH2
+                              ? 'subheading'
+                              : 'paragraph';
                     return {
                       ...base,
                       type: 'text',
@@ -4816,14 +6429,8 @@ function LessonBuilder() {
                 });
                 if (mappedEditBlocks.length > 0) {
                   setContentBlocks(mappedEditBlocks);
-                  // Clear lessonContent to prevent duplicate rendering in edit mode
-                  setLessonContent(prev => ({
-                    ...prev,
-                    data: {
-                      ...prev.data,
-                      content: []
-                    }
-                  }));
+                  // Clear lessonContent completely to prevent duplicate rendering in edit mode
+                  setLessonContent(null);
                 }
               } catch (e) {
                 console.warn('Failed to map fetched content to edit blocks:', e);
@@ -4889,6 +6496,7 @@ function LessonBuilder() {
 
     loadLessonData();
   }, [courseId, moduleId, lessonId, navigate, location.state]);
+
 
   if (loading) {
     return (
@@ -4988,11 +6596,44 @@ function LessonBuilder() {
                 <h1 className="text-lg font-bold">{lessonData?.title || lessonTitle || 'Untitled Lesson'}</h1>
               </div>
              
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
+                {/* Auto-save status indicator */}
+                <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-2 text-sm">
+                    {autoSaveStatus === 'changes_detected' && (
+                      <>
+                        <div className="h-4 w-4 rounded-full bg-yellow-500 animate-pulse"></div>
+                        <span className="text-yellow-600 font-medium">Changes detected...</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saving' && (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <span className="text-blue-600 font-medium">Saving...</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'saved' && hasUnsavedChanges === false && (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-green-600 font-medium">All changes saved</span>
+                      </>
+                    )}
+                    {autoSaveStatus === 'error' && (
+                      <>
+                        <X className="h-4 w-4 text-red-600" />
+                        <span className="text-red-600 font-medium">Save failed</span>
+                      </>
+                    )}
+                  </div>
+                  {autoSaveStatus !== 'saving' && autoSaveStatus !== 'changes_detected' && (
+                    <span className="text-xs text-gray-500 mt-0.5">Auto-save enabled</span>
+                  )}
+                </div>
+
                 <Button
                   variant="outline"
                   size="sm"
-                  // onClick={handlePreview}
+                 onClick={handlePreview}
                   className="flex items-center gap-1"
                 >
                   <Eye className="h-4 w-4 mr-1" />
@@ -5003,15 +6644,16 @@ function LessonBuilder() {
                 <Button
                   size="sm"
                   onClick={handleUpdate}
-                  disabled={isUploading}
+                  disabled={isUploading || autoSaveStatus === 'saving'}
+                  title="Manually save changes now"
                 >
-                  {isUploading ? (
+                  {isUploading || autoSaveStatus === 'saving' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Updating...
+                      Saving...
                     </>
                   ) : (
-                    'Update'
+                    'Save Now'
                   )}
                 </Button>
               </div>
@@ -5023,17 +6665,23 @@ function LessonBuilder() {
             <div className="py-4">
                 <div>
                   {/* Always show edit interface since View mode is replaced by Modern Preview */}
-                  {contentBlocks.length === 0 ? (
-                    <div className="min-h-[60vh] flex items-center justify-center">
+                  {(() => {
+                    // Get all blocks from single source of truth
+                    const allBlocks = (lessonContent?.data?.content && lessonContent.data.content.length > 0)
+                      ? lessonContent.data.content
+                      : contentBlocks;
+                    return allBlocks.length === 0;
+                  })() ? (
+                    <div className="h-[calc(100vh-8rem)] flex items-center justify-center px-4 overflow-hidden">
                       <div className="max-w-2xl mx-auto text-center">
                         {/* Beautiful gradient background */}
                         <div className="relative">
                           <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-purple-50 to-pink-100 rounded-3xl transform rotate-1"></div>
-                          <div className="relative bg-white rounded-3xl shadow-xl border border-gray-100 p-12">
+                          <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
                             {/* Animated icon */}
-                            <div className="mb-8 relative">
-                              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="mb-4 relative">
+                              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                 </svg>
                               </div>
@@ -5043,17 +6691,17 @@ function LessonBuilder() {
                             </div>
 
                             {/* Main heading */}
-                            <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-4">
+                            <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 bg-clip-text text-transparent mb-3">
                               Ready to Create Something Amazing?
                             </h2>
                             
                             {/* Subtitle */}
-                            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                            <p className="text-base text-gray-600 mb-6 leading-relaxed">
                               Your lesson canvas is waiting! Start building engaging content by adding blocks from the sidebar.
                             </p>
 
                             {/* Feature highlights */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                               <div className="flex flex-col items-center p-4 bg-blue-50 rounded-xl border border-blue-100">
                                 <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
                                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5084,17 +6732,6 @@ function LessonBuilder() {
                                 <p className="text-sm text-gray-600 text-center">Build lessons in minutes</p>
                               </div>
                             </div>
-
-                            {/* Call to action */}
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                              <div className="flex items-center text-sm text-gray-500">
-                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                                </svg>
-                                Choose a content block from the sidebar to get started
-                              </div>
-                            </div>
-
                             {/* Decorative elements */}
                             <div className="absolute top-4 left-4 w-2 h-2 bg-blue-400 rounded-full opacity-60"></div>
                             <div className="absolute top-8 right-6 w-1 h-1 bg-purple-400 rounded-full opacity-60"></div>
@@ -5105,12 +6742,28 @@ function LessonBuilder() {
                     </div>
                   ) : (
                     <div className="space-y-6 max-w-3xl mx-auto">
-                      {contentBlocks.map((block, index) => (
+                      {(() => {
+                        // Use single source of truth for rendering
+                        const blocksToRender = (lessonContent?.data?.content && lessonContent.data.content.length > 0)
+                          ? lessonContent.data.content
+                          : contentBlocks;
+                        
+                        console.log('Rendering blocks from single source:', {
+                          source: lessonContent?.data?.content?.length > 0 ? 'lessonContent' : 'contentBlocks',
+                          totalBlocks: blocksToRender.length,
+
+                          blockIds: blocksToRender.map(b => b.id || b.block_id)
+                        });
+                        
+                        return blocksToRender.map((block, index) => {
+                          const blockId = block.id || block.block_id;
+                          return (
                         <div
-                          key={block.id}
+                          key={blockId}
+                          data-block-id={blockId}
                           className="relative group bg-white rounded-lg"
                           onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, block.id)}
+                          onDrop={(e) => handleDrop(e, blockId)}
                         >
                           <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             {!block.isEditing && (
@@ -5143,7 +6796,8 @@ function LessonBuilder() {
                             <div
                               className="h-8 w-8 flex items-center justify-center text-gray-400 cursor-move"
                               draggable
-                              onDragStart={(e) => handleDragStart(e, block.id)}
+                              onDragStart={(e) => handleDragStart(e, blockId)}
+                              onDragEnd={handleDragEnd}
                             >
                               <GripVertical className="h-4 w-4" />
                             </div>
@@ -5246,34 +6900,243 @@ function LessonBuilder() {
                                 </div>
                               </div>
                             )}
-                           
-                            {block.type === 'video' && (block.videoUrl || block.details?.video_url) && (
+
+                            {block.type === 'video' && (
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.videoTitle || block.details?.caption}</h3>
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title?.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim() || 'Video'}</h3>
                                   <Badge variant="secondary" className="text-xs">
                                     Video
                                   </Badge>
                                 </div>
-                               
-                                {(block.videoDescription || block.details?.description) && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.videoDescription || block.details?.description}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <video
-                                      className="absolute top-0 left-0 w-full h-full"
-                                      controls
-                                      controlsList="nodownload"
-                                      preload="metadata"
-                                      key={block.id}
-                                    >
-                                      <source src={block.videoUrl || block.details?.video_url} type={block.videoFile?.type || 'video/mp4'} />
-                                      Your browser does not support the video tag.
-                                    </video>
-                                  </div>
+                                
+                                {(() => {
+                                  // First try to get video URL from block properties (for newly created blocks)
+                                  let videoUrl = block.videoUrl || block.details?.video_url || '';
+                                  let videoTitle = (block.videoTitle || block.details?.caption || 'Video').replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+                                  let videoDescription = block.videoDescription || block.details?.description || '';
+                                  
+                                  console.log('Video block edit rendering:', {
+                                    blockId: block.id,
+                                    videoUrl,
+                                    videoTitle,
+                                    videoDescription,
+                                    blockDetails: block.details,
+                                    hasUrl: !!videoUrl
+                                  });
+                                  
+                                  // Check if we have a valid video URL
+                                  if (videoUrl && videoUrl.trim()) {
+                                    // Check if it's a YouTube URL by looking at the content or checking if it's an embed URL
+                                    const isYouTubeVideo = videoUrl.includes('youtube.com/embed') || 
+                                                          (block.content && JSON.parse(block.content).isYouTube) ||
+                                                          (block.details && block.details.isYouTube);
+                                    
+                                    return (
+                                      <>
+                                        {videoDescription && (
+                                          <p className="text-sm text-gray-600 mb-3">{videoDescription}</p>
+                                        )}
+                                        
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          {isYouTubeVideo ? (
+                                            <iframe
+                                              src={videoUrl}
+                                              title={videoTitle}
+                                              className="w-full max-w-full"
+                                              style={{ height: '400px', borderRadius: '8px' }}
+                                              frameBorder="0"
+                                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                              allowFullScreen
+                                            />
+                                          ) : (
+                                            <video controls className="w-full max-w-full" style={{ maxHeight: '400px' }} preload="metadata">
+                                              <source src={videoUrl} type="video/mp4" />
+                                              <source src={videoUrl} type="video/webm" />
+                                              <source src={videoUrl} type="video/ogg" />
+                                              Your browser does not support the video element.
+                                            </video>
+                                          )}
+                                          
+                                        </div>
+                                      </>
+                                    );
+                                  } else {
+                                    // Fallback: Use html_css if video URL not found
+                                    console.log('No URL in video block, falling back to html_css');
+                                    if (block.html_css && block.html_css.trim()) {
+                                      return (
+                                        <div
+                                          className="max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">Video URL not found</p>
+                                          <p className="text-xs text-gray-400 mt-1">Block details: {JSON.stringify(block.details)}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                })()}
+                              </div>
+                            )}
+
+                            {block.type === 'audio' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'Audio'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    Audio
+                                  </Badge>
                                 </div>
+                                
+                                {(() => {
+                                  try {
+                                    const audioContent = JSON.parse(block.content || '{}');
+                                    console.log('Audio block edit rendering:', {
+                                      blockId: block.id,
+                                      audioContent,
+                                      hasUrl: !!audioContent.url,
+                                      url: audioContent.url
+                                    });
+                                    
+                                    // Check if we have a valid audio URL
+                                    if (audioContent.url && audioContent.url.trim()) {
+                                      return (
+                                        <>
+                                          {audioContent.description && (
+                                            <p className="text-sm text-gray-600 mb-3">{audioContent.description}</p>
+                                          )}
+                                          
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <audio controls className="w-full" preload="metadata">
+                                              <source src={audioContent.url} type="audio/mpeg" />
+                                              <source src={audioContent.url} type="audio/wav" />
+                                              <source src={audioContent.url} type="audio/ogg" />
+                                              Your browser does not support the audio element.
+                                            </audio>
+                                            
+                                            {audioContent.uploadedData && (
+                                              <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                                <Volume2 className="h-3 w-3 mr-1" />
+                                                <span>{audioContent.uploadedData.fileName}</span>
+                                                <span className="ml-2">({(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB)</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // Fallback: Use html_css if JSON doesn't have URL
+                                      console.log('No URL in audio content, falling back to html_css');
+                                      if (block.html_css && block.html_css.trim()) {
+                                        return (
+                                          <div
+                                            className="max-w-none"
+                                            dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                          />
+                                        );
+                                      } else {
+                                        return (
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <p className="text-sm text-gray-500">Audio URL not found</p>
+                                            <p className="text-xs text-gray-400 mt-1">Content: {JSON.stringify(audioContent)}</p>
+                                          </div>
+                                        );
+                                      }
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing audio content in edit mode:', e);
+                                    // Fallback: Use html_css if JSON parsing fails
+                                    if (block.html_css && block.html_css.trim()) {
+                                      return (
+                                        <div
+                                          className="max-w-none"
+                                          dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                        />
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">Audio content could not be loaded</p>
+                                          <p className="text-xs text-gray-400 mt-1">Error: {e.message}</p>
+                                        </div>
+                                      );
+                                    }
+                                  }
+                                })()}
+                              </div>
+                            )}
+
+                            {block.type === 'youtube' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">{block.title || 'YouTube Video'}</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    YouTube
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  try {
+                                    const youTubeContent = JSON.parse(block.content || '{}');
+                                    console.log('YouTube block edit rendering:', {
+                                      blockId: block.id,
+                                      youTubeContent,
+                                      hasUrl: !!youTubeContent.url,
+                                      url: youTubeContent.url
+                                    });
+                                    
+                                    // Check if we have a valid YouTube URL
+                                    if (youTubeContent.url && youTubeContent.url.trim()) {
+                                      return (
+                                        <>
+                                          {youTubeContent.description && (
+                                            <p className="text-sm text-gray-600 mb-3">{youTubeContent.description}</p>
+                                          )}
+                                          
+                                          <div className="bg-gray-50 rounded-lg p-4">
+                                            <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
+                                              <iframe
+                                                className="absolute top-0 left-0 w-full h-full"
+                                                src={youTubeContent.embedUrl || youTubeContent.url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                                                title={youTubeContent.title || 'YouTube Video'}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                              />
+                                            </div>
+                                            
+                                            <div className="mt-2 text-xs text-gray-500 flex items-center">
+                                              <Youtube className="h-3 w-3 mr-1 text-red-600" />
+                                              <span>YouTube Video</span>
+                                            </div>
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // No fallback to html_css to prevent duplication
+                                      return (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                          <p className="text-sm text-gray-500">YouTube URL not found</p>
+                                          <p className="text-xs text-gray-400 mt-1">Content: {JSON.stringify(youTubeContent)}</p>
+                                        </div>
+                                      );
+                                    }
+                                  } catch (e) {
+                                    console.error('Error parsing YouTube content in edit mode:', e);
+                                    // No fallback to html_css to prevent duplication
+                                    return (
+                                      <div className="bg-gray-50 rounded-lg p-4">
+                                        <p className="text-sm text-gray-500">YouTube content could not be loaded</p>
+                                        <p className="text-xs text-gray-400 mt-1">Error: {e.message}</p>
+                                      </div>
+                                    );
+                                  }
+                                })()}
                               </div>
                             )}
 
@@ -5391,56 +7254,9 @@ function LessonBuilder() {
                               </div>
                             )}
 
-                            {block.type === 'audio' && (block.audioUrl || block.details?.audio_url) && (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.audioTitle || block.details?.caption}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    Audio
-                                  </Badge>
-                                </div>
-                               
-                                {(block.audioDescription || block.details?.description) && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.audioDescription || block.details?.description}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <audio
-                                    src={block.audioUrl || block.details?.audio_url}
-                                    controls
-                                    className="w-full rounded-lg border border-gray-200"
-                                  />
-                                </div>
-                              </div>
-                            )}
+                            
 
-                            {block.type === 'youtube' && (
-                              <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <h3 className="text-lg font-semibold text-gray-900">{block.youtubeTitle}</h3>
-                                  <Badge variant="secondary" className="text-xs">
-                                    YouTube
-                                  </Badge>
-                                </div>
-                               
-                                {block.youtubeDescription && (
-                                  <p className="text-sm text-gray-600 mb-3">{block.youtubeDescription}</p>
-                                )}
-                               
-                                <div className="bg-gray-50 rounded-lg p-3">
-                                  <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
-                                    <iframe
-                                      src={`https://www.youtube.com/embed/${block.youtubeId}?rel=0&showinfo=0`}
-                                      className="absolute top-0 left-0 w-full h-full"
-                                      frameBorder="0"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                      title={block.youtubeTitle || 'YouTube video player'}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                            
 
                             {block.type === 'pdf' && (
                               <div className="space-y-3">
@@ -5493,7 +7309,7 @@ function LessonBuilder() {
                                             onChange={(e) => {
                                               const file = e.target.files[0];
                                               if (file) {
-                                                handleImageFileUpload(block.id, file);
+                                                handleInlineImageFileUpload(block.id, file);
                                               }
                                             }}
                                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -5525,12 +7341,16 @@ function LessonBuilder() {
                                         {/* Image Preview */}
                                         {(block.imageUrl || block.defaultContent?.imageUrl) && (
                                           <div className="mt-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="text-sm font-medium text-gray-700">Current Image:</span>
+                                              
+                                            </div>
                                             <img
                                             src={block.imageUrl || block.defaultContent?.imageUrl}
                                             alt="Preview"
                                             className="mt-2 max-h-48 w-auto rounded-md border border-gray-300"
                                           />
-                                          </div>
+                                        </div>
                                         )}
                                       </div>
                                     </div>
@@ -5547,6 +7367,39 @@ function LessonBuilder() {
                                         style={{ minHeight: '100px' }}
                                       />
                                     </div>
+                                    
+                                    {/* Image Alignment Options for side-by-side layout */}
+                                    {block.layout === 'side-by-side' && (
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                          Image Alignment
+                                        </label>
+                                        <div className="flex gap-4">
+                                          <label className="flex items-center">
+                                            <input
+                                              type="radio"
+                                              name={`alignment-${block.id}`}
+                                              value="left"
+                                              checked={block.alignment === 'left'}
+                                              onChange={(e) => handleImageBlockEdit(block.id, 'alignment', e.target.value)}
+                                              className="mr-2"
+                                            />
+                                            <span className="text-sm">Image Left, Text Right</span>
+                                          </label>
+                                          <label className="flex items-center">
+                                            <input
+                                              type="radio"
+                                              name={`alignment-${block.id}`}
+                                              value="right"
+                                              checked={block.alignment === 'right'}
+                                              onChange={(e) => handleImageBlockEdit(block.id, 'alignment', e.target.value)}
+                                              className="mr-2"
+                                            />
+                                            <span className="text-sm">Image Right, Text Left</span>
+                                          </label>
+                                        </div>
+                                      </div>
+                                    )}
                                    
                                     {/* Save and Cancel Buttons */}
                                     <div className="flex justify-end gap-2 pt-3 border-t border-gray-200">
@@ -5580,6 +7433,25 @@ function LessonBuilder() {
                                   <div>
                                     {block.layout === 'side-by-side' && (
                                       <div className="flex gap-3 items-start">
+                                        {block.alignment === 'right' ? (
+                                          // Image Right, Text Left
+                                          <>
+                                            <div className="w-1/2">
+                                              <p className="text-sm text-gray-600 line-clamp-4">
+                                                {getPlainText(block.text || '').substring(0, 60)}...
+                                              </p>
+                                            </div>
+                                            <div className="w-1/2">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-20 object-cover rounded"
+                                              />
+                                            </div>
+                                          </>
+                                        ) : (
+                                          // Image Left, Text Right (default)
+                                          <>
                                         <div className="w-1/2">
                                           <img
                                             src={block.imageUrl}
@@ -5592,6 +7464,8 @@ function LessonBuilder() {
                                             {getPlainText(block.text || '').substring(0, 60)}...
                                           </p>
                                         </div>
+                                          </>
+                                        )}
                                       </div>
                                     )}
                                     {block.layout === 'overlay' && (
@@ -5609,11 +7483,11 @@ function LessonBuilder() {
                                       </div>
                                     )}
                                     {block.layout === 'centered' && (
-                                      <div className="text-center space-y-3">
+                                      <div className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}>
                                         <img
                                           src={block.imageUrl}
                                           alt="Image"
-                                          className="mx-auto h-20 object-cover rounded"
+                                          className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
                                         />
                                         <p className="text-sm text-gray-600 italic line-clamp-2">
                                           {getPlainText(block.text || '').substring(0, 40)}...
@@ -5636,9 +7510,49 @@ function LessonBuilder() {
                                 )}
                               </>
                             )}
+
+                            {/* Divider Content */}
+                            {block.type === 'divider' && (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900">Divider</h3>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {block.subtype || 'Divider'}
+                                  </Badge>
+                                </div>
+                                
+                                {block.html_css ? (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  />
+                                ) : (
+                                  <div
+                                    className="max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: block.content }}
+                                  />
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Inline Block Insertion - Plus Button */}
+                          <div className="flex justify-center items-center py-1">
+                            <button
+                              onClick={() => {
+                                setInsertionPosition(index + 1);
+                                setShowInsertBlockDialog(true);
+                              }}
+                              className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+                              title="Insert block here"
+                            >
+                              <Plus className="h-5 w-5" />
+                            </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                        })
+                      })()}
                     </div>
                   )}
                 </div>
@@ -5648,159 +7562,13 @@ function LessonBuilder() {
         </div>
 
       {/* Video Dialog */}
-      <Dialog open={showVideoDialog} onOpenChange={handleVideoDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Video</DialogTitle>
-            <p className="text-sm text-gray-500">Upload a video file or provide a video URL</p>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Video Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={videoTitle}
-                onChange={(e) => setVideoTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter video title"
-                required
-              />
-            </div>
-
-            {/* Upload Method Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Method <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="uploadMethod"
-                    value="file"
-                    checked={videoUploadMethod === 'file'}
-                    onChange={(e) => setVideoUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Upload File
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="uploadMethod"
-                    value="url"
-                    checked={videoUploadMethod === 'url'}
-                    onChange={(e) => setVideoUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Video URL
-                </label>
-              </div>
-            </div>
-
-            {/* File Upload Section */}
-            {videoUploadMethod === 'file' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video File <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <div className="flex text-sm text-gray-600">
-                      <label
-                        htmlFor="video-upload"
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                      >
-                        <span>Upload a file</span>
-                        <input
-                          id="video-upload"
-                          name="file"
-                          type="file"
-                          accept="video/mp4,video/webm,video/ogg"
-                          className="sr-only"
-                          onChange={handleVideoInputChange}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      MP4, WebM, or OGG up to 50MB
-                    </p>
-                  </div>
-                </div>
-                {videoPreview && videoUploadMethod === 'file' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <video
-                      src={videoPreview}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* URL Input Section */}
-            {videoUploadMethod === 'url' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Video URL <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="https://example.com/video.mp4"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-                </p>
-                {videoUrl && videoUploadMethod === 'url' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <video
-                      src={videoUrl}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                      onError={() => console.log('Video URL may be invalid or not accessible')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={videoDescription}
-                onChange={(e) => setVideoDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your video (optional)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleVideoDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddVideo}
-              disabled={!videoTitle || (videoUploadMethod === 'file' && !videoFile) || (videoUploadMethod === 'url' && !videoUrl)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isUploading ? 'Uploading...' : 'Add Video'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <VideoComponent
+  showVideoDialog={showVideoDialog}
+  setShowVideoDialog={setShowVideoDialog}
+  onVideoUpdate={handleVideoUpdate}
+  editingVideoBlock={editingVideoBlock}
+      />
+       
 
       {/* Text Editor Dialog */}
       <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
@@ -5833,7 +7601,7 @@ function LessonBuilder() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Heading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '350px' }}>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white" style={{ height: '350px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
@@ -5841,6 +7609,7 @@ function LessonBuilder() {
                           modules={getToolbarModules('heading')}
                           placeholder="Enter your heading text..."
                           style={{ height: '300px' }}
+                          className="quill-editor-overflow-visible"
                         />
                       </div>
                     </div>
@@ -5854,7 +7623,7 @@ function LessonBuilder() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Subheading
                       </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '35px' }}>
+                      <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white" style={{ height: '350px' }}>
                         <ReactQuill
                           theme="snow"
                           value={editorHtml}
@@ -5862,6 +7631,7 @@ function LessonBuilder() {
                           modules={getToolbarModules('heading')}
                           placeholder="Enter your subheading text..."
                           style={{ height: '300px' }}
+                          className="quill-editor-overflow-visible"
                         />
                       </div>
                     </div>
@@ -5880,7 +7650,7 @@ function LessonBuilder() {
                           theme="snow"
                           value={editorHtml}
                           onChange={setEditorHtml}
-                          modules={getToolbarModules('full')}
+                          modules={getToolbarModules('paragraph')}
                           placeholder="Enter your paragraph text..."
                           style={{ height: '300px' }}
                         />
@@ -5897,7 +7667,7 @@ function LessonBuilder() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Heading
                         </label>
-                        <div className="border rounded-md bg-white" style={{ height: '120px', overflow: 'visible' }}>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorHeading}
@@ -5905,6 +7675,7 @@ function LessonBuilder() {
                             modules={getToolbarModules('heading')}
                             placeholder="Type and format your heading here"
                             style={{ height: '80px' }}
+                            className="quill-editor-overflow-visible"
                           />
                         </div>
                       </div>
@@ -5912,14 +7683,15 @@ function LessonBuilder() {
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Paragraph
                         </label>
-                        <div className="border rounded-md bg-white" style={{ height: '230px', overflow: 'visible' }}>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '230px' }}>
                           <ReactQuill
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={getToolbarModules('full')}
+                            modules={getToolbarModules('paragraph')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
+                            className="quill-editor-overflow-visible"
                           />
                         </div>
                       </div>
@@ -5955,7 +7727,7 @@ function LessonBuilder() {
                             theme="snow"
                             value={editorContent}
                             onChange={setEditorContent}
-                            modules={getToolbarModules('full')}
+                            modules={getToolbarModules('paragraph')}
                             placeholder="Type and format your paragraph text here"
                             style={{ height: '180px' }}
                           />
@@ -5986,20 +7758,80 @@ function LessonBuilder() {
                   );
                 }
                
+                // Master Heading with gradient options
+                if (textType === 'master_heading') {
+                  return (
+                    <div className="flex-1 flex flex-col gap-4 h-full">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Master Heading
+                        </label>
+                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
+                          <ReactQuill
+                            theme="snow"
+                            value={editorHtml}
+                            onChange={setEditorHtml}
+                            modules={getToolbarModules('heading')}
+                            placeholder="Enter your master heading text..."
+                            style={{ height: '80px' }}
+                            className="quill-editor-overflow-visible"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex-shrink-0">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Gradient Color
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {gradientOptions.map((option) => (
+                            <div
+                              key={option.id}
+                              className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all ${
+                                masterHeadingGradient === option.id
+                                  ? 'border-blue-500 ring-2 ring-blue-200'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => setMasterHeadingGradient(option.id)}
+                            >
+                              <div 
+                                className={`h-8 w-full rounded bg-gradient-to-r ${option.preview} mb-2`}
+                                style={{ background: option.gradient }}
+                              />
+                              <p className="text-xs text-center text-gray-600 font-medium">
+                                {option.name}
+                              </p>
+                              {masterHeadingGradient === option.id && (
+                                <div className="absolute top-1 right-1">
+                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+               
                 // Default fallback for new blocks or unknown types
                 return (
                   <div className="flex-1 flex flex-col h-full">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Heading
                     </label>
-                    <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white">
+                    <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white">
                       <ReactQuill
                         theme="snow"
                         value={editorHtml}
                         onChange={setEditorHtml}
                         modules={getToolbarModules('heading')}
                         placeholder="Enter your heading text..."
-                        className="flex-1"
+                        className="flex-1 quill-editor-overflow-visible"
                       />
                     </div>
                   </div>
@@ -6097,7 +7929,7 @@ function LessonBuilder() {
                       value={editorContent}
                       onChange={setEditorContent}
                       theme="snow"
-                      modules={getToolbarModules('full')}
+                      modules={getToolbarModules('paragraph')}
                       placeholder="Type and format your content here"
                       style={{ height: '300px' }}
                     />
@@ -6345,7 +8177,6 @@ function LessonBuilder() {
         </div>
       )}
 
-
       {/* Quote Component */}
       <QuoteComponent
         showQuoteTemplateSidebar={showQuoteTemplateSidebar}
@@ -6355,6 +8186,22 @@ function LessonBuilder() {
         onQuoteTemplateSelect={handleQuoteTemplateSelect}
         onQuoteUpdate={handleQuoteUpdate}
         editingQuoteBlock={editingQuoteBlock}
+      />
+
+      {/* Audio Component */}
+      <AudioComponent
+        showAudioDialog={showAudioDialog}
+        setShowAudioDialog={setShowAudioDialog}
+        onAudioUpdate={handleAudioUpdate}
+        editingAudioBlock={editingAudioBlock}
+      />
+
+      {/* YouTube Component */}
+      <YouTubeComponent
+        showYouTubeDialog={showYouTubeDialog}
+        setShowYouTubeDialog={setShowYouTubeDialog}
+        onYouTubeUpdate={handleYouTubeUpdate}
+        editingYouTubeBlock={editingYouTubeBlock}
       />
 
       {/* Interactive Component */}
@@ -6367,6 +8214,17 @@ function LessonBuilder() {
         onInteractiveUpdate={handleInteractiveUpdate}
         editingInteractiveBlock={editingInteractiveBlock}
       />
+
+      {/* Divider Component */}
+      <DividerComponent
+        ref={dividerComponentRef}
+        showDividerTemplateSidebar={showDividerTemplateSidebar}
+        setShowDividerTemplateSidebar={setShowDividerTemplateSidebar}
+        onDividerTemplateSelect={handleDividerTemplateSelect}
+        editingDividerBlock={null}
+        onDividerUpdate={handleDividerUpdate}
+      />
+
 
       {/* Image Dialog */}
       <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>
@@ -6408,6 +8266,77 @@ function LessonBuilder() {
                 placeholder="Enter text to show with or on the image"
               />
             </div>
+            
+            {/* Image Alignment Options */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Image Alignment
+              </label>
+              <div className="space-y-2">
+                <div className="text-sm text-gray-600 mb-2">For Image & Text blocks:</div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="imageAlignment"
+                      value="left"
+                      checked={imageAlignment === 'left'}
+                      onChange={(e) => setImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Image Left, Text Right</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="imageAlignment"
+                      value="right"
+                      checked={imageAlignment === 'right'}
+                      onChange={(e) => setImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Image Right, Text Left</span>
+                  </label>
+                </div>
+                
+                <div className="text-sm text-gray-600 mb-2 mt-4">For standalone images:</div>
+                <div className="flex gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="left"
+                      checked={standaloneImageAlignment === 'left'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Left Aligned</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="center"
+                      checked={standaloneImageAlignment === 'center'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Center Aligned</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="standaloneImageAlignment"
+                      value="right"
+                      checked={standaloneImageAlignment === 'right'}
+                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
+                      className="mr-2"
+                    />
+                    <span className="text-sm">Right Aligned</span>
+                  </label>
+                </div>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Image File <span className="text-red-500">*</span>
@@ -6428,7 +8357,7 @@ function LessonBuilder() {
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    JPG, PNG up to 10MB
+                    JPG, PNG up to 50MB
                   </p>
                 </div>
               </div>
@@ -6463,247 +8392,22 @@ function LessonBuilder() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Audio Dialog */}
-      <Dialog open={showAudioDialog} onOpenChange={handleAudioDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Audio</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Audio Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={audioTitle}
-                onChange={handleAudioInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter audio title"
-                required
-              />
-            </div>
-
-            {/* Upload Method Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Method <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="audioUploadMethod"
-                    value="file"
-                    checked={audioUploadMethod === 'file'}
-                    onChange={(e) => setAudioUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Upload File
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="audioUploadMethod"
-                    value="url"
-                    checked={audioUploadMethod === 'url'}
-                    onChange={(e) => setAudioUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Audio URL
-                </label>
-              </div>
-            </div>
-
-            {/* File Upload Section */}
-            {audioUploadMethod === 'file' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Audio File <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          type="file"
-                          name="file"
-                          className="sr-only"
-                          accept="audio/mpeg,audio/wav,audio/ogg"
-                          onChange={handleAudioInputChange}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      MP3, WAV, or OGG up to 20MB
-                    </p>
-                  </div>
-                </div>
-                {audioPreview && audioUploadMethod === 'file' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
-                      src={audioPreview}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* URL Input Section */}
-            {audioUploadMethod === 'url' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Audio URL <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter audio URL (e.g., https://example.com/audio.mp3)"
-                  required
-                />
-                {audioUrl && audioUploadMethod === 'url' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <audio
-                      src={audioUrl}
-                      controls
-                      className="w-full rounded-lg border border-gray-200"
-                      onError={() => console.log('Audio URL may be invalid or not accessible')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                name="description"
-                value={audioDescription}
-                onChange={handleAudioInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your audio (optional)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleAudioDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddAudio}
-              disabled={!audioTitle || (audioUploadMethod === 'file' && !audioFile) || (audioUploadMethod === 'url' && !audioUrl)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Add Audio
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* YouTube Dialog */}
-      <Dialog open={showYoutubeDialog} onOpenChange={handleYoutubeDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add YouTube Video</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Video Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={youtubeTitle}
-                onChange={(e) => setYoutubeTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter video title"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                YouTube Video URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="url"
-                value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://www.youtube.com/watch?v=..."
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ
-              </p>
-              {youtubeError && (
-                <p className="text-sm text-red-500 mt-1">{youtubeError}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={youtubeDescription}
-                onChange={(e) => setYoutubeDescription(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your video (optional)"
-              />
-            </div>
-
-            {youtubeUrl && extractYoutubeId(youtubeUrl) && (
-              <div className="mt-4">
-                <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
-                <div className="aspect-w-16 aspect-h-9">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYoutubeId(youtubeUrl)}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-64 rounded-lg border border-gray-200"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleYoutubeDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddYoutubeVideo}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              Add Video
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       
+      {/* Image Editor */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageFile={imageToEdit}
+        onSave={handleImageEditorSave}
+        title={imageEditorTitle}
+      />
+
 
       {/* Link Dialog */}
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Link</DialogTitle>
+            <DialogTitle>{currentLinkBlock ? 'Edit Link' : 'Add Link'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -6798,106 +8502,12 @@ function LessonBuilder() {
               onClick={handleAddLink}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              Add Link
+              {currentLinkBlock ? 'Save' : 'Add Link'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* AI Image Generation Dialog */}
-      <Dialog open={showAiImageDialog} onOpenChange={handleAiImageDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Generate AI Image</DialogTitle>
-            <p className="text-sm text-gray-500">Describe the image you want to generate using AI</p>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image Prompt <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={aiImagePrompt}
-                onChange={(e) => setAiImagePrompt(e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Describe the image you want to generate... (e.g., 'A serene mountain landscape at sunset with a lake reflection')"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Be descriptive and specific for better results. Include style, mood, colors, and composition details.
-              </p>
-            </div>
-
-            {/* Preview Section */}
-            {generatedAiImage && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Generated Preview
-                </label>
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <img
-                    src={generatedAiImage}
-                    alt="AI Generated Preview"
-                    className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
-                  />
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Prompt: "{aiImagePrompt}"
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Generation Status */}
-            {aiImageGenerating && (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600">Generating your AI image...</p>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleAiImageDialogClose}>
-              Cancel
-            </Button>
-            {!generatedAiImage ? (
-              <Button
-                onClick={() => generateAiImage(aiImagePrompt)}
-                disabled={!aiImagePrompt.trim() || aiImageGenerating}
-                className="bg-purple-600 hover:bg-purple-700"
-              >
-                {aiImageGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Generating...
-                  </>
-                ) : (
-                  'Generate Image'
-                )}
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => generateAiImage(aiImagePrompt)}
-                  disabled={aiImageGenerating}
-                  className="border-purple-600 text-purple-600 hover:bg-purple-50"
-                >
-                  Regenerate
-                </Button>
-                <Button
-                  onClick={handleAiImageGenerate}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Add to Lesson
-                </Button>
-              </div>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* PDF Dialog */}
       <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>
@@ -7038,15 +8648,22 @@ function LessonBuilder() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handlePdfDialogClose}>
+            <Button variant="outline" onClick={handlePdfDialogClose} disabled={mainPdfUploading}>
               Cancel
             </Button>
             <Button
               onClick={handleAddPdf}
-              disabled={!pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
+              disabled={mainPdfUploading || !pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {currentBlock ? 'Update PDF' : 'Add PDF'}
+              {mainPdfUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {pdfUploadMethod === 'file' ? 'Uploading PDF...' : 'Adding PDF...'}
+                </>
+              ) : (
+                currentBlock ? 'Update PDF' : 'Add PDF'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -7062,6 +8679,44 @@ function LessonBuilder() {
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
       />
+
+      {/* Insert Block Dialog */}
+      <Dialog open={showInsertBlockDialog} onOpenChange={setShowInsertBlockDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Insert Content Block</DialogTitle>
+            <p className="text-sm text-gray-600 mt-2">
+              Choose a block type to insert at this position
+            </p>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+            {contentBlockTypes.map((blockType) => (
+              <button
+                key={blockType.id}
+                onClick={() => {
+                  handleBlockClick(blockType, insertionPosition);
+                  setShowInsertBlockDialog(false);
+                }}
+                className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group"
+              >
+                <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-blue-100 flex items-center justify-center text-gray-600 group-hover:text-blue-600 mb-3 transition-colors">
+                  {blockType.icon}
+                </div>
+                <h3 className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 text-center transition-colors">
+                  {blockType.title}
+                </h3>
+              </button>
+            ))}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInsertBlockDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </>
   );

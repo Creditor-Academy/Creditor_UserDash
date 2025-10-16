@@ -62,9 +62,4 @@ export const contentBlockTypes = [
     title: 'Tables',
     icon: <Table className="h-5 w-5" />
   },
-  {
-    id: 'scorm',
-    title: 'SCORM',
-    icon: <Box className="h-5 w-5" />
-  }
 ];

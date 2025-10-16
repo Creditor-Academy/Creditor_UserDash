@@ -9,7 +9,6 @@ const styles = {
     fontSize: "1.07rem",
     borderRadius: "16px 16px 0 0",
     overflow: "hidden",
-    marginTop: "40px",
   },
   topSection: {
     display: "flex",
