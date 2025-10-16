@@ -29,6 +29,23 @@ import {
 } from 'lucide-react';
 import { fetchCourseAnalytics, fetchCourseAndEnrollments } from '@/services/analyticsService';
 import { toast } from 'sonner';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart,
+} from 'recharts';
 
 export function CourseActivityAnalytics() {
   const [loading, setLoading] = useState(true);
@@ -272,6 +289,166 @@ export function CourseActivityAnalytics() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4 md:space-y-6">
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
+            {/* Bar Chart - Top vs Bottom Courses */}
+            <Card className="border border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-blue-600" />
+                  Course Activity Comparison
+                </CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  Enrollments in last 30 days
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[...mostActiveCourses, ...mostInactiveCourses].map((course, idx) => ({
+                      name: course.title.length > 15 ? course.title.substring(0, 15) + '...' : course.title,
+                      enrollments: course.activeUsers,
+                      fill: idx < mostActiveCourses.length ? '#4f46e5' : '#6b7280',
+                    }))}
+                    margin={{ top: 20, right: 20, left: -10, bottom: 60 }}
+                  >
+                    <defs>
+                      <linearGradient id="activeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.7}/>
+                      </linearGradient>
+                      <linearGradient id="inactiveGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#6b7280" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" strokeWidth={1} />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{ fontSize: 12, fill: '#374151' }}
+                      stroke="#9ca3af"
+                      strokeWidth={1}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: '#374151' }} 
+                      stroke="#9ca3af"
+                      strokeWidth={1}
+                      tickLine={{ stroke: '#d1d5db' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#ffffff', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        padding: '12px'
+                      }}
+                      formatter={(value, name, props) => [
+                        `${value} enrollments`, 
+                        'Last 30 Days'
+                      ]}
+                      labelStyle={{ color: '#374151', fontWeight: '600' }}
+                    />
+                    <Bar 
+                      dataKey="enrollments" 
+                      fill="url(#activeGradient)" 
+                      radius={[6, 6, 0, 0]}
+                      stroke="#ffffff"
+                      strokeWidth={1}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Pie Chart - Activity Distribution */}
+            <Card className="border border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-purple-600" />
+                  Activity Distribution
+                </CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  Courses by activity level
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <defs>
+                      <linearGradient id="highGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#4f46e5" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#3730a3" stopOpacity={0.7}/>
+                      </linearGradient>
+                      <linearGradient id="moderateGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.6}/>
+                      </linearGradient>
+                      <linearGradient id="lowGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#9ca3af" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#6b7280" stopOpacity={0.6}/>
+                      </linearGradient>
+                    </defs>
+                    <Pie
+                      data={[
+                        { 
+                          name: 'High Activity', 
+                          value: allCoursesActivity.filter(c => c.activeUsers >= 20).length,
+                          color: 'url(#highGradient)'
+                        },
+                        { 
+                          name: 'Moderate', 
+                          value: allCoursesActivity.filter(c => c.activeUsers >= 10 && c.activeUsers < 20).length,
+                          color: 'url(#moderateGradient)'
+                        },
+                        { 
+                          name: 'Low Activity', 
+                          value: allCoursesActivity.filter(c => c.activeUsers < 10).length,
+                          color: 'url(#lowGradient)'
+                        },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={85}
+                      innerRadius={25}
+                      fill="#8884d8"
+                      dataKey="value"
+                      stroke="#ffffff"
+                      strokeWidth={2}
+                    >
+                      {[
+                        { color: 'url(#highGradient)' },
+                        { color: 'url(#moderateGradient)' },
+                        { color: 'url(#lowGradient)' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#ffffff', 
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        padding: '12px'
+                      }}
+                      formatter={(value) => [`${value} courses`, '']}
+                      labelStyle={{ color: '#374151', fontWeight: '600' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Course Cards Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Most Active Courses */}
             <div>
@@ -316,10 +493,99 @@ export function CourseActivityAnalytics() {
 
         {/* All Courses Tab */}
         <TabsContent value="all-courses" className="space-y-3 md:space-y-4">
+          {/* Area Chart - All Courses Overview */}
+          <Card className="border border-gray-200 mb-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                All Courses Performance
+              </CardTitle>
+              <CardDescription className="text-xs md:text-sm">
+                30-day enrollment activity for all courses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart
+                  data={allCoursesActivity.slice(0, 10).map((course, idx) => ({
+                    name: course.title.length > 20 ? course.title.substring(0, 20) + '...' : course.title,
+                    enrollments: course.activeUsers,
+                    total: course.enrollments,
+                  }))}
+                  margin={{ top: 20, right: 20, left: -10, bottom: 80 }}
+                >
+                  <defs>
+                    <linearGradient id="colorEnrollments" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" strokeWidth={1} />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                    tick={{ fontSize: 12, fill: '#374151' }}
+                    stroke="#9ca3af"
+                    strokeWidth={1}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12, fill: '#374151' }} 
+                    stroke="#9ca3af"
+                    strokeWidth={1}
+                    tickLine={{ stroke: '#d1d5db' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#ffffff', 
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      fontSize: '13px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                      padding: '12px'
+                    }}
+                    formatter={(value, name) => [
+                      `${value}`,
+                      name === 'enrollments' ? 'Last 30 Days' : 'Total Enrolled'
+                    ]}
+                    labelStyle={{ color: '#374151', fontWeight: '600' }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '13px', paddingTop: '15px', color: '#374151' }}
+                    formatter={(value) => value === 'enrollments' ? 'Last 30 Days' : 'Total Enrolled'}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="enrollments" 
+                    stroke="#4f46e5" 
+                    fillOpacity={1} 
+                    fill="url(#colorEnrollments)" 
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total" 
+                    stroke="#059669" 
+                    strokeWidth={3}
+                    strokeLinecap="round"
+                    dot={{ fill: '#059669', r: 5, stroke: '#ffffff', strokeWidth: 2 }}
+                    activeDot={{ r: 7, stroke: '#059669', strokeWidth: 2, fill: '#ffffff' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3 md:mb-4">
             <div className="flex flex-wrap items-center gap-2">
               <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-blue-600" />
-              <h3 className="text-base md:text-lg font-semibold text-gray-900">All Courses</h3>
+              <h3 className="text-base md:text-lg font-semibold text-gray-900">All Courses List</h3>
               <span className="text-xs md:text-sm text-gray-500">({courseStats.totalCourses} total)</span>
             </div>
           </div>
