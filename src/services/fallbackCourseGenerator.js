@@ -303,6 +303,11 @@ class FallbackCourseGenerator {
    * @returns {string} Extracted subject
    */
   extractSubjectFromTitle(title) {
+    // Handle undefined or null title
+    if (!title || typeof title !== 'string') {
+      return 'General Topic';
+    }
+    
     // Remove common course prefixes/suffixes
     const cleaned = title
       .replace(/^(Introduction to|Learn|Master|Complete|Comprehensive|Advanced|Basic|Beginner|Intermediate)\s+/i, '')

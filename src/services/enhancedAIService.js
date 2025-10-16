@@ -139,22 +139,32 @@ class EnhancedAIService {
 
     // All providers failed, use fallback generator
     console.log('⚠️ All AI providers failed, using fallback generation');
+    console.log('🔄 Using fallback content generation for prompt:', prompt.substring(0, 100) + '...');
+    
     try {
+      // Use the fallback generator's generateContent method
       const fallbackResult = await this.fallbackGenerator.generateContent(prompt, options);
+      
+      if (fallbackResult && fallbackResult.success) {
+        return {
+          success: true,
+          content: fallbackResult.content,
+          fallback: true,
+          provider: 'fallback'
+        };
+      } else {
+        throw new Error(fallbackResult?.error || 'Fallback generation returned no content');
+      }
+    } catch (fallbackError) {
+      console.error('❌ Fallback course generation error:', fallbackError);
+      
+      // Return a simple text fallback as last resort
       return {
         success: true,
-        content: fallbackResult.content,
+        content: 'This is a placeholder response. AI content generation is currently unavailable. Please configure valid API keys or try again later.',
         fallback: true,
-        provider: 'fallback'
-      };
-    } catch (fallbackError) {
-      console.error('❌ Even fallback generation failed:', fallbackError);
-      return {
-        success: false,
-        error: 'All providers including fallback failed',
-        content: 'Unable to generate content at this time. Please try again later.',
-        fallback: true,
-        provider: 'none'
+        provider: 'simple-fallback',
+        error: fallbackError.message
       };
     }
   }

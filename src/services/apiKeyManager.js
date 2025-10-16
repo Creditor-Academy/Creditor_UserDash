@@ -136,6 +136,7 @@ class ApiKeyManager {
     // Check for placeholder values
     const placeholders = [
       'your_api_key_here',
+      'your_ope********here',
       'sk-placeholder',
       'hf_placeholder',
       'test_key',

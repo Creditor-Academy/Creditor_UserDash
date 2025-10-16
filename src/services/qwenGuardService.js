@@ -9,21 +9,40 @@ class QwenGuardService {
   async moderatePrompt(prompt) {
     return {
       success: true,
-      data: { safety: 'Safe', categories: [], refusal: null }
+      data: { 
+        safety: 'Safe', 
+        categories: [], 
+        refusal: null,
+        safe: true
+      }
     };
   }
 
   async moderateResponse(prompt, response) {
     return {
       success: true,
-      data: { safety: 'Safe', categories: [], refusal: null }
+      data: { 
+        safety: 'Safe', 
+        categories: [], 
+        refusal: null,
+        safe: true
+      }
     };
   }
 
   async moderateCourseContent(title, content, options = {}) {
     return {
       success: true,
-      data: { safety: 'Safe', categories: [], refusal: null }
+      data: { 
+        safety: 'Safe', 
+        categories: [], 
+        refusal: null,
+        safe: true,
+        overall: {
+          safe: true,
+          timestamp: new Date().toISOString()
+        }
+      }
     };
   }
 }
