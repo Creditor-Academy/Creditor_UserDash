@@ -5,37 +5,25 @@ import {
   Sparkles, 
   BookOpen, 
   FileText, 
-  Image as ImageIcon, 
-  Video, 
-  AudioLines, 
-  Users, 
-  BarChart3, 
   Settings,
   ChevronLeft,
   ChevronRight,
   Loader2,
   Check,
   Upload,
-  Plus,
   Book,
-  Heading1,
-  Text,
-  List,
-  Quote,
-  Table
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   generateAICourseOutline,
   generateSafeCourseOutline,
-  createCompleteAICourse, 
-  generateAndUploadCourseImage 
+  createCompleteAICourse
 } from '../../services/aiCourseService';
 import { createModule, createLesson, updateLessonContent } from '../../services/courseService';
-import aiService from '../../services/aiService';
 import enhancedAIService from '../../services/enhancedAIService';
 import { uploadImage } from '@/services/imageUploadService';
-import AILessonCreator from './AILessonCreator';
 import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
 import '../../styles/AITextEditor.css';
@@ -75,7 +63,14 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [textEditorType, setTextEditorType] = useState('paragraph');
   const [generatedTextBlocks, setGeneratedTextBlocks] = useState([]);
   const [generationMode, setGenerationMode] = useState('STANDARD');
+  const [showFullscreenOutline, setShowFullscreenOutline] = useState(false);
+  const [liveModules, setLiveModules] = useState([]);
+  const [currentGeneratingModule, setCurrentGeneratingModule] = useState(null);
+  const [currentGeneratingLesson, setCurrentGeneratingLesson] = useState(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [modifyPrompt, setModifyPrompt] = useState('');
   const fileInputRef = useRef(null);
+  const outlineScrollRef = useRef(null);
 
   // Handle text editor save
   const handleTextEditorSave = (textData) => {
@@ -176,17 +171,22 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const generateCourseOutline = async () => {
     if (!courseData.title.trim()) return;
     
+    // Open fullscreen view
+    setShowFullscreenOutline(true);
     setIsGenerating(true);
     setModerationResults(null);
+    setLiveModules([]);
+    setGenerationProgress(0);
+    
+    // Include uploaded files and source content in the request
+    const courseDataWithContent = {
+      ...courseData,
+      uploadedFiles: uploadedFiles,
+      referenceUrls: uploadedFiles.map(f => f.url),
+      sourceContent: sourceContent
+    };
     
     try {
-      // Include uploaded files and source content in the request
-      const courseDataWithContent = {
-        ...courseData,
-        uploadedFiles: uploadedFiles,
-        referenceUrls: uploadedFiles.map(f => f.url),
-        sourceContent: sourceContent
-      };
       
       let result;
       
@@ -220,6 +220,11 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         console.log('📋 Generated course outline data:', result.data);
         console.log('📋 Number of modules generated:', result.data?.modules?.length || 0);
         console.log('📋 Module details:', result.data?.modules);
+        
+        // Stream modules with animation
+        if (result.data?.modules && result.data.modules.length > 0) {
+          await streamModulesToLive(result.data.modules);
+        }
         
         // Ensure we have modules in the outline
         const outlineData = result.data;
@@ -277,6 +282,106 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       });
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(100);
+    }
+  };
+
+  // Stream modules one by one with animation effect
+  const streamModulesToLive = async (modules) => {
+    const totalModules = modules.length;
+    
+    for (let i = 0; i < modules.length; i++) {
+      const module = modules[i];
+      setCurrentGeneratingModule(module);
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const enhancedModule = {
+        id: module.id || `module-${i + 1}`,
+        title: module.module_title || module.title,
+        description: module.description || '',
+        lessons: [],
+        order: i + 1
+      };
+
+      // Stream lessons
+      if (module.lessons && module.lessons.length > 0) {
+        for (let j = 0; j < module.lessons.length; j++) {
+          const lesson = module.lessons[j];
+          setCurrentGeneratingLesson(lesson);
+          
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          enhancedModule.lessons.push({
+            id: `lesson-${i}-${j}`,
+            title: lesson.lesson_title || lesson.title,
+            description: lesson.description || '',
+            duration: lesson.duration || '15 min',
+            order: j + 1
+          });
+          
+          setLiveModules(prev => {
+            const updated = [...prev];
+            const existingIndex = updated.findIndex(m => m.id === enhancedModule.id);
+            if (existingIndex >= 0) {
+              updated[existingIndex] = { ...enhancedModule };
+            } else {
+              updated.push({ ...enhancedModule });
+            }
+            return updated;
+          });
+        }
+      } else {
+        setLiveModules(prev => [...prev, enhancedModule]);
+      }
+      
+      setCurrentGeneratingModule(null);
+      setCurrentGeneratingLesson(null);
+      setGenerationProgress(Math.round(((i + 1) / totalModules) * 100));
+    }
+  };
+
+  // Regenerate with custom prompt
+  const handleRegenerateOutline = async () => {
+    if (!modifyPrompt.trim()) return;
+    
+    setIsGenerating(true);
+    setLiveModules([]);
+    setGenerationProgress(0);
+    
+    try {
+      const result = await generateAICourseOutline({
+        ...courseData,
+        additionalPrompt: modifyPrompt,
+        uploadedFiles: uploadedFiles,
+        sourceContent: sourceContent
+      });
+      
+      if (result.success && result.data) {
+        const outlineData = result.data;
+        if (!outlineData.modules || outlineData.modules.length === 0) {
+          outlineData.modules = [
+            {
+              id: 1,
+              title: `Introduction to ${courseData.title}`,
+              module_title: `Introduction to ${courseData.title}`,
+              description: 'Getting started',
+              lessons: [{ id: 1, title: 'Overview', lesson_title: 'Overview', duration: '10 min' }]
+            }
+          ];
+        }
+        
+        await streamModulesToLive(outlineData.modules);
+        
+        setAiOutline(outlineData);
+        setGeneratedContent(prev => ({ ...prev, outline: outlineData }));
+        setModifyPrompt('');
+      }
+    } catch (error) {
+      console.error('Failed to regenerate outline:', error);
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress(100);
     }
   };
 
@@ -1215,30 +1320,305 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
               </div>
             )}
           </motion.div>
-            
-            {/* Enhanced AI Lesson Creator Modal */}
-            {showLessonCreator && (
-              <EnhancedAILessonCreator
-                isOpen={showLessonCreator}
-                onClose={() => setShowLessonCreator(false)}
-                courseTitle={courseData.title}
-                courseData={courseData}
-                aiOutline={aiOutline}
-                onLessonsCreated={handleLessonsCreated}
-              />
-            )}
-            
-            {/* AI Text Editor Modal */}
-            {showTextEditor && (
-              <AITextEditor
-                isOpen={showTextEditor}
-                onClose={() => setShowTextEditor(false)}
-                onSave={handleTextEditorSave}
-                initialContent={textEditorContent}
-                initialType={textEditorType}
-                title="AI Course Content Editor"
-              />
-            )}
+          
+          {/* Enhanced AI Lesson Creator Modal */}
+          {showLessonCreator && (
+            <EnhancedAILessonCreator
+              isOpen={showLessonCreator}
+              onClose={() => setShowLessonCreator(false)}
+              courseTitle={courseData.title}
+              courseData={courseData}
+              aiOutline={aiOutline}
+              onLessonsCreated={handleLessonsCreated}
+            />
+          )}
+          
+          {/* AI Text Editor Modal */}
+          {showTextEditor && (
+            <AITextEditor
+              isOpen={showTextEditor}
+              onClose={() => setShowTextEditor(false)}
+              onSave={handleTextEditorSave}
+              initialContent={textEditorContent}
+              initialType={textEditorType}
+              title="AI Course Content Editor"
+            />
+          )}
+          
+          {/* Fullscreen Live Outline Generator */}
+          {showFullscreenOutline && (
+            <React.Fragment>
+              <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 bg-white z-[9999] flex flex-col">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 flex items-center justify-between flex-shrink-0 shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowFullscreenOutline(false)}
+                      className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <Sparkles className="w-6 h-6" />
+                    <div>
+                      <h2 className="text-xl font-bold">AI Course Outline Generator</h2>
+                      <p className="text-sm text-white/80">{courseData.title}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    {!isGenerating && liveModules.length > 0 && (
+                      <Button
+                        onClick={() => {
+                          setShowFullscreenOutline(false);
+                          setShowLessonCreator(true);
+                        }}
+                        className="bg-white text-purple-600 hover:bg-gray-100"
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Continue with Lessons
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 flex overflow-hidden">
+                  {/* LEFT: Live Generation View */}
+                  <div className="flex-1 flex flex-col bg-gray-50 border-r border-gray-200 overflow-hidden">
+                    {/* Progress Bar */}
+                    <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {isGenerating && (
+                            <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                          )}
+                          {!isGenerating && liveModules.length > 0 && (
+                            <Check className="w-4 h-4 text-green-600" />
+                          )}
+                          <span className="text-sm font-medium text-gray-700">
+                            {isGenerating ? 'Generating course outline...' : liveModules.length > 0 ? 'Course outline generated!' : 'Ready to generate'}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-500">{generationProgress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <motion.div 
+                          className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${generationProgress}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    </div>
+                    {/* Generated Modules List */}
+                    <div 
+                      ref={outlineScrollRef}
+                      className="flex-1 overflow-y-auto px-6 py-6 space-y-4"
+                    >
+                      {liveModules.length === 0 && isGenerating && (
+                        <div className="text-center py-12">
+                          <Loader2 className="w-12 h-12 animate-spin text-purple-600 mx-auto mb-4" />
+                          <p className="text-gray-500">Analyzing and generating your course outline...</p>
+                        </div>
+                      )}
+
+                      <AnimatePresence mode="popLayout">
+                        {liveModules.map((module, moduleIndex) => (
+                          <motion.div
+                            key={module.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
+                          >
+                            {/* Module Header */}
+                            <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-5 py-4 border-b border-gray-200">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-lg">
+                                  {moduleIndex + 1}
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-semibold text-gray-900">{module.title}</h3>
+                                  {module.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{module.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                    <span className="flex items-center gap-1">
+                                      <BookOpen className="w-3 h-3" />
+                                      {module.lessons?.length || 0} lessons
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Lessons List */}
+                            {module.lessons && module.lessons.length > 0 && (
+                              <div className="px-5 py-3 space-y-2">
+                                {module.lessons.map((lesson, lessonIndex) => {
+                                  const delay = lessonIndex * 0.05;
+                                  return (
+                                    <motion.div
+                                      key={lesson.id}
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      transition={{ delay, duration: 0.3 }}
+                                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-medium">
+                                        {lessonIndex + 1}
+                                      </div>
+                                      <div className="flex-1">
+                                        <h4 className="text-sm font-medium text-gray-900">{lesson.title}</h4>
+                                        {lesson.description && (
+                                          <p className="text-xs text-gray-500 mt-0.5">{lesson.description}</p>
+                                        )}
+                                      </div>
+                                      {lesson.duration && (
+                                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          {lesson.duration}
+                                        </span>
+                                      )}
+                                    </motion.div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+
+                      {/* Currently Generating Indicator */}
+                      {currentGeneratingModule && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="bg-white rounded-lg shadow-sm border border-purple-200 p-5"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Generating: {currentGeneratingModule.module_title || currentGeneratingModule.title}
+                              </p>
+                              {currentGeneratingLesson && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  → {currentGeneratingLesson.lesson_title || currentGeneratingLesson.title}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT: Control Panel */
+                  <div className="w-96 bg-white flex flex-col border-l border-gray-200">
+                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                      <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-purple-600" />
+                        Outline Controls
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Modify or regenerate the outline
+                      </p>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+                      {/* Course Info */
+                      <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-100">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Course Details</h4>
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-600">Title:</span>
+                            <p className="font-medium text-gray-900">{courseData.title}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Subject:</span>
+                            <p className="font-medium text-gray-900">{courseData.subject || 'General'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Difficulty:</span>
+                            <p className="font-medium text-gray-900 capitalize">{courseData.difficulty}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Statistics */}
+                      {liveModules.length > 0 && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-center gap-2 mb-1">
+                              <BookOpen className="w-4 h-4 text-purple-600" />
+                              <span className="text-xs text-gray-600">Modules</span>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">{liveModules.length}</p>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-center gap-2 mb-1">
+                              <FileText className="w-4 h-4 text-blue-600" />
+                              <span className="text-xs text-gray-600">Lessons</span>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">
+                              {(() => {
+                                let total = 0;
+                                for (const m of liveModules) {
+                                  total += m.lessons?.length || 0;
+                                }
+                                return total;
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Modification Controls - Only show when outline exists */}
+                      {liveModules.length > 0 && (
+                        <>
+                          {/* Modification Prompt */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Modify Outline (Optional)
+                            </label>
+                            <textarea
+                              value={modifyPrompt}
+                              onChange={(e) => setModifyPrompt(e.target.value)}
+                              placeholder="E.g., 'Add more lessons on advanced topics' or 'Make it more beginner-friendly'"
+                              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none text-sm"
+                              disabled={isGenerating}
+                            />
+                            <p className="text-xs text-gray-500 mt-2">
+                              Describe how you want to modify the outline
+                            </p>
+                          </div>
+
+                          <Button
+                            onClick={handleRegenerateOutline}
+                            disabled={!modifyPrompt.trim() || isGenerating}
+                            className="w-full bg-purple-600 hover:bg-purple-700"
+                          >
+                            {isGenerating ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Regenerating...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Regenerate Outline
+                              </>
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </React.Fragment>
+          )}
           </>
         )}
       </AnimatePresence>

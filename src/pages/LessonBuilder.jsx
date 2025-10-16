@@ -8568,26 +8568,35 @@ function LessonBuilder() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   PDF File <span className="text-red-500">*</span>
                 </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                <div 
+                  onClick={() => document.getElementById('pdf-file-upload-input')?.click()}
+                  className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer"
+                >
                   <div className="space-y-1 text-center">
                     <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          type="file"
-                          name="file"
-                          className="sr-only"
-                          accept="application/pdf"
-                          onChange={handlePdfInputChange}
-                        />
+                      <label htmlFor="pdf-file-upload-input" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 px-2">
+                        <span className="pointer-events-none">Upload a file</span>
                       </label>
-                      <p className="pl-1">or drag and drop</p>
+                      <p className="pl-1 pointer-events-none">or drag and drop</p>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 pointer-events-none">
                       PDF up to 20MB
                     </p>
+                    {pdfFile && (
+                      <p className="text-sm text-green-600 font-medium pointer-events-none">
+                        ✓ {pdfFile.name}
+                      </p>
+                    )}
                   </div>
                 </div>
+                <input
+                  id="pdf-file-upload-input"
+                  type="file"
+                  name="file"
+                  className="hidden"
+                  accept="application/pdf"
+                  onChange={handlePdfInputChange}
+                />
                 {pdfPreview && pdfUploadMethod === 'file' && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>

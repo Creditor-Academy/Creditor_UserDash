@@ -128,10 +128,15 @@ class UniversalAILessonService {
     try {
       const prompt = `Create an engaging introduction for the lesson "${lessonTitle}" in the module "${moduleTitle}" of the course "${courseTitle}". The introduction should hook the reader, set clear expectations, and explain what they will learn. Keep it concise but compelling.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 300,
         temperature: 0.7
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       return {
         id: `ai-intro-${Date.now()}`,
@@ -157,10 +162,15 @@ class UniversalAILessonService {
     try {
       const prompt = `Create 4-6 clear, specific learning objectives for the lesson "${lessonTitle}". Each objective should start with an action verb (understand, analyze, apply, create, evaluate) and be measurable. Format as a simple list.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 200,
         temperature: 0.6
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       // Parse objectives into array
       const objectives = content ? 
@@ -210,10 +220,15 @@ class UniversalAILessonService {
       // Content
       const prompt = `Explain the key concepts and fundamental principles of "${lessonTitle}". Provide clear definitions and explanations that are easy to understand. Include the most important concepts that students need to master.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 400,
         temperature: 0.7
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       blocks.push({
         id: `ai-concepts-content-${Date.now()}`,
@@ -248,10 +263,15 @@ class UniversalAILessonService {
 
       const prompt = `Provide 3-4 practical examples or real-world applications of "${lessonTitle}". Make them relevant, specific, and easy to understand. Show how the concepts apply in different contexts.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 350,
         temperature: 0.8
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       blocks.push({
         id: `ai-examples-content-${Date.now()}`,
@@ -285,10 +305,15 @@ class UniversalAILessonService {
 
       const prompt = `List 5-7 best practices or important tips related to "${lessonTitle}". Make them actionable and practical. Format as clear, concise points.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 300,
         temperature: 0.6
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       const practices = content ? 
         content.split('\n').filter(line => line.trim()).map(practice => practice.replace(/^\d+\.?\s*/, '').replace(/^[-•]\s*/, '').trim()) :
@@ -333,10 +358,15 @@ class UniversalAILessonService {
 
       const prompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking. Make them open-ended and engaging.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 250,
         temperature: 0.7
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       const questions = content ? 
         content.split('\n').filter(line => line.trim() && line.includes('?')).map(q => q.replace(/^\d+\.?\s*/, '').trim()) :
@@ -380,10 +410,15 @@ class UniversalAILessonService {
 
       const prompt = `Create a concise summary of the key takeaways from the lesson "${lessonTitle}". Include the most important points students should remember and how they can apply this knowledge.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 200,
         temperature: 0.6
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       blocks.push({
         id: `ai-summary-content-${Date.now()}`,
@@ -426,10 +461,15 @@ class UniversalAILessonService {
     try {
       const prompt = `Create a structured outline for the lesson "${lessonTitle}" in the module "${moduleTitle}". Include main topics, subtopics, and key points. Format as a hierarchical structure.`;
       
-      const content = await this.aiService.generateText(prompt, {
+      const result = await this.aiService.generateText(prompt, {
         maxTokens: 400,
         temperature: 0.6
       });
+
+      // Extract text from result object
+      const content = result?.success 
+        ? (result.data?.text || result.content || '') 
+        : '';
 
       blocks.push({
         id: `ai-outline-${Date.now()}`,

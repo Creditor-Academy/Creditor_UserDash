@@ -14,18 +14,12 @@ class EnhancedAIService {
     this.initializeAPIs();
     
     // Define model priorities for different tasks
+    // REDUCED to prevent excessive API calls and infinite loops
     this.modelPriorities = {
       textGeneration: [
         { provider: 'openai', model: 'gpt-3.5-turbo', priority: 1 },
         { provider: 'huggingface-router', model: 'HuggingFaceH4/zephyr-7b-beta:featherless-ai', priority: 2 },
-        { provider: 'huggingface', model: 'OpenAssistant/oasst-sft-7-llama-2-13b', priority: 3 },
-        { provider: 'huggingface', model: 'HuggingFaceH4/zephyr-7b-beta', priority: 4 },
-        { provider: 'huggingface', model: 'facebook/bart-large-cnn', priority: 5 },
-        { provider: 'huggingface', model: 'microsoft/DialoGPT-large', priority: 6 },
-        { provider: 'huggingface', model: 'google/flan-t5-large', priority: 7 },
-        { provider: 'huggingface', model: 'meta-llama/Llama-3.1-8B-Instruct', priority: 8 },
-        { provider: 'huggingface', model: 'tiiuae/falcon-7b-instruct', priority: 9 },
-        { provider: 'huggingface', model: 'gpt2-medium', priority: 10 }
+        { provider: 'huggingface', model: 'HuggingFaceH4/zephyr-7b-beta', priority: 3 }
       ],
       imageGeneration: [
         { provider: 'deepai', model: 'text2img', priority: 1 },
@@ -87,6 +81,8 @@ class EnhancedAIService {
    */
   async generateText(prompt, options = {}) {
     const providers = this.modelPriorities.textGeneration;
+    let unauthorizedCount = 0;
+    const maxUnauthorized = 2; // Stop after 2 consecutive 401 errors
     
     for (const provider of providers) {
       try {
@@ -111,6 +107,16 @@ class EnhancedAIService {
           console.log(`✅ Text generation successful with ${provider.provider}`);
           return result;
         }
+        
+        // Check for unauthorized errors
+        if (result.error && (result.error.includes('401') || result.error.includes('Unauthorized') || result.error.includes('Invalid credentials'))) {
+          unauthorizedCount++;
+          console.warn(`🔑 Unauthorized error ${unauthorizedCount}/${maxUnauthorized}`);
+          if (unauthorizedCount >= maxUnauthorized) {
+            console.warn(`⚠️ Too many unauthorized errors, skipping remaining providers`);
+            break;
+          }
+        }
       } catch (error) {
         console.warn(`⚠️ ${provider.provider} failed:`, error.message);
         
@@ -120,7 +126,12 @@ class EnhancedAIService {
         } else if (error.message.includes('402') || error.message.includes('Payment Required')) {
           console.log(`💳 Payment required for ${provider.provider}, trying next provider...`);
         } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-          console.log(`🔑 Authentication failed for ${provider.provider}, trying next provider...`);
+          unauthorizedCount++;
+          console.log(`🔑 Authentication failed for ${provider.provider} (${unauthorizedCount}/${maxUnauthorized})`);
+          if (unauthorizedCount >= maxUnauthorized) {
+            console.warn(`⚠️ Too many unauthorized errors, stopping provider attempts`);
+            break;
+          }
         }
         continue;
       }
@@ -256,8 +267,12 @@ class EnhancedAIService {
 
     console.log(`🔑 Found ${hfKeys.length} HuggingFace API key(s) for text generation`);
 
+    // Limit key attempts to prevent infinite loops
+    const maxKeyAttempts = Math.min(hfKeys.length, 2);
+    let unauthorizedCount = 0;
+
     // Try each key until one works
-    for (let i = 0; i < hfKeys.length; i++) {
+    for (let i = 0; i < maxKeyAttempts; i++) {
       const apiKey = hfKeys[i];
       
       try {
@@ -289,7 +304,12 @@ class EnhancedAIService {
           } else if (response.status === 503) {
             console.warn(`🔧 HuggingFace model ${model} loading (503) with key ${i + 1} - trying next key`);
           } else if (response.status === 401) {
+            unauthorizedCount++;
             console.warn(`🔑 HuggingFace key ${i + 1} unauthorized (401) - invalid key`);
+            if (unauthorizedCount >= maxKeyAttempts) {
+              console.warn(`⚠️ All keys unauthorized, stopping attempts`);
+              break;
+            }
           } else {
             console.warn(`❌ HuggingFace key ${i + 1} failed: ${response.status} - ${errorText}`);
           }
@@ -329,7 +349,7 @@ class EnhancedAIService {
     // All keys failed
     return {
       success: false,
-      error: `All ${hfKeys.length} HuggingFace API keys failed`,
+      error: `All ${maxKeyAttempts} HuggingFace API keys failed`,
       provider: 'huggingface'
     };
   }
@@ -352,8 +372,12 @@ class EnhancedAIService {
 
     console.log(`🚀 Using HuggingFace Router with ${hfKeys.length} key(s) for model: ${model}`);
 
+    // Limit key attempts to prevent infinite loops
+    const maxKeyAttempts = Math.min(hfKeys.length, 2);
+    let unauthorizedCount = 0;
+
     // Try each key until one works
-    for (let i = 0; i < hfKeys.length; i++) {
+    for (let i = 0; i < maxKeyAttempts; i++) {
       const apiKey = hfKeys[i];
       
       try {
@@ -402,8 +426,13 @@ class EnhancedAIService {
         // Enhanced error handling for router API
         if (error.message.includes('429')) {
           console.warn(`⏰ HuggingFace Router key ${i + 1} rate limited - trying next key`);
-        } else if (error.message.includes('401')) {
-          console.warn(`🔑 HuggingFace Router key ${i + 1} unauthorized - invalid key`);
+        } else if (error.message.includes('401') || error.message.includes('Invalid credentials')) {
+          unauthorizedCount++;
+          console.warn(`🔑 HuggingFace Router key ${i + 1} unauthorized - invalid key (${unauthorizedCount}/${maxKeyAttempts})`);
+          if (unauthorizedCount >= maxKeyAttempts) {
+            console.warn(`⚠️ All router keys unauthorized, stopping attempts`);
+            break;
+          }
         } else if (error.message.includes('503')) {
           console.warn(`🔧 HuggingFace Router model ${model} unavailable with key ${i + 1} - trying next key`);
         }
@@ -415,7 +444,7 @@ class EnhancedAIService {
     // All keys failed
     return {
       success: false,
-      error: `All ${hfKeys.length} HuggingFace Router API keys failed`,
+      error: `All ${maxKeyAttempts} HuggingFace Router API keys failed`,
       provider: 'huggingface-router'
     };
   }
