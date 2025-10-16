@@ -9,30 +9,36 @@ import {
   CreditCard,
   Bot,
   FileQuestion,
-  BarChart
+  BarChart,
+  GraduationCap
 } from 'lucide-react';
 
-const FeatureCard = ({ icon: Icon, title, description, onClick }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      onClick={onClick}
-      className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all cursor-pointer hover:bg-blue-50"
-    >
-      <div className="flex items-start gap-4">
-        <div className="p-3 bg-blue-50 rounded-lg">
-          <Icon className="w-6 h-6 text-blue-600" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-600 leading-relaxed">{description}</p>
-        </div>
+const FeatureCard = ({ icon: Icon, title, description, onClick }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+    onClick={onClick}
+    className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all cursor-pointer hover:bg-blue-50"
+  >
+    <div className="flex items-start gap-4">
+      <div className="p-3 bg-blue-50 rounded-lg">
+        <Icon className="w-6 h-6 text-blue-600" />
       </div>
-    </motion.div>
-  );
-};
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+        <p className="text-gray-600 leading-relaxed">{description}</p>
+      </div>
+    </div>
+  </motion.div>
+);
+
+const SectionTitle = ({ title, description }) => (
+  <div className="mb-8">
+    <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
+    <p className="text-gray-600">{description}</p>
+  </div>
+);
 
 const LMSGuide = () => {
   const navigate = useNavigate();
@@ -41,7 +47,7 @@ const LMSGuide = () => {
     navigate(`/dashboard/guide/${featureId}`);
   };
 
-  const features = [
+  const generalFeatures = [
     {
       icon: Users,
       title: "Private User Group",
@@ -76,11 +82,49 @@ const LMSGuide = () => {
       icon: FileQuestion,
       title: "Support Tickets",
       description: "Create and track support tickets for any issues or questions. Our support team is always ready to help you."
+    }
+  ];
+
+  const instructorFeatures = [
+    {
+      icon: BookOpen,
+      title: "Course Management",
+      description: "Create and manage your courses. Add content, set up assessments, and track student progress."
+    },
+    {
+      icon: Users,
+      title: "User Management",
+      description: "Manage student enrollments, track progress, and handle user permissions and roles."
+    },
+    {
+      icon: Library,
+      title: "Course Catalog Management",
+      description: "Organize and structure your course catalog. Create categories and manage course visibility."
+    },
+    {
+      icon: Users,
+      title: "Group Management",
+      description: "Create and manage learning groups. Monitor group activities and facilitate collaboration."
     },
     {
       icon: BarChart,
-      title: "Progress Tracking",
-      description: "Monitor your learning progress with detailed analytics. View completion rates, assessment scores, and time spent on courses."
+      title: "Event Management",
+      description: "Schedule and manage learning events, webinars, and live sessions."
+    },
+    {
+      icon: FileQuestion,
+      title: "Assets Management",
+      description: "Manage course materials, media files, and learning resources efficiently."
+    },
+    {
+      icon: MessageSquare,
+      title: "Private Groups",
+      description: "Create and manage private discussion groups for specific courses or topics."
+    },
+    {
+      icon: BarChart,
+      title: "Course Analytics",
+      description: "Access detailed analytics and insights about course performance and student engagement."
     }
   ];
 
@@ -94,24 +138,53 @@ const LMSGuide = () => {
       >
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Athena LMS Guide</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Discover all the powerful features our learning management system has to offer, including our new private communication tools.
-          This guide will help you make the most of your learning experience.
+          Discover all the powerful features our learning management system has to offer,
+          including our new private communication tools. This guide will help you make the most of your learning experience.
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {features.map((feature, index) => {
-          const featureId = feature.title.toLowerCase().replace(/\s+/g, '_');
-          return (
-            <FeatureCard
-              key={index}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-              onClick={() => handleFeatureClick(featureId)}
-            />
-          );
-        })}
+      {/* General Features Section */}
+      <div className="mb-16">
+        <SectionTitle 
+          title="General Features" 
+          description="Core features available to all users for learning and collaboration."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {generalFeatures.map((feature, index) => {
+            const featureId = feature.title.toLowerCase().replace(/\s+/g, '_');
+            return (
+              <FeatureCard
+                key={index}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                onClick={() => handleFeatureClick(featureId)}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Instructor Features Section */}
+      <div>
+        <SectionTitle 
+          title="Instructor Features" 
+          description="Advanced tools and features for course creators and instructors."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {instructorFeatures.map((feature, index) => {
+            const featureId = `instructor_${feature.title.toLowerCase().replace(/\s+/g, '_')}`;
+            return (
+              <FeatureCard
+                key={index}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                onClick={() => handleFeatureClick(featureId)}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );

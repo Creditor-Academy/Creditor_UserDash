@@ -1,11 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Send, Settings, Search, Bell, Star } from 'lucide-react';
-import { BaseFeature } from '../FeatureComponents';
+import { Library, FolderPlus, Tags, Search, Star } from 'lucide-react';
+import { BaseFeature } from '../../FeatureComponents';
 
 const ProTip = ({ children, emoji = "💡" }) => (
   <div className="relative bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-100 rounded-2xl p-8 border border-amber-300/50 shadow-lg overflow-hidden">
-    {/* Background pattern */}
     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-y-16 translate-x-16"></div>
     
     <div className="relative z-10 flex items-start gap-4">
@@ -31,7 +30,6 @@ const StepCard = ({ icon: Icon, title, items, color, index }) => (
     hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300
     group overflow-hidden
   `}>
-    {/* Background decoration */}
     <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-50 rounded-full -translate-y-16 translate-x-16`}></div>
     
     <div className="relative z-10 flex items-center gap-4 mb-6">
@@ -53,20 +51,17 @@ const StepCard = ({ icon: Icon, title, items, color, index }) => (
       ))}
     </ul>
     
-    {/* Hover effect */}
     <div className={`absolute inset-0 bg-gradient-to-br from-${color}-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
   </div>
 );
 
 const IntroSection = () => (
   <div className="space-y-10">
-    {/* Enhanced Header Section */}
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-10 rounded-3xl shadow-2xl"
     >
-      {/* Background pattern */}
       <motion.div 
         className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]"
         animate={{ 
@@ -99,7 +94,7 @@ const IntroSection = () => (
           transition={{ type: "spring", stiffness: 300 }}
         >
           <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl">
-            <MessageSquare className="w-10 h-10 text-white" />
+            <Library className="w-10 h-10 text-white" />
           </div>
           <motion.div 
             className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg"
@@ -111,7 +106,7 @@ const IntroSection = () => (
         </motion.div>
         <div>
           <h3 className="text-3xl font-bold text-white mb-2">
-            Welcome to Private Chat
+            Course Catalog Management
           </h3>
           <div className="flex items-center gap-2">
             <motion.div 
@@ -119,59 +114,35 @@ const IntroSection = () => (
               animate={{ scale: [1, 1.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-blue-100 text-sm font-medium">Secure Communication Channel</span>
+            <span className="text-blue-100 text-sm font-medium">Instructor Tools</span>
           </div>
         </div>
       </div>
       
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Your dedicated space for <span className="text-yellow-300 font-semibold">private conversations</span> and direct communication. 
-        Connect one-on-one with other users in a secure and organized environment.
+        Create and manage your <span className="text-yellow-300 font-semibold">course catalog</span> with ease. 
+        Organize courses into categories, set visibility, and provide detailed course information.
       </p>
-      
-      {/* Stats */}
-      <div className="relative z-10 flex gap-8 mt-8">
-        {[
-          { color: "bg-green-400", text: "Private" },
-          { color: "bg-blue-400", text: "Secure" },
-          { color: "bg-purple-400", text: "Real-time" }
-        ].map((stat, index) => (
-          <motion.div 
-            key={index}
-            className="flex items-center gap-2"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.2 }}
-          >
-            <motion.div 
-              className={`w-3 h-3 ${stat.color} rounded-full`}
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
-            />
-            <span className="text-white/90 font-medium">{stat.text}</span>
-          </motion.div>
-        ))}
-      </div>
     </motion.div>
   </div>
 );
 
-const PrivateChatGuide = () => {
+const CourseCatalogGuide = () => {
   const featureData = {
-    id: 'private_chat',
-    icon: MessageSquare,
-    title: 'Private 1 on 1 Chat',
+    id: 'course_catalog',
+    icon: Library,
+    title: 'Course Catalog Management',
     introduction: <IntroSection />,
     videos: [
       {
-        url: 'https://www.youtube.com/embed/example3',
-        title: 'Using Private Chat Features',
-        description: 'Learn how to start conversations, use chat features, and manage your private messages securely.'
+        url: 'https://www.youtube.com/embed/example1',
+        title: 'Managing Course Catalog',
+        description: 'Learn how to effectively organize and manage your course catalog for optimal student experience.'
       }
     ],
     steps: [
       {
-        title: 'Getting Started with Private Chat',
+        title: 'Creating Course Catalog',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -180,13 +151,13 @@ const PrivateChatGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={MessageSquare}
-                title="Accessing Chat Features"
+                icon={FolderPlus}
+                title="Catalog Structure"
                 color="blue"
                 items={[
-                  'Navigate to the Messages section using the sidebar icon',
-                  'View your existing conversations in the main dashboard.'
-                  
+                  'Create and organize course categories',
+                  'Set up subcategories for better organization',
+                  'Design a clear navigation structure'
                 ]}
                 index={0}
               />
@@ -198,33 +169,22 @@ const PrivateChatGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Send}
-                title="Starting Conversations"
+                icon={Tags}
+                title="Course Categorization"
                 color="emerald"
                 items={[
-                  'Click the "New Message" button to initiate a chat',
-                  'Search and select a user from the directory',
-                  'Begin your conversation with a friendly greeting'
+                  'Add courses to appropriate categories',
+                  'Tag courses for better searchability',
+                  'Set course difficulty levels and prerequisites'
                 ]}
                 index={1}
               />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <ProTip emoji="💬">
-                <span className="font-bold">Communication Tip:</span> Start with a clear and professional greeting. 
-                Include context about why you're reaching out to make your communication more effective.
-              </ProTip>
             </motion.div>
           </div>
         )
       },
       {
-        title: 'Managing Your Conversations',
+        title: 'Catalog Management',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -233,13 +193,13 @@ const PrivateChatGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={Settings}
-                title="Chat Settings & Features"
+                icon={Search}
+                title="Discovery Features"
                 color="purple"
                 items={[
-                  
-                  'Share files and media securely within the chat',
-                  'Delte any messaege for everyone in the private chat for that typing error 😁.'
+                  'Configure search and filter options',
+                  'Set up featured courses and recommendations',
+                  'Create custom course collections'
                 ]}
                 index={2}
               />
@@ -250,27 +210,11 @@ const PrivateChatGuide = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <StepCard
-                icon={Search}
-                title="Search & Organization"
-                color="indigo"
-                items={[
-                  'Use the search function to find specific messages or files',
-                  'Organize conversations with labels and favorites',
-                  'Archive old conversations for better inbox management'
-                ]}
-                index={3}
-              />
+              <ProTip emoji="📚">
+                <span className="font-bold">Organization Tip:</span> Use consistent naming conventions 
+                and clear category descriptions to help students find relevant courses easily.
+              </ProTip>
             </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              
-            </motion.div>
-
           </div>
         )
       }
@@ -280,4 +224,4 @@ const PrivateChatGuide = () => {
   return <BaseFeature feature={featureData} />;
 };
 
-export default PrivateChatGuide;
+export default CourseCatalogGuide;

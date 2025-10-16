@@ -1,11 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Send, Settings, Search, Bell, Star } from 'lucide-react';
-import { BaseFeature } from '../FeatureComponents';
+import { BookOpen, Plus, Edit, Settings, Star, BarChart } from 'lucide-react';
+import { BaseFeature } from '../../FeatureComponents';
 
 const ProTip = ({ children, emoji = "💡" }) => (
   <div className="relative bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-100 rounded-2xl p-8 border border-amber-300/50 shadow-lg overflow-hidden">
-    {/* Background pattern */}
     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-y-16 translate-x-16"></div>
     
     <div className="relative z-10 flex items-start gap-4">
@@ -31,7 +30,6 @@ const StepCard = ({ icon: Icon, title, items, color, index }) => (
     hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300
     group overflow-hidden
   `}>
-    {/* Background decoration */}
     <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-50 rounded-full -translate-y-16 translate-x-16`}></div>
     
     <div className="relative z-10 flex items-center gap-4 mb-6">
@@ -53,20 +51,17 @@ const StepCard = ({ icon: Icon, title, items, color, index }) => (
       ))}
     </ul>
     
-    {/* Hover effect */}
     <div className={`absolute inset-0 bg-gradient-to-br from-${color}-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
   </div>
 );
 
 const IntroSection = () => (
   <div className="space-y-10">
-    {/* Enhanced Header Section */}
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-10 rounded-3xl shadow-2xl"
     >
-      {/* Background pattern */}
       <motion.div 
         className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]"
         animate={{ 
@@ -99,7 +94,7 @@ const IntroSection = () => (
           transition={{ type: "spring", stiffness: 300 }}
         >
           <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl">
-            <MessageSquare className="w-10 h-10 text-white" />
+            <BookOpen className="w-10 h-10 text-white" />
           </div>
           <motion.div 
             className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg"
@@ -111,7 +106,7 @@ const IntroSection = () => (
         </motion.div>
         <div>
           <h3 className="text-3xl font-bold text-white mb-2">
-            Welcome to Private Chat
+            Course Management
           </h3>
           <div className="flex items-center gap-2">
             <motion.div 
@@ -119,22 +114,21 @@ const IntroSection = () => (
               animate={{ scale: [1, 1.5, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
-            <span className="text-blue-100 text-sm font-medium">Secure Communication Channel</span>
+            <span className="text-blue-100 text-sm font-medium">Instructor Tools</span>
           </div>
         </div>
       </div>
       
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Your dedicated space for <span className="text-yellow-300 font-semibold">private conversations</span> and direct communication. 
-        Connect one-on-one with other users in a secure and organized environment.
+        Powerful tools to <span className="text-yellow-300 font-semibold">create, manage, and monitor</span> your courses. 
+        Design engaging content, track student progress, and deliver an exceptional learning experience.
       </p>
       
-      {/* Stats */}
       <div className="relative z-10 flex gap-8 mt-8">
         {[
-          { color: "bg-green-400", text: "Private" },
-          { color: "bg-blue-400", text: "Secure" },
-          { color: "bg-purple-400", text: "Real-time" }
+          { color: "bg-green-400", text: "Create" },
+          { color: "bg-blue-400", text: "Manage" },
+          { color: "bg-purple-400", text: "Monitor" }
         ].map((stat, index) => (
           <motion.div 
             key={index}
@@ -156,22 +150,22 @@ const IntroSection = () => (
   </div>
 );
 
-const PrivateChatGuide = () => {
+const CourseManagementGuide = () => {
   const featureData = {
-    id: 'private_chat',
-    icon: MessageSquare,
-    title: 'Private 1 on 1 Chat',
+    id: 'course_management',
+    icon: BookOpen,
+    title: 'Course Management',
     introduction: <IntroSection />,
     videos: [
       {
-        url: 'https://www.youtube.com/embed/example3',
-        title: 'Using Private Chat Features',
-        description: 'Learn how to start conversations, use chat features, and manage your private messages securely.'
+        url: 'https://www.youtube.com/embed/example1',
+        title: 'Course Management Overview',
+        description: 'Learn how to effectively create and manage your courses using our comprehensive suite of instructor tools.'
       }
     ],
     steps: [
       {
-        title: 'Getting Started with Private Chat',
+        title: 'Creating & Structuring Courses',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -180,13 +174,13 @@ const PrivateChatGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={MessageSquare}
-                title="Accessing Chat Features"
+                icon={Plus}
+                title="Course Creation"
                 color="blue"
                 items={[
-                  'Navigate to the Messages section using the sidebar icon',
-                  'View your existing conversations in the main dashboard.'
-                  
+                  'Create new courses with detailed information and objectives',
+                  'Structure your course into modules and lessons',
+                  'Set up prerequisites and completion requirements'
                 ]}
                 index={0}
               />
@@ -198,13 +192,13 @@ const PrivateChatGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Send}
-                title="Starting Conversations"
+                icon={Edit}
+                title="Content Management"
                 color="emerald"
                 items={[
-                  'Click the "New Message" button to initiate a chat',
-                  'Search and select a user from the directory',
-                  'Begin your conversation with a friendly greeting'
+                  'Add and organize course materials and resources',
+                  'Create interactive quizzes and assignments',
+                  'Upload video lectures and presentations'
                 ]}
                 index={1}
               />
@@ -215,16 +209,16 @@ const PrivateChatGuide = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <ProTip emoji="💬">
-                <span className="font-bold">Communication Tip:</span> Start with a clear and professional greeting. 
-                Include context about why you're reaching out to make your communication more effective.
+              <ProTip emoji="📚">
+                <span className="font-bold">Course Structure:</span> Organize your content into small, 
+                digestible modules. This makes it easier for students to track their progress and maintain engagement.
               </ProTip>
             </motion.div>
           </div>
         )
       },
       {
-        title: 'Managing Your Conversations',
+        title: 'Course Settings & Analytics',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -234,12 +228,12 @@ const PrivateChatGuide = () => {
             >
               <StepCard
                 icon={Settings}
-                title="Chat Settings & Features"
+                title="Course Settings"
                 color="purple"
                 items={[
-                  
-                  'Share files and media securely within the chat',
-                  'Delte any messaege for everyone in the private chat for that typing error 😁.'
+                  'Configure enrollment settings and access permissions',
+                  'Set up course completion certificates',
+                  'Manage course visibility and availability'
                 ]}
                 index={2}
               />
@@ -251,26 +245,17 @@ const PrivateChatGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Search}
-                title="Search & Organization"
+                icon={BarChart}
+                title="Progress Tracking"
                 color="indigo"
                 items={[
-                  'Use the search function to find specific messages or files',
-                  'Organize conversations with labels and favorites',
-                  'Archive old conversations for better inbox management'
+                  'Monitor student progress and engagement',
+                  'View detailed analytics on course performance',
+                  'Generate reports on student achievements'
                 ]}
                 index={3}
               />
             </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              
-            </motion.div>
-
           </div>
         )
       }
@@ -280,4 +265,4 @@ const PrivateChatGuide = () => {
   return <BaseFeature feature={featureData} />;
 };
 
-export default PrivateChatGuide;
+export default CourseManagementGuide;
