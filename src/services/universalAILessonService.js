@@ -195,6 +195,9 @@ class UniversalAILessonService {
         const practicesBlocks = await this.generateBestPracticesSection(lessonTitle, blockOrder);
         blocks.push(...practicesBlocks);
         blockOrder += practicesBlocks.length;
+
+        // Add continue divider after best practices
+        blocks.push(this.createContinueDivider('CONTINUE TO ASSESSMENT', blockOrder++, '#F59E0B'));
       } else if (options.contentType === 'outline') {
         // Generate outline-style content
         const outlineBlocks = await this.generateOutlineContent(lessonTitle, moduleTitle, blockOrder);
@@ -207,6 +210,9 @@ class UniversalAILessonService {
         const assessmentBlocks = await this.generateAssessmentSection(lessonTitle, blockOrder);
         blocks.push(...assessmentBlocks);
         blockOrder += assessmentBlocks.length;
+
+        // Add continue divider after assessment
+        blocks.push(this.createContinueDivider('CONTINUE TO SUMMARY', blockOrder++, '#EF4444'));
       }
 
       // 5. Generate Summary
@@ -393,14 +399,8 @@ class UniversalAILessonService {
     const blocks = [];
     
     try {
-      blocks.push({
-        id: `ai-practices-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Best Practices and Tips',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      });
+      // Master Heading for page separation (consistent with other sections)
+      blocks.push(this.createMasterHeading('Best Practices and Tips', startOrder, 'gradient4'));
 
       const prompt = `List 5-7 best practices or important tips related to "${lessonTitle}". Make them actionable and practical. Format as clear, concise points.`;
       
@@ -446,14 +446,8 @@ class UniversalAILessonService {
     const blocks = [];
     
     try {
-      blocks.push({
-        id: `ai-assessment-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Reflection Questions',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      });
+      // Master Heading for page separation (consistent with other sections)
+      blocks.push(this.createMasterHeading('Reflection Questions', startOrder, 'gradient5'));
 
       const prompt = `Create 4-5 thought-provoking questions about "${lessonTitle}" that test understanding and encourage critical thinking. Make them open-ended and engaging.`;
       
@@ -498,14 +492,8 @@ class UniversalAILessonService {
     const blocks = [];
     
     try {
-      blocks.push({
-        id: `ai-summary-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Key Takeaways',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      });
+      // Master Heading for page separation (consistent with other sections)
+      blocks.push(this.createMasterHeading('Key Takeaways', startOrder, 'gradient6'));
 
       const prompt = `Create a concise summary of the key takeaways from the lesson "${lessonTitle}". Include the most important points students should remember and how they can apply this knowledge.`;
       
@@ -558,6 +546,9 @@ class UniversalAILessonService {
     const blocks = [];
     
     try {
+      // Master Heading for page separation (consistent with other sections)
+      blocks.push(this.createMasterHeading('Lesson Outline', startOrder, 'gradient3'));
+
       const prompt = `Create a structured outline for the lesson "${lessonTitle}" in the module "${moduleTitle}". Include main topics, subtopics, and key points. Format as a hierarchical structure.`;
       
       const result = await this.aiService.generateText(prompt, {
@@ -574,7 +565,7 @@ class UniversalAILessonService {
         id: `ai-outline-${Date.now()}`,
         type: 'text',
         content: content || `This lesson outline covers the main topics and key concepts of ${lessonTitle}, providing a structured approach to learning.`,
-        order: startOrder,
+        order: startOrder + 1,
         isAIGenerated: true
       });
 
@@ -729,14 +720,8 @@ class UniversalAILessonService {
 
   getFallbackKeyConcepts(lessonTitle, startOrder) {
     return [
-      {
-        id: `fallback-concepts-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Key Concepts',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      },
+      // Master Heading for page separation (consistent with other sections)
+      this.createMasterHeading('Key Concepts and Principles', startOrder, 'gradient2'),
       {
         id: `fallback-concepts-content-${Date.now()}`,
         type: 'text',
@@ -749,14 +734,8 @@ class UniversalAILessonService {
 
   getFallbackExamples(lessonTitle, startOrder) {
     return [
-      {
-        id: `fallback-examples-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Examples and Applications',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      },
+      // Master Heading for page separation (consistent with other sections)
+      this.createMasterHeading('Practical Applications and Examples', startOrder, 'gradient3'),
       {
         id: `fallback-examples-content-${Date.now()}`,
         type: 'text',
@@ -769,14 +748,8 @@ class UniversalAILessonService {
 
   getFallbackBestPractices(lessonTitle, startOrder) {
     return [
-      {
-        id: `fallback-practices-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Best Practices',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      },
+      // Master Heading for page separation (consistent with other sections)
+      this.createMasterHeading('Best Practices and Tips', startOrder, 'gradient4'),
       {
         id: `fallback-practices-content-${Date.now()}`,
         type: 'list',
@@ -790,14 +763,8 @@ class UniversalAILessonService {
 
   getFallbackAssessment(lessonTitle, startOrder) {
     return [
-      {
-        id: `fallback-assessment-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Reflection Questions',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      },
+      // Master Heading for page separation (consistent with other sections)
+      this.createMasterHeading('Reflection Questions', startOrder, 'gradient5'),
       {
         id: `fallback-assessment-content-${Date.now()}`,
         type: 'list',
@@ -811,14 +778,8 @@ class UniversalAILessonService {
 
   getFallbackSummary(lessonTitle, moduleTitle, startOrder) {
     return [
-      {
-        id: `fallback-summary-heading-${Date.now()}`,
-        type: 'heading',
-        content: 'Summary',
-        level: 2,
-        order: startOrder,
-        isAIGenerated: true
-      },
+      // Master Heading for page separation (consistent with other sections)
+      this.createMasterHeading('Key Takeaways', startOrder, 'gradient6'),
       {
         id: `fallback-summary-content-${Date.now()}`,
         type: 'text',
@@ -831,11 +792,13 @@ class UniversalAILessonService {
 
   getFallbackOutline(lessonTitle, moduleTitle, startOrder) {
     return [
+      // Master Heading for page separation (consistent with other sections)
+      this.createMasterHeading('Lesson Outline', startOrder, 'gradient3'),
       {
         id: `fallback-outline-${Date.now()}`,
         type: 'text',
         content: `This lesson covers ${lessonTitle} as part of ${moduleTitle}. The content includes key concepts, practical applications, and important takeaways.`,
-        order: startOrder,
+        order: startOrder + 1,
         isAIGenerated: true
       }
     ];
