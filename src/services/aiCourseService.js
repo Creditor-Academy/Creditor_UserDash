@@ -643,17 +643,156 @@ export async function createCompleteAICourse(courseData) {
       }
     }
     
+    // Step 5: Auto-generate lesson content using universalAILessonService
+    console.log('📝 Step 5: Auto-generating content for all lessons...');
+    const contentGenerationResults = {
+      successCount: 0,
+      failedCount: 0,
+      totalImages: 0,
+      totalBlocks: 0,
+      errors: []
+    };
+    
+    // Import universalAILessonService dynamically if needed
+    const universalAILessonService = await import('./universalAILessonService').then(m => m.default);
+    
+    // Track generation mode (from courseData options or default to STANDARD)
+    const generationMode = courseData.generationMode || 'STANDARD';
+    const generationConfig = {
+      QUICK: { 
+        contentType: 'outline',
+        includeImages: false,
+        includeAssessments: false,
+        includeExamples: false,
+        maxTokens: 500
+      },
+      STANDARD: { 
+        contentType: 'comprehensive',
+        includeImages: true,
+        includeAssessments: true,
+        includeExamples: true,
+        maxTokens: 1000
+      },
+      COMPLETE: { 
+        contentType: 'comprehensive',
+        includeImages: true,
+        includeAssessments: true,
+        includeExamples: true,
+        includeSummary: true,
+        maxTokens: 1500
+      },
+      PREMIUM: { 
+        contentType: 'comprehensive',
+        includeImages: true,
+        includeAssessments: true,
+        includeExamples: true,
+        includeSummary: true,
+        includeInteractive: true,
+        maxTokens: 2000
+      }
+    };
+    
+    const config = generationConfig[generationMode] || generationConfig.STANDARD;
+    console.log(`🎯 Using ${generationMode} generation mode`);
+    
+    // Process lessons sequentially with progress tracking
+    let processedCount = 0;
+    for (const createdLesson of createdLessons) {
+      processedCount++;
+      const lessonId = createdLesson.data?.id || createdLesson.id;
+      const lessonTitle = createdLesson.data?.title || createdLesson.title || 'Untitled Lesson';
+      
+      try {
+        console.log(`📚 Generating content for lesson ${processedCount}/${createdLessons.length}: ${lessonTitle}`);
+        updateProgress(`Generating content for lesson ${processedCount} of ${createdLessons.length}: ${lessonTitle}`);
+        
+        // Find module info for this lesson
+        const parentModule = createdModules.find(m => {
+          const modId = m.data?.id || m.id;
+          return createdLesson.module_id === modId || 
+                 createdLesson.data?.module_id === modId;
+        });
+        
+        const moduleTitle = parentModule?.data?.title || parentModule?.title || 'Module';
+        
+        // Generate content blocks using universalAILessonService
+        const blocks = await universalAILessonService.generateLessonContent(
+          { title: lessonTitle, description: createdLesson.data?.description || createdLesson.description },
+          { title: moduleTitle },
+          { title: courseData.title },
+          {
+            contentType: config.contentType,
+            maxTokens: config.maxTokens,
+            includeIntroduction: true,
+            includeLearningObjectives: true,
+            includeExamples: config.includeExamples,
+            includeAssessments: config.includeAssessments,
+            includeSummary: config.includeSummary,
+            includeInteractive: config.includeInteractive
+          }
+        );
+        
+        // Save generated content to lesson
+        await universalAILessonService.saveContentToLesson(lessonId, blocks);
+        
+        contentGenerationResults.successCount++;
+        contentGenerationResults.totalBlocks += blocks.length;
+        
+        console.log(`✅ Content generated and saved for: ${lessonTitle} (${blocks.length} blocks)`);
+        
+        // Add delay between lessons to avoid rate limits
+        if (processedCount < createdLessons.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+      } catch (contentError) {
+        console.error(`❌ Failed to generate content for "${lessonTitle}":`, contentError.message);
+        contentGenerationResults.failedCount++;
+        contentGenerationResults.errors.push({
+          lessonTitle,
+          error: contentError.message
+        });
+        
+        // Generate placeholder content for failed lessons
+        try {
+          const placeholderBlocks = [{
+            id: `placeholder-${Date.now()}`,
+            type: 'text',
+            content: `This lesson covers ${lessonTitle}. Content will be enhanced soon.`,
+            order: 0,
+            isPlaceholder: true
+          }];
+          await universalAILessonService.saveContentToLesson(lessonId, placeholderBlocks);
+          console.log(`📋 Placeholder content saved for: ${lessonTitle}`);
+        } catch (placeholderError) {
+          console.error(`❌ Failed to save placeholder for "${lessonTitle}":`, placeholderError.message);
+        }
+      }
+    }
+    
+    // Log content generation summary
+    console.log(`📊 Content Generation Summary:`);
+    console.log(`   ✅ Successful: ${contentGenerationResults.successCount}/${createdLessons.length}`);
+    console.log(`   📦 Total Blocks: ${contentGenerationResults.totalBlocks}`);
+    if (contentGenerationResults.failedCount > 0) {
+      console.warn(`   ❌ Failed: ${contentGenerationResults.failedCount}`);
+    }
+    
     // Log final summary
     console.log(`📊 Final creation summary:`);
     console.log(`   ✅ Course: Created successfully`);
     console.log(`   📚 Modules: ${createdModules.length}/${courseStructure.modules.length} created`);
     console.log(`   📝 Lessons: ${createdLessons.length} created`);
+    console.log(`   📦 Content: ${contentGenerationResults.successCount} lessons with AI-generated content`);
     
     if (moduleErrors.length > 0) {
       console.warn(`   ⚠️ Module errors: ${moduleErrors.length}`);
     }
     if (lessonErrors.length > 0) {
       console.warn(`   ⚠️ Lesson errors: ${lessonErrors.length}`);
+    }
+    if (contentGenerationResults.failedCount > 0) {
+      console.warn(`   ⚠️ Content generation errors: ${contentGenerationResults.failedCount}`);
     }
     
     return {
@@ -664,6 +803,13 @@ export async function createCompleteAICourse(courseData) {
         lessons: createdLessons,
         totalModules: createdModules.length,
         totalLessons: createdLessons.length,
+        contentGeneration: {
+          successCount: contentGenerationResults.successCount,
+          failedCount: contentGenerationResults.failedCount,
+          totalBlocks: contentGenerationResults.totalBlocks,
+          generationMode,
+          errors: contentGenerationResults.errors.length > 0 ? contentGenerationResults.errors : undefined
+        },
         moduleErrors: moduleErrors.length > 0 ? moduleErrors : undefined,
         lessonErrors: lessonErrors.length > 0 ? lessonErrors : undefined
       }
