@@ -14,7 +14,7 @@ const ProTip = ({ children, emoji = "💡" }) => (
       </div>
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-amber-800 font-bold text-lg">Pro Tip</span>
+          <span className="text-amber-800 font-bold text-lg">Pro Tip.</span>
           <div className="px-2 py-1 bg-amber-200/50 rounded-full">
             <span className="text-amber-700 text-sm font-medium">Expert Advice</span>
           </div>
