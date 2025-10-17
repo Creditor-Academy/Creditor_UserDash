@@ -10,7 +10,8 @@ import {
   Bot,
   FileQuestion,
   BarChart,
-  GraduationCap
+  GraduationCap,
+  UserCog
 } from 'lucide-react';
 
 const FeatureCard = ({ icon: Icon, title, description, onClick }) => (
@@ -19,15 +20,26 @@ const FeatureCard = ({ icon: Icon, title, description, onClick }) => (
     whileInView={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5 }}
     onClick={onClick}
-    className="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all cursor-pointer hover:bg-blue-50"
+    className="group bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer hover:bg-gradient-to-br hover:from-blue-50 hover:to-blue-100/30"
   >
     <div className="flex items-start gap-4">
-      <div className="p-3 bg-blue-50 rounded-lg">
+      <div className="p-3 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
         <Icon className="w-6 h-6 text-blue-600" />
       </div>
-      <div>
+      <div className="flex-1">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 leading-relaxed">{description}</p>
+        <p className="text-gray-600 leading-relaxed mb-4">{description}</p>
+        <div className="flex items-center gap-2 text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+          <span>Know More</span>
+          <svg 
+            className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
       </div>
     </div>
   </motion.div>
@@ -48,6 +60,11 @@ const LMSGuide = () => {
   };
 
   const generalFeatures = [
+    {
+      icon: UserCog,
+      title: "Edit Profile",
+      description: "Customize your profile settings, update personal information, and manage your account preferences for a personalized learning experience."
+    },
     {
       icon: Users,
       title: "Private User Group",
@@ -75,7 +92,7 @@ const LMSGuide = () => {
     },
     {
       icon: Bot,
-      title: "AI Assistant",
+      title: "Credit ChatBot",
       description: "Get instant help with our AI-powered assistant. Ask questions about courses, technical issues, or general platform navigation."
     },
     {

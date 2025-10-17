@@ -5,9 +5,10 @@ import PrivateChatGuide from './features/PrivateChatGuide';
 import MyCoursesGuide from './features/MyCoursesGuide';
 import CourseCatalogGuide from './features/CourseCatalogGuide';
 import CreditorCardGuide from './features/CreditorCardGuide';
-import AIAssistantGuide from './features/AIAssistantGuide';
+import CreditChatbotGuide from './features/CreditChatbotGuide';
 import SupportTicketsGuide from './features/SupportTicketsGuide';
 import ProgressTrackingGuide from './features/ProgressTrackingGuide';
+import EditProfileGuide from './features/EditProfileGuide';
 
 const FEATURE_COMPONENTS = {
   'private_user_group': PrivateGroupGuide,
@@ -15,9 +16,10 @@ const FEATURE_COMPONENTS = {
   'my_courses': MyCoursesGuide,
   'course_catalog': CourseCatalogGuide,
   'creditor_card': CreditorCardGuide,
-  'ai_assistant': AIAssistantGuide,
+  'credit_chatbot': CreditChatbotGuide,
   'support_tickets': SupportTicketsGuide,
-  'progress_tracking': ProgressTrackingGuide
+  'progress_tracking': ProgressTrackingGuide,
+  'edit_profile': EditProfileGuide
 };
 
 const FeatureGuideContainer = () => {
