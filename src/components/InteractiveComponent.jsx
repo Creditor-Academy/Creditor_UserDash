@@ -450,8 +450,8 @@ const InteractiveComponent = forwardRef(({
   const handleImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       
@@ -508,8 +508,8 @@ const InteractiveComponent = forwardRef(({
   const handleAudioUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -569,8 +569,8 @@ const InteractiveComponent = forwardRef(({
   const handleTabImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       

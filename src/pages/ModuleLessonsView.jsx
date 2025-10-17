@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, Plus, RefreshCw, X } from "lucide-react";
+import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, Plus, RefreshCw, X, Upload, Link } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import ImageEditor from "@/components/ImageEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { uploadImage } from "@/services/imageUploadService";
 
 const ModuleLessonsView = () => {
   const { courseId, moduleId } = useParams();
@@ -65,6 +68,13 @@ const ModuleLessonsView = () => {
   const [lessonContent, setLessonContent] = useState(null);
   const [loadingContent, setLoadingContent] = useState(false);
 
+  // Image editor and upload state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [thumbnailMode, setThumbnailMode] = useState('url'); // 'url' or 'upload'
+  const [editingContext, setEditingContext] = useState(null); // 'create' or 'update'
+
   // Fetch module and lessons data
   useEffect(() => {
     fetchModuleLessons();
@@ -73,6 +83,7 @@ const ModuleLessonsView = () => {
   const fetchModuleLessons = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
       
       const [moduleResponse, lessonsResponse] = await Promise.all([
         axios.get(
@@ -96,18 +107,20 @@ const ModuleLessonsView = () => {
       setModuleDetails(moduleData);
       
       // Handle lessons response
+      console.log('Lessons API Response:', lessonsResponse.data);
+      
       let lessonsData = [];
       if (Array.isArray(lessonsResponse.data)) {
         lessonsData = lessonsResponse.data;
-      } else if (lessonsResponse.data?.data) {
-        lessonsData = Array.isArray(lessonsResponse.data.data) 
-          ? lessonsResponse.data.data 
-          : [lessonsResponse.data.data];
+      } else if (lessonsResponse.data?.data && Array.isArray(lessonsResponse.data.data)) {
+        lessonsData = lessonsResponse.data.data;
       } else if (lessonsResponse.data?.lessons) {
         lessonsData = Array.isArray(lessonsResponse.data.lessons)
           ? lessonsResponse.data.lessons
           : [lessonsResponse.data.lessons];
       }
+      
+      console.log('Extracted lessons data:', lessonsData);
       
       // Normalize lesson data to ensure consistent field names
       const normalizedLessons = lessonsData.map(lesson => ({
@@ -115,6 +128,7 @@ const ModuleLessonsView = () => {
         status: lesson.status || lesson.lesson_status || 'DRAFT'
       }));
       
+      console.log('Normalized lessons:', normalizedLessons);
       setLessons(normalizedLessons);
       
       // Set the next order number for new lessons
@@ -125,6 +139,7 @@ const ModuleLessonsView = () => {
       
     } catch (err) {
       console.error("Error fetching module lessons:", err);
+      console.error("Error details:", err.response?.data || err.message);
       setError("Failed to load module lessons. Please try again later.");
     } finally {
       setLoading(false);
@@ -286,20 +301,126 @@ const ModuleLessonsView = () => {
     }));
   };
 
+  // Handle file selection for thumbnail
+  const handleFileSelect = (e, context) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (500MB limit)
+    const maxSize = 500 * 1024 * 1024; // 500MB in bytes
+    if (file.size > maxSize) {
+      toast({
+        title: "File Too Large",
+        description: "Please select an image under 500MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if it's an image
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedImageFile(file);
+    setEditingContext(context);
+    setShowImageEditor(true);
+  };
+
+  // Handle image save from editor
+  const handleImageEditorSave = async (editedFile) => {
+    setShowImageEditor(false);
+    setIsUploadingImage(true);
+
+    try {
+      // Use the same upload service as InteractiveComponent
+      const uploadResult = await uploadImage(editedFile, {
+        folder: 'lesson-thumbnails',
+        public: true
+      });
+
+      if (uploadResult.success && uploadResult.imageUrl) {
+        // Set the thumbnail URL based on context
+        if (editingContext === 'create') {
+          setNewLesson(prev => ({
+            ...prev,
+            thumbnail: uploadResult.imageUrl
+          }));
+        } else if (editingContext === 'update') {
+          setCurrentLesson(prev => ({
+            ...prev,
+            thumbnail: uploadResult.imageUrl
+          }));
+        }
+
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully!",
+        });
+      } else {
+        throw new Error('Upload failed - no image URL returned');
+      }
+
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingImage(false);
+      setSelectedImageFile(null);
+      setEditingContext(null);
+    }
+  };
+
+  // Handle closing image editor
+  const handleImageEditorClose = () => {
+    setShowImageEditor(false);
+    setSelectedImageFile(null);
+    setEditingContext(null);
+  };
+
   const filteredLessons = useMemo(() => {
+    console.log('filteredLessons - lessons:', lessons);
+    console.log('filteredLessons - searchQuery:', searchQuery);
+    
     if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
+      console.log('No lessons found or lessons is not an array');
       return [];
     }
     
-    const query = searchQuery.toLowerCase().trim();
-    if (!query) return lessons;
+    // First, sort lessons by order field (ascending)
+    const sortedLessons = [...lessons].sort((a, b) => {
+      const orderA = parseInt(a.order) || 0;
+      const orderB = parseInt(b.order) || 0;
+      return orderA - orderB;
+    });
     
-    return lessons.filter(lesson => {
+    console.log('Sorted lessons:', sortedLessons);
+    
+    // Then apply search filter if there's a query
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) {
+      console.log('No search query, returning sorted lessons');
+      return sortedLessons;
+    }
+    
+    const filtered = sortedLessons.filter(lesson => {
       if (!lesson) return false;
       const title = (lesson.title || '').toLowerCase();
       const description = (lesson.description || '').toLowerCase();
       return title.includes(query) || description.includes(query);
     });
+    
+    console.log('Filtered lessons:', filtered);
+    return filtered;
   }, [lessons, searchQuery]);
 
   const handleLessonClick = (lesson) => {
@@ -569,7 +690,20 @@ const ModuleLessonsView = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="thumbnail">Thumbnail URL</Label>
+              <Label>Thumbnail Image</Label>
+              <Tabs defaultValue="url" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="url" className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    Image URL
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload File
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="url" className="space-y-2">
               <Input
                 id="thumbnail"
                 name="thumbnail"
@@ -579,11 +713,47 @@ const ModuleLessonsView = () => {
                 type="url"
               />
               <p className="text-xs text-gray-500">
-                Enter a URL to an image file. Maximum file size: 100MB. Supported formats: JPG, PNG, GIF, WebP.
-              </p>
+                    Enter a URL to an image file.
+                  </p>
+                </TabsContent>
+                
+                <TabsContent value="upload" className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileSelect(e, 'create')}
+                      className="cursor-pointer"
+                      disabled={isUploadingImage}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Maximum file size: 500MB. Supported formats: JPG, PNG, GIF, WebP.
+                  </p>
+                  {isUploadingImage && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Uploading image...</span>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+              
               {newLesson.thumbnail && (
                 <div className="mt-2">
-                  <p className="text-xs text-gray-600 mb-2">Preview:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-600">Preview:</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setNewLesson(prev => ({ ...prev, thumbnail: '' }))}
+                      className="h-6 text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
                   <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
                     <img 
                       src={newLesson.thumbnail} 
@@ -698,7 +868,20 @@ const ModuleLessonsView = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="thumbnail">Thumbnail URL</Label>
+              <Label>Thumbnail Image</Label>
+              <Tabs defaultValue="url" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="url" className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    Image URL
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload File
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="url" className="space-y-2">
               <Input
                 id="thumbnail"
                 name="thumbnail"
@@ -708,11 +891,47 @@ const ModuleLessonsView = () => {
                 type="url"
               />
               <p className="text-xs text-gray-500">
-                Enter a URL to an image file. Maximum file size: 100MB. Supported formats: JPG, PNG, GIF, WebP.
-              </p>
+                    Enter a URL to an image file.
+                  </p>
+                </TabsContent>
+                
+                <TabsContent value="upload" className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileSelect(e, 'update')}
+                      className="cursor-pointer"
+                      disabled={isUploadingImage}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Maximum file size: 500MB. Supported formats: JPG, PNG, GIF, WebP.
+                  </p>
+                  {isUploadingImage && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Uploading image...</span>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+              
               {currentLesson?.thumbnail && (
                 <div className="mt-2">
-                  <p className="text-xs text-gray-600 mb-2">Preview:</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-600">Preview:</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentLesson(prev => ({ ...prev, thumbnail: '' }))}
+                      className="h-6 text-xs"
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
                   <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
                     <img 
                       src={currentLesson.thumbnail} 
@@ -821,6 +1040,17 @@ const ModuleLessonsView = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Editor Modal */}
+      {selectedImageFile && (
+        <ImageEditor
+          isOpen={showImageEditor}
+          onClose={handleImageEditorClose}
+          imageFile={selectedImageFile}
+          onSave={handleImageEditorSave}
+          title="Edit Thumbnail Image"
+        />
+      )}
     </div>
   );
 };
