@@ -519,7 +519,7 @@ const customAlignToolbar = [
   [{ 'font': Font.whitelist }],
   [{ 'size': Size.whitelist }],
   ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
+  [{ 'color': [] }],
   [
     { 'align': '' },
     { 'align': 'center' },
@@ -534,7 +534,7 @@ const headingToolbar = [
   [{ 'font': Font.whitelist }],
   [{ 'size': Size.whitelist }],
   ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
+  [{ 'color': [] }],
   [{ 'align': [] }],
   ['clean']
 ];
@@ -546,7 +546,7 @@ const getToolbarModules = (type = 'full') => {
     [{ 'font': Font.whitelist }],
     [{ 'size': Size.whitelist }],
     ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
+    [{ 'color': [] }],
     [{ 'align': [] }]
   ];
 
@@ -557,7 +557,7 @@ const getToolbarModules = (type = 'full') => {
         [{ 'font': Font.whitelist }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline'],
-        [{ 'color': [] }, { 'background': [] }],
+        [{ 'color': [] }],
         [
           { 'align': '' },
           { 'align': 'center' },
@@ -568,14 +568,20 @@ const getToolbarModules = (type = 'full') => {
     };
   }
   
-  // Simplified toolbar for paragraph blocks (no alignment, lists, links, images, clean)
+  // Simplified toolbar for paragraph blocks with alignment
   if (type === 'paragraph') {
     return {
       toolbar: [
         [{ 'font': Font.whitelist }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }, { 'background': [] }]
+        [{ 'color': [] }],
+        [
+          { 'align': '' },
+          { 'align': 'center' },
+          { 'align': 'right' },
+          { 'align': 'justify' }
+        ]
       ]
     };
   }
@@ -847,9 +853,8 @@ function LessonBuilder() {
   const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
   
   // Auto-save state
-  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error', 'changes_detected'
+  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const autoSaveTimerRef = React.useRef(null);
   
   // Inline block insertion state
   const [insertionPosition, setInsertionPosition] = useState(null);
@@ -1064,14 +1069,6 @@ function LessonBuilder() {
   const dividerComponentRef = React.useRef();
 
 
-  // Cleanup timer on unmount
-  React.useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, []);
 
   // Warn user before leaving page with unsaved changes
   React.useEffect(() => {
@@ -4235,6 +4232,10 @@ function LessonBuilder() {
 
       console.log('Payload being sent to backend:', lessonDataToUpdate);
 
+      // Log payload size for debugging
+      const payloadSize = JSON.stringify(lessonDataToUpdate).length;
+      console.log('Payload size:', Math.round(payloadSize / 1024 / 1024), 'MB');
+
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
         lessonDataToUpdate,
@@ -4246,59 +4247,154 @@ function LessonBuilder() {
         }
       );
 
-      if (response.data && response.data.success) {
-        toast.success('Lesson updated successfully!');
-        setAutoSaveStatus('saved');
-        setHasUnsavedChanges(false);
+      // Log the full response for debugging
+      console.log('Full response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+
+      // Check for any error indicators in the response
+      const hasError = 
+        response.status < 200 || 
+        response.status >= 300 ||
+        !response.data ||
+        response.data.error ||
+        response.data.errorMessage ||
+        response.data.message?.toLowerCase().includes('error') ||
+        response.data.message?.toLowerCase().includes('failed') ||
+        response.data.message?.toLowerCase().includes('too large') ||
+        response.data.message?.toLowerCase().includes('413') ||
+        (response.data.success === false) ||
+        (response.data.success === undefined && response.data.error);
+
+      if (hasError) {
+        let errorMessage = 'Failed to update lesson content';
         
-        // Reset to neutral after 2 seconds
-        setTimeout(() => {
-          setAutoSaveStatus('saved');
-        }, 2000);
-      } else {
-        throw new Error(response.data?.errorMessage || 'Failed to update lesson content');
+        // Check HTTP status codes first
+        if (response.status === 413) {
+          errorMessage = 'Content is too large. Please reduce the size of your content and try again.';
+        } else if (response.status === 400) {
+          errorMessage = 'Invalid content format. Please check your content and try again.';
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (response.status === 403) {
+          errorMessage = 'You do not have permission to update this lesson.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (response.status < 200 || response.status >= 300) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText || 'Request failed'}`;
+        }
+        // Check response body for error messages
+        else if (response.data?.errorMessage) {
+          errorMessage = response.data.errorMessage;
+        } else if (response.data?.message) {
+          errorMessage = response.data.message;
+        } else if (response.data?.error) {
+          errorMessage = response.data.error;
+        }
+        
+        console.error('Auto-save failed with error:', errorMessage);
+        throw new Error(errorMessage);
       }
+
+      // If we get here, the save was successful
+      const isManualSave = autoSaveStatus === 'error';
+      toast.success(isManualSave ? 'Changes saved successfully!' : 'Lesson updated successfully!');
+      setAutoSaveStatus('saved');
+      setHasUnsavedChanges(false);
+      
+      // Reset to neutral after 2 seconds
+      setTimeout(() => {
+        setAutoSaveStatus('saved');
+      }, 2000);
      
     } catch (error) {
       console.error('Error updating lesson:', error);
-      toast.error(error.response?.data?.errorMessage || 'Failed to update lesson. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        request: error.request,
+        config: error.config
+      });
+      
+      // Handle different error types
+      let errorMessage = 'Failed to update lesson. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const responseData = error.response.data;
+        
+        console.log('Server error response:', { status, data: responseData });
+        console.log('413 Error detected! Status:', status, 'Data:', responseData);
+        
+        if (status === 413) {
+          errorMessage = 'Content is too large. Please reduce the size of your content and try again.';
+          console.log('Setting 413 error message:', errorMessage);
+        } else if (status === 400) {
+          errorMessage = 'Invalid content format. Please check your content and try again.';
+        } else if (status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (status === 403) {
+          errorMessage = 'You do not have permission to update this lesson.';
+        } else if (status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (responseData?.errorMessage) {
+          errorMessage = responseData.errorMessage;
+        } else if (responseData?.message) {
+          errorMessage = responseData.message;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
+        } else {
+          errorMessage = `HTTP ${status}: ${error.response.statusText || 'Request failed'}`;
+        }
+      } else if (error.request) {
+        // Network error
+        console.log('Network error - no response received:', error.request);
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        // Other error (including our custom thrown errors)
+        console.log('Other error:', error.message);
+        errorMessage = error.message;
+      }
+      
+      console.error('Final error message:', errorMessage);
+      console.log('Setting auto-save status to error and showing toast');
+      toast.error(errorMessage);
       setAutoSaveStatus('error');
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Auto-save function with optimized debounce
-  const triggerAutoSave = React.useCallback(() => {
-    // Clear any existing timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    // Set new timer for auto-save (800ms debounce for faster response)
-    autoSaveTimerRef.current = setTimeout(async () => {
-      // Only save if we have unsaved changes and a lesson ID
-      if (!lessonId || !hasUnsavedChanges) {
-        return;
+  // Simple debounced auto-save function
+  const debouncedAutoSave = React.useMemo(() => {
+    let timeoutId = null;
+    
+    return (content) => {
+      // Clear existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-
-      try {
-        setAutoSaveStatus('saving');
-        await handleUpdate();
-        setAutoSaveStatus('saved');
-        setHasUnsavedChanges(false);
+      
+      // Set new timeout
+      timeoutId = setTimeout(async () => {
+        if (!lessonId || !content || content.length === 0) {
+          return;
+        }
         
-        // Reset to neutral state after 1.5 seconds
-        setTimeout(() => {
-          setAutoSaveStatus('saved');
-        }, 1500);
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-        setAutoSaveStatus('error');
-        toast.error('Auto-save failed. Please try saving manually.');
-      }
-    }, 800); // 800ms debounce for faster response
-  }, [lessonId, hasUnsavedChanges, handleUpdate]);
+        try {
+          setAutoSaveStatus('saving');
+          await handleUpdate();
+          // handleUpdate() will set the status to 'saved' on success
+          // No need to set it here as it's already handled in handleUpdate()
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+          // handleUpdate() will set the status to 'error' and show the specific error message
+          // No need to override it here
+        }
+      }, 1000); // 1 second debounce
+    };
+  }, [lessonId, handleUpdate]);
 
   // Auto-save when content blocks change
   React.useEffect(() => {
@@ -4317,12 +4413,10 @@ function LessonBuilder() {
     
     if (hasChanged && contentBlocks.length > 0) {
       setHasUnsavedChanges(true);
-      // Show immediate feedback that changes are detected
-      setAutoSaveStatus('changes_detected');
-      triggerAutoSave();
+      debouncedAutoSave(contentBlocks);
       prevContentBlocksRef.current = [...contentBlocks];
     }
-  }, [contentBlocks, loading, fetchingContent, triggerAutoSave]);
+  }, [contentBlocks, loading, fetchingContent, debouncedAutoSave]);
 
   const toggleViewMode = () => {
     // View mode functionality removed - now using Modern Preview only
@@ -6600,32 +6694,26 @@ function LessonBuilder() {
                 {/* Auto-save status indicator */}
                 <div className="flex flex-col items-end">
                   <div className="flex items-center gap-2 text-sm">
-                    {autoSaveStatus === 'changes_detected' && (
-                      <>
-                        <div className="h-4 w-4 rounded-full bg-yellow-500 animate-pulse"></div>
-                        <span className="text-yellow-600 font-medium">Changes detected...</span>
-                      </>
-                    )}
                     {autoSaveStatus === 'saving' && (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                        <span className="text-blue-600 font-medium">Saving...</span>
+                        <span className="text-blue-600 font-medium">Auto-saving...</span>
                       </>
                     )}
                     {autoSaveStatus === 'saved' && hasUnsavedChanges === false && (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-green-600 font-medium">All changes saved</span>
+                        <span className="text-green-600 font-medium">Auto-saved</span>
                       </>
                     )}
                     {autoSaveStatus === 'error' && (
                       <>
                         <X className="h-4 w-4 text-red-600" />
-                        <span className="text-red-600 font-medium">Save failed</span>
+                        <span className="text-red-600 font-medium">Auto-save failed</span>
                       </>
                     )}
                   </div>
-                  {autoSaveStatus !== 'saving' && autoSaveStatus !== 'changes_detected' && (
+                  {autoSaveStatus !== 'saving' && (
                     <span className="text-xs text-gray-500 mt-0.5">Auto-save enabled</span>
                   )}
                 </div>
@@ -6645,12 +6733,18 @@ function LessonBuilder() {
                   size="sm"
                   onClick={handleUpdate}
                   disabled={isUploading || autoSaveStatus === 'saving'}
-                  title="Manually save changes now"
+                  title={autoSaveStatus === 'error' ? "Auto-save failed - click to save manually" : "Manually save changes now"}
+                  variant={autoSaveStatus === 'error' ? 'destructive' : 'default'}
                 >
                   {isUploading || autoSaveStatus === 'saving' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Saving...
+                    </>
+                  ) : autoSaveStatus === 'error' ? (
+                    <>
+                      <X className="h-4 w-4 mr-2" />
+                      Save Now
                     </>
                   ) : (
                     'Save Now'
