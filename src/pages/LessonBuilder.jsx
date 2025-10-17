@@ -517,7 +517,7 @@ const customAlignToolbar = [
   [{ 'font': Font.whitelist }],
   [{ 'size': Size.whitelist }],
   ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
+  [{ 'color': [] }],
   [
     { 'align': '' },
     { 'align': 'center' },
@@ -532,7 +532,7 @@ const headingToolbar = [
   [{ 'font': Font.whitelist }],
   [{ 'size': Size.whitelist }],
   ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
+  [{ 'color': [] }],
   [{ 'align': [] }],
   ['clean']
 ];
@@ -544,7 +544,7 @@ const getToolbarModules = (type = 'full') => {
     [{ 'font': Font.whitelist }],
     [{ 'size': Size.whitelist }],
     ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
+    [{ 'color': [] }],
     [{ 'align': [] }]
   ];
 
@@ -555,7 +555,7 @@ const getToolbarModules = (type = 'full') => {
         [{ 'font': Font.whitelist }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline'],
-        [{ 'color': [] }, { 'background': [] }],
+        [{ 'color': [] }],
         [
           { 'align': '' },
           { 'align': 'center' },
@@ -566,14 +566,20 @@ const getToolbarModules = (type = 'full') => {
     };
   }
   
-  // Simplified toolbar for paragraph blocks (no alignment, lists, links, images, clean)
+  // Simplified toolbar for paragraph blocks with alignment
   if (type === 'paragraph') {
     return {
       toolbar: [
         [{ 'font': Font.whitelist }],
         [{ 'size': Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }, { 'background': [] }]
+        [{ 'color': [] }],
+        [
+          { 'align': '' },
+          { 'align': 'center' },
+          { 'align': 'right' },
+          { 'align': 'justify' }
+        ]
       ]
     };
   }

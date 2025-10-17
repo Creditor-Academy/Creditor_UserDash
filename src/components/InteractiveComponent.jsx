@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target, Loader2 } from 'lucide-react';
+import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target, Loader2, Clock, Crop } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
+import ImageEditor from './ImageEditor';
 
 const InteractiveComponent = forwardRef(({
   showInteractiveTemplateSidebar,
@@ -31,9 +32,41 @@ const InteractiveComponent = forwardRef(({
     image: null,
     hotspots: []
   });
+  const [timelineData, setTimelineData] = useState([
+    { 
+      id: '1',
+      date: '2024-01-15', 
+      title: 'Project Kickoff', 
+      description: 'Initial project planning and team formation', 
+      image: null, 
+      audio: null 
+    },
+    { 
+      id: '2',
+      date: null, 
+      title: 'Design Phase', 
+      description: 'Creating wireframes and mockups for the application', 
+      image: null, 
+      audio: null 
+    },
+    { 
+      id: '3',
+      date: '2024-03-15', 
+      title: 'Development Start', 
+      description: 'Beginning of active development and coding phase', 
+      image: null, 
+      audio: null 
+    }
+  ]);
   const [editingHotspot, setEditingHotspot] = useState(null);
   const [showHotspotDialog, setShowHotspotDialog] = useState(false);
   const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] = useState(false);
+  
+  // Image editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditContext, setImageEditContext] = useState(null); // { type: 'accordion'|'tab'|'labeledGraphic'|'timeline', index: number }
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
    
   // Helper function to extract accordion data from HTML
   const extractAccordionFromHTML = (htmlContent) => {
@@ -191,10 +224,94 @@ const InteractiveComponent = forwardRef(({
     return extractedData;
   };
 
+  // Helper function to extract timeline data from HTML
+  const extractTimelineFromHTML = (htmlContent) => {
+    const extractedData = [];
+    
+    try {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      // Find all timeline items
+      const timelineItems = tempDiv.querySelectorAll('.timeline-item');
+      
+      timelineItems.forEach((item, index) => {
+        // Extract date from timeline date span
+        const dateElement = item.querySelector('.timeline-date');
+        const date = dateElement ? dateElement.textContent.trim() : new Date().toISOString().split('T')[0];
+        
+        // Extract title from timeline title
+        const titleElement = item.querySelector('.timeline-title');
+        const title = titleElement ? titleElement.textContent.trim() : `Event ${index + 1}`;
+        
+        // Extract description from timeline content
+        const contentElement = item.querySelector('.timeline-content p');
+        const description = contentElement ? contentElement.textContent.trim() : '';
+        
+        // Extract image if present
+        const imageElement = item.querySelector('.timeline-content img');
+        const image = imageElement ? {
+          src: imageElement.src,
+          name: imageElement.alt || 'Timeline image',
+          size: 0
+        } : null;
+        
+        // Extract audio if present
+        const audioElement = item.querySelector('.timeline-content audio source');
+        const audio = audioElement ? {
+          src: audioElement.getAttribute('src'),
+          type: audioElement.getAttribute('type') || 'audio/mpeg',
+          name: 'Timeline audio',
+          size: 0
+        } : null;
+        
+        extractedData.push({
+          id: (index + 1).toString(),
+          date,
+          title,
+          description,
+          image,
+          audio
+        });
+      });
+    } catch (error) {
+      console.error('Error extracting timeline data from HTML:', error);
+    }
+    
+    return extractedData;
+  };
+
+  // Timeline helper functions
+  const addTimelineItem = () => {
+    const newId = (timelineData.length + 1).toString();
+    setTimelineData([...timelineData, { 
+      id: newId,
+      date: null, 
+      title: `Event ${timelineData.length + 1}`, 
+      description: `Description for event ${timelineData.length + 1}`, 
+      image: null, 
+      audio: null 
+    }]);
+  };
+
+  const removeTimelineItem = (index) => {
+    if (timelineData.length > 1) {
+      setTimelineData(timelineData.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateTimelineItem = (index, field, value) => {
+    const updated = [...timelineData];
+    updated[index][field] = value;
+    setTimelineData(updated);
+  };
+
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     setTabsData,
-    setAccordionData
+    setAccordionData,
+    setTimelineData
   }));
 
   // Interactive templates
@@ -249,6 +366,35 @@ const InteractiveComponent = forwardRef(({
           <div className="text-xs text-gray-600 mt-1">Image with interactive hotspots</div>
         </div>
       )
+    },
+    {
+      id: 'timeline',
+      title: 'Timeline',
+      description: 'Interactive timeline with events and milestones',
+      icon: <Clock className="h-6 w-6" />,
+      preview: (
+        <div className="w-full h-32 bg-white rounded-lg border p-3">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <div className="flex-1 border-t-2 border-blue-200"></div>
+            </div>
+            <div className="ml-4 space-y-1">
+              <div className="text-xs font-medium text-blue-600">2024-01-15</div>
+              <div className="text-xs font-semibold text-gray-800">Project Kickoff</div>
+              <div className="text-xs text-gray-600">Initial project planning...</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <div className="flex-1 border-t-2 border-blue-200"></div>
+            </div>
+            <div className="ml-4 space-y-1">
+              <div className="text-xs font-medium text-blue-600">2024-02-01</div>
+              <div className="text-xs font-semibold text-gray-800">Design Phase</div>
+            </div>
+          </div>
+        </div>
+      )
     }
   ];
 
@@ -285,6 +431,9 @@ const InteractiveComponent = forwardRef(({
         } else if (htmlContent.includes('data-template="labeled-graphic"') || 
                    htmlContent.includes('labeled-graphic-container')) {
           template = 'labeled-graphic';
+        } else if (htmlContent.includes('data-template="timeline"') || 
+                   htmlContent.includes('timeline-container')) {
+          template = 'timeline';
         }
       }
       
@@ -306,6 +455,9 @@ const InteractiveComponent = forwardRef(({
             } else if (template === 'labeled-graphic' && content.labeledGraphicData) {
               console.log('Loading labeled graphic data:', content.labeledGraphicData);
               setLabeledGraphicData(content.labeledGraphicData);
+            } else if (template === 'timeline' && content.timelineData) {
+              console.log('Loading timeline data:', content.timelineData);
+              setTimelineData(content.timelineData);
             }
           } else {
             console.log('No JSON content found, trying to extract from HTML');
@@ -320,6 +472,12 @@ const InteractiveComponent = forwardRef(({
               if (extractedData.image) {
                 console.log('Extracted labeled graphic data from HTML:', extractedData);
                 setLabeledGraphicData(extractedData);
+              }
+            } else if (template === 'timeline' && editingInteractiveBlock.html_css) {
+              const extractedData = extractTimelineFromHTML(editingInteractiveBlock.html_css);
+              if (extractedData.length > 0) {
+                console.log('Extracted timeline data from HTML:', extractedData);
+                setTimelineData(extractedData);
               }
             }
           }
@@ -337,6 +495,25 @@ const InteractiveComponent = forwardRef(({
               image: null,
               hotspots: []
             });
+          } else if (template === 'timeline') {
+            setTimelineData([
+              { 
+                id: '1',
+                date: '2024-01-15', 
+                title: 'Event 1', 
+                description: 'Description for event 1', 
+                image: null, 
+                audio: null 
+              },
+              { 
+                id: '2',
+                date: null, 
+                title: 'Event 2', 
+                description: 'Description for event 2', 
+                image: null, 
+                audio: null 
+              }
+            ]);
           }
         }
       }
@@ -382,6 +559,32 @@ const InteractiveComponent = forwardRef(({
         }
       ]
     };
+    const defaultTimelineData = [
+      { 
+        id: '1',
+        date: '2024-01-15', 
+        title: 'Project Kickoff', 
+        description: 'Initial project planning and team formation', 
+        image: null, 
+        audio: null 
+      },
+      { 
+        id: '2',
+        date: null, 
+        title: 'Design Phase', 
+        description: 'Creating wireframes and mockups for the application', 
+        image: null, 
+        audio: null 
+      },
+      { 
+        id: '3',
+        date: '2024-03-15', 
+        title: 'Development Start', 
+        description: 'Beginning of active development and coding phase', 
+        image: null, 
+        audio: null 
+      }
+    ];
     
     let defaultData, dataKey;
     if (template.id === 'tabs') {
@@ -393,6 +596,9 @@ const InteractiveComponent = forwardRef(({
     } else if (template.id === 'labeled-graphic') {
       defaultData = defaultLabeledGraphicData;
       dataKey = 'labeledGraphicData';
+    } else if (template.id === 'timeline') {
+      defaultData = defaultTimelineData;
+      dataKey = 'timelineData';
     }
     
     const interactiveContent = {
@@ -450,8 +656,8 @@ const InteractiveComponent = forwardRef(({
   const handleImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       
@@ -462,40 +668,10 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      try {
-        // Upload image to cloud API
-        const uploadResult = await uploadImage(file, {
-          folder: 'lesson-images',
-          public: true
-        });
-        
-        if (uploadResult.success && uploadResult.imageUrl) {
-          updateAccordionItem(index, 'image', {
-            src: uploadResult.imageUrl, // Use cloud URL
-            name: file.name,
-            size: file.size,
-            uploadedData: uploadResult
-          });
-          toast.success('Image uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no image URL returned');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast.error(error.message || 'Failed to upload image. Please try again.');
-        
-        // Fallback to local URL for immediate preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          updateAccordionItem(index, 'image', {
-            src: e.target.result,
-            name: file.name,
-            size: file.size,
-            isLocal: true
-          });
-        };
-        reader.readAsDataURL(file);
-      }
+      // Open image editor instead of uploading directly
+      setImageToEdit(file);
+      setImageEditContext({ type: 'accordion', index });
+      setShowImageEditor(true);
     }
   };
 
@@ -508,8 +684,8 @@ const InteractiveComponent = forwardRef(({
   const handleAudioUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -569,8 +745,8 @@ const InteractiveComponent = forwardRef(({
   const handleTabImageUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       
@@ -581,40 +757,10 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      try {
-        // Upload image to cloud API
-        const uploadResult = await uploadImage(file, {
-          folder: 'lesson-images',
-          public: true
-        });
-        
-        if (uploadResult.success && uploadResult.imageUrl) {
-          updateTabsItem(index, 'image', {
-            src: uploadResult.imageUrl, // Use cloud URL
-            name: file.name,
-            size: file.size,
-            uploadedData: uploadResult
-          });
-          toast.success('Image uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no image URL returned');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast.error(error.message || 'Failed to upload image. Please try again.');
-        
-        // Fallback to local URL for immediate preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          updateTabsItem(index, 'image', {
-            src: e.target.result,
-            name: file.name,
-            size: file.size,
-            isLocal: true
-          });
-        };
-        reader.readAsDataURL(file);
-      }
+      // Open image editor instead of uploading directly
+      setImageToEdit(file);
+      setImageEditContext({ type: 'tab', index });
+      setShowImageEditor(true);
     }
   };
 
@@ -627,8 +773,8 @@ const InteractiveComponent = forwardRef(({
   const handleTabAudioUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -688,8 +834,8 @@ const InteractiveComponent = forwardRef(({
   const handleLabeledGraphicImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       
@@ -700,50 +846,10 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      setLabeledGraphicImageUploading(true);
-      
-      try {
-        // Upload image to cloud API
-        const uploadResult = await uploadImage(file, {
-          folder: 'lesson-images',
-          public: true
-        });
-        
-        if (uploadResult.success && uploadResult.imageUrl) {
-          setLabeledGraphicData(prev => ({
-            ...prev,
-            image: {
-              src: uploadResult.imageUrl,
-              name: file.name,
-              size: file.size,
-              uploadedData: uploadResult
-            }
-          }));
-          toast.success('Image uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no image URL returned');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast.error(error.message || 'Failed to upload image. Please try again.');
-        
-        // Fallback to local URL for immediate preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setLabeledGraphicData(prev => ({
-            ...prev,
-            image: {
-              src: e.target.result,
-              name: file.name,
-              size: file.size,
-              isLocal: true
-            }
-          }));
-        };
-        reader.readAsDataURL(file);
-      } finally {
-        setLabeledGraphicImageUploading(false);
-      }
+      // Open image editor instead of uploading directly
+      setImageToEdit(file);
+      setImageEditContext({ type: 'labeledGraphic' });
+      setShowImageEditor(true);
     }
   };
 
@@ -811,8 +917,8 @@ const InteractiveComponent = forwardRef(({
   const handleHotspotAudioUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -875,6 +981,181 @@ const InteractiveComponent = forwardRef(({
       audio: null
     }));
     toast.success('Audio removed successfully!');
+  };
+
+  // Timeline image handling functions
+  const handleTimelineImageUpload = (index, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload only JPG, PNG, GIF, or WebP images');
+        return;
+      }
+      
+      // Open image editor
+      setImageToEdit(file);
+      setImageEditContext({ type: 'timeline', index });
+      setShowImageEditor(true);
+    }
+  };
+
+  // Timeline audio handling functions
+  const handleTimelineAudioUpload = async (index, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/m4a'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload only MP3, WAV, OGG, or M4A audio files');
+        return;
+      }
+      
+      try {
+        // Upload audio to cloud API
+        const uploadResult = await uploadAudioResource(file, {
+          folder: 'lesson-audio',
+          public: true,
+          type: 'audio'
+        });
+        
+        if (uploadResult.success && uploadResult.audioUrl) {
+          updateTimelineItem(index, 'audio', {
+            src: uploadResult.audioUrl, // Use cloud URL
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uploadedData: uploadResult
+          });
+          toast.success('Audio uploaded successfully!');
+        } else {
+          throw new Error('Audio upload failed');
+        }
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+        toast.error(error.message || 'Failed to upload audio. Please try again.');
+        
+        // Fallback to local URL for immediate preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          updateTimelineItem(index, 'audio', {
+            src: e.target.result,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            isLocal: true
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  // Handle image save from image editor
+  const handleImageEditorSave = async (editedFile) => {
+    if (!imageEditContext) return;
+    
+    const { type, index } = imageEditContext;
+    
+    // Close ImageEditor immediately and show processing state
+    setShowImageEditor(false);
+    setIsImageProcessing(true);
+    
+    try {
+      // Show uploading state for labeled graphic
+      if (type === 'labeledGraphic') {
+        setLabeledGraphicImageUploading(true);
+      }
+      
+      // Upload edited image to cloud API
+      const uploadResult = await uploadImage(editedFile, {
+        folder: 'lesson-images',
+        public: true
+      });
+      
+      if (uploadResult.success && uploadResult.imageUrl) {
+        const imageData = {
+          src: uploadResult.imageUrl, // Use cloud URL
+          name: editedFile.name,
+          size: editedFile.size,
+          uploadedData: uploadResult
+        };
+        
+        // Update the appropriate state based on context type
+        if (type === 'accordion') {
+          updateAccordionItem(index, 'image', imageData);
+        } else if (type === 'tab') {
+          updateTabsItem(index, 'image', imageData);
+        } else if (type === 'labeledGraphic') {
+          setLabeledGraphicData(prev => ({
+            ...prev,
+            image: imageData
+          }));
+        } else if (type === 'timeline') {
+          updateTimelineItem(index, 'image', imageData);
+        }
+        
+        toast.success('Image edited and uploaded successfully!');
+      } else {
+        throw new Error('Upload failed - no image URL returned');
+      }
+    } catch (error) {
+      console.error('Error uploading edited image:', error);
+      toast.error(error.message || 'Failed to upload image. Please try again.');
+      
+      // Fallback to local URL for immediate preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = {
+          src: e.target.result,
+          name: editedFile.name,
+          size: editedFile.size,
+          isLocal: true
+        };
+        
+        if (type === 'accordion') {
+          updateAccordionItem(index, 'image', imageData);
+        } else if (type === 'tab') {
+          updateTabsItem(index, 'image', imageData);
+        } else if (type === 'labeledGraphic') {
+          setLabeledGraphicData(prev => ({
+            ...prev,
+            image: imageData
+          }));
+        } else if (type === 'timeline') {
+          updateTimelineItem(index, 'image', imageData);
+        }
+      };
+      reader.readAsDataURL(editedFile);
+    } finally {
+      // Hide uploading state and clean up
+      if (type === 'labeledGraphic') {
+        setLabeledGraphicImageUploading(false);
+      }
+      setIsImageProcessing(false);
+      setImageToEdit(null);
+      setImageEditContext(null);
+    }
+  };
+
+  // Handle image editor close
+  const handleImageEditorClose = () => {
+    if (!isImageProcessing) {
+      setShowImageEditor(false);
+      setImageToEdit(null);
+      setImageEditContext(null);
+    }
   };
 
   const generateInteractiveHTML = (template, data) => {
@@ -1105,6 +1386,80 @@ const InteractiveComponent = forwardRef(({
         </div>
       `;
       return labeledGraphicHTML;
+    } else if (template === 'timeline') {
+      const timelineId = `timeline-${Date.now()}`;
+      const timelineHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-gradient-to-r from-purple-500 to-pink-600">
+          <div class="timeline-container" data-template="timeline" id="${timelineId}">
+            <div class="relative">
+              <!-- Timeline line -->
+              <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 to-purple-500"></div>
+              
+              ${data.map((item, index) => `
+                <div class="timeline-item relative flex items-start mb-8 last:mb-0">
+                  <!-- Timeline dot -->
+                  <div class="relative z-10 flex-shrink-0 w-8 h-8 bg-blue-500 border-4 border-white rounded-full shadow-lg flex items-center justify-center">
+                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                  
+                  <!-- Timeline content -->
+                  <div class="ml-6 flex-1 min-w-0">
+                    <div class="bg-gray-50 rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                      <!-- Date (optional) -->
+                      ${item.date ? `
+                        <div class="timeline-date text-sm font-medium text-blue-600 mb-2">
+                          ${new Date(item.date).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </div>
+                      ` : ''}
+                      
+                      <!-- Title -->
+                      <h3 class="timeline-title text-lg font-semibold text-gray-800 mb-2">${item.title}</h3>
+                      
+                      <!-- Description -->
+                      <div class="timeline-content">
+                        <p class="text-gray-700 leading-relaxed mb-3">${item.description}</p>
+                        
+                        ${item.image ? `
+                          <div class="mb-3">
+                            <img src="${item.image.src}" 
+                                 alt="${item.image.name || 'Timeline image'}" 
+                                 class="w-full h-48 object-cover rounded-lg shadow-sm" />
+                          </div>
+                        ` : ''}
+                        
+                        ${item.audio ? `
+                          <div class="bg-gray-100 rounded-lg p-3 border border-gray-200">
+                            <div class="flex items-center gap-2 mb-2">
+                              <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg class="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.814L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.314a1 1 0 011.617.814zM12 8a1 1 0 011.414 0L15 9.586l1.586-1.586A1 1 0 1118 9.414L16.414 11 18 12.586A1 1 0 0116.586 14L15 12.414 13.414 14A1 1 0 0112 12.586L13.586 11 12 9.414A1 1 0 0112 8z" clip-rule="evenodd"></path>
+                                </svg>
+                              </div>
+                              <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-800">${item.audio.name}</p>
+                                <p class="text-xs text-gray-500">${Math.round(item.audio.size / 1024)} KB</p>
+                              </div>
+                            </div>
+                            <audio controls class="w-full" preload="metadata" style="height: 32px;">
+                              <source src="${item.audio.src}" type="${item.audio.type}">
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      return timelineHTML;
     }
     return '';
   };
@@ -1140,6 +1495,15 @@ const InteractiveComponent = forwardRef(({
       // Validate that image is uploaded
       if (!data.image) {
         toast.error('Please upload an image for the labeled graphic');
+        return;
+      }
+    } else if (selectedTemplate === 'timeline') {
+      data = timelineData;
+      dataKey = 'timelineData';
+      // Validate that all items have content (date is optional)
+      const hasEmptyItems = data.some(item => !item.title.trim() || !item.description.trim());
+      if (hasEmptyItems) {
+        toast.error('Please fill in all titles and descriptions');
         return;
       }
     }
@@ -1188,6 +1552,24 @@ const InteractiveComponent = forwardRef(({
       image: null,
       hotspots: []
     });
+    setTimelineData([
+      { 
+        id: '1',
+        date: '2024-01-15', 
+        title: 'Event 1', 
+        description: 'Description for event 1', 
+        image: null, 
+        audio: null 
+      },
+      { 
+        id: '2',
+        date: null, 
+        title: 'Event 2', 
+        description: 'Description for event 2', 
+        image: null, 
+        audio: null 
+      }
+    ]);
     setEditingHotspot(null);
     setShowHotspotDialog(false);
   };
@@ -1237,8 +1619,32 @@ const InteractiveComponent = forwardRef(({
       )}
 
       {/* Interactive Edit Dialog */}
-      <Dialog open={showInteractiveEditDialog} onOpenChange={setShowInteractiveEditDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showInteractiveEditDialog} onOpenChange={(open) => {
+        if (!open && !isImageProcessing) {
+          setShowInteractiveEditDialog(false);
+        }
+      }}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto sm:max-w-5xl !fixed !left-1/2 !top-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
+          {/* Loading overlay */}
+          {isImageProcessing && (
+            <div className="absolute inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center rounded-lg">
+              <div className="bg-white rounded-xl p-8 shadow-2xl max-w-md mx-4 border border-gray-200">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent absolute top-0 left-0"></div>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Processing Your Image</h3>
+                    <p className="text-sm text-gray-600">Uploading and processing your edited image...</p>
+                    <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <DialogHeader>
             <DialogTitle>
               {editingInteractiveBlock ? 'Edit' : 'Create'} Interactive Content
@@ -1339,7 +1745,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 50MB
+                                  PNG, JPG, GIF up to 500MB
                                 </span>
                               </label>
                             </div>
@@ -1394,7 +1800,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload audio
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  MP3, WAV, OGG up to 10MB
+                                  MP3, WAV, OGG up to 100MB
                                 </span>
                               </label>
                             </div>
@@ -1500,7 +1906,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 50MB
+                                  PNG, JPG, GIF up to 500MB
                                 </span>
                               </label>
                             </div>
@@ -1555,7 +1961,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload audio
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  MP3, WAV, OGG up to 10MB
+                                  MP3, WAV, OGG up to 100MB
                                 </span>
                               </label>
                             </div>
@@ -1681,7 +2087,7 @@ const InteractiveComponent = forwardRef(({
                               Click to upload an image for your labeled graphic
                             </p>
                             <span className="text-xs text-gray-400 mt-2 block">
-                              PNG, JPG, GIF up to 5MB
+                              PNG, JPG, GIF up to 500MB
                             </span>
                           </div>
                         </label>
@@ -1727,13 +2133,224 @@ const InteractiveComponent = forwardRef(({
                 </div>
               </div>
             )}
+
+            {selectedTemplate === 'timeline' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Timeline Configuration</h3>
+                  <Button onClick={addTimelineItem} size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Event
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  {timelineData.map((item, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium text-gray-700">Event {index + 1}</span>
+                        {timelineData.length > 1 && (
+                          <Button
+                            onClick={() => removeTimelineItem(index)}
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Event Date <span className="text-gray-500 text-sm">(Optional)</span>
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="date"
+                              value={item.date || ''}
+                              onChange={(e) => updateTimelineItem(index, 'date', e.target.value || null)}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Select a date (optional)"
+                            />
+                            {item.date && (
+                              <button
+                                type="button"
+                                onClick={() => updateTimelineItem(index, 'date', null)}
+                                className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-md transition-colors duration-200 flex items-center gap-1"
+                                title="Remove date"
+                              >
+                                <X className="h-4 w-4" />
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Event Title
+                          </label>
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => updateTimelineItem(index, 'title', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter event title"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Event Description
+                          </label>
+                          <textarea
+                            value={item.description}
+                            onChange={(e) => updateTimelineItem(index, 'description', e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter event description"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Event Image (Optional)
+                          </label>
+                          {item.image ? (
+                            <div className="space-y-3">
+                              <div className="relative inline-block">
+                                <img
+                                  src={item.image.src}
+                                  alt={item.image.name}
+                                  className="max-w-full h-32 object-cover rounded-lg border border-gray-300"
+                                />
+                                <div className="absolute -top-2 -right-2 flex gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // Create a file object from the image src for editing
+                                      fetch(item.image.src)
+                                        .then(res => res.blob())
+                                        .then(blob => {
+                                          const file = new File([blob], item.image.name, { type: blob.type });
+                                          setImageToEdit(file);
+                                          setImageEditContext({ type: 'timeline', index });
+                                          setShowImageEditor(true);
+                                        })
+                                        .catch(err => {
+                                          console.error('Error loading image for editing:', err);
+                                          toast.error('Could not load image for editing');
+                                        });
+                                    }}
+                                    className="bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 transition-colors"
+                                    title="Crop & Edit"
+                                  >
+                                    <Crop className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(index, 'image', null)}
+                                    className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                    title="Remove image"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500">
+                                {item.image.name} ({Math.round(item.image.size / 1024)} KB)
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleTimelineImageUpload(index, e)}
+                                className="hidden"
+                                id={`timeline-image-upload-${index}`}
+                              />
+                              <label
+                                htmlFor={`timeline-image-upload-${index}`}
+                                className="cursor-pointer flex flex-col items-center space-y-2"
+                              >
+                                <Upload className="h-8 w-8 text-gray-400" />
+                                <span className="text-sm text-gray-600">
+                                  Click to upload image
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  PNG, JPG, GIF up to 500MB
+                                </span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Event Audio (Optional)
+                          </label>
+                          {item.audio ? (
+                            <div className="space-y-3">
+                              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                      <Volume2 className="h-5 w-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-800">{item.audio.name}</p>
+                                      <p className="text-xs text-gray-500">{Math.round(item.audio.size / 1024)} KB</p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateTimelineItem(index, 'audio', null)}
+                                    className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <audio controls className="w-full" preload="metadata">
+                                  <source src={item.audio.src} type={item.audio.type} />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                              <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={(e) => handleTimelineAudioUpload(index, e)}
+                                className="hidden"
+                                id={`timeline-audio-upload-${index}`}
+                              />
+                              <label
+                                htmlFor={`timeline-audio-upload-${index}`}
+                                className="cursor-pointer flex flex-col items-center space-y-2"
+                              >
+                                <Volume2 className="h-8 w-8 text-gray-400" />
+                                <span className="text-sm text-gray-600">
+                                  Click to upload audio
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  MP3, WAV, OGG up to 100MB
+                                </span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={isImageProcessing}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={isImageProcessing}>
               {editingInteractiveBlock ? 'Update' : 'Create'} Interactive Content
             </Button>
           </DialogFooter>
@@ -1822,7 +2439,7 @@ const InteractiveComponent = forwardRef(({
                         Click to upload audio
                       </span>
                       <span className="text-xs text-gray-500">
-                        MP3, WAV, OGG up to 10MB
+                        MP3, WAV, OGG up to 100MB
                       </span>
                     </label>
                   </div>
@@ -1869,6 +2486,15 @@ const InteractiveComponent = forwardRef(({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Editor */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageFile={imageToEdit}
+        onSave={handleImageEditorSave}
+        title="Crop & Edit Timeline Image"
+      />
     </>
   );
 });
