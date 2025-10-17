@@ -7,7 +7,9 @@
  */
 class QwenImageService {
   constructor() {
-    this.huggingfaceKey = import.meta.env.VITE_HF_API_KEY || import.meta.env.VITE_HUGGINGFACE_API_KEY || "your_huggingface_api_key_here";
+    this.huggingfaceKey = import.meta.env.VITE_HUGGINGFACE_INFERENCE_API_KEY || 
+                         import.meta.env.VITE_HF_API_KEY || 
+                         import.meta.env.VITE_HUGGINGFACE_API_KEY;
     this.baseUrl = "https://api-inference.huggingface.co/models";
     
     // Model configurations for different use cases - Updated with valid models
