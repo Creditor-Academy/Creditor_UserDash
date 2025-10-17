@@ -61,15 +61,11 @@ const InteractiveComponent = forwardRef(({
   const [editingHotspot, setEditingHotspot] = useState(null);
   const [showHotspotDialog, setShowHotspotDialog] = useState(false);
   const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] = useState(false);
-  const [showImageEditor, setShowImageEditor] = useState(false);
-  const [imageToEdit, setImageToEdit] = useState(null);
-  const [editingImageIndex, setEditingImageIndex] = useState(null);
-  const [editingImageType, setEditingImageType] = useState(null); // 'timeline', 'accordion', 'tabs', 'hotspot'
   
   // Image editor state
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [imageToEdit, setImageToEdit] = useState(null);
-  const [imageEditContext, setImageEditContext] = useState(null); // { type: 'accordion'|'tab'|'labeledGraphic', index: number }
+  const [imageEditContext, setImageEditContext] = useState(null); // { type: 'accordion'|'tab'|'labeledGraphic'|'timeline', index: number }
   const [isImageProcessing, setIsImageProcessing] = useState(false);
    
   // Helper function to extract accordion data from HTML
@@ -991,8 +987,8 @@ const InteractiveComponent = forwardRef(({
   const handleTimelineImageUpload = (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       
@@ -1005,100 +1001,17 @@ const InteractiveComponent = forwardRef(({
       
       // Open image editor
       setImageToEdit(file);
-      setEditingImageIndex(index);
-      setEditingImageType('timeline');
+      setImageEditContext({ type: 'timeline', index });
       setShowImageEditor(true);
     }
-  };
-
-  const handleImageEditorSave = async (editedFile) => {
-    if (!editedFile || editingImageIndex === null || !editingImageType) return;
-
-    try {
-      // Upload edited image to cloud API
-      const uploadResult = await uploadImage(editedFile, {
-        folder: 'lesson-images',
-        public: true
-      });
-      
-      if (uploadResult.success && uploadResult.imageUrl) {
-        const imageData = {
-          src: uploadResult.imageUrl,
-          name: editedFile.name,
-          size: editedFile.size,
-          uploadedData: uploadResult
-        };
-
-        // Update the appropriate data based on type
-        if (editingImageType === 'timeline') {
-          updateTimelineItem(editingImageIndex, 'image', imageData);
-        } else if (editingImageType === 'accordion') {
-          updateAccordionItem(editingImageIndex, 'image', imageData);
-        } else if (editingImageType === 'tabs') {
-          updateTabsItem(editingImageIndex, 'image', imageData);
-        } else if (editingImageType === 'hotspot') {
-          setEditingHotspot(prev => ({
-            ...prev,
-            audio: prev.audio, // Keep existing audio
-            image: imageData
-          }));
-        }
-
-        toast.success('Image cropped and uploaded successfully!');
-      } else {
-        throw new Error('Upload failed - no image URL returned');
-      }
-    } catch (error) {
-      console.error('Error uploading edited image:', error);
-      toast.error(error.message || 'Failed to upload edited image. Please try again.');
-      
-      // Fallback to local URL for immediate preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageData = {
-          src: e.target.result,
-          name: editedFile.name,
-          size: editedFile.size,
-          isLocal: true
-        };
-
-        if (editingImageType === 'timeline') {
-          updateTimelineItem(editingImageIndex, 'image', imageData);
-        } else if (editingImageType === 'accordion') {
-          updateAccordionItem(editingImageIndex, 'image', imageData);
-        } else if (editingImageType === 'tabs') {
-          updateTabsItem(editingImageIndex, 'image', imageData);
-        } else if (editingImageType === 'hotspot') {
-          setEditingHotspot(prev => ({
-            ...prev,
-            audio: prev.audio,
-            image: imageData
-          }));
-        }
-      };
-      reader.readAsDataURL(editedFile);
-    }
-
-    // Close image editor
-    setShowImageEditor(false);
-    setImageToEdit(null);
-    setEditingImageIndex(null);
-    setEditingImageType(null);
-  };
-
-  const handleImageEditorClose = () => {
-    setShowImageEditor(false);
-    setImageToEdit(null);
-    setEditingImageIndex(null);
-    setEditingImageType(null);
   };
 
   // Timeline audio handling functions
   const handleTimelineAudioUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -1189,6 +1102,8 @@ const InteractiveComponent = forwardRef(({
             ...prev,
             image: imageData
           }));
+        } else if (type === 'timeline') {
+          updateTimelineItem(index, 'image', imageData);
         }
         
         toast.success('Image edited and uploaded successfully!');
@@ -1218,6 +1133,8 @@ const InteractiveComponent = forwardRef(({
             ...prev,
             image: imageData
           }));
+        } else if (type === 'timeline') {
+          updateTimelineItem(index, 'image', imageData);
         }
       };
       reader.readAsDataURL(editedFile);
@@ -2315,8 +2232,7 @@ const InteractiveComponent = forwardRef(({
                                         .then(blob => {
                                           const file = new File([blob], item.image.name, { type: blob.type });
                                           setImageToEdit(file);
-                                          setEditingImageIndex(index);
-                                          setEditingImageType('timeline');
+                                          setImageEditContext({ type: 'timeline', index });
                                           setShowImageEditor(true);
                                         })
                                         .catch(err => {
@@ -2361,7 +2277,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 50MB
+                                  PNG, JPG, GIF up to 500MB
                                 </span>
                               </label>
                             </div>
@@ -2416,7 +2332,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload audio
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  MP3, WAV, OGG up to 10MB
+                                  MP3, WAV, OGG up to 100MB
                                 </span>
                               </label>
                             </div>
