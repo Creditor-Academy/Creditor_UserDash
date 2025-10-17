@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
+import ImageEditor from '@/components/ImageEditor';
 
 const InteractiveComponent = forwardRef(({
   showInteractiveTemplateSidebar,
@@ -34,6 +35,12 @@ const InteractiveComponent = forwardRef(({
   const [editingHotspot, setEditingHotspot] = useState(null);
   const [showHotspotDialog, setShowHotspotDialog] = useState(false);
   const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] = useState(false);
+  
+  // Image editor state
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState(null);
+  const [imageEditContext, setImageEditContext] = useState(null); // { type: 'accordion'|'tab'|'labeledGraphic', index: number }
+  const [isImageProcessing, setIsImageProcessing] = useState(false);
    
   // Helper function to extract accordion data from HTML
   const extractAccordionFromHTML = (htmlContent) => {
@@ -462,40 +469,10 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      try {
-        // Upload image to cloud API
-        const uploadResult = await uploadImage(file, {
-          folder: 'lesson-images',
-          public: true
-        });
-        
-        if (uploadResult.success && uploadResult.imageUrl) {
-          updateAccordionItem(index, 'image', {
-            src: uploadResult.imageUrl, // Use cloud URL
-            name: file.name,
-            size: file.size,
-            uploadedData: uploadResult
-          });
-          toast.success('Image uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no image URL returned');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast.error(error.message || 'Failed to upload image. Please try again.');
-        
-        // Fallback to local URL for immediate preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          updateAccordionItem(index, 'image', {
-            src: e.target.result,
-            name: file.name,
-            size: file.size,
-            isLocal: true
-          });
-        };
-        reader.readAsDataURL(file);
-      }
+      // Open image editor instead of uploading directly
+      setImageToEdit(file);
+      setImageEditContext({ type: 'accordion', index });
+      setShowImageEditor(true);
     }
   };
 
@@ -581,40 +558,10 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      try {
-        // Upload image to cloud API
-        const uploadResult = await uploadImage(file, {
-          folder: 'lesson-images',
-          public: true
-        });
-        
-        if (uploadResult.success && uploadResult.imageUrl) {
-          updateTabsItem(index, 'image', {
-            src: uploadResult.imageUrl, // Use cloud URL
-            name: file.name,
-            size: file.size,
-            uploadedData: uploadResult
-          });
-          toast.success('Image uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no image URL returned');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast.error(error.message || 'Failed to upload image. Please try again.');
-        
-        // Fallback to local URL for immediate preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          updateTabsItem(index, 'image', {
-            src: e.target.result,
-            name: file.name,
-            size: file.size,
-            isLocal: true
-          });
-        };
-        reader.readAsDataURL(file);
-      }
+      // Open image editor instead of uploading directly
+      setImageToEdit(file);
+      setImageEditContext({ type: 'tab', index });
+      setShowImageEditor(true);
     }
   };
 
@@ -627,8 +574,8 @@ const InteractiveComponent = forwardRef(({
   const handleTabAudioUpload = async (index, event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -688,8 +635,8 @@ const InteractiveComponent = forwardRef(({
   const handleLabeledGraphicImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        toast.error('Image size should be less than 50MB');
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
         return;
       }
       
@@ -700,50 +647,10 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      setLabeledGraphicImageUploading(true);
-      
-      try {
-        // Upload image to cloud API
-        const uploadResult = await uploadImage(file, {
-          folder: 'lesson-images',
-          public: true
-        });
-        
-        if (uploadResult.success && uploadResult.imageUrl) {
-          setLabeledGraphicData(prev => ({
-            ...prev,
-            image: {
-              src: uploadResult.imageUrl,
-              name: file.name,
-              size: file.size,
-              uploadedData: uploadResult
-            }
-          }));
-          toast.success('Image uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no image URL returned');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        toast.error(error.message || 'Failed to upload image. Please try again.');
-        
-        // Fallback to local URL for immediate preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setLabeledGraphicData(prev => ({
-            ...prev,
-            image: {
-              src: e.target.result,
-              name: file.name,
-              size: file.size,
-              isLocal: true
-            }
-          }));
-        };
-        reader.readAsDataURL(file);
-      } finally {
-        setLabeledGraphicImageUploading(false);
-      }
+      // Open image editor instead of uploading directly
+      setImageToEdit(file);
+      setImageEditContext({ type: 'labeledGraphic' });
+      setShowImageEditor(true);
     }
   };
 
@@ -811,8 +718,8 @@ const InteractiveComponent = forwardRef(({
   const handleHotspotAudioUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit for audio
-        toast.error('Audio file size should be less than 10MB');
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
         return;
       }
       
@@ -875,6 +782,98 @@ const InteractiveComponent = forwardRef(({
       audio: null
     }));
     toast.success('Audio removed successfully!');
+  };
+
+  // Handle image save from image editor
+  const handleImageEditorSave = async (editedFile) => {
+    if (!imageEditContext) return;
+    
+    const { type, index } = imageEditContext;
+    
+    // Close ImageEditor immediately and show processing state
+    setShowImageEditor(false);
+    setIsImageProcessing(true);
+    
+    try {
+      // Show uploading state for labeled graphic
+      if (type === 'labeledGraphic') {
+        setLabeledGraphicImageUploading(true);
+      }
+      
+      // Upload edited image to cloud API
+      const uploadResult = await uploadImage(editedFile, {
+        folder: 'lesson-images',
+        public: true
+      });
+      
+      if (uploadResult.success && uploadResult.imageUrl) {
+        const imageData = {
+          src: uploadResult.imageUrl, // Use cloud URL
+          name: editedFile.name,
+          size: editedFile.size,
+          uploadedData: uploadResult
+        };
+        
+        // Update the appropriate state based on context type
+        if (type === 'accordion') {
+          updateAccordionItem(index, 'image', imageData);
+        } else if (type === 'tab') {
+          updateTabsItem(index, 'image', imageData);
+        } else if (type === 'labeledGraphic') {
+          setLabeledGraphicData(prev => ({
+            ...prev,
+            image: imageData
+          }));
+        }
+        
+        toast.success('Image edited and uploaded successfully!');
+      } else {
+        throw new Error('Upload failed - no image URL returned');
+      }
+    } catch (error) {
+      console.error('Error uploading edited image:', error);
+      toast.error(error.message || 'Failed to upload image. Please try again.');
+      
+      // Fallback to local URL for immediate preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = {
+          src: e.target.result,
+          name: editedFile.name,
+          size: editedFile.size,
+          isLocal: true
+        };
+        
+        if (type === 'accordion') {
+          updateAccordionItem(index, 'image', imageData);
+        } else if (type === 'tab') {
+          updateTabsItem(index, 'image', imageData);
+        } else if (type === 'labeledGraphic') {
+          setLabeledGraphicData(prev => ({
+            ...prev,
+            image: imageData
+          }));
+        }
+      };
+      reader.readAsDataURL(editedFile);
+    } finally {
+      // Hide uploading state and clean up
+      if (type === 'labeledGraphic') {
+        setLabeledGraphicImageUploading(false);
+      }
+      setIsImageProcessing(false);
+      setImageToEdit(null);
+      setImageEditContext(null);
+    }
+  };
+
+  // Handle image editor close
+  const handleImageEditorClose = () => {
+    if (!isImageProcessing) {
+      setShowImageEditor(false);
+      setImageToEdit(null);
+      setImageEditContext(null);
+    }
   };
 
   const generateInteractiveHTML = (template, data) => {
@@ -1237,8 +1236,32 @@ const InteractiveComponent = forwardRef(({
       )}
 
       {/* Interactive Edit Dialog */}
-      <Dialog open={showInteractiveEditDialog} onOpenChange={setShowInteractiveEditDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={showInteractiveEditDialog} onOpenChange={(open) => {
+        if (!open && !isImageProcessing) {
+          setShowInteractiveEditDialog(false);
+        }
+      }}>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto sm:max-w-5xl !fixed !left-1/2 !top-1/2 !transform !-translate-x-1/2 !-translate-y-1/2">
+          {/* Loading overlay */}
+          {isImageProcessing && (
+            <div className="absolute inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center rounded-lg">
+              <div className="bg-white rounded-xl p-8 shadow-2xl max-w-md mx-4 border border-gray-200">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent absolute top-0 left-0"></div>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Processing Your Image</h3>
+                    <p className="text-sm text-gray-600">Uploading and processing your edited image...</p>
+                    <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <DialogHeader>
             <DialogTitle>
               {editingInteractiveBlock ? 'Edit' : 'Create'} Interactive Content
@@ -1339,7 +1362,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 50MB
+                                  PNG, JPG, GIF up to 500MB
                                 </span>
                               </label>
                             </div>
@@ -1394,7 +1417,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload audio
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  MP3, WAV, OGG up to 10MB
+                                  MP3, WAV, OGG up to 100MB
                                 </span>
                               </label>
                             </div>
@@ -1500,7 +1523,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload image
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  PNG, JPG, GIF up to 50MB
+                                  PNG, JPG, GIF up to 500MB
                                 </span>
                               </label>
                             </div>
@@ -1555,7 +1578,7 @@ const InteractiveComponent = forwardRef(({
                                   Click to upload audio
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  MP3, WAV, OGG up to 10MB
+                                  MP3, WAV, OGG up to 100MB
                                 </span>
                               </label>
                             </div>
@@ -1681,7 +1704,7 @@ const InteractiveComponent = forwardRef(({
                               Click to upload an image for your labeled graphic
                             </p>
                             <span className="text-xs text-gray-400 mt-2 block">
-                              PNG, JPG, GIF up to 5MB
+                              PNG, JPG, GIF up to 500MB
                             </span>
                           </div>
                         </label>
@@ -1730,10 +1753,10 @@ const InteractiveComponent = forwardRef(({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={isImageProcessing}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={isImageProcessing}>
               {editingInteractiveBlock ? 'Update' : 'Create'} Interactive Content
             </Button>
           </DialogFooter>
@@ -1822,7 +1845,7 @@ const InteractiveComponent = forwardRef(({
                         Click to upload audio
                       </span>
                       <span className="text-xs text-gray-500">
-                        MP3, WAV, OGG up to 10MB
+                        MP3, WAV, OGG up to 100MB
                       </span>
                     </label>
                   </div>
@@ -1869,6 +1892,15 @@ const InteractiveComponent = forwardRef(({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Editor */}
+      <ImageEditor
+        isOpen={showImageEditor}
+        onClose={handleImageEditorClose}
+        imageFile={imageToEdit}
+        onSave={handleImageEditorSave}
+        title="Edit Image Before Upload"
+      />
     </>
   );
 });
