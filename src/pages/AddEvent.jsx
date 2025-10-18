@@ -3,6 +3,7 @@ import { currentUserId } from "@/data/currentUser";
 import { getAllEvents } from "@/services/calendarService";
 import { fetchUserProfile } from "@/services/userService";
 import { getAuthHeader } from "@/services/authHeader";
+import EventAttendanceModal from "@/components/dashboard/EventAttendanceModal";
 
 const DEFAULT_TIMEZONE = "America/New_York";
 const AddEvent = () => {
@@ -43,6 +44,8 @@ const AddEvent = () => {
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [selectedDateForEvents, setSelectedDateForEvents] = useState(null);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null);
 
   // Sort events by startTime descending (most recent at top)
   const sortedEvents = [...events].sort((a, b) => {
@@ -782,6 +785,18 @@ const AddEvent = () => {
     setCalendarYear(Number(e.target.value));
   };
 
+  // Handle opening attendance modal
+  const handleViewAttendance = (event) => {
+    setSelectedEventForAttendance(event);
+    setIsAttendanceModalOpen(true);
+  };
+
+  // Handle closing attendance modal
+  const handleCloseAttendanceModal = () => {
+    setIsAttendanceModalOpen(false);
+    setSelectedEventForAttendance(null);
+  };
+
   // Helper: get events for a specific date
   const getEventsForDate = (date) => {
     if (!date) return [];
@@ -1026,6 +1041,12 @@ const AddEvent = () => {
                           onClick={() => handleEdit(events.findIndex(e => e.id === event.id))}
                         >
                           Edit
+                        </button>
+                        <button
+                          className="text-green-600 hover:underline text-xs"
+                          onClick={() => handleViewAttendance(event)}
+                        >
+                          View Attendance
                         </button>
                         <button
                           className="text-red-600 hover:underline text-xs"
@@ -1701,6 +1722,15 @@ const AddEvent = () => {
                         Edit
                       </button>
                       <button
+                        className="text-green-600 hover:underline text-sm"
+                        onClick={() => {
+                          setShowDateEvents(false);
+                          handleViewAttendance(event);
+                        }}
+                      >
+                        View Attendance
+                      </button>
+                      <button
                         className="text-red-600 hover:underline text-sm"
                         onClick={() => {
                           setShowDateEvents(false);
@@ -1731,6 +1761,16 @@ const AddEvent = () => {
           </div>
         </div>
       )}
+
+      {/* Event Attendance Modal */}
+      <EventAttendanceModal
+        isOpen={isAttendanceModalOpen}
+        onClose={handleCloseAttendanceModal}
+        eventId={selectedEventForAttendance?.id}
+        eventTitle={selectedEventForAttendance?.title}
+        eventDate={selectedEventForAttendance?.startTime}
+        eventTime={selectedEventForAttendance?.startTime}
+      />
     </div>
   );
 };
