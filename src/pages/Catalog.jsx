@@ -196,7 +196,7 @@ export function CatalogPage() {
     
     // Specific pricing for premium catalogs
     if (catalogName.includes("become private") && catalogName.includes("sov 101")) {
-      return 28000; // Become Private + SOV 101
+      return 14000; // Become Private + SOV 101
     } else if (catalogName.includes("operate private")) {
       return 14000; // Operate Private
     } else if ((catalogName.includes("business credit") || catalogName.includes("i want")) && 
@@ -389,10 +389,10 @@ export function CatalogPage() {
                  catalog.courseCount || 0
                 )} courses</span>
             </span>
-            {catalogPrice > 0 && (
+            {catalogPrice > 0 && !isMasterClass(catalog) && (
               <span className="flex items-center gap-1 text-blue-600 font-medium">
-                <ShoppingCart className="h-4 w-4" />
-                {catalogPrice}
+                <span>{catalogPrice}</span>
+                <span className="text-[10px] leading-4 px-1.5 py-0.5 rounded-md border border-blue-200 bg-blue-50 text-blue-600 font-semibold tracking-wider">CP</span>
               </span>
             )}
           </div>
@@ -418,7 +418,7 @@ export function CatalogPage() {
               </Link>
             </Button>
             
-            {catalogPrice > 0 && !isEnrolled && (
+            {catalogPrice > 0 && !isEnrolled && !isMasterClass(catalog) && (
               <Button
                 onClick={(e) => {
                   e.preventDefault();

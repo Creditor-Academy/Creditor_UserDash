@@ -241,6 +241,10 @@ const CatelogCourses = () => {
 
   // Helper function to check if user can buy a course
   const canBuyCourse = (course) => {
+    // Hide buy options for Master Class catalog courses
+    const isMasterClassCatalog = (catalog?.name || "").toLowerCase().includes("master class");
+    if (isMasterClassCatalog) return false;
+
     // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
     const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
     const isFreeCatalog = freeCourseNames.some(name => 
@@ -811,7 +815,7 @@ const CatelogCourses = () => {
                              </Link>
                            </Button>
                            
-                         <Button
+                        <Button
                            onClick={(e) => {
                              e.preventDefault();
                              e.stopPropagation();
@@ -832,7 +836,7 @@ const CatelogCourses = () => {
                            </Button>
                            </Link>
                            {/* Only show the message for non-free and non-recording catalog courses */}
-                           {(() => {
+                          {(() => {
                              // Check if this course belongs to a free catalog (Roadmap Series or Start Your Passive Income Now)
                              const freeCourseNames = ["Roadmap Series", "Start Your Passive Income Now"];
                              const isFreeCatalog = freeCourseNames.some(name =>
@@ -847,8 +851,9 @@ const CatelogCourses = () => {
                                (catalog?.name || "").toLowerCase().includes("recordings") ||
                                (catalog?.name || "").toLowerCase().includes("recording");
 
-                             // Only show the message if it's NOT a free catalog and NOT a class recording catalog
-                             if (!isFreeCatalog && !isClassRecordingCatalog) {
+                              // Only show the message if it's NOT a free catalog, NOT a class recording catalog, and NOT master class
+                             const isMasterClassCatalog = (catalog?.name || "").toLowerCase().includes("master class");
+                             if (!isFreeCatalog && !isClassRecordingCatalog && !isMasterClassCatalog) {
                                return (
                                  <p className="text-xs text-gray-500 mt-2 text-center">
                                    You bought individual lessons - continue buying lessons only

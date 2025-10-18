@@ -70,7 +70,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [purchasedModulesError, setPurchasedModulesError] = React.useState(null);
   const [coursePrices, setCoursePrices] = React.useState({});
   const [expandedModuleCourses, setExpandedModuleCourses] = React.useState({});
-  const [totalModulesPerCourse, setTotalModulesPerCourse] = React.useState({});
+  const [totalModulesCount, setTotalModulesCount] = React.useState({});
+  const [loadingTotalModules, setLoadingTotalModules] = React.useState({});
 
   // Fetch courses for the selected user when modal opens or user changes
 
@@ -98,11 +99,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       const coursesArray = Array.isArray(coursesData) ? coursesData : [];
       setCourses(coursesArray);
       
+      
       // Fetch modules for each course
       if (coursesArray.length > 0) {
         fetchModulesForCourses(coursesArray);
         fetchPricesForCourses(coursesArray);
-        fetchTotalModulesForCourses(coursesArray);
+        fetchTotalModulesCount(coursesArray);
         // Fetch unlocked/purchased modules for the viewed user (single call)
         await fetchPurchasedModulesForUser(coursesArray);
       }
@@ -159,6 +161,15 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
           // ignore; we'll fall back to Unknown Course
         }
       }
+
+      // Also fetch total modules count for courses that have purchased modules
+      const purchasedCourseIds = Array.from(new Set(
+        modulesArray.map((m) => m.course_id || m.module?.course_id || m.courseId).filter(Boolean)
+      ));
+      
+      if (purchasedCourseIds.length > 0) {
+        fetchTotalModulesCountForPurchasedCourses(purchasedCourseIds);
+      }
       const withCourseInfo = modulesArray.map((m) => {
         const normalized = {
           // Prefer top-level id/title; fallback to nested module object often returned by access APIs
@@ -213,30 +224,75 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   };
 
   // Fetch total modules count for each course
-  const fetchTotalModulesForCourses = async (coursesArray) => {
+  const fetchTotalModulesCount = async (coursesArray) => {
     try {
       const entries = await Promise.all(
         (coursesArray || []).map(async (c) => {
           const id = c.course_id || c.id;
           if (!id) return null;
+          
+          setLoadingTotalModules(prev => ({ ...prev, [id]: true }));
+          
           try {
             const response = await fetch(`/api/course/${id}/modules/getAllModules`);
-            if (!response.ok) return null;
+            if (!response.ok) {
+              throw new Error(`Failed to fetch modules for course ${id}`);
+            }
             const modules = await response.json();
             const totalCount = Array.isArray(modules) ? modules.length : 0;
             return [id, totalCount];
-          } catch (_) {
-            return null;
+          } catch (error) {
+            console.warn(`Failed to fetch total modules for course ${id}:`, error);
+            return [id, 0]; // Default to 0 if API fails
+          } finally {
+            setLoadingTotalModules(prev => ({ ...prev, [id]: false }));
           }
         })
       );
+      
       const map = {};
       entries.forEach((e) => {
         if (e && e[0] != null) map[e[0]] = e[1];
       });
-      setTotalModulesPerCourse((prev) => ({ ...prev, ...map }));
-    } catch (_) {
-      // silently ignore failures
+      setTotalModulesCount((prev) => ({ ...prev, ...map }));
+    } catch (error) {
+      console.warn("Failed to fetch total modules count:", error);
+    }
+  };
+
+  // Fetch total modules count for purchased courses specifically
+  const fetchTotalModulesCountForPurchasedCourses = async (courseIds) => {
+    try {
+      const entries = await Promise.all(
+        courseIds.map(async (courseId) => {
+          if (!courseId) return null;
+          
+          setLoadingTotalModules(prev => ({ ...prev, [courseId]: true }));
+          
+          try {
+            const response = await fetch(`/api/course/${courseId}/modules/getAllModules`);
+            if (!response.ok) {
+              throw new Error(`Failed to fetch modules for course ${courseId}`);
+            }
+            const modules = await response.json();
+            const totalCount = Array.isArray(modules) ? modules.length : 0;
+            return [courseId, totalCount];
+          } catch (error) {
+            console.warn(`Failed to fetch total modules for course ${courseId}:`, error);
+            return [courseId, 0]; // Default to 0 if API fails
+          } finally {
+            setLoadingTotalModules(prev => ({ ...prev, [courseId]: false }));
+          }
+        })
+      );
+      
+      const map = {};
+      entries.forEach((e) => {
+        if (e && e[0] != null) map[e[0]] = e[1];
+      });
+      setTotalModulesCount((prev) => ({ ...prev, ...map }));
+    } catch (error) {
+      console.warn("Failed to fetch total modules count for purchased courses:", error);
     }
   };
 
@@ -253,6 +309,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       const courseId = module.course_id || module.module?.course_id || module.courseId;
       const courseTitle = module.course_title || module.module?.course_title || 'Unknown Course';
       
+      
       if (!grouped[courseId]) {
         grouped[courseId] = {
           courseId,
@@ -264,13 +321,6 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
     });
     
     return Object.values(grouped);
-  };
-
-  // Helper function to get purchased modules count for a course
-  const getPurchasedModulesCount = (courseId) => {
-    return purchasedModules.filter(module => 
-      (module.course_id || module.module?.course_id || module.courseId) === courseId
-    ).length;
   };
   
   const fetchModulesForCourses = async (coursesArray) => {
@@ -1329,13 +1379,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                 <div className="flex items-center gap-6 text-sm text-gray-600">
                                   <div className="flex items-center gap-2">
                                     <BookOpenCheck className="h-4 w-4 text-blue-500" />
-                                    <span className="font-medium">
-                                      {(() => {
-                                        const purchasedCount = getPurchasedModulesCount(courseId);
-                                        const totalCount = totalModulesPerCourse[courseId] || modules.length;
-                                        return `${purchasedCount}/${totalCount} module${totalCount !== 1 ? 's' : ''}`;
-                                      })()}
-                                    </span>
+                                    <span className="font-medium">{modules.length} module{modules.length !== 1 ? 's' : ''}</span>
                                   </div>
                                   {formatPrice(coursePrices[courseId]) && (
                                     <div className="flex items-center gap-2">
@@ -1475,8 +1519,26 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                       <p className="text-sm text-gray-600 font-medium">
                                         {(() => {
                                           const purchasedCount = courseGroup.modules.length;
-                                          const totalCount = totalModulesPerCourse[courseGroup.courseId] || purchasedCount;
-                                          return `${purchasedCount}/${totalCount} module${totalCount !== 1 ? 's' : ''} purchased`;
+                                          const totalCount = totalModulesCount[courseGroup.courseId] || 0;
+                                          const isLoading = loadingTotalModules[courseGroup.courseId];
+                                          
+                                          
+                                          if (isLoading) {
+                                            return (
+                                              <span className="flex items-center gap-2">
+                                                <div className="w-3 h-3 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
+                                                Loading...
+                                              </span>
+                                            );
+                                          }
+                                          
+                                          // Always show the format with total count if we have it, otherwise show just purchased count
+                                          if (totalCount > 0) {
+                                            return `${purchasedCount}/${totalCount} modules purchased`;
+                                          } else {
+                                            // If total count is 0 or not available, show just purchased count
+                                            return `${purchasedCount} module${purchasedCount !== 1 ? 's' : ''} purchased`;
+                                          }
                                         })()}
                                       </p>
                                     </div>
