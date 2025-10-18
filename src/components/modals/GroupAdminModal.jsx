@@ -254,17 +254,17 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
           />
           <div className="absolute inset-0 flex items-center justify-center">
             <motion.div
-              className="bg-white rounded-2xl shadow-2xl border border-gray-200/60 ring-1 ring-black/5 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl shadow-2xl border border-gray-200/60 ring-1 ring-black/5 w-full max-w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.22, ease: 'easeOut' }}
             >
-              <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
+              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50">
                 <div className="flex items-center gap-3">
                   <Shield className="h-5 w-5 text-blue-600" />
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 leading-tight">Group Admin</h3>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 leading-tight">Group Admin</h3>
                     <p className="text-xs text-gray-500">Manage and view insights</p>
                   </div>
                 </div>
@@ -273,29 +273,29 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                 </button>
               </div>
 
-              <div className="p-5 space-y-5 overflow-y-auto">
+              <div className="p-4 sm:p-5 space-y-5 overflow-y-auto">
                 {/* Overview */}
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-lg sm:text-xl font-bold">
                     {group?.name ? group.name.charAt(0).toUpperCase() : 'G'}
                   </div>
                   <div className="flex-1">
-                    <div className="text-xl font-semibold text-gray-900">{group?.name || `Group ${groupId}`}</div>
+                    <div className="text-lg sm:text-xl font-semibold text-gray-900">{group?.name || `Group ${groupId}`}</div>
                     <div className="text-sm text-gray-600 line-clamp-2">{group?.description || 'No description'}</div>
                   </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="rounded-xl border border-gray-200 p-3 sm:p-4 bg-gray-50">
                     <div className="flex items-center gap-2 text-gray-600 text-sm"><MessageSquare className="h-4 w-4" /> Posts</div>
                     <div className="text-2xl font-bold text-gray-900 mt-1">{postsCount}</div>
                   </div>
-                  <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                  <div className="rounded-xl border border-gray-200 p-3 sm:p-4 bg-gray-50">
                     <div className="flex items-center gap-2 text-gray-600 text-sm"><Bell className="h-4 w-4" /> Announcements</div>
                     <div className="text-2xl font-bold text-gray-900 mt-1">{announcementsCount}</div>
                   </div>
-                  <div className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                  <div className="rounded-xl border border-gray-200 p-3 sm:p-4 bg-gray-50">
                     <div className="flex items-center gap-2 text-gray-600 text-sm"><Users className="h-4 w-4" /> Members</div>
                     <div className="text-2xl font-bold text-gray-900 mt-1">{members?.length || 0}</div>
                   </div>
@@ -306,7 +306,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <div className="font-semibold text-gray-800">Members</div>
-                      <div className="text-sm text-gray-500">{members?.length || 0} total</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{members?.length || 0} total</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="relative">
@@ -315,7 +315,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           placeholder="Search members..."
-                          className="pl-7 h-8 w-56"
+                          className="pl-7 h-8 w-40 sm:w-56"
                         />
                       </div>
                       {isInstructorOrAdmin() && (
@@ -331,7 +331,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                       )}
                     </div>
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-100">
+                  <div className="max-h-64 sm:max-h-72 overflow-y-auto divide-y divide-gray-100">
                     {loading ? (
                       <div className="p-6 text-center text-gray-500 flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" /> Loading members...
@@ -355,7 +355,7 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                                 {!selectedIds.has(uid) && <Square className="h-3 w-3 text-gray-400" />}
                               </button>
                             )}
-                            <div className="w-9 h-9 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-sm font-medium">
+                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center text-sm font-medium">
                               {(user.first_name?.[0] || user.name?.[0] || user.email?.[0] || 'U').toUpperCase()}
                             </div>
                             <div className="min-w-0">
@@ -415,10 +415,10 @@ export default function GroupAdminModal({ isOpen, onClose, groupId }) {
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <div className="font-semibold text-gray-800">Attachments</div>
-                      <div className="text-sm text-gray-500">{attachments?.length || 0} media</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{attachments?.length || 0} media</div>
                     </div>
                   </div>
-                  <div className="p-4">
+                  <div className="p-3 sm:p-4">
                     {/* helpers for media type */}
                     {/**/}
                     {/**/}

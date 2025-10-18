@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getAccessToken, clearAccessToken } from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
 export const api = axios.create({
 	baseURL: API_BASE,

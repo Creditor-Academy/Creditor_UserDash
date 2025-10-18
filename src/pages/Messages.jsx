@@ -135,6 +135,15 @@ function Messages() {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
+  // Truncate message to a small, fixed preview with custom ellipsis for chat list
+  const getHalfPreview = (text) => {
+    if (!text) return '';
+    const str = String(text).trim();
+    const PREVIEW_LIMIT = 24; // small portion
+    if (str.length <= PREVIEW_LIMIT) return str;
+    return str.slice(0, PREVIEW_LIMIT).trimEnd() + '.....';
+  };
+
   // Reset local UI state when arriving at Messages route to avoid showing stale names
   useEffect(() => {
     if (location.pathname.endsWith("/messages")) {
@@ -864,11 +873,11 @@ function Messages() {
                              <span className="flex items-center gap-1 sm:gap-1.5">
                                <span>You:</span>
                                <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
-                               <span>{friend.lastMessage}</span>
+                                <span>{getHalfPreview(friend.lastMessage)}</span>
                              </span>
                            );
                          }
-                         return <span className="truncate max-w-[60vw] sm:max-w-[260px]">{friend.lastMessage || 'Start a conversation'}</span>;
+                          return getHalfPreview(friend.lastMessage || 'Start a conversation');
                        })()}
                     </p>
                   </div>
@@ -889,7 +898,7 @@ function Messages() {
                 {/* Chat Header */}
                 <div className="p-3 sm:p-4 border-b sticky top-0 z-10 bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 border-purple-100/70">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <Button variant="ghost" size="icon" className="mr-0.5 sm:mr-1 h-8 w-8 sm:h-9 sm:w-9" onClick={() => {
+                    <Button variant="ghost" size="icon" className="mr-0.5 sm:mr-1 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/70 hover:bg-white shadow-sm hover:shadow transition-all" onClick={() => {
                       // Leave the room when going back to chat list
                       if (roomId) {
                         try {
@@ -901,7 +910,7 @@ function Messages() {
                       }
                       setSelectedFriend(null);
                     }} title="Back to chats">
-                      <span className="text-lg sm:text-xl">←</span>
+                      <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6 text-purple-700" />
                     </Button>
                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
                       {convosLoaded && (

@@ -16,13 +16,29 @@ export function getAccessToken() {
 
 export function setAccessToken(token) {
 	if (!token) return clearAccessToken();
+	
+	// Primary storage: localStorage (works across domains)
 	localStorage.setItem('authToken', token);
 	localStorage.setItem('token', token);
+	
+	// Optional: Store in cookies for same-domain features (like sidebar)
+	// But don't rely on them for authentication
+	try {
+		Cookies.set('token', token, { 
+			expires: 7,
+			secure: window.location.protocol === 'https:',
+			sameSite: 'lax' // More permissive for cross-domain
+		});
+	} catch (error) {
+		console.warn('Could not set cookie (cross-domain):', error);
+	}
+	
 	// Notify listeners that the token changed
 	window.dispatchEvent(new CustomEvent('authTokenUpdated', { detail: token }));
 }
 
 export function clearAccessToken() {
+	// Clear from localStorage (primary storage)
 	localStorage.removeItem('authToken');
 	localStorage.removeItem('token');
 	// Also remove accesstoken cookie

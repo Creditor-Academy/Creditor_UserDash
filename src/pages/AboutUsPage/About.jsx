@@ -3,7 +3,7 @@ import Navbar from '../../components/navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import AboutHero from '../../components/AboutUs/AboutHero';
 import AboutSection  from '../../components/AboutUs/About';
-import Team from '../../components/AboutUs/Team';
+// import Team from '../../components/AboutUs/Team';
 import Principle from '../../components/AboutUs/Principle';
 import Insights from '../../components/AboutUs/Insights';
 const About = () => {
@@ -13,7 +13,7 @@ const About = () => {
         <div>
           <AboutHero />
           <AboutSection/>
-          <Team/>
+          {/* <Team/> */}
           <Principle/>
           <Insights/>
           {/* Add other components here */}

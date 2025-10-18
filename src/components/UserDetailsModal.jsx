@@ -46,8 +46,7 @@ import {
   ChevronRight,
   BookOpenCheck
 } from "lucide-react";
-
-import { fetchUserCoursesByUserId } from "@/services/userService";
+import { fetchUserCoursesByUserId, fetchAllCourses } from "@/services/userService";
 import { fetchCourseModules, fetchCourseById, fetchCoursePrice } from "@/services/courseService";
 import { getUnlockedModulesByUser } from "@/services/modulesService";
 
@@ -69,9 +68,20 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   const [loadingPurchasedModules, setLoadingPurchasedModules] = React.useState(false);
   const [purchasedModulesError, setPurchasedModulesError] = React.useState(null);
   const [coursePrices, setCoursePrices] = React.useState({});
-  const [expandedModuleCourses, setExpandedModuleCourses] = React.useState({});
-  const [totalModulesCount, setTotalModulesCount] = React.useState({});
-  const [loadingTotalModules, setLoadingTotalModules] = React.useState({});
+  const [totalModuleCounts, setTotalModuleCounts] = React.useState({});
+  const [expandedGrouped, setExpandedGrouped] = React.useState({});
+  const [expandedProgress, setExpandedProgress] = React.useState({
+    completed: false,
+    modules: false,
+    quizzes: false,
+    enrolled: false,
+    pending: false
+  });
+
+  // User progress data from backend
+  const [userProgressData, setUserProgressData] = React.useState(null);
+  const [loadingUserProgress, setLoadingUserProgress] = React.useState(false);
+  const [userProgressError, setUserProgressError] = React.useState(null);
 
   // Fetch courses for the selected user when modal opens or user changes
 
@@ -80,12 +90,11 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
     if (isOpen && user?.id) {
 
       fetchCourses();
-
+      if (isInstructorOrAdmin) {
+        fetchUserProgressData();
+      }
     }
-
-  }, [isOpen, user?.id]);
-
-
+  }, [isOpen, user?.id, isInstructorOrAdmin]);
 
   const fetchCourses = async () => {
 
@@ -98,7 +107,46 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       const coursesData = await fetchUserCoursesByUserId(user.id);
       const coursesArray = Array.isArray(coursesData) ? coursesData : [];
       setCourses(coursesArray);
-      
+
+      // Build courseId -> totalModules map from `_count.modules` coming from getCourses
+      try {
+        let countsMap = (coursesArray || []).reduce((acc, c) => {
+          const id = c.course_id || c.courseId || c.id || c.course?.id || c.course?.course_id;
+          if (!id) return acc;
+          const total = (c._count && typeof c._count.modules === 'number')
+            ? c._count.modules
+            : (c.course && c.course._count && typeof c.course._count.modules === 'number')
+              ? c.course._count.modules
+              : (typeof c.modulesCount === 'number' ? c.modulesCount : undefined);
+          if (typeof total === 'number') acc[String(id)] = Number(total);
+          return acc;
+        }, {});
+        console.log('[UserDetailsModal] user courses IDs:', (coursesArray||[]).map(c => c.course_id || c.courseId || c.id || c.course?.id || c.course?.course_id));
+        console.log('[UserDetailsModal] derived totals from user courses:', countsMap);
+
+        // If any course is missing a count, fetch global courses to complete the map
+        const missingIds = (coursesArray || [])
+          .map(c => c.course_id || c.courseId || c.id || c.course?.id || c.course?.course_id)
+          .filter(Boolean)
+          .filter(id => countsMap[String(id)] === undefined);
+
+        if (missingIds.length > 0) {
+          const allCourses = await fetchAllCourses().catch(() => []);
+          const globalMap = Array.isArray(allCourses) ? allCourses.reduce((acc, c) => {
+            const gid = c.id || c.course_id || c.courseId;
+            if (!gid) return acc;
+            const gtotal = c?._count?.modules;
+            if (typeof gtotal === 'number') acc[String(gid)] = Number(gtotal);
+            return acc;
+          }, {}) : {};
+          countsMap = { ...globalMap, ...countsMap };
+          console.log('[UserDetailsModal] filled totals from global getCourses for missingIds:', missingIds, 'globalMap:', globalMap);
+        }
+        setTotalModuleCounts(countsMap);
+        console.log('[UserDetailsModal] final totalModuleCounts:', countsMap);
+      } catch (_) {
+        // ignore; UI will fallback to purchased count if absent
+      }
       
       // Fetch modules for each course
       if (coursesArray.length > 0) {
@@ -117,9 +165,28 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
     } finally {
 
       setLoadingCourses(false);
-
     }
+  };
 
+  // Fetch user progress data for instructors/admins
+  const fetchUserProgressData = async () => {
+    setLoadingUserProgress(true);
+    setUserProgressError(null);
+    try {
+      const { api } = await import('@/services/apiClient');
+      const response = await api.post('/api/instructor/getUserProgressData', {
+        userId: user.id
+      });
+
+      const progressData = response?.data?.data || null;
+      setUserProgressData(progressData);
+      console.log('[UserDetailsModal] User progress data fetched:', progressData);
+    } catch (error) {
+      console.error('[UserDetailsModal] Failed to fetch user progress:', error);
+      setUserProgressError('Failed to load progress data');
+    } finally {
+      setLoadingUserProgress(false);
+    }
   };
   
   // Removed per-course purchased modules flow
@@ -189,6 +256,40 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
         };
       });
       setPurchasedModules(withCourseInfo);
+
+      // Ensure we have total counts for any courseIds present only in purchased modules
+      try {
+        const purchasedCourseIds = Array.from(new Set(
+          (withCourseInfo || [])
+            .map(m => m.course_id || m.module?.course_id || m.courseId)
+            .filter(Boolean)
+        ));
+        const missingForPurchased = purchasedCourseIds.filter(id => totalModuleCounts[String(id)] === undefined);
+        if (missingForPurchased.length > 0) {
+          const entries = await Promise.all(missingForPurchased.map(async (id) => {
+            try {
+              const mods = await fetchCourseModules(id);
+              const count = Array.isArray(mods) ? mods.length : 0;
+              // Also cache modules for use in rendering not-purchased rows (published only)
+              const publishedModules = Array.isArray(mods)
+                ? mods.filter(module => {
+                    const status = (module.module_status || module.status || "").toString().toUpperCase();
+                    return status === "PUBLISHED" || module.published === true;
+                  })
+                : [];
+              return [id, count, publishedModules];
+            } catch (_) {
+              return [id, 0, []];
+            }
+          }));
+          const map = entries.reduce((acc, [id, cnt]) => { acc[String(id)] = cnt; return acc; }, {});
+          setTotalModuleCounts(prev => ({ ...map, ...prev }));
+          // Merge modules into courseModules cache
+          const modulesMap = entries.reduce((acc, [id, _cnt, mods]) => { acc[String(id)] = mods; return acc; }, {});
+          setCourseModules(prev => ({ ...prev, ...modulesMap }));
+          console.log('[UserDetailsModal] filled totals from purchased-only courses:', map);
+        }
+      } catch (_) {}
     } catch (err) {
       console.warn("getUnlockedModulesByUser failed, will fallback to per-course API", err);
       throw err;
@@ -199,11 +300,19 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
   // Fetch and cache course prices to display in Courses tab
   const fetchPricesForCourses = async (coursesArray) => {
+    console.log('[UserDetailsModal] Fetching prices for courses. Note: 404 errors for /price endpoints are normal for free courses.');
     try {
       const entries = await Promise.all(
         (coursesArray || []).map(async (c) => {
           const id = c.course_id || c.id;
           if (!id) return null;
+          
+          // Skip price fetching for courses that are likely free or don't have individual pricing
+          // This prevents unnecessary 404 errors in the console
+          if (c.price === "0" || c.price === 0 || c.courseType === "FREE") {
+            return null;
+          }
+          
           try {
             const priceData = await fetchCoursePrice(id);
             const raw = (priceData && (priceData.price || priceData.amount || priceData)) ?? null;
@@ -218,81 +327,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
         if (e && e[0] != null) map[e[0]] = e[1];
       });
       setCoursePrices((prev) => ({ ...prev, ...map }));
-    } catch (_) {
-      // silently ignore pricing failures
-    }
-  };
-
-  // Fetch total modules count for each course
-  const fetchTotalModulesCount = async (coursesArray) => {
-    try {
-      const entries = await Promise.all(
-        (coursesArray || []).map(async (c) => {
-          const id = c.course_id || c.id;
-          if (!id) return null;
-          
-          setLoadingTotalModules(prev => ({ ...prev, [id]: true }));
-          
-          try {
-            const response = await fetch(`/api/course/${id}/modules/getAllModules`);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch modules for course ${id}`);
-            }
-            const modules = await response.json();
-            const totalCount = Array.isArray(modules) ? modules.length : 0;
-            return [id, totalCount];
-          } catch (error) {
-            console.warn(`Failed to fetch total modules for course ${id}:`, error);
-            return [id, 0]; // Default to 0 if API fails
-          } finally {
-            setLoadingTotalModules(prev => ({ ...prev, [id]: false }));
-          }
-        })
-      );
-      
-      const map = {};
-      entries.forEach((e) => {
-        if (e && e[0] != null) map[e[0]] = e[1];
-      });
-      setTotalModulesCount((prev) => ({ ...prev, ...map }));
     } catch (error) {
-      console.warn("Failed to fetch total modules count:", error);
-    }
-  };
-
-  // Fetch total modules count for purchased courses specifically
-  const fetchTotalModulesCountForPurchasedCourses = async (courseIds) => {
-    try {
-      const entries = await Promise.all(
-        courseIds.map(async (courseId) => {
-          if (!courseId) return null;
-          
-          setLoadingTotalModules(prev => ({ ...prev, [courseId]: true }));
-          
-          try {
-            const response = await fetch(`/api/course/${courseId}/modules/getAllModules`);
-            if (!response.ok) {
-              throw new Error(`Failed to fetch modules for course ${courseId}`);
-            }
-            const modules = await response.json();
-            const totalCount = Array.isArray(modules) ? modules.length : 0;
-            return [courseId, totalCount];
-          } catch (error) {
-            console.warn(`Failed to fetch total modules for course ${courseId}:`, error);
-            return [courseId, 0]; // Default to 0 if API fails
-          } finally {
-            setLoadingTotalModules(prev => ({ ...prev, [courseId]: false }));
-          }
-        })
-      );
-      
-      const map = {};
-      entries.forEach((e) => {
-        if (e && e[0] != null) map[e[0]] = e[1];
-      });
-      setTotalModulesCount((prev) => ({ ...prev, ...map }));
-    } catch (error) {
-      console.warn("Failed to fetch total modules count for purchased courses:", error);
+      console.warn('[UserDetailsModal] Price fetching failed:', error);
     }
   };
 
@@ -682,43 +718,26 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
   return (
 
     <Dialog open={isOpen} onOpenChange={onClose}>
-
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden rounded-2xl shadow-2xl border-0">
-
-        <DialogHeader className="px-8 py-6 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200/60 rounded-t-2xl">
-
-          <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-gray-900">
-
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-
-              <User className="h-6 w-6 text-white" />
-
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl">
+        <DialogHeader className="pb-4 border-b border-gray-100">
+          <DialogTitle className="flex items-center gap-3 text-2xl font-semibold text-gray-900">
+            <div className="p-2 bg-blue-100 rounded-xl">
+              <User className="h-6 w-6 text-blue-600" />
             </div>
-
             User Details
 
           </DialogTitle>
 
         </DialogHeader>
 
-
-
-        <div className="px-8 py-6 space-y-8 max-h-[calc(95vh-120px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-
+        <div className="space-y-8">
           {/* Basic Information */}
-
-          <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/30 rounded-2xl overflow-hidden">
-
-            <CardHeader className="px-6 py-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100/50">
-
-              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-
-                <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm">
-
-                  <User className="h-5 w-5 text-white" />
-
+          <Card className="shadow-sm border border-gray-100 rounded-xl">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <User className="h-5 w-5 text-gray-600" />
                 </div>
-
                 Basic Information
 
               </CardTitle>
@@ -1092,19 +1111,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
           {/* Account Information - Only for instructors/admins */}
 
           {isInstructorOrAdmin && (
-
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-slate-50/30 rounded-2xl overflow-hidden">
-
-              <CardHeader className="px-6 py-5 bg-gradient-to-r from-slate-50 to-gray-50 border-b border-slate-100/50">
-
-                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-800">
-
-                  <div className="p-2 bg-gradient-to-r from-slate-500 to-gray-600 rounded-lg shadow-sm">
-
-                    <Shield className="h-5 w-5 text-white" />
-
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
+              <CardHeader className="pb-4 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Shield className="h-5 w-5 text-purple-600" />
                   </div>
-
                   Account Information
 
                 </CardTitle>
@@ -1247,14 +1259,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
           {/* Enrolled */}
           {loadingCourses ? (
-
-            <Card className="shadow-sm border border-gray-100">
-
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
               <CardHeader>
-
-                <CardTitle className="flex items-center gap-2">
-
-                  <GraduationCap className="h-4 w-4" />
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
                   Enrolled
                 </CardTitle>
 
@@ -1272,14 +1282,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
             </Card>
 
           ) : coursesError ? (
-
-            <Card className="shadow-sm border border-gray-100">
-
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
               <CardHeader>
-
-                <CardTitle className="flex items-center gap-2">
-
-                  <GraduationCap className="h-4 w-4" />
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
                   Enrolled
                 </CardTitle>
 
@@ -1294,17 +1302,30 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
 
             </Card>
           ) : (
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30 rounded-2xl overflow-hidden">
-              <CardHeader className="px-6 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100/50">
-                <CardTitle className="flex items-center gap-4 text-xl font-bold text-gray-800">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+            <Card className="shadow-lg border border-gray-200 bg-white rounded-2xl">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-gray-900">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-sm">
                     <GraduationCap className="h-6 w-6 text-white" />
                   </div>
-                  <span className="bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                    Enrolled
-                  </span>
-                  <Badge className="ml-auto bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border-blue-200 px-4 py-2 text-sm font-semibold rounded-full shadow-sm">
-                    {activeTab === 'courses' ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` : `${purchasedModules.length} Module${purchasedModules.length !== 1 ? 's' : ''}`}
+                  <span>Enrolled</span>
+                  <Badge variant="secondary" className="ml-auto bg-blue-50 text-blue-700 border-blue-200 font-medium">
+                    {activeTab === 'courses' 
+                      ? `${courses.length} Course${courses.length !== 1 ? 's' : ''}` 
+                      : (() => {
+                          // Group modules by course to get course count
+                          const groupedModules = purchasedModules.reduce((acc, module) => {
+                            const courseTitle = module.course_title || 'Unknown Course';
+                            if (!acc[courseTitle]) {
+                              acc[courseTitle] = [];
+                            }
+                            acc[courseTitle].push(module);
+                            return acc;
+                          }, {});
+                          const courseCount = Object.keys(groupedModules).length;
+                          return `${courseCount} Course${courseCount !== 1 ? 's' : ''}`;
+                        })()
+                    }
                   </Badge>
                 </CardTitle>
                 
@@ -1314,12 +1335,12 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                     onClick={() => setActiveTab('courses')}
                     className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       activeTab === 'courses'
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105'
-                        : 'bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-700 border border-gray-200 hover:border-blue-300 hover:shadow-md'
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-200 shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <BookOpen className="h-4 w-4" />
+                      <BookOpen className="h-5 w-5" />
                       Courses
                     </div>
                   </button>
@@ -1327,20 +1348,19 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                     onClick={() => setActiveTab('modules')}
                     className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
                       activeTab === 'modules'
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105'
-                        : 'bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-700 border border-gray-200 hover:border-blue-300 hover:shadow-md'
+                        ? 'bg-blue-100 text-blue-700 border-2 border-blue-200 shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <BookOpenCheck className="h-4 w-4" />
+                      <BookOpenCheck className="h-5 w-5" />
                       Modules
                     </div>
                   </button>
                 </div>
               </CardHeader>
-
-              <CardContent className="px-6 py-6">
-                <div className="space-y-6 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+              <CardContent>
+                <div className="space-y-4 max-h-[75vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                   {activeTab === 'courses' ? (
                     // Courses Tab
                     courses.length === 0 ? (
@@ -1358,22 +1378,26 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                       const isLoadingModules = loadingModules[courseId] || false;
                       const modulesErrorMsg = modulesError[courseId];
                       const isExpanded = expandedCourses[courseId];
+                      const totalFromCounts = totalModuleCounts[String(courseId)];
+                      const totalModulesForHeader = modules.length > 0
+                        ? modules.length
+                        : (typeof totalFromCounts === 'number' ? totalFromCounts : 0);
                       
                       return (
                         <div 
                           key={courseId || index} 
-                          className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200/60 hover:border-blue-300 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-2"
+                          className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
                         >
                           {/* Course Header */}
                           <div className="p-6 border-b border-gray-100/60 bg-gradient-to-r from-white to-gray-50/30">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-4 mb-3">
-                                  <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-sm">
                                     <BookOpen className="h-5 w-5 text-white" />
                                   </div>
-                                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
-                                    {course.title}
+                                  <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                        {course.title}
                                   </h3>
                                 </div>
                                 <div className="flex items-center gap-6 text-sm text-gray-600">
@@ -1390,6 +1414,16 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                 </div>
                               </div>
                               
+                              {/* Right-side controls */}
+                              <div className="flex items-center gap-2">
+                                {/* Total modules pill */}
+                                <span
+                                  className="hidden sm:inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-white border border-gray-200 text-gray-700"
+                                  title={`Total modules in ${course.title}`}
+                                >
+                                  {`Total ${totalModulesForHeader} Module${totalModulesForHeader !== 1 ? 's' : ''}`}
+                                </span>
+                              
                               {/* Expand/Collapse Button */}
                               {modules.length > 0 && (
                                 <button
@@ -1397,22 +1431,24 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                     ...prev, 
                                     [courseId]: !prev[courseId] 
                                   }))}
-                                  className="p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 group-hover:bg-blue-100 shadow-sm hover:shadow-md"
+                                    className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                                    aria-label={isExpanded ? 'Collapse modules' : 'Expand modules'}
                                 >
                                   {isExpanded ? (
-                                    <ChevronDown className="h-5 w-5 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
+                                      <ChevronDown className="h-4 w-4 text-gray-600" />
                                   ) : (
-                                    <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-blue-600 transition-colors duration-200" />
+                                      <ChevronRight className="h-4 w-4 text-gray-600" />
                                   )}
                                 </button>
                               )}
+                              </div>
                             </div>
                           </div>
                           
                           {/* Modules Section */}
                           {modules.length > 0 && (
-                            <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                              <div className="p-6 pt-4 bg-gradient-to-r from-gray-50/50 to-blue-50/30">
+                            <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[60vh] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                              <div className="p-4 pt-2 bg-gray-50">
                                 {isLoadingModules ? (
                                   <div className="space-y-3">
                                     {[1, 2, 3].map((i) => (
@@ -1435,7 +1471,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                                         className="flex items-center gap-4 p-4 bg-white rounded-xl hover:shadow-md transition-all duration-200 group/module border border-gray-100/50"
                                       >
                                         <div className="flex-shrink-0">
-                                          <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full group-hover/module:scale-125 transition-transform duration-200 shadow-sm"></div>
+                                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <p className="text-sm font-semibold text-gray-700 group-hover/module:text-gray-900 truncate">
@@ -1470,14 +1506,14 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                     loadingPurchasedModules ? (
                       <div className="space-y-4">
                         {[1, 2, 3].map((i) => (
-                          <div key={i} className="bg-white rounded-2xl border border-gray-200/60 p-6 animate-pulse shadow-sm">
-                            <div className="flex items-center gap-4 mb-4">
-                              <div className="w-12 h-12 bg-gray-300 rounded-xl"></div>
-                              <div className="h-5 bg-gray-300 rounded w-1/3"></div>
+                          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                              <div className="h-4 bg-gray-200 rounded w-1/3"></div>
                             </div>
-                            <div className="space-y-3">
-                              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            <div className="space-y-2">
+                              <div className="h-3 bg-gray-100 rounded w-1/4"></div>
+                              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
                             </div>
                           </div>
                         ))}
@@ -1495,115 +1531,589 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
                         <h3 className="text-xl font-bold text-gray-700 mb-3">No Purchased Modules</h3>
                         <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">This user hasn't purchased any individual modules yet.</p>
                       </div>
-                    ) : (
-                      (() => {
-                        const groupedModules = groupModulesByCourse(purchasedModules);
-                        return groupedModules.map((courseGroup, courseIndex) => {
-                          const isExpanded = expandedModuleCourses[courseGroup.courseId];
-                          return (
-                            <div 
-                              key={courseGroup.courseId || courseIndex} 
-                              className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200/60 hover:border-green-300 hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1"
-                            >
-                              {/* Course Header */}
-                              <div className="p-6 border-b border-gray-100/60 bg-gradient-to-r from-green-50 to-emerald-50">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                                      <BookOpen className="h-5 w-5 text-white" />
+                    ) : (() => {
+                      // Group purchased modules by courseId while keeping course title for display
+                      const groupedByCourse = purchasedModules.reduce((acc, m) => {
+                        const cid = m.course_id || m.module?.course_id || m.courseId;
+                        if (!cid) return acc;
+                        const title = m.course_title || m.module?.course_title || 'Unknown Course';
+                        if (!acc[cid]) acc[cid] = { title, items: [] };
+                        acc[cid].items.push(m);
+                        return acc;
+                      }, {});
+                      console.log('[UserDetailsModal] groupedByCourse keys:', Object.keys(groupedByCourse));
+
+                      return Object.entries(groupedByCourse).map(([courseId, group]) => {
+                        const getModuleId = (x) => {
+                          try {
+                            const val = x?.id || x?.module?.id || x?.module_id || x?.moduleId || x?.uuid || x?._id;
+                            return val != null ? String(val) : '';
+                          } catch { return ''; }
+                        };
+                        const isExpanded = Boolean(expandedGrouped[courseId]);
+                        const allMods = courseModules[courseId] || [];
+                        // Build a set of purchased module ids to diff
+                        const purchasedIds = new Set(
+                          group.items.map((m) => getModuleId(m)).filter(Boolean)
+                        );
+                        // Non-purchased = all course modules (published) that are not in purchased set
+                        const notPurchased = allMods.filter((mod) => {
+                          const mid = getModuleId(mod);
+                          return mid && !purchasedIds.has(mid);
+                        });
+                        const purchasedCount = group.items.length;
+                        const totalForCourse = totalModuleCounts[String(courseId)];
+                        const actualTotal = allMods.length > 0 ? allMods.length : (typeof totalForCourse === 'number' ? totalForCourse : purchasedCount);
+                        const showNotPurchased = purchasedCount < actualTotal && notPurchased.length > 0;
+                        
+                        // Debug logging for inconsistent counts
+                        if (purchasedCount === actualTotal && notPurchased.length > 0) {
+                          console.warn(`[UserDetailsModal] Inconsistent module counts for course ${courseId}:`, {
+                            purchased: purchasedCount,
+                            totalFromCounts: totalForCourse,
+                            actualModules: allMods.length,
+                            notPurchased: notPurchased.length,
+                            purchasedIds: Array.from(purchasedIds),
+                            allModuleIds: allMods.map(m => getModuleId(m))
+                          });
+                        }
+                        return (
+                        <div key={courseId} className="space-y-3">
+                          {/* Course Header */}
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
+                               onClick={() => setExpandedGrouped(prev => ({ ...prev, [courseId]: !prev[courseId] }))}>
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-sm">
+                                <BookOpen className="h-4 w-4 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                                  {group.title}
+                                </h3>
+                                <p className="text-xs text-blue-700/90">
+                                  {(() => {
+                                    const purchased = group.items.length;
+                                    const total = totalModuleCounts[String(courseId)];
+                                    const allMods = courseModules[courseId] || [];
+                                    const actualTotal = allMods.length > 0 ? allMods.length : (typeof total === 'number' ? total : purchased);
+                                    return `${purchased} purchased of ${actualTotal} total`;
+                                  })()}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="bg-white/70 text-blue-700 border-blue-300 shadow-sm">
+                                {(() => {
+                                  const total = totalModuleCounts[String(courseId)];
+                                  const allMods = courseModules[courseId] || [];
+                                  const actualTotal = allMods.length > 0 ? allMods.length : (typeof total === 'number' ? total : group.items.length);
+                                  return `Total ${actualTotal} Module${actualTotal !== 1 ? 's' : ''}`;
+                                })()}
+                              </Badge>
+                              <button type="button"
+                                      onClick={(e) => { e.stopPropagation(); setExpandedGrouped(prev => ({ ...prev, [courseId]: !prev[courseId] })); }}
+                                      className="ml-2 p-2 rounded-lg hover:bg-white/50 transition-colors">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-blue-600" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-blue-600" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                          
+                          {/* Modules under this course */}
+                          <div className={`ml-6 space-y-4 transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100 overflow-y-auto border-l-2 border-blue-200 pl-6 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-gray-50' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+                            {isExpanded && group.items.length > 0 && (
+                              <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
+                                <BookOpenCheck className="h-4 w-4" />
+                                Purchased ({group.items.length})
+                              </div>
+                            )}
+                            {isExpanded && group.items.length === 0 && (
+                              <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                                <BookOpenCheck className="h-4 w-4" />
+                                No purchased modules
+                              </div>
+                            )}
+                            {isExpanded && group.items.map((module, index) => (
+                        <div 
+                          key={module.id || index} 
+                                className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-green-400 hover:shadow-lg transition-all duration-300 ease-in-out transform hover:-translate-y-1"
+                        >
+                          <div className="p-4">
+                            <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl shadow-sm group-hover:scale-110 transition-transform duration-200">
+                                <BookOpenCheck className="h-4 w-4 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                      <h4 className="text-base font-semibold text-gray-900 group-hover:text-green-700 transition-colors duration-200 mb-2">
+                                  {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                      </h4>
+                                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                                  {formatPrice(module.price) && (
+                                    <div className="flex items-center gap-1 font-medium">
+                                      <span className="text-green-600">{formatPrice(module.price)}</span>
                                     </div>
-                                    <div>
-                                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-700 transition-colors duration-200">
-                                        {courseGroup.courseTitle}
-                                      </h3>
-                                      <p className="text-sm text-gray-600 font-medium">
-                                        {(() => {
-                                          const purchasedCount = courseGroup.modules.length;
-                                          const totalCount = totalModulesCount[courseGroup.courseId] || 0;
-                                          const isLoading = loadingTotalModules[courseGroup.courseId];
-                                          
-                                          
-                                          if (isLoading) {
-                                            return (
-                                              <span className="flex items-center gap-2">
-                                                <div className="w-3 h-3 border-2 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
-                                                Loading...
-                                              </span>
-                                            );
-                                          }
-                                          
-                                          // Always show the format with total count if we have it, otherwise show just purchased count
-                                          if (totalCount > 0) {
-                                            return `${purchasedCount}/${totalCount} modules purchased`;
-                                          } else {
-                                            // If total count is 0 or not available, show just purchased count
-                                            return `${purchasedCount} module${purchasedCount !== 1 ? 's' : ''} purchased`;
-                                          }
-                                        })()}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Expand/Collapse Button */}
-                                  <button
-                                    onClick={() => setExpandedModuleCourses(prev => ({ 
-                                      ...prev, 
-                                      [courseGroup.courseId]: !prev[courseGroup.courseId] 
-                                    }))}
-                                    className="p-3 rounded-xl hover:bg-green-100 transition-all duration-200 group-hover:bg-green-200 shadow-sm hover:shadow-md"
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronDown className="h-5 w-5 text-gray-500 group-hover:text-green-600 transition-colors duration-200" />
-                                    ) : (
-                                      <ChevronRight className="h-5 w-5 text-gray-500 group-hover:text-green-600 transition-colors duration-200" />
-                                    )}
-                                  </button>
+                                  )}
                                 </div>
                               </div>
-                              
-                              {/* Modules Section */}
-                              <div className={`transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-                                <div className="p-6 pt-4 bg-gradient-to-r from-gray-50/50 to-green-50/30">
-                                  <div className="space-y-3">
-                                    {courseGroup.modules.map((module, moduleIndex) => (
-                                      <div 
-                                        key={module.id || moduleIndex} 
-                                        className="flex items-center gap-4 p-4 bg-white rounded-xl hover:shadow-md transition-all duration-200 group/module border border-gray-100/50"
-                                      >
-                                        <div className="flex-shrink-0">
-                                          <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full group-hover/module:scale-125 transition-transform duration-200 shadow-sm"></div>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-sm font-semibold text-gray-700 group-hover/module:text-gray-900 truncate">
-                                            {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
-                                          </p>
-                                          {formatPrice(module.price) && (
-                                            <div className="flex items-center gap-1 mt-1">
-                                              <DollarSign className="h-3 w-3 text-green-500" />
-                                              <p className="text-xs font-medium text-green-600">
-                                                {formatPrice(module.price)}
-                                              </p>
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex-shrink-0">
-                                          <Badge className="bg-green-100 text-green-700 border-green-200 px-3 py-1 text-xs font-semibold rounded-full">
-                                            Purchased
-                                          </Badge>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
+                              <div className="flex-shrink-0">
+                                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs font-semibold px-3 py-1">
+                                  Purchased
+                                </Badge>
                               </div>
                             </div>
-                          );
-                        });
-                      })()
-                    )
+                          </div>
+                        </div>
+                            ))}
+                            {isExpanded && showNotPurchased && (
+                              <div className="pt-4 mt-2 border-t border-gray-200" />
+                            )}
+                            {isExpanded && showNotPurchased && (
+                              <div className="flex items-center gap-2 text-sm font-semibold text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                                <BookOpenCheck className="h-4 w-4" />
+                                Not Purchased ({notPurchased.length})
+                              </div>
+                            )}
+                            {isExpanded && showNotPurchased && notPurchased.map((module, index) => (
+                              <div 
+                                key={(module.id || module.module?.id || `np-${index}`)} 
+                                className="group relative overflow-hidden bg-white rounded-2xl border border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+                              >
+                                <div className="p-4">
+                                  <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-gray-200 rounded-xl shadow-sm">
+                                      <BookOpenCheck className="h-4 w-4 text-gray-600" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-base font-semibold text-gray-700 mb-2">
+                                        {module.title || module.module?.title || module.name || module.module_name || 'Untitled Module'}
+                                      </h4>
+                                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                                        {formatPrice(module.price) && (
+                                          <div className="flex items-center gap-1 font-medium">
+                                            <span className="text-gray-600">{formatPrice(module.price)}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                      <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs font-semibold px-3 py-1">
+                                        Not Purchased
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                      });
+                    })()
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          )}
 
+          {/* Progress Overview - Only for instructors/admins */}
+          {isInstructorOrAdmin && (
+            <Card className="shadow-sm border border-gray-100 rounded-xl">
+              <CardHeader className="pb-4 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <GraduationCap className="h-5 w-5 text-blue-600" />
+                  </div>
+                  Progress Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                {loadingUserProgress ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                      <p className="text-sm text-gray-600">Loading progress data...</p>
+                    </div>
+                  </div>
+                ) : userProgressError ? (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{userProgressError}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 sm:space-y-4">
+                    {/* Completed Courses */}
+                    <div className="bg-blue-50 rounded-xl border border-blue-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, completed: !prev.completed }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                            <CheckCircle className="text-blue-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-blue-600 font-semibold text-sm block truncate">Completed</span>
+                            <p className="text-blue-600 text-xs mt-0.5 truncate">Courses finished</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-blue-700">
+                            {userProgressData?.completedCoursesCount || 0}
+                          </p>
+                          {expandedProgress.completed ? (
+                            <ChevronDown className="text-blue-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-blue-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.completed && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.completedCourses?.length > 0 ? (
+                              userProgressData.completedCourses.map((courseProgress) => (
+                                <div key={courseProgress.id} className="bg-white rounded-lg p-3 border border-blue-200 hover:shadow-sm transition-all duration-200 hover:border-blue-300">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate">{courseProgress.course?.title || 'Untitled Course'}</h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Completed: {courseProgress.completed_at ? new Date(courseProgress.completed_at).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                      <div className="mt-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                          <div 
+                                            className="bg-green-600 h-1.5 rounded-full transition-all duration-300" 
+                                            style={{ width: `${courseProgress.progress || 0}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-1">{courseProgress.progress || 0}% Complete</span>
+                                      </div>
+                                    </div>
+                                    <Badge className="bg-green-100 text-green-700 border-green-200 flex-shrink-0 text-xs">
+                                      <CheckCircle className="h-3 w-3 mr-1" /> Done
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <CheckCircle className="h-8 w-8 text-gray-300" />
+                                  <p>No completed courses yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Modules Completed */}
+                    <div className="bg-emerald-50 rounded-xl border border-emerald-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-emerald-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, modules: !prev.modules }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-emerald-100 rounded-lg flex-shrink-0">
+                            <BookOpen className="text-emerald-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-emerald-600 font-semibold text-sm block truncate">Modules</span>
+                            <p className="text-emerald-600 text-xs mt-0.5 truncate">Modules Completed</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-emerald-700">
+                            {userProgressData?.modulesCompletedCount || 0}
+                          </p>
+                          {expandedProgress.modules ? (
+                            <ChevronDown className="text-emerald-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-emerald-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.modules && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.modulesCompleted?.length > 0 ? (
+                              userProgressData.modulesCompleted.map((moduleProgress) => (
+                                <div key={moduleProgress.id} className="bg-white rounded-lg p-3 border border-emerald-200 hover:shadow-sm transition-all duration-200 hover:border-emerald-300">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                        {moduleProgress.module?.title || 'Untitled Module'}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Completed: {moduleProgress.completed_at ? new Date(moduleProgress.completed_at).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                      <div className="mt-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                          <div 
+                                            className="bg-emerald-600 h-1.5 rounded-full transition-all duration-300" 
+                                            style={{ width: `${moduleProgress.progress || 0}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-1">{moduleProgress.progress || 0}% Complete</span>
+                                      </div>
+                                    </div>
+                                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 flex-shrink-0 text-xs">
+                                      <BookOpen className="h-3 w-3 mr-1" /> Done
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <BookOpen className="h-8 w-8 text-gray-300" />
+                                  <p>No completed modules yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quizzes Completed */}
+                    <div className="bg-orange-50 rounded-xl border border-orange-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-orange-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, quizzes: !prev.quizzes }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-orange-100 rounded-lg flex-shrink-0">
+                            <Award className="text-orange-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-orange-600 font-semibold text-sm block truncate">Quizzes</span>
+                            <p className="text-orange-600 text-xs mt-0.5 truncate">Quiz Completed</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-orange-700">
+                            {userProgressData?.completedQuizzesCount || 0}
+                          </p>
+                          {expandedProgress.quizzes ? (
+                            <ChevronDown className="text-orange-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-orange-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.quizzes && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.completedQuizzes?.length > 0 ? (
+                              userProgressData.completedQuizzes.map((quizAttempt) => (
+                                <div key={quizAttempt.id} className="bg-white rounded-lg p-3 border border-orange-200 hover:shadow-sm transition-all duration-200 hover:border-orange-300">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                        {quizAttempt.quiz?.title || 'Untitled Quiz'}
+                                      </h4>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Type: {quizAttempt.quiz?.type || 'N/A'} • Submitted: {quizAttempt.submitted_at ? new Date(quizAttempt.submitted_at).toLocaleDateString() : 'N/A'}
+                                      </p>
+                                      <div className="mt-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                          <div 
+                                            className={`h-1.5 rounded-full transition-all duration-300 ${quizAttempt.passed ? 'bg-green-600' : 'bg-red-600'}`}
+                                            style={{ width: `${(quizAttempt.score / (quizAttempt.quiz?.max_score || 100)) * 100}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-xs text-gray-500 mt-1">
+                                          Score: {quizAttempt.score}/{quizAttempt.quiz?.max_score || 100} 
+                                          ({quizAttempt.passed ? 'Passed' : 'Failed'})
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <Badge className={`${quizAttempt.passed ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'} flex-shrink-0 text-xs`}>
+                                      {quizAttempt.passed ? (
+                                        <><CheckCircle className="h-3 w-3 mr-1" /> Passed</>
+                                      ) : (
+                                        <><XCircle className="h-3 w-3 mr-1" /> Failed</>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Award className="h-8 w-8 text-gray-300" />
+                                  <p>No completed quizzes yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Enrolled Courses */}
+                    <div className="bg-purple-50 rounded-xl border border-purple-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-purple-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, enrolled: !prev.enrolled }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-purple-100 rounded-lg flex-shrink-0">
+                            <BookOpen className="text-purple-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-purple-600 font-semibold text-sm block truncate">Enrolled</span>
+                            <p className="text-purple-600 text-xs mt-0.5 truncate">Total Courses</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-purple-700">
+                            {userProgressData?.allEnrolledCoursesCount || 0}
+                          </p>
+                          {expandedProgress.enrolled ? (
+                            <ChevronDown className="text-purple-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-purple-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.enrolled && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.allEnrolledCourses?.length > 0 ? (
+                              userProgressData.allEnrolledCourses.map((enrollment) => {
+                                // Find if this course is completed
+                                const completedCourse = userProgressData.completedCourses?.find(
+                                  c => c.course_id === enrollment.course_id
+                                );
+                                const progress = completedCourse ? completedCourse.progress : 0;
+                                const isCompleted = completedCourse ? completedCourse.completed : false;
+                                
+                                return (
+                                  <div key={enrollment.course_id} className="bg-white rounded-lg p-3 border border-purple-200 hover:shadow-sm transition-all duration-200 hover:border-purple-300">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                          {enrollment.course?.title || 'Untitled Course'}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Enrolled: {enrollment.subscription_start ? new Date(enrollment.subscription_start).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <div className="mt-2">
+                                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                            <div 
+                                              className={`h-1.5 rounded-full transition-all duration-300 ${isCompleted ? 'bg-green-600' : 'bg-purple-600'}`}
+                                              style={{ width: `${progress}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-xs text-gray-500 mt-1">
+                                            {progress}% Complete {isCompleted ? '(Finished)' : '(In Progress)'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <Badge className={`${isCompleted ? 'bg-green-100 text-green-700 border-green-200' : 'bg-purple-100 text-purple-700 border-purple-200'} flex-shrink-0 text-xs`}>
+                                        {isCompleted ? (
+                                          <><CheckCircle className="h-3 w-3 mr-1" /> Completed</>
+                                        ) : (
+                                          <>{progress}%</>
+                                        )}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <BookOpen className="h-8 w-8 text-gray-300" />
+                                  <p>No enrolled courses yet</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Pending Courses */}
+                    <div className="bg-yellow-50 rounded-xl border border-yellow-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div 
+                        className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-yellow-100 transition-colors"
+                        onClick={() => setExpandedProgress(prev => ({ ...prev, pending: !prev.pending }))}
+                      >
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                          <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+                            <Clock className="text-yellow-600" size={18} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-yellow-600 font-semibold text-sm block truncate">Pending</span>
+                            <p className="text-yellow-600 text-xs mt-0.5 truncate">Courses Remaining</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                          <p className="text-2xl sm:text-3xl font-bold text-yellow-700">
+                            {userProgressData?.pendingCourseCount || 0}
+                          </p>
+                          {expandedProgress.pending ? (
+                            <ChevronDown className="text-yellow-600 flex-shrink-0" size={18} />
+                          ) : (
+                            <ChevronRight className="text-yellow-600 flex-shrink-0" size={18} />
+                          )}
+                        </div>
+                      </div>
+                      {expandedProgress.pending && (
+                        <div className="px-3 sm:px-4 pb-3 sm:pb-4 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                          <div className="space-y-2">
+                            {userProgressData?.pendingCourse?.length > 0 ? (
+                              userProgressData.pendingCourse.map((enrollment) => {
+                                // Pending courses don't have progress yet
+                                const progress = 0;
+                                
+                                return (
+                                  <div key={enrollment.course_id} className="bg-white rounded-lg p-3 border border-yellow-200 hover:shadow-sm transition-all duration-200 hover:border-yellow-300">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                                          {enrollment.course?.title || 'Untitled Course'}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          Enrolled: {enrollment.subscription_start ? new Date(enrollment.subscription_start).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                        <div className="mt-2">
+                                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                            <div 
+                                              className="bg-yellow-600 h-1.5 rounded-full transition-all duration-300" 
+                                              style={{ width: `${progress}%` }}
+                                            ></div>
+                                          </div>
+                                          <span className="text-xs text-gray-500 mt-1">
+                                            {progress}% Complete (Not Started)
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 flex-shrink-0 text-xs">
+                                        <Clock className="h-3 w-3 mr-1" /> Pending
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Clock className="h-8 w-8 text-gray-300" />
+                                  <p>No pending courses</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </CardContent>
 
             </Card>

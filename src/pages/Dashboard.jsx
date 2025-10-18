@@ -75,9 +75,7 @@ export function Dashboard() {
       activeCourses: 0,
       completedCourses: 0,
       totalLearningHours: 0,
-      averageProgress: 0,
-      modulesCompleted: 0,
-      assessmentsCompleted: 0
+      averageProgress: 0
     },
     weeklyPerformance: {
       studyHours: 0,
@@ -158,79 +156,54 @@ export function Dashboard() {
         throw new Error('Unable to get user ID. Please log in again.');
       }
       
-      // Use the working endpoints from your backend
+      // Use the new user progress endpoint from your backend
       try {
-        // console.log('🔍 Fetching user courses from:', `${API_BASE}/api/course/getCourses`);
-        // console.log('👤 User ID:', currentUserId);
-        
-        // Get user courses via interceptor-enabled client (handles validation + refresh)
         const { api } = await import('@/services/apiClient');
-        const userCoursesResponse = await api.get('/api/course/getCourses');
-        
-        if (userCoursesResponse.data && userCoursesResponse.data.data) {
-          const courses = userCoursesResponse.data.data;
-          
-          // Calculate basic dashboard stats from available data
-          const activeCourses = courses.length;
-          const completedCourses = 0; // Will be calculated when progress tracking is implemented
-          const totalLearningHours = 0; // Will be calculated when time tracking is implemented
-          const averageProgress = 0; // Will be calculated when progress tracking is implemented
-          const modulesCompleted = 0; // Will be calculated when module progress tracking is implemented
-          const assessmentsCompleted = 0; // Will be calculated when assessment tracking is implemented
-          
-                      const newDashboardData = {
-              summary: {
-                activeCourses,
-                completedCourses,
-                totalLearningHours,
-                averageProgress,
-                modulesCompleted,
-                assessmentsCompleted
-              },
-              weeklyPerformance: {
-                studyHours: 0, // Will be calculated when time tracking is implemented
-                lessonsCompleted: activeCourses
-              },
-              monthlyProgressChart: [],
-              learningActivities: []
-            };
-            
-            setDashboardData(newDashboardData);
-        } else {
-          // No courses found, set default values
-          setDashboardData({
-            summary: {
-              activeCourses: 0,
-              completedCourses: 0,
-              totalLearningHours: 0,
-              averageProgress: 0,
-              modulesCompleted: 0,
-              assessmentsCompleted: 0
-            },
-            weeklyPerformance: {
-              studyHours: 0,
-              lessonsCompleted: 0
-            },
-            monthlyProgressChart: [],
-            learningActivities: []
-          });
-        }
-      } catch (coursesError) {
-        console.error('❌ Failed to fetch user courses:', coursesError);
+        const progressResponse = await api.get('/api/user/dashboard/userProgress');
+        const progressData = progressResponse?.data?.data || {};
+
+        const allEnrolledCoursesCount = Number(progressData.allEnrolledCoursesCount) || 0;
+        const completedCourses = Number(progressData.completedCourseCount) || 0;
+        const modulesCompleted = Number(progressData.modulesCompletedCount) || 0;
+        const assessmentsCompleted = Number(progressData.quizCompletedCount) || 0;
+        const pendingCoursesCount = Number(progressData.pendingCoursesCount) || 0;
+
+        const newDashboardData = {
+          summary: {
+            allEnrolledCoursesCount,
+            completedCourses,
+            totalLearningHours: 0, // Not provided by backend yet
+            averageProgress: 0, // Not provided by backend yet
+            modulesCompleted,
+            assessmentsCompleted,
+            pendingCoursesCount
+          },
+          weeklyPerformance: {
+            studyHours: 0, // Placeholder until backend provides
+            lessonsCompleted: allEnrolledCoursesCount
+          },
+          monthlyProgressChart: [],
+          learningActivities: []
+        };
+
+        setDashboardData(newDashboardData);
+      } catch (progressError) {
+        console.error('❌ Failed to fetch user progress:', progressError);
         console.error('❌ Error details:', {
-          message: coursesError.message,
-          status: coursesError.response?.status,
-          data: coursesError.response?.data
+          message: progressError.message,
+          status: progressError.response?.status,
+          data: progressError.response?.data
         });
         // Set default values if endpoint fails
         setDashboardData({
           summary: {
-            activeCourses: 0,
+            allEnrolledCoursesCount: 0,
             completedCourses: 0,
             totalLearningHours: 0,
             averageProgress: 0,
             modulesCompleted: 0,
-            assessmentsCompleted: 0
+            assessmentsCompleted: 0,
+            pendingCoursesCount: 0
           },
           weeklyPerformance: {
             studyHours: 0,
@@ -261,12 +234,13 @@ export function Dashboard() {
       // Set default values if API fails
       setDashboardData({
         summary: {
-          activeCourses: 0,
+          allEnrolledCoursesCount: 0,
           completedCourses: 0,
           totalLearningHours: 0,
           averageProgress: 0,
           modulesCompleted: 0,
-          assessmentsCompleted: 0
+          assessmentsCompleted: 0,
+          pendingCoursesCount: 0
         },
         weeklyPerformance: {
           studyHours: 0,
@@ -285,13 +259,26 @@ export function Dashboard() {
     fetchUserOverview();
   }, []); // Remove userId dependency to prevent infinite loop
 
+  // Recording course IDs to filter out from My Courses
+  const RECORDING_COURSE_IDS = [
+    "a188173c-23a6-4cb7-9653-6a1a809e9914", // Become Private Recordings
+    "7b798545-6f5f-4028-9b1e-e18c7d2b4c47", // Operate Private Recordings
+    "199e328d-8366-4af1-9582-9ea545f8b59e", // Business Credit Recordings
+    "d8e2e17f-af91-46e3-9a81-6e5b0214bc5e", // Private Merchant Recordings
+    "d5330607-9a45-4298-8ead-976dd8810283", // Sovereignty 101 Recordings
+    "814b3edf-86da-4b0d-bb8c-8a6da2d9b4df", // I Want Remedy Now Recordings
+  ];
+
   useEffect(() => {
     const fetchCourses = async () => {
       setCoursesLoading(true);
       try {
         const data = await fetchUserCourses();
+        // Filter out recording courses from My Courses
+        const filteredData = data.filter(course => !RECORDING_COURSE_IDS.includes(course.id));
+        
         // Process courses to include module counts, durations, and trial status
-        const processedCourses = data.map(course => {
+        const processedCourses = filteredData.map(course => {
           const trialStatus = getCourseTrialStatus(course);
           return {
             ...course,
@@ -638,7 +625,7 @@ export function Dashboard() {
                 <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                      <GraduationCap className="text-white" size={20} />
+                      <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
@@ -669,10 +656,10 @@ export function Dashboard() {
                   )}
 
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600" size={20} />
+                        <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-blue-600 font-semibold">Completed</span>
                       </div>
                       <p className="text-2xl font-bold text-blue-700 mt-1">
@@ -686,7 +673,7 @@ export function Dashboard() {
                     </div>
                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600" size={20} />
+                        <BookOpen className="text-emerald-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-emerald-600 font-semibold">Modules</span>
                       </div>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">
@@ -700,8 +687,8 @@ export function Dashboard() {
                     </div>
                     <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
                       <div className="flex items-center gap-2">
-                        <Award className="text-orange-600" size={20} />
-                        <span className="text-orange-600 font-semibold">Assessments</span>
+                        <Award className="text-orange-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                        <span className="text-orange-600 font-semibold">Quizzes</span>
                       </div>
                       <p className="text-2xl font-bold text-orange-700 mt-1">
                         {loading ? (
@@ -710,21 +697,35 @@ export function Dashboard() {
                           dashboardData.summary?.assessmentsCompleted || 0
                         )}
                       </p>
-                      <p className="text-orange-600 text-sm">Assessment Completed</p>
+                      <p className="text-orange-600 text-sm">Quiz Completed</p>
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600" size={20} />
-                        <span className="text-purple-600 font-semibold">Active</span>
+                        <BookOpen className="text-purple-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                        <span className="text-purple-600 font-semibold">Enrolled</span>
                       </div>
                       <p className="text-2xl font-bold text-purple-700 mt-1">
                         {loading ? (
                           <span className="inline-block align-middle animate-pulse bg-purple-200 h-8 w-12 rounded"></span>
                         ) : (
-                          dashboardData.summary?.activeCourses || 0
+                          dashboardData.summary?.allEnrolledCoursesCount || 0
                         )}
                       </p>
-                      <p className="text-purple-600 text-sm">Courses</p>
+                      <p className="text-purple-600 text-sm">Total Courses</p>
+                    </div>
+                    <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
+                      <div className="flex items-center gap-2">
+                        <Clock className="text-yellow-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                        <span className="text-yellow-600 font-semibold">Pending</span>
+                      </div>
+                      <p className="text-2xl font-bold text-yellow-700 mt-1">
+                        {loading ? (
+                          <span className="inline-block align-middle animate-pulse bg-yellow-200 h-8 w-12 rounded"></span>
+                        ) : (
+                          dashboardData.summary?.pendingCoursesCount || 0
+                        )}
+                      </p>
+                      <p className="text-yellow-600 text-sm">Courses Remaining</p>
                     </div>
                   </div>
                 </div>
@@ -1039,72 +1040,7 @@ export function Dashboard() {
               </div>
             </div>
           </div>
-          {/* How It Works Section */}
-          <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8 mb-8">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-3">How It Works</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto text-base sm:text-lg">
-                Start your education journey in just three simple steps. Our platform makes learning accessible and effective.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-              {/* Step 1 */}
-              <div className="group relative bg-gradient-to-br from-blue-50 to-white p-4 sm:p-6 rounded-xl border border-blue-100 hover:shadow-lg transition-all duration-300 min-h-[320px] flex flex-col justify-between">
-                <div className="absolute -top-5 left-4 sm:left-6 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <span className="font-bold">1</span>
-                </div>
-                <div className="flex flex-col items-center text-center pt-8 sm:pt-6">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-blue-200 transition-all">
-                    <Search className="text-blue-600" size={24} />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Choose a Course</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Browse our extensive catalog of private courses and select the one that matches your career goals.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Step 2 */}
-              <div className="group relative bg-gradient-to-br from-purple-50 to-white p-4 sm:p-6 rounded-xl border border-purple-100 hover:shadow-lg transition-all duration-300 min-h-[320px] flex flex-col justify-between">
-                <div className="absolute -top-5 left-4 sm:left-6 w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <span className="font-bold">2</span>
-                </div>
-                <div className="flex flex-col items-center text-center pt-8 sm:pt-6">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-purple-100 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-purple-200 transition-all">
-                    <MonitorPlay className="text-purple-600" size={24} />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Learn Anytime</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Access high-quality video lectures, case studies, and interactive materials at your own pace.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Step 3 - Updated version without certification mention */}
-              <div className="group relative bg-gradient-to-br from-green-50 to-white p-4 sm:p-6 rounded-xl border border-green-100 hover:shadow-lg transition-all duration-300 min-h-[320px] flex flex-col justify-between">
-                <div className="absolute -top-5 left-4 sm:left-6 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                  <span className="font-bold">3</span>
-                </div>
-                <div className="flex flex-col items-center text-center pt-8 sm:pt-6">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-green-200 transition-all">
-                    <CheckCircle className="text-green-600" size={24} />
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Master the Material</h3>
-                  <p className="text-gray-600 text-sm sm:text-base">
-                    Complete lessons, apply your knowledge with practical exercises, and track your progress.
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-center mt-8 sm:mt-10">
-            </div>
-          </div>
-
           
-          
-
           <AthenaUpcomingEvent />
         </div>
       </main>

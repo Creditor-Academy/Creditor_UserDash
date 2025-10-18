@@ -202,15 +202,15 @@ export function AnnouncementsPage() {
   return (
     <div className="space-y-6">
       {/* Professional Header */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-50 rounded-lg">
                 <Bell className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
                   Group Announcements
                 </h1>
                 <p className="text-gray-600">Stay updated with important group information</p>
@@ -230,20 +230,20 @@ export function AnnouncementsPage() {
       </div>
 
       {/* Search */}
-      <div className="flex w-full items-center space-x-2">
+      <div className="flex w-full items-center gap-2">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search announcements..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="h-9"
+          className="h-9 w-full"
         />
       </div>
 
       {/* Announcements List */}
       {loading ? (
         <Card>
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-6 sm:p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
             <p className="text-gray-600">Loading announcements...</p>
           </CardContent>
@@ -253,16 +253,16 @@ export function AnnouncementsPage() {
           {filteredAnnouncements.map((announcement, index) => (
             <Card key={announcement.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-9 w-9 sm:h-10 sm:w-10">
                       <AvatarImage src={announcement.user?.image} />
                       <AvatarFallback className="bg-blue-100 text-blue-600">
                         {getAuthorInitials(announcement.user)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-lg font-semibold text-gray-900">
+                      <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
                         {announcement.title}
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
@@ -275,7 +275,7 @@ export function AnnouncementsPage() {
                       </CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mt-2 sm:mt-0">
                     {getPriorityBadge(announcement.priority)}
                     {isGroupAdmin && (
                       <div className="flex items-center gap-1">
@@ -310,7 +310,7 @@ export function AnnouncementsPage() {
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none space-y-4">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
                     {announcement.content}
                   </p>
 
@@ -342,7 +342,7 @@ export function AnnouncementsPage() {
                           <div className="rounded-lg overflow-hidden border">
                             <iframe
                               src={`${announcement.media_url}#toolbar=0`}
-                              className="w-full h-[480px]"
+                              className="w-full h-[240px] sm:h-[480px]"
                               title="Announcement PDF"
                             />
                           </div>
@@ -373,8 +373,8 @@ export function AnnouncementsPage() {
         </div>
       ) : (
         <Card>
-          <CardContent className="p-8 text-center">
-            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <CardContent className="p-6 sm:p-8 text-center">
+            <Bell className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No announcements yet</h3>
             <p className="text-gray-600 mb-4">
               {searchQuery 
