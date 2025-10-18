@@ -13,9 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { markAllNotificationsRead } from "@/services/notificationService";
+import getSocket from "@/services/socketClient";
+import { getInvitationByToken, acceptPrivateGroupInvitation, rejectPrivateGroupInvitation, getPendingInvitations } from "@/services/privateGroupService";
 
 export function NotificationModal({ open, onOpenChange, onNotificationUpdate, notificationsFromApi = [], onMarkedAllRead }) {
   const [notifications, setNotifications] = useState([]);
+  const [chatInvites, setChatInvites] = useState([]);
 
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
@@ -52,13 +55,251 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
     }
   }, [notificationsFromApi]);
 
+  // Load pending invitations when component mounts or modal opens
+  useEffect(() => {
+    // Load on mount to update notification badge
+    loadPendingInvitations();
+  }, []);
+
+  // Also load when modal opens to ensure fresh data
+  useEffect(() => {
+    if (open) {
+      loadPendingInvitations();
+    }
+  }, [open]);
+
+  // Load invitations on user login
+  useEffect(() => {
+    const handleUserLoggedIn = () => {
+      console.log('User logged in - loading pending invitations');
+      setTimeout(() => {
+        loadPendingInvitations();
+      }, 500); // Small delay to ensure token is set
+    };
+
+    window.addEventListener('userLoggedIn', handleUserLoggedIn);
+    return () => window.removeEventListener('userLoggedIn', handleUserLoggedIn);
+  }, []);
+
+  // Refresh invitations when window gains focus (user returns to tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused - refreshing invitations');
+      loadPendingInvitations();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
+
+  // Listen for invitation refresh requests
+  useEffect(() => {
+    const handleRefresh = () => {
+      console.log('Invitation refresh requested');
+      loadPendingInvitations();
+    };
+
+    window.addEventListener('refresh-invitations', handleRefresh);
+    return () => window.removeEventListener('refresh-invitations', handleRefresh);
+  }, []);
+
+  const loadPendingInvitations = async () => {
+    try {
+      console.log('[Invitation API] Fetching pending invitations for current user...');
+      const response = await getPendingInvitations();
+      
+      // Handle nested response structure from backend
+      // Backend returns: { success: true, data: [...] }
+      // Axios wraps it: { data: { success: true, data: [...] } }
+      const invitations = response?.data?.data || response?.data?.invitations || response?.data || [];
+      
+      console.log('[Invitation API] Full response:', response);
+      console.log('[Invitation API] Response.data:', response?.data);
+      console.log('[Invitation API] Parsed invitations:', invitations);
+      console.log('[Invitation API] Current user ID:', localStorage.getItem('userId'));
+      
+      if (!Array.isArray(invitations) || invitations.length === 0) {
+        console.log('[Invitation API] No pending invitations found');
+        return;
+      }
+
+      console.log('[Invitation API] Processing', invitations.length, 'invitations');
+
+      // Map invitations to the format expected by the UI
+      const currentUserId = localStorage.getItem('userId');
+      const mappedInvites = await Promise.all(
+        invitations.map(async (inv) => {
+          try {
+            // Double-check this invitation is for the current user
+            const inviteeId = String(inv.invitee_id || inv.inviteeId || '');
+            if (inviteeId && inviteeId !== String(currentUserId)) {
+              console.log('[Invitation API] Skipping invitation not for current user:', inv);
+              return null;
+            }
+            
+            // Fetch full invitation details if needed
+            const detailRes = inv.group ? { data: inv } : await getInvitationByToken(inv.token);
+            const detail = detailRes?.data || detailRes || {};
+            const group = detail.group || {};
+            const inviter = detail.inviter || {};
+
+            return {
+              id: String(inv.token || inv.id),
+              type: 'chat-invitation',
+              title: group.name || inv.group_name || 'Private Group',
+              description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+              time: new Date(inv.created_at || inv.createdAt || Date.now()).toLocaleString(),
+              token: inv.token,
+              groupId: group.id || inv.group_id,
+              thumbnail: group.thumbnail || group.image || null,
+              inviterName: [inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'Admin',
+              read: false,
+            };
+          } catch (err) {
+            console.warn('Failed to process invitation:', err);
+            return null;
+          }
+        })
+      );
+
+      // Filter out any null values and update state
+      const validInvites = mappedInvites.filter(Boolean);
+      
+      // Deduplicate invitations by group - only keep the most recent invitation per group
+      const deduplicatedInvites = [];
+      const seenGroups = new Set();
+      
+      // Sort by time (newest first) and keep only the first invitation per group
+      validInvites
+        .sort((a, b) => new Date(b.time) - new Date(a.time))
+        .forEach(inv => {
+          const groupKey = String(inv.groupId);
+          if (!seenGroups.has(groupKey)) {
+            seenGroups.add(groupKey);
+            deduplicatedInvites.push(inv);
+          } else {
+            console.log('[Invitation API] Skipping duplicate invitation for group:', groupKey);
+          }
+        });
+      
+      setChatInvites(prev => {
+        // Merge with existing invites, avoiding duplicates by token
+        const existingTokens = new Set(prev.map(c => String(c.token)));
+        const newInvites = deduplicatedInvites.filter(inv => !existingTokens.has(String(inv.token)));
+        const updatedInvites = [...prev, ...newInvites];
+        
+        // Update parent badge count immediately
+        if (onNotificationUpdate && newInvites.length > 0) {
+          const totalUnread = notifications.filter(n => !n.read).length + updatedInvites.filter(c => !c.read).length;
+          onNotificationUpdate(totalUnread);
+        }
+        
+        return updatedInvites;
+      });
+    } catch (error) {
+      console.error('Failed to load pending invitations:', error);
+    }
+  };
+
   // Initialize unread count when modal opens
   useEffect(() => {
     if (open && onNotificationUpdate) {
-      const unreadCount = notifications.filter(n => !n.read).length;
+      const unreadCount = notifications.filter(n => !n.read).length + chatInvites.filter(c => !c.read).length;
       onNotificationUpdate(unreadCount);
     }
-  }, [open, notifications, onNotificationUpdate]);
+  }, [open, notifications, chatInvites, onNotificationUpdate]);
+
+  // Socket listener for private group invitations
+  useEffect(() => {
+    const socket = getSocket();
+    const currentUserId = String(localStorage.getItem('userId') || '');
+
+    const onInvitationSent = async (data) => {
+      try {
+        console.log('[Invitation] Received socket event:', data);
+        console.log('[Invitation] Current user ID:', currentUserId);
+        
+        const invites = Array.isArray(data?.invites) ? data.invites : [];
+        
+        console.log('[Invitation] Processing invites:', invites);
+        console.log('[Invitation] Number of invites:', invites.length);
+        
+        // Check if current user is in the invitee list
+        const match = invites.find((i) => {
+          const inviteeId = String(i.invitee_id || i.inviteeId || '');
+          const isMatch = inviteeId === currentUserId;
+          console.log('[Invitation] Checking invitee:', inviteeId, 'against current:', currentUserId, '-> Match:', isMatch);
+          return isMatch;
+        });
+        
+        // Only process if current user is actually invited (in the invitee list)
+        if (!match || !match.token) {
+          console.log('[Invitation] Current user is NOT in invitee list - ignoring invitation');
+          return;
+        }
+
+        console.log('[Invitation] Match found! Current user IS invited - Processing token:', match.token);
+
+        // Fetch invite details for rich card
+        const detailRes = await getInvitationByToken(match.token);
+        const detail = detailRes?.data || detailRes || {};
+        const group = detail.group || {};
+        const inviter = detail.inviter || {};
+
+        const newInvite = {
+          id: String(match.token),
+          type: 'chat-invitation',
+          title: group.name || 'Private Group',
+          description: `You've been invited by ${[inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'an admin'}`,
+          time: new Date().toLocaleString(),
+          token: match.token,
+          groupId: group.id,
+          thumbnail: group.thumbnail || group.image || null,
+          inviterName: [inviter.first_name, inviter.last_name].filter(Boolean).join(' ') || inviter.name || 'Admin',
+          read: false,
+        };
+
+        setChatInvites((prev) => {
+          // Check if invitation with same token already exists
+          const exists = prev.some((c) => String(c.id) === String(newInvite.id) || String(c.token) === String(newInvite.token));
+          if (exists) {
+            console.log('[Invitation] Invitation already exists - skipping');
+            return prev;
+          }
+          
+          // Check if user already has an invitation for this group
+          const hasInviteForGroup = prev.some((c) => String(c.groupId) === String(newInvite.groupId));
+          if (hasInviteForGroup) {
+            console.log('[Invitation] User already has invitation for this group - replacing with newer one');
+            // Remove old invitation for this group and add the new one
+            const filtered = prev.filter(c => String(c.groupId) !== String(newInvite.groupId));
+            return [newInvite, ...filtered];
+          }
+          
+          console.log('[Invitation] Adding new invitation to list');
+          
+          // Update notification badge
+          if (onNotificationUpdate) {
+            setTimeout(() => {
+              const totalUnread = notifications.filter(n => !n.read).length + (prev.length + 1);
+              onNotificationUpdate(totalUnread);
+            }, 100);
+          }
+          
+          return [newInvite, ...prev];
+        });
+
+        toast.info('New chat invitation received');
+      } catch (e) {
+        console.warn('[Invitation] Failed processing privateGroupInvitationSent', e);
+      }
+    };
+
+    socket.on('privateGroupInvitationSent', onInvitationSent);
+    return () => {
+      socket.off('privateGroupInvitationSent', onInvitationSent);
+    };
+  }, []);
 
   const markAsRead = (id) => {
     setNotifications(notifications.map(n => 
@@ -76,9 +317,125 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
       console.warn('Mark-all API failed or unavailable; applying frontend fallback.');
     }
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setChatInvites(prev => prev.map(c => ({ ...c, read: true })));
     if (onMarkedAllRead) onMarkedAllRead();
     toast.success("All notifications marked as read");
     if (onNotificationUpdate) onNotificationUpdate(0);
+  };
+
+  const acceptInvite = async (token, idToRemove) => {
+    try {
+      // Get invitation details before removing from list
+      const invite = chatInvites.find(c => String(c.id) === String(idToRemove));
+      
+      const response = await acceptPrivateGroupInvitation(token);
+      
+      toast.success('You joined the group successfully.');
+      
+      // Remove ALL invitations for the same group (handles duplicate invitations)
+      setChatInvites(prev => {
+        const filtered = prev.filter(c => {
+          // Remove the accepted invitation by token
+          if (String(c.id) === String(idToRemove)) return false;
+          // Also remove any other invitations for the same group
+          if (String(c.groupId) === String(invite?.groupId)) {
+            console.log('[Invitation] Removing duplicate invitation for same group:', c.id);
+            return false;
+          }
+          return true;
+        });
+        
+        // Update notification badge
+        if (onNotificationUpdate) {
+          const totalUnread = notifications.filter(n => !n.read).length + filtered.filter(c => !c.read).length;
+          onNotificationUpdate(totalUnread);
+        }
+        
+        return filtered;
+      });
+      
+      // Emit socket event for real-time updates
+      const socket = getSocket();
+      const currentUserId = localStorage.getItem('userId');
+      socket.emit('privateGroupInvitationAccepted', {
+        groupId: invite?.groupId,
+        userId: currentUserId,
+        token: token,
+        group: {
+          id: invite?.groupId,
+          name: invite?.title,
+          thumbnail: invite?.thumbnail,
+          member_count: response?.data?.member_count || 1,
+          description: response?.data?.description
+        }
+      });
+      
+      // Dispatch custom event for local UI update
+      window.dispatchEvent(new CustomEvent('privateGroupInvitationAccepted', {
+        detail: {
+          groupId: invite?.groupId,
+          userId: currentUserId,
+          group: {
+            id: invite?.groupId,
+            name: invite?.title,
+            thumbnail: invite?.thumbnail,
+            member_count: response?.data?.member_count || 1,
+            description: response?.data?.description
+          }
+        }
+      }));
+      
+      // Optional navigation to messages view (adjust if you have a different route)
+      // window.location.href = `/messages`;
+    } catch (e) {
+      console.warn('Accept invitation failed', e);
+      const errorMessage = e?.response?.data?.message || '';
+      
+      // Check if user is already a member
+      if (errorMessage.toLowerCase().includes('already') || 
+          errorMessage.toLowerCase().includes('member')) {
+        toast.info('You are already a member of this group');
+        
+        // Remove this invitation since it's no longer valid
+        const invite = chatInvites.find(c => String(c.id) === String(idToRemove));
+        setChatInvites(prev => {
+          const filtered = prev.filter(c => String(c.groupId) !== String(invite?.groupId));
+          
+          // Update notification badge
+          if (onNotificationUpdate) {
+            const totalUnread = notifications.filter(n => !n.read).length + filtered.filter(c => !c.read).length;
+            onNotificationUpdate(totalUnread);
+          }
+          
+          return filtered;
+        });
+      } else {
+        toast.error(errorMessage || 'Failed to accept invitation');
+      }
+    }
+  };
+
+  const rejectInvite = async (token, idToRemove) => {
+    try {
+      await rejectPrivateGroupInvitation(token);
+      toast.success('Invitation rejected.');
+      
+      // Remove the rejected invitation and update badge
+      setChatInvites(prev => {
+        const filtered = prev.filter(c => String(c.id) !== String(idToRemove));
+        
+        // Update notification badge
+        if (onNotificationUpdate) {
+          const totalUnread = notifications.filter(n => !n.read).length + filtered.filter(c => !c.read).length;
+          onNotificationUpdate(totalUnread);
+        }
+        
+        return filtered;
+      });
+    } catch (e) {
+      console.warn('Reject invitation failed', e);
+      toast.error(e?.response?.data?.message || 'Failed to reject invitation');
+    }
   };
 
   return (
@@ -93,7 +450,7 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
         
         <Tabs defaultValue="all" className="w-full flex flex-col flex-1 min-h-0">
           <div className="px-4 pb-2 border-b border-gray-100 flex-shrink-0">
-            <TabsList className="grid w-full grid-cols-4 h-8 bg-gray-100 rounded-lg p-1">
+            <TabsList className="grid w-full grid-cols-5 h-8 bg-gray-100 rounded-lg p-1">
               <TabsTrigger 
                 value="all" 
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
@@ -111,6 +468,12 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
               >
                 Payment
+              </TabsTrigger>
+              <TabsTrigger 
+                value="chats" 
+                className="text-xs font-medium rounded-md px-2 py-1 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600"
+              >
+                Chats
               </TabsTrigger>
               <TabsTrigger 
                 value="settings" 
@@ -259,6 +622,36 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
                 </div>
               )}
 
+            </TabsContent>
+
+            {/* Chats tab - private group invitations */}
+            <TabsContent value="chats" className="space-y-2 mt-0">
+              {chatInvites.length > 0 ? (
+                chatInvites.map((c) => (
+                  <div key={c.id} className={`p-3 rounded-lg ${c.read ? 'bg-gray-50' : 'bg-blue-50'} border border-gray-100`}>
+                    <div className="flex items-start gap-3">
+                      {c.thumbnail ? (
+                        <img src={c.thumbnail} alt={c.title} className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-200 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 text-xs">{c.title}</h4>
+                        <p className="text-gray-700 text-xs mt-1">You’ve been invited to join {c.title} by {c.inviterName}</p>
+                        <p className="text-blue-600 text-[10px] mt-1">{c.time}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button onClick={() => acceptInvite(c.token, c.id)} variant="default" className="h-6 px-2 py-1 text-xs">Accept</Button>
+                        <Button onClick={() => rejectInvite(c.token, c.id)} variant="outline" className="h-6 px-2 py-1 text-xs">Reject</Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-gray-500 text-xs">No chat notifications yet</p>
+                </div>
+              )}
             </TabsContent>
             
             <TabsContent value="settings" className="space-y-3 mt-0">
