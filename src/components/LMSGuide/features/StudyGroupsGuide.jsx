@@ -1,9 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, Settings, Shield, Star } from 'lucide-react';
-import { BaseFeature } from '../../FeatureComponents';
+import { Users, MessageSquare, Settings, Star, GraduationCap } from 'lucide-react';
+import { BaseFeature } from '../FeatureComponents';
 
-// Reuse the ProTip and StepCard components from CourseManagementGuide
 const ProTip = ({ children, emoji = "💡" }) => (
   <div className="relative bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-100 rounded-2xl p-8 border border-amber-300/50 shadow-lg overflow-hidden">
     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-y-16 translate-x-16"></div>
@@ -63,7 +62,6 @@ const IntroSection = () => (
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-10 rounded-3xl shadow-2xl"
     >
-      {/* Background animations */}
       <motion.div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]" />
       
       <div className="relative z-10 flex items-center gap-6 mb-8">
@@ -77,39 +75,62 @@ const IntroSection = () => (
         </motion.div>
         <div>
           <h3 className="text-3xl font-bold text-white mb-2">
-            User Management
+            Study Groups
           </h3>
           <div className="flex items-center gap-2">
             <motion.div className="w-2 h-2 bg-green-400 rounded-full" />
-            <span className="text-blue-100 text-sm font-medium">Instructor Tools</span>
+            <span className="text-blue-100 text-sm font-medium">Collaborative Learning</span>
           </div>
         </div>
       </div>
       
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Efficiently <span className="text-yellow-300 font-semibold">manage users</span> and their roles. 
-        Control access, track progress, and ensure a smooth learning experience for all participants.
+        Foster <span className="text-yellow-300 font-semibold">collaborative learning</span> through study groups. 
+        Access both common interest groups and course-specific groups to enhance your learning experience through focused discussions and collaboration.
       </p>
+      
+      <div className="relative z-10 flex gap-8 mt-8">
+        {[
+          { color: "bg-green-400", text: "Common Groups" },
+          { color: "bg-blue-400", text: "Course Groups" },
+          { color: "bg-purple-400", text: "Interactive Features" }
+        ].map((stat, index) => (
+          <motion.div 
+            key={index}
+            className="flex items-center gap-2"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.2 }}
+          >
+            <motion.div 
+              className={`w-3 h-3 ${stat.color} rounded-full`}
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+            />
+            <span className="text-white/90 font-medium">{stat.text}</span>
+          </motion.div>
+        ))}
+      </div>
     </motion.div>
   </div>
 );
 
-const UserManagementGuide = () => {
+const StudyGroupsGuide = () => {
   const featureData = {
-    id: 'user_management',
+    id: 'study_groups',
     icon: Users,
-    title: 'User Management',
+    title: 'Study Groups',
     introduction: <IntroSection />,
     videos: [
       {
         url: 'https://www.youtube.com/embed/example1',
-        title: 'User Management Overview',
-        description: 'Learn how to effectively manage users, roles, and permissions in your courses.'
+        title: 'Study Groups Overview',
+        description: 'Learn how to create and manage study groups for collaborative learning.'
       }
     ],
     steps: [
       {
-        title: 'Managing Users',
+        title: 'Types of Study Groups',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -118,13 +139,14 @@ const UserManagementGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={UserPlus}
-                title="User Administration"
+                icon={Users}
+                title="Common Groups"
                 color="blue"
                 items={[
-                  'Add new users individually or in bulk',
-                  'Import users from CSV or Excel files',
-                  'Manage user profiles and contact information'
+                  'Join open discussion groups for general topics',
+                  'Participate in common interest study circles',
+                  'Connect with peers across different courses',
+                  'Engage in collaborative learning communities'
                 ]}
                 index={0}
               />
@@ -136,22 +158,34 @@ const UserManagementGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Shield}
-                title="Role Management"
+                icon={GraduationCap}
+                title="Course Groups"
                 color="emerald"
                 items={[
-                  'Assign and modify user roles (Student, Instructor, Admin)',
-                  'Set up custom permissions for specific users',
-                  'Manage access levels for different course sections'
+                  'Access instructor-created course-specific groups',
+                  'Collaborate with course peers on assignments',
+                  'Receive course-related announcements',
+                  'Participate in guided discussions'
                 ]}
                 index={1}
               />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <ProTip emoji="💡">
+                <span className="font-bold">Group Selection:</span> Common Groups are perfect for general discussions and networking, 
+                while Course Groups provide focused, instructor-guided learning environments specific to your enrolled courses.
+              </ProTip>
             </motion.div>
           </div>
         )
       },
       {
-        title: 'User Settings & Analytics',
+        title: 'Group Features & Interaction',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -160,13 +194,14 @@ const UserManagementGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={Settings}
-                title="User Settings"
+                icon={MessageSquare}
+                title="Group Communication"
                 color="purple"
                 items={[
-                  'Configure user notification preferences',
-                  'Manage user access and restrictions',
-                  'Set up user groups and batch operations'
+                  'View group news and updates',
+                  'Chat with all group members in real-time',
+                  'Access member list and profiles',
+                  'Receive important announcements'
                 ]}
                 index={2}
               />
@@ -177,9 +212,28 @@ const UserManagementGuide = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <ProTip emoji="👥">
-                <span className="font-bold">Batch Operations:</span> Use bulk actions to efficiently 
-                manage multiple users at once. This saves time when updating roles or permissions for groups.
+              <StepCard
+                icon={Settings}
+                title="Group Sections"
+                color="indigo"
+                items={[
+                  'News - Stay updated with latest group activities',
+                  'Members - View and interact with group participants',
+                  'Chat - Engage in group discussions',
+                  'Announcements - Access instructor notices and updates'
+                ]}
+                index={3}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <ProTip emoji="🔔">
+                <span className="font-bold">Stay Connected:</span> Check the Announcements section regularly 
+                to stay updated with important information from instructors and group administrators.
               </ProTip>
             </motion.div>
           </div>
@@ -191,4 +245,4 @@ const UserManagementGuide = () => {
   return <BaseFeature feature={featureData} />;
 };
 
-export default UserManagementGuide;
+export default StudyGroupsGuide;

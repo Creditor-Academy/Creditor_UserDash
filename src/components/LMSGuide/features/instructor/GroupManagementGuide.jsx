@@ -1,9 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Users, UserPlus, Settings, Shield, Star } from 'lucide-react';
+import { Users, UserPlus, Settings, Shield, Star, MessageSquare } from 'lucide-react';
 import { BaseFeature } from '../../FeatureComponents';
 
-// Reuse the ProTip and StepCard components from CourseManagementGuide
 const ProTip = ({ children, emoji = "💡" }) => (
   <div className="relative bg-gradient-to-r from-amber-100 via-orange-50 to-yellow-100 rounded-2xl p-8 border border-amber-300/50 shadow-lg overflow-hidden">
     <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full -translate-y-16 translate-x-16"></div>
@@ -63,7 +62,6 @@ const IntroSection = () => (
       animate={{ opacity: 1, y: 0 }}
       className="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-10 rounded-3xl shadow-2xl"
     >
-      {/* Background animations */}
       <motion.div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_50%)]" />
       
       <div className="relative z-10 flex items-center gap-6 mb-8">
@@ -77,7 +75,7 @@ const IntroSection = () => (
         </motion.div>
         <div>
           <h3 className="text-3xl font-bold text-white mb-2">
-            User Management
+            Group Management
           </h3>
           <div className="flex items-center gap-2">
             <motion.div className="w-2 h-2 bg-green-400 rounded-full" />
@@ -87,29 +85,29 @@ const IntroSection = () => (
       </div>
       
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Efficiently <span className="text-yellow-300 font-semibold">manage users</span> and their roles. 
-        Control access, track progress, and ensure a smooth learning experience for all participants.
+        Efficiently <span className="text-yellow-300 font-semibold">manage learning groups</span> and facilitate collaboration. 
+        Create, monitor, and organize group activities to enhance the learning experience.
       </p>
     </motion.div>
   </div>
 );
 
-const UserManagementGuide = () => {
+const GroupManagementGuide = () => {
   const featureData = {
-    id: 'user_management',
+    id: 'group_management',
     icon: Users,
-    title: 'User Management',
+    title: 'Group Management',
     introduction: <IntroSection />,
     videos: [
       {
         url: 'https://www.youtube.com/embed/example1',
-        title: 'User Management Overview',
-        description: 'Learn how to effectively manage users, roles, and permissions in your courses.'
+        title: 'Group Management Overview',
+        description: 'Learn how to effectively manage learning groups and facilitate collaboration.'
       }
     ],
     steps: [
       {
-        title: 'Managing Users',
+        title: 'Creating & Managing Groups',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -119,12 +117,13 @@ const UserManagementGuide = () => {
             >
               <StepCard
                 icon={UserPlus}
-                title="User Administration"
+                title="Group Creation"
                 color="blue"
                 items={[
-                  'Add new users individually or in bulk',
-                  'Import users from CSV or Excel files',
-                  'Manage user profiles and contact information'
+                  'Create course-specific learning groups',
+                  'Set group size and participation limits',
+                  'Define group objectives and guidelines',
+                  'Assign group moderators and leaders'
                 ]}
                 index={0}
               />
@@ -136,13 +135,14 @@ const UserManagementGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Shield}
-                title="Role Management"
+                icon={MessageSquare}
+                title="Group Activities"
                 color="emerald"
                 items={[
-                  'Assign and modify user roles (Student, Instructor, Admin)',
-                  'Set up custom permissions for specific users',
-                  'Manage access levels for different course sections'
+                  'Monitor group discussions and interactions',
+                  'Create and assign group projects',
+                  'Track participation and engagement',
+                  'Facilitate collaborative learning sessions'
                 ]}
                 index={1}
               />
@@ -151,7 +151,7 @@ const UserManagementGuide = () => {
         )
       },
       {
-        title: 'User Settings & Analytics',
+        title: 'Group Settings & Monitoring',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -161,12 +161,13 @@ const UserManagementGuide = () => {
             >
               <StepCard
                 icon={Settings}
-                title="User Settings"
+                title="Group Settings"
                 color="purple"
                 items={[
-                  'Configure user notification preferences',
-                  'Manage user access and restrictions',
-                  'Set up user groups and batch operations'
+                  'Configure group privacy settings',
+                  'Manage member permissions and roles',
+                  'Set up group communication rules',
+                  'Customize group features and tools'
                 ]}
                 index={2}
               />
@@ -177,9 +178,28 @@ const UserManagementGuide = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
+              <StepCard
+                icon={Shield}
+                title="Group Monitoring"
+                color="indigo"
+                items={[
+                  'Review group activity reports',
+                  'Monitor member participation',
+                  'Track group progress and milestones',
+                  'Ensure compliance with guidelines'
+                ]}
+                index={3}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
               <ProTip emoji="👥">
-                <span className="font-bold">Batch Operations:</span> Use bulk actions to efficiently 
-                manage multiple users at once. This saves time when updating roles or permissions for groups.
+                <span className="font-bold">Effective Management:</span> Regularly review group activities and 
+                provide timely feedback to maintain engagement and ensure learning objectives are being met.
               </ProTip>
             </motion.div>
           </div>
@@ -191,4 +211,4 @@ const UserManagementGuide = () => {
   return <BaseFeature feature={featureData} />;
 };
 
-export default UserManagementGuide;
+export default GroupManagementGuide;

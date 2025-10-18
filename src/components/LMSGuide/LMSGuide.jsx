@@ -11,7 +11,8 @@ import {
   FileQuestion,
   BarChart,
   GraduationCap,
-  UserCog
+  UserCog,
+  UsersRound
 } from 'lucide-react';
 
 const FeatureCard = ({ icon: Icon, title, description, onClick }) => (
@@ -60,6 +61,11 @@ const LMSGuide = () => {
   };
 
   const generalFeatures = [
+    {
+      icon: GraduationCap,
+      title: "Study Groups",
+      description: "Join or create study groups for collaborative learning. Connect with peers, share resources, and participate in group study sessions to enhance your learning experience."
+    },
     {
       icon: UserCog,
       title: "Edit Profile",
@@ -132,11 +138,6 @@ const LMSGuide = () => {
       icon: FileQuestion,
       title: "Assets Management",
       description: "Manage course materials, media files, and learning resources efficiently."
-    },
-    {
-      icon: MessageSquare,
-      title: "Private Groups",
-      description: "Create and manage private discussion groups for specific courses or topics."
     },
     {
       icon: BarChart,
