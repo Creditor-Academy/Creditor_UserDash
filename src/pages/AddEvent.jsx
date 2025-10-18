@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { currentUserId } from "@/data/currentUser";
-import { getAllEvents } from "@/services/calendarService";
+import { getAllEvents, getAllEventsWithCount } from "@/services/calendarService";
 import { fetchUserProfile } from "@/services/userService";
 import { getAuthHeader } from "@/services/authHeader";
 import EventAttendanceModal from "@/components/dashboard/EventAttendanceModal";
@@ -46,6 +46,25 @@ const AddEvent = () => {
   const [isScheduling, setIsScheduling] = useState(false);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null);
+  const [showPreviousEvents, setShowPreviousEvents] = useState(false);
+  const [allEvents, setAllEvents] = useState([]);
+  const [loadingPreviousEvents, setLoadingPreviousEvents] = useState(false);
+  const [isEventAttendanceModalOpen, setIsEventAttendanceModalOpen] = useState(false);
+  const [selectedEventForEventAttendance, setSelectedEventForEventAttendance] = useState(null);
+
+  // Function to fetch all events (previous + upcoming)
+  const fetchAllEvents = async () => {
+    setLoadingPreviousEvents(true);
+    try {
+      const data = await getAllEventsWithCount(50); // Fetch last 50 events
+      setAllEvents(data);
+    } catch (err) {
+      console.error('Error fetching all events:', err);
+      alert('Failed to fetch previous events');
+    } finally {
+      setLoadingPreviousEvents(false);
+    }
+  };
 
   // Sort events by startTime descending (most recent at top)
   const sortedEvents = [...events].sort((a, b) => {
@@ -55,9 +74,17 @@ const AddEvent = () => {
     return bTime - aTime;
   });
 
+  // Sort all events by startTime descending (most recent at top)
+  const sortedAllEvents = [...allEvents].sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt) : new Date(a.startTime);
+    const bTime = b.createdAt ? new Date(b.createdAt) : new Date(b.startTime);
+    return bTime - aTime;
+  });
+
   // Pagination logic
-  const totalPages = Math.ceil(sortedEvents.length / EVENTS_PER_PAGE);
-  const paginatedEvents = sortedEvents.slice(
+  const currentEvents = showPreviousEvents ? sortedAllEvents : sortedEvents;
+  const totalPages = Math.ceil(currentEvents.length / EVENTS_PER_PAGE);
+  const paginatedEvents = currentEvents.slice(
     (currentPage - 1) * EVENTS_PER_PAGE,
     currentPage * EVENTS_PER_PAGE
   );
@@ -67,6 +94,16 @@ const AddEvent = () => {
   };
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  };
+
+  // Handle toggle between upcoming and previous events
+  const handleToggleEvents = async () => {
+    if (!showPreviousEvents) {
+      // Switching to previous events - fetch all events
+      await fetchAllEvents();
+    }
+    setShowPreviousEvents(!showPreviousEvents);
+    setCurrentPage(1); // Reset to first page
   };
 
   // Reset to first page if events change
@@ -412,7 +449,7 @@ const AddEvent = () => {
 
   // Edit handler: fetch event details and populate modal
   const handleEdit = async (index) => {
-    const event = events[index];
+    const event = currentEvents[index];
     // Fetch latest event details from backend
     const backendEvent = await fetchEventDetails(event.id);
     const e = backendEvent || event;
@@ -442,7 +479,7 @@ const AddEvent = () => {
   };
 
   const handleDelete = async (index) => {
-    const event = events[index];
+    const event = currentEvents[index];
     // For non-recurring events, use DELETE /calendar/events/:eventId
     if (event.isRecurring && event.occurrences && event.occurrences.length > 0) {
       // Fetch deleted occurrences for this recurring event
@@ -464,7 +501,7 @@ const AddEvent = () => {
   // Confirmed delete for non-recurring event
   const confirmDelete = async () => {
     if (deleteIndex === null) return;
-    const event = events[deleteIndex];
+    const event = currentEvents[deleteIndex];
     try {
       // DELETE non-recurring event
       await fetch(`${import.meta.env.VITE_API_BASE_URL}/calendar/events/${event.id}`, {
@@ -484,6 +521,12 @@ const AddEvent = () => {
         courseId: ev.courseId || ev.course_id
       }));
       setEvents(normalizedEvents);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
     } catch (err) {
       
     } finally {
@@ -510,6 +553,13 @@ const AddEvent = () => {
       // Refetch events after deletion
       const data = await getAllEvents();
       setEvents(data);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
+      
       setShowRecurringDeleteModal(false);
       setModalMessage("Event deleted");
     } catch (err) {
@@ -536,6 +586,13 @@ const AddEvent = () => {
       // Refetch events after deletion
       const data = await getAllEvents();
       setEvents(data);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
+      
       setShowRecurringDeleteModal(false);
     } catch (err) {
       
@@ -568,6 +625,13 @@ const AddEvent = () => {
       // Refetch events after restore
       const data = await getAllEvents();
       setEvents(data);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
+      
       setShowRecurringDeleteModal(false);
       setModalMessage("Event restored successfully");
     } catch (err) {
@@ -700,6 +764,13 @@ const AddEvent = () => {
         // Refetch events after updating
         const data = await getAllEvents();
         setEvents(data);
+        
+        // If showing all events, refresh that too
+        if (showPreviousEvents) {
+          const allData = await getAllEventsWithCount(50);
+          setAllEvents(allData);
+        }
+        
         alert("Event updated successfully!");
       } catch (err) {
         
@@ -752,6 +823,13 @@ const AddEvent = () => {
             courseId: ev.courseId || ev.course_id // fallback to course_id if courseId is missing
           }));
         setEvents(normalizedEvents);
+        
+        // If showing all events, refresh that too
+        if (showPreviousEvents) {
+          const allData = await getAllEventsWithCount(50);
+          setAllEvents(allData);
+        }
+        
         alert("Event created successfully!");
       } catch (err) {
         alert("Failed to create event: " + err.message);
@@ -797,13 +875,26 @@ const AddEvent = () => {
     setSelectedEventForAttendance(null);
   };
 
+  // Handle opening event attendance modal
+  const handleViewEventAttendance = (event) => {
+    setSelectedEventForEventAttendance(event);
+    setIsEventAttendanceModalOpen(true);
+  };
+
+  // Handle closing event attendance modal
+  const handleCloseEventAttendanceModal = () => {
+    setIsEventAttendanceModalOpen(false);
+    setSelectedEventForEventAttendance(null);
+  };
+
   // Helper: get events for a specific date
   const getEventsForDate = (date) => {
     if (!date) return [];
     
     const eventsForDate = [];
+    const eventsToCheck = showPreviousEvents ? allEvents : events;
     
-    events.forEach(ev => {
+    eventsToCheck.forEach(ev => {
       // Handle recurring events with occurrences
       if (ev.isRecurring && ev.occurrences && ev.occurrences.length > 0) {
         // Check each occurrence of the recurring event
@@ -1007,13 +1098,44 @@ const AddEvent = () => {
       
       {/* Events List */}
       <div className="mb-4">
-        <h3 className="font-semibold text-lg mb-4 text-gray-800">Upcoming Events</h3>
-        {sortedEvents.length === 0 ? (
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg text-gray-800">
+            {showPreviousEvents ? 'All Events' : 'Upcoming Events'}
+          </h3>
+          <button
+            onClick={handleToggleEvents}
+            disabled={loadingPreviousEvents}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              loadingPreviousEvents
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : showPreviousEvents
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {loadingPreviousEvents ? (
+              <>
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading...
+              </>
+            ) : showPreviousEvents ? (
+              'Show Upcoming Events'
+            ) : (
+              'Show Previous Events'
+            )}
+          </button>
+        </div>
+        {currentEvents.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="mt-2">No events scheduled yet</p>
+            <p className="mt-2">
+              {showPreviousEvents ? 'No events found' : 'No events scheduled yet'}
+            </p>
           </div>
         ) : (
           <>
@@ -1038,7 +1160,7 @@ const AddEvent = () => {
                       <div className="flex gap-2">
                         <button
                           className="text-blue-600 hover:underline text-xs"
-                          onClick={() => handleEdit(events.findIndex(e => e.id === event.id))}
+                          onClick={() => handleEdit(currentEvents.findIndex(e => e.id === event.id))}
                         >
                           Edit
                         </button>
@@ -1048,9 +1170,17 @@ const AddEvent = () => {
                         >
                           View Attendance
                         </button>
+                        {showPreviousEvents && (
+                          <button
+                            className="text-purple-600 hover:underline text-xs"
+                            onClick={() => handleViewEventAttendance(event)}
+                          >
+                            Attendance
+                          </button>
+                        )}
                         <button
                           className="text-red-600 hover:underline text-xs"
-                          onClick={() => handleDelete(events.findIndex(e => e.id === event.id))}
+                          onClick={() => handleDelete(currentEvents.findIndex(e => e.id === event.id))}
                         >
                           Delete
                         </button>
@@ -1716,7 +1846,7 @@ const AddEvent = () => {
                         className="text-blue-600 hover:underline text-sm"
                         onClick={() => {
                           setShowDateEvents(false);
-                          handleEdit(events.findIndex(e => e.id === event.id));
+                          handleEdit(currentEvents.findIndex(e => e.id === event.id));
                         }}
                       >
                         Edit
@@ -1730,11 +1860,22 @@ const AddEvent = () => {
                       >
                         View Attendance
                       </button>
+                      {showPreviousEvents && (
+                        <button
+                          className="text-purple-600 hover:underline text-sm"
+                          onClick={() => {
+                            setShowDateEvents(false);
+                            handleViewEventAttendance(event);
+                          }}
+                        >
+                          Attendance
+                        </button>
+                      )}
                       <button
                         className="text-red-600 hover:underline text-sm"
                         onClick={() => {
                           setShowDateEvents(false);
-                          handleDelete(events.findIndex(e => e.id === event.id));
+                          handleDelete(currentEvents.findIndex(e => e.id === event.id));
                         }}
                       >
                         Delete
@@ -1770,6 +1911,16 @@ const AddEvent = () => {
         eventTitle={selectedEventForAttendance?.title}
         eventDate={selectedEventForAttendance?.startTime}
         eventTime={selectedEventForAttendance?.startTime}
+      />
+
+      {/* Event Attendance Modal for Previous Events */}
+      <EventAttendanceModal
+        isOpen={isEventAttendanceModalOpen}
+        onClose={handleCloseEventAttendanceModal}
+        eventId={selectedEventForEventAttendance?.id}
+        eventTitle={selectedEventForEventAttendance?.title}
+        eventDate={selectedEventForEventAttendance?.startTime}
+        eventTime={selectedEventForEventAttendance?.startTime}
       />
     </div>
   );
