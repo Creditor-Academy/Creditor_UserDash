@@ -15,8 +15,8 @@ const PromotionalSection = () => {
       >
         {/* Main Headline */}
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-          Our customers have earned $3.7<br />
-          <span className="text-5xl md:text-6xl lg:text-7xl">billion</span> with Athena LMS
+          Our customers have earned <br />
+          <span className="text-5xl md:text-6xl lg:text-7xl">millions</span> with Athena LMS
         </h2>
         
         {/* Sub-headline */}
