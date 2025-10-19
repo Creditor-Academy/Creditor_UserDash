@@ -9,11 +9,11 @@ const Pricing = () => {
     {
       name: "Start",
       target: "Unlock features to drive customer engagement and grow revenue, for those ready to scale up.",
-      price: isAnnual ? "$74" : "$99",
-      originalPrice: isAnnual ? "$99" : "$99",
-      savings: isAnnual ? "Save $300" : "",
+      price: "$7", // isAnnual ? "$74" : "$7",
+      originalPrice: "$99", // isAnnual ? "$99" : "$99",
+      savings: "", // isAnnual ? "Save $300" : "",
       period: "/mo",
-      billingNote: "by billing annually",
+      billingNote: "monthly billing",
       features: [
         { text: "Unlimited Live Lessons", info: true },
         { text: "Unlimited Memberships", info: true },
@@ -24,22 +24,21 @@ const Pricing = () => {
       ],
       sectionHeader: "Start Includes:",
       cta: "Start your free trial",
-      popular: true,
-      featured: "Most Popular!",
-      buttonStyle: "yellow"
+      popular: false,
+      buttonStyle: "white"
     },
     {
       name: "Grow",
       target: "Level up your learning business with more support, pro-level limits, and advanced commerce features to help you sell more.",
-      price: isAnnual ? "$149" : "$189",
-      originalPrice: isAnnual ? "$189" : "$189",
-      savings: isAnnual ? "Save $600" : "",
+      price: "$14", // isAnnual ? "$149" : "$14",
+      originalPrice: "$189", // isAnnual ? "$189" : "$189",
+      savings: "", // isAnnual ? "Save $600" : "",
       period: "/mo",
-      billingNote: "by billing annually",
+      billingNote: "monthly billing",
       features: [
         { text: "3 communities", info: true },
-        { text: "Remove Thinkific branding", info: false },
-        { text: "Thinkific Analytics", info: true },
+        { text: "Remove Athena LMS branding", info: false },
+        { text: "Athena LMS Analytics", info: true },
         { text: "Group Orders", info: false },
         { text: "Invoicing", info: false },
         { text: "Gifting", info: true },
@@ -47,12 +46,13 @@ const Pricing = () => {
       ],
       sectionHeader: "Everything in Start, plus:",
       cta: "Start your free trial",
-      popular: false,
-      buttonStyle: "white"
+      popular: true,
+      featured: "Most Popular!",
+      buttonStyle: "blue"
     },
     {
-      name: "ATHENA LMS",
-      nameHighlight: "PLUS",
+      name: "ATHENA",
+      nameHighlight: "Enterprise",
       target: "Pro-level features and premium services, designed for high-growth businesses and teams. Schedule a call with our team to explore our platform, and receive a custom quote that unlocks enterprise-level features, advanced integrations, and tailored support to scale your online learning business.",
       isPlusCard: true,
       features: [
@@ -68,13 +68,13 @@ const Pricing = () => {
       cta: "Talk to sales",
       popular: false,
       buttonStyle: "white",
-      bgGray: true
+      bgGray: false
     }
   ];
 
   return (
     <section id="pricing-section" className="py-20 px-4 relative overflow-hidden" style={{
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
+      background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
     }}>
       {/* Background Elements */}
       <div className="absolute inset-0">
@@ -114,15 +114,15 @@ const Pricing = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-4 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
             Scalable solutions to drive business growth
           </h2>
           
-          <p className="text-lg text-slate-300 max-w-3xl mx-auto mb-8">
+          <p className="text-lg text-white max-w-3xl mx-auto mb-8 font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
             Athena LMS plans give experts, academies, and companies the tools and features they need to grow their business end-to-end.
           </p>
 
-          {/* Billing Toggle */}
+          {/* Billing Toggle
           <div className="flex items-center justify-center gap-4 mb-12">
             <span className={`text-sm font-medium transition-colors ${!isAnnual ? 'text-white' : 'text-slate-400'}`}>
               Monthly
@@ -139,10 +139,10 @@ const Pricing = () => {
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
               />
             </button>
-            <span className={`text-sm font-medium transition-colors ${isAnnual ? 'text-white' : 'text-slate-400'}`}>
-              Annual <span className="text-sky-400">(Save 25%)</span>
+            <span className={`text-sm font-medium transition-colors text-white`}>
+              Annual <span style={{ color: '#fbbf24' }}>(Save 25%)</span>
             </span>
-          </div>
+          </div> */}
         </motion.div>
 
         {/* Pricing Cards Grid */}
@@ -163,13 +163,13 @@ const Pricing = () => {
               {/* Card */}
               <div className={`overflow-hidden h-full flex flex-col transition-all duration-300 ${
                 plan.popular 
-                  ? 'border-4 border-orange-600 shadow-2xl' 
+                  ? 'border-4 border-yellow-400 shadow-2xl' 
                   : 'border border-gray-300 shadow-lg group-hover:shadow-2xl'
               } ${plan.bgGray ? 'bg-gray-100' : 'bg-white'}`}>
                 
                 {/* Popular Header - Only on featured plan */}
                 {plan.popular && plan.featured && (
-                  <div className="bg-orange-600 text-white py-4 px-6 text-center font-bold text-lg">
+                  <div className="h-14 flex items-center justify-center px-6 text-center font-bold text-lg text-black" style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' }}>
                     {plan.featured}
                   </div>
                 )}
@@ -182,7 +182,7 @@ const Pricing = () => {
                 {/* Card Content */}
                 <div className="p-6 flex-1 flex flex-col">
                   {/* Plan Name - Fixed Height */}
-                  <div className="mb-4 min-h-[110px]">
+                  <div className="mb-4 h-[200px] overflow-hidden">
                     <h3 className="text-3xl font-bold text-gray-900 mb-3">
                       {plan.name}
                       {plan.nameHighlight && (
@@ -198,7 +198,7 @@ const Pricing = () => {
 
                   {/* Pricing - Fixed Height for consistent alignment */}
                   {!plan.isPlusCard && (
-                    <div className="mb-4 min-h-[105px]">
+                    <div className="mb-4 h-[105px]">
                       <div className="flex items-baseline gap-1 mb-1">
                         <span className="text-5xl font-bold text-gray-900">
                           {plan.price}
@@ -207,7 +207,8 @@ const Pricing = () => {
                           {plan.period}
                         </span>
                       </div>
-                      {isAnnual && plan.originalPrice && (
+                      {/* Annual pricing display - commented out for weekly offer */}
+                      {/* {isAnnual && plan.originalPrice && (
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-gray-500 line-through text-base">
                             {plan.originalPrice}/mo
@@ -220,7 +221,7 @@ const Pricing = () => {
                             {plan.savings}
                           </span>
                         </div>
-                      )}
+                      )} */}
                       <p className="text-sm text-gray-600">
                         {plan.billingNote}
                       </p>
@@ -228,7 +229,7 @@ const Pricing = () => {
                   )}
                   
                   {plan.isPlusCard && (
-                    <div className="mb-4" style={{ height: '75px' }} />
+                    <div className="mb-4 h-[105px]" />
                   )}
 
                   {/* CTA Button */}
@@ -236,7 +237,7 @@ const Pricing = () => {
                     <button className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-300 transform group-hover:scale-105 flex items-center justify-center gap-2 ${
                       plan.buttonStyle === 'yellow'
                         ? 'bg-yellow-500 text-gray-900 hover:bg-yellow-600'
-                        : 'bg-white border-2 border-gray-900 text-gray-900 hover:bg-gray-50'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}>
                       {plan.cta} →
                     </button>
@@ -274,7 +275,7 @@ const Pricing = () => {
           viewport={{ once: true }}
           className="text-center mt-4"
         >
-          <p className="text-xs text-slate-400">
+          <p className="text-base text-white">
             All prices are in USD and charged per site with applicable taxes added at checkout.
           </p>
         </motion.div>

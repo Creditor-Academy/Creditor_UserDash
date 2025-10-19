@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { BookOpen, CreditCard, BarChart3, Globe, Zap, Shield, Users, FileText, Target, TrendingUp, Clock, Settings } from 'lucide-react';
 import Scorm from '../../assets/Scorm.png';
 import Course from '../../assets/Course.png';
 import Dashboard from '../../assets/Dashboard.png';
@@ -15,11 +15,11 @@ const Buildfeature = () => {
       title: "Build high-quality learning experiences",
       description: "From online communities to engaging courses, you have the tools and support you need to customize and deliver powerful learning experiences exactly the way you want — no developer experience needed.",
       items: [
-        "Unlimited courses and digital downloads",
-        "Unlimited websites, landing pages, and custom domains",
-        "AI-powered content creation",
-        "SCORM-compliant LMS",
-        "Customized learning paths"
+        { text: "Unlimited courses and digital downloads", icon: BookOpen },
+        { text: "Unlimited websites, landing pages, and custom domains", icon: Globe },
+        { text: "AI-powered content creation", icon: Zap },
+        { text: "SCORM-compliant LMS", icon: Shield },
+        { text: "Customized learning paths", icon: Target }
       ],
       image: Course // Feature 1 image
     },
@@ -28,12 +28,12 @@ const Buildfeature = () => {
       title: "Selling tools: Sell more with ease",
       description: "Earn more revenue with smart selling features on Athena LMS, our built-in selling and payment solution designed for maximum conversion. Athena LMS users sell up to 31% more!",
       items: [
-        "B2B selling features like Group Orders and Invoicing",
-        "Multiple payment options",
-        "Upsell tools like coupons and order bumps",
-        "Sale recovery features like failed payment and abandoned cart emails",
-        "Automatic tax collection and remittance for U.S. and Canadian sales",
-        "Simplified tax management for your sales in the EU and UK"
+        { text: "B2B selling features like Group Orders and Invoicing", icon: Users },
+        { text: "Multiple payment options", icon: CreditCard },
+        { text: "Upsell tools like coupons and order bumps", icon: TrendingUp },
+        { text: "Sale recovery features like failed payment and abandoned cart emails", icon: Clock },
+        { text: "Automatic tax collection and remittance for U.S. and Canadian sales", icon: FileText },
+        { text: "Simplified tax management for your sales in the EU and UK", icon: Settings }
       ],
       image: Dashboard // Feature 2 image (add another image for this section)
     },
@@ -42,10 +42,10 @@ const Buildfeature = () => {
       title: "Analytics: Measure performance that matters",
       description: "Our advanced analytics tools underpin your learning business, surfacing important, actionable insights that allow you and your customers to drive more meaningful results. Track learner value, marketing strategies, and revenue growth to see where you can deliver more relevant offerings.",
       items: [
-        "Advanced analytics",
-        "Custom dashboards to track student engagement and revenue",
-        "Automatically scheduled reports to stakeholders",
-        "Unlimited roles and permissions"
+        { text: "Advanced analytics", icon: BarChart3 },
+        { text: "Custom dashboards to track student engagement and revenue", icon: TrendingUp },
+        { text: "Automatically scheduled reports to stakeholders", icon: FileText },
+        { text: "Unlimited roles and permissions", icon: Settings }
       ],
       image: Scorm // Feature 3 image
     }
@@ -83,9 +83,18 @@ const Buildfeature = () => {
   return (
     <>
       {/* Features Section */}
-      <section className="relative bg-gradient-to-b from-blue-50 via-sky-50 to-blue-50 py-12">
+      <section className="relative py-12" style={{
+        background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
+      }}>
         <div className="container mx-auto px-6 max-w-7xl">
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
+          {/* Section Heading */}
+          <div className="text-center mb-16 pt-8">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              Athena's stand-out suite of features
+            </h1>
+          </div>
+          
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
           
           {/* Left Side - Scrollable Content */}
           <div className="space-y-20">
@@ -103,28 +112,33 @@ const Buildfeature = () => {
                   className="space-y-4 ml-8 lg:ml-12"
                 >
                   {/* Title */}
-                  <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
+                  <h2 className="text-3xl lg:text-4xl font-normal text-white leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                     {feature.title}
                   </h2>
 
                   {/* Description */}
-                  <p className="text-base text-gray-600 leading-relaxed max-w-lg">
+                  <p className="text-base text-white leading-relaxed max-w-lg" style={{ fontFamily: 'Arial, sans-serif' }}>
                     {feature.description}
                   </p>
 
                   {/* Feature List */}
-                  <ul className="space-y-3 mt-6 pt-2">
-                    {feature.items.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-0.5">
-                          <Check className="w-4 h-4 text-green-600" />
+                  <div className="space-y-3 mt-6 pt-2">
+                    {feature.items.map((item, idx) => {
+                      const IconComponent = item.icon;
+                      return (
+                        <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              <IconComponent className="w-5 h-5 text-blue-600" />
+                            </div>
+                            <span className="text-black text-sm leading-relaxed">
+                              {item.text}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-gray-700 text-sm leading-relaxed">
-                          {item}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                      );
+                    })}
+                  </div>
                 </motion.div>
               </div>
             ))}
@@ -132,44 +146,53 @@ const Buildfeature = () => {
 
           {/* Right Side - Sticky Image Panel */}
           <div className="lg:sticky lg:top-32 hidden lg:block">
-            <div className="relative w-full aspect-[16/10] bg-blue-50 rounded-lg shadow-2xl overflow-hidden">
+            <div className="relative w-full aspect-[16/10] rounded-lg shadow-2xl overflow-hidden">
               {/* Image Container with Smooth Transitions */}
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.id}
-                  initial={false}
-                  animate={{
-                    opacity: activeSection === index ? 1 : 0,
-                    zIndex: activeSection === index ? 10 : 1,
-                  }}
-                  transition={{ 
-                    duration: 0.5, 
-                    ease: "easeInOut"
-                  }}
-                  className="absolute inset-0 w-full h-full"
-                >
-                  {feature.image ? (
-                    <div className="w-full h-full flex items-center justify-center p-4">
-                      <img
-                        src={feature.image}
-                        alt={feature.title}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-gray-50 to-blue-100">
-                      <div className="text-center p-6">
-                        <div className="text-gray-400 text-lg font-semibold mb-2">
-                          {feature.title.split(':')[0]}
-                        </div>
-                        <p className="text-gray-500 text-sm">
-                          Add screenshot image here
-                        </p>
+              {features.map((feature, index) => {
+                // Different background shades for each image
+                const backgroundShades = [
+                  "bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100", // Build section - blue theme
+                  "bg-gradient-to-br from-green-50 via-emerald-50 to-green-100", // Selling section - green theme
+                  "bg-gradient-to-br from-purple-50 via-violet-50 to-purple-100" // Analytics section - purple theme
+                ];
+                
+                return (
+                  <motion.div
+                    key={feature.id}
+                    initial={false}
+                    animate={{
+                      opacity: activeSection === index ? 1 : 0,
+                      zIndex: activeSection === index ? 10 : 1,
+                    }}
+                    transition={{ 
+                      duration: 0.5, 
+                      ease: "easeInOut"
+                    }}
+                    className="absolute inset-0 w-full h-full"
+                  >
+                    {feature.image ? (
+                      <div className={`w-full h-full flex items-center justify-center p-4 ${backgroundShades[index]}`}>
+                        <img
+                          src={feature.image}
+                          alt={feature.title}
+                          className="max-w-full max-h-full object-contain"
+                        />
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+                    ) : (
+                      <div className={`w-full h-full flex items-center justify-center ${backgroundShades[index]}`}>
+                        <div className="text-center p-6">
+                          <div className="text-gray-400 text-lg font-semibold mb-2">
+                            {feature.title.split(':')[0]}
+                          </div>
+                          <p className="text-gray-500 text-sm">
+                            Add screenshot image here
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 

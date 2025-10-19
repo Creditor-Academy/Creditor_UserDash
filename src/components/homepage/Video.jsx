@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import CreditorImage from '../../assets/creditor.png';
 
 const Video = () => {
   return (
     <section className="py-20 px-4 relative overflow-hidden" style={{
-      background: "linear-gradient(135deg, #e0f2fe 0%, #ffffff 50%, #bae6fd 100%)"
+      background: "linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)"
     }}>
       {/* Background Decoration */}
       <div className="absolute inset-0">
@@ -44,11 +45,11 @@ const Video = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-6">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
             The right learning products<br />for your customers
           </h2>
           
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
             From online courses and communities to memberships and digital downloads. Athena LMS supports every way you want to share — and scale — your expertise.
           </p>
         </motion.div>
@@ -103,10 +104,115 @@ const Video = () => {
             }}
           />
         </motion.div>
+
+        {/* Success Stories Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="mt-20"
+        >
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              Athena LMS-powered success stories
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
+              Explore the features and tools used by top-earning businesses on Athena LMS.
+            </p>
+          </div>
+
+          {/* Success Stories Grid */}
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Card 1 - Creditor Academy */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="bg-white shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col hover:bg-blue-600 group"
+            >
+              <div className="relative h-64 overflow-hidden">
+                <img 
+                  src={CreditorImage} 
+                  alt="Creditor Academy" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 flex flex-col h-full">
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-white mb-3 transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  How Creditor Academy Transformed Financial Education
+                </h3>
+                <p className="text-gray-600 group-hover:text-white text-sm leading-relaxed mb-2 flex-grow transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  Creditor Academy revolutionized credit and legal empowerment training with Athena LMS — offering immersive, interactive learning paths that helped thousands achieve financial confidence and independence.
+                </p>
+                <a href="#" className="text-gray-900 group-hover:text-white font-medium text-sm flex items-center gap-1 hover:text-blue-600 transition-colors mt-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  Read success story →
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Card 2 */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="bg-white shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col hover:bg-blue-600 group"
+            >
+              <div className="relative h-64 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop" 
+                  alt="Hootsuite team" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 flex flex-col h-full">
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-white mb-3 transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  How Hootsuite scaled customer education and revenue
+                </h3>
+                <p className="text-gray-600 group-hover:text-white text-sm leading-relaxed mb-2 flex-grow transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  Social media platform Hootsuite scaled its educational content to reach over 500,000 students and drove revenue through a paid certification program built on Athena LMS Plus.
+                </p>
+                <a href="#" className="text-gray-900 group-hover:text-white font-medium text-sm flex items-center gap-1 hover:text-blue-600 transition-colors mt-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  Read case study →
+                </a>
+              </div>
+            </motion.div>
+
+            {/* Card 3 */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="bg-white shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col hover:bg-blue-600 group"
+            >
+              <div className="relative h-64 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=400&h=300&fit=crop" 
+                  alt="Keap team" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-6 flex flex-col h-full">
+                <h3 className="text-lg font-bold text-gray-900 group-hover:text-white mb-3 transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  How Keap reduced partner onboarding time by 30%
+                </h3>
+                <p className="text-gray-600 group-hover:text-white text-sm leading-relaxed mb-2 flex-grow transition-colors" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  Keap created an online partner education program that saves time and elevates product knowledge by switching from a legacy LMS to Athena LMS Plus.
+                </p>
+                <a href="#" className="text-gray-900 group-hover:text-white font-medium text-sm flex items-center gap-1 hover:text-blue-600 transition-colors mt-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  Read case study →
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
 };
 
 export default Video;
-

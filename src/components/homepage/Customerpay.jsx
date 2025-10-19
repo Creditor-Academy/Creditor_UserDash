@@ -57,12 +57,12 @@ const Customerpay = () => {
             viewport={{ once: true }}
           >
             {/* Heading */}
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+            <h2 className="text-3xl lg:text-4xl font-normal text-gray-900 mb-4 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
               Courses your customers will love — and pay for
             </h2>
 
             {/* Description */}
-            <p className="text-base text-gray-600 mb-8 leading-relaxed">
+            <p className="text-base text-black mb-8 leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
               Athena LMS's easy-to-use platform helps you create engaging, high-quality experiences that boost learner success and satisfaction.
             </p>
 
@@ -74,7 +74,7 @@ const Customerpay = () => {
                     onClick={() => toggleAccordion(index)}
                     className="w-full py-5 flex items-center justify-between text-left transition-colors duration-200"
                   >
-                    <span className="text-lg font-semibold text-gray-900 pr-4">
+                    <span className="text-lg font-normal text-gray-900 pr-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                       {item.title}
                     </span>
                     <div className="flex-shrink-0">
@@ -95,7 +95,7 @@ const Customerpay = () => {
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="overflow-hidden"
                       >
-                        <div className="pb-5 text-gray-600 text-sm leading-relaxed">
+                        <div className="pb-5 text-black text-sm leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
                           {item.content}
                         </div>
                       </motion.div>

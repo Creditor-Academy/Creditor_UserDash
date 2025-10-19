@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
+import Logo from "../../assets/logo.png";
 
 export default function Hero() {
   return (
@@ -132,69 +133,7 @@ export default function Hero() {
             position: relative;
           }
           
-          .portrait-container {
-            position: relative;
-            width: 300px;
-            height: 400px;
-            margin-bottom: 2rem;
-          }
           
-          .portrait-placeholder {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #fbbf24 0%, #3b82f6 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-          }
-          
-          .portrait-placeholder::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-              linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%),
-              linear-gradient(-45deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
-          }
-          
-          .portrait-icon {
-            font-size: 4rem;
-            color: rgba(255, 255, 255, 0.8);
-            z-index: 1;
-          }
-          
-          .testimonial-text {
-            text-align: left;
-            color: #fff;
-            max-width: 300px;
-          }
-          
-          .testimonial-name {
-            font-family: 'Arial', sans-serif;
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-          }
-          
-          .testimonial-title {
-            font-family: 'Arial', sans-serif;
-            font-size: 1rem;
-            margin-bottom: 0.5rem;
-            opacity: 0.9;
-          }
-          
-          .testimonial-description {
-            font-family: 'Arial', sans-serif;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            line-height: 1.4;
-          }
 
           /* Large Desktop */
           @media (min-width: 1400px) {
@@ -204,10 +143,6 @@ export default function Hero() {
             }
             .hero-heading {
               font-size: 4rem;
-            }
-            .portrait-container {
-              width: 350px;
-              height: 450px;
             }
           }
           
@@ -219,10 +154,6 @@ export default function Hero() {
             }
             .hero-heading {
               font-size: 3rem;
-            }
-            .portrait-container {
-              width: 280px;
-              height: 380px;
             }
           }
           
@@ -242,13 +173,6 @@ export default function Hero() {
             }
             .hero-heading {
               font-size: 2.5rem;
-            }
-            .portrait-container {
-              width: 250px;
-              height: 320px;
-            }
-            .testimonial-text {
-              text-align: center;
             }
           }
           
@@ -275,10 +199,6 @@ export default function Hero() {
               max-width: 250px;
               justify-content: center;
             }
-            .portrait-container {
-              width: 200px;
-              height: 260px;
-            }
           }
           
           @media (max-width: 480px) {
@@ -291,19 +211,6 @@ export default function Hero() {
             .hero-description {
               font-size: 0.95rem;
             }
-            .portrait-container {
-              width: 180px;
-              height: 240px;
-            }
-            .testimonial-name {
-              font-size: 1.1rem;
-            }
-            .testimonial-title {
-              font-size: 0.9rem;
-            }
-            .testimonial-description {
-              font-size: 0.8rem;
-            }
           }
         `}
       </style>
@@ -312,32 +219,27 @@ export default function Hero() {
       <div className="hero-container">
         <div className="hero-left">
           <h1 className="hero-heading">
-            Powering the world's top learning businesses
+            Reimagine Learning. Build, Design, and Deliver Courses with AI.
           </h1>
           <p className="hero-description">
-            Transform your expertise into courses, communities, and other high-quality learning experiences. Our platform is designed to drive revenue growth for businesses like yours.
+            Athena LMS is where Instructional Design meets Artificial Intelligence — a unified platform that helps you create engaging, research-backed courses in minutes.
           </p>
           <div className="hero-buttons">
             <a href="/contact" className="btn-primary">
-              Talk to sales
+              Start Creating
               <ArrowUpRight size={16} strokeWidth={2} />
             </a>
             <a href="/trial" className="btn-secondary">
-              Start free trial
+              Book a Demo
             </a>
           </div>
         </div>
         <div className="hero-right">
-          <div className="portrait-container">
-            <div className="portrait-placeholder">
-              <div className="portrait-icon">👤</div>
-            </div>
-          </div>
-          <div className="testimonial-text">
-            <div className="testimonial-name">Jacques Wong</div>
-            <div className="testimonial-title">Founder, PNC Learning</div>
-            <div className="testimonial-description">Made millions offering online insurance courses on Thinkific</div>
-          </div>
+          <img 
+            src={Logo} 
+            alt="Athena LMS Logo" 
+            className="w-96 h-96 object-contain rounded-3xl"
+          />
         </div>
       </div>
     </section>

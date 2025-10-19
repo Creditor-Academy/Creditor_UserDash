@@ -52,10 +52,9 @@ export default function Ready() {
         }
         
         .ready-heading {
-          font-family: 'Founders Grotesk', Arial, sans-serif;
+          font-family: 'Georgia', 'Times New Roman', serif;
           font-size: clamp(2rem, 5vw, 3.5rem);
-          font-weight: 700;
-          text-transform: uppercase;
+          font-weight: 400;
           color: #fff;
           line-height: 1.2;
           letter-spacing: -2px;
@@ -64,9 +63,9 @@ export default function Ready() {
         }
         
         .ready-subheading {
-          font-family: 'Neue Montreal', Arial, sans-serif;
+          font-family: 'Arial', sans-serif;
           font-size: clamp(1rem, 2vw, 1.25rem);
-          font-weight: 300;
+          font-weight: 400;
           color: #cbd5e1;
           line-height: 1.6;
           margin-bottom: 2rem;
@@ -206,7 +205,7 @@ export default function Ready() {
 
       <div className={`ready-content${showContent ? " show" : ""}`}>
         <h2 className="ready-heading">
-          Ready To Start Your Journey?
+          Ready to Start Your Journey?
         </h2>
         
         <p className="ready-subheading">
