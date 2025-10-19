@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import SolutionsDropdown from "./SolutionsDropdown";
 
 const Navbar = () => {
   const [show, setShow] = useState(true);
@@ -98,7 +99,8 @@ const Navbar = () => {
           ☰
         </button>
         
-        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px", position: "relative" }}>
+          <SolutionsDropdown />
           <Link to="/about" style={navLinkStyle}>About Us</Link>
           {/* <Link to="/features" style={navLinkStyle}>Features</Link> */}
           <Link to="/product" style={navLinkStyle}>Product</Link>
@@ -187,6 +189,7 @@ const Navbar = () => {
           </button>
         </div>
         
+        <div style={drawerLinkStyle}>Solutions</div>
         <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
         <Link to="/product" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Product</Link>
         <Link to="/plans" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Plans</Link>
@@ -326,6 +329,17 @@ const Navbar = () => {
           right: 0 !important;
           z-index: 1000 !important;
           border-radius: 0 !important;
+          overflow: visible !important;
+        }
+        
+        /* Ensure dropdowns can extend beyond navbar */
+        .athena-links {
+          overflow: visible !important;
+        }
+        
+        /* Allow full-width dropdowns */
+        .athena-navbar {
+          overflow: visible !important;
         }
         
         /* Drawer content optimization */
