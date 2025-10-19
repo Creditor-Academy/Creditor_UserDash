@@ -11,6 +11,7 @@ export default function PageTransitionOverlay() {
     const formatName = (pathname) => {
       if (pathname === "/") return "HOME";
       if (pathname === "/faq") return "RESOURCES";
+      if (pathname === "/product") return "SERVICE";
       
       // Split the path and get the last segment
       const pathSegments = pathname.split('/').filter(segment => segment !== '');
