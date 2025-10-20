@@ -105,7 +105,7 @@ const Video = () => {
           />
         </motion.div>
 
-        {/* Success Stories Section */}
+        {/* Success Stories Section
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -113,7 +113,6 @@ const Video = () => {
           viewport={{ once: true }}
           className="mt-20"
         >
-          {/* Section Header */}
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-800 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
               Athena LMS-powered success stories
@@ -123,9 +122,7 @@ const Video = () => {
             </p>
           </div>
 
-          {/* Success Stories Grid */}
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Card 1 - Creditor Academy */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -153,7 +150,6 @@ const Video = () => {
               </div>
             </motion.div>
 
-            {/* Card 2 */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -181,7 +177,6 @@ const Video = () => {
               </div>
             </motion.div>
 
-            {/* Card 3 */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -209,7 +204,7 @@ const Video = () => {
               </div>
             </motion.div>
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );

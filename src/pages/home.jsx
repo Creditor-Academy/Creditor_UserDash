@@ -29,10 +29,10 @@ const Home = () => {
       {/* <About/> */}
       <KeyCapabilities />
       <MonetizeSection />
+      <Buildfeature />
       <Pricing />
       <Video />
-      <PromotionalSection />
-      <Buildfeature />
+      {/* <PromotionalSection /> */}
       <Customerpay />
       {/* <HowWork /> */}
       {/* <Features /> */}

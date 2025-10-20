@@ -45,7 +45,9 @@ const Customerpay = () => {
   };
 
   return (
-    <section className="relative bg-gradient-to-b from-blue-50 to-sky-50 py-20 px-4">
+    <section className="relative py-20 px-4" style={{
+      background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
+    }}>
       <div className="container mx-auto max-w-7xl">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           
@@ -57,31 +59,31 @@ const Customerpay = () => {
             viewport={{ once: true }}
           >
             {/* Heading */}
-            <h2 className="text-3xl lg:text-4xl font-normal text-gray-900 mb-4 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+            <h2 className="text-3xl lg:text-4xl font-normal text-white mb-4 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
               Courses your customers will love — and pay for
             </h2>
 
             {/* Description */}
-            <p className="text-base text-black mb-8 leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
+            <p className="text-base text-white mb-8 leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
               Athena LMS's easy-to-use platform helps you create engaging, high-quality experiences that boost learner success and satisfaction.
             </p>
 
             {/* Accordion */}
-            <div className="space-y-0 border-t border-gray-200">
+            <div className="space-y-0 border-t border-white/20">
               {accordionItems.map((item, index) => (
-                <div key={item.id} className="border-b border-gray-200">
+                <div key={item.id} className="border-b border-white/20">
                   <button
                     onClick={() => toggleAccordion(index)}
                     className="w-full py-5 flex items-center justify-between text-left transition-colors duration-200"
                   >
-                    <span className="text-lg font-normal text-gray-900 pr-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                    <span className="text-lg font-normal text-white pr-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                       {item.title}
                     </span>
                     <div className="flex-shrink-0">
                       {openIndex === index ? (
-                        <X className="w-5 h-5 text-gray-900" />
+                        <X className="w-5 h-5 text-white" />
                       ) : (
-                        <Plus className="w-5 h-5 text-gray-900" />
+                        <Plus className="w-5 h-5 text-white" />
                       )}
                     </div>
                   </button>
@@ -95,7 +97,7 @@ const Customerpay = () => {
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="overflow-hidden"
                       >
-                        <div className="pb-5 text-black text-sm leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
+                        <div className="pb-5 text-white text-sm leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
                           {item.content}
                         </div>
                       </motion.div>

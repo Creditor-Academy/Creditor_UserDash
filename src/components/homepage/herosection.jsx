@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import Logo from "../../assets/logo.png";
+import Logo from "../../assets/logo.Webp";
 
 export default function Hero() {
   return (
@@ -238,7 +238,7 @@ export default function Hero() {
           <img 
             src={Logo} 
             alt="Athena LMS Logo" 
-            className="w-96 h-96 object-contain rounded-3xl"
+            className="w-95 h-95 object-contain rounded-3xl"
           />
         </div>
       </div>
