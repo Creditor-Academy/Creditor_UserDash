@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Voice from '../../assets/Voice.webp';
 import AI from '../../assets/AI.webp';
 import Multi  from '../../assets/Multi.webp';
@@ -11,7 +12,9 @@ import Template from '../../assets/Template.webp';
 
 const KeyCapabilities = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const navigate = useNavigate();
+  const sliderRef = useRef(null);
 
   const capabilities = [
     {
@@ -95,6 +98,19 @@ const KeyCapabilities = () => {
     }
   ];
 
+  // Slider functions for mobile
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % capabilities.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + capabilities.length) % capabilities.length);
+  };
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
+
   return (
     <section className="py-20 px-4 relative overflow-hidden" style={{
       background: "linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)"
@@ -126,8 +142,8 @@ const KeyCapabilities = () => {
           </p>
         </motion.div>
 
-        {/* Capabilities Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        {/* Desktop Grid Layout */}
+        <div className="hidden lg:grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {capabilities.map((capability, index) => (
             <motion.div
               key={index}
@@ -191,23 +207,6 @@ const KeyCapabilities = () => {
                     </p>
                   </div>
 
-                  {/* CTA Button - Always at bottom */}
-                  <div className="relative z-10 mt-auto">
-                    <button
-                      className={`w-full py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-                        capability.buttonStyle === 'blue' 
-                          ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                          : capability.buttonStyle === 'yellow'
-                          ? 'bg-yellow-400 text-black hover:bg-yellow-500'
-                          : 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50'
-                      }`}
-                    >
-                      {capability.buttonText}
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
                 </div>
 
                 {/* Bottom Color Line - Static */}
@@ -222,6 +221,129 @@ const KeyCapabilities = () => {
               </div>
             </motion.div>
           ))}
+        </div>
+
+        {/* Mobile Slider Layout */}
+        <div className="lg:hidden max-w-7xl mx-auto">
+          {/* Slider Container */}
+          <div className="relative overflow-hidden">
+            <div 
+              ref={sliderRef}
+              className="flex transition-transform duration-300 ease-in-out"
+              style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+            >
+              {capabilities.map((capability, index) => (
+                <div key={index} className="w-full flex-shrink-0 px-4">
+                  <motion.div
+                    className="group relative h-full"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    {/* Card */}
+                    <div 
+                      className="group relative h-full bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl flex flex-col"
+                      onMouseEnter={() => setHoveredIndex(index)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                    >
+                      
+                      {/* Image Section */}
+                      {capability.image && (
+                        <div className="relative w-full h-48 flex-shrink-0 overflow-hidden">
+                          <img 
+                            src={capability.image} 
+                            alt={capability.title}
+                            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
+                          />
+                          {/* Gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                          
+                          {/* Icon overlay */}
+                          <div className="absolute top-4 right-4">
+                            <div className="w-10 h-10 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                              <div className="w-5 h-5 text-blue-600 flex items-center justify-center">
+                                {capability.icon}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Content */}
+                      <div className="relative p-6 flex flex-col flex-grow overflow-hidden">
+                        {/* Hover Fill Animation */}
+                        <div 
+                          className="absolute inset-0 transition-all duration-500 ease-out"
+                          style={{
+                            backgroundColor: capability.bottomColor,
+                            transform: hoveredIndex === index ? 'translateY(0)' : 'translateY(100%)',
+                            opacity: hoveredIndex === index ? 0.2 : 0
+                          }}
+                        />
+                        
+                        {/* Content with higher z-index */}
+                        <div className="relative z-10 flex flex-col flex-grow">
+                          {/* Title */}
+                          <h3 className="text-lg font-bold mb-4 text-gray-900 leading-tight" style={{ fontFamily: 'Arial, sans-serif' }}>
+                            {capability.title}
+                          </h3>
+
+                          {/* Description */}
+                          <p className="text-gray-600 leading-relaxed text-sm flex-grow mb-6" style={{ fontFamily: 'Arial, sans-serif' }}>
+                            {capability.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Bottom Color Line - Static */}
+                      <div className="absolute bottom-0 left-0 right-0 h-1">
+                        <div 
+                          style={{
+                            backgroundColor: capability.bottomColor,
+                            height: '100%'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation Arrows */}
+            <button
+              onClick={prevSlide}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-colors duration-200 z-10"
+              aria-label="Previous slide"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            
+            <button
+              onClick={nextSlide}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white transition-colors duration-200 z-10"
+              aria-label="Next slide"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-700" />
+            </button>
+          </div>
+
+          {/* Dots Indicator */}
+          <div className="flex justify-center mt-6 space-x-2">
+            {capabilities.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`w-3 h-3 rounded-full transition-all duration-200 ${
+                  index === currentSlide 
+                    ? 'bg-blue-600 scale-125' 
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Bottom CTA */}
