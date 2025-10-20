@@ -12,40 +12,43 @@ const Buildfeature = () => {
   const features = [
     {
       id: 0,
-      title: "Build high-quality learning experiences",
-      description: "From online communities to engaging courses, you have the tools and support you need to customize and deliver powerful learning experiences exactly the way you want — no developer experience needed.",
+      title: "Build Exceptional Learning Experiences",
+      description: "Create immersive, branded, and high-performing learning environments with Athena LMS. Whether you're teaching a single class or scaling an entire academy, you'll have every tool to craft transformative experiences—without writing a single line of code.",
       items: [
-        { text: "Unlimited courses and digital downloads", icon: BookOpen },
-        { text: "Unlimited websites, landing pages, and custom domains", icon: Globe },
-        { text: "AI-powered content creation", icon: Zap },
-        { text: "SCORM-compliant LMS", icon: Shield },
-        { text: "Customized learning paths", icon: Target }
+        { text: "Drag-and-Drop Course Builder – Design stunning courses, quizzes, and multimedia lessons in minutes.", icon: BookOpen },
+        { text: "Adaptive Learning Paths – Automatically guide learners based on progress, goals, and performance.", icon: Target },
+        { text: "Interactive Communities – Build forums and discussion spaces that keep students connected and engaged.", icon: Users },
+        { text: "Gamification & Rewards – Motivate learners with badges, points, and progress milestones.", icon: TrendingUp },
+        { text: "Integrated Video & Live Streaming – Host lectures, webinars, and interactive sessions directly inside the LMS.", icon: Globe },
+        { text: "AI-Assisted Course Design – Generate outlines, quizzes, and learning materials tailored to your content style.", icon: Zap }
       ],
       image: Course // Feature 1 image
     },
     {
       id: 1,
-      title: "Selling tools: Sell more with ease",
-      description: "Earn more revenue with smart selling features on Athena LMS, our built-in selling and payment solution designed for maximum conversion. Athena LMS users sell up to 31% more!",
+      title: "Sell Smarter. Scale Faster.",
+      description: "Athena LMS turns your course catalog into a high-performing sales engine — blending education with automation. From effortless payments to AI-driven analytics, every feature is built to help you convert, retain, and grow.",
       items: [
-        { text: "B2B selling features like Group Orders and Invoicing", icon: Users },
-        { text: "Multiple payment options", icon: CreditCard },
-        { text: "Upsell tools like coupons and order bumps", icon: TrendingUp },
-        { text: "Sale recovery features like failed payment and abandoned cart emails", icon: Clock },
-        { text: "Automatic tax collection and remittance for U.S. and Canadian sales", icon: FileText },
-        { text: "Simplified tax management for your sales in the EU and UK", icon: Settings }
+        { text: "Instant Course Storefronts – Launch a professional sales page for each course in minutes, no coding required.", icon: Globe },
+        { text: "Dynamic Pricing Engine – Create limited-time offers, seasonal discounts, and tiered pricing to boost urgency.", icon: CreditCard },
+        { text: "Affiliate & Partner Tracking – Reward your ambassadors with automated commission tracking and payouts.", icon: Users },
+        { text: "AI-Driven Sales Insights – Predict buyer behavior, identify best-selling content, and refine your pricing strategy.", icon: BarChart3 },
+        { text: "Global Checkout Experience – Accept worldwide payments with built-in tax, currency, and compliance support.", icon: Shield },
+        { text: "Recurring Revenue Tools – Build memberships, subscriptions, and bundles for predictable monthly income.", icon: TrendingUp }
       ],
       image: Dashboard // Feature 2 image (add another image for this section)
     },
     {
       id: 2,
-      title: "Analytics: Measure performance that matters",
-      description: "Our advanced analytics tools underpin your learning business, surfacing important, actionable insights that allow you and your customers to drive more meaningful results. Track learner value, marketing strategies, and revenue growth to see where you can deliver more relevant offerings.",
+      title: "Analytics: Insights That Drive Impact",
+      description: "Athena LMS puts data to work for you. Go beyond surface metrics with deep analytics that connect learning outcomes, engagement trends, and business growth—all in one visual command center. Turn every course, campaign, and student interaction into a measurable advantage.",
       items: [
-        { text: "Advanced analytics", icon: BarChart3 },
-        { text: "Custom dashboards to track student engagement and revenue", icon: TrendingUp },
-        { text: "Automatically scheduled reports to stakeholders", icon: FileText },
-        { text: "Unlimited roles and permissions", icon: Settings }
+        { text: "Real-Time Performance Tracking – Monitor enrollment, completion, and engagement rates across all courses instantly.", icon: BarChart3 },
+        { text: "Revenue & ROI Analytics – See exactly which programs and campaigns generate the most profit.", icon: TrendingUp },
+        { text: "AI-Powered Learner Insights – Identify high-performing students, at-risk learners, and growth opportunities automatically.", icon: Zap },
+        { text: "Marketing Funnel Tracking – Measure ad-to-enrollment conversion and optimize every lead source.", icon: Target },
+        { text: "Custom KPI Dashboards – Build visual dashboards for teams, departments, or enterprise clients with full control.", icon: Settings },
+        { text: "Automated Report Delivery – Send scheduled summaries to stakeholders with key insights that matter most.", icon: FileText }
       ],
       image: Scorm // Feature 3 image
     }
