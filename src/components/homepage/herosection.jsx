@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import Logo from "../../assets/logo.Webp";
+import Logo from "../../assets/logo.webp";
 
 export default function Hero() {
   return (
