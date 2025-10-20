@@ -13,7 +13,7 @@ const MonetizeSection = () => {
   ];
 
   return (
-    <section className="py-20 px-4 relative overflow-hidden" style={{
+    <section className="py-20 pt-32 md:pt-20 px-4 relative overflow-hidden" style={{
       background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
     }}>
       <div className="max-w-7xl mx-auto">
@@ -93,11 +93,24 @@ const MonetizeSection = () => {
             className="relative"
           >
             {/* Dashboard Logo */}
-            <div className="relative">
+            <div className="relative w-full max-w-2xl mx-auto">
+              {/* Glassmorphism border/glow effect */}
+              <div 
+                className="absolute -inset-4 rounded-2xl"
+                style={{
+                  background: "linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(147, 51, 234, 0.3) 50%, rgba(59, 130, 246, 0.3) 100%)",
+                  boxShadow: "0 0 40px rgba(59, 130, 246, 0.5), 0 0 80px rgba(147, 51, 234, 0.3)",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  filter: "blur(2px)"
+                }}
+              />
+              
+              {/* Image */}
               <img
                 src={DashLogo}
                 alt="Athena LMS Dashboard"
-                className="w-full max-w-2xl mx-auto rounded-lg shadow-2xl"
+                className="w-full rounded-lg shadow-2xl relative z-10"
               />
             </div>
 

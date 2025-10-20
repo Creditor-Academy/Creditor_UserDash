@@ -84,12 +84,20 @@ const Buildfeature = () => {
     <>
       {/* Features Section */}
       <section className="relative py-12" style={{
-        background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
+        background: "linear-gradient(180deg, #ffffff 0%, #f0f9ff 50%, #ffffff 100%)"
       }}>
-        <div className="container mx-auto px-6 max-w-7xl">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-400/5 rounded-full blur-3xl" />
+          {/* Grid pattern */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+        </div>
+
+        <div className="container mx-auto px-6 max-w-7xl relative z-10">
           {/* Section Heading */}
           <div className="text-center mb-16 pt-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-normal text-white mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-900 mb-6 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
               Athena's stand-out suite of features
             </h1>
           </div>
@@ -112,12 +120,12 @@ const Buildfeature = () => {
                   className="space-y-4 ml-8 lg:ml-12"
                 >
                   {/* Title */}
-                  <h2 className="text-3xl lg:text-4xl font-normal text-white leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                  <h2 className="text-3xl lg:text-4xl font-normal text-gray-900 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                     {feature.title}
                   </h2>
 
                   {/* Description */}
-                  <p className="text-base text-white leading-relaxed max-w-lg" style={{ fontFamily: 'Arial, sans-serif' }}>
+                  <p className="text-base text-gray-700 leading-relaxed max-w-lg" style={{ fontFamily: 'Arial, sans-serif' }}>
                     {feature.description}
                   </p>
 
@@ -125,8 +133,15 @@ const Buildfeature = () => {
                   <div className="space-y-3 mt-6 pt-2">
                     {feature.items.map((item, idx) => {
                       const IconComponent = item.icon;
+                      // Different background shades for each feature section to match image containers
+                      const backgroundShades = [
+                        "bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200", // Build section - cyan theme
+                        "bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200", // Selling section - blue theme
+                        "bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200" // Analytics section - violet theme
+                      ];
+                      
                       return (
-                        <div key={idx} className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                        <div key={idx} className={`${backgroundShades[feature.id]} rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200`}>
                           <div className="flex items-start gap-3">
                             <div className="flex-shrink-0 mt-0.5">
                               <IconComponent className="w-5 h-5 text-blue-600" />
@@ -151,9 +166,9 @@ const Buildfeature = () => {
               {features.map((feature, index) => {
                 // Different background shades for each image
                 const backgroundShades = [
-                  "bg-gradient-to-br from-blue-50 via-sky-50 to-blue-100", // Build section - blue theme
-                  "bg-gradient-to-br from-green-50 via-emerald-50 to-green-100", // Selling section - green theme
-                  "bg-gradient-to-br from-purple-50 via-violet-50 to-purple-100" // Analytics section - purple theme
+                  "bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100", // Build section - cyan theme
+                  "bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100", // Selling section - blue theme
+                  "bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100" // Analytics section - violet theme
                 ];
                 
                 return (
