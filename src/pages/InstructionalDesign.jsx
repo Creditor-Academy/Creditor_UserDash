@@ -662,15 +662,9 @@ const InstructionalDesign = () => {
           </div>
         </section>
 
-        {/* Quick Value Proposition - Animated Stats */}
+        {/* Our Process Section */}
         <section className="py-20 bg-gradient-to-br from-blue-900 to-blue-800 relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-10 left-10 w-32 h-32 bg-blue-600 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-10 right-10 w-40 h-40 bg-yellow-400 rounded-full blur-3xl"></div>
-          </div>
-          
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
               initial={{ opacity: 0, y: 30 }}
@@ -679,106 +673,92 @@ const InstructionalDesign = () => {
               viewport={{ once: true }}
             >
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                Proven Results for Organizations Worldwide
+                Our Process
               </h2>
-              <p className="text-lg text-blue-100 max-w-2xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Our instructional design expertise delivers measurable outcomes for enterprise and non-profit clients globally.
+              <p className="text-xl text-blue-100 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+                A proven 5-step methodology that ensures your learning solution is effective, engaging, and aligned with your business objectives.
               </p>
             </motion.div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
+            {/* Desktop Timeline */}
+            <div className="hidden lg:block">
+              <div className="relative">
+                {/* Timeline Line */}
+                <div className="absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-yellow-200 via-yellow-300 via-yellow-400 via-yellow-500 to-yellow-600"></div>
+                
+                <div className="grid grid-cols-5 gap-8">
+                  {processSteps.map((step, index) => (
                 <motion.div
                   key={index}
-                  className="text-center group"
-                  initial={{ opacity: 0, y: 50 }}
+                      className="text-center relative"
+                      initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    duration: 0.8, 
-                    delay: index * 0.15,
-                    type: "spring",
-                    stiffness: 100
-                  }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
-                  whileHover={{ 
-                    scale: 1.05,
-                    transition: { duration: 0.3 }
-                  }}
-                >
-                  <motion.div 
-                    className="flex justify-center mb-6"
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    transition={{ 
-                      duration: 0.6, 
-                      delay: index * 0.15 + 0.3,
-                      type: "spring",
-                      stiffness: 200
-                    }}
-                    viewport={{ once: true }}
-                  >
-                    <div className="p-4 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full text-blue-900 group-hover:from-yellow-500 group-hover:to-yellow-600 transition-all duration-300">
-                      {stat.icon}
+                    >
+                      {/* Step Circle */}
+                      <div className="relative z-10 mb-6">
+                        <div className="w-32 h-32 bg-white rounded-full shadow-lg border-4 border-white flex items-center justify-center mx-auto group hover:scale-105 transition-transform duration-300">
+                          <div className="text-center">
+                            {step.icon}
+                            <div className="text-xs font-bold text-gray-500 mt-1">{step.step}</div>
                     </div>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="text-4xl md:text-5xl font-bold mb-3"
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    transition={{ 
-                      duration: 1, 
-                      delay: index * 0.15 + 0.5
-                    }}
-                    viewport={{ once: true }}
-                  >
-                    <span className="text-yellow-400">{stat.number}</span>
-                    <span className="text-yellow-400">{stat.suffix}</span>
-                  </motion.div>
-                  
-                  <motion.div 
-                    className="text-sm text-blue-100 font-medium"
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ 
-                      duration: 0.6, 
-                      delay: index * 0.15 + 0.7
-                    }}
-                    viewport={{ once: true }}
-                  >
-                    {stat.label}
-                  </motion.div>
+                        </div>
+                      </div>
+                      
+                      <h3 className="text-xl font-semibold text-white mb-3">
+                        {step.title}
+                      </h3>
+                      <p className="text-blue-100 mb-3 text-sm leading-relaxed">
+                        {step.description}
+                      </p>
+                      <div className="text-xs text-yellow-300 font-semibold bg-yellow-400 bg-opacity-20 px-3 py-1 rounded-full inline-block">
+                        {step.benefit}
+                      </div>
                 </motion.div>
               ))}
+                </div>
+              </div>
             </div>
             
-            {/* Additional Trust Indicators */}
+            {/* Mobile Timeline */}
+            <div className="lg:hidden">
+              <div className="space-y-8">
+                {processSteps.map((step, index) => (
             <motion.div
-              className="mt-16 text-center"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
+                    key={index}
+                    className="flex items-start gap-6"
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <div className="flex flex-wrap justify-center items-center gap-8 text-blue-100">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-yellow-400" />
-                  <span className="text-sm font-medium">Enterprise-Grade Security</span>
+                    {/* Step Circle */}
+                    <div className="flex-shrink-0">
+                      <div className="w-16 h-16 bg-white rounded-full shadow-lg border-4 border-white flex items-center justify-center">
+                        <div className="text-center">
+                          {step.icon}
+                          <div className="text-xs font-bold text-gray-500">{step.step}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-yellow-400" />
-                  <span className="text-sm font-medium">Global Delivery</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-yellow-400" />
-                  <span className="text-sm font-medium">Award-Winning Design</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-yellow-400" />
-                  <span className="text-sm font-medium">24/7 Support</span>
+                    
+                    {/* Content */}
+                    <div className="flex-1">
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        {step.title}
+                      </h3>
+                      <p className="text-blue-100 mb-3 leading-relaxed">
+                        {step.description}
+                      </p>
+                      <div className="text-sm text-yellow-300 font-semibold bg-yellow-400 bg-opacity-20 px-3 py-1 rounded-full inline-block">
+                        {step.benefit}
                 </div>
               </div>
             </motion.div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -819,19 +799,19 @@ const InstructionalDesign = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-4 left-4 p-3 bg-white rounded-lg shadow-md">
-                      {service.icon}
-                    </div>
+                    {service.icon}
+                  </div>
                   </div>
                   <div className="p-8">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
-                      {service.title}
-                    </h3>
-                    <p className="text-gray-600 mb-6 leading-relaxed">
-                      {service.description}
-                    </p>
-                    <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
-                      <span>Learn More</span>
-                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
+                    {service.title}
+                  </h3>
+                  <p className="text-gray-600 mb-6 leading-relaxed">
+                    {service.description}
+                  </p>
+                  <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
+                    <span>Learn More</span>
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 </motion.div>
@@ -905,180 +885,9 @@ const InstructionalDesign = () => {
           </div>
         </section>
 
-        {/* Our Process Section */}
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                Our Process
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
-                A proven 5-step methodology that ensures your learning solution is effective, engaging, and aligned with your business objectives.
-              </p>
-            </motion.div>
-
-            {/* Desktop Timeline */}
-            <div className="hidden lg:block">
-              <div className="relative">
-                {/* Timeline Line */}
-                <div className="absolute top-16 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-200 via-green-200 via-purple-200 via-orange-200 to-indigo-200"></div>
-                
-                <div className="grid grid-cols-5 gap-8">
-                  {processSteps.map((step, index) => (
-                    <motion.div
-                      key={index}
-                      className="text-center relative"
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      {/* Step Circle */}
-                      <div className="relative z-10 mb-6">
-                        <div className="w-32 h-32 bg-white rounded-full shadow-lg border-4 border-white flex items-center justify-center mx-auto group hover:scale-105 transition-transform duration-300">
-                          <div className="text-center">
-                            {step.icon}
-                            <div className="text-xs font-bold text-gray-500 mt-1">{step.step}</div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                        {step.title}
-                      </h3>
-                      <p className="text-gray-600 mb-3 text-sm leading-relaxed">
-                        {step.description}
-                      </p>
-                      <div className="text-xs text-blue-600 font-semibold bg-blue-50 px-3 py-1 rounded-full inline-block">
-                        {step.benefit}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Mobile Timeline */}
-            <div className="lg:hidden">
-              <div className="space-y-8">
-                {processSteps.map((step, index) => (
-                  <motion.div
-                    key={index}
-                    className="flex items-start gap-6"
-                    initial={{ opacity: 0, x: -30 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                  >
-                    {/* Step Circle */}
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 bg-white rounded-full shadow-lg border-4 border-white flex items-center justify-center">
-                        <div className="text-center">
-                          {step.icon}
-                          <div className="text-xs font-bold text-gray-500">{step.step}</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                        {step.title}
-                      </h3>
-                      <p className="text-gray-600 mb-3 leading-relaxed">
-                        {step.description}
-                      </p>
-                      <div className="text-sm text-blue-600 font-semibold bg-blue-50 px-3 py-1 rounded-full inline-block">
-                        {step.benefit}
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Success Stories Section */}
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                Success Stories
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Real results from organizations that have transformed their learning with our instructional design expertise.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-              {caseStudies.map((caseStudy, index) => (
-                <motion.div
-                  key={index}
-                  className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -5 }}
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={caseStudy.image}
-                      alt={caseStudy.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        {caseStudy.category}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      {caseStudy.title}
-                    </h3>
-                    <div className="text-2xl font-bold text-blue-600 mb-3">
-                      {caseStudy.result}
-                    </div>
-                    <p className="text-gray-600 leading-relaxed">
-                      {caseStudy.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              className="text-center"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-            >
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto">
-                View All Case Studies
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </motion.div>
-          </div>
-        </section>
 
         {/* Trusted By Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1162,7 +971,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Tools & Platforms Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1201,80 +1010,6 @@ const InstructionalDesign = () => {
                     </div>
                   </div>
                 </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Insights & Resources Section */}
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                Insights & Resources
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Stay ahead with the latest insights on instructional design, e-learning trends, and learning technology.
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {resources.map((resource, index) => (
-                <motion.article
-                  key={index}
-                  className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden group hover:shadow-xl transition-all duration-300"
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -5 }}
-                >
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={resource.image}
-                      alt={resource.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        {resource.category}
-                      </span>
-                    </div>
-                    <div className="absolute top-4 right-4">
-                      <span className="bg-white bg-opacity-90 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-                        {resource.readTime}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                      {resource.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4 leading-relaxed">
-                      {resource.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-500">
-                        {new Date(resource.date).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'short', 
-                          day: 'numeric' 
-                        })}
-                      </span>
-                      <button className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
-                        <span>Read more</span>
-                        <ExternalLink className="w-4 h-4 ml-1" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.article>
               ))}
             </div>
           </div>
