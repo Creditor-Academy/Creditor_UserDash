@@ -81,6 +81,7 @@ import Product from "@/pages/Product/Product";
 import Features from "@/pages/FeaturesPage/Features";
 import WhyUs from "@/pages/WhyusPage/WhyUs";
 import Plans from "@/pages/Plans";
+import InstructionalDesign from "@/pages/InstructionalDesign";
 import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
 import Sov from "./coursesL/Sov";
@@ -131,6 +132,7 @@ function App() {
           <Route path="/product" element={<Product />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/whyus" element={<WhyUs />} />
+          <Route path="/instructional-design" element={<InstructionalDesign />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />

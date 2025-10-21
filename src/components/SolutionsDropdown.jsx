@@ -82,32 +82,32 @@ const SolutionsDropdown = () => {
               </div>
             </div>
 
-            {/* Promotional Section */}
-            <div className="w-full lg:w-80 bg-gray-50 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-200">
+            {/* Athena Instructional Design Section */}
+            <div className="w-full lg:w-80 bg-gradient-to-br from-blue-50 to-indigo-100 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-200">
               <div className="mb-6">
                 <img
-                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=300&h=200&fit=crop&crop=faces"
-                  alt="Team collaboration"
+                  src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=300&h=200&fit=crop&crop=faces"
+                  alt="Instructional Design"
                   className="w-full h-32 object-cover rounded-lg"
                 />
               </div>
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-gray-900">ATHENA</span>
-                  <span className="px-3 py-1 bg-gray-900 text-white text-sm font-bold rounded-full">
-                    Enterprise
+                  <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full">
+                    Instructional Design
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
-                  Advanced features and integrations with dedicated support
+                  Create engaging and effective learning experiences with our instructional design expertise
                 </p>
-                <a
-                  href="#"
-                  className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+                <button
+                  onClick={() => window.location.href = '/instructional-design'}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Learn more
+                  Explore Design Solutions
                   <ArrowRight className="w-3 h-3" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
