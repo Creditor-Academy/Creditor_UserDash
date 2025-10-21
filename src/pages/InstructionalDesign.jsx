@@ -614,7 +614,7 @@ const InstructionalDesign = () => {
           <div className="hero-container">
             <div className="hero-left">
               <motion.h1 
-                className="hero-heading"
+                className="hero-heading text-5xl md:text-6xl lg:text-7xl"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
@@ -623,40 +623,101 @@ const InstructionalDesign = () => {
               </motion.h1>
               <motion.p 
                 className="hero-description"
+                style={{ fontSize: '1.6rem' }}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 Custom instructional design & e-learning development for organisations that want results.
               </motion.p>
-              <motion.div 
-                className="hero-buttons"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-              >
-                <button className="btn-primary sticky-cta">
-                  Book a Consultation
-                  <ArrowUpRight size={16} strokeWidth={2} />
-                </button>
-                <button className="btn-secondary">
-                  <Play size={16} strokeWidth={2} />
-                  Watch Demo
-                </button>
-              </motion.div>
             </div>
             <div className="hero-right">
               <motion.div 
-                className="hero-video-container"
+                className="bg-white rounded-xl shadow-2xl p-6 max-w-sm mx-auto mt-8"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
               >
-                <div className="hero-video-placeholder">
-                  <div className="play-button">
-                    <Play size={32} color="#1e40af" fill="#1e40af" />
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+                  Get Started Today
+                </h3>
+                
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={contactForm.name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="Enter your full name"
+                    />
                   </div>
-                </div>
+
+                  <div>
+                    <label htmlFor="organization" className="block text-xs font-medium text-gray-700 mb-1">
+                      Organization *
+                    </label>
+                    <input
+                      type="text"
+                      id="organization"
+                      name="organization"
+                      value={contactForm.organization}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="Your company or organization"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={contactForm.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="your.email@company.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="projectSummary" className="block text-xs font-medium text-gray-700 mb-1">
+                      Project Summary
+                    </label>
+                    <textarea
+                      id="projectSummary"
+                      name="projectSummary"
+                      value={contactForm.projectSummary}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                      placeholder="Tell us about your learning project, goals, and timeline..."
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send Message
+                  </button>
+                </form>
+
+                <p className="text-xs text-gray-500 text-center mt-3">
+                  We'll respond within 24 hours to schedule your consultation.
+                </p>
               </motion.div>
             </div>
           </div>
@@ -1163,140 +1224,6 @@ const InstructionalDesign = () => {
           </div>
         </section>
 
-        {/* Contact CTA Section */}
-        <section className="py-20" style={{
-          background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)"
-        }}>
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              {/* Left Side - CTA Content */}
-              <motion.div
-                className="text-center lg:text-left"
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                  Ready to Elevate Your Learning?
-                </h2>
-                <p className="text-xl text-blue-100 mb-8" style={{ fontFamily: 'Arial, sans-serif' }}>
-                  Book a free 30-minute consultation to explore your project.
-                </p>
-                
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3 text-blue-100">
-                    <CheckCircle className="w-5 h-5 text-yellow-400" />
-                    <span>Free 30-minute consultation</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-blue-100">
-                    <CheckCircle className="w-5 h-5 text-yellow-400" />
-                    <span>Custom project roadmap</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-blue-100">
-                    <CheckCircle className="w-5 h-5 text-yellow-400" />
-                    <span>No obligation, expert advice</span>
-                  </div>
-                </div>
-
-                <button className="bg-yellow-400 text-gray-900 px-8 py-4 rounded-lg font-semibold hover:bg-yellow-500 transition-colors flex items-center gap-2 text-lg mx-auto lg:mx-0">
-                  <Calendar className="w-5 h-5" />
-                  Schedule Your Consultation
-                </button>
-              </motion.div>
-
-              {/* Right Side - Contact Form */}
-              <motion.div
-                className="bg-white rounded-xl shadow-2xl p-8"
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                viewport={{ once: true }}
-              >
-                <h3 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-                  Get Started Today
-                </h3>
-                
-                <form onSubmit={handleContactSubmit} className="space-y-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={contactForm.name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-2">
-                      Organization *
-                    </label>
-                    <input
-                      type="text"
-                      id="organization"
-                      name="organization"
-                      value={contactForm.organization}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="Your company or organization"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={contactForm.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="your.email@company.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="projectSummary" className="block text-sm font-medium text-gray-700 mb-2">
-                      Project Summary
-                    </label>
-                    <textarea
-                      id="projectSummary"
-                      name="projectSummary"
-                      value={contactForm.projectSummary}
-                      onChange={handleInputChange}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                      placeholder="Tell us about your learning project, goals, and timeline..."
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Send className="w-5 h-5" />
-                    Send Message
-                  </button>
-                </form>
-
-                <p className="text-sm text-gray-500 text-center mt-4">
-                  We'll respond within 24 hours to schedule your consultation.
-                </p>
-              </motion.div>
-            </div>
-          </div>
-        </section>
       </main>
       
       {/* Service Details Modal */}
