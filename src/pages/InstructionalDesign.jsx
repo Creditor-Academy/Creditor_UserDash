@@ -19,6 +19,7 @@ const InstructionalDesign = () => {
       icon: <Brain className="w-8 h-8 text-blue-600" />,
       title: "Instructional Design Strategy & Needs Analysis",
       description: "Comprehensive analysis of learning objectives, audience needs, and organizational goals to create strategic learning solutions.",
+      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
       benefits: [
         "Deep audience analysis and learning gap identification",
         "Strategic learning roadmap development",
@@ -31,6 +32,7 @@ const InstructionalDesign = () => {
       icon: <Monitor className="w-8 h-8 text-green-600" />,
       title: "Custom E-Learning & Course Development",
       description: "Bespoke e-learning solutions designed to engage learners and deliver measurable business outcomes.",
+      image: "https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=400&h=300&fit=crop",
       benefits: [
         "Interactive multimedia content development",
         "SCORM-compliant course creation",
@@ -43,6 +45,7 @@ const InstructionalDesign = () => {
       icon: <Users2 className="w-8 h-8 text-purple-600" />,
       title: "LMS Integration & Platform Support",
       description: "Seamless integration with existing learning management systems and comprehensive platform support.",
+      image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop",
       benefits: [
         "LMS migration and data transfer",
         "API integration and custom connectors",
@@ -55,6 +58,7 @@ const InstructionalDesign = () => {
       icon: <Users className="w-8 h-8 text-orange-600" />,
       title: "Live & Virtual Instructor-Led Training",
       description: "Engaging live training sessions that combine traditional instruction with modern virtual delivery methods.",
+      image: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=400&h=300&fit=crop",
       benefits: [
         "Virtual classroom setup and management",
         "Interactive training session design",
@@ -67,12 +71,26 @@ const InstructionalDesign = () => {
       icon: <Gamepad2 className="w-8 h-8 text-indigo-600" />,
       title: "Assessment, Gamification & Micro-Learning",
       description: "Innovative learning approaches that boost engagement through gamification and bite-sized learning modules.",
+      image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=400&h=300&fit=crop",
       benefits: [
         "Gamified learning experiences and leaderboards",
         "Micro-learning module development",
         "Adaptive assessment and personalized learning paths",
         "Badge and certification systems",
         "Learning analytics and progress tracking"
+      ]
+    },
+    {
+      icon: <BarChart3 className="w-8 h-8 text-teal-600" />,
+      title: "Learning Analytics & Performance Measurement",
+      description: "Data-driven insights and comprehensive analytics to measure learning effectiveness and demonstrate ROI.",
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop",
+      benefits: [
+        "Custom learning dashboards and reporting",
+        "ROI tracking and business impact analysis",
+        "Learner engagement and completion metrics",
+        "Predictive analytics for learning outcomes",
+        "Integration with business intelligence tools"
       ]
     }
   ];
@@ -107,6 +125,12 @@ const InstructionalDesign = () => {
       title: "Transparent Pricing & Agile Workflow",
       subtitle: "No Hidden Costs",
       description: "Clear, upfront pricing with flexible payment options and agile development processes that adapt to your changing needs and timelines."
+    },
+    {
+      icon: <Heart className="w-8 h-8 text-red-600" />,
+      title: "Dedicated Support & Partnership",
+      subtitle: "Your Success is Our Priority",
+      description: "We provide ongoing support, regular check-ins, and continuous optimization to ensure your learning programs deliver lasting results and exceed expectations."
     }
   ];
 
@@ -214,7 +238,7 @@ const InstructionalDesign = () => {
     {
       title: "VR in Training: Case Studies from Healthcare to Manufacturing",
       excerpt: "Real-world examples of how virtual reality is transforming training programs across different industries.",
-      image: "https://images.unsplash.com/photo-1592478411213-6153e4ebc696?w=400&h=250&fit=crop",
+      image: "https://images.unsplash.com/photo-1622979135225-d2ba269cf1ac?w=400&h=250&fit=crop",
       category: "Case Study",
       readTime: "12 min read",
       date: "2024-01-05"
@@ -639,7 +663,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Quick Value Proposition - Animated Stats */}
-        <section className="py-20 bg-white relative overflow-hidden">
+        <section className="py-20 bg-gradient-to-br from-blue-900 to-blue-800 relative overflow-hidden">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-10 left-10 w-32 h-32 bg-blue-600 rounded-full blur-3xl"></div>
@@ -654,10 +678,10 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Proven Results for Organizations Worldwide
               </h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <p className="text-lg text-blue-100 max-w-2xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
                 Our instructional design expertise delivers measurable outcomes for enterprise and non-profit clients globally.
               </p>
             </motion.div>
@@ -693,13 +717,13 @@ const InstructionalDesign = () => {
                     }}
                     viewport={{ once: true }}
                   >
-                    <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full text-blue-600 group-hover:from-blue-200 group-hover:to-blue-300 transition-all duration-300">
+                    <div className="p-4 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full text-blue-900 group-hover:from-yellow-500 group-hover:to-yellow-600 transition-all duration-300">
                       {stat.icon}
                     </div>
                   </motion.div>
                   
                   <motion.div 
-                    className="text-4xl md:text-5xl font-bold text-gray-900 mb-3"
+                    className="text-4xl md:text-5xl font-bold mb-3"
                     initial={{ opacity: 0 }}
                     whileInView={{ opacity: 1 }}
                     transition={{ 
@@ -708,12 +732,12 @@ const InstructionalDesign = () => {
                     }}
                     viewport={{ once: true }}
                   >
-                    <span className="text-blue-600">{stat.number}</span>
-                    <span className="text-yellow-500">{stat.suffix}</span>
+                    <span className="text-yellow-400">{stat.number}</span>
+                    <span className="text-yellow-400">{stat.suffix}</span>
                   </motion.div>
                   
                   <motion.div 
-                    className="text-sm text-gray-600 font-medium"
+                    className="text-sm text-blue-100 font-medium"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ 
@@ -736,21 +760,21 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6, delay: 0.8 }}
               viewport={{ once: true }}
             >
-              <div className="flex flex-wrap justify-center items-center gap-8 text-gray-500">
+              <div className="flex flex-wrap justify-center items-center gap-8 text-blue-100">
                 <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-green-600" />
+                  <Shield className="w-5 h-5 text-yellow-400" />
                   <span className="text-sm font-medium">Enterprise-Grade Security</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-blue-600" />
+                  <Globe className="w-5 h-5 text-yellow-400" />
                   <span className="text-sm font-medium">Global Delivery</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-yellow-600" />
+                  <Award className="w-5 h-5 text-yellow-400" />
                   <span className="text-sm font-medium">Award-Winning Design</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-purple-600" />
+                  <Clock className="w-5 h-5 text-yellow-400" />
                   <span className="text-sm font-medium">24/7 Support</span>
                 </div>
               </div>
@@ -759,7 +783,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Our Services Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -768,7 +792,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Our Services
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -780,7 +804,7 @@ const InstructionalDesign = () => {
               {services.map((service, index) => (
                 <motion.div
                   key={index}
-                  className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                  className="bg-white rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 group cursor-pointer overflow-hidden"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -788,18 +812,27 @@ const InstructionalDesign = () => {
                   whileHover={{ y: -5 }}
                   onClick={() => setSelectedService(service)}
                 >
-                  <div className="mb-6">
-                    {service.icon}
+                  <div className="relative h-48 overflow-hidden">
+                    <img 
+                      src={service.image} 
+                      alt={service.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-4 left-4 p-3 bg-white rounded-lg shadow-md">
+                      {service.icon}
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
-                    {service.title}
-                  </h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">
-                    {service.description}
-                  </p>
-                  <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
-                    <span>Learn More</span>
-                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  <div className="p-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-blue-600 transition-colors">
+                      {service.title}
+                    </h3>
+                    <p className="text-gray-600 mb-6 leading-relaxed">
+                      {service.description}
+                    </p>
+                    <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
+                      <span>Learn More</span>
+                      <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -808,7 +841,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Why Choose Athena Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -817,7 +850,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Why Choose Athena Instructional Designers?
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -873,7 +906,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Our Process Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -882,7 +915,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Our Process
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -973,7 +1006,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Success Stories Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -982,7 +1015,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Success Stories
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -1018,7 +1051,7 @@ const InstructionalDesign = () => {
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
                       {caseStudy.title}
                     </h3>
-                    <div className="text-2xl font-bold text-green-600 mb-3">
+                    <div className="text-2xl font-bold text-blue-600 mb-3">
                       {caseStudy.result}
                     </div>
                     <p className="text-gray-600 leading-relaxed">
@@ -1045,7 +1078,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Trusted By Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1054,7 +1087,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Trusted By
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -1129,7 +1162,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Tools & Platforms Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1138,7 +1171,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Tools & Platforms We Use
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -1174,7 +1207,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Insights & Resources Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1183,7 +1216,7 @@ const InstructionalDesign = () => {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
                 Insights & Resources
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: 'Arial, sans-serif' }}>
@@ -1248,7 +1281,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-gray-50" style={{ display: 'none' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1285,7 +1318,7 @@ const InstructionalDesign = () => {
                   <p className="text-gray-600 mb-4">
                     {feature.description}
                   </p>
-                  <div className="inline-block px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
+                  <div className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">
                     {feature.benefit}
                   </div>
                 </motion.div>
@@ -1295,7 +1328,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Process Section */}
-        <section className="py-20 bg-white">
+        <section className="py-20 bg-white" style={{ display: 'none' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1344,7 +1377,7 @@ const InstructionalDesign = () => {
         </section>
 
         {/* Testimonials Section */}
-        <section className="py-20 bg-gray-50">
+        <section className="py-20 bg-gray-50" style={{ display: 'none' }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               className="text-center mb-16"
@@ -1418,15 +1451,15 @@ const InstructionalDesign = () => {
                 
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3 text-blue-100">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <CheckCircle className="w-5 h-5 text-yellow-400" />
                     <span>Free 30-minute consultation</span>
                   </div>
                   <div className="flex items-center gap-3 text-blue-100">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <CheckCircle className="w-5 h-5 text-yellow-400" />
                     <span>Custom project roadmap</span>
                   </div>
                   <div className="flex items-center gap-3 text-blue-100">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <CheckCircle className="w-5 h-5 text-yellow-400" />
                     <span>No obligation, expert advice</span>
                   </div>
                 </div>
@@ -1581,7 +1614,7 @@ const InstructionalDesign = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                       >
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                         <span className="text-gray-700">{benefit}</span>
                       </motion.li>
                     ))}
