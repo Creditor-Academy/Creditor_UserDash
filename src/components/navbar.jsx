@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import SolutionsDropdown from "./SolutionsDropdown";
 
 const Navbar = () => {
   const [show, setShow] = useState(true);
@@ -98,13 +99,10 @@ const Navbar = () => {
           ☰
         </button>
         
-        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
+        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px", position: "relative" }}>
           <Link to="/about" style={navLinkStyle}>About Us</Link>
-          {/* <Link to="/features" style={navLinkStyle}>Features</Link> */}
-          <Link to="/product" style={navLinkStyle}>Product</Link>
-          <Link to="/plans" style={navLinkStyle}>Plans</Link>
-          {/* <Link to="/whyus" style={navLinkStyle}>Why Us</Link> */}
-          <Link to="/faq" style={navLinkStyle}>Resources</Link>
+          <SolutionsDropdown />
+          <Link to="/website" style={navLinkStyle}>Website</Link>
           <Link to="/contact" style={navLinkStyle}>Contact Us</Link>
           <a
             href="#"
@@ -188,11 +186,8 @@ const Navbar = () => {
         </div>
         
         <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
-        <Link to="/product" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Product</Link>
-        <Link to="/plans" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Plans</Link>
-        {/* <Link to="/features" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Features</Link> */}
-        {/* <Link to="/whyus" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Why Us</Link> */}
-        <Link to="/faq" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Resources</Link>
+        <div style={drawerLinkStyle}>Solutions</div>
+        <Link to="/website" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Website</Link>
         <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
         
         <a 
@@ -326,6 +321,17 @@ const Navbar = () => {
           right: 0 !important;
           z-index: 1000 !important;
           border-radius: 0 !important;
+          overflow: visible !important;
+        }
+        
+        /* Ensure dropdowns can extend beyond navbar */
+        .athena-links {
+          overflow: visible !important;
+        }
+        
+        /* Allow full-width dropdowns */
+        .athena-navbar {
+          overflow: visible !important;
         }
         
         /* Drawer content optimization */

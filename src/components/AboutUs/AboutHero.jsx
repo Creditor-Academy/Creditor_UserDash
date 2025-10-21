@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import ochiside from "../../assets/AthenaDash.png";
-import eyesImage from "../../assets/eyes.svg";
 
 const Hero = () => {
   return (
@@ -27,30 +26,36 @@ const Hero = () => {
           bottom: 0,
           overflow: 'hidden',
           zIndex: 0,
-          filter: 'blur(2px)',
         }}
       >
-        {[...Array(30)].map((_, i) => (
+        {[...Array(40)].map((_, i) => (
           <motion.div
             key={i}
             style={{
               position: 'absolute',
               borderRadius: '50%',
-              backgroundColor: 'rgba(173, 216, 230, 0.4)',
-              x: Math.random() * 100,
-              y: Math.random() * 100,
-              width: Math.random() * 15 + 10,
-              height: Math.random() * 15 + 10,
-              opacity: 0.8,
+              background: i % 3 === 0 
+                ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 197, 253, 0.3))'
+                : i % 3 === 1
+                ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(196, 181, 253, 0.3))'
+                : 'linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(165, 243, 252, 0.3))',
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: Math.random() * 20 + 10,
+              height: Math.random() * 20 + 10,
+              filter: 'blur(1px)',
             }}
             animate={{
-              y: [0, Math.random() * 100 - 50],
-              transition: {
-                duration: Math.random() * 8 + 6,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-              },
+              y: [0, Math.random() * -100, 0],
+              x: [0, Math.random() * 50 - 25, 0],
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.6, 0.3],
+            }}
+            transition={{
+              duration: Math.random() * 10 + 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: Math.random() * 2,
             }}
           />
         ))}
@@ -267,21 +272,123 @@ const Hero = () => {
           </motion.h2>
         </motion.div>
 
-        {/* Right - Eyes component with simpler design */}
+        {/* Right - Feature Cards & Stats */}
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ x: 80, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 1, delay: 0.6 }}
           style={{
             flex: 1,
             display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
+            flexDirection: 'column',
+            gap: '24px',
             position: 'relative',
           }}
-          whileHover={{ scale: 1.05 }}
         >
-          <Eyes />
+          {/* Feature Cards Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '16px',
+          }}>
+            {[
+              { label: 'AI-Powered', icon: '🤖', color: '#3b82f6' },
+              { label: 'Interactive', icon: '✨', color: '#8b5cf6' },
+              { label: 'Scalable', icon: '📈', color: '#06b6d4' },
+              { label: 'Secure', icon: '🔒', color: '#0891b2' }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
+                whileHover={{ scale: 1.05, y: -5 }}
+                style={{
+                  padding: '24px 20px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.6)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.8)',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  fontSize: '40px',
+                  lineHeight: 1,
+                }}>
+                  {item.icon}
+                </div>
+                <span style={{
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  color: item.color,
+                  fontFamily: '"NeueMontreal", sans-serif',
+                  textAlign: 'center',
+                }}>
+                  {item.label}
+                </span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Stats Row */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.2 }}
+            style={{
+              display: 'flex',
+              gap: '16px',
+              justifyContent: 'space-between',
+            }}
+          >
+            {[
+              { value: '10K+', label: 'Active Users' },
+              { value: '50K+', label: 'Courses' },
+              { value: '98%', label: 'Satisfaction' }
+            ].map((stat, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ scale: 1.05 }}
+                style={{
+                  flex: 1,
+                  padding: '20px 16px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.5)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.8)',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                  textAlign: 'center',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: '700',
+                  color: '#0f172a',
+                  fontFamily: '"FoundersGrotesk", sans-serif',
+                  marginBottom: '4px',
+                }}>
+                  {stat.value}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: '#64748b',
+                  fontFamily: '"NeueMontreal", sans-serif',
+                  fontWeight: '500',
+                }}>
+                  {stat.label}
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.div>
       </div>
 
@@ -357,15 +464,6 @@ const Hero = () => {
           }
         }
         
-        @keyframes glow {
-          0%, 100% {
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2);
-          }
-        }
-        
         /* Mobile responsive styles */
         @media (max-width: 768px) {
           .content-row {
@@ -376,120 +474,6 @@ const Hero = () => {
         }
       `}</style>
     </section>
-  );
-};
-
-// Eyes Component (Simplified)
-const Eyes = () => {
-  const [rotate, setRotate] = useState(0);
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      let mouseX = e.clientX;
-      let mouseY = e.clientY;
-
-      let deltaX = mouseX - window.innerWidth / 2;
-      let deltaY = mouseY - window.innerHeight / 2;
-
-      let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-      setRotate(angle - 280);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const eyeContainerStyle = {
-    width: "280px",
-    height: "280px",
-    borderRadius: "50%",
-    border: "6px solid rgba(15, 23, 42, 0.8)",
-    backgroundColor: "#F7F7F7",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 0 16px rgba(59, 130, 246, 0.08)",
-  };
-
-  const innerImageStyle = {
-    transform: `rotate(${rotate}deg)`,
-    width: "240px",
-    height: "240px",
-    objectFit: "cover",
-    transition: 'transform 0.1s ease-out, scale 0.2s',
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "60px",
-        position: "relative",
-      }}
-    >
-      {/* Eye with subtle glow */}
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1,
-        }}
-      >
-        <div style={{ ...eyeContainerStyle }}>
-          <motion.img
-            style={innerImageStyle}
-            src={eyesImage}
-            alt="Eye"
-            whileHover={{ scale: 1.05 }}
-          />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            animation: 'glow 3s infinite ease-in-out',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        ></div>
-      </div>
-
-      {/* Second Eye with subtle glow */}
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1,
-        }}
-      >
-        <div style={{ ...eyeContainerStyle }}>
-          <motion.img
-            style={innerImageStyle}
-            src={eyesImage}
-            alt="Eye"
-            whileHover={{ scale: 1.05 }}
-          />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            animation: 'glow 3s infinite ease-in-out',
-            animationDelay: '1.5s',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        ></div>
-      </div>
-    </div>
   );
 };
 
