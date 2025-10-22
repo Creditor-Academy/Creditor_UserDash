@@ -17,12 +17,22 @@ import WebsiteTable from '../components/WebsiteTable';
 import WebsiteEndSection from '../components/WebsiteEndSection';
 import Navbar from '../components/navbar.jsx';
 import Footer from '../components/Footer.jsx';
+import { HeroSectionOne } from '../components/Website/hero.jsx';
+import PricingCard from '../components/Website/pricingCard.jsx';
+import Templates from '../components/Website/Templates.jsx';
+import Appointment from '../components/Website/appointment.jsx';
+import ComparisonTable from '../components/Website/comparisiontable.jsx';
 
 
 export const WebsiteCreation = () => {
   return (
     <div>
         <Navbar />
+        <HeroSectionOne />
+        <PricingCard />
+        <Templates />
+        <Appointment />
+        <ComparisonTable />
         <WebsiteUpperSection/>
         <WebsiteTable/>
         <WebsiteEndSection/>
