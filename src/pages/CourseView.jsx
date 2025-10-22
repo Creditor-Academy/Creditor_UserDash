@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, Lock, Unlock, ShoppingCart, ArrowLeft, ChevronDown } from "lucide-react";
+import { Search, Clock, Play, BookOpen, Users, Calendar, Award, FileText, ArrowLeft, ChevronRight, ChevronDown, Lock, Unlock, ShoppingCart } from "lucide-react";
 import { fetchCourseModules, fetchCourseById, fetchUserCourses, fetchCoursePrice } from "@/services/courseService";
 import { useCredits } from "@/contexts/CreditsContext";
 import { useUser } from "@/contexts/UserContext";
@@ -427,15 +427,17 @@ export function CourseView() {
         ]);
         
         setCourseDetails(courseData);
-        // Only include published modules; hide drafts from users
-        const publishedModules = (Array.isArray(modulesData) ? modulesData : []).filter((m) => {
-          const status = (m.module_status || m.status || "").toString().toUpperCase();
-          return status === "PUBLISHED" || m.published === true;
-        });
+        
+        // Filter modules to only show PUBLISHED ones
+        const publishedModules = modulesData.filter(module => 
+          module.module_status === 'PUBLISHED'
+        );
+        console.log(`[CourseView] Total modules: ${modulesData.length}, Published modules: ${publishedModules.length}`);
+        
         setModules(publishedModules);
         setFilteredModules(publishedModules);
         
-        // Calculate total duration from modules
+        // Calculate total duration from published modules only
         const total = publishedModules.reduce((sum, module) => {
           const duration = parseInt(module.estimated_duration) || 0;
           return sum + duration;
@@ -533,7 +535,7 @@ export function CourseView() {
                 <div className="text-red-500 mb-4">
                   <span className="text-4xl">❌</span>
                 </div>
-                <h3 className="text-lg font-medium mb-2">Failed to load modules</h3>
+                <h3 className="text-lg font-medium">Failed to load modules</h3>
                 <p className="text-muted-foreground mb-4">{error}</p>
                 <Button onClick={() => window.location.reload()}>
                   Try Again
@@ -559,6 +561,22 @@ export function CourseView() {
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 to-white">
       <main className="flex-1">
         <div className="container py-8 max-w-7xl">
+          {/* Breadcrumb Navigation */}
+          <div className="flex items-center gap-2 mb-6">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/dashboard/courses')}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft size={16} />
+              Back to Courses
+            </Button>
+            <ChevronRight size={16} className="text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {courseDetails?.title || 'Course Details'}
+            </span>
+          </div>
 
           {/* Course Details Section */}
           {courseDetails && (
@@ -567,17 +585,7 @@ export function CourseView() {
                 {/* Course Title and Description at the top */}
                 <CardContent className="p-6">
                   <div className="max-w-4xl">
-                    {/* Back Button */}
-                    <div className="mb-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(-1)}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back
-                      </Button>
-                    </div>
+                    
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight">{courseDetails.title}</h1>
                     <p className={`text-gray-600 text-md leading-relaxed ${!isDescriptionExpanded ? 'line-clamp-4' : ''}`}>
                       {courseDetails.description}
@@ -746,537 +754,152 @@ export function CourseView() {
             </div>
           </div>
 
-          {/* Accordion with inline module lists only for eligible courses */}
-          {isEligibleForTwoModes(courseDetails?.title) && (
-            <div className="mb-4 space-y-3">
-              {/* Book Smart */}
-              <div
-                className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
-                  viewMode === "book"
-                    ? "bg-blue-100 border-blue-300 shadow-lg"
-                    : "bg-blue-50 border-blue-200 hover:shadow-md"
-                }`}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-lg">
-                        <BookOpen className="h-7 w-7 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900">Book Smart</h3>
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
-                            viewMode === 'book'
-                              ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                              : 'bg-gray-100 text-gray-600 border border-gray-200'
-                          }`}>
-                            <span className={`w-2 h-2 rounded-full ${viewMode === 'book' ? 'bg-blue-500' : 'bg-gray-400'}`}></span>
-                            Standard
-                          </span>
-                        </div>
-                        <p className="text-gray-600 mb-4">Standard lessons for this course</p>
-                        
-                        <div className="flex items-center gap-8">
-                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
-                            <BookOpen className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-semibold text-gray-700">{filteredModules.length} modules</span>
-                          </div>
-                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-blue-100">
-                            <Clock className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-semibold text-gray-700">{Math.round(filteredModules.reduce((total, module) => total + (parseInt(module.estimated_duration) || 60), 0) / 60 * 10) / 10} hr</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronDown className={`h-5 w-5 text-gray-400 mt-1`} />
-                  </div>
-                </div>
-              </div>
-              {
-                filteredModules.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">No modules found</h3>
-                    <p className="text-muted-foreground mt-1">
-                      {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                   {filteredModules.map((module) => {
-                    const isContentAvailable = !!module.resource_url;
-                    const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
-                    const isLocked = !hasAccess;
-                    const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
-
-                    // Sequential unlock: allow only the first module or next after highest unlocked
-                    let canUnlockInOrder = false;
-                    if (isLocked) {
-                      const allOrders = modules.map((m) => Number(m.order) || 0).filter((n) => n > 0);
-                      const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
-                      const unlockedOrders = new Set(
-                        modules
-                          .filter((m) => unlockedIds.has(m.id))
-                          .map((m) => Number(m.order) || 0)
-                      );
-                      const highestUnlocked = unlockedOrders.size ? Math.max(...Array.from(unlockedOrders)) : null;
-                      const currentOrder = Number(module.order) || 0;
-                      if (highestUnlocked == null) {
-                        canUnlockInOrder = currentOrder === minOrder;
-                      } else {
-                        canUnlockInOrder = currentOrder === highestUnlocked + 1;
-                      }
-                    }
-                     
-                    
-                    return (
-                      <div key={module.id} className="module-card h-full">
-                        <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                          <div className="aspect-video relative overflow-hidden">
-                            <img 
-                              src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                              alt={module.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {/* Lock overlay for locked modules */}
-                            {isLocked && (
-                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
-                                  <Lock className="w-5 h-5 text-gray-700" />
-                                  <span className="text-sm font-medium text-gray-800">Locked</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          {/* Fixed height for content area, flex-grow to fill space */}
-                          <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                            <CardHeader className="pb-2 px-0 pt-0">
-                              <CardTitle className="text-lg line-clamp-2 min-h-[56px]">{module.title}</CardTitle>
-                              <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">{module.description}</p>
-                            </CardHeader>
-                            <CardContent className="space-y-3 px-0 pt-0 pb-0">
-                              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <BookOpen size={14} />
-                                  <span>Order: {module.order || 'N/A'}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Clock size={14} />
-                                  <span>{module.estimated_duration || 0} min</span>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </div>
-                          {/* Footer always at the bottom */}
-                          <div className="mt-auto px-6 pb-4">
-                            <CardFooter className="p-0 flex flex-col gap-2">
-                               {isContentAvailable && hasAccess ? (
-                                <>
-                                  <Button 
-                                    className="w-full"
-                                    onClick={() => {
-                                      // Get resource_url from module data
-                                      let fullUrl = module.resource_url;
-                                      
-                                      // If it's not already a full URL, prepend the API base URL
-                                      if (fullUrl && !fullUrl.startsWith('http')) {
-                                        fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                      }
-                                      
-                                      // For S3 URLs, ensure they have the correct protocol
-                                      if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                        fullUrl = fullUrl.replace('http://', 'https://');
-                                      }
-                                      
-                                      // Open in new tab
-                                      if (fullUrl) {
-                                        window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                      } else {
-                                        console.error('No resource URL found for module:', module);
-                                      }
-                                    }}
-                                  >
-                                    <Play size={16} className="mr-2" />
-                                    Start Module
-                                  </Button>
-                                  <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                                   <Button variant="outline" className="w-full">
-                                      <FileText size={16} className="mr-2" />
-                                      Start Assessment
-                                    </Button> 
-                                  </Link>
-                                  {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
-                                  {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
-                                    <Button
-                                      variant="secondary"
-                                      className="w-full disabled:opacity-60"
-                                      disabled={markingCompleteIds.has(String(module.id))}
-                                      onClick={async () => {
-                                        const idStr = String(module.id);
-                                        if (!courseId || !module?.id) return;
-                                        // Prevent duplicate clicks
-                                        if (markingCompleteIds.has(idStr)) return;
-                                        setMarkingCompleteIds(prev => {
-                                          const next = new Set(prev);
-                                          next.add(idStr);
-                                          return next;
-                                        });
-                                        try {
-                                          await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
-                                          setCompletedModuleIds(prev => {
-                                            const next = new Set(prev);
-                                            next.add(idStr);
-                                            return next;
-                                          });
-                                        } catch (err) {
-                                          console.error('Failed to mark module as complete', err);
-                                        } finally {
-                                          setMarkingCompleteIds(prev => {
-                                            const next = new Set(prev);
-                                            next.delete(idStr);
-                                            return next;
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
-                                    </Button>
-                                  ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
-                                    <div className="w-full flex items-center justify-center">
-                                      <Badge className="px-3 py-1">Completed</Badge>
-                                    </div>
-                                  ) : null}
-                                </>
-                               ) : !isContentAvailable ? (
-                                 <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                                   <Clock size={16} className="mr-2" />
-                                   <span className="font-medium">Upcoming Module</span>
-                                 </Button>
-                               ) : isFromFreeCatalog(courseDetails) ? (
-                                 <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                                   <Clock size={16} className="mr-2" />
-                                   <span className="font-medium">
-                                     {(() => {
-                                       const courseTitle = (courseDetails?.title || "").toLowerCase();
-                                       const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
-                                         courseTitle.includes(keyword)
-                                       );
-                                       return isClassRecording ? "Upcoming Recording" : "Upcoming Course";
-                                     })()}
-                                   </span>
-                                 </Button>
-                               ) : (() => {
-                                  const t = (courseDetails?.title || "").toLowerCase();
-                                  const isMasterClassCourse = [
-                                    "formation of business trust",
-                                    "tier 1: optimizing your business credit profile",
-                                    "business trust",
-                                    "credit optimization"
-                                  ].some(name => t.includes(name));
-                                  
-                                  const isFreeCourse = [
-                                    "roadmap",
-                                    "road map",
-                                    "roadmap series",
-                                    "road map series",
-                                    "passive income",
-                                    "start your passive income"
-                                  ].some(name => t.includes(name));
-                                  
-                                  if (isMasterClassCourse || isFreeCourse) {
-                                    return (
-                                      <div className="w-full flex flex-col gap-2">
-                                        <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                                          <Clock size={16} className="mr-2" />
-                                          <span className="font-medium">Upcoming</span>
-                                        </Button>
-                                      </div>
-                                    );
-                                  }
-                                  return null;
-                               })() || (
-                                 <div className="w-full flex flex-col gap-2">
-                                   <Button 
-                                     className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
-                                     onClick={() => {
-                                       if (!modulePrice || modulePrice <= 0) return;
-                                       if (!canUnlockInOrder) {
-                                         handleSequentialUnlockClick(module);
-                                         return;
-                                       }
-                                       if (balance < modulePrice) {
-                                         setCreditsModalOpen(true);
-                                         return;
-                                       }
-                                       setConfirmUnlock({ open: true, module });
-                                     }}
-                                     disabled={!modulePrice || unlockingId === module.id}
-                                   >
-                                     {unlockingId === module.id ? (
-                                       <>
-                                         <Clock size={16} className="mr-2 animate-spin" />
-                                         Processing...
-                                       </>
-                                     ) : (
-                                       <>
-                                         <Unlock size={16} className="mr-2" />
-                                         Unlock for {modulePrice} credits
-                                       </>
-                                     )}
-                                   </Button>
-                                   {balance < modulePrice && canUnlockInOrder && (
-                                     <Button 
-                                       variant="outline"
-                                       className="w-full"
-                                       onClick={() => setCreditsModalOpen(true)}
-                                     >
-                                       Buy credits
-                                     </Button>
-                                   )}
-                                 </div>
-                               )}
-                            </CardFooter>
-                          </div>
-                        </Card>
-                      </div>
-                    );
-                  })}
-                </div>
-                )
-              }
-
-              {/* Street Smart */}
-              <div
-                className={`w-full rounded-2xl border-2 transition-all duration-200 cursor-default select-none ${
-                  viewMode === "street"
-                    ? "bg-purple-100 border-purple-300 shadow-lg"
-                    : "bg-purple-50 border-purple-200 hover:shadow-md"
-                }`}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className="p-4 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl shadow-lg">
-                        <Play className="h-7 w-7 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-gray-900">Street Smart</h3>
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-sm rounded-full font-semibold ${
-                            viewMode === 'street'
-                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                              : 'bg-gray-100 text-gray-600 border border-gray-200'
-                          }`}>
-                            <span className={`w-2 h-2 rounded-full ${viewMode === 'street' ? 'bg-purple-500' : 'bg-gray-400'}`}></span>
-                            Recorded
-                          </span>
-                        </div>
-                        <p className="text-gray-600 mb-4">Recorded lessons for this course</p>
-                        
-                        <div className="flex items-center gap-8">
-                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
-                            <BookOpen className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-700">{streetModules.length} modules</span>
-                          </div>
-                          <div className="flex items-center gap-2 bg-white/60 px-3 py-2 rounded-lg border border-purple-100">
-                            <Clock className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-semibold text-gray-700">
-                              {Math.round(streetModules.reduce((total, module) => total + (parseInt(module.duration) || 60), 0) / 60 * 10) / 10} hr
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronDown className={`h-5 w-5 text-gray-400 mt-1`} />
-                  </div>
-                </div>
-              </div>
-              {
-            streetLoading ? (
-              <div className="text-center py-12">
-                <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4 animate-spin" />
-                <h3 className="text-lg font-medium">Loading recordings...</h3>
-              </div>
-            ) : streetError ? (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium">{streetError}</h3>
-                <p className="text-muted-foreground mt-1">Please try again later.</p>
-              </div>
-            ) : streetModules.length === 0 ? (
+          {/* Module list for all courses */}
+          <div className="mb-4">
+            {filteredModules.length === 0 ? (
               <div className="text-center py-12">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No recordings found</h3>
-                <p className="text-muted-foreground mt-1">Recordings may not be available yet for this course.</p>
+                <h3 className="text-lg font-medium">No modules found</h3>
+                <p className="text-muted-foreground mt-1">
+                  {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {streetModules
-                  .filter((m) => (m.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || (m.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map((module) => {
+                {filteredModules.map((module) => {
                   const isContentAvailable = !!module.resource_url;
-                  const hasAccessRecording = isEnrolledRecording || unlockedIds.has(String(module.id));
-                  const isLockedRecording = !hasAccessRecording;
+                  const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
+                  const isLocked = !hasAccess;
                   const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
-                  const recordingCourseId = getRecordingCourseIdForTitle(courseDetails?.title);
+
+                  // Sequential unlock: allow only the first module or next after highest unlocked
+                  let canUnlockInOrder = false;
+                  if (isLocked) {
+                    const allOrders = modules.map((m) => Number(m.order) || 0).filter((n) => n > 0);
+                    const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
+                    const unlockedOrders = new Set(
+                      modules
+                        .filter((m) => unlockedIds.has(m.id))
+                        .map((m) => Number(m.order) || 0)
+                    );
+                    const highestUnlocked = unlockedOrders.size ? Math.max(...Array.from(unlockedOrders)) : null;
+                    const currentOrder = Number(module.order) || 0;
+                    if (highestUnlocked == null) {
+                      canUnlockInOrder = currentOrder === minOrder;
+                    } else {
+                      canUnlockInOrder = currentOrder === highestUnlocked + 1;
+                    }
+                  }
+                   
                   
-                  // Debug logging for Street Smart access
-                  console.log(`[Street Smart] Module ${module.id}: isEnrolledRecording=${isEnrolledRecording}, unlockedIds.has=${unlockedIds.has(String(module.id))}, hasAccessRecording=${hasAccessRecording}`);
                   return (
                     <div key={module.id} className="module-card h-full">
                       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
                         <div className="aspect-video relative overflow-hidden">
-                          <img
-                            src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"}
+                          <img 
+                            src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
                             alt={module.title}
                             className="w-full h-full object-cover"
                           />
-                          {isLockedRecording && (
+                          {/* Lock overlay for locked modules */}
+                          {isLocked && (
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                               <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
                                 <Lock className="w-5 h-5 text-gray-700" />
                                 <span className="text-sm font-medium text-gray-800">Locked</span>
-              </div>
-            </div>
-          )}
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        {/* Fixed height for content area, flex-grow to fill space */}
                         <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
                           <CardHeader className="pb-2 px-0 pt-0">
                             <CardTitle className="text-lg line-clamp-2 min-h-[56px]">{module.title}</CardTitle>
                             <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">{module.description}</p>
-                                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1">
-                                    <BookOpen className="w-3 h-3" />
-                                    <span>Order: {module.order || module.sequence || 1}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{module.duration || '60'} min</span>
-                                  </div>
-                                </div>
                           </CardHeader>
+                          <CardContent className="space-y-3 px-0 pt-0 pb-0">
+                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <BookOpen size={14} />
+                                <span>Order: {module.order || 'N/A'}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock size={14} />
+                                <span>{module.estimated_duration || 0} min</span>
+                              </div>
+                            </div>
+                          </CardContent>
                         </div>
+                        {/* Footer always at the bottom */}
                         <div className="mt-auto px-6 pb-4">
                           <CardFooter className="p-0 flex flex-col gap-2">
-                            {isContentAvailable && hasAccessRecording ? (
-                              <>
+                            <Link 
+                              to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} 
+                              state={{ 
+                                moduleData: {
+                                  title: module.title || module.module_title || module.name || 'Module',
+                                  description: module.description || module.module_description || '',
+                                  duration: module.estimated_duration || module.duration || 0,
+                                  totalModules: modules.length || 0
+                                },
+                                courseData: {
+                                  title: courseDetails?.title || courseDetails?.course_title || courseDetails?.name || 'Course',
+                                  description: courseDetails?.description || courseDetails?.course_description || ''
+                                }
+                              }}
+                              className="w-full">
+                              <Button className="w-full">
+                                <Play size={16} className="mr-2" />
+                                View Lessons
+                              </Button>
+                            </Link>
+                            <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
+                             <Button variant="outline" className="w-full">
+                                <FileText size={16} className="mr-2" />
+                                View Assessment
+                              </Button> 
+                            </Link>
+                            {/* Mark as Complete - only show when enrolled in the course */}
+                            {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
                               <Button
-                                className="w-full"
-                                onClick={() => {
-                                      // Get resource_url from module data
-                                  let fullUrl = module.resource_url;
-                                      
-                                      // If it's not already a full URL, prepend the API base URL
-                                  if (fullUrl && !fullUrl.startsWith('http')) {
-                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                  }
-                                      
-                                      // For S3 URLs, ensure they have the correct protocol
-                                      if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                        fullUrl = fullUrl.replace('http://', 'https://');
-                                      }
-                                      
-                                      // Open in new tab
-                                  if (fullUrl) {
-                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                      } else {
-                                        console.error('No resource URL found for module:', module);
+                                variant="secondary"
+                                className="w-full disabled:opacity-60"
+                                disabled={markingCompleteIds.has(String(module.id))}
+                                onClick={async () => {
+                                  const idStr = String(module.id);
+                                  if (!courseId || !module?.id) return;
+                                  // Prevent duplicate clicks
+                                  if (markingCompleteIds.has(idStr)) return;
+                                  setMarkingCompleteIds(prev => {
+                                    const next = new Set(prev);
+                                    next.add(idStr);
+                                    return next;
+                                  });
+                                  try {
+                                    await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                    setCompletedModuleIds(prev => {
+                                      const next = new Set(prev);
+                                      next.add(idStr);
+                                      return next;
+                                    });
+                                  } catch (err) {
+                                    console.error('Failed to mark module as complete', err);
+                                  } finally {
+                                    setMarkingCompleteIds(prev => {
+                                      const next = new Set(prev);
+                                      next.delete(idStr);
+                                      return next;
+                                    });
                                   }
                                 }}
                               >
-                                <Play size={16} className="mr-2" />
-                                    Start Module
+                                {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                               </Button>
-                                  <Link to={`/dashboard/courses/${recordingCourseId}/modules/${module.id}/assessments`} className="w-full">
-                                   <Button variant="outline" className="w-full">
-                                      <FileText size={16} className="mr-2" />
-                                      Start Assessment
-                                    </Button>
-                                  </Link>
-                                  {/* Mark as Complete - show when enrolled in the recording course OR when user has individual module access */}
-                                  {(isEnrolledRecording || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
-                                    <Button
-                                      variant="secondary"
-                                      className="w-full disabled:opacity-60"
-                                      disabled={markingCompleteIds.has(String(module.id))}
-                                      onClick={async () => {
-                                        const idStr = String(module.id);
-                                        if (!recordingCourseId || !module?.id) return;
-                                        // Prevent duplicate clicks
-                                        if (markingCompleteIds.has(idStr)) return;
-                                        setMarkingCompleteIds(prev => {
-                                          const next = new Set(prev);
-                                          next.add(idStr);
-                                          return next;
-                                        });
-                                        try {
-                                          await api.post(`/api/course/${recordingCourseId}/modules/${module.id}/mark-complete`);
-                                          setCompletedModuleIds(prev => {
-                                            const next = new Set(prev);
-                                            next.add(idStr);
-                                            return next;
-                                          });
-                                        } catch (err) {
-                                          console.error('Failed to mark module as complete', err);
-                                        } finally {
-                                          setMarkingCompleteIds(prev => {
-                                            const next = new Set(prev);
-                                            next.delete(idStr);
-                                            return next;
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
-                                    </Button>
-                                  ) : (isEnrolledRecording || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
-                                    <div className="w-full flex items-center justify-center">
-                                      <Badge className="px-3 py-1">Completed</Badge>
-                                    </div>
-                                  ) : null}
-                              </>
-                            ) : !isContentAvailable ? (
-                              <Button className="w-full" disabled>
-                                <Clock size={16} className="mr-2" />
-                                Upcoming Recording
-                              </Button>
-                            ) : (
-                              <div className="w-full flex flex-col gap-2">
-                                <Button
-                                  className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
-                                  onClick={() => {
-                                    if (!modulePrice || modulePrice <= 0) return;
-                                    if (balance < modulePrice) {
-                                      setCreditsModalOpen(true);
-                                      return;
-                                    }
-                                    setConfirmUnlock({ open: true, module });
-                                  }}
-                                  disabled={!modulePrice || unlockingId === module.id}
-                                >
-                                  {unlockingId === module.id ? (
-                                    <>
-                                      <Clock size={16} className="mr-2 animate-spin" />
-                                      Processing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Unlock size={16} className="mr-2" />
-                                      Unlock recording for {modulePrice} credits
-                                    </>
-                                  )}
-                                </Button>
-                                {balance < modulePrice && (
-                                  <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => setCreditsModalOpen(true)}
-                                  >
-                                    Buy credits
-                                  </Button>
-                                )}
+                            ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                              <div className="w-full flex items-center justify-center">
+                                <Badge className="px-3 py-1">Completed</Badge>
                               </div>
-                            )}
+                            ) : null}
                           </CardFooter>
                         </div>
                       </Card>
@@ -1284,264 +907,8 @@ export function CourseView() {
                   );
                 })}
               </div>
-            )
-              }
-            </div>
-          )}
-
-          {/* For non-eligible courses, show normal module grid without Book/Street headers */}
-          {!isEligibleForTwoModes(courseDetails?.title) && (
-            filteredModules.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium">No modules found</h3>
-              <p className="text-muted-foreground mt-1">
-                {searchQuery ? "Try adjusting your search query" : "This course doesn't have any modules yet"}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredModules.map((module) => {
-                const isContentAvailable = !!module.resource_url;
-                const hasAccess = isEnrolled || unlockedIds.has(String(module.id));
-                const isLocked = !hasAccess;
-                const modulePrice = Number(module.price) > 0 ? Number(module.price) : getStableRandomPrice(module);
-
-                // Sequential unlock: allow only the first module or next after highest unlocked
-                let canUnlockInOrder = false;
-                if (isLocked) {
-                  const allOrders = modules.map((m) => Number(m.order) || 0).filter((n) => n > 0);
-                  const minOrder = allOrders.length ? Math.min(...allOrders) : 1;
-                  const unlockedOrders = new Set(
-                    modules
-                      .filter((m) => unlockedIds.has(m.id))
-                      .map((m) => Number(m.order) || 0)
-                  );
-                  const highestUnlocked = unlockedOrders.size ? Math.max(...Array.from(unlockedOrders)) : null;
-                  const currentOrder = Number(module.order) || 0;
-                  if (highestUnlocked == null) {
-                    canUnlockInOrder = currentOrder === minOrder;
-                  } else {
-                    canUnlockInOrder = currentOrder === highestUnlocked + 1;
-                  }
-                }
-                 
-                
-                return (
-                  <div key={module.id} className="module-card h-full">
-                    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col h-full">
-                      <div className="aspect-video relative overflow-hidden">
-                        <img 
-                          src={module.thumbnail || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000"} 
-                          alt={module.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {/* Lock overlay for locked modules */}
-                        {isLocked && (
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
-                              <Lock className="w-5 h-5 text-gray-700" />
-                              <span className="text-sm font-medium text-gray-800">Locked</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      {/* Fixed height for content area, flex-grow to fill space */}
-                      <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
-                        <CardHeader className="pb-2 px-0 pt-0">
-                          <CardTitle className="text-lg line-clamp-2 min-h-[56px]">{module.title}</CardTitle>
-                          <p className="text-sm text-muted-foreground line-clamp-3 min-h-[60px]">{module.description}</p>
-                        </CardHeader>
-                        <CardContent className="space-y-3 px-0 pt-0 pb-0">
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <BookOpen size={14} />
-                              <span>Order: {module.order || 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock size={14} />
-                              <span>{module.estimated_duration || 0} min</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </div>
-                      {/* Footer always at the bottom */}
-                      <div className="mt-auto px-6 pb-4">
-                        <CardFooter className="p-0 flex flex-col gap-2">
-                           {isContentAvailable && hasAccess ? (
-                            <>
-                              <Button 
-                                className="w-full"
-                                onClick={() => {
-                                  // Get resource_url from module data
-                                  let fullUrl = module.resource_url;
-                                  
-                                  // If it's not already a full URL, prepend the API base URL
-                                  if (fullUrl && !fullUrl.startsWith('http')) {
-                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                  }
-                                  
-                                  // For S3 URLs, ensure they have the correct protocol
-                                  if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                    fullUrl = fullUrl.replace('http://', 'https://');
-                                  }
-                                  
-                                  // Open in new tab
-                                  if (fullUrl) {
-                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                  } else {
-                                    console.error('No resource URL found for module:', module);
-                                  }
-                                }}
-                              >
-                                <Play size={16} className="mr-2" />
-                                Start Module
-                              </Button>
-                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
-                               <Button variant="outline" className="w-full">
-                                  <FileText size={16} className="mr-2" />
-                                  Start Assessment
-                                </Button> 
-                              </Link>
-                            </>
-                           ) : !isContentAvailable ? (
-                             <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                               <Clock size={16} className="mr-2" />
-                               <span className="font-medium">Upcoming Module</span>
-                             </Button>
-                           ) : isFromFreeCatalog(courseDetails) ? (
-                             <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                               <Clock size={16} className="mr-2" />
-                               <span className="font-medium">
-                                 {(() => {
-                                   const courseTitle = (courseDetails?.title || "").toLowerCase();
-                                   const isClassRecording = ["class recording", "class recordings", "course recording", "course recordings", "recordings", "recording"].some(keyword => 
-                                     courseTitle.includes(keyword)
-                                   );
-                                   return isClassRecording ? "Upcoming Recording" : "Upcoming Course";
-                                 })()}
-                               </span>
-                             </Button>
-                           ) : (() => {
-                              const t = (courseDetails?.title || "").toLowerCase();
-                              const isMasterClassCourse = [
-                                "formation of business trust",
-                                "tier 1: optimizing your business credit profile",
-                                "business trust",
-                                "credit optimization"
-                              ].some(name => t.includes(name));
-                              
-                              const isFreeCourse = [
-                                "roadmap",
-                                "road map",
-                                "roadmap series",
-                                "road map series",
-                                "passive income",
-                                "start your passive income"
-                              ].some(name => t.includes(name));
-                              
-                              if (isMasterClassCourse || isFreeCourse) {
-                                return (
-                                  <div className="w-full flex flex-col gap-2">
-                                    <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
-                                      <Clock size={16} className="mr-2" />
-                                      <span className="font-medium">Upcoming</span>
-                                    </Button>
-                                  </div>
-                                );
-                              }
-                              return null;
-                           })() || (
-                             <div className="w-full flex flex-col gap-2">
-                               <Button 
-                                 className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200 disabled:opacity-60"
-                                 onClick={() => {
-                                   if (!modulePrice || modulePrice <= 0) return;
-                                   if (!canUnlockInOrder) {
-                                     handleSequentialUnlockClick(module);
-                                     return;
-                                   }
-                                   if (balance < modulePrice) {
-                                     setCreditsModalOpen(true);
-                                     return;
-                                   }
-                                   setConfirmUnlock({ open: true, module });
-                                 }}
-                                 disabled={!modulePrice || unlockingId === module.id}
-                               >
-                                 {unlockingId === module.id ? (
-                                   <>
-                                     <Clock size={16} className="mr-2 animate-spin" />
-                                     Processing...
-                                   </>
-                                 ) : (
-                                   <>
-                                     <Unlock size={16} className="mr-2" />
-                                     Unlock for {modulePrice} credits
-                                   </>
-                                 )}
-                               </Button>
-                               {balance < modulePrice && canUnlockInOrder && (
-                                 <Button 
-                                   variant="outline"
-                                   className="w-full"
-                                   onClick={() => setCreditsModalOpen(true)}
-                                 >
-                                   Buy credits
-                                 </Button>
-                               )}
-                             </div>
-                           )}
-                           {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
-                           {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
-                             <Button
-                               variant="secondary"
-                               className="w-full disabled:opacity-60"
-                               disabled={markingCompleteIds.has(String(module.id))}
-                               onClick={async () => {
-                                 const idStr = String(module.id);
-                                 if (!courseId || !module?.id) return;
-                                 // Prevent duplicate clicks
-                                 if (markingCompleteIds.has(idStr)) return;
-                                 setMarkingCompleteIds(prev => {
-                                   const next = new Set(prev);
-                                   next.add(idStr);
-                                   return next;
-                                 });
-                                 try {
-                                   await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
-                                   setCompletedModuleIds(prev => {
-                                     const next = new Set(prev);
-                                     next.add(idStr);
-                                     return next;
-                                   });
-                                 } catch (err) {
-                                   console.error('Failed to mark module as complete', err);
-                                 } finally {
-                                   setMarkingCompleteIds(prev => {
-                                     const next = new Set(prev);
-                                     next.delete(idStr);
-                                     return next;
-                                   });
-                                 }
-                               }}
-                             >
-                               {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
-                             </Button>
-                           ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
-                             <div className="w-full flex items-center justify-center">
-                               <Badge className="px-3 py-1">Completed</Badge>
-                             </div>
-                           ) : null}
-                        </CardFooter>
-                      </div>
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
-            )
-          )}
+            )}
+          </div>
         </div>
       </main>
       

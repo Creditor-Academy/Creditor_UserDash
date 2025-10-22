@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { LessonHeader } from "@/components/courses/LessonHeader";
 import { LessonContent } from "@/components/courses/LessonContent";
 import { unitLessons, unitQuizzes, unitAssignments } from "@/data/unitData";
 import { 
@@ -110,16 +109,9 @@ function LessonDetail() {
         <span className="font-medium">Time spent in this course:</span>
         <span className="font-mono text-lg">{formatTime(timeSpent)}</span>
       </div>
-      <LessonHeader
-        moduleId={moduleId || ""}
-        title="Context API & useContext"
-        description="Managing global state with React Context and the useContext hook. Learn how to create, provide, and consume context in your React applications."
-        lessonCount={unitLessons.length}
-        assignmentCount={unitAssignments.length}
-        quizCount={unitQuizzes.length}
-        totalDuration="1h 45m"
-        progress={lessonProgress}
-      />
+      <div className="p-4 text-center text-gray-500">
+        Lesson view disabled
+      </div>
       
       <div className="flex items-center justify-end gap-3 mb-6 opacity-0 action-button">
         <Button

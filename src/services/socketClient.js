@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
+import { getAccessToken, setAccessToken } from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
 
 // Convert REST base to socket origin if necessary
 function deriveSocketOrigin(base) {
@@ -14,7 +15,7 @@ function deriveSocketOrigin(base) {
 
 // Function to get token from localStorage
 function getTokenFromStorage() {
-  return localStorage.getItem('token');
+  return getAccessToken(); // Use tokenService for consistency
 }
 
 const socketOrigin = deriveSocketOrigin(API_BASE);
@@ -53,7 +54,9 @@ export function getSocket() {
 }
 
 export function refreshSocketAuth(newToken) {
-  localStorage.setItem('token', newToken || '');
+  if (newToken) {
+    setAccessToken(newToken); // This sets both 'authToken' and 'token' in localStorage
+  }
   if (socket) {
     try {
       socket.auth = { token: newToken || undefined };

@@ -8,10 +8,63 @@ export const api = axios.create({
 	withCredentials: true,
 });
 
-// Attach bearer token to requests
-api.interceptors.request.use((config) => {
+// Helper: decode and check JWT expiry
+function isJwtExpired(token) {
+	try {
+		const base64Url = token.split('.')[1];
+		if (!base64Url) {
+			console.warn('[Auth] JWT token missing payload section');
+			return true;
+		}
+		
+		// Fix base64 padding
+		const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+		const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+		
+		// Decode base64
+		const decoded = atob(padded);
+		const jsonPayload = JSON.parse(decoded);
+		
+		if (!jsonPayload?.exp) {
+			console.warn('[Auth] JWT token missing expiration claim');
+			return true;
+		}
+		
+		const expirationTime = jsonPayload.exp * 1000;
+		const currentTime = Date.now();
+		const isExpired = currentTime >= expirationTime;
+		
+		// Add some buffer (5 minutes) to avoid edge cases
+		const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+		const isExpiredWithBuffer = currentTime >= (expirationTime - bufferTime);
+		
+		if (isExpiredWithBuffer) {
+			console.log('[Auth] JWT token is expired or will expire soon:', {
+				expiresAt: new Date(expirationTime).toISOString(),
+				currentTime: new Date(currentTime).toISOString(),
+				timeUntilExpiry: Math.round((expirationTime - currentTime) / 1000) + ' seconds'
+			});
+		}
+		
+		return isExpiredWithBuffer;
+	} catch (error) {
+		console.error('[Auth] Error parsing JWT token:', error.message);
+		return true;
+	}
+}
+
+// Attach bearer token; if expired by validation, try refresh first
+api.interceptors.request.use(async (config) => {
 	const token = getAccessToken();
 	if (token) {
+		// Temporarily disable aggressive token refresh to prevent token clearing
+		// TODO: Re-enable once JWT expiration logic is properly tested
+		const expired = isJwtExpired(token);
+		if (expired) {
+			console.warn('[Auth] Access token appears expired, but skipping refresh to prevent token clearing:', config?.url);
+			// Don't attempt refresh for now - let the server handle it
+		}
+		
 		config.headers = config.headers || {};
 		config.headers['Authorization'] = `Bearer ${token}`;
 		console.debug('[Auth] Attached access token to request:', { url: config?.url });
@@ -21,7 +74,39 @@ api.interceptors.request.use((config) => {
 	return config;
 });
 
-// Handle authentication errors by clearing tokens and forcing logout
+let isRefreshing = false;
+let pendingQueue = [];
+
+async function refreshAccessToken() {
+	try {
+		console.log('[Auth] Attempting token refresh via GET', `${API_BASE}/api/auth/refresh`);
+		const response = await axios.get(`${API_BASE}/api/auth/refresh`, { withCredentials: true });
+		const newToken = response.data?.token || response.data?.accessToken || response.data?.data?.token || response.headers?.['x-access-token'];
+		if (!newToken) throw new Error('No token in refresh response');
+		setAccessToken(newToken);
+		console.log('[Auth] Refresh successful. New access token stored.');
+		// Respect 14-day refresh validity: if server signals refresh token expired, throw to logout via response interceptor
+		return newToken;
+	} catch (err) {
+		console.error('[Auth] Refresh failed:', {
+			status: err?.response?.status,
+			data: err?.response?.data,
+			message: err?.message,
+		});
+		
+		// Only clear tokens if it's a definitive authentication failure
+		// Don't clear tokens for network errors or temporary server issues
+		if (err?.response?.status === 401 || err?.response?.status === 403) {
+			console.warn('[Auth] Authentication failed during refresh, clearing tokens');
+			clearAccessToken();
+		} else {
+			console.warn('[Auth] Refresh failed due to network/server error, keeping tokens');
+		}
+		
+		throw err;
+	}
+}
+
 api.interceptors.response.use(
 	(res) => res,
 	async (error) => {

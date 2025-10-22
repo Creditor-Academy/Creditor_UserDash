@@ -10,7 +10,6 @@ import  Courses  from "@/pages/Courses";
 import  ModulesList  from "@/pages/ModulesList";
 import  ModuleDetail  from "@/pages/ModuleDetail";
 import  LessonDetail  from "@/pages/LessonDetail";
-import  LessonView  from "@/pages/LessonView";
 import  QuizView  from "@/pages/QuizView";
 import QuizTypePage from "@/pages/QuizTypePage";
 import QuizInstructionPage from "@/pages/QuizInstructionPage";
@@ -22,7 +21,8 @@ import AssignmentResultsPage from "@/pages/AssignmentResultsPage";
 import EssayInstructionPage from "@/pages/EssayInstructionPage";
 import EssayTakePage from "@/pages/EssayTakePage";
 import EssayResultsPage from "@/pages/EssayResultsPage";
-import  Groups  from "@/pages/Groups";
+import ModernLessonDemo from "@/pages/ModernLessonDemo";
+import Groups from "@/pages/Groups";
 import Catalog from "@/pages/Catalog";
 import CatelogCourses from "@/pages/CatelogCourses";
 
@@ -67,8 +67,12 @@ import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
+import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
+import LessonBuilder from "./pages/LessonBuilder";
+import LessonPreview from "./pages/LessonPreview";
+import LandingPage from "@/pages/LandingPage";
 import Home from "@/pages/home";
 import About from "@/pages/AboutUsPage/About";
 import Contact from "@/pages/contactpage/contact";
@@ -77,9 +81,9 @@ import Product from "@/pages/Product/Product";
 import Features from "@/pages/FeaturesPage/Features";
 import WhyUs from "@/pages/WhyusPage/WhyUs";
 import Plans from "@/pages/Plans";
+import InstructionalDesign from "@/pages/InstructionalDesign";
 import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
-import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
 import Sophomore from "./coursesL/Sophomore";
 import OperatePrivate from './coursesL/OperatePrivate'; 
@@ -105,6 +109,8 @@ import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
+// import  ModuleView  from "@/pages/ModuleView";
+import LessonView from "./pages/LessonView";
      
 
 
@@ -126,6 +132,7 @@ function App() {
           <Route path="/product" element={<Product />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/whyus" element={<WhyUs />} />
+          <Route path="/instructional-design" element={<InstructionalDesign />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -143,7 +150,19 @@ function App() {
                 <Instructorpage />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<Instructorpage />} />
+            <Route path="course-management" element={<Instructorpage />} />
+            <Route path="user-management" element={<Instructorpage />} />
+            <Route path="course-catalog" element={<Instructorpage />} />
+            <Route path="create-quiz" element={<Instructorpage />} />
+            <Route path="course-lessons" element={<Instructorpage />} />
+            <Route path="group-management" element={<Instructorpage />} />
+            <Route path="event-management" element={<Instructorpage />} />
+            <Route path="support-tickets" element={<Instructorpage />} />
+            <Route path="assets" element={<Instructorpage />} />
+            <Route path="payments" element={<Instructorpage />} />
+          </Route>
           <Route
             path="/instructor/courses/:courseId/modules"
             element={
@@ -151,6 +170,22 @@ function App() {
                 <InstructorCourseModulesPage />
               </ProtectedRoute>
             }
+          />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/builder" 
+            element={
+              <DashboardLayout>
+                <LessonBuilder />
+              </DashboardLayout>
+            } 
+          />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview" 
+            element={<LessonPreview />} 
+          />
+          <Route 
+            path="/courses/:courseId/modules/:moduleId/lessons" 
+            element={<LessonView />} 
           />
           <Route
             path="/instructor/add-users"
@@ -214,6 +249,8 @@ function App() {
                   </CourseTimerProvider>
                 } />
                 <Route path="modules" element={<ModulesList />} />
+                {/* <Route path="modules/:moduleId/view" element={<ModuleView />} /> */}
+                <Route path="modules/:moduleId/lessons" element={<LessonView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />
@@ -221,7 +258,9 @@ function App() {
                   <Route path="assessments" element={<ModuleAssessmentsView />} />
                   <Route path="lesson/:lessonId">
                     <Route index element={<LessonView />} />
+                    <Route path="view" element={<LessonBuilder />} />
                     <Route path="detail" element={<LessonDetail />} />
+                    <Route path="builder" element={<LessonBuilder />} />
                   </Route>
                 </Route>
               </Route>
@@ -339,8 +378,8 @@ function App() {
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
           <Route path="*" element={<NotFound />} />
-          <Route path="/scorm/:courseId" element={<Scrompack />} />
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
+          <Route path="/modern-lesson-demo" element={<ModernLessonDemo />} />
           <Route path="/games" element={<Games />} />
           </Routes>
           <PageTransitionOverlay />
@@ -360,6 +399,7 @@ function CourseTimerProviderWrapper() {
     <CourseTimerProvider courseId={courseId}>
       <SubRoutes>
         <SubRoute index element={<CourseView />} />
+        <SubRoute path="modules/:moduleId/lessons" element={<LessonView />} />
         <SubRoute path="module/:moduleId/lessons" element={<ModuleLessonsView />} />
         <SubRoute path="module/:moduleId/assessments" element={<ModuleAssessmentsView />} />
         <SubRoute path="module/:moduleId/lesson/:lessonId" element={<LessonView />} />

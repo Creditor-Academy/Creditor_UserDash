@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreVertical, Users, BookOpen, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { MoreVertical, Users, BookOpen, Edit, Trash2, Eye, EyeOff, Sparkles, Bot } from 'lucide-react';
 
 const CourseCard = ({ 
   course, 
@@ -38,7 +38,11 @@ const CourseCard = ({
       {/* Course Header */}
       <div className="relative">
         {/* Thumbnail */}
-        <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 relative overflow-hidden">
+        <div className={`h-48 relative overflow-hidden ${
+          course.isAIGenerated 
+            ? 'bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100' 
+            : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+        }`}>
           {course.thumbnail ? (
             <img 
               src={course.thumbnail} 
@@ -50,6 +54,17 @@ const CourseCard = ({
               }}
             />
           ) : null}
+          
+          {/* AI Badge */}
+          {course.isAIGenerated && (
+            <div className="absolute top-3 left-3">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-600 text-white shadow-sm">
+                <Bot className="w-3 h-3 mr-1" />
+                AI
+              </span>
+            </div>
+          )}
+          
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent flex items-end">
             <div className="p-4 w-full">
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(course.course_status)}`}>
@@ -151,6 +166,12 @@ const CourseCard = ({
 
         {/* Course Features */}
         <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
+          {course.isAIGenerated && (
+            <span className="flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+              <Sparkles className="w-3 h-3" />
+              AI Generated
+            </span>
+          )}
           {course.isHidden && (
             <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">
               <EyeOff className="w-3 h-3" />

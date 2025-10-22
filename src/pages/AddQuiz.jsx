@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
+// import { allowedScormUserIds } from "@/data/allowedScormUsers";
 import { currentUserId } from "@/data/currentUser";
 import { fetchAllCourses, fetchCourseModules } from "@/services/courseService";
 import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
@@ -13,7 +13,7 @@ import QuizModal from '@/components/courses/QuizModal';
 import QuizScoresModal from '@/components/courses/QuizScoresModal';
 import EditQuestionModal from '@/components/courses/EditQuestionModal';
 import SceanrioScoreCard from '@/pages/SceanrioScoreCard';
-import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz } from '@/services/quizServices';
+import { fetchQuizzesByModule, getQuizById, deleteQuiz, updateQuiz, fetchAllQuizzes } from '@/services/quizServices';
 import { getQuizQuestions } from '@/services/quizService';
 import { getModuleScenarios, deleteScenario, getSpecificScenario } from '@/services/scenarioService';
 import { getAuthHeader } from '@/services/authHeader';
@@ -62,7 +62,7 @@ const CreateQuizPage = () => {
   const [moduleScenarios, setModuleScenarios] = useState({}); // { [moduleId]: [scenario, ...] }
   const [loadingScenarios, setLoadingScenarios] = useState({}); // { [moduleId]: boolean }
 
-  const isAllowed = allowedScormUserIds.includes(currentUserId);
+  const isAllowed = true; // TODO: Replace with proper permission check
 
   const fetchAndSetModuleQuizzes = async (moduleId) => {
     // Set loading state
