@@ -432,11 +432,35 @@ export function CourseView() {
           const status = (m.module_status || m.status || "").toString().toUpperCase();
           return status === "PUBLISHED" || m.published === true;
         });
-        setModules(publishedModules);
-        setFilteredModules(publishedModules);
+        
+        // Sort modules to move "Why You Must Exit the LLC/Corporation Structure" to the top
+        const sortedModules = publishedModules.sort((a, b) => {
+          const aTitle = (a.title || a.name || "").toLowerCase();
+          const bTitle = (b.title || b.name || "").toLowerCase();
+          
+          // Check if module is the intro module
+          const aIsIntro = aTitle.includes("why you must exit") && 
+                          (aTitle.includes("llc") || aTitle.includes("corporation")) &&
+                          aTitle.includes("structure");
+          const bIsIntro = bTitle.includes("why you must exit") && 
+                          (bTitle.includes("llc") || bTitle.includes("corporation")) &&
+                          bTitle.includes("structure");
+          
+          // Move intro module to top
+          if (aIsIntro && !bIsIntro) return -1;
+          if (!aIsIntro && bIsIntro) return 1;
+          
+          // For other modules, maintain original order by order property
+          const aOrder = Number(a.order) || 0;
+          const bOrder = Number(b.order) || 0;
+          return aOrder - bOrder;
+        });
+        
+        setModules(sortedModules);
+        setFilteredModules(sortedModules);
         
         // Calculate total duration from modules
-        const total = publishedModules.reduce((sum, module) => {
+        const total = sortedModules.reduce((sum, module) => {
           const duration = parseInt(module.estimated_duration) || 0;
           return sum + duration;
         }, 0);
@@ -859,7 +883,15 @@ export function CourseView() {
                               <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <BookOpen size={14} />
-                                  <span>Order: {module.order || 'N/A'}</span>
+                                  <span>
+                                    {(() => {
+                                      const title = (module.title || module.name || "").toLowerCase();
+                                      const isIntroModule = title.includes("why you must exit") && 
+                                                          (title.includes("llc") || title.includes("corporation")) &&
+                                                          title.includes("structure");
+                                      return isIntroModule ? "Intro Module" : `Order: ${module.order || 'N/A'}`;
+                                    })()}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock size={14} />
@@ -1147,7 +1179,15 @@ export function CourseView() {
                                 <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     <BookOpen className="w-3 h-3" />
-                                    <span>Order: {module.order || module.sequence || 1}</span>
+                                    <span>
+                                      {(() => {
+                                        const title = (module.title || module.name || "").toLowerCase();
+                                        const isIntroModule = title.includes("why you must exit") && 
+                                                            (title.includes("llc") || title.includes("corporation")) &&
+                                                            title.includes("structure");
+                                        return isIntroModule ? "Intro Module" : `Order: ${module.order || module.sequence || 1}`;
+                                      })()}
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
@@ -1356,7 +1396,15 @@ export function CourseView() {
                           <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <BookOpen size={14} />
-                              <span>Order: {module.order || 'N/A'}</span>
+                              <span>
+                                {(() => {
+                                  const title = (module.title || module.name || "").toLowerCase();
+                                  const isIntroModule = title.includes("why you must exit") && 
+                                                      (title.includes("llc") || title.includes("corporation")) &&
+                                                      title.includes("structure");
+                                  return isIntroModule ? "Intro Module" : `Order: ${module.order || 'N/A'}`;
+                                })()}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock size={14} />
