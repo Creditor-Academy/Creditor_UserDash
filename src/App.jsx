@@ -105,7 +105,7 @@ import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
-     
+import InstructionalDesign from "@/pages/InstructionalDesign";
 
 
 function App() {
@@ -126,6 +126,7 @@ function App() {
           <Route path="/product" element={<Product />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/whyus" element={<WhyUs />} />
+          <Route path="/instructionaldesign" element={<InstructionalDesign />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />

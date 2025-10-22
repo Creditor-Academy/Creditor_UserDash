@@ -102,11 +102,7 @@ const Navbar = () => {
         <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px", position: "relative" }}>
           <Link to="/about" style={navLinkStyle}>About Us</Link>
           <SolutionsDropdown />
-          {/* <Link to="/features" style={navLinkStyle}>Features</Link> */}
-          <Link to="/product" style={navLinkStyle}>Service</Link>
-          <Link to="/plans" style={navLinkStyle}>Plans</Link>
-          {/* <Link to="/whyus" style={navLinkStyle}>Why Us</Link> */}
-          <Link to="/faq" style={navLinkStyle}>Resources</Link>
+          <Link to="/website" style={navLinkStyle}>Website</Link>
           <Link to="/contact" style={navLinkStyle}>Contact Us</Link>
           <a
             href="#"
@@ -191,11 +187,7 @@ const Navbar = () => {
         
         <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
         <div style={drawerLinkStyle}>Solutions</div>
-        <Link to="/product" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Service</Link>
-        <Link to="/plans" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Plans</Link>
-        {/* <Link to="/features" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Features</Link> */}
-        {/* <Link to="/whyus" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Why Us</Link> */}
-        <Link to="/faq" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Resources</Link>
+        <Link to="/website" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Website</Link>
         <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
         
         <a 
