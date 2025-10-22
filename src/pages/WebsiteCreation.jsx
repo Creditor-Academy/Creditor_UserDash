@@ -33,9 +33,9 @@ export const WebsiteCreation = () => {
         <Templates />
         <Appointment />
         <ComparisonTable />
-        <WebsiteUpperSection/>
-        <WebsiteTable/>
-        <WebsiteEndSection/>
+        {/* <WebsiteUpperSection/> */}
+        {/* <WebsiteTable/> */}
+        {/* <WebsiteEndSection/> */}
         <Footer />
     </div>
   )
