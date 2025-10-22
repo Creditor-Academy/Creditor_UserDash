@@ -1,41 +1,47 @@
 import React from "react";
 import { motion, easeOut } from "framer-motion";
+import digitalImg from "../../assets/template/digital.webp";
+import musicImg from "../../assets/template/music.webp";
+import healthImg from "../../assets/template/health.webp";
+import estateImg from "../../assets/template/estate.webp";
+import businessImg from "../../assets/template/business.webp";
+import ecommerceImg from "../../assets/template/ecommerce.webp";
 
 const SERVICES = [
   {
     id: "digital-marketing",
     title: "Digital Marketing",
-    image: "/src/assets/template/digital.webp",
+    image: digitalImg,
     gradient: "from-slate-800/80 via-slate-700/70 to-slate-900/80",
   },
   {
     id: "music-studio",
     title: "Music & Studio",
-    image: "/src/assets/template/music.webp",
+    image: musicImg,
     gradient: "from-gray-800/80 via-gray-700/70 to-gray-900/80",
   },
   {
     id: "health-care",
     title: "Health Care",
-    image: "/src/assets/template/health.webp",
+    image: healthImg,
     gradient: "from-zinc-800/80 via-zinc-700/70 to-zinc-900/80",
   },
   {
     id: "real-estate",
     title: "Real Estate",
-    image: "/src/assets/template/estate.webp",
+    image: estateImg,
     gradient: "from-neutral-800/80 via-neutral-700/70 to-neutral-900/80",
   },
   {
     id: "business-consulting",
     title: "Business Consulting",
-    image: "/src/assets/template/business.webp",
+    image: businessImg,
     gradient: "from-stone-800/80 via-stone-700/70 to-stone-900/80",
   },
   {
     id: "e-commerce",
     title: "E‑Commerce",
-    image: "/src/assets/template/ecommerce.webp",
+    image: ecommerceImg,
     gradient: "from-slate-900/80 via-gray-800/70 to-slate-800/80",
   },
 ];
