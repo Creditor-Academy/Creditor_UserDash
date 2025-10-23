@@ -28,7 +28,7 @@ import CatelogCourses from "@/pages/CatelogCourses";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
-import  Profile  from "@/pages/Profile";
+import Profile  from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import CourseView from "@/pages/CourseView";
 import ModuleLessonsView from "@/pages/ModuleLessonsView";
@@ -89,8 +89,6 @@ import PrivateMerchant from './coursesL/PrivateMerchant';
 import { MasterClass } from '@/pages/MasterClass';
 import LiveClass from './pages/LiveClass';
 import { WebsiteCreation } from './pages/WebsiteCreation';
-import AcademicAthena from './pages/AcademicAthena';
-import CompanyAthena from './pages/CompanyAthena';
 import AcademicAthena from './pages/AcademicAthena';
 import CompanyAthena from './pages/CompanyAthena';
 import MerchantProcessing from './pages/MerchantProcessing';
