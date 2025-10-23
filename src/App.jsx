@@ -109,6 +109,7 @@ import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import InstructionalDesign from "@/pages/InstructionalDesign";
 import PricingPage from "@/pages/Pricing";
+import ExpertAthena from './pages/Expert_athena';
 
 
 function App() {
@@ -139,6 +140,7 @@ function App() {
           <Route path="/website" element={<WebsiteCreation/>}/>
           <Route path="/academic_athena" element={<AcademicAthena/>}/>
           <Route path="/company_athena" element={<CompanyAthena/>}/>
+          <Route path="/expert_athena" element={<ExpertAthena/>}/>
           <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />

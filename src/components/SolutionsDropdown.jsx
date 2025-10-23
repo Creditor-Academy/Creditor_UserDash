@@ -56,7 +56,7 @@ const SolutionsDropdown = () => {
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Companies</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Surpass revenue targets and reduce churn</p>
                 </a>
-                <a href="#" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/expert_athena" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Experts</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Turn your knowledge into new revenue streams</p>
                 </a>

@@ -6,7 +6,7 @@ import AnalyticsImage from "../../../assets/analytics.webp";
 
 export default function CompanyHero() {
   return (
-    <section className="relative overflow-hidden bg-[#f5f1eb] py-20 lg:py-32">
+    <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-20 lg:py-32">
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
@@ -64,24 +64,24 @@ export default function CompanyHero() {
                 />
                 
                 {/* Revenue Chart Overlay */}
-                <div className="absolute bottom-6 left-6 right-6">
-                  <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6">
+                <div className="absolute bottom-3 left-3 w-60">
+                  <div className="bg-white/95 backdrop-blur-sm rounded-md shadow-lg p-2">
                     {/* Chart Header */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-1.5">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-1">Revenue Over Time</h3>
-                        <p className="text-xs text-gray-600">Last 6 weeks</p>
+                        <h3 className="text-[10px] font-semibold text-gray-900">Revenue Over Time</h3>
+                        <p className="text-[8px] text-gray-600">Last 6 weeks</p>
                       </div>
-                      <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <button className="p-0.5 hover:bg-gray-100 rounded transition-colors">
+                        <svg className="w-2.5 h-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </button>
                     </div>
 
                     {/* Simple Line Chart */}
-                    <div className="mb-4">
-                      <svg className="w-full h-24" viewBox="0 0 400 100" preserveAspectRatio="none">
+                    <div className="mb-1.5">
+                      <svg className="w-full h-14" viewBox="0 0 400 100" preserveAspectRatio="none">
                         {/* Grid lines */}
                         <line x1="0" y1="20" x2="400" y2="20" stroke="#e5e7eb" strokeWidth="1" />
                         <line x1="0" y1="40" x2="400" y2="40" stroke="#e5e7eb" strokeWidth="1" />
@@ -114,7 +114,7 @@ export default function CompanyHero() {
                       </svg>
                       
                       {/* X-axis labels */}
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
+                      <div className="flex justify-between text-[8px] text-gray-500 mt-1">
                         <span>Oct. 13</span>
                         <span>Oct. 23</span>
                         <span>Oct. 25</span>
@@ -122,9 +122,9 @@ export default function CompanyHero() {
                     </div>
 
                     {/* Total Revenue Badge */}
-                    <div className="bg-orange-600 text-white rounded-lg p-4 inline-block">
-                      <div className="text-2xl font-bold mb-1">$246,301</div>
-                      <div className="text-xs opacity-90">Total Revenue</div>
+                    <div className="bg-orange-600 text-white rounded-md p-1.5 inline-block">
+                      <div className="text-sm font-bold">$246,301</div>
+                      <div className="text-[8px] opacity-90">Total Revenue</div>
                     </div>
                   </div>
                 </div>
