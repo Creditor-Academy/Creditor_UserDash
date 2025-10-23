@@ -48,11 +48,11 @@ const SolutionsDropdown = () => {
             <div className="flex-1 p-6 lg:p-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Athena LMS for</h3>
               <div className="flex flex-col gap-6">
-                <a href="#" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/academic_athena" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Academies</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Scale your professional training programs</p>
                 </a>
-                <a href="#" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/company_athena" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Companies</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Surpass revenue targets and reduce churn</p>
                 </a>

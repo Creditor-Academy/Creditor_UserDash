@@ -89,6 +89,8 @@ import PrivateMerchant from './coursesL/PrivateMerchant';
 import { MasterClass } from '@/pages/MasterClass';
 import LiveClass from './pages/LiveClass';
 import { WebsiteCreation } from './pages/WebsiteCreation';
+import AcademicAthena from './pages/AcademicAthena';
+import CompanyAthena from './pages/CompanyAthena';
 import MerchantProcessing from './pages/MerchantProcessing';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "@/pages/Auth/Login";
@@ -135,6 +137,8 @@ function App() {
           <Route path="/masterclass" element={<MasterClass />}/>
           <Route path="/liveclass" element={<LiveClass />} />
           <Route path="/website" element={<WebsiteCreation/>}/>
+          <Route path="/academic_athena" element={<AcademicAthena/>}/>
+          <Route path="/company_athena" element={<CompanyAthena/>}/>
           <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
