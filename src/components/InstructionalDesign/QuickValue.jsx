@@ -223,7 +223,7 @@ const QuickValue = () => {
           <div className="quick-value-grid">
             <ValueCard
               icon={<BookOpen />}
-              targetNumber={150}
+              targetNumber={1500}
               suffix="+"
               label="Courses Built"
               isVisible={isVisible}
