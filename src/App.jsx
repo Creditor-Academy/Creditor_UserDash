@@ -91,6 +91,8 @@ import LiveClass from './pages/LiveClass';
 import { WebsiteCreation } from './pages/WebsiteCreation';
 import AcademicAthena from './pages/AcademicAthena';
 import CompanyAthena from './pages/CompanyAthena';
+import AcademicAthena from './pages/AcademicAthena';
+import CompanyAthena from './pages/CompanyAthena';
 import MerchantProcessing from './pages/MerchantProcessing';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "@/pages/Auth/Login";
