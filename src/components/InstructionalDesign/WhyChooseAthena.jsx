@@ -5,7 +5,6 @@ import {
   Wrench, 
   Users, 
   Zap,
-  ChevronRight,
   CheckCircle
 } from 'lucide-react';
 
@@ -217,14 +216,14 @@ const WhyChooseAthena = () => {
                       {/* Visual Element */}
                       <div className="relative">
                         <div className="relative bg-white/10 backdrop-blur-md rounded-2xl p-8 text-center border-2 border-white/30 overflow-hidden">
-                          {/* Background Image with color overlay */}
+                          {/* Background Image with black overlay */}
                           <div className="absolute inset-0 z-0">
                             <img 
                               src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80" 
                               alt="Background"
-                              className="w-full h-full object-cover opacity-40"
+                              className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 bg-black opacity-10"></div>
+                            <div className="absolute inset-0" style={{ backgroundColor: '#000000', opacity: 0.5 }}></div>
                           </div>
                           
                           {/* Content */}
@@ -250,14 +249,6 @@ const WhyChooseAthena = () => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Call to Action */}
-        <div className="text-center mt-12">
-          <div className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:text-blue-700 transition-colors cursor-pointer">
-            <span>Ready to transform your learning strategy?</span>
-            <ChevronRight className="w-5 h-5" />
           </div>
         </div>
       </div>

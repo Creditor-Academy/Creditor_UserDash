@@ -7,6 +7,9 @@ import ServicesOverview from '../components/InstructionalDesign/ServicesOverview
 import WhyChooseAthena from '../components/InstructionalDesign/WhyChooseAthena.jsx';
 import FounderQuote from '../components/InstructionalDesign/FounderQuote.jsx';
 import Approach from '../components/InstructionalDesign/Approach.jsx';
+import OurClients from '../components/InstructionalDesign/OurClients.jsx';
+import Technology from '../components/InstructionalDesign/Technology.jsx';
+import CTA from '../components/InstructionalDesign/CTA.jsx';
 
 const InstructionalDesign = () => {
   return (
@@ -18,6 +21,9 @@ const InstructionalDesign = () => {
       <WhyChooseAthena />
       <FounderQuote />
       <Approach />
+      <OurClients />
+      <Technology />
+      <CTA />
       <Footer />
     </div>
   );
