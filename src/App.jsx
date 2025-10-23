@@ -106,6 +106,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import InstructionalDesign from "@/pages/InstructionalDesign";
+import PricingPage from "@/pages/Pricing";
 
 
 function App() {
@@ -134,6 +135,7 @@ function App() {
           <Route path="/masterclass" element={<MasterClass />}/>
           <Route path="/liveclass" element={<LiveClass />} />
           <Route path="/website" element={<WebsiteCreation/>}/>
+          <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
           <Route path="/privatemerchant" element={<PrivateMerchant/>} />

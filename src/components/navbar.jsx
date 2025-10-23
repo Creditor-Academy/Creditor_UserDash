@@ -103,6 +103,7 @@ const Navbar = () => {
           <Link to="/about" style={navLinkStyle}>About Us</Link>
           <SolutionsDropdown />
           <Link to="/website" style={navLinkStyle}>Website</Link>
+          <Link to="/pricing" style={navLinkStyle}>Pricing</Link>
           <Link to="/contact" style={navLinkStyle}>Contact Us</Link>
           <a
             href="#"
@@ -188,6 +189,7 @@ const Navbar = () => {
         <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
         <div style={drawerLinkStyle}>Solutions</div>
         <Link to="/website" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Website</Link>
+        <Link to="/pricing" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Pricing</Link>
         <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
         
         <a 
