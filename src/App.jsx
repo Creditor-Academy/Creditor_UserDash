@@ -139,10 +139,7 @@ function App() {
           <Route path="/website" element={<WebsiteCreation/>}/>
           <Route path="/academic_athena" element={<AcademicAthena/>}/>
           <Route path="/company_athena" element={<CompanyAthena/>}/>
-<<<<<<< Updated upstream
           <Route path="/pricing" element={<PricingPage/>}/>
-=======
->>>>>>> Stashed changes
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
           <Route path="/privatemerchant" element={<PrivateMerchant/>} />
