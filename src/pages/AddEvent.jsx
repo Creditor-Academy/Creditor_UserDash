@@ -1129,7 +1129,7 @@ const AddEvent = () => {
                   Loading...
                 </span>
               ) : (
-                'Previous Events'
+                'All Events'
               )}
               <span className={`absolute -bottom-px left-0 w-full h-0.5 ${showPreviousEvents ? 'bg-blue-600' : ''}`} />
             </button>
@@ -1148,53 +1148,75 @@ const AddEvent = () => {
           <>
             <ul className="space-y-3">
               {paginatedEvents.map((event, i) => (
-                <li key={event.id || i} className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-gray-800">{event.title}
-                        {event.isRecurring && (
-                          <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full align-middle">Recurring</span>
-                        )}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">{event.description}</p>
-                      {event.courseId && (
-                        <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                          {courses.find(c => c.id === event.courseId)?.title || event.courseId}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          className="text-blue-600 hover:underline text-xs"
-                          onClick={() => handleEdit(currentEvents.findIndex(e => e.id === event.id))}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="text-green-600 hover:underline text-xs"
-                          onClick={() => handleViewAttendance(event)}
-                        >
-                          View Attendance
-                        </button>
-                        {showPreviousEvents && (
-                          <button
-                            className="text-purple-600 hover:underline text-xs"
-                            onClick={() => handleViewEventAttendance(event)}
-                          >
-                            Attendance
-                          </button>
-                        )}
-                        <button
-                          className="text-red-600 hover:underline text-xs"
-                          onClick={() => handleDelete(currentEvents.findIndex(e => e.id === event.id))}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center text-sm text-gray-500 space-x-4">
+                 <li key={event.id || i} className="border rounded-lg p-6 bg-white hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md">
+                   <div className="flex justify-between items-start">
+                     <div className="space-y-3 flex-1">
+                       <div className="flex items-center gap-3">
+                         <h4 className="font-semibold text-gray-800 text-lg">{event.title}</h4>
+                         {event.isRecurring && (
+                           <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                             </svg>
+                             Recurring
+                           </span>
+                         )}
+                       </div>
+                       <div className="flex items-center gap-2 flex-wrap">
+                         {event.courseId && (
+                           <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full flex items-center gap-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                             </svg>
+                             {courses.find(c => c.id === event.courseId)?.title || event.courseId}
+                           </span>
+                         )}
+                         <a 
+                           href={event.description}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-full flex items-center gap-1 hover:bg-green-100 transition-colors"
+                         >
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                           </svg>
+                           Join Meeting
+                         </a>
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <button
+                         onClick={() => handleEdit(currentEvents.findIndex(e => e.id === event.id))}
+                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                         title="Edit"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                         </svg>
+                       </button>
+                       {showPreviousEvents && (
+                         <button
+                           onClick={() => handleViewAttendance(event)}
+                           className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                           title="View Attendance"
+                         >
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                           </svg>
+                         </button>
+                       )}
+                       <button
+                         onClick={() => handleDelete(currentEvents.findIndex(e => e.id === event.id))}
+                         className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                         title="Delete"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                         </svg>
+                       </button>
+                     </div>
+                   </div>
+                   <div className="mt-4 flex items-center text-sm text-gray-600 space-x-4">
                     <span>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />

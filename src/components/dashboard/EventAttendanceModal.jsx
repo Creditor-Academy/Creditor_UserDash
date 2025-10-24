@@ -113,87 +113,145 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
+          <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
             Event Attendance
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mt-4">
-          <div className="mb-6">
-            <h3 className="font-medium text-gray-900">{eventTitle}</h3>
+        <div className="mt-6">
+          <div className="mb-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <h3 className="font-semibold text-lg text-gray-900">{eventTitle}</h3>
             {eventDate && (
-              <p className="text-sm text-gray-500">{formatDate(eventDate)}</p>
+              <div className="flex items-center mt-2 text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-sm">{formatDate(eventDate)}</p>
+              </div>
             )}
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              <p className="mt-4 text-sm text-gray-600">Loading attendance data...</p>
             </div>
           ) : error ? (
-            <div className="text-center py-8 text-red-600">
-              {error}
+            <div className="text-center py-12 px-4 bg-red-50 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-red-600 font-medium">{error}</p>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="text-sm text-green-600 font-medium">Total Present</p>
-                  <p className="text-2xl font-bold text-green-700">
+              <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="bg-green-50 p-6 rounded-xl border border-green-100">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-green-600 font-medium">Total Present</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-3xl font-bold text-green-700 mt-2">
                     {attendanceData?.TotalPresent || 0}
                   </p>
                 </div>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-blue-600 font-medium">Total Attendees</p>
-                  <p className="text-2xl font-bold text-blue-700">
+                <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-blue-600 font-medium">Total Attendees</p>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-3xl font-bold text-blue-700 mt-2">
                     {attendanceData?.eventAttendaceList?.length || 0}
                   </p>
                 </div>
               </div>
 
-              <div className="flex gap-4 mb-4">
-                <Input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1"
-                />
+              <div className="flex gap-4 mb-6">
+                <div className="relative flex-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <Input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 w-full"
+                  />
+                </div>
                 <Button
                   onClick={handleExportCSV}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white px-6 flex items-center gap-2"
                   disabled={!attendanceData || attendanceData.eventAttendaceList.length === 0}
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
                   Export CSV
                 </Button>
               </div>
 
-              <div className="max-h-[400px] overflow-y-auto">
+              <div className="max-h-[400px] overflow-y-auto rounded-lg border border-gray-200">
                 {filteredAttendees?.length > 0 ? (
                   <div className="divide-y divide-gray-200">
                     {filteredAttendees.map((attendee, index) => (
-                      <div key={index} className="py-3 flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {attendee.user.first_name} {attendee.user.last_name}
-                          </p>
-                          <p className="text-sm text-gray-500">{attendee.user.email}</p>
+                      <div key={index} className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm">
+                            {attendee.user.first_name[0]}{attendee.user.last_name[0]}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {attendee.user.first_name} {attendee.user.last_name}
+                            </p>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                              {attendee.user.email}
+                            </div>
+                          </div>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
                           attendee.isPresent
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                         }`}>
-                          {attendee.isPresent ? 'Present' : 'Absent'}
+                          {attendee.isPresent ? (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Present
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              Absent
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No attendance records found
+                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <p className="text-gray-500 text-center">No attendance records found</p>
+                    <p className="text-sm text-gray-400 mt-1">Try adjusting your search terms</p>
                   </div>
                 )}
               </div>
