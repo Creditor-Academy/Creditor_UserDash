@@ -86,7 +86,7 @@ const IntroSection = () => (
       
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
         Efficiently <span className="text-yellow-300 font-semibold">manage learning groups</span> and facilitate collaboration. 
-        Create, monitor, and organize group activities to enhance the learning experience.
+        Access Group Management through the instructor portal sidebar to oversee both study and common groups, with comprehensive tools for group administration.
       </p>
     </motion.div>
   </div>
@@ -107,7 +107,7 @@ const GroupManagementGuide = () => {
     ],
     steps: [
       {
-        title: 'Creating & Managing Groups',
+        title: 'Accessing Group Management',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -116,14 +116,14 @@ const GroupManagementGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={UserPlus}
-                title="Group Creation"
+                icon={Users}
+                title="Navigation"
                 color="blue"
                 items={[
-                  'Create course-specific learning groups',
-                  'Set group size and participation limits',
-                  'Define group objectives and guidelines',
-                  'Assign group moderators and leaders'
+                  'Access the Instructor Portal from the sidebar',
+                  'Click on "Group Management" in the sidebar',
+                  'View all study and common groups in one place',
+                  'Easy access to group management tools'
                 ]}
                 index={0}
               />
@@ -136,22 +136,33 @@ const GroupManagementGuide = () => {
             >
               <StepCard
                 icon={MessageSquare}
-                title="Group Activities"
+                title="Group Actions"
                 color="emerald"
                 items={[
-                  'Monitor group discussions and interactions',
-                  'Create and assign group projects',
-                  'Track participation and engagement',
-                  'Facilitate collaborative learning sessions'
+                  'View - Access detailed group information and activities',
+                  'Edit - Modify group details, photo, description, and type',
+                  'Create - Post announcements and content in groups',
+                  'Delete - Remove groups when no longer needed'
                 ]}
                 index={1}
               />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <ProTip emoji="🎯">
+                <span className="font-bold">Quick Access:</span> The Group Management section in the instructor portal 
+                provides all the tools you need to oversee and manage your learning groups effectively.
+              </ProTip>
             </motion.div>
           </div>
         )
       },
       {
-        title: 'Group Settings & Monitoring',
+        title: 'Member Management & Group Settings',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -160,14 +171,14 @@ const GroupManagementGuide = () => {
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={Settings}
-                title="Group Settings"
+                icon={UserPlus}
+                title="Member Management"
                 color="purple"
                 items={[
-                  'Configure group privacy settings',
-                  'Manage member permissions and roles',
-                  'Set up group communication rules',
-                  'Customize group features and tools'
+                  'Add Member - Invite new users to the group',
+                  'View Members - See complete list of group participants',
+                  'Manage member roles and permissions',
+                  'Monitor member participation and activity'
                 ]}
                 index={2}
               />
@@ -179,14 +190,14 @@ const GroupManagementGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Shield}
-                title="Group Monitoring"
+                icon={Settings}
+                title="Group Configuration"
                 color="indigo"
                 items={[
-                  'Review group activity reports',
-                  'Monitor member participation',
-                  'Track group progress and milestones',
-                  'Ensure compliance with guidelines'
+                  'Set group type (open or course-related)',
+                  'Update group description and profile photo',
+                  'Configure privacy and access settings',
+                  'Manage group communication preferences'
                 ]}
                 index={3}
               />
@@ -197,9 +208,9 @@ const GroupManagementGuide = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <ProTip emoji="👥">
-                <span className="font-bold">Effective Management:</span> Regularly review group activities and 
-                provide timely feedback to maintain engagement and ensure learning objectives are being met.
+              <ProTip emoji="⚙️">
+                <span className="font-bold">Group Settings:</span> Take advantage of group type settings to 
+                differentiate between open discussion groups and course-specific study groups for better organization.
               </ProTip>
             </motion.div>
           </div>

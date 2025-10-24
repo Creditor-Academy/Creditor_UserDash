@@ -86,7 +86,7 @@ const IntroSection = () => (
       
       <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
         Foster <span className="text-yellow-300 font-semibold">collaborative learning</span> through study groups. 
-        Access both common interest groups and course-specific groups to enhance your learning experience through focused discussions and collaboration.
+        Simply click on the Study Groups tab in the sidebar to access all your groups in one place. View and join both common interest groups and course-specific groups to enhance your learning experience.
       </p>
       
       <div className="relative z-10 flex gap-8 mt-8">
@@ -129,6 +129,42 @@ const StudyGroupsGuide = () => {
       }
     ],
     steps: [
+      {
+        title: 'Accessing Study Groups',
+        renderDescription: () => (
+          <div className="space-y-8 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <StepCard
+                icon={MessageSquare}
+                title="Quick Access"
+                color="blue"
+                items={[
+                  'Click on "Study Groups" in the sidebar navigation',
+                  'View all available groups in one place',
+                  'Easy access to both common and course groups',
+                  'Quick overview of group activities'
+                ]}
+                index={0}
+              />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <ProTip emoji="🔍">
+                <span className="font-bold">Quick Navigation:</span> The Study Groups tab in the sidebar 
+                provides instant access to all your groups. It's your central hub for collaborative learning!
+              </ProTip>
+            </motion.div>
+          </div>
+        )
+      },
       {
         title: 'Types of Study Groups',
         renderDescription: () => (
