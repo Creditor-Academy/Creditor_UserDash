@@ -46,20 +46,20 @@ export async function markEventAttendance(eventId) {
  * @param {string} eventId - The ID of the event
  * @returns {Promise<Object>} Response data from the API
  */
-export async function checkEventAttendance(eventId) {
-  try {
-    const response = await api.get(`/api/user/event/${eventId}/attendance`);
-    return response.data;
-  } catch (error) {
-    console.error('Error checking attendance:', error);
+// export async function checkEventAttendance(eventId) {
+//   try {
+//     const response = await api.get(`/api/user/event/${eventId}/attendance`);
+//     return response.data;
+//   } catch (error) {
+//     console.error('Error checking attendance:', error);
     
-    if (error.response?.status === 404) {
-      return { marked: false };
-    }
+//     if (error.response?.status === 404) {
+//       return { marked: false };
+//     }
     
-    throw new Error(error.response?.data?.message || 'Failed to check attendance status');
-  }
-}
+//     throw new Error(error.response?.data?.message || 'Failed to check attendance status');
+//   }
+// }
 
 /**
  * Fetch attendance list for a specific event (Instructor/Admin only)
