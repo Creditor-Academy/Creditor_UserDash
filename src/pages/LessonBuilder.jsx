@@ -2472,7 +2472,8 @@ function LessonBuilder() {
     if (!block) return;
 
     // Enhanced quote block detection - check content structure and HTML patterns
-    const isQuoteBlock = block.type === 'quote' || 
+    // But exclude interactive blocks (process, timeline, etc.) that might have similar patterns
+    const isQuoteBlock = (block.type === 'quote' || 
                         (block.textType && block.textType.startsWith('quote_')) ||
                         (block.details?.quote_type) ||
                         // Check if content has quote structure (JSON with quote/author)
@@ -2495,7 +2496,24 @@ function LessonBuilder() {
                           block.html_css.includes('text-left max-w-3xl') && block.html_css.includes('bg-gradient-to-br from-slate-50') ||
                           block.html_css.includes('text-3xl md:text-4xl') && block.html_css.includes('font-thin') ||
                           block.html_css.includes('bg-gradient-to-br from-gray-50') && block.html_css.includes('backdrop-blur-sm')
-                        ));
+                        ))) &&
+                        // Exclude interactive blocks (process, timeline, accordion, tabs, labeled-graphic)
+                        !(block.type === 'interactive' || 
+                          block.subtype === 'process' || 
+                          block.subtype === 'timeline' ||
+                          block.subtype === 'accordion' || 
+                          block.subtype === 'tabs' || 
+                          block.subtype === 'labeled-graphic' ||
+                          (block.html_css && (
+                            block.html_css.includes('data-template="process"') ||
+                            block.html_css.includes('interactive-process') ||
+                            block.html_css.includes('process-container') ||
+                            block.html_css.includes('data-template="timeline"') ||
+                            block.html_css.includes('timeline-container') ||
+                            block.html_css.includes('data-template="accordion"') ||
+                            block.html_css.includes('data-template="tabs"') ||
+                            block.html_css.includes('data-template="labeled-graphic"')
+                          )));
 
     if (isQuoteBlock) {
       // Handle quote block editing with proper type detection
@@ -2831,13 +2849,13 @@ function LessonBuilder() {
    
     // Enhanced interactive block detection - check subtype, content structure and HTML patterns
     const isInteractiveBlock = block.type === 'interactive' || 
-                              // Check subtype for accordion or tabs
-                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs' || block.subtype === 'labeled-graphic')) ||
+                              // Check subtype for accordion, tabs, labeled-graphic, timeline, or process
+                              (block.subtype && (block.subtype === 'accordion' || block.subtype === 'tabs' || block.subtype === 'labeled-graphic' || block.subtype === 'timeline' || block.subtype === 'process')) ||
                               // Check if content has interactive structure (JSON with template)
                               (() => {
                                 try {
                                   const content = JSON.parse(block.content || '{}');
-                                  return content.template && (content.tabsData || content.accordionData || content.labeledGraphicData);
+                                  return content.template && (content.tabsData || content.accordionData || content.labeledGraphicData || content.timelineData || content.processData);
                                 } catch {
                                   return false;
                                 }
@@ -2852,7 +2870,12 @@ function LessonBuilder() {
                                 block.html_css.includes('data-template="tabs"') ||
                                 block.html_css.includes('data-template="accordion"') ||
                                 block.html_css.includes('data-template="labeled-graphic"') ||
-                                block.html_css.includes('labeled-graphic-container')
+                                block.html_css.includes('labeled-graphic-container') ||
+                                block.html_css.includes('data-template="timeline"') ||
+                                block.html_css.includes('timeline-container') ||
+                                block.html_css.includes('data-template="process"') ||
+                                block.html_css.includes('interactive-process') ||
+                                block.html_css.includes('process-container')
                               ));
 
     if (isInteractiveBlock) {
