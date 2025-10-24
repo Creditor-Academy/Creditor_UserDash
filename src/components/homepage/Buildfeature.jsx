@@ -344,7 +344,7 @@ const Buildfeature = () => {
             className="text-center"
           >
             <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-              50+
+              1500+
             </div>
             <div className="text-slate-400 text-sm uppercase tracking-wide">
               Courses Ready
@@ -392,7 +392,7 @@ const Buildfeature = () => {
             className="text-center"
           >
             <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-              100%
+              98%
             </div>
             <div className="text-slate-400 text-sm uppercase tracking-wide">
               Success Rate

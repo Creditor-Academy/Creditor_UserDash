@@ -67,7 +67,7 @@ const SolutionsDropdown = () => {
             <div className="flex-1 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Solutions for</h3>
               <div className="flex flex-col gap-6">
-                <a href="#" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/revenue_generation" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Revenue generation</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Sell more with profitable learning experiences</p>
                 </a>
