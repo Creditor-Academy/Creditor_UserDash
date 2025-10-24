@@ -102,6 +102,5 @@ export async function getEventAttendance(eventId) {
 
 export default {
   markEventAttendance,
-  checkEventAttendance,
   getEventAttendance
 };
