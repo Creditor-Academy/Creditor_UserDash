@@ -111,6 +111,8 @@ import InstructionalDesign from "@/pages/InstructionalDesign";
 import PricingPage from "@/pages/Pricing";
 import ExpertAthena from './pages/Expert_athena';
 import RevenueGeneration from './pages/RevenueGeneration';
+import CustomerTraining from './pages/CustomerTraining';
+import LeadGeneration from './pages/LeadGeneration';
 
 
 function App() {
@@ -143,6 +145,8 @@ function App() {
           <Route path="/company_athena" element={<CompanyAthena/>}/>
           <Route path="/expert_athena" element={<ExpertAthena/>}/>
           <Route path="/revenue_generation" element={<RevenueGeneration/>}/>
+          <Route path="/customer_training" element={<CustomerTraining/>}/>
+          <Route path="/lead_generation" element={<LeadGeneration/>}/>
           <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
