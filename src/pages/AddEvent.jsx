@@ -96,16 +96,6 @@ const AddEvent = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
   };
 
-  // Handle toggle between upcoming and previous events
-  const handleToggleEvents = async () => {
-    if (!showPreviousEvents) {
-      // Switching to previous events - fetch all events
-      await fetchAllEvents();
-    }
-    setShowPreviousEvents(!showPreviousEvents);
-    setCurrentPage(1); // Reset to first page
-  };
-
   // Reset to first page if events change
   useEffect(() => {
     setCurrentPage(1);
@@ -1098,35 +1088,52 @@ const AddEvent = () => {
       
       {/* Events List */}
       <div className="mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg text-gray-800">
-            {showPreviousEvents ? 'All Events' : 'Upcoming Events'}
-          </h3>
-          <button
-            onClick={handleToggleEvents}
-            disabled={loadingPreviousEvents}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              loadingPreviousEvents
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : showPreviousEvents
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {loadingPreviousEvents ? (
-              <>
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Loading...
-              </>
-            ) : showPreviousEvents ? (
-              'Show Upcoming Events'
-            ) : (
-              'Show Previous Events'
-            )}
-          </button>
+        <div className="border-b border-gray-200 mb-4">
+          <nav className="flex space-x-8" aria-label="Events">
+            <button
+              onClick={() => {
+                setShowPreviousEvents(false);
+                setCurrentPage(1);
+              }}
+              className={`py-4 px-1 relative font-medium text-sm ${
+                !showPreviousEvents
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+              }`}
+            >
+              Upcoming Events
+              <span className={`absolute -bottom-px left-0 w-full h-0.5 ${!showPreviousEvents ? 'bg-blue-600' : ''}`} />
+            </button>
+            <button
+              onClick={async () => {
+                if (!showPreviousEvents) {
+                  setLoadingPreviousEvents(true);
+                  await fetchAllEvents();
+                }
+                setShowPreviousEvents(true);
+                setCurrentPage(1);
+              }}
+              disabled={loadingPreviousEvents}
+              className={`py-4 px-1 relative font-medium text-sm ${
+                showPreviousEvents
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+              }`}
+            >
+              {loadingPreviousEvents ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading...
+                </span>
+              ) : (
+                'Previous Events'
+              )}
+              <span className={`absolute -bottom-px left-0 w-full h-0.5 ${showPreviousEvents ? 'bg-blue-600' : ''}`} />
+            </button>
+          </nav>
         </div>
         {currentEvents.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
