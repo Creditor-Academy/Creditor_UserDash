@@ -71,11 +71,11 @@ const SolutionsDropdown = () => {
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Revenue generation</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Sell more with profitable learning experiences</p>
                 </a>
-                <a href="#" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/customer_training" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Customer training</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Maximize customer success — and revenue</p>
                 </a>
-                <a href="#" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/lead_generation" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Lead generation</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Fill your sales funnel with learning content</p>
                 </a>
