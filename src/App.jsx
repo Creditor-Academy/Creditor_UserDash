@@ -28,7 +28,7 @@ import CatelogCourses from "@/pages/CatelogCourses";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
-import  Profile  from "@/pages/Profile";
+import Profile  from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import CourseView from "@/pages/CourseView";
 import ModuleLessonsView from "@/pages/ModuleLessonsView";
@@ -89,6 +89,8 @@ import PrivateMerchant from './coursesL/PrivateMerchant';
 import { MasterClass } from '@/pages/MasterClass';
 import LiveClass from './pages/LiveClass';
 import { WebsiteCreation } from './pages/WebsiteCreation';
+import AcademicAthena from './pages/AcademicAthena';
+import CompanyAthena from './pages/CompanyAthena';
 import MerchantProcessing from './pages/MerchantProcessing';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "@/pages/Auth/Login";
@@ -107,6 +109,8 @@ import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 import InstructionalDesign from "@/pages/InstructionalDesign";
 import PricingPage from "@/pages/Pricing";
+import ExpertAthena from './pages/Expert_athena';
+import RevenueGeneration from './pages/RevenueGeneration';
 
 
 function App() {
@@ -135,6 +139,10 @@ function App() {
           <Route path="/masterclass" element={<MasterClass />}/>
           <Route path="/liveclass" element={<LiveClass />} />
           <Route path="/website" element={<WebsiteCreation/>}/>
+          <Route path="/academic_athena" element={<AcademicAthena/>}/>
+          <Route path="/company_athena" element={<CompanyAthena/>}/>
+          <Route path="/expert_athena" element={<ExpertAthena/>}/>
+          <Route path="/revenue_generation" element={<RevenueGeneration/>}/>
           <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
