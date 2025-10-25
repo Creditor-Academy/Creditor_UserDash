@@ -5,7 +5,7 @@ import AcademicHero from '../components/solutions/academic_athena/academic_hero.
 import AcademicChoose from '../components/solutions/academic_athena/academic_choose.jsx';
 import AcademicFeature from '../components/solutions/academic_athena/academic_feature.jsx';
 import AcademicAnswer from '../components/solutions/academic_athena/academic_answer.jsx';
-import AcademicSucceed from '../components/solutions/academic_athena/academic_succeed.jsx';
+// import AcademicSucceed from '../components/solutions/academic_athena/academic_succeed.jsx';
 import AcademicScale from '../components/solutions/academic_athena/academic_scale.jsx';
 
 export const AcademicAthena = () => {
@@ -16,7 +16,7 @@ export const AcademicAthena = () => {
       <AcademicChoose />
       <AcademicAnswer />
       <AcademicFeature />
-      <AcademicSucceed />
+      {/* <AcademicSucceed /> */}
       <AcademicScale />
       <Footer />
     </div>

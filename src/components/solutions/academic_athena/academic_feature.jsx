@@ -7,6 +7,9 @@ import {
   BarChart3,
   CheckCircle,
 } from "lucide-react";
+import Payment from "../../../assets/Payment.png";
+import Joinclass from "../../../assets/Joinclass.png";
+import Courseanalytics from "../../../assets/Courseanalytics.png";
 
 const features = [
   {
@@ -25,7 +28,7 @@ const features = [
     description:
       "Host live one-on-one or group sessions to earn more, build trust, and grow your audience with integrated scheduling and video tools.",
     icon: Video,
-    mockupBg: "bg-gradient-to-br from-gray-100 to-gray-50",
+    mockupBg: "bg-gradient-to-br from-blue-100 to-blue-50",
     accentColor: "blue",
     bottomColor: "#3b82f6", // blue
   },
@@ -35,7 +38,7 @@ const features = [
     description:
       "Connect seamlessly with tools like HubSpot, Salesforce, and MailChimp to sync data and streamline your entire workflow.",
     icon: Zap,
-    mockupBg: "bg-gradient-to-br from-gray-100 to-gray-50",
+    mockupBg: "bg-gradient-to-br from-purple-100 to-purple-50",
     accentColor: "purple",
     bottomColor: "#8b5cf6", // purple
     showLogos: true,
@@ -46,7 +49,7 @@ const features = [
     description:
       "Access comprehensive insights to better understand learner behavior, improve content quality, and grow your revenue.",
     icon: BarChart3,
-    mockupBg: "bg-gradient-to-br from-gray-100 to-gray-50",
+    mockupBg: "bg-gradient-to-br from-green-100 to-green-50",
     accentColor: "green",
     bottomColor: "#10b981", // green
     showChart: true,
@@ -125,41 +128,23 @@ export default function AcademicFeature() {
                   onMouseLeave={() => setHoveredIndex(null)}
                 >
                   {/* Mockup Area */}
-                  <div className={`${feature.mockupBg} h-64 flex items-center justify-center p-6 relative flex-shrink-0 overflow-hidden`}>
-                    {/* Scale effect on hover */}
-                    <div className="w-full h-full flex items-center justify-center transition-transform duration-700 group-hover:scale-105">
+                  <div className={`${feature.mockupBg} h-48 flex items-center justify-center p-0 relative flex-shrink-0 overflow-hidden`}>
                     {/* Commerce Mockup */}
                     {feature.id === 1 && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
-                        <div className="bg-orange-600 text-white px-4 py-2 rounded-lg mb-3 flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm font-semibold">Yes, add this to my order!</span>
-                        </div>
-                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
-                          <div className="w-16 h-16 bg-blue-100 rounded"></div>
-                          <div className="flex-1">
-                            <div className="h-3 bg-gray-300 rounded w-32 mb-2"></div>
-                            <div className="h-3 bg-gray-200 rounded w-24"></div>
-                          </div>
-                        </div>
-                      </div>
+                      <img 
+                        src={Payment} 
+                        alt="Payment Interface" 
+                        className="w-full h-full object-cover object-left"
+                      />
                     )}
 
                     {/* Coaching Mockup */}
                     {feature.id === 2 && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-20 h-20 bg-gray-300 rounded-lg"></div>
-                          <div className="flex-1">
-                            <div className="h-3 bg-gray-300 rounded w-28 mb-2"></div>
-                            <div className="h-2 bg-gray-200 rounded w-32"></div>
-                          </div>
-                        </div>
-                        <button className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2">
-                          Join now
-                          <span>→</span>
-                        </button>
-                      </div>
+                      <img 
+                        src={Joinclass} 
+                        alt="Join Class Interface" 
+                        className="w-full h-full object-cover object-left"
+                      />
                     )}
 
                     {/* Integrations Mockup */}
@@ -182,22 +167,12 @@ export default function AcademicFeature() {
 
                     {/* Analytics Chart */}
                     {feature.showChart && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
-                        <div className="text-xs font-semibold text-gray-700 mb-1">Customer Engagement</div>
-                        <div className="text-lg font-bold text-gray-900 mb-3">New vs Churned MRR</div>
-                        <div className="flex items-end justify-between gap-1 h-24">
-                          {[60, 70, 65, 80, 75, 85, 90, 95, 85, 80, 75, 70].map((height, i) => (
-                            <div key={i} className="flex-1 bg-orange-500 rounded-t" style={{ height: `${height}%` }}></div>
-                          ))}
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-2">
-                          <span>Jan</span>
-                          <span>Jun</span>
-                          <span>Dec</span>
-                        </div>
-                      </div>
+                      <img 
+                        src={Courseanalytics} 
+                        alt="Course Analytics Dashboard" 
+                        className="w-full h-full object-cover object-left"
+                      />
                     )}
-                    </div>
                   </div>
 
                   {/* Content Area */}

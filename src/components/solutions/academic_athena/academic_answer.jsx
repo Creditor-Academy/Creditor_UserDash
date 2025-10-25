@@ -1,5 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
+import Enrollment from "../../../assets/Enrollment.png";
+import Payment from "../../../assets/Payment.png";
+import Contentshare from "../../../assets/Contentshare.png";
 
 const questions = [
   {
@@ -8,8 +11,7 @@ const questions = [
     answer:
       "Struggling with managing high volumes of learners, products, and orders? Athena's scalable platform handles everything from bulk sales and group orders to automatic payment processing. Our centralized dashboard lets you manage multiple courses, cohorts, and certification programs without increasing administrative overhead or adding complexity.",
     imagePosition: "right",
-    imageBg: "bg-gradient-to-br from-orange-500 to-orange-600",
-    placeholder: "Enrollments Dashboard",
+    bgColor: "bg-gradient-to-br from-purple-100 to-blue-100",
   },
   {
     id: 2,
@@ -17,8 +19,7 @@ const questions = [
     answer:
       "Combat customer acquisition costs with Athena's built-in tools. Create customized landing pages that help your brand stand out as the best choice. Use our conversion-optimized checkout experiences to turn more visitors into paying customers and reduce churn with communities that increase engagement.",
     imagePosition: "left",
-    imageBg: "bg-gradient-to-br from-gray-400 to-gray-500",
-    placeholder: "Purchase Interface",
+    bgColor: "bg-gradient-to-br from-blue-100 to-purple-100",
   },
   {
     id: 3,
@@ -26,8 +27,7 @@ const questions = [
     answer:
       "Moving to Athena is simple. Our intuitive uploader lets you import existing materials with drag-and-drop organization. Plus, as a SCORM-compliant platform, we ensure secure content transfer between different learning management systems without compatibility issues. With Athena Plus, your dedicated Launch Specialist will guide you from setup to launch, providing strategic insights to help you achieve a successful migration and continued business growth.",
     imagePosition: "right",
-    imageBg: "bg-gradient-to-br from-blue-400 to-blue-500",
-    placeholder: "Content Transfer",
+    bgColor: "bg-gradient-to-br from-purple-100 to-indigo-100",
   },
 ];
 
@@ -96,33 +96,31 @@ export default function AcademicAnswer() {
                 <motion.div
                   whileHover={{ scale: 1.02, y: -5 }}
                   transition={{ duration: 0.3 }}
-                  className={`relative ${item.imageBg} rounded-3xl shadow-2xl overflow-hidden h-[400px] lg:h-[450px] flex items-center justify-center group`}
+                  className={`relative rounded-3xl shadow-2xl overflow-hidden h-[400px] lg:h-[450px] flex items-center justify-center group ${item.bgColor}`}
                 >
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/10" />
-                  
-                  {/* White card placeholder */}
-                  <div className="relative z-10 bg-white rounded-2xl shadow-2xl p-8 m-8 w-4/5 h-3/4 flex items-center justify-center transition-all duration-300 group-hover:shadow-3xl">
-                    <div className="text-center">
-                      <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-                        <svg
-                          className="w-12 h-12 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-base font-semibold text-gray-700">
-                        {item.placeholder}
-                      </p>
-                    </div>
+                  {/* Image Display */}
+                  <div className="relative z-10 w-full h-full flex items-center justify-center p-4">
+                    {item.id === 1 && (
+                      <img 
+                        src={Enrollment} 
+                        alt="Enrollments Dashboard" 
+                        className="w-full h-full object-contain rounded-xl"
+                      />
+                    )}
+                    {item.id === 2 && (
+                      <img 
+                        src={Payment} 
+                        alt="Purchase Interface" 
+                        className="w-full h-full object-contain rounded-xl"
+                      />
+                    )}
+                    {item.id === 3 && (
+                      <img 
+                        src={Contentshare} 
+                        alt="Content Transfer" 
+                        className="w-full h-full object-contain rounded-xl"
+                      />
+                    )}
                   </div>
                 </motion.div>
               </div>

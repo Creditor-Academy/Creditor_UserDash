@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
-import Course from "../../../assets/Course.png";
+import Scorm from "../../../assets/Scorm.png";
 
 export default function ExpertScale() {
   return (
@@ -76,7 +76,7 @@ export default function ExpertScale() {
           >
             <div className="relative shadow-2xl overflow-hidden aspect-square w-full max-w-2xl mx-auto">
               <img 
-                src={Course} 
+                src={Scorm} 
                 alt="Athena LMS Course Dashboard" 
                 className="w-full h-full object-contain"
               />

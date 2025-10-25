@@ -6,8 +6,9 @@ import ExpertChoose from '../components/solutions/expert_athena/expert_choose.js
 import ExpertAnswers from '../components/solutions/expert_athena/expert_answer.jsx';
 import Expertfeatures from '../components/solutions/expert_athena/expert_feature.jsx';
 // import ExpertEnterprise from '../components/solutions/expert_athena/expert_enterprise.jsx';
-import ExpertCase from '../components/solutions/expert_athena/expert_case.jsx';
+// import ExpertCase from '../components/solutions/expert_athena/expert_case.jsx';
 import ExpertScale from '../components/solutions/expert_athena/expert_scale.jsx';
+
 export const ExpertAthena = () => {
     return (
         <div className="min-h-screen bg-white">
@@ -16,10 +17,10 @@ export const ExpertAthena = () => {
             <ExpertChoose />
             <ExpertAnswers />
              <Expertfeatures />
-             <ExpertCase />
              <ExpertScale />
              {/*  
             <ExpertEnterprise />
+               <ExpertCase />
            
              */}
             <Footer />

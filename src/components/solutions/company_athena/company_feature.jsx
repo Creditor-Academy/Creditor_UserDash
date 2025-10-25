@@ -7,6 +7,8 @@ import {
   FileCheck,
   CheckCircle,
 } from "lucide-react";
+import Community from "../../../assets/Community.png";
+import Landing from "../../../assets/Landing.png";
 
 const features = [
   {
@@ -26,7 +28,7 @@ const features = [
     description:
       "Athena Communities help you create interactive, shared learning spaces that drive retention, peer engagement, and long-term value for your business.",
     icon: Users,
-    mockupBg: "bg-gradient-to-br from-yellow-100 to-yellow-50",
+    mockupBg: "bg-gradient-to-br from-amber-100 to-orange-50",
     accentColor: "yellow",
     bottomColor: "#f59e0b", // yellow
     showCommunity: true,
@@ -127,98 +129,44 @@ export default function CompanyFeature() {
                   onMouseLeave={() => setHoveredIndex(null)}
                 >
                   {/* Mockup Area */}
-                  <div className={`${feature.mockupBg} h-64 flex items-center justify-center p-6 relative flex-shrink-0 overflow-hidden`}>
-                    {/* Scale effect on hover */}
-                    <div className="w-full h-full flex items-center justify-center transition-transform duration-700 group-hover:scale-105">
+                  <div className={`${feature.mockupBg} h-48 flex items-center justify-center p-0 relative flex-shrink-0 overflow-hidden`}>
                     {/* Course Creation Mockup */}
                     {feature.showCourseCreation && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-sm font-semibold text-gray-900">Create your course</h3>
-                          <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-xs">✨</span>
+                      <div className="w-full h-full flex items-center justify-center scale-110">
+                        <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold text-gray-900">Create your course</h3>
+                            <div className="w-6 h-6 bg-pink-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs">✨</span>
+                            </div>
                           </div>
+                          <p className="text-xs text-gray-600 mb-3">Generating course outline...</p>
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                            <div className="bg-blue-500 h-2 rounded-full w-3/4"></div>
+                          </div>
+                          <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-xs font-medium transition-colors">
+                            Stop generating
+                          </button>
                         </div>
-                        <p className="text-xs text-gray-600 mb-3">Generating course outline...</p>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                          <div className="bg-blue-500 h-2 rounded-full w-3/4"></div>
-                        </div>
-                        <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-xs font-medium transition-colors">
-                          Stop generating
-                        </button>
                       </div>
                     )}
 
                     {/* Community Mockup */}
                     {feature.showCommunity && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
-                          <div className="flex-1">
-                            <div className="text-xs font-semibold text-gray-900">Lily Lee @lee_lily</div>
-                            <div className="text-xs text-gray-500">22 mins ago • Moderator</div>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-700 mb-3">1 hour to go! Join us live for a deep dive into Strategic Planning—you won't want to miss it.</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                          <span>12 likes</span>
-                          <span>7 comments</span>
-                        </div>
-                        <button className="w-full bg-orange-500 text-white py-2 rounded-lg text-xs font-semibold">
-                          Announcements
-                        </button>
-                      </div>
+                      <img 
+                        src={Community} 
+                        alt="Community Interface" 
+                        className="w-full h-full object-cover object-left"
+                      />
                     )}
 
                     {/* Landing Page Mockup */}
                     {feature.showLandingPage && (
-                      <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-xs relative overflow-hidden">
-                        {/* Website Template Preview */}
-                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                          {/* Browser Header */}
-                          <div className="bg-gray-100 px-3 py-2 flex items-center gap-2">
-                            <div className="flex gap-1">
-                              <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                              <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                              <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                            </div>
-                            <div className="flex-1 bg-white rounded px-2 py-1 text-xs text-gray-500">
-                              athena-learning.com
-                            </div>
-                          </div>
-                          
-                          {/* Website Content */}
-                          <div className="p-4">
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-blue-600 rounded"></div>
-                                <span className="text-sm font-bold text-gray-800">Athena</span>
-                              </div>
-                              <div className="w-16 h-6 bg-gray-200 rounded"></div>
-                            </div>
-                            
-                            {/* Hero Section */}
-                            <div className="text-center">
-                              <h1 className="text-lg font-bold text-gray-800 mb-2">Transform Your Business</h1>
-                              <div className="h-2 bg-gray-200 rounded w-24 mx-auto mb-3"></div>
-                              <div className="w-full h-8 bg-blue-600 rounded flex items-center justify-center">
-                                <span className="text-white text-sm font-semibold">Get Started</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                         {/* AI Generation Overlay */}
-                         <div className="absolute top-2 right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center z-10">
-                           <span className="text-white text-xs">✨</span>
-                         </div>
-                         
-                         {/* Generating Page Indicator */}
-                         <div className="absolute bottom-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-lg text-xs font-semibold z-10">
-                           Generating Page
-                         </div>
-                      </div>
+                      <img 
+                        src={Landing} 
+                        alt="Landing Page Interface" 
+                        className="w-full h-full object-cover object-left"
+                      />
                     )}
 
                     {/* SCORM Compliance Mockup */}
@@ -238,7 +186,6 @@ export default function CompanyFeature() {
                         </div>
                       </div>
                     )}
-                    </div>
                   </div>
 
                   {/* Content Area */}
