@@ -18,7 +18,7 @@ export const LeadGeneration = () => {
       <LeadSimpleSolution />
       <LeadCTASurpass />
       <LeadFeatures />
-      <LeadSucceed />
+      {/* <LeadSucceed /> */}
       <LeadDeliver />
       <Footer />
     </>  

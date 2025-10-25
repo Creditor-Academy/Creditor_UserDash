@@ -360,10 +360,10 @@ const Buildfeature = () => {
             className="text-center"
           >
             <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-              400+
+              400K+
             </div>
             <div className="text-slate-400 text-sm uppercase tracking-wide">
-              Active Users
+              Enterprise User Scale
             </div>
           </motion.div>
 
@@ -392,10 +392,10 @@ const Buildfeature = () => {
             className="text-center"
           >
             <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-              98%
+              $500M
             </div>
             <div className="text-slate-400 text-sm uppercase tracking-wide">
-              Success Rate
+              Scalable Finance
             </div>
           </motion.div>
         </div>
