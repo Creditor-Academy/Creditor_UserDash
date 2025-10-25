@@ -1,6 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Dashboard from "../../../assets/dashboard.webp";
+import Community from "../../../assets/community.webp";
+import Courses from "../../../assets/course.webp";
+import Commerce from "../../../assets/commerce.webp";
 
 const RevenueFeatures = () => {
   const [hoveredIndex, setHoveredIndex] = useState(null);
@@ -11,7 +15,7 @@ const RevenueFeatures = () => {
     {
       title: "Courses",
       description: "From drag-and-drop lessons to smart content suggestions, our intuitive course builder has everything you need to create without obstacles.",
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&h=200&fit=crop&crop=edges",
+      image: Courses,
       bottomColor: "#3b82f6", // blue
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +26,7 @@ const RevenueFeatures = () => {
     {
       title: "Communities",
       description: "Athena Communities help you create interactive, shared learning spaces that drive retention, peer engagement, and long-term value for your business.",
-      image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&h=200&fit=crop&crop=edges",
+      image: Community,
       bottomColor: "#f59e0b", // orange
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +37,7 @@ const RevenueFeatures = () => {
     {
       title: "Landing pages",
       description: "Create aesthetically-pleasing, high-converting landing pages in minutes, thanks to built-in AI optimization, and seamless integrations.",
-      image: "https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=200&fit=crop&crop=edges",
+      image: Dashboard,
       bottomColor: "#10b981", // green
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +48,7 @@ const RevenueFeatures = () => {
     {
       title: "Commerce",
       description: "Sell more, increase order value, automate taxes, and more with Athena — your built-in commerce engine. Athena users sell up to 31% more!",
-      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=200&fit=crop&crop=edges",
+      image: Commerce,
       bottomColor: "#8b5cf6", // purple
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,8 +128,6 @@ const RevenueFeatures = () => {
                       alt={feature.title}
                       className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                     />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                     
                     {/* Icon overlay */}
                     <div className="absolute top-4 right-4">
@@ -212,8 +214,6 @@ const RevenueFeatures = () => {
                             alt={feature.title}
                             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                           />
-                          {/* Gradient overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                           
                           {/* Icon overlay */}
                           <div className="absolute top-4 right-4">

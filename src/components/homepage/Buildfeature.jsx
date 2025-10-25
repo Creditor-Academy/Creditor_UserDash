@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, CreditCard, BarChart3, Globe, Zap, Shield, Users, FileText, Target, TrendingUp, Clock, Settings, ChevronDown, ChevronUp } from 'lucide-react';
-import Scorm from '../../assets/Scorm.png';
+import Scorm from '../../assets/analytics.webp';
 import Course from '../../assets/Course.png';
 import Dashboard from '../../assets/Dashboard.png';
 

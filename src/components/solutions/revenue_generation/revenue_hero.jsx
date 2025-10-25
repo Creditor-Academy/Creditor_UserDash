@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowRight, Layers } from 'lucide-react';
+import RevenueHeroImage from '../../../assets/revenuehero.webp';
 
 const RevenueHero = () => {
   const products = [
@@ -77,24 +78,13 @@ const RevenueHero = () => {
 
           {/* Right Column - Image with Product Card */}
           <div className="relative lg:h-[520px] h-[450px] lg:pr-0">
-            {/* Background Images */}
-            <div className="absolute inset-0 flex flex-col rounded-lg overflow-hidden">
-              {/* Top Image - Woman with glasses */}
-              <div className="flex-1 overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&h=300&fit=crop&crop=faces"
-                  alt="Professional woman with glasses"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              {/* Bottom Image - Woman in yellow */}
-              <div className="flex-1 overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=600&h=300&fit=crop&crop=faces"
-                  alt="Professional woman in yellow"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+            {/* Background Image */}
+            <div className="absolute inset-0 rounded-lg overflow-hidden">
+              <img
+                src={RevenueHeroImage}
+                alt="Revenue generation hero image"
+                className="w-full h-full object-cover"
+              />
             </div>
 
             {/* Product Card Overlay - Positioned at bottom-left, extending outside image */}
