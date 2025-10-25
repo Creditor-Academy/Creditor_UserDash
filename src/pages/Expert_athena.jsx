@@ -17,6 +17,7 @@ export const ExpertAthena = () => {
             <ExpertChoose />
             <ExpertAnswers />
              <Expertfeatures />
+             {/* <ExpertCase /> */}
              <ExpertScale />
              {/*  
             <ExpertEnterprise />

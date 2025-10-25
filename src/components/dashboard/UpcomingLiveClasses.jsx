@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Video, Users, ExternalLink, Bell, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { markEventAttendance } from '../../services/attendanceService';
 
 const upcomingClasses = [
   {
@@ -111,10 +112,24 @@ export function UpcomingLiveClasses() {
     setClasses(updatedClasses);
   }, [currentTime]);
 
-  const handleJoinClass = (classItem) => {
+  const handleJoinClass = async (classItem) => {
     if (classItem.canJoin) {
-      toast.success(`Joining ${classItem.title}...`);
-      window.open(classItem.zoomLink, '_blank');
+      try {
+        // Mark attendance first
+        await markEventAttendance(classItem.id);
+        toast.success("Attendance marked successfully!");
+        
+        // Then open the zoom link
+        window.open(classItem.zoomLink, '_blank');
+      } catch (error) {
+        console.error('Error marking attendance:', error);
+        
+        // Show error message but still allow joining the meeting
+        toast.error(error.message || "Failed to mark attendance, but you can still join the meeting");
+        
+        // Open the zoom link even if attendance marking fails
+        window.open(classItem.zoomLink, '_blank');
+      }
     } else {
       const classDateTime = new Date(`${classItem.date}T${classItem.time}:00`);
       const timeUntilClass = Math.floor((classDateTime.getTime() - currentTime.getTime()) / (1000 * 60));

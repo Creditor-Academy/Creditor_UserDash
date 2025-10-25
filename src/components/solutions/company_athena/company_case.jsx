@@ -8,7 +8,7 @@ const caseStudies = [
     icon: Building2,
     title: "How Chargebee Empowers Customer Success Through Subscription Academy",
     quote:
-      "Athena Plus has been instrumental in scaling our customer education. The platform's flexibility allows us to deliver comprehensive training that directly impacts customer success metrics.",
+      "Athena Enterprise has been instrumental in scaling our customer education. The platform's flexibility allows us to deliver comprehensive training that directly impacts customer success metrics.",
     author: "Guy Marion, Chief Marketing Officer",
     bgColor: "bg-blue-400",
     hoverColor: "hover:bg-blue-500",
@@ -17,9 +17,9 @@ const caseStudies = [
   {
     id: 2,
     icon: Building2,
-    title: "How Keap reduced partner onboarding time by 30% by making the switch from a legacy LMS to Athena Plus",
+    title: "How Keap reduced partner onboarding time by 30% by making the switch from a legacy LMS to Athena Enterprise",
     quote:
-      "Athena Plus has revolutionized our partner education program. The intuitive interface and powerful analytics have significantly improved our partner onboarding process.",
+      "Athena Enterprise has revolutionized our partner education program. The intuitive interface and powerful analytics have significantly improved our partner onboarding process.",
     author: "Brian Anciaux, Partner Onboarding Manager",
     bgColor: "bg-orange-600",
     hoverColor: "hover:bg-orange-700",
@@ -28,9 +28,9 @@ const caseStudies = [
   {
     id: 3,
     icon: Building2,
-    title: "How Hootsuite Uses Athena Plus to Educate Customers and Generate Revenue",
+    title: "How Hootsuite Uses Athena Enterprise to Educate Customers and Generate Revenue",
     quote:
-      "Our customers are consuming Hootsuite Academy education content at unprecedented rates. Athena Plus has transformed how we deliver value to our user base.",
+      "Our customers are consuming Hootsuite Academy education content at unprecedented rates. Athena Enterprise has transformed how we deliver value to our user base.",
     author: "Sarah Whyte, Education Marketing Specialist, Hootsuite",
     bgColor: "bg-gray-800",
     hoverColor: "hover:bg-gray-900",

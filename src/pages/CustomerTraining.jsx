@@ -18,7 +18,7 @@ export const CustomerTraining = () => {
       <CustomerSimpleSolution />
       <CustomerCTASurpass />
       <CustomerFeatures />
-      <CustomerSucceed />
+      {/* <CustomerSucceed /> */}
       <CustomerDeliver />
       <Footer />
     </>  

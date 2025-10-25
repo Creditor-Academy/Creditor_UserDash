@@ -625,7 +625,7 @@ export function Dashboard() {
                 <div className="relative z-10 p-4 sm:p-5 bg-white/80 backdrop-blur-sm">
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4 mb-2">
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                      <GraduationCap className="text-white" size={20} />
+                      <GraduationCap className="text-white w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h2 className="text-xl sm:text-2xl font-bold mb-1 leading-tight bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent break-words">
@@ -659,7 +659,7 @@ export function Dashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-6 px-1">
                     <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="text-blue-600" size={20} />
+                        <CheckCircle className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-blue-600 font-semibold">Completed</span>
                       </div>
                       <p className="text-2xl font-bold text-blue-700 mt-1">
@@ -673,7 +673,7 @@ export function Dashboard() {
                     </div>
                     <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-emerald-600" size={20} />
+                        <BookOpen className="text-emerald-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-emerald-600 font-semibold">Modules</span>
                       </div>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">
@@ -687,7 +687,7 @@ export function Dashboard() {
                     </div>
                     <div className="bg-orange-50 rounded-xl p-4 border border-orange-100">
                       <div className="flex items-center gap-2">
-                        <Award className="text-orange-600" size={20} />
+                        <Award className="text-orange-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-orange-600 font-semibold">Quizzes</span>
                       </div>
                       <p className="text-2xl font-bold text-orange-700 mt-1">
@@ -701,7 +701,7 @@ export function Dashboard() {
                     </div>
                     <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
                       <div className="flex items-center gap-2">
-                        <BookOpen className="text-purple-600" size={20} />
+                        <BookOpen className="text-purple-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-purple-600 font-semibold">Enrolled</span>
                       </div>
                       <p className="text-2xl font-bold text-purple-700 mt-1">
@@ -715,7 +715,7 @@ export function Dashboard() {
                     </div>
                     <div className="bg-yellow-50 rounded-xl p-4 border border-yellow-100">
                       <div className="flex items-center gap-2">
-                        <Clock className="text-yellow-600" size={20} />
+                        <Clock className="text-yellow-600 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                         <span className="text-yellow-600 font-semibold">Pending</span>
                       </div>
                       <p className="text-2xl font-bold text-yellow-700 mt-1">

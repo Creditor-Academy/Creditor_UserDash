@@ -25,7 +25,7 @@ const questions = [
     id: 3,
     question: "How can I migrate existing content?",
     answer:
-      "Moving to Athena is simple. Our intuitive uploader lets you import existing materials with drag-and-drop organization. Plus, as a SCORM-compliant platform, we ensure secure content transfer between different learning management systems without compatibility issues. With Athena Plus, your dedicated Launch Specialist will guide you from setup to launch, providing strategic insights to help you achieve a successful migration and continued business growth.",
+      "Moving to Athena is simple. Our intuitive uploader lets you import existing materials with drag-and-drop organization. Plus, as a SCORM-compliant platform, we ensure secure content transfer between different learning management systems without compatibility issues. With Athena Enterprise, your dedicated Launch Specialist will guide you from setup to launch, providing strategic insights to help you achieve a successful migration and continued business growth.",
     imagePosition: "right",
     bgColor: "bg-gradient-to-br from-purple-100 to-indigo-100",
   },

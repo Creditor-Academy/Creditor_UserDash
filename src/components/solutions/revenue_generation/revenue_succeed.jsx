@@ -44,9 +44,9 @@ const caseStudies = [
 const bottomCaseStudy = {
   id: 4,
   icon: BookOpen,
-  title: "How Anita Canada helps retailers drive business growth with Athena Plus",
+  title: "How Anita Canada helps retailers drive business growth with Athena Enterprise",
   quote:
-    "We have the control we need, but we're subcontracting all the work out to Athena Plus. It was effortless on our part.",
+    "We have the control we need, but we're subcontracting all the work out to Athena Enterprise. It was effortless on our part.",
   author: "Mark Caskenette, Managing Director, Anita Canada",
   bgColor: "bg-gray-100",
   textColor: "text-gray-900",
