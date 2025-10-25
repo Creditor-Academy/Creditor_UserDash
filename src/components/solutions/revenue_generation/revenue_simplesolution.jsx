@@ -1,5 +1,8 @@
 import React from "react";
 import { motion } from "framer-motion";
+import AnalyticsImage from "../../../assets/analytics.webp";
+import AIcoursebuilder from "../../../assets/aicourse.webp";
+import product from "../../../assets/product.webp";
 
 const solutions = [
   {
@@ -19,7 +22,7 @@ const solutions = [
       "Expand how you offer and sell education. Deliver comprehensive courses, live coaching sessions, exclusive memberships and subscriptions, private communities, and more. Build new revenue streams and expand your business by offering more ways to learn with Athena.",
     imagePosition: "left",
     imageBg: "bg-gradient-to-br from-purple-500 to-purple-600",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop&crop=edges",
+    image: product,
     placeholder: "Product Catalog",
   },
   {
@@ -29,7 +32,7 @@ const solutions = [
       "Hit your revenue goals in less time. Streamline the creation of digital learning products with our AI-powered tools, designed to simplify the time you spend on content. Generate course outlines and put together quizzes in less time so you can focus on other aspects of your business.",
     imagePosition: "right",
     imageBg: "bg-gradient-to-br from-blue-500 to-blue-600",
-    image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=600&fit=crop&crop=edges",
+    image: AIcoursebuilder,
     placeholder: "AI Course Builder",
   },
   {
@@ -39,7 +42,7 @@ const solutions = [
       "Make smarter business decisions. Build custom dashboards for internal stakeholders or B2B partners that focus on the metrics they want to see, and have reports automatically emailed at your desired cadence. Use reporting tools that show visitor and student behaviour, engagement data, business revenue, and program performance.",
     imagePosition: "left",
     imageBg: "bg-gradient-to-br from-orange-500 to-orange-600",
-    image: "https://images.unsplash.com/photo-1543286386-713bdd548da4?w=800&h=600&fit=crop&crop=edges",
+    image: AnalyticsImage,
     placeholder: "Analytics & Reports",
   },
 ];

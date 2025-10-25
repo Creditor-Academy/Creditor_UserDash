@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Voice from '../../assets/Voice.webp';
-import AI from '../../assets/AI.webp';
-import Multi  from '../../assets/Multi.webp';
+import AI from '../../assets/aicourse.webp';
+import Multi  from '../../assets/multimedia.webp';
 import Pathway from '../../assets/Pathway.webp';
-import Progress from '../../assets/progres.webp';
+import Progress from '../../assets/analytics.webp';
 import Template from '../../assets/Template.webp';
 
 

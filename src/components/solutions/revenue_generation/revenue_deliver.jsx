@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import DashboardImage from "../../../assets/dashboard.webp";
 
 const RevenueDeliver = () => {
   const features = [
@@ -123,7 +124,7 @@ const RevenueDeliver = () => {
             <div className="relative bg-white shadow-2xl overflow-hidden">
               {/* Dashboard Image */}
               <img
-                src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop&crop=edges"
+                src={DashboardImage}
                 alt="Revenue Dashboard Analytics"
                 className="w-full h-auto object-cover"
               />
