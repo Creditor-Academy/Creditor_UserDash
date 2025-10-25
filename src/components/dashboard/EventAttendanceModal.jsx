@@ -40,10 +40,10 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
       } catch (err) {
         setError(err.message);
         console.error("Error fetching attendance:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
     fetchAttendanceData();
   }, [eventId, isOpen]);
@@ -77,16 +77,25 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
     worksheet.addRow(['Date:', formatDate(eventDate)]);
     worksheet.addRow([]);  // Empty row for spacing
 
-    // Add headers
-    worksheet.addRow(['Name', 'Email', 'Status']);
+      // Add headers
+      worksheet.addRow(['Name', 'Email', 'Status', 'Time']);
 
-    // Add data
-    attendanceData.eventAttendaceList.forEach(attendee => {
-      worksheet.addRow([
-        `${attendee.user.first_name} ${attendee.user.last_name}`,
-        attendee.user.email,
-        attendee.isPresent ? 'Present' : 'Absent'
-      ]);
+      // Add data
+      attendanceData.eventAttendaceList.forEach(attendee => {
+        const attendanceTime = attendee.created_at ? 
+          new Date(attendee.created_at).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+            timeZone: 'UTC'
+          }) : 'N/A';
+
+        worksheet.addRow([
+          `${attendee.user.first_name} ${attendee.user.last_name}`,
+          attendee.user.email,
+          attendee.isPresent ? 'Present' : 'Absent',
+          attendanceTime
+        ]);
     });
 
     // Style the header
@@ -126,15 +135,15 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
         <div className="mt-6">
           <div className="mb-8 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <h3 className="font-semibold text-lg text-gray-900">{eventTitle}</h3>
-            {eventDate && (
+                {eventDate && (
               <div className="flex items-center mt-2 text-gray-600">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <p className="text-sm">{formatDate(eventDate)}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -158,27 +167,27 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       <p className="text-xl text-blue-600 font-medium">Total Attendees</p>
-                    </div>
+          </div>
                     <p className="text-4xl font-bold text-blue-700 pr-4">
                       {attendanceData?.eventAttendaceList?.length || 0}
                     </p>
                   </div>
+                  </div>
                 </div>
-              </div>
 
               <div className="flex gap-4 mb-6">
                 <div className="relative flex-1">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  <Input
+          <Input
                     type="text"
-                    placeholder="Search by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 pr-4 py-2 w-full"
-                  />
-                </div>
+          />
+        </div>
                 <Button
                   onClick={handleExportCSV}
                   className="bg-green-600 hover:bg-green-700 text-white px-6 flex items-center gap-2"
@@ -189,18 +198,18 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
                   </svg>
                   Export CSV
                 </Button>
-              </div>
+            </div>
 
               <div className="max-h-[400px] overflow-y-auto rounded-lg border border-gray-200">
                 {filteredAttendees?.length > 0 ? (
                   <div className="divide-y divide-gray-200">
                     {filteredAttendees.map((attendee, index) => (
-                      <div key={index} className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-3">
+                      <div key={index} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-medium text-sm">
                             {attendee.user.first_name[0]}{attendee.user.last_name[0]}
-                          </div>
-                          <div>
+                        </div>
+                        <div>
                             <p className="font-medium text-gray-900">
                               {attendee.user.first_name} {attendee.user.last_name}
                             </p>
@@ -212,9 +221,20 @@ const EventAttendanceModal = ({ isOpen, onClose, eventId, eventTitle, eventDate 
                             </div>
                           </div>
                         </div>
+                        <div className="flex items-center gap-1 text-sm text-gray-500">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {attendee.created_at ? new Date(attendee.created_at).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                            timeZone: 'UTC'
+                          }) : 'Invalid Date'}
                       </div>
-                    ))}
-                  </div>
+                      </div>
+              ))}
+            </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 px-4">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
