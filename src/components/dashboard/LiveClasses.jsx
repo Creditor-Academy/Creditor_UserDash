@@ -5,6 +5,8 @@ import { ExternalLink, Play, Video, Clock, Calendar, Users, FileVideo } from "lu
 import { AttendanceViewerModal } from "./AttendanceViewerModal";
 import ClassRecording from "./ClassRecording";
 import { getAuthHeader } from '../../services/authHeader'; // adjust path as needed
+import { markEventAttendance } from '../../services/attendanceService';
+import { toast } from "sonner";
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
@@ -258,10 +260,28 @@ export function LiveClasses() {
     }
   };
 
-  const handleJoinClass = (event) => {
-    const joinLink = event.description || event.zoomLink || "";
-    if (joinLink) {
-      window.open(joinLink, '_blank');
+  const handleJoinClass = async (event) => {
+    try {
+      // Mark attendance first
+      await markEventAttendance(event.id);
+      toast.success("Attendance marked successfully!");
+      
+      // Then open the zoom link
+      const joinLink = event.description || event.zoomLink || "";
+      if (joinLink) {
+        window.open(joinLink, '_blank');
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      
+      // Show error message but still allow joining the meeting
+      toast.error(error.message || "Failed to mark attendance, but you can still join the meeting");
+      
+      // Open the zoom link even if attendance marking fails
+      const joinLink = event.description || event.zoomLink || "";
+      if (joinLink) {
+        window.open(joinLink, '_blank');
+      }
     }
   };
 
