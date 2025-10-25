@@ -23,7 +23,7 @@ export const RevenueGeneration = () => {
       <SimpleSolution />
       <RevenueCTASurpass />
       <RevenueFeatures />
-      <RevenueSucceed />
+      {/* <RevenueSucceed /> */}
       <RevenueDeliver />
       {/* <RevenueBenefits /> */}
       {/* <RevenueStrategies /> */}

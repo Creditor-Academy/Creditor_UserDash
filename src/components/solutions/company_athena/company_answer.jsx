@@ -24,7 +24,7 @@ const questions = [
     id: 3,
     question: "Workforce training",
     answer:
-      "Invest in your team's growth. Improve job satisfaction while boosting productivity, retention, and results for your organization. Athena Plus supports onboarding, upskilling, sales enablement, and talent development. Businesses have seen 75% reduction in onboarding time with Athena Plus.",
+      "Invest in your team's growth. Improve job satisfaction while boosting productivity, retention, and results for your organization. Athena Enterprise supports onboarding, upskilling, sales enablement, and talent development. Businesses have seen 75% reduction in onboarding time with Athena Enterprise.",
     imagePosition: "right",
     imageBg: "bg-gradient-to-br from-blue-300 to-blue-400",
     placeholder: "Course Creation",

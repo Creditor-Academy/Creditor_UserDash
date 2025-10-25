@@ -16,7 +16,7 @@ export const AcademicAthena = () => {
       <AcademicChoose />
       <AcademicAnswer />
       <AcademicFeature />
-      <AcademicSucceed />
+      {/* <AcademicSucceed /> */}
       <AcademicScale />
       <Footer />
     </div>
