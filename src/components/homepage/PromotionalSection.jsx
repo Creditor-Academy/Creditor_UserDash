@@ -32,7 +32,7 @@ const PromotionalSection = () => {
           </button>
           
           <button className="bg-transparent border-2 border-yellow-400 hover:bg-yellow-400 hover:text-gray-900 text-gray-800 font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2" style={{ fontFamily: 'Arial, sans-serif' }}>
-            Start free trial
+            Join Now
           </button>
         </div>
       </motion.div>

@@ -147,7 +147,7 @@ export default function AcademicChoose() {
               Trusted by <span className="text-white font-semibold">1,000+</span> training companies worldwide
             </p>
             <button className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
-              Start Your Free Trial
+              Join Now
             </button>
           </div>
         </motion.div> */}

@@ -40,7 +40,7 @@ const RevenueCTASurpass = () => {
 
             <div>
               <button className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-4 px-10 rounded-full text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Start free trial
+                Join Now
               </button>
             </div>
           </motion.div>

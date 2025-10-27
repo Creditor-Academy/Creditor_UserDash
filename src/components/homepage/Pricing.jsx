@@ -27,7 +27,7 @@ const Pricing = () => {
         { text: "Add-on flexibility (extra GB or AI credits)", info: false }
       ],
       sectionHeader: "Starter Includes:",
-      cta: "Start your free trial",
+      cta: "Join Now",
       popular: false,
       buttonStyle: "white"
     },
@@ -48,7 +48,7 @@ const Pricing = () => {
         { text: "Better per-user value and bundled resources", info: false }
       ],
       sectionHeader: "Growth Includes:",
-      cta: "Start your free trial",
+      cta: "Join Now",
       popular: true,
       featured: "Most Popular!",
       buttonStyle: "blue"
