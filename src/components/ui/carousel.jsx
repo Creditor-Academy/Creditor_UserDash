@@ -22,6 +22,7 @@ const Carousel = React.forwardRef(
       orientation = "horizontal",
       opts,
       setApi,
+      onSlideChange,
       plugins,
       className,
       children,
@@ -39,14 +40,22 @@ const Carousel = React.forwardRef(
     const [canScrollPrev, setCanScrollPrev] = React.useState(false);
     const [canScrollNext, setCanScrollNext] = React.useState(false);
 
-    const onSelect = React.useCallback((api) => {
-      if (!api) {
-        return;
-      }
+    const onSelect = React.useCallback((embla) => {
+      const instance = embla || api;
+      if (!instance) return;
+      setCanScrollPrev(instance.canScrollPrev());
+      setCanScrollNext(instance.canScrollNext());
+    }, [api]);
 
-      setCanScrollPrev(api.canScrollPrev());
-      setCanScrollNext(api.canScrollNext());
-    }, []);
+    const handleSelectEvent = React.useCallback(() => {
+      if (!api) return;
+      onSelect(api);
+      if (typeof onSlideChange === 'function') {
+        try {
+          onSlideChange(api.selectedScrollSnap());
+        } catch (_) {}
+      }
+    }, [api, onSelect, onSlideChange]);
 
     const scrollPrev = React.useCallback(() => {
       api?.scrollPrev();
@@ -78,18 +87,15 @@ const Carousel = React.forwardRef(
     }, [api, setApi]);
 
     React.useEffect(() => {
-      if (!api) {
-        return;
-      }
-
+      if (!api) return;
       onSelect(api);
-      api.on("reInit", onSelect);
-      api.on("select", onSelect);
-
+      api.on("reInit", handleSelectEvent);
+      api.on("select", handleSelectEvent);
       return () => {
-        api?.off("select", onSelect);
+        api?.off("reInit", handleSelectEvent);
+        api?.off("select", handleSelectEvent);
       };
-    }, [api, onSelect]);
+    }, [api, onSelect, handleSelectEvent]);
 
     return (
       <CarouselContext.Provider

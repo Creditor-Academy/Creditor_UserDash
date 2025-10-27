@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, XCircle, Clock, BookOpen, Trophy, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getQuizResults } from "@/services/quizService";
+// Results are derived from the submit response passed via navigation state
 
 function QuizResultsPage() {
   const { quizId } = useParams();
@@ -28,29 +30,25 @@ function QuizResultsPage() {
       try {
         setIsLoading(true);
         
-        // Check if we have results data from navigation state
-        if (!quizResults) {
-          console.error('No quiz results found in navigation state');
-          setError('No quiz results found. Please complete the quiz first.');
+        if (quizResults) {
+          // Use the provided navigation state
+          setQuizData(quizSession || {});
+          setResults(quizResults);
+          console.log('Quiz results loaded from navigation state:', { quizResults, answers, quizSession, startedAt });
           return;
         }
         
-        // Set the data from navigation state
-        setQuizData(quizSession);
-        setResults(quizResults);
-        
-        console.log('Quiz results loaded:', {
-          quizResults,
-          answers,
-          quizSession,
-          startedAt
-        });
-        
-        // Validate that we have the expected data
-        if (!quizResults.score && !quizResults.data?.score) {
-          console.warn('Quiz results missing score data:', quizResults);
+        // Fallback: fetch latest results for this quiz
+        if (quizId) {
+          console.warn('No quiz results in navigation state; fetching latest results for quiz:', quizId);
+          const fetched = await getQuizResults(quizId);
+          setResults(fetched);
+          // Provide minimal quiz info so the page renders
+          setQuizData({ quiz: { id: quizId, title: fetched?.quiz?.title || `Quiz ${quizId}` }, title: fetched?.quiz?.title });
+          return;
         }
         
+        setError('No quiz selected.');
       } catch (err) {
         console.error('Error initializing results:', err);
         setError('Failed to load quiz results');
@@ -61,7 +59,7 @@ function QuizResultsPage() {
     };
 
     initializeResults();
-  }, [quizResults, quizSession, answers, startedAt]);
+  }, [quizId, quizResults, quizSession, answers, startedAt]);
 
   const getScoreColor = (score) => {
     if (score >= 90) return 'text-green-600';
@@ -85,26 +83,37 @@ function QuizResultsPage() {
   };
 
   // Extract score and other data from results
+  // score here represents percentage to display
   let score = 0;
-  let grade = 'N/A';
+  let totalQuestions = 0;
+  let correctAnswers = 0;
+  let attemptId = '';
+  let detailedAnswers = [];
   
-  if (results?.score) {
-    // Backend returns score as "85 (B)" format
-    const scoreMatch = results.score.toString().match(/(\d+)\s*\(([A-Z])\)/);
-    if (scoreMatch) {
-      score = parseInt(scoreMatch[1]);
-      grade = scoreMatch[2];
-    } else {
-      // Try to extract just the number
-      const numMatch = results.score.toString().match(/(\d+)/);
-      if (numMatch) {
-        score = parseInt(numMatch[1]);
-      }
+  // Support both wrapped and unwrapped result shapes
+  const dataShape = results?.data ?? results;
+  if (dataShape) {
+    attemptId = dataShape.attempt_id || dataShape.attemptId || '';
+    totalQuestions = dataShape.total_questions || dataShape.totalQuestions || 0;
+    detailedAnswers = dataShape.answers || dataShape.answerDetails || [];
+    // Prefer computing percent from detailed answers
+    correctAnswers = Array.isArray(detailedAnswers)
+      ? detailedAnswers.filter(a => a?.isCorrect === true || a?.correct === true).length
+      : 0;
+    if (totalQuestions > 0 && correctAnswers >= 0) {
+      score = Math.round((correctAnswers / totalQuestions) * 100);
+    } else if (typeof dataShape.score === 'number' && totalQuestions > 0) {
+      // If we only have a numeric score and total, derive percent defensively
+      const numericScore = dataShape.score;
+      // If score seems already like percent, clamp; else estimate percent
+      score = numericScore <= 100 ? Math.round(numericScore) : Math.round((numericScore / totalQuestions) * 100);
+      correctAnswers = Math.round((score / 100) * totalQuestions);
     }
   }
   
-  const remarks = results?.remarks || '';
-  const passed = results?.passed || false;
+  const remarks = results?.message || '';
+  const passingScore = quizData?.quiz?.min_score || quizData?.passingScore || quizData?.min_score || 70;
+  const passed = score >= passingScore;
   const answered = Object.keys(answers || {}).length;
   
   // Debug logging to see what we received
@@ -115,14 +124,17 @@ function QuizResultsPage() {
     startedAt: startedAt,
     extractedData: {
       score,
-      grade,
-      remarks,
+      totalQuestions,
+      correctAnswers,
+      attemptId,
+      detailedAnswers,
       passed,
-      answered
+      answered,
+      passingScore
     }
   });
   
-  const isPassed = passed || score >= (quizData?.passingScore || 70);
+  const isPassed = passed;
 
   if (isLoading) {
     return (
@@ -152,7 +164,7 @@ function QuizResultsPage() {
     <div className="container py-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-3)}>
           <BookOpen size={16} />
           Back to Quiz
         </Button>
@@ -185,19 +197,13 @@ function QuizResultsPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
-                    <Clock className="h-6 w-6 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Duration</p>
-                      <p className="text-lg font-semibold text-gray-900">{quizData?.quiz?.time_limit || quizData?.timeLimit || 25} minutes</p>
-                    </div>
-                  </div>
+                  
                   
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
                     <CheckCircle className="h-6 w-6 text-purple-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">Passing Score</p>
-                      <p className="text-lg font-semibold text-gray-900">{quizData?.quiz?.min_score || quizData?.passingScore || 70}%</p>
+                      <p className="text-lg font-semibold text-gray-900">{passingScore}%</p>
                     </div>
                   </div>
                   
@@ -205,9 +211,19 @@ function QuizResultsPage() {
                     <BookOpen className="h-6 w-6 text-indigo-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">Questions Answered</p>
-                      <p className="text-lg font-semibold text-gray-900">{answered}</p>
+                      <p className="text-lg font-semibold text-gray-900">{answered} / {totalQuestions}</p>
                     </div>
                   </div>
+
+                  {attemptId && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                      <BookOpen className="h-6 w-6 text-orange-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Attempt ID</p>
+                        <p className="text-sm font-semibold text-gray-900 font-mono">{attemptId}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Remarks Display */}
@@ -240,15 +256,6 @@ function QuizResultsPage() {
                   
                 </div>
 
-                {/* Grade Display */}
-                {grade && grade !== 'N/A' && (
-                  <div className="mb-4">
-                    <div className="inline-block bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full font-bold text-xl">
-                      Grade: {grade}
-                    </div>
-                  </div>
-                )}
-
                 {/* Status Badge */}
                 <div className="mb-4">
                   <Badge 
@@ -264,7 +271,7 @@ function QuizResultsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-gray-600">Correct Answers</span>
                     <span className="font-semibold text-green-600">
-                      {Math.round((score / 100) * answered)} / {answered}
+                      {correctAnswers} / {totalQuestions}
                     </span>
                   </div>
                   <Progress value={score} className="h-3" />
@@ -276,7 +283,7 @@ function QuizResultsPage() {
       </Card>
 
       {/* Performance Analysis */}
-      {results && (
+      {detailedAnswers && detailedAnswers.length > 0 && (
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="text-2xl font-bold flex items-center gap-2">
@@ -286,53 +293,232 @@ function QuizResultsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
+              
               {/* Question Review */}
-              {quizData?.questions && (
-                <div>
-                  <h4 className="font-semibold mb-3">Question Review</h4>
+              <div>
+                <h4 className="font-semibold mb-3">Question Review</h4>
                   <div className="space-y-4">
-                    {quizData.questions.map((question, index) => {
-                      const userAnswer = answers?.[question.id];
-                      const isCorrect = score > 0; // This is simplified - you might want to add correct answer tracking
+                    {detailedAnswers.map((answer, index) => {
+                      // Get the question data from the quiz session or answers
+                      const questionData = quizData?.questions?.find(q => 
+                        String(q.id) === String(answer.questionId) || 
+                        String(q._id) === String(answer.questionId) ||
+                        String(q.questionId) === String(answer.questionId)
+                      );
+                      
+                      // Get user's actual answer text from the answers passed via navigation
+                      const userAnswerData = answers?.[answer.questionId];
+                      
+                      // Debug logging for answer data
+                      console.log(`Question ${index + 1} answer data:`, {
+                        questionId: answer.questionId,
+                        userAnswerData,
+                        answerData: answer,
+                        questionData,
+                        isCorrect: answer.isCorrect,
+                        correctAnswer: answer.correctAnswer
+                      });
                       
                       return (
-                        <div key={question.id} className="p-4 border rounded-lg">
+                        <div key={`${answer.questionId}-${index}`} className="p-4 border rounded-lg">
                           <div className="flex items-start gap-3">
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
-                              isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                              answer.isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
                             }`}>
                               {index + 1}
                             </div>
                             <div className="flex-1">
-                              <p className="font-medium mb-2">{question.text}</p>
-                              <div className="space-y-2">
-                                {question.options?.map((option) => (
-                                  <div key={option.id} className={`flex items-center gap-2 p-2 rounded ${
-                                    userAnswer === option.id ? 'bg-blue-50 border border-blue-200' : ''
-                                  }`}>
-                                    <input
-                                      type="radio"
-                                      checked={userAnswer === option.id}
-                                      disabled
-                                      className="w-4 h-4"
-                                    />
-                                    <span className={userAnswer === option.id ? 'font-medium' : ''}>
-                                      {option.text}
-                                    </span>
-                                    {userAnswer === option.id && (
-                                      <span className="text-sm text-gray-500">(Your answer)</span>
+                              {/* Question Type Badge */}
+                              <div className="mb-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {(() => {
+                                    const type = questionData?.type || questionData?.question_type || 'Unknown Type';
+                                    const typeMap = {
+                                      'mcq': 'Multiple Choice',
+                                      'scq': 'Single Choice',
+                                      'truefalse': 'True/False',
+                                      'fill_blank': 'Fill in the Blank',
+                                      'one_word': 'One Word Answer',
+                                      'descriptive': 'Descriptive'
+                                    };
+                                    return typeMap[type.toLowerCase()] || type;
+                                  })()}
+                                </Badge>
+                              </div>
+                              
+                              {/* Question Text */}
+                              <p className="font-medium mb-3 text-lg">
+                                {questionData?.question || questionData?.questionText || questionData?.text || questionData?.content || `Question ${index + 1}`}
+                              </p>
+                              {/* CATEGORIZATION Visualization */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                if (typeLower !== 'categorization') return null;
+                                const opts = Array.isArray(questionData?.options) ? questionData.options : [];
+                                const categories = opts.filter(o => o?.isCategory === true || (!('isCategory' in (o || {})) && !o?.category));
+                                const items = opts.filter(o => o?.isCategory === false || (!!o?.category && !o?.isCategory));
+                                const selected = Array.isArray(answer?.selected) ? answer.selected : [];
+                                const itemTextById = new Map(items.map(o => [String(o.id), o.text]));
+                                // Group selected items by category name
+                                const categoryToItems = new Map();
+                                selected.forEach(s => {
+                                  const cat = String(s?.category || '').trim();
+                                  const id = String(s?.optionId || '');
+                                  const text = itemTextById.get(id) || id;
+                                  if (!cat) return;
+                                  if (!categoryToItems.has(cat)) categoryToItems.set(cat, []);
+                                  categoryToItems.get(cat).push({ id, text });
+                                });
+                                // Unassigned items (not in selected list)
+                                const assignedSet = new Set(selected.map(s => String(s?.optionId || '')));
+                                const unassigned = items.filter(it => !assignedSet.has(String(it.id)));
+                                return (
+                                  <div className="space-y-4 mb-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      {categories.map(cat => {
+                                        const catName = cat.text;
+                                        const catItems = categoryToItems.get(catName) || [];
+                                        return (
+                                          <div key={cat.id} className="group rounded-2xl border-2 border-dashed border-blue-200 bg-gradient-to-b from-blue-50 to-blue-100/40 p-5 min-h-[160px] shadow-sm">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-600 text-white text-xs font-semibold shadow">
+                                                <span className="inline-block w-2 h-2 bg-white rounded-full mr-2" />
+                                                {catName}
+                                              </div>
+                                              <span className="ml-2 inline-flex items-center justify-center text-xs font-semibold text-blue-700 bg-white/70 border border-blue-200 rounded-full h-6 px-2">
+                                                {catItems.length}
+                                              </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-2 min-h-[90px]">
+                                              {catItems.length ? catItems.map(item => (
+                                                <div key={item.id} className="bg-white/95 border border-gray-200 rounded-lg px-3 py-2 text-sm shadow-sm">
+                                                  <div className="flex items-center">
+                                                    <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-2" />
+                                                    <span className="text-gray-800">{item.text}</span>
+                                                  </div>
+                                                </div>
+                                              )) : (
+                                                <div className="flex items-center justify-center text-gray-400 text-sm py-6">No items</div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    {unassigned.length > 0 && (
+                                      <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                          <h5 className="text-xs font-semibold text-gray-800">Unassigned Items</h5>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {unassigned.map(item => (
+                                            <div key={item.id} className="bg-yellow-50 border border-yellow-200 rounded-md px-3 py-1.5 text-xs">
+                                              <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2 align-middle" />
+                                              <span className="text-gray-800 align-middle">{item.text}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
-                                ))}
-                              </div>
+                                );
+                              })()}
+                              
+                              {/* Options Display for MCQ/SCQ questions - hide for categorization */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                if (typeLower === 'categorization') return null;
+                                if (!(questionData?.options && Array.isArray(questionData.options) && questionData.options.length > 0)) return null;
+                                return (
+                                <div className="space-y-2 mb-3">
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
+                                  {questionData.options.map((option, optIndex) => {
+                                    const optionText = option?.text || option?.label || option?.value || String(option);
+                                    const optionId = option?.id || option?._id || option?.optionId || option?.value || optIndex;
+                                    const isSelected = Array.isArray(userAnswerData) 
+                                      ? userAnswerData.some(ans => String(ans) === String(optionId) || String(ans) === String(optIndex))
+                                      : String(userAnswerData) === String(optionId) || String(userAnswerData) === String(optIndex);
+                                    let optionStyle = "p-2 rounded border";
+                                    if (isSelected && answer.isCorrect) {
+                                      optionStyle += " bg-green-100 border-green-300 text-green-800";
+                                    } else if (isSelected && !answer.isCorrect) {
+                                      optionStyle += " bg-red-100 border-red-300 text-red-800";
+                                    } else {
+                                      optionStyle += " bg-gray-50 border-gray-200 text-gray-700";
+                                    }
+                                    return (
+                                      <div key={optIndex} className={optionStyle}>
+                                        <span className="font-medium">{optionText}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                );
+                              })()}
+
+                              {/* Your Answer display for text/optionless questions (fill-ups, one-word, descriptive, etc.) */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                const hasOptions = Array.isArray(questionData?.options) && questionData.options.length > 0;
+                                const isTextualType = [
+                                  'fill_blank', 'fill_ups', 'fill in the blank', 'fillintheblank',
+                                  'one_word', 'oneword', 'one word',
+                                  'descriptive', 'text', 'essay', 'long_answer', 'long answer'
+                                ].includes(typeLower);
+                                const shouldShow = isTextualType || !hasOptions;
+                                if (!shouldShow) return null;
+
+                                const fromResult = Array.isArray(answer?.selected)
+                                  ? answer.selected
+                                  : (answer?.selected != null ? [answer.selected] : undefined);
+                                const fromState = Array.isArray(userAnswerData)
+                                  ? userAnswerData
+                                  : (userAnswerData != null ? [userAnswerData] : []);
+                                const values = fromResult ?? fromState;
+
+                                return (
+                                  <div className="space-y-2 mb-3">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Your Answer:</p>
+                                    {values && values.length > 0 ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {values.map((val, i) => (
+                                          <span key={i} className="px-2 py-1 rounded bg-gray-100 border border-gray-200 text-gray-800">
+                                            {String(val)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-500">No answer</span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                    
+                              
+                              
+                              {/* Correct Answer Display for Text-based questions */}
+                              {!answer.isCorrect && (answer.correctAnswer || answer.correct_answer || questionData?.correct_answer) && (
+                                <div className="space-y-2 mb-3">
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Correct Answer:</p>
+                                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <span className="font-medium text-green-800">
+                                      {(() => {
+                                        const correctAns = answer.correctAnswer || answer.correct_answer || questionData?.correct_answer;
+                                        return Array.isArray(correctAns) ? correctAns.join(', ') : String(correctAns);
+                                      })()}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              
                             </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              )}
+              </div>
               
               {/* Time Analysis */}
               {results.timeSpent && (
@@ -370,50 +556,8 @@ function QuizResultsPage() {
         </Card>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          <BookOpen className="mr-2 h-4 w-4" />
-          Back to Quiz
-        </Button>
-        
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            onClick={() => navigate(`/dashboard/courses/${moduleId}/modules/${moduleId}/assessments`)}
-          >
-            <BookOpen className="mr-2 h-4 w-4" />
-            View All Assessments
-          </Button>
-          
-          <Button 
-            onClick={() => navigate(`/dashboard/quiz/take/${quizId}?module=${moduleId}&category=${category}`)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Trophy className="mr-2 h-4 w-4" />
-            Retake Quiz
-          </Button>
-        </div>
-      </div>
 
-      {/* Congratulations or Encouragement */}
-      {isPassed ? (
-        <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg text-center">
-          <Trophy className="h-12 w-12 text-green-600 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-green-800 mb-2">Congratulations!</h3>
-          <p className="text-green-700">
-            You've successfully completed this quiz. Keep up the great work and continue learning!
-          </p>
-        </div>
-      ) : (
-        <div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-          <AlertTriangle className="h-12 w-12 text-yellow-600 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-yellow-800 mb-2">Keep Learning!</h3>
-          <p className="text-yellow-700">
-            Don't worry about this attempt. Review the material and try again. Every attempt is a learning opportunity!
-          </p>
-        </div>
-      )}
+      
     </div>
   );
 }

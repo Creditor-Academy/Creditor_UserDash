@@ -7,29 +7,19 @@ function ComingSoonPopover() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const features = [
+   
     {
-      title: "Notifications",
-      description: "Real-time alerts for courses, tickets, and classes.",
+      title: "Progress Bar",
+      description: "We’re launching progress bars to help users track their learning journey and stay motivated.",
       tags: [
-        { label: "Courses", color: "blue" },
-        { label: "Tickets", color: "amber" },
-        { label: "Classes", color: "purple" }
+        { label: "Progress", color: "green" },
+        { label: "Learning", color: "purple" },
+        { label: "Motivation", color: "blue" }
       ],
-      banner: "https://lesson-banners.s3.us-east-1.amazonaws.com/Recording-banners/Upcoming-Features/Notifications.jpeg",
-      badge: "Live Preview"
-    },
-    {
-      title: "Assessments",
-      description: "Interactive quizzes and tests to evaluate your knowledge.",
-      tags: [
-        { label: "Quizzes", color: "green" },
-        { label: "Tests", color: "red" },
-        { label: "Progress", color: "indigo" }
-      ],
-      banner: "https://lesson-banners.s3.us-east-1.amazonaws.com/Dashboard-banners/AssessmentCard.jpg",
-      badge: "Coming Soon"
+      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/progress+bar+banner.png",
     }
   ];
+  
 
   useEffect(() => {
     const onScroll = () => {
@@ -91,9 +81,8 @@ function ComingSoonPopover() {
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          <span className="absolute top-3 left-3 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-black/70 text-white border border-white/30 shadow backdrop-blur-sm">
-            Coming Soon
-          </span>
+          
+
           <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-[11px] font-medium text-white">
             <span className="inline-block w-2 h-2 bg-emerald-300 rounded-full animate-pulse" /> {feature.badge}
           </span>

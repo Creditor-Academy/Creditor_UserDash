@@ -28,16 +28,17 @@ import CatelogCourses from "@/pages/CatelogCourses";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
-import  Profile  from "@/pages/Profile";
+import Profile  from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import CourseView from "@/pages/CourseView";
 import ModuleLessonsView from "@/pages/ModuleLessonsView";
 import ModuleAssessmentsView from "@/pages/ModuleAssessmentsView";
 import CourseEnrollment from "@/pages/CourseEnrollment";
 import GroupLayout from "@/layouts/GroupLayout";
+import MembersPage from "@/pages/group/MembersPage";
 import NewsPage from "@/pages/group/NewsPage";
-import GroupCalendarPage from "@/pages/group/CalendarPage";
-import AnnouncementPage from "@/pages/group/AnnouncementPage";
+
+import AnnouncementsPage from "@/pages/group/AnnouncementsPage";
 import ChatPage from "@/pages/group/ChatPage";
 import  SpeechifyReaderView  from "@/pages/SpeechifyReaderView";
 import AvatarPickerPage from "@/pages/AvatarPickerPage";
@@ -61,16 +62,22 @@ import CertificatePage from "../src/pages/CertificatePage";
 import SurveyInstructionPage from "@/pages/SurveyInstructionPage";
 import DebateInstructionPage from "@/pages/DebateInstructionPage";
 import DebateTakePage from "@/pages/DebateTakePage";
+import Chatbot from "@/pages/Chatbot";
 import Games from "@/pages/Games";
 import GameDetailView from "@/components/games/GameDetailView";
 import MyTickets from "@/pages/MyTickets";
 import { CourseTimerProvider } from "@/components/courses/CourseTimerProvider";
-import ScormPage from "@/pages/ScormPage";
-import { allowedScormUserIds } from "@/data/allowedScormUsers";
-import { currentUserId } from "@/data/currentUser";
 import Instructorpage from "@/pages/Instructorpage";
 import InstructorCourseModulesPage from "@/pages/InstructorCourseModulesPage";
-import LandingPage from "@/pages/LandingPage";
+import Home from "@/pages/home";
+import About from "@/pages/AboutUsPage/About";
+import Contact from "@/pages/contactpage/contact";
+import FAQPage from "@/pages/faqpages/faqpage";
+import Product from "@/pages/Product/Product";
+import Features from "@/pages/FeaturesPage/Features";
+import WhyUs from "@/pages/WhyusPage/WhyUs";
+import Plans from "@/pages/Plans";
+import PageTransitionOverlay from "@/components/PageTransitionOverlay";
 import AdminModal from "@/components/AdminModal";
 import Scrompack from "@/pages/Scrompack";
 import Sov from "./coursesL/Sov";
@@ -82,6 +89,8 @@ import PrivateMerchant from './coursesL/PrivateMerchant';
 import { MasterClass } from '@/pages/MasterClass';
 import LiveClass from './pages/LiveClass';
 import { WebsiteCreation } from './pages/WebsiteCreation';
+import AcademicAthena from './pages/AcademicAthena';
+import CompanyAthena from './pages/CompanyAthena';
 import MerchantProcessing from './pages/MerchantProcessing';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "@/pages/Auth/Login";
@@ -92,28 +101,39 @@ import ReturnRefund from "@/pages/ReturnRefund";
 import MembershipTnC from "@/pages/MembershipTnC";  
 import ContactSection from "@/components/ContactSection"; 
 import AddUsersPage from "@/pages/AddUsersPage";
+import CreateScenario from "@/pages/CreateScenario";
+import PreviewScenario from "@/pages/PreviewScenario";
+import ScenarioTakePage from "@/pages/ScenarioTakePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
-import  ModuleView  from "@/pages/ModuleView";
-     
+import { CreditsProvider } from "./contexts/CreditsContext";
+import InstructionalDesign from "@/pages/InstructionalDesign";
+import PricingPage from "@/pages/Pricing";
+import ExpertAthena from './pages/Expert_athena';
+import RevenueGeneration from './pages/RevenueGeneration';
+import CustomerTraining from './pages/CustomerTraining';
+import LeadGeneration from './pages/LeadGeneration';
 
-function ProtectedScormRoute() {
-  if (!allowedScormUserIds.includes(currentUserId)) {
-    return <div style={{padding: 24}}><h2>Access Denied</h2><p>You do not have permission to view this page.</p></div>;
-  }
-  return <ScormPage />;
-}
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <UserProvider>
+          <CreditsProvider>
           <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/product" element={<Product />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/whyus" element={<WhyUs />} />
+          <Route path="/instructionaldesign" element={<InstructionalDesign />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -121,6 +141,13 @@ function App() {
           <Route path="/masterclass" element={<MasterClass />}/>
           <Route path="/liveclass" element={<LiveClass />} />
           <Route path="/website" element={<WebsiteCreation/>}/>
+          <Route path="/academic_athena" element={<AcademicAthena/>}/>
+          <Route path="/company_athena" element={<CompanyAthena/>}/>
+          <Route path="/expert_athena" element={<ExpertAthena/>}/>
+          <Route path="/revenue_generation" element={<RevenueGeneration/>}/>
+          <Route path="/customer_training" element={<CustomerTraining/>}/>
+          <Route path="/lead_generation" element={<LeadGeneration/>}/>
+          <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
           <Route path="/privatemerchant" element={<PrivateMerchant/>} />
@@ -145,6 +172,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <AddUsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/add-quiz"
+            element={
+              <ProtectedRoute>
+                <Instructorpage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/create-scenario"
+            element={
+              <ProtectedRoute>
+                <CreateScenario />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/preview-scenario"
+            element={
+              <ProtectedRoute>
+                <PreviewScenario />
               </ProtectedRoute>
             }
           />
@@ -178,7 +229,6 @@ function App() {
                   </CourseTimerProvider>
                 } />
                 <Route path="modules" element={<ModulesList />} />
-                <Route path="modules/:moduleId/view" element={<ModuleView />} />
                 <Route path="modules/:moduleId/assessments" element={<ModuleAssessmentsView />} />
                 <Route path="module/:moduleId">
                   <Route index element={<ModuleDetail />} />
@@ -198,6 +248,11 @@ function App() {
               <Route path="instruction/:quizId" element={<QuizInstructionPage />} />
               <Route path="take/:quizId" element={<QuizTakePage />} />
               <Route path="results/:quizId" element={<QuizResultsPage />} />
+            </Route>
+
+            {/* Scenario routes */}
+            <Route path="scenario">
+              <Route path="take/:scenarioId" element={<ScenarioTakePage />} />
             </Route>
 
             <Route path="assignment">
@@ -230,9 +285,9 @@ function App() {
               <Route index element={<Groups />} />
               <Route path=":groupId/*" element={<GroupLayout />}>
                 <Route path="news" element={<NewsPage />} />
+                <Route path="members" element={<MembersPage />} />
                 <Route path="chat" element={<ChatPage />} />
-                <Route path="calendar" element={<GroupCalendarPage />} />
-                <Route path="announcements" element={<AnnouncementPage />} />
+                <Route path="announcements" element={<AnnouncementsPage />} />
                 <Route path="*" element={<NewsPage />} />
               </Route>
             </Route>
@@ -259,6 +314,7 @@ function App() {
             <Route path="announcements" element={<Announcements />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="todo" element={<TodoPage />} />
+            <Route path="chatbot" element={<Chatbot />} />
             <Route path="faqs" element={<FAQs />} />
             <Route path="privacy" element={<Privacy />} />
             <Route path="guides" element={<Guides />} />
@@ -271,11 +327,6 @@ function App() {
               <Route path="tickets" element={<MyTickets />} />
             </Route>
 
-            {/* SCORM routes - inside dashboard to keep sidebar */}
-            <Route path="scorm">
-              <Route index element={<ProtectedScormRoute />} />
-              <Route path=":courseId/:moduleId" element={<Scrompack />} />
-            </Route>
           </Route>
 
           {/* Catalog and enrollment */}
@@ -287,7 +338,8 @@ function App() {
           <Route path="payment-success/:courseId" element={<PaymentSuccess />} />
           <Route path="payment-failed/:courseId" element={<PaymentFailed />} />
           <Route path="progress" element={<Progress />} />
-          <Route path="messages" element={<Messages />} />
+          {/* Duplicate top-level messages route removed to keep messages inside dashboard layout */}
+           
           <Route path="profile" element={<Profile />} />
           <Route path="privacy" element={<Privacy />} />
           <Route path="avatar-picker" element={<AvatarPickerPage />} />
@@ -299,7 +351,6 @@ function App() {
           <Route path="guides" element={<Guides />} />
           <Route path="support/ticket" element={<SupportTicket />} />
           <Route path="support/tickets" element={<MyTickets />} />
-          <Route path="scorm" element={<ProtectedScormRoute />} />
           <Route path="instructor" element={<Instructorpage />} />
           <Route path="add-users" element={<AddUsersPage />} />
           <Route path="*" element={<NotFound />} />
@@ -307,7 +358,9 @@ function App() {
           <Route path="/speechify-reader" element={<SpeechifyReaderView />} />
           <Route path="/games" element={<Games />} />
           </Routes>
+          <PageTransitionOverlay />
           <Toaster />
+          </CreditsProvider>
         </UserProvider>
       </AuthProvider>
     </ThemeProvider>

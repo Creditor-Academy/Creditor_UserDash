@@ -8,17 +8,21 @@ import NotificationModal from "./NotificationModal";
 import InboxModal from "./InboxModal";
 import CalendarModal from "./CalendarModal";
 import UserDetailsModal from "@/components/UserDetailsModal";
+import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
-import { fetchDetailedUserProfile } from "@/services/userService";
+import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
+import { useCredits } from "@/contexts/CreditsContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const { isInstructorOrAdmin, hasRole } = useAuth();
+  const { balance, addCredits } = useCredits();
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
   const [inboxModalOpen, setInboxModalOpen] = useState(false);
   const [calendarModalOpen, setCalendarModalOpen] = useState(false);
+  const [creditsModalOpen, setCreditsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -34,9 +38,74 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
   const [userDetailsError, setUserDetailsError] = useState(null);
   const [apiNotifications, setApiNotifications] = useState([]);
+  const [viewerTimezone, setViewerTimezone] = useState(null);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+
+  // Display helper: format credit points using USD-style units (K, M, B, T)
+  // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
+  const formatCreditPoints = (value) => {
+    const num = Number(value) || 0;
+    const abs = Math.abs(num);
+    const sign = num < 0 ? '-' : '';
+
+    const formatWithClamp = (val, suffix) => {
+      let display = val;
+      let clamped = false;
+      if (display > 100) {
+        display = 100;
+        clamped = true;
+      }
+      // Keep at most one decimal place; strip trailing .0
+      const rounded = Math.round(display * 10) / 10;
+      const text = (rounded % 1 === 0) ? String(rounded) : rounded.toFixed(1);
+      return `${sign}${text}${suffix}${clamped ? '+' : ''}`;
+    };
+
+    // Units in descending order for easy promotion (e.g., 100M -> 1B)
+    const units = [
+      { value: 1_000_000_000_000, suffix: 'T' },
+      { value: 1_000_000_000, suffix: 'B' },
+      { value: 1_000_000, suffix: 'M' },
+      { value: 1_000, suffix: 'K' },
+    ];
+
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      if (abs >= u.value) {
+        const val = abs / u.value;
+        // If value is at least 100 of this unit, promote to the next higher unit
+        if (val >= 100 && i > 0) {
+          const higher = units[i - 1];
+          const hasPlus = abs > 100 * u.value; // strictly greater than the threshold
+          return `${sign}1${higher.suffix}${hasPlus ? '+' : ''}`;
+        }
+        return formatWithClamp(val, u.suffix);
+      }
+    }
+
+    // For values 100-999, show exact number without clamping
+    if (abs >= 100 && abs < 1000) {
+      return `${sign}${Math.round(abs)}`;
+    }
+
+    // For small values (< 100), show exact number
+    // For large values (>= 1000), clamp to 100 and add +
+    if (abs < 100) {
+      return `${sign}${Math.round(abs)}`;
+    } else {
+      return `${sign}100+`;
+    }
+  };
+
+  // Listen for a global request to open the credits modal
+  useEffect(() => {
+    const handler = () => setCreditsModalOpen(true);
+    window.addEventListener('open-credits-modal', handler);
+    return () => window.removeEventListener('open-credits-modal', handler);
+  }, []);
 
   // Local notifications persistence helpers
   const LOCAL_NOTIFS_KEY = 'local_notifications';
@@ -83,6 +152,21 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     };
 
     fetchEnrolledCourses();
+  }, []);
+
+  // Fetch current viewer profile to get timezone for consistent date formatting
+  useEffect(() => {
+    const loadViewerProfile = async () => {
+      try {
+        const profile = await fetchUserProfile();
+        if (profile && (profile.timezone || profile.timeZone)) {
+          setViewerTimezone(profile.timezone || profile.timeZone);
+        }
+      } catch (e) {
+        // Non-fatal
+      }
+    };
+    loadViewerProfile();
   }, []);
 
   // Centralized notifications fetcher
@@ -234,7 +318,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target) &&
-        !searchInputRef.current.contains(event.target)
+        !searchInputRef.current?.contains(event.target)
       ) {
         setShowDropdown(false);
       }
@@ -254,7 +338,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     if (!showDropdown || !searchResults) return;
 
     const totalResults = (searchResults.results?.courses?.length || 0) + 
-                        (isInstructorOrAdmin() ? (searchResults.results?.users?.length || 0) : 0);
+                        (searchResults.results?.users?.length || 0);
 
     switch (e.key) {
       case 'ArrowDown':
@@ -278,7 +362,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           
           if (selectedResultIndex < courses.length) {
             handleCourseClick(courses[selectedResultIndex].id);
-          } else if (isInstructorOrAdmin()) {
+          } else {
             const userIndex = selectedResultIndex - courses.length;
             if (userIndex < users.length) {
               handleUserClick(users[userIndex].id);
@@ -289,6 +373,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
       case 'Escape':
         setShowDropdown(false);
         setSelectedResultIndex(-1);
+        setShowMobileSearch(false);
         break;
     }
   };
@@ -305,33 +390,71 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     if (isEnrolled) {
       setShowDropdown(false);
       setSearchQuery("");
+      setShowMobileSearch(false);
       navigate(`/dashboard/courses/${courseId}/modules`);
     } else {
       // Show enrollment alert
       setSelectedCourseId(courseId);
       setShowEnrollmentAlert(true);
       setShowDropdown(false);
+      setShowMobileSearch(false);
     }
   };
 
   const handleUserClick = async (userId) => {
-    // Only instructors/admins can access user profiles
-    if (isInstructorOrAdmin()) {
-      setShowDropdown(false);
-      setSearchQuery("");
-      setUserDetailsError(null);
-      setUserDetailsLoading(true);
-      setShowUserDetailsModal(true);
-      
-      try {
-        const userData = await fetchDetailedUserProfile(userId);
+    setShowDropdown(false);
+    setSearchQuery("");
+    setShowMobileSearch(false);
+    setUserDetailsError(null);
+    setUserDetailsLoading(true);
+    setShowUserDetailsModal(true);
+    
+    try {
+      if (isInstructorOrAdmin()) {
+        // For instructors/admins, fetch detailed profile
+        let userData = await fetchDetailedUserProfile(userId);
+
+        // Fallback: if no activity_log/last_login present, try pulling from admin user list
+        if (!userData?.activity_log || userData.activity_log.length === 0) {
+          try {
+            const allUsers = await fetchAllUsersAdmin();
+            const match = (allUsers || []).find(u => u.id === userId);
+            if (match?.activity_log && match.activity_log.length > 0) {
+              userData = { ...userData, activity_log: match.activity_log };
+            }
+          } catch (e) {
+            // Non-fatal: keep userData as-is
+          }
+        }
+
         setSelectedUser(userData);
-      } catch (error) {
-        console.error('Failed to fetch user details:', error);
-        setUserDetailsError(error?.message || 'Failed to fetch user details');
-      } finally {
-        setUserDetailsLoading(false);
+      } else {
+        // For regular users, fetch public-safe profile, then merge courses
+        try {
+          const publicProfile = await fetchPublicUserProfile(userId);
+          try {
+            const coursesData = await fetchUserCoursesByUserId(userId);
+            setSelectedUser({ ...publicProfile, courses: coursesData || [] });
+          } catch (coursesError) {
+            console.warn('Could not fetch courses for user:', coursesError);
+            setSelectedUser(publicProfile);
+          }
+        } catch (publicErr) {
+          console.warn('Could not fetch public user profile, fallback to search result user:', publicErr);
+          const users = searchResults.results?.users || [];
+          const fallback = users.find(user => user.id === userId);
+          if (fallback) {
+            setSelectedUser(fallback);
+          } else {
+            setUserDetailsError('User data not found');
+          }
+        }
       }
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      setUserDetailsError(error?.message || 'Failed to fetch user details');
+    } finally {
+      setUserDetailsLoading(false);
     }
   };
 
@@ -402,14 +525,14 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                 }
               }}
             >
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 LMS Athena 
               </h1>
             </button>
           </div>
           
-          {/* Search Bar */}
-          <div className="hidden md:block flex-1 max-w-md mx-8 relative">
+          {/* Search Bar - Desktop */}
+          <div className="hidden md:block flex-1 max-w-md mx-4 lg:mx-8 relative">
             <form onSubmit={handleSearchSubmit} className="relative">
               <span className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400">
                 {isSearching ? (
@@ -441,7 +564,7 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                     <div className="text-sm font-medium text-gray-700">
                       Found {searchResults.results?.courses?.length || 0} course{(searchResults.results?.courses?.length || 0) !== 1 ? 's' : ''}
-                      {isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
+                      {searchResults.results?.users?.length > 0 && (
                         <span> and {searchResults.results.users.length} user{(searchResults.results.users.length !== 1) ? 's' : ''}</span>
                       )}
                     </div>
@@ -493,8 +616,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-                {/* Users Section - Only show for instructors/admins */}
-                {isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
+                {/* Users Section - Show for all users */}
+                {searchResults.results?.users?.length > 0 && (
                   <div className="p-4">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -518,7 +641,15 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               isSelected ? 'bg-blue-50' : ''
                             }`}
                           >
-                            <User className="h-4 w-4 text-green-600" />
+                            {user.image ? (
+                              <img
+                                src={user.image}
+                                alt={`${user.first_name} ${user.last_name}`}
+                                className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <User className="h-4 w-4 text-green-600" />
+                            )}
                             <div className="flex-1">
                               <div className="font-medium text-gray-900">
                                 {user.first_name} {user.last_name}
@@ -537,15 +668,6 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                   </div>
                 )}
 
-                {/* Show message for non-instructors when users exist in search results */}
-                {!isInstructorOrAdmin() && searchResults.results?.users?.length > 0 && (
-                  <div className="p-4 border-t border-gray-100">
-                    <div className="text-sm text-gray-500 text-center">
-                      <Users className="h-4 w-4 mx-auto mb-2 text-gray-400" />
-                      <p>User search results are available for instructors and administrators only.</p>
-                    </div>
-                  </div>
-                )}
 
                 {/* No Results Message */}
                 {(!searchResults.results?.courses?.length && !searchResults.results?.users?.length) && (
@@ -580,7 +702,28 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           </div>
 
           {/* Right - Enhanced Icons and Profile */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Mobile Search Button */}
+            <button
+              onClick={() => setShowMobileSearch(!showMobileSearch)}
+              className="md:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </button>
+            {/* Credits Badge */}
+            <button
+              onClick={() => setCreditsModalOpen(true)}
+              className="group relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur hover:bg-white text-gray-900 flex items-center gap-1.5 sm:gap-2 shadow-sm hover:shadow transition-all"
+              aria-label="Open credits purchase"
+              title="Manage credits"
+            >
+              <span className="inline-flex items-center justify-center h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-300 text-black text-[9px] sm:text-[10px] font-extrabold shadow-inner">
+                CP
+              </span>
+              <span className="text-xs sm:text-sm font-semibold tabular-nums tracking-wide">{formatCreditPoints(balance)}</span>
+              <span className="ml-1 inline-flex items-center justify-center h-4 w-4 sm:h-5 sm:w-5 rounded-full bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">+</span>
+            </button>
             
             {/* Notification Bell */}
             <button
@@ -597,11 +740,182 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
             </button>
             
             {/* Profile Dropdown */}
-            <div className="ml-2">
+            <div className="ml-1 sm:ml-2">
               <ProfileDropdown />
             </div>
           </div>
         </div>
+        
+        {/* Mobile Search Bar */}
+        {showMobileSearch && (
+          <div className="md:hidden p-4 border-t border-gray-200 bg-white">
+            <form onSubmit={handleSearchSubmit} className="relative">
+              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400">
+                {isSearching ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+              </span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search courses and users..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="pl-12 pr-4 py-3 w-full bg-gray-50 border-0 rounded-2xl text-gray-800 text-sm h-12 shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-offset-0 transition-all duration-200"
+                style={{ outline: 'none' }}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMobileSearch(false);
+                  setShowDropdown(false);
+                  setSearchQuery("");
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </form>
+
+            {/* Mobile Search Results Dropdown */}
+            {showDropdown && searchResults && (
+              <div
+                ref={dropdownRef}
+                className="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-y-auto z-50"
+              >
+                {/* Total Results Header */}
+                {((searchResults.results?.courses?.length > 0) || (searchResults.results?.users?.length > 0)) && (
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                    <div className="text-sm font-medium text-gray-700">
+                      Found {searchResults.results?.courses?.length || 0} course{(searchResults.results?.courses?.length || 0) !== 1 ? 's' : ''}
+                      {searchResults.results?.users?.length > 0 && (
+                        <span> and {searchResults.results.users.length} user{(searchResults.results.users.length !== 1) ? 's' : ''}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Courses Section */}
+                {searchResults.results?.courses?.length > 0 && (
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      Courses ({searchResults.results.courses.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {searchResults.results.courses.map((course, index) => {
+                        const isEnrolled = enrolledCourses.some(ec => ec.id === course.id);
+                        const isSelected = selectedResultIndex === index;
+                        return (
+                          <button
+                            key={course.id}
+                            onClick={() => handleCourseClick(course.id)}
+                            onMouseEnter={() => setSelectedResultIndex(index)}
+                            onMouseLeave={() => setSelectedResultIndex(-1)}
+                            className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
+                              isSelected ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            <BookOpen className="h-4 w-4 text-blue-600" />
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{course.title}</div>
+                              <div className="text-sm text-gray-500 flex items-center gap-2">
+                                Course
+                                {isEnrolled ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Enrolled
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    <Lock className="h-3 w-3 mr-1" />
+                                    Not Enrolled
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Users Section - Show for all users */}
+                {searchResults.results?.users?.length > 0 && (
+                  <div className="p-4">
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Users ({searchResults.results.users.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {searchResults.results.users.map((user, index) => {
+                        const userRole = user.user_roles?.[0]?.role || 'user';
+                        const roleColor = userRole === 'admin' ? 'bg-red-100 text-red-800' : 
+                                        userRole === 'instructor' ? 'bg-blue-100 text-blue-800' : 
+                                        'bg-gray-100 text-gray-600';
+                        const isSelected = selectedResultIndex === searchResults.results.courses.length + index;
+                        
+                        return (
+                          <button
+                            key={user.id}
+                            onClick={() => handleUserClick(user.id)}
+                            onMouseEnter={() => setSelectedResultIndex(searchResults.results.courses.length + index)}
+                            onMouseLeave={() => setSelectedResultIndex(-1)}
+                            className={`w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-3 ${
+                              isSelected ? 'bg-blue-50' : ''
+                            }`}
+                          >
+                            {user.image ? (
+                              <img
+                                src={user.image}
+                                alt={`${user.first_name} ${user.last_name}`}
+                                className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <User className="h-4 w-4 text-green-600" />
+                            )}
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">
+                                {user.first_name} {user.last_name}
+                              </div>
+                              <div className="text-sm text-gray-500 flex items-center gap-2">
+                                {user.email}
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleColor}`}>
+                                  {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* No Results Message */}
+                {(!searchResults.results?.courses?.length && !searchResults.results?.users?.length) && (
+                  <div className="p-4 text-center text-gray-500">
+                    <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                    <p className="font-medium">No results found for "{searchQuery}"</p>
+                    <p className="text-sm text-gray-400 mt-1">Try different keywords or check your spelling</p>
+                  </div>
+                )}
+
+                {/* Loading State */}
+                {isSearching && (
+                  <div className="p-4 text-center text-gray-500">
+                    <Loader2 className="h-6 w-6 mx-auto mb-2 animate-spin text-blue-500" />
+                    <p>Searching...</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Calendar Modal */}
         <CalendarModal 
@@ -634,8 +948,21 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
           user={selectedUser}
           isLoading={userDetailsLoading}
           error={userDetailsError}
+          isInstructorOrAdmin={isInstructorOrAdmin()}
+          viewerTimezone={viewerTimezone}
         />
       </header>
+
+      {/* Credits Modal - render outside header to center across full viewport */}
+      <CreditPurchaseModal 
+        open={creditsModalOpen} 
+        onClose={() => setCreditsModalOpen(false)}
+        balance={balance}
+        onBalanceChange={(_, meta) => {
+          const delta = meta?.added ?? 0;
+          if (delta) addCredits(delta);
+        }}
+      />
 
       {/* Enrollment Alert Modal */}
       {showEnrollmentAlert && (

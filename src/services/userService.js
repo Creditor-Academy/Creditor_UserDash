@@ -93,6 +93,26 @@ export async function fetchUserProfile() {
   }
 }
 
+export async function fetchAllUsers() {
+  try {
+    console.log("📤 userService: Fetching all users");
+    const response = await api.get('/api/user/all', {
+      withCredentials: true,
+    });
+    
+    if (response.data && response.data.code === 200) {
+      const users = response.data.data || [];
+      console.log("✅ userService: Users fetched successfully:", users.length);
+      return users;
+    } else {
+      throw new Error('Failed to fetch users');
+    }
+  } catch (error) {
+    console.error("❌ userService: Error fetching users:", error);
+    throw error;
+  }
+}
+
 export async function updateUserProfile(profileData) {
   try {
     console.log("📤 userService: Updating profile to:", `/api/user/updateUserProfile`);
@@ -171,15 +191,58 @@ export async function fetchDetailedUserProfile(userId) {
   }
 }
 
+// Public profile for regular users: limited-safe fields
+export async function fetchPublicUserProfile(userId) {
+  try {
+    const response = await api.get(`/api/user/profile/${userId}`);
+    const data = response.data;
+    if (data && (data.success === true || data.code === 200)) {
+      const payload = data.data || {};
+      // Normalize to match consumer expectations
+      return {
+        ...payload,
+        image: payload.profile_photo || payload.image || null,
+        user_roles: payload.user_roles || [{ role: 'user' }], // Add default role if not present
+      };
+    }
+    throw new Error(data?.message || 'Failed to fetch public user profile');
+  } catch (error) {
+    console.error('Error fetching public user profile:', error);
+    throw error;
+  }
+}
+
+
+// Admin/Instructor: fetch all users (includes activity_log for last visited)
+export async function fetchAllUsersAdmin() {
+  try {
+    const response = await api.get('/api/user/all', {
+      withCredentials: true,
+    });
+
+    const data = response.data;
+    if (data && (data.success === true || data.code === 200)) {
+      return data.data || [];
+    }
+    return data?.data || [];
+  } catch (error) {
+    console.error('Error fetching all users (admin):', error);
+    throw error;
+  }
+}
+
 
 export async function logoutUser() {
   try {
-    const response = await fetch('https://creditor-backend-1-iijy.onrender.com/api/auth/logout', {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    
+    const response = await fetch(`${baseUrl}/api/auth/logout`, {
       method: 'GET',
-      credentials: 'include', // Important for sending cookies
+      credentials: 'include', // Keep for any same-domain cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -195,3 +258,4 @@ export async function logoutUser() {
     return false;
   }
 }
+

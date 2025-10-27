@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle } from "lucide-react";
+import { Gavel, Mail, Lock, Eye, EyeOff, ArrowRight, Shield, BookOpen, Users, Award, ArrowLeft, CheckCircle, UserPlus, Phone } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import axios from "axios";
 import { fetchUserProfile, setUserRole, setUserRoles } from "@/services/userService";
-// Removed logo import as logo display is no longer used
 import { useAuth } from "@/contexts/AuthContext";
+import { SignUp } from "@/pages/Auth/SignUp";
+import { storeAccessToken } from "@/services/tokenService";
 
 // ForgotPassword Component
 function ForgotPassword({ onBack, email, onEmailChange }) {
@@ -26,7 +28,8 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
     setIsLoading(true);
     try {
-      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email });
+      const normalizedEmail = email.trim().toLowerCase();
+      const response = await axios.post(`${API_BASE}/api/auth/forgot-password`, { email: normalizedEmail });
       setIsEmailSent(true);
       toast.success(response.data?.message || "Password reset email sent successfully!");
     } catch (error) {
@@ -76,37 +79,36 @@ function ForgotPassword({ onBack, email, onEmailChange }) {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="forgot-email" className="text-sm font-medium text-slate-700 flex items-center gap-2">
-            <Mail className="h-4 w-4 text-blue-500" />
+          <Label htmlFor="forgot-email" className="text-sm font-medium text-slate-700">
             Email Address
           </Label>
-          <Input 
-            id="forgot-email" 
-            type="email" 
-            placeholder="Enter your email address" 
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            disabled={isLoading}
-            required
-            className="h-11 px-4 border-2 border-slate-200 hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300"
-          />
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input 
+              id="forgot-email" 
+              type="email" 
+              placeholder="Enter your email address" 
+              value={email}
+              onChange={(e) => onEmailChange(e.target.value)}
+              disabled={isLoading}
+              required
+              className="h-11 pl-10 pr-4 border-slate-200 focus:border-blue-500"
+            />
+          </div>
         </div>
 
         <Button 
           type="submit" 
-          className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl" 
+          className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" 
           disabled={isLoading}
         >
           {isLoading ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               Sending...
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              Send Reset Link
-              <ArrowRight className="h-4 w-4" />
-            </div>
+            "Send Reset Link"
           )}
         </Button>
       </form>
@@ -131,15 +133,19 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isFocused, setIsFocused] = useState({ email: false, password: false });
   const [animateCard, setAnimateCard] = useState(false);
+  const [animateImage, setAnimateImage] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     // Trigger card animation on mount
     setAnimateCard(true);
+    // Staggered image entrance
+    const t = setTimeout(() => setAnimateImage(true), 50);
+    return () => clearTimeout(t);
   }, []);
 
   const handleSubmit = async (e) => {
@@ -147,61 +153,25 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
       const response = await axios.post(`${API_BASE}/api/auth/login`, {
-        email,
-        password,
+        email: normalizedEmail,
+        password: normalizedPassword,
       }, {
         withCredentials: true
       });
-
       if (response.data.success && response.data.accessToken) {
-        // Store tokens
-        localStorage.setItem('authToken', response.data.accessToken);
-        localStorage.setItem('token', response.data.accessToken); // For backward compatibility
-
-        // Persist using tokenService and schedule proactive refresh (~5 minutes default)
-        try {
-          const { storeAccessToken } = await import('@/services/tokenService');
-          storeAccessToken(response.data.accessToken);
-          console.log('[Auth] Login success. Using validation-based refresh only.');
-        } catch (e) {
-          console.warn('[Auth] Could not schedule proactive refresh after login:', e?.message || e);
-        }
+        // Store tokens using tokenService for consistent token storage
+        storeAccessToken(response.data.accessToken);
+        console.log('[Auth] Login success. Token stored.');
         
         // Set authentication state
         setAuth(response.data.accessToken);
 
-        // Set default role first
-        setUserRole('user');
-        
-        // Fetch user profile and set roles
-        try {
-          const profile = await fetchUserProfile();
-          console.log('Fetched user profile after login:', profile);
-          
-          if (profile) {
-            // Store user ID if available
-            if (profile.id) {
-              localStorage.setItem('userId', profile.id);
-            }
-            
-            // Handle user roles
-            if (Array.isArray(profile.user_roles) && profile.user_roles.length > 0) {
-              const roles = profile.user_roles.map(roleObj => roleObj.role);
-              const priorityRoles = ['admin', 'instructor', 'user'];
-              const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
-              
-              // Set single role (enforces single role system)
-              setUserRoles([highestRole]);
-              console.log('Set user single role to:', highestRole);
-            } else {
-              setUserRoles(['user']);
-            }
-          }
-        } catch (profileErr) {
-          console.warn("Could not fetch user profile:", profileErr);
-          setUserRoles(['user']);
-        }
+        // Don't set default role - let UserContext fetch profile and set correct role
+        // Dispatch userLoggedIn event to trigger UserContext profile fetch
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
         
         toast.success("Login successful!");
         navigate("/dashboard");
@@ -230,205 +200,154 @@ export function Login() {
     navigate("/"); // Navigate directly to homepage
   };
 
-  const features = [
-    { icon: <BookOpen className="h-5 w-5" />, text: "Personalized, role-based learning paths" },
-    { icon: <Users className="h-5 w-5" />, text: "Real-time progress tracking and insights" },
-    { icon: <Award className="h-5 w-5" />, text: "Verified credentials and achievements" }
-  ];
-
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-blue-50 via-indigo-50 to-slate-100 relative overflow-hidden">
-      {/* Back Button - Top Left */}
-      <div className="absolute top-6 left-6 z-50">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={handleBackClick} 
-          className="flex items-center gap-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 group"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="transition-transform group-hover:-translate-x-1">
-            <path d="M19 12H5M12 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back
-        </Button>
-      </div>
-
-      {/* Enhanced background elements with blue shades */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-blob"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-300/25 rounded-full mix-blend-multiply filter blur-xl opacity-40 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-sky-300/15 rounded-full mix-blend-multiply filter blur-xl opacity-35 animate-blob animation-delay-4000"></div>
-        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-blue-200/30 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-1000"></div>
-      </div>
-
-      <div className="relative w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center p-4 lg:p-8">
-        {/* Left Side - Branding */}
-        <div className="hidden lg:flex flex-col items-start justify-center h-full text-slate-800 p-8">
-          {/* Brand */}
-          <div className={`transform transition-all duration-1000 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-700 bg-clip-text text-transparent">
-                LMS ATHENA
-              </h1>
-              <p className="text-slate-600 text-lg">Premier Private Education Platform</p>
-            </div>
-          </div>
-
-          {/* Hero Content */}
-          <div className={`transform transition-all duration-1000 delay-300 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
-            <h2 className="text-4xl font-bold mb-6 leading-tight text-slate-800">
-              Unlock the Future of Learning with Athena
-            </h2>
-            <p className="text-lg text-slate-600 leading-relaxed mb-8">
-              Experience a next-gen platform built to empower your growth through personalized, role-based education.
-            </p>
-          </div>
-
-          {/* Feature Highlights */}
-          <div className={`grid grid-cols-1 gap-4 w-full transform transition-all duration-1000 delay-500 ${animateCard ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-3 text-slate-700">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-                  {feature.icon}
-                </div>
-                <span className="text-sm font-medium">{feature.text}</span>
-              </div>
-            ))}
-          </div>
+    <div className="min-h-screen relative overflow-hidden bg-white">
+      <div className="relative flex min-h-screen">
+        {/* Left Illustration */}
+        <div className="hidden lg:flex w-1/2 items-center justify-center p-10">
+          <img
+            src="https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/login.PNG"
+            alt="Login illustration"
+            className={`max-w-[420px] w-[80%] h-auto object-contain transition-all duration-700 ease-out will-change-transform 
+              ${animateImage ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'}`}
+            loading="eager"
+          />
         </div>
 
-        {/* Right Side - Login Form */}
-        <div className="flex items-center justify-center p-4 lg:p-8">
-          <Card className={`w-full max-w-md bg-white/95 backdrop-blur-sm border border-blue-100/50 shadow-2xl transform transition-all duration-1000 ${animateCard ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-95'}`}>
-            <CardHeader className="space-y-4 text-center pb-6">
-              {/* Mobile Brand (logo removed) */}
-              <div className="flex items-center justify-center gap-3 lg:hidden mb-2">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-800">LMS ATHENA</h2>
-                  <p className="text-xs text-slate-600">Private Education Platform</p>
+        {/* Right Wave + Card */}
+        <div className="flex-1 relative flex items-center justify-center p-0">
+          {/* Blue wave background */}
+          <div className="absolute inset-y-0 right-0 w-screen text-blue-500 -z-0 pointer-events-none">
+            <svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" className="h-full w-full" preserveAspectRatio="none">
+              {/* Soft back layer */}
+              <path d="M800,0 C620,80 540,160 480,240 C420,320 380,420 220,520 C140,570 70,610 0,640 L0,800 L800,800 Z" fill="currentColor" opacity="0.18" />
+              {/* Mid layer */}
+              <path d="M800,0 C640,90 560,170 510,250 C450,345 400,430 260,530 C160,600 80,650 0,690 L0,800 L800,800 Z" fill="currentColor" opacity="0.28" />
+              {/* Foreground diagonal sweep from top-right to bottom-left */}
+              <path d="M800,0 C660,100 590,190 540,280 C470,400 390,470 300,540 C200,615 110,665 0,710 L0,800 L800,800 Z" fill="currentColor" opacity="0.92" />
+            </svg>
+          </div>
+
+          {/* Card */}
+          <div className="w-full max-w-md relative z-10 p-6">
+            <Card className={`border-slate-200 shadow-xl transition-all duration-700 ${animateCard ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+              <CardHeader className="space-y-1 pb-4">
+                <div className="flex justify-center mb-2">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-blue-600" />
+                  </div>
                 </div>
-              </div>
-              
-              <div>
-                <CardTitle className="text-2xl font-bold text-slate-800 mb-1">Welcome Back</CardTitle>
-                <CardDescription className="text-slate-600">
-                  Sign in to continue your private education journey
+                <CardTitle className="text-xl font-medium text-center text-slate-800">Welcome back</CardTitle>
+                <CardDescription className="text-center text-slate-500">
+                  Enter your credentials to access your account
                 </CardDescription>
-              </div>
-            </CardHeader>
+              </CardHeader>
 
-            <CardContent className="space-y-4">
-              {showForgotPassword ? (
-                <ForgotPassword 
-                  onBack={() => setShowForgotPassword(false)}
-                  email={email}
-                  onEmailChange={setEmail}
-                />
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Email Field */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-blue-500" />
-                      Email Address
-                    </Label>
-                    <div className="relative">
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="Enter your email address" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        onFocus={() => setIsFocused({ ...isFocused, email: true })}
-                        onBlur={() => setIsFocused({ ...isFocused, email: false })}
-                        disabled={isLoading}
-                        required
-                        className={`h-11 px-4 border-2 transition-all duration-300 ${
-                          isFocused.email 
-                            ? 'border-blue-500 ring-2 ring-blue-200' 
-                            : 'border-slate-200 hover:border-blue-300'
-                        } focus:border-blue-500 focus:ring-2 focus:ring-blue-200`}
-                      />
+              <CardContent className="space-y-4">
+                {showSignUp ? (
+                  <SignUp onBack={() => setShowSignUp(false)} />
+                ) : showForgotPassword ? (
+                  <ForgotPassword 
+                    onBack={() => setShowForgotPassword(false)}
+                    email={email}
+                    onEmailChange={setEmail}
+                  />
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Email Field */}
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-slate-700">
+                        User ID
+                      </Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          placeholder="Enter your email address" 
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={isLoading}
+                          required
+                          className="pl-10 h-11 border-slate-200 focus:border-blue-500"
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Password Field */}
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                      <Lock className="h-4 w-4 text-blue-500" />
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        onFocus={() => setIsFocused({ ...isFocused, password: true })}
-                        onBlur={() => setIsFocused({ ...isFocused, password: false })}
-                        disabled={isLoading}
-                        required
-                        className={`h-11 px-4 pr-12 border-2 transition-all duration-300 ${
-                          isFocused.password 
-                            ? 'border-blue-500 ring-2 ring-blue-200' 
-                            : 'border-slate-200 hover:border-blue-300'
-                        } focus:border-blue-500 focus:ring-2 focus:ring-blue-200`}
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-blue-600 focus:outline-none transition-colors"
-                        tabIndex={-1}
-                        onClick={() => setShowPassword((v) => !v)}
-                      >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
+                    
+                    {/* Password Field */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="password" className="text-slate-700">
+                          Password
+                        </Label>
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPassword(true)}
+                          className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                          disabled={isLoading}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={isLoading}
+                          required
+                          className="pl-10 pr-10 h-11 border-slate-200 focus:border-blue-500"
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none transition-colors"
+                          tabIndex={-1}
+                          onClick={() => setShowPassword((v) => !v)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Forgot Password Link */}
-                  <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline"
+                    {/* Submit Button */}
+                    <Button 
+                      type="submit" 
+                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium" 
                       disabled={isLoading}
                     >
-                      Forgot Password?
+                      {isLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Signing in...
+                        </div>
+                      ) : (
+                        "Sign In"
+                      )}
+                    </Button>
+                  </form>
+                )}
+              </CardContent>
+
+              {/* {!showSignUp && !showForgotPassword && (
+                <CardFooter className="flex flex-col space-y-4 pt-2">
+                  <div className="text-center text-sm text-slate-500">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUp(true)}
+                      className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      disabled={isLoading}
+                    >
+                      Sign up
                     </button>
                   </div>
-
-                  {/* Submit Button */}
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-base transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl" 
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Signing in...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        Sign In
-                        <ArrowRight className="h-4 w-4" />
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-
-            <CardFooter className="pt-4">
-              <div className="w-full text-center">
-                <div className="flex items-center justify-center gap-1">
-                  <Shield className="h-4 w-4 text-green-500" />
-                  <span className="text-xs text-slate-600 font-medium">256-bit SSL Encryption</span>
-                </div>
-              </div>
-            </CardFooter>
-          </Card>
+                </CardFooter>
+              )} */}
+            </Card>
+          </div>
         </div>
       </div>
     </div>

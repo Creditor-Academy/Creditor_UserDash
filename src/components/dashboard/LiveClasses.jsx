@@ -5,7 +5,8 @@ import { ExternalLink, Play, Video, Clock, Calendar, Users, FileVideo } from "lu
 import { AttendanceViewerModal } from "./AttendanceViewerModal";
 import ClassRecording from "./ClassRecording";
 import { getAuthHeader } from '../../services/authHeader'; // adjust path as needed
-// Empty array - no recordings exist yet
+import { markEventAttendance } from '../../services/attendanceService';
+import { toast } from "sonner";
 const recordedSessions = [];
 
 // Helper function to convert UTC time to user's timezone
@@ -259,10 +260,28 @@ export function LiveClasses() {
     }
   };
 
-  const handleJoinClass = (event) => {
-    const joinLink = event.description || event.zoomLink || "";
-    if (joinLink) {
-      window.open(joinLink, '_blank');
+  const handleJoinClass = async (event) => {
+    try {
+      // Mark attendance first
+      await markEventAttendance(event.id);
+      toast.success("Attendance marked successfully!");
+      
+      // Then open the zoom link
+      const joinLink = event.description || event.zoomLink || "";
+      if (joinLink) {
+        window.open(joinLink, '_blank');
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      
+      // Show error message but still allow joining the meeting
+      toast.error(error.message || "Failed to mark attendance, but you can still join the meeting");
+      
+      // Open the zoom link even if attendance marking fails
+      const joinLink = event.description || event.zoomLink || "";
+      if (joinLink) {
+        window.open(joinLink, '_blank');
+      }
     }
   };
 
@@ -303,17 +322,16 @@ export function LiveClasses() {
             const end = new Date(event.endTime);
             return now <= end;
           }).length === 0 ? (
-            <div className="text-center py-8">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg font-medium text-gray-600">No classes scheduled for today</p>
-              <p className="text-sm text-muted-foreground mt-1">Check back later for upcoming classes</p>
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  Current timezone: {userTimezone}
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  Events are filtered based on your timezone preference
-                </p>
+            <div className="text-center py-6">
+              <div className="mx-auto w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-3 shadow-sm">
+                <Video className="h-6 w-6 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">All caught up!</h3>
+              <p className="text-sm text-gray-500 mb-2">No live classes scheduled for today</p>
+              <div className="flex justify-center items-center gap-2 text-xs text-gray-400">
+                <div className="w-1 h-1 bg-gray-300 rounded-full animate-pulse"></div>
+                <span>Perfect time to review recordings</span>
+                <div className="w-1 h-1 bg-gray-300 rounded-full animate-pulse"></div>
               </div>
             </div>
           ) : (
@@ -338,9 +356,9 @@ export function LiveClasses() {
                           : 'border-blue-200 bg-blue-50 shadow-sm'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                             <div className={`w-3 h-3 rounded-full ${
                               isLive ? 'bg-purple-500 animate-pulse' : 'bg-blue-500'
                             }`}></div>
@@ -362,7 +380,7 @@ export function LiveClasses() {
                               {event.courseName || courses.find(c => c.id === (event.courseId || event.course_id))?.title || (event.courseId || event.course_id)}
                             </span>
                           )}
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
                               <span>
@@ -377,12 +395,12 @@ export function LiveClasses() {
                             )}
                           </div>
                           {event.description && (
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2 break-words">
                               {event.description}
                             </p>
                           )}
                         </div>
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-shrink-0">
                           <Button
                             onClick={() => handleJoinClass(event)}
                             disabled={!isLive}
@@ -390,7 +408,7 @@ export function LiveClasses() {
                               isLive 
                                 ? 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 animate-pulse' 
                                 : 'bg-blue-600 hover:bg-blue-700'
-                            } text-white transition-all duration-300`}
+                            } text-white transition-all duration-300 w-full sm:w-auto`}
                             size="sm"
                           >
                             <Video className="w-4 h-4 mr-2" />
@@ -503,7 +521,7 @@ export function LiveClasses() {
             
             {cancelledEvent.reason && (
               <div className="mt-3 p-3 bg-red-50 rounded-md text-sm text-red-700">
-                <div className="font-medium">Cancellation reason:</div>
+                <div className="font-medium">Cancellation Reason:</div>
                 <div>{cancelledEvent.reason}</div>
               </div>
             )}
@@ -514,11 +532,11 @@ export function LiveClasses() {
     
   </Card>
 )}
-<ClassRecording/>
+{/* <ClassRecording/>
       <AttendanceViewerModal
         isOpen={isAttendanceModalOpen}
         onClose={() => setIsAttendanceModalOpen(false)}
-      />
+      /> */}
       
     </div>
   );

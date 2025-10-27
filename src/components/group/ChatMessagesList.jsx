@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "./ChatMessage";
 
-export function ChatMessagesList({ messages, currentUserId }) {
+export function ChatMessagesList({ messages, currentUserId, onEditMessage, onDeleteMessage, onVotePoll, onPinToggle, onPollPinToggle, isAdmin = false, groupId }) {
   const scrollAreaRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -20,7 +20,14 @@ export function ChatMessagesList({ messages, currentUserId }) {
             <ChatMessage 
               key={message.id} 
               message={message} 
-              currentUserId={currentUserId} 
+              currentUserId={currentUserId}
+              onEditMessage={onEditMessage}
+              onDeleteMessage={onDeleteMessage}
+              onVotePoll={onVotePoll}
+              onPinToggle={onPinToggle}
+              onPollPinToggle={onPollPinToggle}
+              isAdmin={isAdmin}
+              groupId={groupId}
             />
           ))}
           <div ref={messagesEndRef} />

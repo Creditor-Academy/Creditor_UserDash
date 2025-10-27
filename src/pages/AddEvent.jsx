@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { currentUserId } from "@/data/currentUser";
-import { getAllEvents } from "@/services/calendarService";
+import { getAllEvents, getAllEventsWithCount } from "@/services/calendarService";
 import { fetchUserProfile } from "@/services/userService";
 import { getAuthHeader } from "@/services/authHeader";
+import EventAttendanceModal from "@/components/dashboard/EventAttendanceModal";
 
 const DEFAULT_TIMEZONE = "America/New_York";
 const AddEvent = () => {
@@ -42,6 +43,28 @@ const AddEvent = () => {
   const [showDateEvents, setShowDateEvents] = useState(false);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [selectedDateForEvents, setSelectedDateForEvents] = useState(null);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+  const [selectedEventForAttendance, setSelectedEventForAttendance] = useState(null);
+  const [showPreviousEvents, setShowPreviousEvents] = useState(false);
+  const [allEvents, setAllEvents] = useState([]);
+  const [loadingPreviousEvents, setLoadingPreviousEvents] = useState(false);
+  const [isEventAttendanceModalOpen, setIsEventAttendanceModalOpen] = useState(false);
+  const [selectedEventForEventAttendance, setSelectedEventForEventAttendance] = useState(null);
+
+  // Function to fetch all events (previous + upcoming)
+  const fetchAllEvents = async () => {
+    setLoadingPreviousEvents(true);
+    try {
+      const data = await getAllEventsWithCount(50); // Fetch last 50 events
+      setAllEvents(data);
+    } catch (err) {
+      console.error('Error fetching all events:', err);
+      alert('Failed to fetch previous events');
+    } finally {
+      setLoadingPreviousEvents(false);
+    }
+  };
 
   // Sort events by startTime descending (most recent at top)
   const sortedEvents = [...events].sort((a, b) => {
@@ -51,9 +74,17 @@ const AddEvent = () => {
     return bTime - aTime;
   });
 
+  // Sort all events by startTime descending (most recent at top)
+  const sortedAllEvents = [...allEvents].sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt) : new Date(a.startTime);
+    const bTime = b.createdAt ? new Date(b.createdAt) : new Date(b.startTime);
+    return bTime - aTime;
+  });
+
   // Pagination logic
-  const totalPages = Math.ceil(sortedEvents.length / EVENTS_PER_PAGE);
-  const paginatedEvents = sortedEvents.slice(
+  const currentEvents = showPreviousEvents ? sortedAllEvents : sortedEvents;
+  const totalPages = Math.ceil(currentEvents.length / EVENTS_PER_PAGE);
+  const paginatedEvents = currentEvents.slice(
     (currentPage - 1) * EVENTS_PER_PAGE,
     currentPage * EVENTS_PER_PAGE
   );
@@ -408,7 +439,7 @@ const AddEvent = () => {
 
   // Edit handler: fetch event details and populate modal
   const handleEdit = async (index) => {
-    const event = events[index];
+    const event = currentEvents[index];
     // Fetch latest event details from backend
     const backendEvent = await fetchEventDetails(event.id);
     const e = backendEvent || event;
@@ -438,7 +469,7 @@ const AddEvent = () => {
   };
 
   const handleDelete = async (index) => {
-    const event = events[index];
+    const event = currentEvents[index];
     // For non-recurring events, use DELETE /calendar/events/:eventId
     if (event.isRecurring && event.occurrences && event.occurrences.length > 0) {
       // Fetch deleted occurrences for this recurring event
@@ -460,7 +491,7 @@ const AddEvent = () => {
   // Confirmed delete for non-recurring event
   const confirmDelete = async () => {
     if (deleteIndex === null) return;
-    const event = events[deleteIndex];
+    const event = currentEvents[deleteIndex];
     try {
       // DELETE non-recurring event
       await fetch(`${import.meta.env.VITE_API_BASE_URL}/calendar/events/${event.id}`, {
@@ -480,6 +511,12 @@ const AddEvent = () => {
         courseId: ev.courseId || ev.course_id
       }));
       setEvents(normalizedEvents);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
     } catch (err) {
       
     } finally {
@@ -506,6 +543,13 @@ const AddEvent = () => {
       // Refetch events after deletion
       const data = await getAllEvents();
       setEvents(data);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
+      
       setShowRecurringDeleteModal(false);
       setModalMessage("Event deleted");
     } catch (err) {
@@ -532,6 +576,13 @@ const AddEvent = () => {
       // Refetch events after deletion
       const data = await getAllEvents();
       setEvents(data);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
+      
       setShowRecurringDeleteModal(false);
     } catch (err) {
       
@@ -564,6 +615,13 @@ const AddEvent = () => {
       // Refetch events after restore
       const data = await getAllEvents();
       setEvents(data);
+      
+      // If showing all events, refresh that too
+      if (showPreviousEvents) {
+        const allData = await getAllEventsWithCount(50);
+        setAllEvents(allData);
+      }
+      
       setShowRecurringDeleteModal(false);
       setModalMessage("Event restored successfully");
     } catch (err) {
@@ -585,6 +643,9 @@ const AddEvent = () => {
       return;
     }
     
+    // Set scheduling state to true
+    setIsScheduling(true);
+    
     // Decode and log the JWT token to see what's in it
     const decodedToken = decodeToken();
 
@@ -592,6 +653,7 @@ const AddEvent = () => {
     const validationErrors = validateRecurringEvent(form);
     if (validationErrors.length > 0) {
       alert("Validation errors:\n" + validationErrors.join("\n"));
+      setIsScheduling(false);
       return;
     }
 
@@ -692,10 +754,19 @@ const AddEvent = () => {
         // Refetch events after updating
         const data = await getAllEvents();
         setEvents(data);
+        
+        // If showing all events, refresh that too
+        if (showPreviousEvents) {
+          const allData = await getAllEventsWithCount(50);
+          setAllEvents(allData);
+        }
+        
         alert("Event updated successfully!");
       } catch (err) {
         
         alert(err.message || 'Failed to update event');
+      } finally {
+        setIsScheduling(false);
       }
       setEditIndex(null);
     } else {
@@ -742,9 +813,18 @@ const AddEvent = () => {
             courseId: ev.courseId || ev.course_id // fallback to course_id if courseId is missing
           }));
         setEvents(normalizedEvents);
+        
+        // If showing all events, refresh that too
+        if (showPreviousEvents) {
+          const allData = await getAllEventsWithCount(50);
+          setAllEvents(allData);
+        }
+        
         alert("Event created successfully!");
       } catch (err) {
         alert("Failed to create event: " + err.message);
+      } finally {
+        setIsScheduling(false);
       }
     }
     
@@ -773,13 +853,38 @@ const AddEvent = () => {
     setCalendarYear(Number(e.target.value));
   };
 
+  // Handle opening attendance modal
+  const handleViewAttendance = (event) => {
+    setSelectedEventForAttendance(event);
+    setIsAttendanceModalOpen(true);
+  };
+
+  // Handle closing attendance modal
+  const handleCloseAttendanceModal = () => {
+    setIsAttendanceModalOpen(false);
+    setSelectedEventForAttendance(null);
+  };
+
+  // Handle opening event attendance modal
+  const handleViewEventAttendance = (event) => {
+    setSelectedEventForEventAttendance(event);
+    setIsEventAttendanceModalOpen(true);
+  };
+
+  // Handle closing event attendance modal
+  const handleCloseEventAttendanceModal = () => {
+    setIsEventAttendanceModalOpen(false);
+    setSelectedEventForEventAttendance(null);
+  };
+
   // Helper: get events for a specific date
   const getEventsForDate = (date) => {
     if (!date) return [];
     
     const eventsForDate = [];
+    const eventsToCheck = showPreviousEvents ? allEvents : events;
     
-    events.forEach(ev => {
+    eventsToCheck.forEach(ev => {
       // Handle recurring events with occurrences
       if (ev.isRecurring && ev.occurrences && ev.occurrences.length > 0) {
         // Check each occurrence of the recurring event
@@ -983,51 +1088,135 @@ const AddEvent = () => {
       
       {/* Events List */}
       <div className="mb-4">
-        <h3 className="font-semibold text-lg mb-4 text-gray-800">Upcoming Events</h3>
-        {sortedEvents.length === 0 ? (
+        <div className="border-b border-gray-200 mb-4">
+          <nav className="flex space-x-8" aria-label="Events">
+            <button
+              onClick={() => {
+                setShowPreviousEvents(false);
+                setCurrentPage(1);
+              }}
+              className={`py-4 px-1 relative font-medium text-sm ${
+                !showPreviousEvents
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+              }`}
+            >
+              Upcoming Events
+              <span className={`absolute -bottom-px left-0 w-full h-0.5 ${!showPreviousEvents ? 'bg-blue-600' : ''}`} />
+            </button>
+            <button
+              onClick={async () => {
+                if (!showPreviousEvents) {
+                  setLoadingPreviousEvents(true);
+                  await fetchAllEvents();
+                }
+                setShowPreviousEvents(true);
+                setCurrentPage(1);
+              }}
+              disabled={loadingPreviousEvents}
+              className={`py-4 px-1 relative font-medium text-sm ${
+                showPreviousEvents
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300'
+              }`}
+            >
+              {loadingPreviousEvents ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading...
+                </span>
+              ) : (
+                'All Events'
+              )}
+              <span className={`absolute -bottom-px left-0 w-full h-0.5 ${showPreviousEvents ? 'bg-blue-600' : ''}`} />
+            </button>
+          </nav>
+        </div>
+        {currentEvents.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="mt-2">No events scheduled yet</p>
+            <p className="mt-2">
+              {showPreviousEvents ? 'No events found' : 'No events scheduled yet'}
+            </p>
           </div>
         ) : (
           <>
             <ul className="space-y-3">
               {paginatedEvents.map((event, i) => (
-                <li key={event.id || i} className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-gray-800">{event.title}
-                        {event.isRecurring && (
-                          <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full align-middle">Recurring</span>
-                        )}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">{event.description}</p>
-                      {event.courseId && (
-                        <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                          {courses.find(c => c.id === event.courseId)?.title || event.courseId}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          className="text-blue-600 hover:underline text-xs"
-                          onClick={() => handleEdit(events.findIndex(e => e.id === event.id))}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="text-red-600 hover:underline text-xs"
-                          onClick={() => handleDelete(events.findIndex(e => e.id === event.id))}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center text-sm text-gray-500 space-x-4">
+                 <li key={event.id || i} className="border rounded-lg p-6 bg-white hover:bg-gray-50 transition-colors shadow-sm hover:shadow-md">
+                   <div className="flex justify-between items-start">
+                     <div className="space-y-3 flex-1">
+                       <div className="flex items-center gap-3">
+                         <h4 className="font-semibold text-gray-800 text-lg">{event.title}</h4>
+                         {event.isRecurring && (
+                           <span className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full flex items-center gap-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                             </svg>
+                             Recurring
+                           </span>
+                         )}
+                       </div>
+                       <div className="flex items-center gap-2 flex-wrap">
+                         {event.courseId && (
+                           <span className="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm font-medium rounded-full flex items-center gap-1">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                             </svg>
+                             {courses.find(c => c.id === event.courseId)?.title || event.courseId}
+                           </span>
+                         )}
+                         <a 
+                           href={event.description}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-full flex items-center gap-1 hover:bg-green-100 transition-colors"
+                         >
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                           </svg>
+                           Join Meeting
+                         </a>
+                       </div>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <button
+                         onClick={() => handleEdit(currentEvents.findIndex(e => e.id === event.id))}
+                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                         title="Edit"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                         </svg>
+                       </button>
+                       {showPreviousEvents && (
+                         <button
+                           onClick={() => handleViewAttendance(event)}
+                           className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                           title="View Attendance"
+                         >
+                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                           </svg>
+                         </button>
+                       )}
+                       <button
+                         onClick={() => handleDelete(currentEvents.findIndex(e => e.id === event.id))}
+                         className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                         title="Delete"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                         </svg>
+                       </button>
+                     </div>
+                   </div>
+                   <div className="mt-4 flex items-center text-sm text-gray-600 space-x-4">
                     <span>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -1123,10 +1312,18 @@ const AddEvent = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-5xl relative transform transition-all duration-300 scale-100 opacity-100">
             <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+              disabled={isScheduling}
+              className={`absolute top-4 right-4 transition-colors duration-200 p-1 rounded-full ${
+                isScheduling 
+                  ? 'text-gray-300 cursor-not-allowed' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
               onClick={() => {
-                setShowModal(false);
-                setEditIndex(null);
+                if (!isScheduling) {
+                  setShowModal(false);
+                  setEditIndex(null);
+                  setIsScheduling(false);
+                }
               }}
               aria-label="Close"
             >
@@ -1273,19 +1470,39 @@ const AddEvent = () => {
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
                 <button
                   type="button"
+                  disabled={isScheduling}
                   onClick={() => {
                     setShowModal(false);
                     setEditIndex(null);
+                    setIsScheduling(false);
                   }}
-                  className="px-5 py-2.5 border border-gray-300 text-sm font-medium rounded-lg shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  className={`px-5 py-2.5 border border-gray-300 text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
+                    isScheduling 
+                      ? 'text-gray-400 bg-gray-100 cursor-not-allowed' 
+                      : 'text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                  disabled={isScheduling}
+                  className={`px-5 py-2.5 text-white text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 flex items-center justify-center gap-2 ${
+                    isScheduling 
+                      ? 'bg-blue-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  {editIndex !== null ? 'Update Event' : 'Schedule Event'}
+                  {isScheduling && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {isScheduling 
+                    ? (editIndex !== null ? 'Updating...' : 'Scheduling...') 
+                    : (editIndex !== null ? 'Update Event' : 'Schedule Event')
+                  }
                 </button>
               </div>
             </form>
@@ -1658,16 +1875,36 @@ const AddEvent = () => {
                         className="text-blue-600 hover:underline text-sm"
                         onClick={() => {
                           setShowDateEvents(false);
-                          handleEdit(events.findIndex(e => e.id === event.id));
+                          handleEdit(currentEvents.findIndex(e => e.id === event.id));
                         }}
                       >
                         Edit
                       </button>
                       <button
+                        className="text-green-600 hover:underline text-sm"
+                        onClick={() => {
+                          setShowDateEvents(false);
+                          handleViewAttendance(event);
+                        }}
+                      >
+                        View Attendance
+                      </button>
+                      {showPreviousEvents && (
+                        <button
+                          className="text-purple-600 hover:underline text-sm"
+                          onClick={() => {
+                            setShowDateEvents(false);
+                            handleViewEventAttendance(event);
+                          }}
+                        >
+                          Attendance
+                        </button>
+                      )}
+                      <button
                         className="text-red-600 hover:underline text-sm"
                         onClick={() => {
                           setShowDateEvents(false);
-                          handleDelete(events.findIndex(e => e.id === event.id));
+                          handleDelete(currentEvents.findIndex(e => e.id === event.id));
                         }}
                       >
                         Delete
@@ -1694,6 +1931,26 @@ const AddEvent = () => {
           </div>
         </div>
       )}
+
+      {/* Event Attendance Modal */}
+      <EventAttendanceModal
+        isOpen={isAttendanceModalOpen}
+        onClose={handleCloseAttendanceModal}
+        eventId={selectedEventForAttendance?.id}
+        eventTitle={selectedEventForAttendance?.title}
+        eventDate={selectedEventForAttendance?.startTime}
+        eventTime={selectedEventForAttendance?.startTime}
+      />
+
+      {/* Event Attendance Modal for Previous Events */}
+      <EventAttendanceModal
+        isOpen={isEventAttendanceModalOpen}
+        onClose={handleCloseEventAttendanceModal}
+        eventId={selectedEventForEventAttendance?.id}
+        eventTitle={selectedEventForEventAttendance?.title}
+        eventDate={selectedEventForEventAttendance?.startTime}
+        eventTime={selectedEventForEventAttendance?.startTime}
+      />
     </div>
   );
 };
