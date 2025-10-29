@@ -452,7 +452,7 @@ const CoreDifferentiators = () => {
                 boxShadow: `0 4px 12px ${colors.primary}40`
               }}
             >
-              Start Free Trial
+              Join Now
             </motion.button>
             <motion.button
               whileHover={{ 

@@ -237,3 +237,29 @@ export async function getPastCourseEvents(courseId) {
     throw error;
   }
 }
+
+export async function getAllEventsWithCount(count) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/calendar/events/get-all-events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+      body: JSON.stringify({ count })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to fetch all events:', response.status, errorText);
+      throw new Error(`Failed to fetch all events: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error in getAllEventsWithCount:', error);
+    throw error;
+  }
+}

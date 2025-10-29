@@ -115,7 +115,7 @@ const ProductCTA = () => {
             >
               <div className="text-center mb-6">
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                  Start Your Free Trial
+                  Join Now
                 </h3>
                 <p className="text-slate-300">
                   Experience the full power of Athena with no commitments
@@ -148,7 +148,7 @@ const ProductCTA = () => {
                   whileTap={{ scale: 0.98 }}
                   className="w-full px-8 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg transition-all duration-300 inline-flex items-center justify-center group"
                 >
-                  Start Free Trial
+                  Join Now
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
                 <motion.button

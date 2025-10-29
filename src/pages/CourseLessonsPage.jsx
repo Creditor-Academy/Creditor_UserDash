@@ -376,7 +376,15 @@ const CourseLessonsPage = () => {
                                 {/* Module Stats */}
                                 <div className="flex items-center gap-4 text-xs text-gray-500">
                                   <span>Duration: {module.estimated_duration || 0} min</span>
-                                  <span>Order: {module.order || 'N/A'}</span>
+                                  <span>
+                                    {(() => {
+                                      const title = (module.title || module.name || "").toLowerCase();
+                                      const isIntroModule = title.includes("why you must exit") && 
+                                                          (title.includes("llc") || title.includes("corporation")) &&
+                                                          title.includes("structure");
+                                      return isIntroModule ? "Intro Module" : `Order: ${module.order || 'N/A'}`;
+                                    })()}
+                                  </span>
                                 </div>
                                 
                                 {/* Module Status */}

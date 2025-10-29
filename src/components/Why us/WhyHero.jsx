@@ -546,7 +546,7 @@ const WhyUsHero = () => {
                   gap: "10px"
                 }}
               >
-                Start Free Trial
+                Join Now
                 <motion.span
                   animate={{ x: [0, 4, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}

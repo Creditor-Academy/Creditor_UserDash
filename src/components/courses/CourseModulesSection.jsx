@@ -41,7 +41,15 @@ const CourseModulesSection = ({
                   <p className="text-sm text-gray-600 mt-1">{module.description}</p>
                 )}
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Order: {module.order || 'N/A'}</span>
+                  <span className="text-xs text-gray-500">
+                    {(() => {
+                      const title = (module.title || module.name || "").toLowerCase();
+                      const isIntroModule = title.includes("why you must exit") && 
+                                          (title.includes("llc") || title.includes("corporation")) &&
+                                          title.includes("structure");
+                      return isIntroModule ? "Intro Module" : `Order: ${module.order || 'N/A'}`;
+                    })()}
+                  </span>
                   <span className="text-xs text-gray-500">Duration: {module.estimated_duration || 0} min</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     module.module_status === 'PUBLISHED' ? 'bg-green-100 text-green-800' :
