@@ -358,7 +358,7 @@ const QuoteComponent = forwardRef(({
         htmlContent = `
           <div class="relative bg-white py-16 px-8 max-w-5xl mx-auto">
             <div class="text-center">
-              <blockquote class="text-3xl md:text-4xl text-gray-800 mb-12 leading-relaxed font-thin tracking-wide">
+              <blockquote class="text-2xl md:text-2xl text-gray-800 mb-12 leading-relaxed font-light tracking-wide">
                 ${content.quote}
               </blockquote>
               <cite class="text-lg font-medium text-orange-500 not-italic tracking-wider">${content.author}</cite>
@@ -388,12 +388,12 @@ const QuoteComponent = forwardRef(({
       case 'quote_d':
         htmlContent = `
           <div class="relative bg-gradient-to-br from-slate-50 to-gray-50 py-20 px-12 max-w-4xl mx-auto">
-            <div class="text-left max-w-3xl">
+            <div class="text-left max-w-xl">
               <div class="mb-8">
                 <svg class="w-12 h-12 text-slate-300 mb-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
                 </svg>
-                <blockquote class="text-2xl md:text-3xl text-slate-700 leading-relaxed font-light mb-8">
+                <blockquote class="text-lg md:text-xl text-slate-700 leading-relaxed font-light mb-8">
                   ${content.quote}
                 </blockquote>
               </div>
@@ -408,15 +408,15 @@ const QuoteComponent = forwardRef(({
 
       case 'quote_on_image':
         htmlContent = `
-          <div class="relative rounded-2xl overflow-hidden shadow-2xl max-w-4xl mx-auto min-h-[400px]" style="background-image: url('${content.backgroundImage}'); background-size: cover; background-position: center;">
+          <div class="relative rounded-2xl overflow-hidden shadow-2xl max-w-3xl mx-auto h-[300px]" style="background-image: url('${content.backgroundImage}'); background-size: cover; background-position: center;">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20"></div>
-            <div class="relative z-10 flex items-center justify-center h-full p-8 md:p-12">
-              <div class="text-center max-w-3xl">
-                <div class="mb-6">
-                  <svg class="w-12 h-12 text-white/30 mx-auto mb-6" fill="currentColor" viewBox="0 0 24 24">
+            <div class="relative z-10 flex items-center justify-center h-full p-4 md:p-6">
+              <div class="text-center max-w-xl w-full">
+                <div class="mb-3">
+                  <svg class="w-6 h-6 text-white/30 mx-auto mb-3" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
                   </svg>
-                  <blockquote class="text-3xl md:text-4xl lg:text-5xl text-white leading-tight font-extralight mb-8 tracking-wide">
+                  <blockquote class="text-base md:text-lg lg:text-xl text-white leading-tight font-extralight mb-4 tracking-wide">
                     ${content.quote}
                   </blockquote>
                 </div>
