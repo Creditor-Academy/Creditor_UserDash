@@ -3,23 +3,19 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { getAuthHeader } from '@/services/authHeader';
 import { uploadImage } from '@/services/imageUploadService';
-import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
 import VideoComponent from '@/components/VideoComponent';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { convertToModernLessonFormat } from '@/utils/lessonDataConverter.ts';
 import {
-  ArrowLeft, Plus, FileText, Eye, Pencil, Trash2, GripVertical,
-  Play, Link2, File, BookOpen, Image, Video,
-  HelpCircle, FileText as FileTextIcon, File as FileIcon, Box, Link as LinkIcon,
+  ArrowLeft, Plus, Eye, Pencil, Trash2, GripVertical,
+  Image, Video,
+  FileText as FileTextIcon, Link as LinkIcon,
   Type,
   Heading1,
   Heading2,
   Text,
   List,
-  ListOrdered,
   Table,
   Loader2,
   MessageSquare,
@@ -28,7 +24,6 @@ import {
   Minus,
   Volume2,
   Youtube,
-  Crop,
   CheckCircle,
   X
 } from 'lucide-react';
@@ -45,6 +40,9 @@ import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
 import ImageEditor from '@/components/ImageEditor';
+import PDFComponent from '@/components/PDFComponent';
+import LinkComponent from '@/components/LinkComponent';
+import ImageBlockComponent from '@/components/ImageBlockComponent';
 
 // Add custom CSS for slide animation and font families
 const slideInLeftStyle = `
@@ -500,43 +498,6 @@ if (typeof document !== 'undefined' && !document.getElementById('quill-overflow-
   document.head.appendChild(style);
 }
 
-// Universal toolbar for paragraph/content
-const paragraphToolbar = [
-  [{ 'font': Font.whitelist }],
-  [{ 'size': Size.whitelist }],
-  ['bold', 'italic', 'underline', 'strike'],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-  [{ 'align': [] }],
-  ['link', 'image'],
-  ['clean']
-];
-
-// Custom alignment toolbar with clear labels
-const customAlignToolbar = [
-  [{ 'font': Font.whitelist }],
-  [{ 'size': Size.whitelist }],
-  ['bold', 'italic', 'underline'],
-  [{ 'color': [] }],
-  [
-    { 'align': '' },
-    { 'align': 'center' },
-    { 'align': 'right' },
-    { 'align': 'justify' }
-  ],
-  ['clean']
-];
-
-// Simplified toolbar for heading/subheading
-const headingToolbar = [
-  [{ 'font': Font.whitelist }],
-  [{ 'size': Size.whitelist }],
-  ['bold', 'italic', 'underline'],
-  [{ 'color': [] }],
-  [{ 'align': [] }],
-  ['clean']
-];
-
 // Comprehensive toolbar modules for all text types
 const getToolbarModules = (type = 'full') => {
   // Default base toolbar (includes size picker)
@@ -729,7 +690,6 @@ function LessonBuilder() {
   const [loading, setLoading] = useState(true);
   const [imageUploading, setImageUploading] = useState({});
   const [mainImageUploading, setMainImageUploading] = useState(false);
-  const [showTextTypeModal, setShowTextTypeModal] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
@@ -737,12 +697,6 @@ function LessonBuilder() {
   const [currentBlock, setCurrentBlock] = useState(null);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [editingVideoBlock, setEditingVideoBlock] = useState(null);
-  const [videoTitle, setVideoTitle] = useState('');
-  const [videoDescription, setVideoDescription] = useState('');
-  const [videoFile, setVideoFile] = useState(null);
-  const [videoPreview, setVideoPreview] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoUploadMethod, setVideoUploadMethod] = useState('file'); // 'file' or 'url'
   const [isUploading, setIsUploading] = useState(false);
   const [showTextEditorDialog, setShowTextEditorDialog] = useState(false);
   const [editorTitle, setEditorTitle] = useState('');
@@ -793,36 +747,14 @@ function LessonBuilder() {
   ];
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
-  const [showImageDialog, setShowImageDialog] = useState(false);
-  const [imageTitle, setImageTitle] = useState('');
-  const [imageDescription, setImageDescription] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
-  
   const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [linkTitle, setLinkTitle] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-  const [linkDescription, setLinkDescription] = useState('');
-  const [linkButtonText, setLinkButtonText] = useState('Visit Link');
-  const [linkButtonStyle, setLinkButtonStyle] = useState('primary');
-  const [linkError, setLinkError] = useState('');
-  const [currentLinkBlock, setCurrentLinkBlock] = useState(null);
+  const [editingLinkBlock, setEditingLinkBlock] = useState(null);
   const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
-  const [showImageEditDialog, setShowImageEditDialog] = useState(false);
-  const [currentImageBlock, setCurrentImageBlock] = useState(null);
-  const [imageTemplateText, setImageTemplateText] = useState('');
-  const [imageTemplateUrl, setImageTemplateUrl] = useState('');
-  const [selectedImageTemplate, setSelectedImageTemplate] = useState(null);
+  const [showImageDialog, setShowImageDialog] = useState(false);
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
   const [showStatementSidebar, setShowStatementSidebar] = useState(false);
   const [showPdfDialog, setShowPdfDialog] = useState(false);
-  const [pdfTitle, setPdfTitle] = useState('');
-  const [pdfDescription, setPdfDescription] = useState('');
-  const [pdfFile, setPdfFile] = useState(null);
-  const [pdfPreview, setPdfPreview] = useState('');
-  const [pdfUrl, setPdfUrl] = useState('');
-  const [pdfUploadMethod, setPdfUploadMethod] = useState('file');
-  const [mainPdfUploading, setMainPdfUploading] = useState(false);
+  const [editingPdfBlock, setEditingPdfBlock] = useState(null);
   const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
   const [showQuoteEditDialog, setShowQuoteEditDialog] = useState(false);
   const [editingQuoteBlock, setEditingQuoteBlock] = useState(null);
@@ -838,80 +770,15 @@ function LessonBuilder() {
   const [showAudioDialog, setShowAudioDialog] = useState(false);
   const [editingAudioBlock, setEditingAudioBlock] = useState(null);
   const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
-  const [youTubeUrl, setYouTubeUrl] = useState('');
-  const [youTubeTitle, setYouTubeTitle] = useState('');
-  const [youTubeDescription, setYouTubeDescription] = useState('');
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
-  const [imageAlignment, setImageAlignment] = useState('left'); // 'left' or 'right' for image & text blocks
-  const [standaloneImageAlignment, setStandaloneImageAlignment] = useState('center'); // 'left', 'center', 'right' for standalone images
-  
-  // Image Editor state
-  const [showImageEditor, setShowImageEditor] = useState(false);
-  const [imageToEdit, setImageToEdit] = useState(null);
-  const [imageEditorTitle, setImageEditorTitle] = useState('Edit Image');
   
   // Auto-save state
-  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error', 'changes_detected'
+  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const autoSaveTimerRef = React.useRef(null);
   
   // Inline block insertion state
   const [insertionPosition, setInsertionPosition] = useState(null);
-  const [showInsertDropdown, setShowInsertDropdown] = useState(null); // block index where dropdown is shown
   const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false); // Show insert block dialog
-  
-
-
-  // Image block templates
-  const imageTemplates = [
-    {
-      id: 'image-text',
-      title: 'Image & text',
-      description: 'Image with text content side by side',
-      icon: <Image className="h-6 w-6" />,
-      layout: 'side-by-side',
-      alignment: 'left', // Default alignment
-      defaultContent: {
-        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-        text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy. The pains of the past are behind us. The future has yet to unfold. But the now is full of beauty always waiting for our attention.'
-      }
-    },
-    {
-      id: 'text-on-image',
-      title: 'Text on image',
-      description: 'Text overlay on background image',
-      icon: <Image className="h-6 w-6" />,
-      layout: 'overlay',
-      defaultContent: {
-        imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-        text: 'Daylight in the forest. Light filters through the trees and the forest. Every step is filled with the sounds of nature, and the scent of pine and earth fills the air. This is where peace begins.'
-      }
-    },
-    {
-      id: 'image-centered',
-      title: 'Image centered',
-      description: 'Centered image with optional caption',
-      icon: <Image className="h-6 w-6" />,
-      layout: 'centered',
-      alignment: 'center', // Default alignment
-      defaultContent: {
-        imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
-        text: 'A peaceful moment captured in time'
-      }
-    },
-    {
-      id: 'image-full-width',
-      title: 'Image full width',
-      description: 'Full width image with text below',
-      icon: <Image className="h-6 w-6" />,
-      layout: 'full-width',
-      defaultContent: {
-        imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&q=80',
-        text: 'When we show up to the present moment with all of our senses, we invite the world to fill us with joy.'
-      }
-    }
-  ];
-
 
   const contentBlockTypes = [
     {
@@ -1060,22 +927,13 @@ function LessonBuilder() {
    
   ];
 
-
-  const blockRefs = React.useRef({});
   const statementComponentRef = React.useRef();
   const listComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
   const dividerComponentRef = React.useRef();
+  const imageBlockComponentRef = React.useRef();
 
 
-  // Cleanup timer on unmount
-  React.useEffect(() => {
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, []);
 
   // Warn user before leaving page with unsaved changes
   React.useEffect(() => {
@@ -1101,7 +959,6 @@ function LessonBuilder() {
     // Store the insertion position for use in subsequent handlers
     if (position !== null) {
       setInsertionPosition(position);
-      setShowInsertDropdown(null); // Close the dropdown
     }
 
     if (blockType.id === 'text') {
@@ -1451,37 +1308,6 @@ function LessonBuilder() {
       setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
     }
   };
-
-  // Interactive component callbacks
-  // const handleInteractiveTemplateSelect = (newBlock) => {
-  //   const interactiveBlock = {
-  //     id: `block_${Date.now()}`,
-  //     block_id: `block_${Date.now()}`,
-  //     type: 'interactive',
-  //     title: 'Interactive',
-  //     content: newBlock.content,
-  //     html_css: newBlock.html_css,
-  //     order: contentBlocks.length + 1
-  //   };
-  //   setContentBlocks(prevBlocks => [...prevBlocks, interactiveBlock]);
-  // };
-
-  // const handleInteractiveUpdate = (blockId, updatedContent) => {
-  //   setContentBlocks(prevBlocks =>
-  //     prevBlocks.map(block =>
-  //       block.id === blockId
-  //         ? { 
-  //             ...block, 
-  //             type: 'interactive', // Ensure type remains interactive
-  //             subtype: updatedContent.subtype || block.subtype || 'accordion', // Preserve subtype
-  //             content: updatedContent.content, 
-  //             html_css: updatedContent.html_css 
-  //           }
-  //         : block
-  //     )
-  //   );
-  //   setEditingInteractiveBlock(null);
-  // };
 
   // Interactive component callbacks
   const handleInteractiveTemplateSelect = (newBlock) => {
@@ -3032,13 +2858,7 @@ function LessonBuilder() {
     } else if (block.type === 'link') {
       // Handle link block editing
       console.log('Link block detected for editing:', block);
-      setCurrentLinkBlock(block);
-      setLinkTitle(block.linkTitle || '');
-      setLinkUrl(block.linkUrl || '');
-      setLinkDescription(block.linkDescription || '');
-      setLinkButtonText(block.linkButtonText || 'Visit Link');
-      setLinkButtonStyle(block.linkButtonStyle || 'primary');
-      setLinkError('');
+      setEditingLinkBlock(block);
       setShowLinkDialog(true);
     } else {
       setCurrentBlock(block);
@@ -3176,87 +2996,9 @@ function LessonBuilder() {
     });
   };
 
-  const handleSave = async () => {
-    const lessonDataToSave = {
-      title: lessonTitle,
-      contentBlocks,
-      status: 'DRAFT',
-      lastModified: new Date().toISOString()
-    };
-
-    // Determine if this is a new lesson or an update
-    const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/api/course`;
-    const apiUrl = lessonId
-      ? `${baseUrl}/${courseId}/modules/${moduleId}/lesson/${lessonId}`
-      : `${baseUrl}/${courseId}/modules/${moduleId}/lesson/create-lesson`;
-
-    try {
-      const response = lessonId
-        ? await axios.put(apiUrl, lessonDataToSave)
-        : await axios.post(apiUrl, lessonDataToSave);
-     
-      toast.success('Lesson saved successfully!');
-    } catch (error) {
-      toast.error('Error saving lesson!');
-      console.error(error);
-    }
-  };
-
-
   const handlePreview = () => {
     // Navigate to the new lesson preview page
     navigate(`/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/preview`);
-  };
-
-  // Convert LessonBuilder content blocks to Modern format
-  const convertToModernFormat = () => {
-    // Create lesson data object
-    const currentLessonData = {
-      id: lessonId || Math.random().toString(36).substr(2, 9),
-      title: lessonTitle || 'Untitled Lesson',
-      description: lessonData?.description || 'No description available',
-      duration: '30 min',
-      author: 'Course Creator',
-      difficulty: 'Intermediate'
-    };
-
-    // Use contentBlocks if available, otherwise fall back to lessonContent
-    const sourceBlocks = (contentBlocks && contentBlocks.length > 0) 
-      ? contentBlocks 
-      : (lessonContent?.data?.content || []);
-
-    return convertToModernLessonFormat(currentLessonData, sourceBlocks, false);
-  };
-
-  // Handle block updates from the unified preview
-  const handleBlockUpdate = (blockId, updatedBlock) => {
-    console.log('Updating block:', blockId, updatedBlock);
-    
-    // Update contentBlocks if they exist
-    if (contentBlocks && contentBlocks.length > 0) {
-      setContentBlocks(prevBlocks => 
-        prevBlocks.map(block => 
-          (block.id || block.block_id) === blockId 
-            ? { ...block, ...updatedBlock }
-            : block
-        )
-      );
-    }
-    
-    // Also update lessonContent if it exists
-    if (lessonContent?.data?.content) {
-      setLessonContent(prev => ({
-        ...prev,
-        data: {
-          ...prev.data,
-          content: prev.data.content.map(block => 
-            (block.id || block.block_id) === blockId 
-              ? { ...block, ...updatedBlock }
-              : block
-          )
-        }
-      }));
-    }
   };
 
   // Convert blocks to HTML/CSS format
@@ -4239,6 +3981,10 @@ function LessonBuilder() {
 
       console.log('Payload being sent to backend:', lessonDataToUpdate);
 
+      // Log payload size for debugging
+      const payloadSize = JSON.stringify(lessonDataToUpdate).length;
+      console.log('Payload size:', Math.round(payloadSize / 1024 / 1024), 'MB');
+
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
         lessonDataToUpdate,
@@ -4250,59 +3996,154 @@ function LessonBuilder() {
         }
       );
 
-      if (response.data && response.data.success) {
-        toast.success('Lesson updated successfully!');
-        setAutoSaveStatus('saved');
-        setHasUnsavedChanges(false);
+      // Log the full response for debugging
+      console.log('Full response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+
+      // Check for any error indicators in the response
+      const hasError = 
+        response.status < 200 || 
+        response.status >= 300 ||
+        !response.data ||
+        response.data.error ||
+        response.data.errorMessage ||
+        response.data.message?.toLowerCase().includes('error') ||
+        response.data.message?.toLowerCase().includes('failed') ||
+        response.data.message?.toLowerCase().includes('too large') ||
+        response.data.message?.toLowerCase().includes('413') ||
+        (response.data.success === false) ||
+        (response.data.success === undefined && response.data.error);
+
+      if (hasError) {
+        let errorMessage = 'Failed to update lesson content';
         
-        // Reset to neutral after 2 seconds
-        setTimeout(() => {
-          setAutoSaveStatus('saved');
-        }, 2000);
-      } else {
-        throw new Error(response.data?.errorMessage || 'Failed to update lesson content');
+        // Check HTTP status codes first
+        if (response.status === 413) {
+          errorMessage = 'Content is too large. Please reduce the size of your content and try again.';
+        } else if (response.status === 400) {
+          errorMessage = 'Invalid content format. Please check your content and try again.';
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (response.status === 403) {
+          errorMessage = 'You do not have permission to update this lesson.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (response.status < 200 || response.status >= 300) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText || 'Request failed'}`;
+        }
+        // Check response body for error messages
+        else if (response.data?.errorMessage) {
+          errorMessage = response.data.errorMessage;
+        } else if (response.data?.message) {
+          errorMessage = response.data.message;
+        } else if (response.data?.error) {
+          errorMessage = response.data.error;
+        }
+        
+        console.error('Auto-save failed with error:', errorMessage);
+        throw new Error(errorMessage);
       }
+
+      // If we get here, the save was successful
+      const isManualSave = autoSaveStatus === 'error';
+      toast.success(isManualSave ? 'Changes saved successfully!' : 'Lesson updated successfully!');
+      setAutoSaveStatus('saved');
+      setHasUnsavedChanges(false);
+      
+      // Reset to neutral after 2 seconds
+      setTimeout(() => {
+        setAutoSaveStatus('saved');
+      }, 2000);
      
     } catch (error) {
       console.error('Error updating lesson:', error);
-      toast.error(error.response?.data?.errorMessage || 'Failed to update lesson. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        request: error.request,
+        config: error.config
+      });
+      
+      // Handle different error types
+      let errorMessage = 'Failed to update lesson. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const responseData = error.response.data;
+        
+        console.log('Server error response:', { status, data: responseData });
+        console.log('413 Error detected! Status:', status, 'Data:', responseData);
+        
+        if (status === 413) {
+          errorMessage = 'Content is too large. Please reduce the size of your content and try again.';
+          console.log('Setting 413 error message:', errorMessage);
+        } else if (status === 400) {
+          errorMessage = 'Invalid content format. Please check your content and try again.';
+        } else if (status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (status === 403) {
+          errorMessage = 'You do not have permission to update this lesson.';
+        } else if (status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (responseData?.errorMessage) {
+          errorMessage = responseData.errorMessage;
+        } else if (responseData?.message) {
+          errorMessage = responseData.message;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
+        } else {
+          errorMessage = `HTTP ${status}: ${error.response.statusText || 'Request failed'}`;
+        }
+      } else if (error.request) {
+        // Network error
+        console.log('Network error - no response received:', error.request);
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        // Other error (including our custom thrown errors)
+        console.log('Other error:', error.message);
+        errorMessage = error.message;
+      }
+      
+      console.error('Final error message:', errorMessage);
+      console.log('Setting auto-save status to error and showing toast');
+      toast.error(errorMessage);
       setAutoSaveStatus('error');
     } finally {
       setIsUploading(false);
     }
   };
 
-  // Auto-save function with optimized debounce
-  const triggerAutoSave = React.useCallback(() => {
-    // Clear any existing timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    // Set new timer for auto-save (800ms debounce for faster response)
-    autoSaveTimerRef.current = setTimeout(async () => {
-      // Only save if we have unsaved changes and a lesson ID
-      if (!lessonId || !hasUnsavedChanges) {
-        return;
+  // Simple debounced auto-save function
+  const debouncedAutoSave = React.useMemo(() => {
+    let timeoutId = null;
+    
+    return (content) => {
+      // Clear existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
-
-      try {
-        setAutoSaveStatus('saving');
-        await handleUpdate();
-        setAutoSaveStatus('saved');
-        setHasUnsavedChanges(false);
+      
+      // Set new timeout
+      timeoutId = setTimeout(async () => {
+        if (!lessonId || !content || content.length === 0) {
+          return;
+        }
         
-        // Reset to neutral state after 1.5 seconds
-        setTimeout(() => {
-          setAutoSaveStatus('saved');
-        }, 1500);
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-        setAutoSaveStatus('error');
-        toast.error('Auto-save failed. Please try saving manually.');
-      }
-    }, 800); // 800ms debounce for faster response
-  }, [lessonId, hasUnsavedChanges, handleUpdate]);
+        try {
+          setAutoSaveStatus('saving');
+          await handleUpdate();
+          // handleUpdate() will set the status to 'saved' on success
+          // No need to set it here as it's already handled in handleUpdate()
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+          // handleUpdate() will set the status to 'error' and show the specific error message
+          // No need to override it here
+        }
+      }, 1000); // 1 second debounce
+    };
+  }, [lessonId, handleUpdate]);
 
   // Auto-save when content blocks change
   React.useEffect(() => {
@@ -4321,72 +4162,15 @@ function LessonBuilder() {
     
     if (hasChanged && contentBlocks.length > 0) {
       setHasUnsavedChanges(true);
-      // Show immediate feedback that changes are detected
-      setAutoSaveStatus('changes_detected');
-      triggerAutoSave();
+      debouncedAutoSave(contentBlocks);
       prevContentBlocksRef.current = [...contentBlocks];
     }
-  }, [contentBlocks, loading, fetchingContent, triggerAutoSave]);
+  }, [contentBlocks, loading, fetchingContent, debouncedAutoSave]);
 
-  const toggleViewMode = () => {
-    // View mode functionality removed - now using Modern Preview only
-  };
-
-   
-
-  const handleVideoInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'file') {
-      setVideoFile(e.target.files[0]);
-      setVideoPreview(URL.createObjectURL(e.target.files[0]));
-    } else {
-      if (name === 'title') {
-        setVideoTitle(value);
-      } else if (name === 'description') {
-        setVideoDescription(value);
-      } else if (name === 'url') {
-        setVideoUrl(value);
-      }
-    }
-  };
-
-  const handleImageTemplateSelect = (template) => {
-
-    const imageUrl = template.defaultContent?.imageUrl || '';
-    const imageTitle = template.title;
-    const imageText = template.defaultContent?.text || '';
-   
-    const newBlock = {
-      id: `image-${Date.now()}`,
-      block_id: `image-${Date.now()}`,
-      type: 'image',
-      title: template.title,
-      layout: template.layout,
-      templateType: template.id,
-      alignment: template.alignment || 'left', // Include alignment from template
-      imageUrl: imageUrl,
-      imageTitle: imageTitle,
-      imageDescription: '',
-      text: imageText,
-      isEditing: false,
-      timestamp: new Date().toISOString(),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1,
-      details: {
-        image_url: imageUrl,
-        caption: imageText,
-        alt_text: imageTitle,
-        layout: template.layout,
-        template: template.id,
-        alignment: template.alignment || 'left'
-      }
-    };
-
-    // Generate HTML content immediately for the new block
-    newBlock.html_css = generateImageBlockHtml(newBlock);
-   
+  const handleImageTemplateSelect = (newBlock) => {
     // Check if we're inserting at a specific position
     if (insertionPosition !== null) {
-      // Insert at specific position in contentBlocks (always update this for immediate UI)
+      // Insert at specific position in contentBlocks
       setContentBlocks(prev => {
         const newBlocks = [...prev];
         newBlocks.splice(insertionPosition, 0, newBlock);
@@ -4409,228 +4193,71 @@ function LessonBuilder() {
       }
       setInsertionPosition(null);
     } else {
-      // Always add to local edit list so it appears immediately in edit mode
+      // Add to contentBlocks
       setContentBlocks(prev => [...prev, newBlock]);
     }
-    setShowImageTemplateSidebar(false);
   };
 
-  const handleImageBlockEdit = (blockId, field, value) => {
-    setContentBlocks(prev =>
-      prev.map(block => {
-        if (block.id !== blockId) return block;
-        
-        const updatedBlock = { ...block, [field]: value };
-        
-        // If alignment is being changed, regenerate the HTML
-        if (field === 'alignment') {
-          updatedBlock.html_css = generateImageBlockHtml(updatedBlock);
-        }
-        
-        return updatedBlock;
-      })
-    );
-  };
-
-  const handleImageFileUpload = async (blockId, file, retryCount = 0) => {
-    if (!file) return;
-
-    // Set loading state for this specific block
-    setImageUploading(prev => ({ ...prev, [blockId]: true }));
-
-    try {
-      console.log('Attempting to upload image to AWS S3:', {
-        blockId,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        retryCount
+  const handleImageUpdate = (newBlock, currentBlock) => {
+    // Check if we're inserting at a specific position first (highest priority)
+    if (insertionPosition !== null) {
+      // Insert at specific position in contentBlocks
+      setContentBlocks(prev => {
+        const newBlocks = [...prev];
+        newBlocks.splice(insertionPosition, 0, newBlock);
+        return newBlocks;
       });
-
-      // Upload image to API
-      const uploadResult = await uploadImage(file, {
-        folder: 'lesson-images', // Optional: organize images in a specific folder
-        public: true // Make images publicly accessible
-      });
-
-      if (uploadResult.success && uploadResult.imageUrl) {
-        // Update the block with the uploaded AWS S3 image URL
-        handleImageBlockEdit(blockId, 'imageUrl', uploadResult.imageUrl);
-        handleImageBlockEdit(blockId, 'imageFile', file);
-        handleImageBlockEdit(blockId, 'uploadedImageData', uploadResult);
-        
-        // Clear any local URL flag
-        handleImageBlockEdit(blockId, 'isUsingLocalUrl', false);
-        
-        console.log('Image uploaded successfully to AWS S3:', {
-          blockId,
-          awsUrl: uploadResult.imageUrl,
-          uploadResult
+      
+      // Also update lessonContent if it exists
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => {
+          const newContent = [...prevLessonContent.data.content];
+          newContent.splice(insertionPosition, 0, newBlock);
+          return {
+            ...prevLessonContent,
+            data: {
+              ...prevLessonContent.data,
+              content: newContent
+            }
+          };
         });
-        
-        toast.success('Image uploaded successfully to AWS S3!');
-      } else {
-        throw new Error('Upload failed - no image URL returned');
       }
-    } catch (error) {
-      console.error('Error uploading image to AWS S3:', error);
-      console.error('Upload error details:', {
-        blockId,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        error: error.message,
-        retryCount
-      });
+      setInsertionPosition(null);
+    } else if (currentBlock && contentBlocks.find(b => b.id === currentBlock.id)) {
+      // Update existing block locally (edit mode)
+      const getPlainText = (html) => {
+        const temp = typeof document !== 'undefined' ? document.createElement('div') : null;
+        if (!temp) return html || '';
+        temp.innerHTML = html || '';
+        return temp.textContent || temp.innerText || '';
+      };
       
-      // Retry up to 2 times for network errors
-      if (retryCount < 2 && (error.message.includes('network') || error.message.includes('timeout') || error.message.includes('fetch'))) {
-        console.log(`Retrying upload (attempt ${retryCount + 1}/2)...`);
-        // Don't clear loading state, keep it active for retry
-        setTimeout(() => {
-          handleImageFileUpload(blockId, file, retryCount + 1);
-        }, 1000 * (retryCount + 1)); // Exponential backoff
-        return; // Exit early, don't execute finally block
-      }
+      setContentBlocks(prev => prev.map(block => block.id === currentBlock.id ? { ...newBlock, text: getPlainText(newBlock.text || ''), imageDescription: getPlainText(newBlock.imageDescription || '') } : block));
       
-      toast.error(`Failed to upload image to AWS S3: ${error.message || 'Unknown error'}. Using local preview.`);
-      
-      // Fallback to local URL for immediate preview (but warn user)
-      const localImageUrl = URL.createObjectURL(file);
-      handleImageBlockEdit(blockId, 'imageUrl', localImageUrl);
-      handleImageBlockEdit(blockId, 'imageFile', file);
-      
-      // Mark that this is using local URL so save function can warn
-      handleImageBlockEdit(blockId, 'isUsingLocalUrl', true);
-      
-      console.warn('Using local blob URL as fallback:', localImageUrl);
-    } finally {
-      // Clear loading state
-      setImageUploading(prev => ({ ...prev, [blockId]: false }));
-    }
-  };
-
-  // Generate HTML content for image blocks
-  const generateImageBlockHtml = (block) => {
-    const layout = block.layout || 'centered';
-    const textContent = (block.text || block.imageDescription || '').toString();
-    const imageUrl = block.imageUrl || '';
-    const imageTitle = block.imageTitle || '';
-    const alignment = block.alignment || block.details?.alignment || 'left';
-
-    if (!imageUrl) return '';
-
-    if (layout === 'side-by-side') {
-      const imageFirst = alignment === 'left';
-      const imageOrder = imageFirst ? 'order-1' : 'order-2';
-      const textOrder = imageFirst ? 'order-2' : 'order-1';
-      
-      return `
-        <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div class="${imageOrder}">
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
-          </div>
-          <div class="${textOrder}">
-            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
-          </div>
-        </div>
-      `;
-    } else if (layout === 'overlay') {
-      return `
-        <div class="relative rounded-xl overflow-hidden">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
-        </div>
-      `;
-    } else if (layout === 'full-width') {
-      return `
-        <div class="space-y-3">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
-          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
-        </div>
-      `;
-    } else { // centered or default
-      // Handle standalone image alignment
-      let alignmentClass = 'text-center'; // default
-      if (alignment === 'left') {
-        alignmentClass = 'text-left';
-      } else if (alignment === 'right') {
-        alignmentClass = 'text-right';
-      }
-      
-      return `
-        <div class="${alignmentClass}">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
-          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
-        </div>
-      `;
-    }
-  };
-
-  const saveImageTemplateChanges = (blockId) => {
-    setContentBlocks(prev =>
-      prev.map(block => {
-        if (block.id !== blockId) return block;
-        if (block.type === 'image') {
-          const captionPlainText = getPlainText(block.text || '');
-          
-          // Ensure we're using the uploaded AWS URL, not local URL
-          let finalImageUrl = block.imageUrl || block.details?.image_url || '';
-          
-          // If imageUrl is a local blob URL, try to get the uploaded URL from uploadedImageData
-          if (finalImageUrl.startsWith('blob:') && block.uploadedImageData?.imageUrl) {
-            finalImageUrl = block.uploadedImageData.imageUrl;
-            console.log('Using uploaded AWS URL instead of local blob URL:', finalImageUrl);
+      // If lessonContent exists, also sync the fetched content block
+      if (lessonContent?.data?.content) {
+        setLessonContent(prev => ({
+          ...prev,
+          data: {
+            ...prev.data,
+            content: prev.data.content.map(b => b.block_id === currentBlock.id ? {
+              ...b,
+              html_css: newBlock.html_css,
+              details: newBlock.details,
+              imageUrl: newBlock.imageUrl,
+              imageTitle: newBlock.imageTitle,
+              imageDescription: getPlainText(newBlock.imageDescription || ''),
+              text: getPlainText(newBlock.text || ''),
+              layout: newBlock.layout,
+              templateType: newBlock.templateType
+            } : b)
           }
-          
-          const updatedDetails = {
-            ...(block.details || {}),
-            image_url: finalImageUrl,
-            caption: (captionPlainText || block.details?.caption || ''),
-            alt_text: block.imageTitle || block.details?.alt_text || '',
-            layout: block.layout || block.details?.layout,
-            template: block.templateType || block.details?.template,
-            alignment: block.alignment || block.details?.alignment || 'left',
-          };
-          
-          // Create updated block with final image URL for HTML generation
-          const updatedBlock = {
-            ...block,
-            imageUrl: finalImageUrl,
-            details: updatedDetails
-          };
-          
-          // Generate HTML content with the correct AWS URL
-          const htmlContent = generateImageBlockHtml(updatedBlock);
-          
-          console.log('Saving image block:', {
-            blockId,
-            layout: block.layout,
-            originalUrl: block.imageUrl,
-            finalUrl: finalImageUrl,
-            isLocalUrl: finalImageUrl.startsWith('blob:'),
-            hasUploadedData: !!block.uploadedImageData,
-            isUsingLocalUrl: block.isUsingLocalUrl
-          });
-          
-          // Warn if still using local URL
-          if (finalImageUrl.startsWith('blob:') || block.isUsingLocalUrl) {
-            console.warn('WARNING: Image block is using local URL instead of AWS S3 URL');
-            toast.warning('Warning: Image is stored locally and may not be accessible after page refresh. Please re-upload the image.');
-          }
-          
-          return { 
-            ...updatedBlock,
-            isEditing: false, 
-            html_css: htmlContent, 
-            imageDescription: captionPlainText, 
-            details: updatedDetails 
-          };
-        }
-        return { ...block, isEditing: false };
-      })
-    );
-    console.log('Image template changes saved for block:', blockId);
+        }));
+      }
+    } else {
+      // Add new block to local edit list immediately
+      setContentBlocks(prev => [...prev, newBlock]);
+    }
   };
 
   const toggleImageBlockEditing = (blockId) => {
@@ -4641,6 +4268,30 @@ function LessonBuilder() {
           : block
       )
     );
+  };
+
+  const handleImageFileUpload = async (blockId, file, retryCount = 0) => {
+    if (imageBlockComponentRef.current && imageBlockComponentRef.current.handleImageFileUpload) {
+      await imageBlockComponentRef.current.handleImageFileUpload(blockId, file, retryCount);
+    }
+  };
+
+  const handleImageBlockEdit = (blockId, field, value) => {
+    if (imageBlockComponentRef.current && imageBlockComponentRef.current.handleImageBlockEdit) {
+      imageBlockComponentRef.current.handleImageBlockEdit(blockId, field, value);
+    }
+  };
+
+  const saveImageTemplateChanges = (blockId) => {
+    if (imageBlockComponentRef.current && imageBlockComponentRef.current.saveImageTemplateChanges) {
+      imageBlockComponentRef.current.saveImageTemplateChanges(blockId);
+    }
+  };
+
+  const handleInlineImageFileUpload = (blockId, file) => {
+    if (imageBlockComponentRef.current && imageBlockComponentRef.current.handleInlineImageFileUpload) {
+      imageBlockComponentRef.current.handleInlineImageFileUpload(blockId, file);
+    }
   };
 
   const handleTextEditorOpen = (block = null) => {
@@ -5376,419 +5027,17 @@ function LessonBuilder() {
     setEditorContent('');
   };
 
-  const handleImageDialogClose = () => {
-    setShowImageDialog(false);
-    setImageTitle('');
-    setImageDescription('');
-    setImageFile(null);
-    setImagePreview('');
-    setImageTemplateText('');
-    setCurrentBlock(null);
-  };
-
-  const handleImageInputChange = (e) => {
-    const { name, value, files } = e.target;
-   
-    if (name === 'file' && files && files[0]) {
-      const file = files[0];
-     
-      // Check file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-      if (!validTypes.includes(file.type)) {
-        alert('Please upload only JPG or PNG images');
-        return;
-      }
-     
-      // Check file size (50MB max)
-      if (file.size > 50 * 1024 * 1024) {
-        alert('Image size should be less than 50MB');
-        return;
-      }
-     
-      // Show image editor instead of directly setting the file
-      setImageToEdit(file);
-      setImageEditorTitle('Edit Image');
-      setShowImageEditor(true);
-    } else if (name === 'title') {
-      setImageTitle(value);
-    } else if (name === 'description') {
-      setImageDescription(value);
-    }
-  };
-
-  // Image Editor callbacks
-  const handleImageEditorSave = (editedFile) => {
-    // Check if this is inline editing (currentBlock has an id)
-    if (currentBlock && currentBlock.id) {
-      // Inline editing - upload the edited file directly
-      handleImageFileUpload(currentBlock.id, editedFile);
-    } else {
-      // Regular image dialog editing
-      setImageFile(editedFile);
-      setImagePreview(URL.createObjectURL(editedFile));
-    }
-    
-    setShowImageEditor(false);
-    setImageToEdit(null);
-    setCurrentBlock(null);
-  };
-
-  const handleImageEditorClose = () => {
-    setShowImageEditor(false);
-    setImageToEdit(null);
-  };
-
-  // Inline image editing with image editor
-  const handleInlineImageFileUpload = (blockId, file) => {
-    if (!file) return;
-
-    // Check file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please upload only JPG or PNG images');
-      return;
-    }
-   
-    // Check file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      alert('Image size should be less than 50MB');
-      return;
-    }
-
-    // Show image editor for inline editing
-    setImageToEdit(file);
-    setImageEditorTitle('Edit Image');
-    setShowImageEditor(true);
-    
-    // Store the block ID for when the editor saves
-    setCurrentBlock({ id: blockId });
-  };
-
-  const handleAddImage = async () => {
-    if (!imageTitle || (!imageFile && !imagePreview)) {
-      alert('Please fill in all required fields');
-      return;
-    }
-
-    // Set loading state
-    setMainImageUploading(true);
-
-    try {
-    // Handle both File object and string URL cases
-    let imageUrl = '';
-      let uploadedImageData = null;
-      
-    if (imageFile && typeof imageFile === 'object' && 'name' in imageFile) {
-        // It's a File object - upload to API
-        try {
-          const uploadResult = await uploadImage(imageFile, {
-            folder: 'lesson-images',
-            public: true
-          });
-          
-          if (uploadResult.success && uploadResult.imageUrl) {
-            imageUrl = uploadResult.imageUrl;
-            uploadedImageData = uploadResult;
-            toast.success('Image uploaded successfully!');
-          } else {
-            throw new Error('Upload failed - no image URL returned');
-          }
-        } catch (error) {
-          console.error('Error uploading image:', error);
-          toast.error(error.message || 'Failed to upload image. Please try again.');
-          
-          // Fallback to local URL for immediate preview
-      imageUrl = URL.createObjectURL(imageFile);
-        }
-    } else if (typeof imageFile === 'string') {
-      // It's already a URL string
-      imageUrl = imageFile;
-    } else if (imagePreview) {
-      // Fallback to imagePreview if available
-      imageUrl = imagePreview;
-    }
-
-    const layout = currentBlock?.layout || null;
-    const templateType = currentBlock?.templateType || null;
-    const textContent = getPlainText(imageTemplateText || '').trim();
-
-    // Build HTML based on layout when applicable
-    let htmlContent = '';
-    if (layout === 'side-by-side') {
-      const alignment = currentBlock?.alignment || 'left';
-      const imageFirst = alignment === 'left';
-      const imageOrder = imageFirst ? 'order-1' : 'order-2';
-      const textOrder = imageFirst ? 'order-2' : 'order-1';
-      
-      htmlContent = `
-        <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-          <div class="${imageOrder}">
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
-          </div>
-          <div class="${textOrder}">
-            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
-          </div>
-        </div>
-      `;
-    } else if (layout === 'overlay') {
-      htmlContent = `
-        <div class="relative rounded-xl overflow-hidden">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
-        </div>
-      `;
-    } else if (layout === 'centered') {
-      htmlContent = `
-        <div class="text-center">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
-          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
-        </div>
-      `;
-    } else if (layout === 'full-width') {
-      htmlContent = `
-        <div class="space-y-3">
-          <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
-          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
-        </div>
-      `;
-    } else {
-      htmlContent = `
-        <div class="image-block">
-          <img
-            src="${imageUrl}"
-            alt="${imageTitle || 'Image'}"
-            style="max-width: 100%; height: auto; border-radius: 0.5rem;"
-          />
-          ${textContent ? `
-            <span class="mt-2 text-sm text-gray-600">${textContent}</span>
-          ` : ''}
-        </div>
-      `;
-    }
-
-    // Determine which alignment to use based on layout
-    const finalAlignment = layout === 'side-by-side' ? imageAlignment : standaloneImageAlignment;
-
-    const newBlock = {
-      id: currentBlock?.id || `image-${Date.now()}`,
-      block_id: currentBlock?.id || `image-${Date.now()}`,
-      type: 'image',
-      title: imageTitle,
-      layout: layout || undefined,
-      templateType: templateType || undefined,
-      alignment: finalAlignment, // Include appropriate alignment
-      details: {
-        image_url: imageUrl,
-        caption: textContent || '',
-        alt_text: imageTitle,
-        layout: layout || undefined,
-        template: templateType || undefined,
-        alignment: finalAlignment
-      },
-      html_css: htmlContent,
-      imageTitle: imageTitle,
-      imageDescription: textContent,
-      text: textContent,
-      imageFile: imageFile,
-      imageUrl: imageUrl,
-      uploadedImageData: uploadedImageData,
-      timestamp: new Date().toISOString(),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    // Check if we're inserting at a specific position first (highest priority)
-    if (insertionPosition !== null) {
-      // Insert at specific position in contentBlocks (always update this for immediate UI)
-      setContentBlocks(prev => {
-        const newBlocks = [...prev];
-        newBlocks.splice(insertionPosition, 0, newBlock);
-        return newBlocks;
-      });
-      
-      // Also update lessonContent if it exists
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => {
-          const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
-          return {
-            ...prevLessonContent,
-            data: {
-              ...prevLessonContent.data,
-              content: newContent
-            }
-          };
-        });
-      }
-      setInsertionPosition(null);
-      setCurrentBlock(null);
-    } else if (currentBlock && contentBlocks.find(b => b.id === currentBlock.id)) {
-      // Update existing block locally (edit mode) - only if the block actually exists in contentBlocks
-      setContentBlocks(prev => prev.map(block => block.id === currentBlock.id ? { ...newBlock, text: getPlainText(newBlock.text || ''), imageDescription: getPlainText(newBlock.imageDescription || '') } : block));
-      // If lessonContent exists, also sync the fetched content block
-      if (lessonContent?.data?.content) {
-        setLessonContent(prev => ({
-          ...prev,
-          data: {
-            ...prev.data,
-            content: prev.data.content.map(b => b.block_id === currentBlock.id ? {
-              ...b,
-              html_css: htmlContent,
-              details: { ...(b.details || {}), image_url: imageUrl, caption: textContent, alt_text: imageTitle, layout: layout || b.details?.layout, template: templateType || b.details?.template },
-              imageUrl: imageUrl,
-              imageTitle: imageTitle,
-              imageDescription: getPlainText(textContent || ''),
-              text: getPlainText(textContent || ''),
-              layout: layout || b.layout,
-              templateType: templateType || b.templateType
-            } : b)
-          }
-        }));
-      }
-      setCurrentBlock(null);
-    } else {
-      // Add new block to local edit list immediately
-      setContentBlocks(prev => [...prev, newBlock]);
-      setCurrentBlock(null);
-    }
-   
-    handleImageDialogClose();
-    } finally {
-      // Clear loading state
-      setMainImageUploading(false);
-    }
-  };
-
-  const handleEditImage = (blockId) => {
-    const block = contentBlocks.find(b => b.id === blockId);
-    if (block) {
-      setCurrentBlock(block);
-      setImageTitle(block.imageTitle);
-      setImageDescription(block.imageDescription || '');
-      setImageFile(block.imageFile);
-      setImagePreview(block.imageUrl);
-      setImageTemplateText(block.text || block.details?.caption || '');
-      
-      // Set appropriate alignment based on layout
-      const blockAlignment = block.alignment || 'left';
-      if (block.layout === 'side-by-side') {
-        setImageAlignment(blockAlignment);
-      } else {
-        setStandaloneImageAlignment(blockAlignment);
-      }
-      
-      setShowImageDialog(true);
-    }
-  };
-
-  const handleAudioDialogClose = () => {
-    setShowAudioDialog(false);
-    setAudioTitle('');
-    setAudioDescription('');
-    setAudioFile(null);
-    setAudioPreview('');
-    setAudioUrl('');
-    setAudioUploadMethod('file');
-    setCurrentBlock(null);
-  };
-
-  const handleAudioInputChange = (e) => {
-    const { name, value, files } = e.target;
-   
-    if (name === 'file' && files && files[0]) {
-      const file = files[0];
-     
-      // Check file type
-      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg'];
-      if (!validTypes.includes(file.type)) {
-        alert('Please upload only MP3, WAV, or OGG audio files');
-        return;
-      }
-     
-      // Check file size (20MB max)
-      if (file.size > 20 * 1024 * 1024) {
-        alert('Audio size should be less than 20MB');
-        return;
-      }
-     
-      setAudioFile(file);
-      setAudioPreview(URL.createObjectURL(file));
-    } else if (name === 'title') {
-      setAudioTitle(value);
-    } else if (name === 'description') {
-      setAudioDescription(value);
-    } else if (name === 'url') {
-      setAudioUrl(value);
-    }
-  };
-
-  const handleAddAudio = async () => {
-    // Validate required fields based on upload method
-    if (!audioTitle) {
-      alert('Please enter an audio title');
-      return;
-    }
-   
-    if (audioUploadMethod === 'file' && !audioFile) {
-      alert('Please select an audio file');
-      return;
-    }
-   
-    if (audioUploadMethod === 'url' && !audioUrl) {
-      alert('Please enter an audio URL');
-      return;
-    }
-
-    // Create audio URL based on upload method
-    let finalAudioUrl = '';
-    if (audioUploadMethod === 'file') {
-      try {
-        setIsUploading(true);
-        const upload = await uploadAudioResource(audioFile, { folder: 'lesson-audio', public: true, type: 'audio' });
-        if (!upload?.success || !upload?.audioUrl) {
-          throw new Error('Audio upload failed');
-        }
-        finalAudioUrl = upload.audioUrl;
-      } catch (e) {
-        setIsUploading(false);
-        toast.error(e.message || 'Audio upload failed');
-        return;
-      } finally {
-        setIsUploading(false);
-      }
-    } else {
-      finalAudioUrl = audioUrl;
-    }
-
-    // Generate HTML content for display
-    const htmlContent = `
-      <audio controls style="width: 100%; max-width: 400px;">
-        <source src="${finalAudioUrl}" type="audio/mpeg">
-        Your browser does not support the audio element.
-      </audio>
-      ${audioTitle ? `<p style="font-size: 14px; color: #666; margin-top: 8px;">${audioTitle}</p>` : ''}
-      ${audioDescription ? `<p style="font-size: 12px; color: #888; margin-top: 4px;">${audioDescription}</p>` : ''}
-    `;
-
-    const audioBlock = {
-      id: currentBlock?.id || `audio-${Date.now()}`,
-      block_id: currentBlock?.id || `audio-${Date.now()}`,
-      type: 'audio',
-      title: 'Audio',
-      audioTitle: audioTitle,
-      audioDescription: audioDescription,
-      audioFile: audioUploadMethod === 'file' ? audioFile : null,
-      audioUrl: finalAudioUrl,
-      uploadMethod: audioUploadMethod,
-      originalUrl: audioUploadMethod === 'url' ? audioUrl : null,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentBlock) {
-      // Update existing block
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentBlock.id ? audioBlock : block)
+  const handleLinkUpdate = (linkBlock) => {
+    if (editingLinkBlock) {
+      // Update existing link block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingLinkBlock.id ? {
+            ...block,
+            ...linkBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
       );
       
       // Also update lessonContent if it exists (for fetched lessons)
@@ -5798,144 +5047,22 @@ function LessonBuilder() {
           data: {
             ...prevLessonContent.data,
             content: prevLessonContent.data.content.map(block =>
-              block.block_id === currentBlock.id ? {
-                ...audioBlock,
-                block_id: currentBlock.id,
-                details: {
-                  audio_url: finalAudioUrl,
-                  caption: audioTitle,
-                  description: audioDescription
-                }
+              (block.block_id === editingLinkBlock.id || block.id === editingLinkBlock.id) ? {
+                ...block,
+                ...linkBlock,
+                updatedAt: new Date().toISOString()
               } : block
             )
           }
         }));
       }
     } else {
-      // Add new block to local edit list
-      setContentBlocks(prev => [...prev, audioBlock]);
-      
-      // Also add to lessonContent if it exists (for fetched lessons)
-      if (lessonContent?.data?.content) {
-        const newAudioBlock = {
-          ...audioBlock,
-          details: {
-            audio_url: finalAudioUrl,
-            caption: audioTitle,
-            description: audioDescription
-          }
-        };
-        setLessonContent(prevLessonContent => ({
-          ...prevLessonContent,
-          data: {
-            ...prevLessonContent.data,
-            content: [...prevLessonContent.data.content, newAudioBlock]
-          }
-        }));
-      }
-    }
-   
-    handleAudioDialogClose();
-  };
-
-  const handleEditAudio = (blockId) => {
-    const block = contentBlocks.find(b => b.id === blockId);
-    if (block) {
-      setCurrentBlock(block);
-      setAudioTitle(block.audioTitle);
-      setAudioDescription(block.audioDescription || '');
-      setAudioFile(block.audioFile);
-      setAudioPreview(block.audioUrl);
-      setShowAudioDialog(true);
-    }
-  };
-
-  
-
-  const handleLinkDialogClose = () => {
-    setShowLinkDialog(false);
-    setLinkTitle('');
-    setLinkUrl('');
-    setLinkDescription('');
-    setLinkButtonText('Visit Link');
-    setLinkButtonStyle('primary');
-    setLinkError('');
-    setCurrentLinkBlock(null);
-  };
-
-  const handleLinkInputChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'title') {
-      setLinkTitle(value);
-    } else if (name === 'url') {
-      setLinkUrl(value);
-    } else if (name === 'description') {
-      setLinkDescription(value);
-    } else if (name === 'buttonText') {
-      setLinkButtonText(value);
-    } else if (name === 'buttonStyle') {
-      setLinkButtonStyle(value);
-    }
-  };
-
-  const handleAddLink = () => {
-    if (!linkTitle || !linkUrl || !linkButtonText) {
-      setLinkError('Please fill in all required fields');
-      return;
-    }
-
-    try {
-      // This will throw if URL is invalid
-      new URL(linkUrl);
-    } catch (e) {
-      setLinkError('Please enter a valid URL (e.g., https://example.com)');
-      return;
-    }
-
-    // Generate HTML content for display
-    const buttonStyles = {
-      primary: 'background-color: #3B82F6; color: white; border: none;',
-      secondary: 'background-color: #6B7280; color: white; border: none;',
-      outline: 'background-color: transparent; color: #3B82F6; border: 2px solid #3B82F6;'
-    };
-
-    const htmlContent = `
-      <div style="padding: 16px; border: 1px solid #E5E7EB; border-radius: 8px; background-color: #F9FAFB;">
-        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">${linkTitle}</h3>
-        ${linkDescription ? `<p style="margin: 0 0 12px 0; font-size: 14px; color: #6B7280;">${linkDescription}</p>` : ''}
-        <a href="${linkUrl}" target="_blank" rel="noopener noreferrer"
-           style="display: inline-block; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; ${buttonStyles[linkButtonStyle] || buttonStyles.primary}">
-          ${linkButtonText}
-        </a>
-      </div>
-    `;
-
-    const newBlock = {
-      id: currentLinkBlock?.id || `link-${Date.now()}`,
-      block_id: currentLinkBlock?.id || `link-${Date.now()}`,
-      type: 'link',
-      title: 'Link',
-      linkTitle: linkTitle,
-      linkUrl: linkUrl,
-      linkDescription: linkDescription,
-      linkButtonText: linkButtonText,
-      linkButtonStyle: linkButtonStyle,
-      timestamp: new Date().toISOString(),
-      html_css: htmlContent,
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    if (currentLinkBlock) {
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentLinkBlock.id ? newBlock : block)
-      );
-    } else {
       // Check if we're inserting at a specific position
       if (insertionPosition !== null) {
         // Insert at specific position in contentBlocks (always update this for immediate UI)
         setContentBlocks(prevBlocks => {
           const newBlocks = [...prevBlocks];
-          newBlocks.splice(insertionPosition, 0, newBlock);
+          newBlocks.splice(insertionPosition, 0, linkBlock);
           return newBlocks;
         });
         
@@ -5943,7 +5070,7 @@ function LessonBuilder() {
         if (lessonContent?.data?.content) {
           setLessonContent(prevLessonContent => {
             const newContent = [...prevLessonContent.data.content];
-            newContent.splice(insertionPosition, 0, newBlock);
+            newContent.splice(insertionPosition, 0, linkBlock);
             return {
               ...prevLessonContent,
               data: {
@@ -5956,110 +5083,43 @@ function LessonBuilder() {
         setInsertionPosition(null);
       } else {
         // Add new link block - only add to contentBlocks like other block handlers
-        setContentBlocks(prev => [...prev, newBlock]);
+        setContentBlocks(prevBlocks => [...prevBlocks, linkBlock]);
       }
     }
-   
-    handleLinkDialogClose();
+
+    // Reset editing state
+    setEditingLinkBlock(null);
   };
 
-  const handlePdfDialogClose = () => {
-    setShowPdfDialog(false);
-    setPdfTitle('');
-    setPdfDescription('');
-    setPdfFile(null);
-    setPdfPreview('');
-    setPdfUrl('');
-    setPdfUploadMethod('file');
-    setCurrentBlock(null);
-  };
-
-  const handlePdfInputChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'file' && files && files[0]) {
-      setPdfFile(files[0]);
-      setPdfPreview(URL.createObjectURL(files[0]));
-    } else if (name === 'title') {
-      setPdfTitle(value);
-    } else if (name === 'description') {
-      setPdfDescription(value);
-    } else if (name === 'url') {
-      setPdfUrl(value);
-    }
-  };
-
-  const handleAddPdf = async () => {
-    // Validate required fields based on upload method
-    if (!pdfTitle) {
-      alert('Please enter a PDF title');
-      return;
-    }
-   
-    if (pdfUploadMethod === 'file' && !pdfFile) {
-      alert('Please select a PDF file');
-      return;
-    }
-   
-    if (pdfUploadMethod === 'url' && !pdfUrl) {
-      alert('Please enter a PDF URL');
-      return;
-    }
-
-    setMainPdfUploading(true);
-
-    // Create PDF URL based on upload method
-    let finalPdfUrl = '';
-    let uploadedPdfData = null;
-    if (pdfUploadMethod === 'file') {
-      try {
-        const result = await uploadImage(pdfFile, { fieldName: 'resource', folder: 'lesson-resources', public: true, type: 'pdf' });
-        if (result?.success && result?.imageUrl) {
-          finalPdfUrl = result.imageUrl;
-          uploadedPdfData = result;
-          toast.success('PDF uploaded successfully!');
-        } else {
-          throw new Error('Upload failed - no URL returned');
-        }
-      } catch (err) {
-        console.error('PDF upload error:', err);
-        toast.error(err.message || 'Failed to upload PDF. Using local preview.');
-        finalPdfUrl = URL.createObjectURL(pdfFile);
-      }
-    } else {
-      finalPdfUrl = pdfUrl;
-    }
-
-    const pdfBlock = {
-      id: currentBlock?.id || `pdf-${Date.now()}`,
-      type: 'pdf',
-      title: 'PDF',
-      pdfTitle: pdfTitle,
-      pdfDescription: pdfDescription,
-      pdfFile: pdfUploadMethod === 'file' ? pdfFile : null,
-      pdfUrl: finalPdfUrl,
-      uploadMethod: pdfUploadMethod,
-      originalUrl: pdfUploadMethod === 'url' ? pdfUrl : null,
-      uploadedPdfData,
-      timestamp: new Date().toISOString(),
-      details: {
-        pdf_url: finalPdfUrl,
-        caption: pdfTitle,
-        description: pdfDescription,
-      },
-      html_css: `
-        <div class="lesson-pdf">
-          ${pdfTitle ? `<h3 class="pdf-title">${pdfTitle}</h3>` : ''}
-          ${pdfDescription ? `<p class="pdf-description">${pdfDescription}</p>` : ''}
-          <iframe src="${finalPdfUrl}" class="pdf-iframe" style="width: 100%; height: 600px; border: none; border-radius: 12px;"></iframe>
-        </div>
-      `
-    };
-
-    if (currentBlock) {
-      // Update existing block
-      setContentBlocks(prev =>
-        prev.map(block => block.id === currentBlock.id ? pdfBlock : block)
+  const handlePdfUpdate = (pdfBlock) => {
+    if (editingPdfBlock) {
+      // Update existing PDF block
+      setContentBlocks(blocks =>
+        blocks.map(block =>
+          block.id === editingPdfBlock.id ? {
+            ...block,
+            ...pdfBlock,
+            updatedAt: new Date().toISOString()
+          } : block
+        )
       );
+
+      // Also update lessonContent if it exists (for fetched lessons)
+      if (lessonContent?.data?.content) {
+        setLessonContent(prevLessonContent => ({
+          ...prevLessonContent,
+          data: {
+            ...prevLessonContent.data,
+            content: prevLessonContent.data.content.map(block =>
+              (block.block_id === editingPdfBlock.id || block.id === editingPdfBlock.id) ? {
+                ...block,
+                ...pdfBlock,
+                updatedAt: new Date().toISOString()
+              } : block
+            )
+          }
+        }));
+      }
     } else {
       // Check if we're inserting at a specific position
       if (insertionPosition !== null) {
@@ -6086,13 +5146,13 @@ function LessonBuilder() {
         }
         setInsertionPosition(null);
       } else {
-        // Add new block
-        setContentBlocks(prev => [...prev, pdfBlock]);
+        // Add new PDF block - only add to contentBlocks like other block handlers
+        setContentBlocks(prevBlocks => [...prevBlocks, pdfBlock]);
       }
     }
    
-    handlePdfDialogClose();
-    setMainPdfUploading(false);
+    // Reset editing state
+    setEditingPdfBlock(null);
   };
 
   useEffect(() => {
@@ -6563,13 +5623,6 @@ function LessonBuilder() {
                   ))}
                 </div>
               </div>
-
-              {/* Footer */}
-              {/* <div className="p-3 border-t border-gray-200 bg-gray-50">
-                <p className="text-xs text-gray-500 text-center">
-                  Drag blocks to the right to build your lesson
-                </p>
-              </div> */}
             </div>
           </div>
 
@@ -6604,32 +5657,26 @@ function LessonBuilder() {
                 {/* Auto-save status indicator */}
                 <div className="flex flex-col items-end">
                   <div className="flex items-center gap-2 text-sm">
-                    {autoSaveStatus === 'changes_detected' && (
-                      <>
-                        <div className="h-4 w-4 rounded-full bg-yellow-500 animate-pulse"></div>
-                        <span className="text-yellow-600 font-medium">Changes detected...</span>
-                      </>
-                    )}
                     {autoSaveStatus === 'saving' && (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                        <span className="text-blue-600 font-medium">Saving...</span>
+                        <span className="text-blue-600 font-medium">Auto-saving...</span>
                       </>
                     )}
                     {autoSaveStatus === 'saved' && hasUnsavedChanges === false && (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-green-600 font-medium">All changes saved</span>
+                        <span className="text-green-600 font-medium">Auto-saved</span>
                       </>
                     )}
                     {autoSaveStatus === 'error' && (
                       <>
                         <X className="h-4 w-4 text-red-600" />
-                        <span className="text-red-600 font-medium">Save failed</span>
+                        <span className="text-red-600 font-medium">Auto-save failed</span>
                       </>
                     )}
                   </div>
-                  {autoSaveStatus !== 'saving' && autoSaveStatus !== 'changes_detected' && (
+                  {autoSaveStatus !== 'saving' && (
                     <span className="text-xs text-gray-500 mt-0.5">Auto-save enabled</span>
                   )}
                 </div>
@@ -6649,12 +5696,18 @@ function LessonBuilder() {
                   size="sm"
                   onClick={handleUpdate}
                   disabled={isUploading || autoSaveStatus === 'saving'}
-                  title="Manually save changes now"
+                  title={autoSaveStatus === 'error' ? "Auto-save failed - click to save manually" : "Manually save changes now"}
+                  variant={autoSaveStatus === 'error' ? 'destructive' : 'default'}
                 >
                   {isUploading || autoSaveStatus === 'saving' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Saving...
+                    </>
+                  ) : autoSaveStatus === 'error' ? (
+                    <>
+                      <X className="h-4 w-4 mr-2" />
+                      Save Now
                     </>
                   ) : (
                     'Save Now'
@@ -7292,7 +6345,10 @@ function LessonBuilder() {
                                 <div className="flex items-center gap-2 mb-3">
                                   <h3 className="text-lg font-semibold text-gray-900">{block.title}</h3>
                                   <Badge variant="secondary" className="text-xs">
-                                    {imageTemplates.find(t => t.id === block.templateType)?.title || block.templateType}
+                                    {block.layout === 'side-by-side' ? 'Image & text' : 
+                                     block.layout === 'overlay' ? 'Text on image' : 
+                                     block.layout === 'full-width' ? 'Image full width' : 
+                                     'Image centered'}
                                   </Badge>
                                 </div>
                                
@@ -7984,118 +7040,6 @@ function LessonBuilder() {
         </DialogContent>
       </Dialog>
 
-      {/* Image Template Sidebar */}
-      {showImageTemplateSidebar && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300"
-            onClick={() => setShowImageTemplateSidebar(false)}
-          />
-         
-          {/* Sidebar */}
-          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <Image className="h-6 w-6" />
-                  Image Templates
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowImageTemplateSidebar(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  ×
-                </Button>
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Choose a template to add to your lesson
-              </p>
-            </div>
-           
-            <div className="p-6 space-y-4">
-              {imageTemplates.map((template) => (
-                <div
-                  key={template.id}
-                  onClick={() => handleImageTemplateSelect(template)}
-                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
-                      {template.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{template.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                    </div>
-                  </div>
-                 
-                  {/* Mini Preview */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    {template.layout === 'side-by-side' && (
-                      <div className="flex gap-3 items-start">
-                        <div className="w-1/2">
-                          <img
-                            src={template.defaultContent.imageUrl}
-                            alt="Preview"
-                            className="w-full h-20 object-cover rounded"
-                          />
-                        </div>
-                        <div className="w-1/2">
-                          <p className="text-xs text-gray-600 line-clamp-4">
-                            {template.defaultContent.text.substring(0, 60)}...
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {template.layout === 'overlay' && (
-                      <div className="relative">
-                        <img
-                          src={template.defaultContent.imageUrl}
-                          alt="Preview"
-                          className="w-full h-24 object-cover rounded"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
-                          <p className="text-white text-sm text-center line-clamp-3">
-                            {template.defaultContent.text.substring(0, 50)}...
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {template.layout === 'centered' && (
-                      <div className="text-center space-y-2">
-                        <img
-                          src={template.defaultContent.imageUrl}
-                          alt="Preview"
-                          className="mx-auto h-20 object-cover rounded"
-                        />
-                        <p className="text-xs text-gray-600 italic line-clamp-2">
-                          {template.defaultContent.text.substring(0, 40)}...
-                        </p>
-                      </div>
-                    )}
-                    {template.layout === 'full-width' && (
-                      <div className="space-y-2">
-                        <img
-                          src={template.defaultContent.imageUrl}
-                          alt="Preview"
-                          className="w-full h-24 object-cover rounded"
-                        />
-                        <p className="text-xs text-gray-600 line-clamp-3">
-                          {template.defaultContent.text.substring(0, 60)}...
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Table Component */}
       {showTableComponent && (
         <TableComponent
@@ -8230,448 +7174,37 @@ function LessonBuilder() {
       />
 
 
-      {/* Image Dialog */}
-      <Dialog open={showImageDialog} onOpenChange={handleImageDialogClose}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Image</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={imageTitle}
-                onChange={handleImageInputChange}
-                className="w-full p-2 border rounded"
-                placeholder="Enter image title"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Text on/with Image
-              </label>
-              <ReactQuill
-                theme="snow"
-                value={imageTemplateText}
-                onChange={setImageTemplateText}
-                modules={{
-                  toolbar: [
-                    ['bold', 'italic', 'underline'],
-                    [{ align: [] }],
-                    ['clean']
-                  ]
-                }}
-                style={{ minHeight: '120px' }}
-                placeholder="Enter text to show with or on the image"
-              />
-            </div>
-            
-            {/* Image Alignment Options */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image Alignment
-              </label>
-              <div className="space-y-2">
-                <div className="text-sm text-gray-600 mb-2">For Image & Text blocks:</div>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="imageAlignment"
-                      value="left"
-                      checked={imageAlignment === 'left'}
-                      onChange={(e) => setImageAlignment(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Image Left, Text Right</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="imageAlignment"
-                      value="right"
-                      checked={imageAlignment === 'right'}
-                      onChange={(e) => setImageAlignment(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Image Right, Text Left</span>
-                  </label>
-                </div>
-                
-                <div className="text-sm text-gray-600 mb-2 mt-4">For standalone images:</div>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="standaloneImageAlignment"
-                      value="left"
-                      checked={standaloneImageAlignment === 'left'}
-                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Left Aligned</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="standaloneImageAlignment"
-                      value="center"
-                      checked={standaloneImageAlignment === 'center'}
-                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Center Aligned</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="standaloneImageAlignment"
-                      value="right"
-                      checked={standaloneImageAlignment === 'right'}
-                      onChange={(e) => setStandaloneImageAlignment(e.target.value)}
-                      className="mr-2"
-                    />
-                    <span className="text-sm">Right Aligned</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Image File <span className="text-red-500">*</span>
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <div className="flex text-sm text-gray-600">
-                    <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                      <span>Upload a file</span>
-                      <input
-                        type="file"
-                        name="file"
-                        className="sr-only"
-                        accept="image/jpeg, image/png, image/jpg"
-                        onChange={handleImageInputChange}
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    JPG, PNG up to 50MB
-                  </p>
-                </div>
-              </div>
-              {imagePreview && (
-                <div className="mt-4">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="max-w-full h-auto max-h-64 rounded-lg border"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleImageDialogClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleAddImage} 
-              disabled={!imageTitle || (!imageFile && !imagePreview) || mainImageUploading}
-            >
-              {mainImageUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Uploading...
-                </>
-              ) : (
-                'Add Image'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Image Editor */}
-      <ImageEditor
-        isOpen={showImageEditor}
-        onClose={handleImageEditorClose}
-        imageFile={imageToEdit}
-        onSave={handleImageEditorSave}
-        title={imageEditorTitle}
+      {/* Image Block Component */}
+      <ImageBlockComponent
+        ref={imageBlockComponentRef}
+        showImageTemplateSidebar={showImageTemplateSidebar}
+        setShowImageTemplateSidebar={setShowImageTemplateSidebar}
+        showImageDialog={showImageDialog}
+        setShowImageDialog={setShowImageDialog}
+        onImageTemplateSelect={handleImageTemplateSelect}
+        onImageUpdate={handleImageUpdate}
+        editingImageBlock={null}
+        imageUploading={imageUploading}
+        setImageUploading={setImageUploading}
+        contentBlocks={contentBlocks}
+        setContentBlocks={setContentBlocks}
       />
 
+      {/* Link Component */}
+      <LinkComponent
+        showLinkDialog={showLinkDialog}
+        setShowLinkDialog={setShowLinkDialog}
+        onLinkUpdate={handleLinkUpdate}
+        editingLinkBlock={editingLinkBlock}
+      />
 
-      {/* Link Dialog */}
-      <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{currentLinkBlock ? 'Edit Link' : 'Add Link'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Link Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={linkTitle}
-                onChange={handleLinkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter link title"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Link URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="url"
-                name="url"
-                value={linkUrl}
-                onChange={handleLinkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="https://www.example.com"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Example: https://www.example.com
-              </p>
-              {linkError && (
-                <p className="text-sm text-red-500 mt-1">{linkError}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                name="description"
-                value={linkDescription}
-                onChange={handleLinkInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your link (optional)"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Button Text <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="buttonText"
-                value={linkButtonText}
-                onChange={handleLinkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Visit Link"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Button Style
-              </label>
-              <select
-                name="buttonStyle"
-                value={linkButtonStyle}
-                onChange={handleLinkInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="primary">Primary (Blue)</option>
-                <option value="secondary">Secondary (Gray)</option>
-                <option value="success">Success (Green)</option>
-                <option value="warning">Warning (Orange)</option>
-                <option value="danger">Danger (Red)</option>
-                <option value="outline">Outline</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleLinkDialogClose}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddLink}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {currentLinkBlock ? 'Save' : 'Add Link'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* PDF Dialog */}
-      <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{currentBlock ? 'Edit PDF' : 'Add PDF'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                PDF Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={pdfTitle}
-                onChange={handlePdfInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter PDF title"
-                required
-              />
-            </div>
-
-            {/* Upload Method Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Method <span className="text-red-500">*</span>
-              </label>
-              <div className="flex space-x-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="pdfUploadMethod"
-                    value="file"
-                    checked={pdfUploadMethod === 'file'}
-                    onChange={(e) => setPdfUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  Upload File
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="pdfUploadMethod"
-                    value="url"
-                    checked={pdfUploadMethod === 'url'}
-                    onChange={(e) => setPdfUploadMethod(e.target.value)}
-                    className="mr-2"
-                  />
-                  PDF URL
-                </label>
-              </div>
-            </div>
-
-            {/* File Upload Section */}
-            {pdfUploadMethod === 'file' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  PDF File <span className="text-red-500">*</span>
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                  <div className="space-y-1 text-center">
-                    <div className="flex text-sm text-gray-600">
-                      <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          type="file"
-                          name="file"
-                          className="sr-only"
-                          accept="application/pdf"
-                          onChange={handlePdfInputChange}
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      PDF up to 20MB
-                    </p>
-                  </div>
-                </div>
-                {pdfPreview && pdfUploadMethod === 'file' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <embed
-                      src={pdfPreview}
-                      type="application/pdf"
-                      width="100%"
-                      height="500"
-                      className="rounded-lg border border-gray-200"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* URL Input Section */}
-            {pdfUploadMethod === 'url' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  PDF URL <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  value={pdfUrl}
-                  onChange={(e) => setPdfUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter PDF URL (e.g., https://example.com/document.pdf)"
-                  required
-                />
-                {pdfUrl && pdfUploadMethod === 'url' && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
-                    <embed
-                      src={pdfUrl}
-                      type="application/pdf"
-                      width="100%"
-                      height="500"
-                      className="rounded-lg border border-gray-200"
-                      onError={() => alert('Could not load PDF. Please check the URL and try again.')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                name="description"
-                value={pdfDescription}
-                onChange={handlePdfInputChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter a description for your PDF (optional)"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={handlePdfDialogClose} disabled={mainPdfUploading}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddPdf}
-              disabled={mainPdfUploading || !pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {mainPdfUploading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {pdfUploadMethod === 'file' ? 'Uploading PDF...' : 'Adding PDF...'}
-                </>
-              ) : (
-                currentBlock ? 'Update PDF' : 'Add PDF'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* PDF Component */}
+      <PDFComponent
+        showPdfDialog={showPdfDialog}
+        setShowPdfDialog={setShowPdfDialog}
+        onPdfUpdate={handlePdfUpdate}
+        editingPdfBlock={editingPdfBlock}
+      />
 
       {/* Statement Component */}
       <StatementComponent

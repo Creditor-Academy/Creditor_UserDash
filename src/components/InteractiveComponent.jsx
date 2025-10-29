@@ -373,24 +373,36 @@ const InteractiveComponent = forwardRef(({
       description: 'Interactive timeline with events and milestones',
       icon: <Clock className="h-6 w-6" />,
       preview: (
-        <div className="w-full h-32 bg-white rounded-lg border p-3">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <div className="flex-1 border-t-2 border-blue-200"></div>
+        <div className="w-full h-40 bg-white rounded-lg border p-4">
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-400 to-purple-500"></div>
+            
+            {/* First event */}
+            <div className="relative flex items-start mb-4">
+              <div className="relative z-10 flex-shrink-0 w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+              </div>
+              <div className="ml-3 flex-1 min-w-0">
+                <div className="bg-gray-50 rounded-md p-2 shadow-sm border border-gray-200">
+                  <div className="text-xs font-medium text-blue-600 mb-1">Jan 15, 2024</div>
+                  <div className="text-xs font-semibold text-gray-800 mb-1">Project Kickoff</div>
+                  <div className="text-xs text-gray-600 leading-tight">Initial project planning...</div>
+                </div>
+              </div>
             </div>
-            <div className="ml-4 space-y-1">
-              <div className="text-xs font-medium text-blue-600">2024-01-15</div>
-              <div className="text-xs font-semibold text-gray-800">Project Kickoff</div>
-              <div className="text-xs text-gray-600">Initial project planning...</div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <div className="flex-1 border-t-2 border-blue-200"></div>
-            </div>
-            <div className="ml-4 space-y-1">
-              <div className="text-xs font-medium text-blue-600">2024-02-01</div>
-              <div className="text-xs font-semibold text-gray-800">Design Phase</div>
+            
+            {/* Second event */}
+            <div className="relative flex items-start">
+              <div className="relative z-10 flex-shrink-0 w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-sm flex items-center justify-center">
+                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+              </div>
+              <div className="ml-3 flex-1 min-w-0">
+                <div className="bg-gray-50 rounded-md p-2 shadow-sm border border-gray-200">
+                  <div className="text-xs font-medium text-blue-600 mb-1">Feb 1, 2024</div>
+                  <div className="text-xs font-semibold text-gray-800">Design Phase</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
