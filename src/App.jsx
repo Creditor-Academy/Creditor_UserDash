@@ -28,7 +28,7 @@ import CatelogCourses from "@/pages/CatelogCourses";
 
 import Progress from "@/pages/Progress";
 import Messages from "@/pages/Messages";
-import  Profile  from "@/pages/Profile";
+import Profile  from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import CourseView from "@/pages/CourseView";
 import ModuleLessonsView from "@/pages/ModuleLessonsView";
@@ -92,6 +92,8 @@ import PrivateMerchant from './coursesL/PrivateMerchant';
 import { MasterClass } from '@/pages/MasterClass';
 import LiveClass from './pages/LiveClass';
 import { WebsiteCreation } from './pages/WebsiteCreation';
+import AcademicAthena from './pages/AcademicAthena';
+import CompanyAthena from './pages/CompanyAthena';
 import MerchantProcessing from './pages/MerchantProcessing';
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "@/pages/Auth/Login";
@@ -110,7 +112,17 @@ import { UserProvider } from "./contexts/UserContext";
 import { CreditsProvider } from "./contexts/CreditsContext";
 // import  ModuleView  from "@/pages/ModuleView";
 import LessonView from "./pages/LessonView";
-     
+import InstructionalDesign from "@/pages/InstructionalDesign";
+import PricingPage from "@/pages/Pricing";
+import ExpertAthena from './pages/Expert_athena';
+import RevenueGeneration from './pages/RevenueGeneration';
+import CustomerTraining from './pages/CustomerTraining';
+import LeadGeneration from './pages/LeadGeneration';
+import CoursesPage from './pages/Platform/CoursesPage';
+import CommunitiesPage from './pages/Platform/CommunitiesPage';
+import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
+import MembershipsPage from './pages/Platform/MembershipsPage';
+import CoachingPage from './pages/Platform/CoachingPage';
 
 
 function App() {
@@ -131,6 +143,7 @@ function App() {
           <Route path="/product" element={<Product />} />
           <Route path="/plans" element={<Plans />} />
           <Route path="/whyus" element={<WhyUs />} />
+          <Route path="/instructionaldesign" element={<InstructionalDesign />} />
           <Route path="/sov" element={<Sov />} />
           <Route path="/sophomore" element={<Sophomore />} />
           <Route path="/operateprivate" element={<OperatePrivate />} />
@@ -138,9 +151,24 @@ function App() {
           <Route path="/masterclass" element={<MasterClass />}/>
           <Route path="/liveclass" element={<LiveClass />} />
           <Route path="/website" element={<WebsiteCreation/>}/>
+          <Route path="/academic_athena" element={<AcademicAthena/>}/>
+          <Route path="/company_athena" element={<CompanyAthena/>}/>
+          <Route path="/expert_athena" element={<ExpertAthena/>}/>
+          <Route path="/revenue_generation" element={<RevenueGeneration/>}/>
+          <Route path="/customer_training" element={<CustomerTraining/>}/>
+          <Route path="/lead_generation" element={<LeadGeneration/>}/>
+          <Route path="/pricing" element={<PricingPage/>}/>
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
           <Route path="/privatemerchant" element={<PrivateMerchant/>} />
+          
+          {/* Platform routes */}
+          <Route path="/platform/courses" element={<CoursesPage/>}/>
+          <Route path="/platform/communities" element={<CommunitiesPage/>}/>
+          <Route path="/platform/digital-downloads" element={<DigitalDownloadsPage/>}/>
+          <Route path="/platform/memberships" element={<MembershipsPage/>}/>
+          <Route path="/platform/coaching" element={<CoachingPage/>}/>
+          
           <Route
             path="/instructor"
             element={

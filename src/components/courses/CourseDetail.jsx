@@ -22,7 +22,31 @@ export function CourseDetail() {
       setError("");
       try {
         const data = await fetchCourseModules(courseId);
-        setModules(data);
+        
+        // Sort modules to move "Why You Must Exit the LLC/Corporation Structure" to the top
+        const sortedModules = data.sort((a, b) => {
+          const aTitle = (a.title || a.name || "").toLowerCase();
+          const bTitle = (b.title || b.name || "").toLowerCase();
+          
+          // Check if module is the intro module
+          const aIsIntro = aTitle.includes("why you must exit") && 
+                          (aTitle.includes("llc") || aTitle.includes("corporation")) &&
+                          aTitle.includes("structure");
+          const bIsIntro = bTitle.includes("why you must exit") && 
+                          (bTitle.includes("llc") || bTitle.includes("corporation")) &&
+                          bTitle.includes("structure");
+          
+          // Move intro module to top
+          if (aIsIntro && !bIsIntro) return -1;
+          if (!aIsIntro && bIsIntro) return 1;
+          
+          // For other modules, maintain original order by order property
+          const aOrder = Number(a.order) || 0;
+          const bOrder = Number(b.order) || 0;
+          return aOrder - bOrder;
+        });
+        
+        setModules(sortedModules);
       } catch (err) {
         console.error('Error fetching modules:', err);
         setError("Failed to load course modules");

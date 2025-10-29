@@ -7,16 +7,7 @@ function ComingSoonPopover() {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const features = [
-    {
-      title: "User Private Group",
-      description: "Introducing private groups where users can collaborate, share, and interact securely within a closed space.",
-      tags: [
-        { label: "Group", color: "amber" },
-        { label: "Private", color: "blue" },
-        { label: "Collaboration", color: "indigo" }
-      ],
-      banner: "https://athena-user-assets.s3.eu-north-1.amazonaws.com/allAthenaAssets/User+Private+group.jfif",
-    },
+   
     {
       title: "Progress Bar",
       description: "We’re launching progress bars to help users track their learning journey and stay motivated.",
