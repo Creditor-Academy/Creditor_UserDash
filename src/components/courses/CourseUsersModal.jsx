@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCourseUsers, unenrollUser } from '../../services/courseService';
-import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus } from 'lucide-react';
+import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus, Download } from 'lucide-react';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import AddToGroupModal from './AddToGroupModal';
+import * as XLSX from 'xlsx';
 
 const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [courseUsers, setCourseUsers] = useState([]);
@@ -172,6 +173,60 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
     }
   };
 
+  // Export users to Excel
+  const handleExportToExcel = () => {
+    if (!filteredUsers || filteredUsers.length === 0) {
+      alert('No users to export');
+      return;
+    }
+
+    // Prepare data for Excel
+    const excelData = filteredUsers.map((userData, index) => {
+      // Get the highest priority role
+      let userRole = 'user';
+      if (userData.user.user_roles && userData.user.user_roles.length > 0) {
+        const roles = userData.user.user_roles.map(roleObj => roleObj.role);
+        const priorityRoles = ['admin', 'instructor', 'user'];
+        userRole = priorityRoles.find(role => roles.includes(role)) || 'user';
+      }
+
+      return {
+        'S.No': index + 1,
+        'User ID': userData.user_id,
+        'First Name': userData.user.first_name || '',
+        'Last Name': userData.user.last_name || '',
+        'Email': userData.user.email || '',
+        'Role': userRole,
+        'Enrolled Date': userData.enrolled_at ? new Date(userData.enrolled_at).toLocaleDateString() : 'N/A'
+      };
+    });
+
+    // Create a new workbook
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Enrolled Users');
+
+    // Auto-size columns
+    const maxWidth = 50;
+    const columnWidths = Object.keys(excelData[0]).map(key => ({
+      wch: Math.min(
+        Math.max(
+          key.length,
+          ...excelData.map(row => String(row[key]).length)
+        ),
+        maxWidth
+      )
+    }));
+    worksheet['!cols'] = columnWidths;
+
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `Course_Enrolled_Users_${courseId}_${date}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(workbook, filename);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -190,13 +245,24 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            aria-label="Close"
-          >
-            <X className="w-6 h-6 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportToExcel}
+              disabled={!filteredUsers || filteredUsers.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Export to Excel"
+            >
+              <Download className="w-4 h-4" />
+              Export to Excel
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
