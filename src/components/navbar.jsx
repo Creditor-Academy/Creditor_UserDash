@@ -1,6 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import SolutionsDropdown from "./SolutionsDropdown";
+import PlatformDropdown from "./PlatformDropdown";
 
 const Navbar = () => {
   const [show, setShow] = useState(true);
@@ -61,12 +63,11 @@ const Navbar = () => {
           background: isScrolled ? "rgba(111, 164, 247, 0.95)" : "#6fa4f7",
           backdropFilter: isScrolled ? "blur(10px)" : "none",
           padding: "12px 24px",
-          borderRadius: "16px",
           fontFamily: "inherit",
           position: "fixed",
-          top: "16px",
-          left: "16px",
-          right: "16px",
+          top: 0,
+          left: 0,
+          right: 0,
           zIndex: 100,
           transition: "all 0.3s ease",
           transform: show ? "translateY(0)" : "translateY(-130%)",
@@ -98,11 +99,12 @@ const Navbar = () => {
           ☰
         </button>
         
-        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
-          <Link to="/about" style={navLinkStyle}>About Us</Link>
-          <Link to="/features" style={navLinkStyle}>Features</Link>
-          <Link to="/whyus" style={navLinkStyle}>Why Us</Link>
-          <Link to="/faq" style={navLinkStyle}>FAQ</Link>
+        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px", position: "relative" }}>
+          {/* <Link to="/about" style={navLinkStyle}>About Us</Link> */}
+          <SolutionsDropdown />
+          <PlatformDropdown />
+          <Link to="/website" style={navLinkStyle}>Website</Link>
+          <Link to="/pricing" style={navLinkStyle}>Pricing</Link>
           <Link to="/contact" style={navLinkStyle}>Contact Us</Link>
           <a
             href="#"
@@ -185,10 +187,11 @@ const Navbar = () => {
           </button>
         </div>
         
-        <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
-        <Link to="/features" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Features</Link>
-        <Link to="/whyus" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Why Us</Link>
-        <Link to="/faq" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>FAQ</Link>
+        {/* <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link> */}
+        <div style={drawerLinkStyle}>Solutions</div>
+        <div style={drawerLinkStyle}>Platform</div>
+        <Link to="/website" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Website</Link>
+        <Link to="/pricing" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Pricing</Link>
         <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
         
         <a 
@@ -322,6 +325,17 @@ const Navbar = () => {
           right: 0 !important;
           z-index: 1000 !important;
           border-radius: 0 !important;
+          overflow: visible !important;
+        }
+        
+        /* Ensure dropdowns can extend beyond navbar */
+        .athena-links {
+          overflow: visible !important;
+        }
+        
+        /* Allow full-width dropdowns */
+        .athena-navbar {
+          overflow: visible !important;
         }
         
         /* Drawer content optimization */

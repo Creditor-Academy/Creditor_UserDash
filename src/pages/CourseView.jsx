@@ -184,8 +184,10 @@ export function CourseView() {
 
   // Initialize completed modules from backend data
   useEffect(() => {
+    const completedIds = new Set();
+    
+    // Check main course modules
     if (modules && modules.length > 0) {
-      const completedIds = new Set();
       modules.forEach(module => {
         if (module.user_module_progress && 
             Array.isArray(module.user_module_progress) && 
@@ -194,9 +196,22 @@ export function CourseView() {
           completedIds.add(String(module.id));
         }
       });
-      setCompletedModuleIds(completedIds);
     }
-  }, [modules]);
+    
+    // Check Street Smart modules
+    if (streetModules && streetModules.length > 0) {
+      streetModules.forEach(module => {
+        if (module.user_module_progress && 
+            Array.isArray(module.user_module_progress) && 
+            module.user_module_progress.length > 0 &&
+            module.user_module_progress[0].completed === true) {
+          completedIds.add(String(module.id));
+        }
+      });
+    }
+    
+    setCompletedModuleIds(completedIds);
+  }, [modules, streetModules]);
 
   const getStableRandomPrice = (moduleObj) => {
     const input = String(moduleObj?.id || "");
@@ -417,11 +432,35 @@ export function CourseView() {
           const status = (m.module_status || m.status || "").toString().toUpperCase();
           return status === "PUBLISHED" || m.published === true;
         });
-        setModules(publishedModules);
-        setFilteredModules(publishedModules);
+        
+        // Sort modules to move "Why You Must Exit the LLC/Corporation Structure" to the top
+        const sortedModules = publishedModules.sort((a, b) => {
+          const aTitle = (a.title || a.name || "").toLowerCase();
+          const bTitle = (b.title || b.name || "").toLowerCase();
+          
+          // Check if module is the intro module
+          const aIsIntro = aTitle.includes("why you must exit") && 
+                          (aTitle.includes("llc") || aTitle.includes("corporation")) &&
+                          aTitle.includes("structure");
+          const bIsIntro = bTitle.includes("why you must exit") && 
+                          (bTitle.includes("llc") || bTitle.includes("corporation")) &&
+                          bTitle.includes("structure");
+          
+          // Move intro module to top
+          if (aIsIntro && !bIsIntro) return -1;
+          if (!aIsIntro && bIsIntro) return 1;
+          
+          // For other modules, maintain original order by order property
+          const aOrder = Number(a.order) || 0;
+          const bOrder = Number(b.order) || 0;
+          return aOrder - bOrder;
+        });
+        
+        setModules(sortedModules);
+        setFilteredModules(sortedModules);
         
         // Calculate total duration from modules
-        const total = publishedModules.reduce((sum, module) => {
+        const total = sortedModules.reduce((sum, module) => {
           const duration = parseInt(module.estimated_duration) || 0;
           return sum + duration;
         }, 0);
@@ -844,7 +883,15 @@ export function CourseView() {
                               <div className="flex items-center justify-between text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <BookOpen size={14} />
-                                  <span>Order: {module.order || 'N/A'}</span>
+                                  <span>
+                                    {(() => {
+                                      const title = (module.title || module.name || "").toLowerCase();
+                                      const isIntroModule = title.includes("why you must exit") && 
+                                                          (title.includes("llc") || title.includes("corporation")) &&
+                                                          title.includes("structure");
+                                      return isIntroModule ? "Intro Module" : `Order: ${module.order || 'N/A'}`;
+                                    })()}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock size={14} />
@@ -891,8 +938,8 @@ export function CourseView() {
                                       Start Assessment
                                     </Button> 
                                   </Link>
-                                  {/* Mark as Complete - only show when enrolled in the course */}
-                                  {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                                  {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
+                                  {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
                                     <Button
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
@@ -927,7 +974,7 @@ export function CourseView() {
                                     >
                                       {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                                     </Button>
-                                  ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                                  ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
                                     <div className="w-full flex items-center justify-center">
                                       <Badge className="px-3 py-1">Completed</Badge>
                                     </div>
@@ -1121,9 +1168,9 @@ export function CourseView() {
                               <div className="bg-white/95 rounded-lg p-3 shadow-xl flex items-center gap-2">
                                 <Lock className="w-5 h-5 text-gray-700" />
                                 <span className="text-sm font-medium text-gray-800">Locked</span>
-                              </div>
-                            </div>
-                          )}
+              </div>
+            </div>
+          )}
                         </div>
                         <div className="flex flex-col flex-grow min-h-[170px] max-h-[170px] px-6 pt-4 pb-2">
                           <CardHeader className="pb-2 px-0 pt-0">
@@ -1132,7 +1179,15 @@ export function CourseView() {
                                 <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     <BookOpen className="w-3 h-3" />
-                                    <span>Order: {module.order || module.sequence || 1}</span>
+                                    <span>
+                                      {(() => {
+                                        const title = (module.title || module.name || "").toLowerCase();
+                                        const isIntroModule = title.includes("why you must exit") && 
+                                                            (title.includes("llc") || title.includes("corporation")) &&
+                                                            title.includes("structure");
+                                        return isIntroModule ? "Intro Module" : `Order: ${module.order || module.sequence || 1}`;
+                                      })()}
+                                    </span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" />
@@ -1178,8 +1233,8 @@ export function CourseView() {
                                       Start Assessment
                                     </Button>
                                   </Link>
-                                  {/* Mark as Complete - only show when enrolled in the recording course */}
-                                  {isEnrolledRecording && !completedModuleIds.has(String(module.id)) ? (
+                                  {/* Mark as Complete - show when enrolled in the recording course OR when user has individual module access */}
+                                  {(isEnrolledRecording || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
                                     <Button
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
@@ -1214,7 +1269,7 @@ export function CourseView() {
                                     >
                                       {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                                     </Button>
-                                  ) : isEnrolledRecording && completedModuleIds.has(String(module.id)) ? (
+                                  ) : (isEnrolledRecording || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
                                     <div className="w-full flex items-center justify-center">
                                       <Badge className="px-3 py-1">Completed</Badge>
                                     </div>
@@ -1341,7 +1396,15 @@ export function CourseView() {
                           <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <BookOpen size={14} />
-                              <span>Order: {module.order || 'N/A'}</span>
+                              <span>
+                                {(() => {
+                                  const title = (module.title || module.name || "").toLowerCase();
+                                  const isIntroModule = title.includes("why you must exit") && 
+                                                      (title.includes("llc") || title.includes("corporation")) &&
+                                                      title.includes("structure");
+                                  return isIntroModule ? "Intro Module" : `Order: ${module.order || 'N/A'}`;
+                                })()}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock size={14} />
@@ -1477,8 +1540,8 @@ export function CourseView() {
                                )}
                              </div>
                            )}
-                           {/* Mark as Complete - only show when enrolled in the course */}
-                           {isEnrolled && !completedModuleIds.has(String(module.id)) ? (
+                           {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
+                           {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
                              <Button
                                variant="secondary"
                                className="w-full disabled:opacity-60"
@@ -1513,7 +1576,7 @@ export function CourseView() {
                              >
                                {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                              </Button>
-                           ) : isEnrolled && completedModuleIds.has(String(module.id)) ? (
+                           ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
                              <div className="w-full flex items-center justify-center">
                                <Badge className="px-3 py-1">Completed</Badge>
                              </div>

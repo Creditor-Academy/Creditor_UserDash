@@ -10,6 +10,11 @@ export default function PageTransitionOverlay() {
   useEffect(() => {
     const formatName = (pathname) => {
       if (pathname === "/") return "HOME";
+      if (pathname === "/about") return "ABOUT US";
+      if (pathname === "/website") return "WEBSITE";
+      if (pathname === "/contact") return "CONTACT US";
+      if (pathname === "/faq") return "RESOURCES";
+      if (pathname === "/product") return "SERVICE";
       
       // Split the path and get the last segment
       const pathSegments = pathname.split('/').filter(segment => segment !== '');
@@ -30,7 +35,7 @@ export default function PageTransitionOverlay() {
     })();
 
     // Whitelist only these routes for overlay
-    const allowedPaths = new Set(["/", "/about", "/contact", "/faq", "/features", "/whyus"]);
+    const allowedPaths = new Set(["/", "/about", "/website", "/contact", "/faq", "/features", "/whyus", "/product", "/plans"]);
 
     // Hide overlay for non-whitelisted routes or login explicitly
     if (location.pathname === "/login" || !allowedPaths.has(normalizedPath)) {

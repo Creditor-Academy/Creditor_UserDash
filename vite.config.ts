@@ -7,7 +7,7 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 3000,
+    port: 8080,
     proxy: {
       '/api': {
         target: 'http://localhost:9000',
@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
       }
     },
     cors: {
-      origin: ['http://localhost:3000', 'http://localhost:9000'],
+      origin: ['http://localhost:8080', 'http://localhost:9000'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
       credentials: true,
@@ -36,15 +36,17 @@ export default defineConfig(({ mode }) => ({
     },
     strictPort: true,
     hmr: {
-      port: 3000,
-      protocol: 'ws',
-      host: 'localhost',
-      clientPort: 3000
+      overlay: false,
+      port: 8081
+    },
+    watch: {
+      usePolling: false,
+      ignored: ['**/node_modules/**', '**/.git/**']
     }
   },
   preview: {
     host: "0.0.0.0",
-    port: 3000,
+    port: 8080,
     allowedHosts: [
       "www.lmsathena.com",
       "lmsathena.com",
@@ -58,8 +60,9 @@ export default defineConfig(({ mode }) => ({
   base: '/',
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    // Temporarily disabled componentTagger to fix infinite refresh
+    // mode === 'development' &&
+    // componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {

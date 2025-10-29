@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import { motion, useAnimation, useInView } from "framer-motion";
 import LiveClassBanner from "../assets/LiveClassBanner.png";
+import { markEventAttendance } from '../services/attendanceService';
+import { toast } from "sonner";
 
 // Helper to convert a date to PST (America/Los_Angeles)
 function toPST(date) {
@@ -111,6 +113,32 @@ const ClassLC = () => {
     });
   };
 
+  // Handle joining class with attendance marking
+  const handleJoinClass = async (event) => {
+    try {
+      // Mark attendance first
+      await markEventAttendance(event.id);
+      toast.success("Attendance marked successfully!");
+      
+      // Then open the zoom link
+      const joinLink = event.description || event.zoomLink || "";
+      if (joinLink) {
+        window.open(joinLink, '_blank');
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      
+      // Show error message but still allow joining the meeting
+      toast.error(error.message || "Failed to mark attendance, but you can still join the meeting");
+      
+      // Open the zoom link even if attendance marking fails
+      const joinLink = event.description || event.zoomLink || "";
+      if (joinLink) {
+        window.open(joinLink, '_blank');
+      }
+    }
+  };
+
   return (
     <div className="w-full font-[Poppins]">
       {/* Banner Section */}
@@ -174,11 +202,9 @@ const ClassLC = () => {
         >
           {/* Show Join Now for each live event */}
           {liveEvents.length > 0 && liveEvents.map((event, idx) => (
-            <motion.a
+            <motion.button
               key={event.id || idx}
-              href={event.description || event.zoomLink || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => handleJoinClass(event)}
               whileHover={{ scale: 1.07 }}
               whileTap={{ scale: 0.98 }}
               style={{
@@ -195,7 +221,7 @@ const ClassLC = () => {
               }}
             >
               Join Now: {event.title} ({formatTimeInUserTimezone(event.startTime)} - {formatTimeInUserTimezone(event.endTime)})
-            </motion.a>
+            </motion.button>
           ))}
 
           {/* If no live event, show next upcoming */}

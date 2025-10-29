@@ -1,7 +1,5 @@
-import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import athenadash from "../../assets/AthenaDash.png";
-import interactive from "../../assets/interactive.mp4";
+import Logo from "../../assets/logo.webp";
 
 export default function Hero() {
   return (
@@ -15,289 +13,233 @@ export default function Hero() {
             height: 100vh;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: center;
             box-sizing: border-box;
             overflow: hidden;
             margin-top: 0;
             padding-top: 0;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
           }
-          .hero-bg-video {
+          
+          .hero-diagonal-lines {
             position: absolute;
             top: 0;
-            left: 0;
+            right: 0;
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            object-position: center;
-            z-index: 0;
-          }
-          .hero-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-              to bottom,
-              rgba(30, 58, 138, 0.4),
-              rgba(30, 64, 175, 0.3),
-              rgba(30, 58, 138, 0.4)
-            );
+            background: 
+              linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 30.5%, rgba(255,255,255,0.1) 31%, transparent 31.5%),
+              linear-gradient(50deg, transparent 35%, rgba(255,255,255,0.08) 35.5%, rgba(255,255,255,0.08) 36%, transparent 36.5%),
+              linear-gradient(55deg, transparent 40%, rgba(255,255,255,0.06) 40.5%, rgba(255,255,255,0.06) 41%, transparent 41.5%);
+            background-size: 200px 200px, 250px 250px, 300px 300px;
+            background-position: 0 0, 50px 50px, 100px 100px;
             z-index: 1;
           }
-          .hero-content {
+          
+          .hero-container {
             position: relative;
             z-index: 2;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 120px 3rem 0 3rem; /* Increased top padding (was 80px) */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            padding: 0 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
             height: 100vh;
             box-sizing: border-box;
           }
+          
+          .hero-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+          }
+          
           .hero-heading {
-            font-family: 'Founders Grotesk', Arial, sans-serif;
-            font-size: 4.7vw;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 3.5rem;
+            font-weight: 400;
+            color: #fff;
+            line-height: 1.1;
+            letter-spacing: -1px;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          }
+          
+          .hero-description {
+            font-family: 'Arial', sans-serif;
+            font-size: 1.1rem;
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            max-width: 500px;
+          }
+          
+          .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+          }
+          
+          .btn-primary {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
             font-weight: 600;
-            text-transform: uppercase;
-            color: #fff;
-            line-height: 0.95;
-            letter-spacing: -2px;
-          }
-          .hero-heading .inline-img {
-            display: inline-flex;
-            align-items: center;
-            vertical-align: middle;
-            margin: 0 8px;
-          }
-          .hero-heading img {
-            height: 90px;
-            object-fit: cover;
-            border-radius: 6px;
-            margin-top: 0.5rem;
-            margin-right: 12px;
-          }
-          .hero-sub-links {
-            margin-top: 2.2em;
-            padding-top: 32px;
-            border-top: 1.5px solid rgba(255,255,255,0.35);
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px 18px;
-            align-items: center;
-            color: #fff;
-            font-family: 'Neue Montreal', Arial, sans-serif;
-            font-size: 1.05em;
-            line-height: 1.5;
-            opacity: 0.92;
-            width: 100%;
-          }
-          .hero-desc {
-            font-size: 1.02em;
-            opacity: 0.91;
-            flex: 1 1 320px;
-          }
-          .hero-action {
-            margin-left: 0;
+            font-family: 'Arial', sans-serif;
+            text-decoration: none;
             display: flex;
             align-items: center;
-            gap: 12px;
-            justify-content: flex-end;
-            flex: 1 1 320px;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
           }
-          .start-btn {
-            background: rgba(255,255,255,0.13);
-            border: 1.3px solid rgba(255,255,255,0.63);
+          
+          .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+          }
+          
+          .btn-secondary {
+            background: transparent;
             color: #fff;
-            padding: 7px 26px;
-            border-radius: 40px;
-            font-size: 1.09em;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-family: 'Neue Montreal', Arial, sans-serif;
+            padding: 12px 24px;
+            border: 1px solid #fff;
+            border-radius: 8px;
+            font-size: 1rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
+            font-family: 'Arial', sans-serif;
+            text-decoration: none;
+            transition: all 0.3s ease;
           }
-          .start-btn:hover {
-            background: #fff;
-            color: #18326b;
+          
+          .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
           }
-          .arrow-icon {
+          
+          .hero-right {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            margin-left: 6px;
-            border: 1.3px solid rgba(255,255,255,0.63);
-            border-radius: 100%;
-            width: 35px;
-            height: 35px;
-            background: rgba(255,255,255,0.11);
+            height: 100%;
+            position: relative;
           }
-          .arrow-icon svg {
-            color: #fff;
-            transition: color 0.2s;
-          }
-          .start-btn:hover + .arrow-icon svg {
-            color: #18326b;
-          }
+          
+          
 
           /* Large Desktop */
           @media (min-width: 1400px) {
-            .hero-content {
-              max-width: 1400px;
+            .hero-container {
+              max-width: 1600px;
               padding: 0 4rem;
-              padding-top: 120px; /* Ensures larger top padding */
+            }
+            .hero-heading {
+              font-size: 4rem;
             }
           }
           
           /* Desktop */
           @media (max-width: 1200px) {
-            .hero-content {
-              max-width: 100%;
-              padding: 100px 2.5rem 0 2.5rem; /* Was 70px, now 100px */
+            .hero-container {
+              padding: 0 2.5rem;
+              gap: 3rem;
             }
             .hero-heading {
-              font-size: 4.2vw;
+              font-size: 3rem;
             }
           }
           
           /* Tablet */
           @media (max-width: 900px) {
-            .hero-content {
-              margin: 0 auto;
-              max-width: 100%;
-              padding: 100px 2rem 0 2rem; /* Was 60px, now 100px */
+            .hero-container {
+              grid-template-columns: 1fr;
+              gap: 2rem;
+              padding: 2rem;
+              text-align: center;
+            }
+            .hero-left {
+              order: 2;
+            }
+            .hero-right {
+              order: 1;
             }
             .hero-heading {
-              font-size: 6.5vw;
-            }
-            .hero-heading img {
-              height: 60px;
-            }
-            .hero-sub-links {
-              font-size: 0.98em;
-            }
-            .hero-desc {
-              font-size: 0.98em;
+              font-size: 2.5rem;
             }
           }
+          
           /* Mobile */
           @media (max-width: 768px) {
-            .hero-content {
-              margin: 0 auto;
-              padding: 120px 1.5rem 0 1.5rem; /* Was 80px, now 120px */
+            .hero-container {
+              padding: 1.5rem;
+              gap: 1.5rem;
             }
             .hero-heading {
-              font-size: 8vw;
+              font-size: 2.2rem;
             }
-            .hero-heading img {
-              height: 45px;
+            .hero-description {
+              font-size: 1rem;
             }
-            .hero-sub-links {
-              font-size: 0.95em;
-            }
-          }
-          @media (max-width: 600px) {
-            .hero-content {
-              margin: 0 auto;
-              padding: 120px 1rem 0 1rem; /* Was 80px, now 120px */
-            }
-            .hero-heading {
-              font-size: 10vw;
-            }
-            .hero-heading img {
-              height: 35px;
-            }
-            .hero-sub-links {
+            .hero-buttons {
               flex-direction: column;
-              align-items: flex-start;
-              gap: 12px;
-              font-size: 0.9em;
+              align-items: center;
+              gap: 0.8rem;
             }
-            .hero-action {
-              margin-left: 0;
-              margin-top: 16px;
+            .btn-primary,
+            .btn-secondary {
               width: 100%;
-              justify-content: flex-start;
+              max-width: 250px;
+              justify-content: center;
             }
           }
+          
           @media (max-width: 480px) {
-            .hero-content {
-              padding: 110px 0.8rem 0 0.8rem; /* Was 80px, now 110px */
+            .hero-container {
+              padding: 1rem;
             }
             .hero-heading {
-              font-size: 12vw;
+              font-size: 1.8rem;
             }
-            .hero-heading img {
-              height: 28px;
-            }
-            .hero-sub-links {
-              font-size: 0.85em;
-              gap: 10px;
-            }
-            .start-btn {
-              padding: 6px 20px;
-              font-size: 0.9em;
-            }
-            .arrow-icon {
-              width: 30px;
-              height: 30px;
-            }
-          }
-          @media (max-width: 360px) {
-            .hero-content {
-              padding: 100px 0.6rem 0 0.6rem; /* Was 80px, now 100px */
-            }
-            .hero-heading {
-              font-size: 13vw;
-            }
-            .hero-heading img {
-              height: 24px;
-            }
-            .hero-sub-links {
-              font-size: 0.8em;
-            }
-            .start-btn {
-              padding: 5px 16px;
-              font-size: 0.85em;
+            .hero-description {
+              font-size: 0.95rem;
             }
           }
         `}
       </style>
 
-      <video className="hero-bg-video" autoPlay muted loop playsInline src={interactive} />
-      <div className="hero-overlay" />
-      <div className="hero-content">
-        <h1 className="hero-heading">
-          Transform Your Learning
-          <br/>
-          <span className="inline-img" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <motion.span
-              initial={{ width: 0 }}
-              animate={{ width: 'auto' }}
-              transition={{ ease: [0.86, 0, 0.07, 0.995], duration: 1, delay: 1.5 }}
-              style={{ display: 'inline-block', overflow: 'hidden' }}
-            >
-              <img src={athenadash} alt="Athena Logo" />
-            </motion.span>
-          </span>
-          Skill Enhancing
-          <br/>
-          Experience
-        </h1>
-        <div className="hero-sub-links">
-          <span className="hero-desc">For students, educators, and lifelong learners</span>
-          <div className="hero-action">
-            <span className="hero-desc">From first lesson to mastery</span>
-            <a href="/contact" className="start-btn">
-              Start Learning
+      <div className="hero-diagonal-lines" />
+      <div className="hero-container">
+        <div className="hero-left">
+          <h1 className="hero-heading">
+            Reimagine Learning. Build, Design, and Deliver Courses with AI.
+          </h1>
+          <p className="hero-description">
+            Athena LMS is where Instructional Design meets Artificial Intelligence — a unified platform that helps you create engaging, research-backed courses in minutes.
+          </p>
+          <div className="hero-buttons">
+            <a href="/contact" className="btn-primary">
+              Start Creating
+              <ArrowUpRight size={16} strokeWidth={2} />
             </a>
-            <span className="arrow-icon">
-              <ArrowUpRight size={22} strokeWidth={1.35} />
-            </span>
+            <a href="/trial" className="btn-secondary">
+              Book a Demo
+            </a>
           </div>
+        </div>
+        <div className="hero-right">
+          <img 
+            src={Logo} 
+            alt="Athena LMS Logo" 
+            className="w-95 h-95 object-contain rounded-3xl"
+          />
         </div>
       </div>
     </section>
