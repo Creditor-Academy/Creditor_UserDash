@@ -100,7 +100,7 @@ const Navbar = () => {
         </button>
         
         <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px", position: "relative" }}>
-          {/* <Link to="/about" style={navLinkStyle}>About Us</Link> */}
+          <Link to="/about" style={navLinkStyle}>About Us</Link>
           <SolutionsDropdown />
           <PlatformDropdown />
           <Link to="/website" style={navLinkStyle}>Website</Link>
@@ -187,7 +187,7 @@ const Navbar = () => {
           </button>
         </div>
         
-        {/* <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link> */}
+        <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>  
         <div style={drawerLinkStyle}>Solutions</div>
         <div style={drawerLinkStyle}>Platform</div>
         <Link to="/website" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Website</Link>

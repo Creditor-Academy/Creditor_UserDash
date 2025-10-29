@@ -26,7 +26,7 @@
     text-transform: uppercase;
     letter-spacing: 2px;
     font-size: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
   
   .principles-heading .principles-title {
@@ -35,7 +35,7 @@
     font-family: "NeueMontreal", sans-serif;
     color: #1E3A8A !important;
     line-height: 1.2;
-    margin: 0 0 16px 0;
+    margin: 0 0 0 0;
   }
   
   .principles-heading .principles-description {
