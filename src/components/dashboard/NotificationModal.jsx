@@ -19,6 +19,7 @@ import { getInvitationByToken, acceptPrivateGroupInvitation, rejectPrivateGroupI
 export function NotificationModal({ open, onOpenChange, onNotificationUpdate, notificationsFromApi = [], onMarkedAllRead }) {
   const [notifications, setNotifications] = useState([]);
   const [chatInvites, setChatInvites] = useState([]);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
@@ -310,17 +311,40 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
   };
 
   const handleMarkAllAsRead = async () => {
+    if (isMarkingAllRead) return; // Prevent multiple simultaneous calls
+    
+    setIsMarkingAllRead(true);
+    
     try {
-      await markAllNotificationsRead();
-    } catch (e) {
-      // If backend route isn't available, proceed with frontend-only update
-      console.warn('Mark-all API failed or unavailable; applying frontend fallback.');
+      console.log('Calling mark all as read API...');
+      const response = await markAllNotificationsRead();
+      console.log('Mark all as read API response:', response);
+      
+      // Update local state after successful API call
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setChatInvites(prev => prev.map(c => ({ ...c, read: true })));
+      
+      if (onMarkedAllRead) onMarkedAllRead();
+      if (onNotificationUpdate) onNotificationUpdate(0);
+      
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+      
+      // Check if it's a network error or backend unavailable
+      if (error.response) {
+        // Backend responded with an error
+        toast.error(error.response.data?.message || 'Failed to mark notifications as read');
+      } else if (error.request) {
+        // Request made but no response received
+        toast.error('Unable to connect to server. Please check your connection.');
+      } else {
+        // Something else happened
+        toast.error('An unexpected error occurred');
+      }
+    } finally {
+      setIsMarkingAllRead(false);
     }
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setChatInvites(prev => prev.map(c => ({ ...c, read: true })));
-    if (onMarkedAllRead) onMarkedAllRead();
-    toast.success("All notifications marked as read");
-    if (onNotificationUpdate) onNotificationUpdate(0);
   };
 
   const acceptInvite = async (token, idToRemove) => {
@@ -826,8 +850,9 @@ export function NotificationModal({ open, onOpenChange, onNotificationUpdate, no
               variant="outline"
               className="w-full h-8 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
               onClick={handleMarkAllAsRead}
+              disabled={isMarkingAllRead}
             >
-              Mark All as Read
+              {isMarkingAllRead ? 'Marking as read...' : 'Mark All as Read'}
             </Button>
           </div>
         </Tabs>
