@@ -11,6 +11,8 @@ import { useUser } from "@/contexts/UserContext";
 import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 import { getUnlockedModulesByUser } from "@/services/modulesService";
 import api from "@/services/apiClient";
+import axios from "axios";
+import { getAuthHeader } from "@/services/authHeader";
 
 // MODULE_UNLOCK_COST will be fetched from backend per module
 
@@ -86,6 +88,10 @@ export function CourseView() {
   const [completedModuleIds, setCompletedModuleIds] = useState(new Set());
   // Track modules currently being marked as complete
   const [markingCompleteIds, setMarkingCompleteIds] = useState(new Set());
+  
+  // Track which modules have lessons
+  const [modulesWithLessons, setModulesWithLessons] = useState(new Set());
+  const [loadingLessonCounts, setLoadingLessonCounts] = useState(false);
   
   // Accordion expansion control for Book/Street sections
   const [expandedSection, setExpandedSection] = useState(null); // null | 'book' | 'street'
@@ -531,6 +537,93 @@ export function CourseView() {
     }
   }, [userProfile?.id, courseId]);
 
+  // Fetch lesson counts for all modules to determine which have lessons
+  useEffect(() => {
+    const checkModulesForLessons = async () => {
+      if (!modules || modules.length === 0) return;
+      
+      setLoadingLessonCounts(true);
+      const modulesWithLessonsSet = new Set();
+      
+      try {
+        // Check each module for lessons
+        const lessonCheckPromises = modules.map(async (module) => {
+          try {
+            const response = await axios.get(
+              `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${module.id}/lesson/all-lessons`,
+              {
+                headers: getAuthHeader(),
+                withCredentials: true,
+              }
+            );
+            
+            const lessonsData = response.data?.data || response.data || [];
+            const lessons = Array.isArray(lessonsData) ? lessonsData : [];
+            
+            // If module has any lessons, add it to the set
+            if (lessons.length > 0) {
+              modulesWithLessonsSet.add(String(module.id));
+            }
+          } catch (err) {
+            // If error fetching lessons, assume no lessons for now
+            console.log(`Could not fetch lessons for module ${module.id}:`, err.message);
+          }
+        });
+        
+        await Promise.all(lessonCheckPromises);
+        setModulesWithLessons(modulesWithLessonsSet);
+      } catch (error) {
+        console.error('Error checking modules for lessons:', error);
+      } finally {
+        setLoadingLessonCounts(false);
+      }
+    };
+    
+    checkModulesForLessons();
+  }, [modules, courseId]);
+
+  // Also check Street Smart modules for lessons
+  useEffect(() => {
+    const checkStreetModulesForLessons = async () => {
+      if (!streetModules || streetModules.length === 0) return;
+      
+      const recordingCourseId = getRecordingCourseIdForTitle(courseDetails?.title);
+      if (!recordingCourseId) return;
+      
+      const modulesWithLessonsSet = new Set(modulesWithLessons);
+      
+      try {
+        const lessonCheckPromises = streetModules.map(async (module) => {
+          try {
+            const response = await axios.get(
+              `${import.meta.env.VITE_API_BASE_URL}/api/course/${recordingCourseId}/modules/${module.id}/lesson/all-lessons`,
+              {
+                headers: getAuthHeader(),
+                withCredentials: true,
+              }
+            );
+            
+            const lessonsData = response.data?.data || response.data || [];
+            const lessons = Array.isArray(lessonsData) ? lessonsData : [];
+            
+            if (lessons.length > 0) {
+              modulesWithLessonsSet.add(String(module.id));
+            }
+          } catch (err) {
+            console.log(`Could not fetch lessons for street module ${module.id}:`, err.message);
+          }
+        });
+        
+        await Promise.all(lessonCheckPromises);
+        setModulesWithLessons(modulesWithLessonsSet);
+      } catch (error) {
+        console.error('Error checking street modules for lessons:', error);
+      }
+    };
+    
+    checkStreetModulesForLessons();
+  }, [streetModules, courseDetails?.title]);
+
 
   if (isLoading) {
     return (
@@ -778,7 +871,8 @@ export function CourseView() {
             </div>
           </div>
 
-          {/* Module list for all courses */}
+          {/* Module list for courses with Book Smart/Street Smart modes */}
+          {isEligibleForTwoModes(courseDetails?.title) && (
           <div className="mb-4">
             {filteredModules.length === 0 ? (
               <div className="text-center py-12">
@@ -865,43 +959,22 @@ export function CourseView() {
                           {/* Footer always at the bottom */}
                           <div className="mt-auto px-6 pb-4">
                             <CardFooter className="p-0 flex flex-col gap-2">
-                               {isContentAvailable && hasAccess ? (
+                               {hasAccess && modulesWithLessons.has(String(module.id)) ? (
                                 <>
-                                  <Button 
-                                    className="w-full"
-                                    onClick={() => {
-                                      // Get resource_url from module data
-                                      let fullUrl = module.resource_url;
-                                      
-                                      // If it's not already a full URL, prepend the API base URL
-                                      if (fullUrl && !fullUrl.startsWith('http')) {
-                                        fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                      }
-                                      
-                                      // For S3 URLs, ensure they have the correct protocol
-                                      if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                        fullUrl = fullUrl.replace('http://', 'https://');
-                                      }
-                                      
-                                      // Open in new tab
-                                      if (fullUrl) {
-                                        window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                      } else {
-                                        console.error('No resource URL found for module:', module);
-                                      }
-                                    }}
-                                  >
-                                    <Play size={16} className="mr-2" />
-                                    Start Module
-                                  </Button>
+                                  <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} className="w-full">
+                                    <Button className="w-full">
+                                      <Play size={16} className="mr-2" />
+                                      View Lessons
+                                    </Button>
+                                  </Link>
                                   <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
                                    <Button variant="outline" className="w-full">
                                       <FileText size={16} className="mr-2" />
-                                      Start Assessment
+                                      View Assessment
                                     </Button> 
                                   </Link>
                                   {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
-                                  {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
+                                  {!completedModuleIds.has(String(module.id)) ? (
                                     <Button
                                       variant="secondary"
                                       className="w-full disabled:opacity-60"
@@ -936,13 +1009,13 @@ export function CourseView() {
                                     >
                                       {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
                                     </Button>
-                                  ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
+                                  ) : (
                                     <div className="w-full flex items-center justify-center">
                                       <Badge className="px-3 py-1">Completed</Badge>
                                     </div>
-                                  ) : null}
+                                  )}
                                 </>
-                               ) : !isContentAvailable ? (
+                               ) : !modulesWithLessons.has(String(module.id)) ? (
                                  <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
                                    <Clock size={16} className="mr-2" />
                                    <span className="font-medium">Upcoming Module</span>
@@ -1160,87 +1233,66 @@ export function CourseView() {
                         </div>
                         <div className="mt-auto px-6 pb-4">
                           <CardFooter className="p-0 flex flex-col gap-2">
-                            {isContentAvailable && hasAccessRecording ? (
+                            {hasAccessRecording && modulesWithLessons.has(String(module.id)) ? (
                               <>
-                              <Button
-                                className="w-full"
-                                onClick={() => {
-                                      // Get resource_url from module data
-                                  let fullUrl = module.resource_url;
-                                      
-                                      // If it's not already a full URL, prepend the API base URL
-                                  if (fullUrl && !fullUrl.startsWith('http')) {
-                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                  }
-                                      
-                                      // For S3 URLs, ensure they have the correct protocol
-                                      if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                        fullUrl = fullUrl.replace('http://', 'https://');
-                                      }
-                                      
-                                      // Open in new tab
-                                  if (fullUrl) {
-                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                      } else {
-                                        console.error('No resource URL found for module:', module);
-                                  }
-                                }}
-                              >
-                                <Play size={16} className="mr-2" />
-                                    Start Module
-                              </Button>
-                                  <Link to={`/dashboard/courses/${recordingCourseId}/modules/${module.id}/assessments`} className="w-full">
-                                   <Button variant="outline" className="w-full">
-                                      <FileText size={16} className="mr-2" />
-                                      Start Assessment
-                                    </Button>
-                                  </Link>
-                                  {/* Mark as Complete - show when enrolled in the recording course OR when user has individual module access */}
-                                  {(isEnrolledRecording || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
-                                    <Button
-                                      variant="secondary"
-                                      className="w-full disabled:opacity-60"
-                                      disabled={markingCompleteIds.has(String(module.id))}
-                                      onClick={async () => {
-                                        const idStr = String(module.id);
-                                        if (!recordingCourseId || !module?.id) return;
-                                        // Prevent duplicate clicks
-                                        if (markingCompleteIds.has(idStr)) return;
-                                        setMarkingCompleteIds(prev => {
+                                <Link to={`/dashboard/courses/${recordingCourseId}/modules/${module.id}/lessons`} className="w-full">
+                                  <Button className="w-full">
+                                    <Play size={16} className="mr-2" />
+                                    View Lessons
+                                  </Button>
+                                </Link>
+                                <Link to={`/dashboard/courses/${recordingCourseId}/modules/${module.id}/assessments`} className="w-full">
+                                  <Button variant="outline" className="w-full">
+                                    <FileText size={16} className="mr-2" />
+                                    View Assessment
+                                  </Button>
+                                </Link>
+                                {/* Mark as Complete - show when enrolled in the recording course OR when user has individual module access */}
+                                {!completedModuleIds.has(String(module.id)) ? (
+                                  <Button
+                                    variant="secondary"
+                                    className="w-full disabled:opacity-60"
+                                    disabled={markingCompleteIds.has(String(module.id))}
+                                    onClick={async () => {
+                                      const idStr = String(module.id);
+                                      if (!recordingCourseId || !module?.id) return;
+                                      // Prevent duplicate clicks
+                                      if (markingCompleteIds.has(idStr)) return;
+                                      setMarkingCompleteIds(prev => {
+                                        const next = new Set(prev);
+                                        next.add(idStr);
+                                        return next;
+                                      });
+                                      try {
+                                        await api.post(`/api/course/${recordingCourseId}/modules/${module.id}/mark-complete`);
+                                        setCompletedModuleIds(prev => {
                                           const next = new Set(prev);
                                           next.add(idStr);
                                           return next;
                                         });
-                                        try {
-                                          await api.post(`/api/course/${recordingCourseId}/modules/${module.id}/mark-complete`);
-                                          setCompletedModuleIds(prev => {
-                                            const next = new Set(prev);
-                                            next.add(idStr);
-                                            return next;
-                                          });
-                                        } catch (err) {
-                                          console.error('Failed to mark module as complete', err);
-                                        } finally {
-                                          setMarkingCompleteIds(prev => {
-                                            const next = new Set(prev);
-                                            next.delete(idStr);
-                                            return next;
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
-                                    </Button>
-                                  ) : (isEnrolledRecording || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
-                                    <div className="w-full flex items-center justify-center">
-                                      <Badge className="px-3 py-1">Completed</Badge>
-                                    </div>
-                                  ) : null}
+                                      } catch (err) {
+                                        console.error('Failed to mark module as complete', err);
+                                      } finally {
+                                        setMarkingCompleteIds(prev => {
+                                          const next = new Set(prev);
+                                          next.delete(idStr);
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                                  </Button>
+                                ) : (
+                                  <div className="w-full flex items-center justify-center">
+                                    <Badge className="px-3 py-1">Completed</Badge>
+                                  </div>
+                                )}
                               </>
-                            ) : !isContentAvailable ? (
-                              <Button className="w-full" disabled>
+                            ) : !modulesWithLessons.has(String(module.id)) ? (
+                              <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
                                 <Clock size={16} className="mr-2" />
-                                Upcoming Recording
+                                <span className="font-medium">Upcoming Recording</span>
                               </Button>
                             ) : (
                               <div className="w-full flex flex-col gap-2">
@@ -1378,43 +1430,63 @@ export function CourseView() {
                       {/* Footer always at the bottom */}
                       <div className="mt-auto px-6 pb-4">
                         <CardFooter className="p-0 flex flex-col gap-2">
-                           {isContentAvailable && hasAccess ? (
+                           {hasAccess && modulesWithLessons.has(String(module.id)) ? (
                             <>
-                              <Button 
-                                className="w-full"
-                                onClick={() => {
-                                  // Get resource_url from module data
-                                  let fullUrl = module.resource_url;
-                                  
-                                  // If it's not already a full URL, prepend the API base URL
-                                  if (fullUrl && !fullUrl.startsWith('http')) {
-                                    fullUrl = `${import.meta.env.VITE_API_BASE_URL}${fullUrl}`;
-                                  }
-                                  
-                                  // For S3 URLs, ensure they have the correct protocol
-                                  if (fullUrl && fullUrl.includes('s3.amazonaws.com') && !fullUrl.startsWith('https://')) {
-                                    fullUrl = fullUrl.replace('http://', 'https://');
-                                  }
-                                  
-                                  // Open in new tab
-                                  if (fullUrl) {
-                                    window.open(fullUrl, '_blank', 'noopener,noreferrer');
-                                  } else {
-                                    console.error('No resource URL found for module:', module);
-                                  }
-                                }}
-                              >
-                                <Play size={16} className="mr-2" />
-                                Start Module
-                              </Button>
+                              <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/lessons`} className="w-full">
+                                <Button className="w-full">
+                                  <Play size={16} className="mr-2" />
+                                  View Lessons
+                                </Button>
+                              </Link>
                               <Link to={`/dashboard/courses/${courseId}/modules/${module.id}/assessments`} className="w-full">
                                <Button variant="outline" className="w-full">
                                   <FileText size={16} className="mr-2" />
-                                  Start Assessment
+                                  View Assessment
                                 </Button> 
                               </Link>
+                              {/* Mark as Complete button */}
+                              {!completedModuleIds.has(String(module.id)) ? (
+                                <Button
+                                  variant="secondary"
+                                  className="w-full disabled:opacity-60"
+                                  disabled={markingCompleteIds.has(String(module.id))}
+                                  onClick={async () => {
+                                    const idStr = String(module.id);
+                                    if (!courseId || !module?.id) return;
+                                    // Prevent duplicate clicks
+                                    if (markingCompleteIds.has(idStr)) return;
+                                    setMarkingCompleteIds(prev => {
+                                      const next = new Set(prev);
+                                      next.add(idStr);
+                                      return next;
+                                    });
+                                    try {
+                                      await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
+                                      setCompletedModuleIds(prev => {
+                                        const next = new Set(prev);
+                                        next.add(idStr);
+                                        return next;
+                                      });
+                                    } catch (err) {
+                                      console.error('Failed to mark module as complete', err);
+                                    } finally {
+                                      setMarkingCompleteIds(prev => {
+                                        const next = new Set(prev);
+                                        next.delete(idStr);
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                >
+                                  {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
+                                </Button>
+                              ) : (
+                                <div className="w-full flex items-center justify-center">
+                                  <Badge className="px-3 py-1">Completed</Badge>
+                                </div>
+                              )}
                             </>
-                           ) : !isContentAvailable ? (
+                           ) : !modulesWithLessons.has(String(module.id)) ? (
                              <Button className="w-full bg-blue-600 border-blue-600 text-white hover:bg-blue-700 hover:border-blue-700 transition-colors duration-200" disabled>
                                <Clock size={16} className="mr-2" />
                                <span className="font-medium">Upcoming Module</span>
@@ -1502,47 +1574,6 @@ export function CourseView() {
                                )}
                              </div>
                            )}
-                           {/* Mark as Complete - show when enrolled in the course OR when user has individual module access */}
-                           {(isEnrolled || unlockedIds.has(String(module.id))) && !completedModuleIds.has(String(module.id)) ? (
-                             <Button
-                               variant="secondary"
-                               className="w-full disabled:opacity-60"
-                               disabled={markingCompleteIds.has(String(module.id))}
-                               onClick={async () => {
-                                 const idStr = String(module.id);
-                                 if (!courseId || !module?.id) return;
-                                 // Prevent duplicate clicks
-                                 if (markingCompleteIds.has(idStr)) return;
-                                 setMarkingCompleteIds(prev => {
-                                   const next = new Set(prev);
-                                   next.add(idStr);
-                                   return next;
-                                 });
-                                 try {
-                                   await api.post(`/api/course/${courseId}/modules/${module.id}/mark-complete`);
-                                   setCompletedModuleIds(prev => {
-                                     const next = new Set(prev);
-                                     next.add(idStr);
-                                     return next;
-                                   });
-                                 } catch (err) {
-                                   console.error('Failed to mark module as complete', err);
-                                 } finally {
-                                   setMarkingCompleteIds(prev => {
-                                     const next = new Set(prev);
-                                     next.delete(idStr);
-                                     return next;
-                                   });
-                                 }
-                               }}
-                             >
-                               {markingCompleteIds.has(String(module.id)) ? 'Marking...' : 'Mark as Complete'}
-                             </Button>
-                           ) : (isEnrolled || unlockedIds.has(String(module.id))) && completedModuleIds.has(String(module.id)) ? (
-                             <div className="w-full flex items-center justify-center">
-                               <Badge className="px-3 py-1">Completed</Badge>
-                             </div>
-                           ) : null}
                         </CardFooter>
                       </div>
                     </Card>
