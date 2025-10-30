@@ -113,6 +113,11 @@ import ExpertAthena from './pages/Expert_athena';
 import RevenueGeneration from './pages/RevenueGeneration';
 import CustomerTraining from './pages/CustomerTraining';
 import LeadGeneration from './pages/LeadGeneration';
+import CoursesPage from './pages/Platform/CoursesPage';
+import CommunitiesPage from './pages/Platform/CommunitiesPage';
+import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
+import MembershipsPage from './pages/Platform/MembershipsPage';
+import CoachingPage from './pages/Platform/CoachingPage';
 
 
 function App() {
@@ -151,6 +156,14 @@ function App() {
           <Route path="/remedy" element={<Remedy/>} />
           <Route path="/pmp" element={<MerchantProcessing/>} />
           <Route path="/privatemerchant" element={<PrivateMerchant/>} />
+          
+          {/* Platform routes */}
+          <Route path="/platform/courses" element={<CoursesPage/>}/>
+          <Route path="/platform/communities" element={<CommunitiesPage/>}/>
+          <Route path="/platform/digital-downloads" element={<DigitalDownloadsPage/>}/>
+          <Route path="/platform/memberships" element={<MembershipsPage/>}/>
+          <Route path="/platform/coaching" element={<CoachingPage/>}/>
+          
           <Route
             path="/instructor"
             element={

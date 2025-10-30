@@ -108,7 +108,7 @@ const RevenueDeliver = () => {
                 Talk to sales
               </button>
               <button className="bg-transparent hover:bg-white/10 text-white font-bold py-4 px-8 border-2 border-white rounded-full text-base transition-all duration-300" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Start free trial
+                Join Now
               </button>
             </motion.div>
           </motion.div>

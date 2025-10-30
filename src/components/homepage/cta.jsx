@@ -36,7 +36,7 @@ export default function LearningFutureSection() {
           whileTap={{ scale: 0.97 }}
           className="bg-gradient-to-r from-sky-500 to-blue-600 text-white font-semibold px-8 py-3 rounded-full shadow-lg hover:from-sky-600 hover:to-blue-700 hover:shadow-xl transition-all duration-300"
         >
-          Start Free Trial
+          Join Now
         </motion.button>
       </div>
     </section>

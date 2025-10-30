@@ -213,7 +213,7 @@ export default function Ready() {
         </p>
         
         <button className="ready-cta" onClick={() => navigate('/contact')}>
-          Start Free Trial
+          Join Now
           <ArrowRight size={20} className="ready-cta-icon" />
         </button>
       </div>

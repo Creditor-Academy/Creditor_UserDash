@@ -55,7 +55,7 @@ export default function ExpertScale() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg">
-                Start free trial
+                Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
               
@@ -90,3 +90,4 @@ export default function ExpertScale() {
     </section>
   );
 }
+

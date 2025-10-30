@@ -65,7 +65,7 @@ const CustomerHero = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <button className="inline-flex items-center justify-center gap-2 bg-[#fbbf24] hover:bg-[#f59e0b] text-gray-900 px-6 py-3.5 rounded-full font-semibold text-base transition-all duration-200 shadow-sm hover:shadow-md">
-                Start free trial
+                Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button className="inline-flex items-center justify-center gap-2 bg-transparent hover:bg-white/10 text-white px-6 py-3.5 rounded-full font-semibold text-base border-2 border-white transition-all duration-200">

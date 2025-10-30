@@ -4,7 +4,7 @@ import Logo from '../../assets/logo.webp';
 
 const FounderQuote = () => {
   return (
-    <section className="py-20 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)' }}>
+    <section className="py-20 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)' }}>
       {/* Animated Grid Background - Right Side */}
       <div 
         className="absolute right-0 top-0 bottom-0 pointer-events-none"

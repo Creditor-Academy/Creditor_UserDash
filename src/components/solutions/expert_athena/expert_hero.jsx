@@ -46,7 +46,7 @@ export default function ExpertHero() {
             {/* CTA Buttons */}
             <div className="flex flex-wrap items-center gap-4">
               <button className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-full shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
-                Start free trial
+                Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border-2 border-gray-900 text-gray-900 font-semibold rounded-full hover:bg-gray-900 hover:text-white transition-all duration-300">
