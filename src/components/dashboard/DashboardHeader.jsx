@@ -476,27 +476,18 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   };
 
   // Handler passed to modal when all marked as read
-  const handleAllMarkedRead = async () => {
-    try {
-      // Try to call backend to mark all as read (if route is enabled)
-      await markAllNotificationsRead();
-      console.log('Backend marked all notifications as read');
-    } catch (error) {
-      console.warn('Backend mark as read failed, using frontend fallback:', error);
-    }
-    
-    // Persist read-all cutoff and update local storage
+  const handleAllMarkedRead = () => {
+    // Only update local persistence and state
     const nowIso = new Date().toISOString();
     writeReadAllAt(nowIso);
     const locals = readLocalNotifications();
     const updatedLocals = locals.map(n => ({ ...n, read: true }));
     writeLocalNotifications(updatedLocals);
-    
-    // Update state
+
     setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadNotifications(0);
-    
-    // Refresh notifications from backend to ensure consistency
+
+    // Optionally re-fetch for UI sync
     setTimeout(() => {
       refreshNotifications();
     }, 500);
