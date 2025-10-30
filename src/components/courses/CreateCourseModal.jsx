@@ -64,31 +64,37 @@ const CreateCourseModal = ({ isOpen, onClose, onCourseCreated }) => {
       if (response.success) {
         onCourseCreated(response.data);
         
-        // Send notification to all users about new course
+        // Only send notification to all users if course is PUBLISHED (not DRAFT)
         const courseId = response.data.id;
-        try {
-          console.log('Sending course notification for course ID:', courseId);
-          const notificationResponse = await createCourseNotification(courseId);
-          console.log('Course notification sent successfully:', notificationResponse);
-        } catch (err) {
-          console.warn('Course notification failed (route might be disabled); continuing.', err);
-          // Add local fallback notification
-          const now = new Date();
-          const localNotification = {
-            id: `local-course-${courseId}-${now.getTime()}`,
-            type: 'course',
-            title: 'Course Created',
-            message: `"${form.title}" has been created successfully`,
-            created_at: now.toISOString(),
-            read: false,
-            courseId: courseId,
-          };
-          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
-        }
+        const courseStatus = (form.course_status || '').toUpperCase();
         
-        // Trigger UI to refresh notifications
-        console.log('Dispatching refresh-notifications event');
-        window.dispatchEvent(new Event('refresh-notifications'));
+        if (courseStatus === 'PUBLISHED') {
+          try {
+            console.log('Sending course notification for published course ID:', courseId);
+            const notificationResponse = await createCourseNotification(courseId);
+            console.log('Course notification sent successfully:', notificationResponse);
+          } catch (err) {
+            console.warn('Course notification failed (route might be disabled); continuing.', err);
+            // Add local fallback notification
+            const now = new Date();
+            const localNotification = {
+              id: `local-course-${courseId}-${now.getTime()}`,
+              type: 'course',
+              title: 'New Course Available',
+              message: `"${form.title}" has been published and is now available`,
+              created_at: now.toISOString(),
+              read: false,
+              courseId: courseId,
+            };
+            window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+          }
+          
+          // Trigger UI to refresh notifications
+          console.log('Dispatching refresh-notifications event');
+          window.dispatchEvent(new Event('refresh-notifications'));
+        } else {
+          console.log(`Course created with status "${form.course_status}" - no notification sent (only PUBLISHED courses notify users)`);
+        }
 
         onClose();
         setForm({

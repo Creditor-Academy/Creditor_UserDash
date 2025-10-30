@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { updateCourse } from '../../services/courseService';
+import { createCourseNotification } from '@/services/notificationService';
 
 const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
   const [editCourseData, setEditCourseData] = useState(courseData || {});
@@ -36,7 +37,40 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
         payload.thumbnail = editCourseData.thumbnail;
       }
       
+      // Check if course status is changing to PUBLISHED
+      const oldStatus = (courseData.course_status || '').toUpperCase();
+      const newStatus = (editCourseData.course_status || '').toUpperCase();
+      const isBeingPublished = oldStatus !== 'PUBLISHED' && newStatus === 'PUBLISHED';
+      
       await updateCourse(editCourseData.id, payload);
+      
+      // If course is being published, send notification to all users
+      if (isBeingPublished) {
+        try {
+          console.log('Course status changed to PUBLISHED - sending notification for course ID:', editCourseData.id);
+          await createCourseNotification(editCourseData.id);
+          console.log('Course publication notification sent successfully');
+        } catch (err) {
+          console.warn('Course notification failed (route might be disabled); continuing.', err);
+          // Add local fallback notification
+          const now = new Date();
+          const localNotification = {
+            id: `local-course-${editCourseData.id}-${now.getTime()}`,
+            type: 'course',
+            title: 'New Course Available',
+            message: `"${editCourseData.title}" has been published and is now available`,
+            created_at: now.toISOString(),
+            read: false,
+            courseId: editCourseData.id,
+          };
+          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+        }
+        
+        // Trigger UI to refresh notifications
+        console.log('Dispatching refresh-notifications event');
+        window.dispatchEvent(new Event('refresh-notifications'));
+      }
+      
       onCourseUpdated(editCourseData);
       onClose();
     } catch (err) {
