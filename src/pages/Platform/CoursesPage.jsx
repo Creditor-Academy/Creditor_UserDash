@@ -7,7 +7,7 @@ import Coursepay from '../../components/Platform/Courses/Coursepay';
 import Athenaplus from '../../components/Platform/Courses/athenaplus';
 import CourseFinger from '../../components/Platform/Courses/CourseFinger';
 import Courseready from '../../components/Platform/Courses/Courseready';
-
+import Coursecta from '../../components/Platform/Courses/Coursecta';
 const CoursesPage = () => {
   return (
     <div>
@@ -18,6 +18,7 @@ const CoursesPage = () => {
       <Athenaplus />
       <CourseFinger />
       <Courseready />
+      <Coursecta />
       {/* Add more course-related components here */}
       <Footer />
     </div>
