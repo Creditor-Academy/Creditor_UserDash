@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import AIEnhancementPanel from './AIEnhancementPanel';
 
 // Mock removed - Bytez SDK dependency removed
@@ -16,12 +17,12 @@ import AIEnhancementPanel from './AIEnhancementPanel';
 // });
 
 describe('AIEnhancementPanel', () => {
-  const mockOnContentGenerated = jest.fn();
-  const mockOnClose = jest.fn();
+  const mockOnContentGenerated = vi.fn();
+  const mockOnClose = vi.fn();
   const mockLessonData = { title: 'Test Lesson' };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders correctly when open', () => {

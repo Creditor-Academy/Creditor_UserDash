@@ -1,22 +1,23 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import LessonHeader from './LessonHeader';
 
 describe('LessonHeader', () => {
   const mockProps = {
     lessonTitle: 'Test Lesson',
     lessonData: { title: 'Test Lesson' },
-    onBack: jest.fn(),
-    onView: jest.fn(),
-    onSave: jest.fn(),
-    onUpdate: jest.fn(),
+    onBack: vi.fn(),
+    onView: vi.fn(),
+    onSave: vi.fn(),
+    onUpdate: vi.fn(),
     isUploading: false,
-    onAIEnhance: jest.fn()
+    onAIEnhance: vi.fn(),
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('renders lesson title correctly', () => {
