@@ -1,10 +1,10 @@
 import { getAuthHeader } from '../services/authHeader'; // adjust path as needed
-import api from './apiClient'; // Enhanced API client with token refresh
+import api from './apiClient'; // Enhanced API client
 import axios from 'axios';
 
 export async function fetchAllCourses() {
   try {
-    // Use the enhanced API client with automatic token refresh
+    // Use the enhanced API client
     const response = await api.get('/api/course/getAllCourses');
     
     console.log('fetchAllCourses success response:', response.data);
@@ -25,7 +25,7 @@ export async function fetchAllCourses() {
 
 export async function fetchCourseById(courseId) {
   try {
-    // Use the enhanced API client with automatic token refresh
+    // Use the enhanced API client
     const response = await api.get(`/api/course/getCourseById/${courseId}`);
     
     console.log('fetchCourseById success response:', response.data);
@@ -46,7 +46,7 @@ export async function fetchCourseById(courseId) {
 
 export async function fetchUserCourses(withModules = false) {
   try {
-    // Use the enhanced API client with automatic token refresh
+    // Use the enhanced API client
     const response = await api.get('/api/course/getCourses');
     
     console.log('fetchUserCourses success response:', response.data);
@@ -121,7 +121,7 @@ export async function createAICourse(courseData) {
   console.log('Sending AI course data:', aiCourseData);
 
   try {
-    // Use the enhanced API client with automatic token refresh
+    // Use the enhanced API client
     const response = await api.post('/api/course/createCourse', aiCourseData);
     
     console.log('Course created successfully:', response.data);
@@ -756,7 +756,7 @@ export async function createModule(courseId, moduleData) {
   console.log('createModule called with:', { courseId, moduleData });
   
   try {
-    // Use the enhanced API client with automatic token refresh
+    // Use the enhanced API client
     const response = await api.post(`/api/course/${courseId}/modules/create`, moduleData);
     
     console.log('createModule success response:', response.data);

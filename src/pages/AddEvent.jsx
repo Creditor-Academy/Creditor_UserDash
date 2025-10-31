@@ -82,17 +82,6 @@ const AddEvent = () => {
     return null;
   };
 
-  // Try to refresh the token to get one with role information
-  const refreshToken = async () => {
-    try {
-      // This would require the user's credentials, which we don't have stored
-      // For now, let's just log that we need a token with role information
-      return false;
-    } catch (error) {
-     
-      return false;
-    }
-  };
 
   // URL validation function
   const isValidUrl = (string) => {

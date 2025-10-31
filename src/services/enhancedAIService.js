@@ -74,42 +74,65 @@ class EnhancedAIService {
   }
 
   /**
-   * Generate text using multiple AI providers with intelligent failover
+   * Generate text using multiple AI providers with intelligent failover and reliability improvements
    * @param {string} prompt - Text generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<Object>} Generated text result
    */
   async generateText(prompt, options = {}) {
+    // Input validation
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      throw new Error('Invalid prompt: must be a non-empty string');
+    }
+    
+    if (prompt.length > 10000) {
+      throw new Error('Prompt too long: maximum 10,000 characters allowed');
+    }
+    
     const providers = this.modelPriorities.textGeneration;
     let unauthorizedCount = 0;
-    const maxUnauthorized = 2; // Stop after 2 consecutive 401 errors
+    const maxUnauthorized = 2;
+    const errors = [];
+    const startTime = Date.now();
+    
+    console.log(`🚀 Starting text generation with ${providers.length} providers`);
     
     for (const provider of providers) {
+      const providerStartTime = Date.now();
+      
       try {
         console.log(`🤖 Attempting text generation with ${provider.provider} (${provider.model})`);
         
-        let result;
-        switch (provider.provider) {
-          case 'openai':
-            result = await this.generateWithOpenAI(prompt, options);
-            break;
-          case 'huggingface-router':
-            result = await this.generateWithHuggingFaceRouter(prompt, provider.model, options);
-            break;
-          case 'huggingface':
-            result = await this.generateWithHuggingFace(prompt, provider.model, options);
-            break;
-          default:
-            continue;
-        }
+        // Add timeout wrapper
+        const result = await Promise.race([
+          this.generateWithProvider(provider, prompt, options),
+          this.createTimeoutPromise(30000, `${provider.provider} timeout`)
+        ]);
 
-        if (result.success) {
-          console.log(`✅ Text generation successful with ${provider.provider}`);
-          return result;
+        if (result && result.success) {
+          const duration = Date.now() - providerStartTime;
+          console.log(`✅ Text generation successful with ${provider.provider} in ${duration}ms`);
+          
+          // Validate and sanitize result
+          if (result.data && result.data.text) {
+            return {
+              success: true,
+              content: this.sanitizeContent(result.data.text),
+              provider: provider.provider,
+              model: provider.model,
+              usage: result.data.usage,
+              duration,
+              fallback: false
+            };
+          }
         }
         
+        // Handle unsuccessful results
+        const errorMsg = result?.error || 'No content generated';
+        errors.push(`${provider.provider}: ${errorMsg}`);
+        
         // Check for unauthorized errors
-        if (result.error && (result.error.includes('401') || result.error.includes('Unauthorized') || result.error.includes('Invalid credentials'))) {
+        if (errorMsg.includes('401') || errorMsg.includes('Unauthorized') || errorMsg.includes('Invalid credentials')) {
           unauthorizedCount++;
           console.warn(`🔑 Unauthorized error ${unauthorizedCount}/${maxUnauthorized}`);
           if (unauthorizedCount >= maxUnauthorized) {
@@ -117,11 +140,18 @@ class EnhancedAIService {
             break;
           }
         }
+        
       } catch (error) {
-        console.warn(`⚠️ ${provider.provider} failed:`, error.message);
+        const duration = Date.now() - providerStartTime;
+        const errorMsg = this.getErrorMessage(error);
+        errors.push(`${provider.provider}: ${errorMsg}`);
+        
+        console.warn(`⚠️ ${provider.provider} failed in ${duration}ms:`, errorMsg);
         
         // Handle specific error types
-        if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+        if (error.message.includes('timeout')) {
+          console.log(`⏰ ${provider.provider} timed out, trying next provider...`);
+        } else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
           console.log(`🔄 Rate limit hit for ${provider.provider}, trying next provider...`);
         } else if (error.message.includes('402') || error.message.includes('Payment Required')) {
           console.log(`💳 Payment required for ${provider.provider}, trying next provider...`);
@@ -138,81 +168,96 @@ class EnhancedAIService {
     }
 
     // All providers failed, use fallback generator
-    console.log('⚠️ All AI providers failed, using fallback generation');
-    console.log('🔄 Using fallback content generation for prompt:', prompt.substring(0, 100) + '...');
+    const totalDuration = Date.now() - startTime;
+    console.log(`⚠️ All AI providers failed after ${totalDuration}ms, using fallback generation`);
+    console.log('🔄 Errors encountered:', errors.join('; '));
     
-    try {
-      // Use the fallback generator's generateContent method
-      const fallbackResult = await this.fallbackGenerator.generateContent(prompt, options);
-      
-      if (fallbackResult && fallbackResult.success) {
-        return {
-          success: true,
-          content: fallbackResult.content,
-          fallback: true,
-          provider: 'fallback'
-        };
-      } else {
-        throw new Error(fallbackResult?.error || 'Fallback generation returned no content');
-      }
-    } catch (fallbackError) {
-      console.error('❌ Fallback course generation error:', fallbackError);
-      
-      // Return a simple text fallback as last resort
-      return {
-        success: true,
-        content: 'This is a placeholder response. AI content generation is currently unavailable. Please configure valid API keys or try again later.',
-        fallback: true,
-        provider: 'simple-fallback',
-        error: fallbackError.message
-      };
-    }
+    return this.handleFallbackGeneration(prompt, options, errors);
   }
 
   /**
-   * Generate images using multiple AI providers with intelligent failover
-   * Enhanced with comprehensive error handling and graceful fallbacks
+   * Generate images using multiple AI providers with enhanced reliability
    * @param {string} prompt - Image generation prompt
    * @param {Object} options - Generation options
    * @returns {Promise<Object>} Generated image result
    */
   async generateImage(prompt, options = {}) {
+    // Input validation
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+      throw new Error('Invalid prompt: must be a non-empty string');
+    }
+    
+    if (prompt.length > 1000) {
+      throw new Error('Image prompt too long: maximum 1,000 characters allowed');
+    }
+    
+    // Content safety check
+    const safetyCheck = this.checkContentSafety(prompt);
+    if (!safetyCheck.safe) {
+      throw new Error(`Content safety violation: ${safetyCheck.reason}`);
+    }
+    
     const providers = this.modelPriorities.imageGeneration;
     const errors = [];
+    const startTime = Date.now();
+    
+    console.log(`🚀 Starting image generation with ${providers.length} providers`);
     
     for (const provider of providers) {
+      const providerStartTime = Date.now();
+      
       try {
         console.log(`🎨 Attempting image generation with ${provider.provider} (${provider.model})`);
         
-        let result;
-        switch (provider.provider) {
-          case 'deepai':
-            result = await this.generateWithDeepAI(prompt, options);
-            break;
-          case 'huggingface':
-            result = await this.generateImageWithHuggingFace(prompt, provider.model, options);
-            break;
-          default:
-            continue;
-        }
+        // Add timeout wrapper for image generation (longer timeout)
+        const result = await Promise.race([
+          this.generateImageWithProvider(provider, prompt, options),
+          this.createTimeoutPromise(60000, `${provider.provider} image timeout`)
+        ]);
 
-        if (result.success) {
-          console.log(`✅ Image generation successful with ${provider.provider}`);
-          return result;
+        if (result && result.success) {
+          const duration = Date.now() - providerStartTime;
+          console.log(`✅ Image generation successful with ${provider.provider} in ${duration}ms`);
+          
+          // Validate image URL
+          if (result.imageUrl && this.validateImageUrl(result.imageUrl)) {
+            return {
+              success: true,
+              imageUrl: result.imageUrl,
+              provider: provider.provider,
+              model: provider.model,
+              duration,
+              fallback: false
+            };
+          } else {
+            errors.push(`${provider.provider}: Invalid image URL returned`);
+          }
         } else {
-          errors.push(`${provider.provider}: ${result.error}`);
-          console.warn(`⚠️ ${provider.provider} failed:`, result.error);
+          const errorMsg = result?.error || 'No image generated';
+          errors.push(`${provider.provider}: ${errorMsg}`);
+          console.warn(`⚠️ ${provider.provider} failed:`, errorMsg);
         }
       } catch (error) {
-        errors.push(`${provider.provider}: ${error.message}`);
-        console.error(`❌ ${provider.provider} threw error:`, error);
+        const duration = Date.now() - providerStartTime;
+        const errorMsg = this.getErrorMessage(error);
+        errors.push(`${provider.provider}: ${errorMsg}`);
+        
+        console.error(`❌ ${provider.provider} threw error in ${duration}ms:`, errorMsg);
         continue;
       }
     }
 
-    // All providers failed, log all errors and return fallback
-    console.error('❌ All image generation providers failed:', errors);
-    return this.generateFallbackImage(prompt, options);
+    // All providers failed
+    const totalDuration = Date.now() - startTime;
+    console.error(`❌ All image generation providers failed after ${totalDuration}ms:`, errors);
+    
+    return {
+      success: false,
+      error: `All image generation providers failed: ${errors.join('; ')}`,
+      fallback: true,
+      provider: 'none',
+      duration: totalDuration
+    };
   }
 
   /**
@@ -989,6 +1034,169 @@ Format the response as JSON with this structure:
       }
     };
   }
+}
+
+// ===== RELIABILITY UTILITY METHODS =====
+
+/**
+ * Create timeout promise for race conditions
+ */
+EnhancedAIService.prototype.createTimeoutPromise = function(timeout, message) {
+  return new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Timeout: ${message}`)), timeout);
+  });
+}
+
+/**
+ * Generate with provider wrapper
+ */
+EnhancedAIService.prototype.generateWithProvider = async function(provider, prompt, options) {
+  switch (provider.provider) {
+    case 'openai':
+      return await this.generateWithOpenAI(prompt, options);
+    case 'huggingface-router':
+      return await this.generateWithHuggingFaceRouter(prompt, provider.model, options);
+    case 'huggingface':
+      return await this.generateWithHuggingFace(prompt, provider.model, options);
+    default:
+      throw new Error(`Unknown provider: ${provider.provider}`);
+  }
+}
+
+/**
+ * Generate image with provider wrapper
+ */
+EnhancedAIService.prototype.generateImageWithProvider = async function(provider, prompt, options) {
+  switch (provider.provider) {
+    case 'deepai':
+      return await this.generateWithDeepAI(prompt, options);
+    case 'huggingface':
+      return await this.generateImageWithHuggingFace(prompt, provider.model, options);
+    default:
+      throw new Error(`Unknown image provider: ${provider.provider}`);
+  }
+}
+
+/**
+ * Handle fallback generation
+ */
+EnhancedAIService.prototype.handleFallbackGeneration = async function(prompt, options, errors) {
+  try {
+    console.log('🔄 Using fallback content generation for prompt:', prompt.substring(0, 100) + '...');
+    
+    const fallbackResult = await this.fallbackGenerator.generateContent(prompt, options);
+    
+    if (fallbackResult && fallbackResult.success) {
+      return {
+        success: true,
+        content: this.sanitizeContent(fallbackResult.content),
+        fallback: true,
+        provider: 'fallback',
+        errors: errors
+      };
+    } else {
+      throw new Error(fallbackResult?.error || 'Fallback generation returned no content');
+    }
+  } catch (fallbackError) {
+    console.error('❌ Fallback generation error:', fallbackError);
+    
+    // Return a simple text fallback as last resort
+    return {
+      success: true,
+      content: 'AI content generation is currently unavailable. Please check your API configuration or try again later.',
+      fallback: true,
+      provider: 'simple-fallback',
+      error: fallbackError.message,
+      errors: errors
+    };
+  }
+}
+
+/**
+ * Sanitize content output
+ */
+EnhancedAIService.prototype.sanitizeContent = function(content) {
+  if (!content || typeof content !== 'string') return '';
+  
+  // Basic sanitization - remove potentially harmful content
+  return content
+    .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocols
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .trim();
+}
+
+/**
+ * Check content safety
+ */
+EnhancedAIService.prototype.checkContentSafety = function(prompt) {
+  const inappropriateKeywords = [
+    'nsfw', 'nude', 'explicit', 'violence', 'gore', 'hate', 'illegal', 
+    'harmful', 'weapon', 'drug', 'suicide', 'self-harm'
+  ];
+  
+  const lowerPrompt = prompt.toLowerCase();
+  
+  for (const keyword of inappropriateKeywords) {
+    if (lowerPrompt.includes(keyword)) {
+      return {
+        safe: false,
+        reason: `Contains inappropriate keyword: ${keyword}`
+      };
+    }
+  }
+  
+  return { safe: true };
+}
+
+/**
+ * Validate image URL
+ */
+EnhancedAIService.prototype.validateImageUrl = function(url) {
+  if (!url || typeof url !== 'string') return false;
+  
+  try {
+    const urlObj = new URL(url);
+    return ['http:', 'https:', 'blob:', 'data:'].includes(urlObj.protocol);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get user-friendly error message
+ */
+EnhancedAIService.prototype.getErrorMessage = function(error) {
+  if (!error) return 'Unknown error';
+  
+  const message = error.message || error.toString();
+  
+  // Common error patterns
+  if (message.includes('fetch')) return 'Network connection failed';
+  if (message.includes('timeout')) return 'Request timed out';
+  if (message.includes('401')) return 'Invalid API key';
+  if (message.includes('429')) return 'Rate limit exceeded';
+  if (message.includes('500')) return 'Service temporarily unavailable';
+  if (message.includes('400')) return 'Invalid request format';
+  if (message.includes('403')) return 'Access forbidden';
+  
+  return message;
+}
+
+/**
+ * Get service health status
+ */
+EnhancedAIService.prototype.getServiceHealth = function() {
+  return {
+    providers: {
+      openai: !!this.openai,
+      huggingface: !!this.huggingfaceKey,
+      deepai: !!this.deepAIKey
+    },
+    modelPriorities: this.modelPriorities,
+    fallbackAvailable: !!this.fallbackGenerator,
+    timestamp: new Date().toISOString()
+  };
 }
 
 // Create and export singleton instance

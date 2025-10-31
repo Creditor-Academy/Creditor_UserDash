@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client';
-import { getAccessToken, setAccessToken } from './tokenService';
+import { getAccessToken } from './tokenService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor-backend-ceds.onrender.com';
 
@@ -51,18 +51,6 @@ export function getSocket() {
     });
   }
   return socket;
-}
-
-export function refreshSocketAuth(newToken) {
-  if (newToken) {
-    setAccessToken(newToken); // This sets both 'authToken' and 'token' in localStorage
-  }
-  if (socket) {
-    try {
-      socket.auth = { token: newToken || undefined };
-      socket.connect();
-    } catch {}
-  }
 }
 
 export function disconnectSocket() {
