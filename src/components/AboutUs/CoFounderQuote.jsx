@@ -2,7 +2,7 @@ import React from 'react';
 import PaulImage from '../../assets/Paul.jpeg';
 import Logo from '../../assets/logo.webp';
 
-const FounderQuote = () => {
+const CoFounderQuote = () => {
   return (
     <section className="py-20 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)' }}>
       {/* Animated Grid Background - Right Side */}
@@ -59,20 +59,17 @@ const FounderQuote = () => {
       
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Quote Section */}
+          {/* Text Section */}
           <div className="space-y-6">
-            {/* Quote */}
             <blockquote className="text-2xl md:text-3xl font-normal text-white leading-relaxed" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-              "We don't just create courses—we architect learning experiences that inspire, engage, and transform. Every interaction is an opportunity to unlock human potential and drive meaningful change."
+              Visionary leader with over 15 years of experience in educational technology. Passionate about creating learning solutions that transform lives and bridge the gap between traditional and digital education.
             </blockquote>
-            
-            {/* Attribution */}
             <div className="space-y-1">
               <p className="text-lg font-semibold text-white" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-                PaulMichael Rowland
+                Mr. PaulMichael Rowland
               </p>
               <p className="text-base text-gray-300" style={{ fontFamily: 'Arial, sans-serif' }}>
-                Founder
+                Co-Founder
               </p>
             </div>
           </div>
@@ -83,11 +80,10 @@ const FounderQuote = () => {
               <div className="w-64 h-64">
                 <img 
                   src={PaulImage} 
-                  alt="PaulMichael Rowland - Founder"
+                  alt="Mr. PaulMichael Rowland - Co-Founder"
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
-              {/* Decorative elements */}
               <div className="absolute -top-4 -right-4 w-8 h-8 bg-blue-500 rounded-full opacity-20"></div>
               <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-indigo-400 rounded-full opacity-30"></div>
             </div>
@@ -98,4 +94,6 @@ const FounderQuote = () => {
   );
 };
 
-export default FounderQuote;
+export default CoFounderQuote;
+
+
