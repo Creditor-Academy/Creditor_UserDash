@@ -7,10 +7,10 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:9000',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
@@ -75,8 +75,9 @@ export default defineConfig(({ mode }) => ({
 }));
 
 
+
 // #(Testing Backend)
-// VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
+// # VITE_API_BASE_URL=https://testbackend-hcoy.onrender.com
 
 // #(development Backend)
 // VITE_API_BASE_URL=https://creditor.onrender.com
