@@ -107,9 +107,9 @@ const GroupManagementGuide = () => {
     ],
     steps: [
       {
-        title: 'Accessing Group Management',
+        title: 'Step 1: Navigate to Group Management',
         renderDescription: () => (
-          <div className="space-y-8 ml-4">
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -117,101 +117,527 @@ const GroupManagementGuide = () => {
             >
               <StepCard
                 icon={Users}
-                title="Navigation"
+                title="Accessing the Feature"
                 color="blue"
-                items={[
-                  'Access the Instructor Portal from the sidebar',
-                  'Click on "Group Management" in the sidebar',
-                  'View all study and common groups in one place',
-                  'Easy access to group management tools'
-                ]}
                 index={0}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StepCard
-                icon={MessageSquare}
-                title="Group Actions"
-                color="emerald"
                 items={[
-                  'View - Access detailed group information and activities',
-                  'Edit - Modify group details, photo, description, and type',
-                  'Create - Post announcements and content in groups',
-                  'Delete - Remove groups when no longer needed'
+                  'From the sidebar, navigate to the "Instructor Portal"',
+                  'Click on it to open the "Instructor Dashboard"',
+                  'From the "Instructor Tools" sidebar, click on "Group Management"',
+                  'You will see a list of all "Open Groups" and "Course Related Groups"'
                 ]}
-                index={1}
               />
             </motion.div>
 
+            <ProTip emoji="🎯">
+              <span className="font-bold">Quick Tip:</span> The Group Management section provides centralized access 
+              to all your learning groups where you can perform 6 main actions: View, Create, Edit, Add Member, View Member, and Delete Group.
+            </ProTip>
+          </div>
+        )
+      },
+      {
+        title: 'Step 2: Create a Group',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              transition={{ duration: 0.5 }}
             >
-              <ProTip emoji="🎯">
-                <span className="font-bold">Quick Access:</span> The Group Management section in the instructor portal 
-                provides all the tools you need to oversee and manage your learning groups effectively.
-              </ProTip>
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-8 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <UserPlus className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-bold text-blue-800">Create Group Button</h4>
+                </div>
+                
+                <p className="text-gray-700 mb-6 font-medium">
+                  Click on <strong>"Create Group"</strong> button to create a new group:
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">1</span>
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-medium">Click the <strong>"Create Group"</strong> button</p>
+                      <p className="text-gray-600 text-sm mt-1">A form will open up for group creation</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">2</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 font-medium mb-3">Select the group type:</p>
+                      <div className="space-y-2 ml-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span className="text-gray-700"><strong>Open Group:</strong> Accessible to all users</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span className="text-gray-700"><strong>Course Related:</strong> Specific to a particular course</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">3</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-gray-700 font-medium mb-3">Fill in the basic details:</p>
+                      <div className="space-y-2 ml-4">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span className="text-gray-700"><strong>Group Name:</strong> Enter a descriptive name for your group</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span className="text-gray-700"><strong>Group Description:</strong> Add details about the group's purpose</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span className="text-gray-700"><strong>Display Picture (DP):</strong> Upload a group image</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">4</span>
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-medium">Submit to create the group</p>
+                      <p className="text-gray-600 text-sm mt-1">Your new group has been created successfully! 🎉</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <ProTip emoji="✨">
+              <span className="font-bold">Getting Started:</span> Choose "Open Group" for general discussion groups 
+              or "Course Related" if the group is tied to a specific course. Make sure to add a clear name and description 
+              so members understand the group's purpose.
+            </ProTip>
+          </div>
+        )
+      },
+      {
+        title: 'Step 3: View Group Details',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-emerald-50 border-l-4 border-emerald-500 p-8 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-bold text-emerald-800">View Action</h4>
+                </div>
+                
+                <p className="text-gray-700 mb-4 font-medium">
+                  Click on <strong>"View"</strong> to see comprehensive group details:
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">📝</span>
+                      <span className="font-bold text-gray-800">Group Name</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">The name of the group</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">📄</span>
+                      <span className="font-bold text-gray-800">Group Description</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">Details about the group's purpose</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">👥</span>
+                      <span className="font-bold text-gray-800">No. of Members</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">Total count of group members</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">🖼️</span>
+                      <span className="font-bold text-gray-800">Group DP</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">Group display picture</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">💬</span>
+                      <span className="font-bold text-gray-800">No. of Posts</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">Total number of posts in the group</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">📅</span>
+                      <span className="font-bold text-gray-800">Date of Creation</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">When the group was created</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">📌</span>
+                      <span className="font-bold text-gray-800">Pinned Posts</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">Important posts that are pinned</p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-emerald-600 font-bold text-lg">📋</span>
+                      <span className="font-bold text-gray-800">Group Posts</span>
+                    </div>
+                    <p className="text-gray-600 text-sm">All posts made in the group</p>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         )
       },
       {
-        title: 'Member Management & Group Settings',
+        title: 'Step 4: Create Posts and Announcements',
         renderDescription: () => (
-          <div className="space-y-8 ml-4">
+          <div className="space-y-6 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-purple-50 border-l-4 border-purple-500 p-8 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <MessageSquare className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-bold text-purple-800">Create Action</h4>
+                </div>
+                
+                <p className="text-gray-700 mb-6 font-medium">
+                  Click on <strong>"Create"</strong> to create posts and announcements in your group:
+                </p>
+                
+                {/* Create Post Section */}
+                <div className="bg-white rounded-xl p-6 border-2 border-purple-200 mb-6 shadow-md">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <MessageSquare className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <h4 className="font-bold text-purple-800 text-lg">Creating a Post</h4>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">1</span>
+                      </div>
+                      <div>
+                        <p className="text-gray-700 font-medium">Click on <strong>"Create Post"</strong> button</p>
+                        <p className="text-gray-600 text-sm mt-1">A popup window will open up</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">2</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 font-medium mb-3">Fill in the required fields:</p>
+                        <div className="space-y-2 ml-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                            <span className="text-gray-700"><strong>Type:</strong> Select the type of post</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                            <span className="text-gray-700"><strong>Title:</strong> Enter the post title</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                            <span className="text-gray-700"><strong>Content:</strong> Add your post content</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="w-2 h-2 bg-purple-400 rounded-full mt-1.5"></span>
+                            <span className="text-gray-700"><strong>File Attachment:</strong> Attach files like images, videos, PDFs, or provide a manual link</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">3</span>
+                      </div>
+                      <div>
+                        <p className="text-gray-700 font-medium">Click <strong>Submit</strong></p>
+                        <p className="text-gray-600 text-sm mt-1">Your post has been created successfully! ✅</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Create Announcement Section */}
+                <div className="bg-white rounded-xl p-6 border-2 border-purple-200 shadow-md">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <Star className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <h4 className="font-bold text-purple-800 text-lg">Creating an Announcement</h4>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">1</span>
+                      </div>
+                      <div>
+                        <p className="text-gray-700 font-medium">Click on <strong>"Create Announcement"</strong></p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">2</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 font-medium mb-3">Provide the required information:</p>
+                        <div className="space-y-2 ml-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                            <span className="text-gray-700"><strong>Title:</strong> Enter the announcement title</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                            <span className="text-gray-700"><strong>Content:</strong> Add the announcement content</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                            <span className="text-gray-700"><strong>Media:</strong> Attach any media files if needed</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">3</span>
+                      </div>
+                      <div>
+                        <p className="text-gray-700 font-medium">Submit to create the announcement</p>
+                        <p className="text-gray-600 text-sm mt-1">The announcement will be posted! 📢</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <ProTip emoji="💡">
+              <span className="font-bold">Content Tip:</span> Use posts for regular updates and discussions, 
+              while announcements are perfect for important notifications that need immediate attention from all group members.
+            </ProTip>
+          </div>
+        )
+      },
+      {
+        title: 'Step 5: Edit Group Information',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={UserPlus}
-                title="Member Management"
-                color="purple"
+                icon={Settings}
+                title="Edit Action"
+                color="indigo"
+                index={3}
                 items={[
-                  'Add Member - Invite new users to the group',
-                  'View Members - See complete list of group participants',
-                  'Manage member roles and permissions',
-                  'Monitor member participation and activity'
+                  'Click on "Edit" to modify group settings',
+                  'Group Title - Update the group name',
+                  'Group Description - Modify the group description',
+                  'Group Type - Change between "Open Group" or "Course Related"',
+                  'Privacy Settings - Make the group private if needed'
                 ]}
-                index={2}
               />
             </motion.div>
 
+            <div className="bg-indigo-100 border border-indigo-300 rounded-xl p-6">
+              <div className="flex items-start gap-3">
+                <Shield className="w-6 h-6 text-indigo-600 mt-1 flex-shrink-0" />
+                <div>
+                  <p className="text-indigo-900 font-medium">
+                    <strong>Privacy Control:</strong> Making a group private restricts access to invited members only, 
+                    perfect for course-specific discussions or selective study groups.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      {
+        title: 'Step 6: Add Members to Group',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-amber-50 border-l-4 border-amber-500 p-8 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+                    <UserPlus className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-bold text-amber-800">Add Member Action</h4>
+                </div>
+                
+                <p className="text-gray-700 mb-6 font-medium">
+                  Click on <strong>"Add Member"</strong> to invite new members to your group:
+                </p>
+                
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-4 bg-white p-4 rounded-lg border border-amber-200">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold">1</span>
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-medium">Select users you want to add to the group</p>
+                      <p className="text-gray-600 text-sm mt-1">Browse available users or search by name</p>
+                    </div>
+                  </li>
+                  
+                  <li className="flex items-start gap-4 bg-white p-4 rounded-lg border border-amber-200">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold">2</span>
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-medium">Send invitations to new members</p>
+                      <p className="text-gray-600 text-sm mt-1">Members will receive a notification to join</p>
+                    </div>
+                  </li>
+                  
+                  <li className="flex items-start gap-4 bg-white p-4 rounded-lg border border-amber-200">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold">3</span>
+                    </div>
+                    <div>
+                      <p className="text-gray-700 font-medium">Manage member permissions and roles</p>
+                      <p className="text-gray-600 text-sm mt-1">Set appropriate access levels for new members</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </motion.div>
+          </div>
+        )
+      },
+      {
+        title: 'Step 7: View Group Members',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
             >
               <StepCard
-                icon={Settings}
-                title="Group Configuration"
-                color="indigo"
+                icon={Users}
+                title="View Member Action"
+                color="teal"
+                index={5}
                 items={[
-                  'Set group type (open or course-related)',
-                  'Update group description and profile photo',
-                  'Configure privacy and access settings',
-                  'Manage group communication preferences'
+                  'Click on "View Member" to see all group members',
+                  'View the complete list of all members added to your group',
+                  'See member details and participation status',
+                  'Monitor member activity and engagement',
+                  'Check when members joined the group'
                 ]}
-                index={3}
               />
             </motion.div>
 
+            <ProTip emoji="👥">
+              <span className="font-bold">Member Insights:</span> Regularly reviewing member activity helps you 
+              identify engaged participants and those who might need additional support or encouragement.
+            </ProTip>
+          </div>
+        )
+      },
+      {
+        title: 'Step 8: Delete a Group',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              transition={{ duration: 0.5 }}
             >
-              <ProTip emoji="⚙️">
-                <span className="font-bold">Group Settings:</span> Take advantage of group type settings to 
-                differentiate between open discussion groups and course-specific study groups for better organization.
-              </ProTip>
+              <div className="bg-red-50 border-l-4 border-red-500 p-8 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg">
+                    <Users className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-xl font-bold text-red-800">Delete Group Action</h4>
+                </div>
+                
+                <p className="text-gray-700 mb-6 font-medium">
+                  Click on <strong>"Delete Group"</strong> when you need to remove a group:
+                </p>
+                
+                <div className="bg-white rounded-xl p-6 border-2 border-red-200 shadow-md">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-2xl">⚠️</span>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-red-800 mb-2">Important Notice</h5>
+                      <p className="text-gray-700 leading-relaxed">
+                        If your group's purpose has been fulfilled and you no longer need it, you can delete the group. 
+                        <strong className="text-red-700"> Make sure to inform members before deletion</strong> as this 
+                        action is typically <strong className="text-red-700">irreversible</strong>.
+                      </p>
+                      
+                      <div className="mt-4 pt-4 border-t border-red-200">
+                        <p className="text-gray-700 font-medium mb-2">Before deleting:</p>
+                        <ul className="space-y-1 text-gray-600 text-sm ml-4">
+                          <li>• Notify all group members</li>
+                          <li>• Archive important posts and materials</li>
+                          <li>• Consider making the group inactive instead</li>
+                          <li>• Confirm this is the intended action</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         )
