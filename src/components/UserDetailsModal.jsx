@@ -152,7 +152,6 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
       if (coursesArray.length > 0) {
         fetchModulesForCourses(coursesArray);
         fetchPricesForCourses(coursesArray);
-        fetchTotalModulesCount(coursesArray);
         // Fetch unlocked/purchased modules for the viewed user (single call)
         await fetchPurchasedModulesForUser(coursesArray);
       }
@@ -234,9 +233,8 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
         modulesArray.map((m) => m.course_id || m.module?.course_id || m.courseId).filter(Boolean)
       ));
       
-      if (purchasedCourseIds.length > 0) {
-        fetchTotalModulesCountForPurchasedCourses(purchasedCourseIds);
-      }
+      // Total module counts are handled inline in fetchPurchasedModulesForUser
+      // No need for separate function call
       const withCourseInfo = modulesArray.map((m) => {
         const normalized = {
           // Prefer top-level id/title; fallback to nested module object often returned by access APIs
