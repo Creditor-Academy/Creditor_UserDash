@@ -233,7 +233,7 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
         modulesArray.map((m) => m.course_id || m.module?.course_id || m.courseId).filter(Boolean)
       ));
       
-      https://github.com/TanuShri0112/Pramerica_Dashboard.git      // Total module counts are handled inline in fetchPurchasedModulesForUser
+      // Total module counts are handled inline in fetchPurchasedModulesForUser
       // No need for separate function call
       const withCourseInfo = modulesArray.map((m) => {
         const normalized = {
