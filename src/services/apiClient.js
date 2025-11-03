@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAccessToken, clearAccessToken } from './tokenService';
+import { getAccessToken, setAccessToken, clearAccessToken } from './tokenService';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
@@ -66,11 +66,18 @@ api.interceptors.request.use(async (config) => {
 		}
 		
 		config.headers = config.headers || {};
+		// Only add Authorization header if we have a token that we can read
+		// If backend uses HttpOnly cookies, this won't interfere
 		config.headers['Authorization'] = `Bearer ${token}`;
-		console.debug('[Auth] Attached access token to request:', { url: config?.url });
+		console.debug('[Auth] Attached access token to request:', { url: config?.url, hasToken: !!token });
 	} else {
-		console.debug('[Auth] No access token present for request:', { url: config?.url });
+		// No token found in client storage, rely on HttpOnly cookies sent automatically
+		console.debug('[Auth] No access token in client storage, relying on cookie authentication:', { url: config?.url });
 	}
+	
+	// Ensure credentials are sent (cookies will be included automatically)
+	config.withCredentials = true;
+	
 	return config;
 });
 

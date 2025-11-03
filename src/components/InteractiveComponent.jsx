@@ -98,6 +98,79 @@ const InteractiveComponent = forwardRef(({
   const [imageEditContext, setImageEditContext] = useState(null); // { type: 'accordion'|'tab'|'labeledGraphic'|'timeline', index: number }
   const [isImageProcessing, setIsImageProcessing] = useState(false);
    
+  // Helper function to extract tabs data from HTML
+  const extractTabsFromHTML = (htmlContent) => {
+    const extractedData = [];
+    
+    try {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      // Find all tab buttons to get titles
+      const tabButtons = tempDiv.querySelectorAll('.tab-button');
+      // Find all tab panels to get content
+      const tabPanels = tempDiv.querySelectorAll('.tab-panel');
+      
+      tabPanels.forEach((panel, index) => {
+        // Extract title from tab button
+        const tabButton = tabButtons[index];
+        const title = tabButton ? tabButton.textContent.trim() : `Tab ${index + 1}`;
+        
+        // Extract content from tab panel - look for the content div
+        const contentDiv = panel.querySelector('.text-gray-700');
+        let content = '';
+        if (contentDiv) {
+          // Get text content while preserving line breaks
+          content = contentDiv.innerHTML
+            .replace(/<\/p>/g, '\n')
+            .replace(/<\/li>/g, '\n')
+            .replace(/<br\s*\/?>/g, '\n')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        }
+        
+        // Extract image if present
+        let image = null;
+        const imageElement = panel.querySelector('img');
+        if (imageElement) {
+          image = {
+            src: imageElement.src,
+            name: imageElement.alt || 'Tab image',
+            size: 0
+          };
+        }
+        
+        // Extract audio if present
+        let audio = null;
+        const audioElement = panel.querySelector('audio source');
+        if (audioElement) {
+          const audioSrc = audioElement.getAttribute('src');
+          const audioType = audioElement.getAttribute('type');
+          if (audioSrc) {
+            audio = {
+              src: audioSrc,
+              type: audioType || 'audio/mpeg',
+              name: 'Tab audio',
+              size: 0
+            };
+          }
+        }
+        
+        extractedData.push({
+          title,
+          content,
+          image,
+          audio
+        });
+      });
+    } catch (error) {
+      console.error('Error extracting tabs data from HTML:', error);
+    }
+    
+    return extractedData;
+  };
+
   // Helper function to extract accordion data from HTML
   const extractAccordionFromHTML = (htmlContent) => {
     const extractedData = [];
@@ -115,16 +188,45 @@ const InteractiveComponent = forwardRef(({
         const headerButton = item.querySelector('.accordion-header span');
         const title = headerButton ? headerButton.textContent.trim() : `Section ${index + 1}`;
         
-        // Extract content from accordion content div
+        // Extract content from accordion content div - preserve formatting
         const contentDiv = item.querySelector('.accordion-content .text-gray-700');
-        const content = contentDiv ? contentDiv.textContent.trim() : '';
+        let content = '';
+        if (contentDiv) {
+          // Get text content while preserving line breaks
+          content = contentDiv.innerHTML
+            .replace(/<\/p>/g, '\n')
+            .replace(/<\/li>/g, '\n')
+            .replace(/<br\s*\/?>/g, '\n')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        }
         
         // Extract image if present
+        let image = null;
         const imageElement = item.querySelector('.accordion-content img');
-        const image = imageElement ? imageElement.src : null;
+        if (imageElement) {
+          image = {
+            src: imageElement.src,
+            name: imageElement.alt || 'Accordion image',
+            size: 0
+          };
+        }
         
-        // Extract audio if present (placeholder for future implementation)
-        const audio = null;
+        // Extract audio if present
+        let audio = null;
+        const audioElement = item.querySelector('audio source');
+        if (audioElement) {
+          const audioSrc = audioElement.getAttribute('src');
+          const audioType = audioElement.getAttribute('type');
+          if (audioSrc) {
+            audio = {
+              src: audioSrc,
+              type: audioType || 'audio/mpeg',
+              name: 'Accordion audio',
+              size: 0
+            };
+          }
+        }
         
         extractedData.push({
           title,
@@ -562,9 +664,16 @@ const InteractiveComponent = forwardRef(({
           } else {
             console.log('No JSON content found, trying to extract from HTML');
             // If no structured content, try to extract from HTML
-            if (template === 'accordion' && editingInteractiveBlock.html_css) {
+            if (template === 'tabs' && editingInteractiveBlock.html_css) {
+              const extractedData = extractTabsFromHTML(editingInteractiveBlock.html_css);
+              if (extractedData.length > 0) {
+                console.log('Extracted tabs data from HTML:', extractedData);
+                setTabsData(extractedData);
+              }
+            } else if (template === 'accordion' && editingInteractiveBlock.html_css) {
               const extractedData = extractAccordionFromHTML(editingInteractiveBlock.html_css);
               if (extractedData.length > 0) {
+                console.log('Extracted accordion data from HTML:', extractedData);
                 setAccordionData(extractedData);
               }
             } else if (template === 'labeled-graphic' && editingInteractiveBlock.html_css) {
@@ -584,7 +693,13 @@ const InteractiveComponent = forwardRef(({
         } catch (error) {
           console.error('Error parsing interactive block content:', error);
           // Set default data if parsing fails
-          if (template === 'accordion') {
+          if (template === 'tabs') {
+            setTabsData([
+              { title: 'Tab 1', content: 'Content for tab 1', image: null, audio: null },
+              { title: 'Tab 2', content: 'Content for tab 2', image: null, audio: null },
+              { title: 'Tab 3', content: 'Content for tab 3', image: null, audio: null }
+            ]);
+          } else if (template === 'accordion') {
             setAccordionData([
               { title: 'Section 1', content: 'Content for section 1', image: null, audio: null },
               { title: 'Section 2', content: 'Content for section 2', image: null, audio: null },
@@ -612,6 +727,23 @@ const InteractiveComponent = forwardRef(({
                 description: 'Description for event 2', 
                 image: null, 
                 audio: null 
+              }
+            ]);
+          } else if (template === 'process') {
+            setProcessData([
+              {
+                id: '1',
+                title: 'Understand your physical being',
+                description: 'Recognizing your physical being is key to maintaining overall well-being.',
+                image: null,
+                audio: null
+              },
+              {
+                id: '2', 
+                title: 'Step 2',
+                description: 'Content for step 2 will go here.',
+                image: null,
+                audio: null
               }
             ]);
           }
@@ -890,7 +1022,7 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      // Open image editor instead of uploading directly
+      // Open image editor for cropping before upload
       setImageToEdit(file);
       setImageEditContext({ type: 'tab', index });
       setShowImageEditor(true);
@@ -1372,6 +1504,54 @@ const InteractiveComponent = forwardRef(({
     }
   };
 
+  // Helper function to format content with bullet points and line breaks
+  const formatContent = (content) => {
+    if (!content) return '';
+    
+    // Split content by lines
+    const lines = content.split('\n');
+    let formattedHTML = '';
+    let inList = false;
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Check if line is a bullet point (starts with -, *, •, or number.)
+      const isBullet = /^[-*•]\s+/.test(trimmedLine);
+      const isNumbered = /^\d+\.\s+/.test(trimmedLine);
+      
+      if (isBullet || isNumbered) {
+        // Start list if not already in one
+        if (!inList) {
+          formattedHTML += isNumbered ? '<ol class="list-decimal ml-6 space-y-2">' : '<ul class="list-disc ml-6 space-y-2">';
+          inList = isNumbered ? 'ol' : 'ul';
+        }
+        
+        // Remove bullet/number marker and add as list item
+        const cleanedLine = trimmedLine.replace(/^[-*•]\s+/, '').replace(/^\d+\.\s+/, '');
+        formattedHTML += `<li>${cleanedLine}</li>`;
+      } else {
+        // Close list if we were in one
+        if (inList) {
+          formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
+          inList = false;
+        }
+        
+        // Add regular line with line break
+        if (trimmedLine) {
+          formattedHTML += `<p class="mb-2">${trimmedLine}</p>`;
+        }
+      }
+    });
+    
+    // Close list if still open
+    if (inList) {
+      formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
+    }
+    
+    return formattedHTML || content;
+  };
+
   const generateInteractiveHTML = (template, data) => {
     if (template === 'tabs') {
       const tabsId = `tabs-${Date.now()}`;
@@ -1392,18 +1572,20 @@ const InteractiveComponent = forwardRef(({
             <div class="tab-content">
               ${data.map((tab, index) => `
                 <div class="tab-panel ${index === 0 ? 'block' : 'hidden'}" data-panel="${index}" role="tabpanel">
-                  <div class="text-gray-700 leading-relaxed ${tab.image || tab.audio ? 'mb-4' : ''}">${tab.content}</div>
+                  <div class="text-gray-700 leading-relaxed ${tab.image || tab.audio ? 'mb-4' : ''}">${formatContent(tab.content)}</div>
                   ${tab.image ? `
-                    <div class="relative ${tab.audio ? '' : 'mb-4'}">
-                      <img src="${tab.image.src}" alt="${tab.image.name || 'Tab image'}" class="w-full h-auto rounded-lg shadow-sm" style="height: 250px; object-fit: cover;" />
-                      ${tab.audio ? `
-                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 rounded-b-lg p-3">
-                          <audio controls class="w-full" preload="metadata" style="height: 32px;">
-                            <source src="${tab.audio.src}" type="${tab.audio.type}">
-                            Your browser does not support the audio element.
-                          </audio>
-                        </div>
-                      ` : ''}
+                    <div class="flex justify-center ${tab.audio ? '' : 'mb-4'}">
+                      <div class="relative max-w-full">
+                        <img src="${tab.image.src}" alt="${tab.image.name || 'Tab image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                        ${tab.audio ? `
+                          <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <audio controls class="w-full" preload="metadata" style="height: 32px;">
+                              <source src="${tab.audio.src}" type="${tab.audio.type}">
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        ` : ''}
+                      </div>
                     </div>
                   ` : ''}
                   ${tab.audio && !tab.image ? `
@@ -1454,18 +1636,20 @@ const InteractiveComponent = forwardRef(({
                 <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'max-h-96 pb-4' : 'max-h-0'}" 
                      data-content="${index}">
                   <div class="pl-4">
-                    <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${item.content}</div>
+                    <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${formatContent(item.content)}</div>
                     ${item.image ? `
-                      <div class="relative ${item.audio ? '' : 'mb-4'}">
-                        <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="w-full h-auto rounded-lg shadow-sm" style="height: 250px; object-fit: cover;" />
-                        ${item.audio ? `
-                          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 rounded-b-lg p-3">
-                            <audio controls class="w-full" preload="metadata" style="height: 32px;">
-                              <source src="${item.audio.src}" type="${item.audio.type}">
-                              Your browser does not support the audio element.
-                            </audio>
-                          </div>
-                        ` : ''}
+                      <div class="flex justify-center ${item.audio ? '' : 'mb-4'}">
+                        <div class="relative max-w-full">
+                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                          ${item.audio ? `
+                            <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <audio controls class="w-full" preload="metadata" style="height: 32px;">
+                                <source src="${item.audio.src}" type="${item.audio.type}">
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+                          ` : ''}
+                        </div>
                       </div>
                     ` : ''}
                     ${item.audio && !item.image ? `
