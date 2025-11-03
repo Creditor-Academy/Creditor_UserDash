@@ -1,6 +1,8 @@
-"use client";
-import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+'use client';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import SolutionsDropdown from './SolutionsDropdown';
+import PlatformDropdown from './PlatformDropdown';
 
 const Navbar = () => {
   const [show, setShow] = useState(true);
@@ -12,17 +14,17 @@ const Navbar = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScroll = window.scrollY;
-      
+
       // Navbar background on scroll
       setIsScrolled(currentScroll > 10);
-      
+
       // Hide/show navbar on scroll
       if (currentScroll <= 0) {
         setShow(true);
         setLastScroll(0);
         return;
       }
-      
+
       if (currentScroll > lastScroll && currentScroll > 80) {
         // Scrolling Down
         setShow(false);
@@ -33,8 +35,8 @@ const Navbar = () => {
       setLastScroll(currentScroll);
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScroll]);
 
   // Prevent body scroll when drawer is open
@@ -44,7 +46,7 @@ const Navbar = () => {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -55,41 +57,41 @@ const Navbar = () => {
       <nav
         className="athena-navbar"
         style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: isScrolled ? "rgba(111, 164, 247, 0.95)" : "#6fa4f7",
-          backdropFilter: isScrolled ? "blur(10px)" : "none",
-          padding: "12px 24px",
-          borderRadius: "16px",
-          fontFamily: "inherit",
-          position: "fixed",
-          top: "16px",
-          left: "16px",
-          right: "16px",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: isScrolled ? 'rgba(111, 164, 247, 0.95)' : '#6fa4f7',
+          backdropFilter: isScrolled ? 'blur(10px)' : 'none',
+          padding: '12px 24px',
+          fontFamily: 'inherit',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
           zIndex: 100,
-          transition: "all 0.3s ease",
-          transform: show ? "translateY(0)" : "translateY(-130%)",
+          transition: 'all 0.3s ease',
+          transform: show ? 'translateY(0)' : 'translateY(-130%)',
           opacity: show ? 1 : 0,
-          boxShadow: isScrolled ? "0 4px 20px rgba(0, 0, 0, 0.1)" : "0 4px 16px 0 rgba(0,0,0,0.06)",
-          pointerEvents: show ? "auto" : "none",
+          boxShadow: isScrolled
+            ? '0 4px 20px rgba(0, 0, 0, 0.1)'
+            : '0 4px 16px 0 rgba(0,0,0,0.06)',
+          pointerEvents: show ? 'auto' : 'none',
         }}
       >
         <Link
-  to="/"
-  style={{
-    fontWeight: "bold",
-    fontSize: "1.8rem",
-    color: "#fff",
-    letterSpacing: "0.5px",
-    textDecoration: "none",
-    cursor: "pointer"
-  }}
->
-  ATHENA LMS
-</Link>
+          to="/"
+          style={{
+            fontWeight: 'bold',
+            fontSize: '1.8rem',
+            color: '#fff',
+            letterSpacing: '0.5px',
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          ATHENA LMS
+        </Link>
 
-        
         <button
           aria-label="Menu"
           className="athena-menu-btn"
@@ -97,41 +99,56 @@ const Navbar = () => {
         >
           ☰
         </button>
-        
-        <div className="athena-links" style={{ display: "flex", alignItems: "center", gap: "28px" }}>
-          <Link to="/about" style={navLinkStyle}>About Us</Link>
-          {/* <Link to="/features" style={navLinkStyle}>Features</Link> */}
-          <Link to="/product" style={navLinkStyle}>Product</Link>
-          <Link to="/plans" style={navLinkStyle}>Plans</Link>
-          {/* <Link to="/whyus" style={navLinkStyle}>Why Us</Link> */}
-          <Link to="/faq" style={navLinkStyle}>Resources</Link>
-          <Link to="/contact" style={navLinkStyle}>Contact Us</Link>
+
+        <div
+          className="athena-links"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '28px',
+            position: 'relative',
+          }}
+        >
+          <Link to="/about" style={navLinkStyle}>
+            About Us
+          </Link>
+          <SolutionsDropdown />
+          <PlatformDropdown />
+          <Link to="/website" style={navLinkStyle}>
+            Website
+          </Link>
+          <Link to="/pricing" style={navLinkStyle}>
+            Pricing
+          </Link>
+          <Link to="/contact" style={navLinkStyle}>
+            Contact Us
+          </Link>
           <a
             href="#"
-            onClick={(e) => {
+            onClick={e => {
               e.preventDefault();
               navigate('/login');
             }}
             style={{
-              background: "#fff",
-              color: "#3182f6",
-              padding: "10px 24px",
-              borderRadius: "8px",
-              fontWeight: "600",
-              fontSize: "1rem",
-              textDecoration: "none",
-              marginLeft: "12px",
-              transition: "all 0.2s ease",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              cursor: "pointer"
+              background: '#fff',
+              color: '#3182f6',
+              padding: '10px 24px',
+              borderRadius: '8px',
+              fontWeight: '600',
+              fontSize: '1rem',
+              textDecoration: 'none',
+              marginLeft: '12px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
             }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "#f0f7ff";
-              e.target.style.transform = "translateY(-2px)";
+            onMouseEnter={e => {
+              e.target.style.background = '#f0f7ff';
+              e.target.style.transform = 'translateY(-2px)';
             }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "#fff";
-              e.target.style.transform = "translateY(0)";
+            onMouseLeave={e => {
+              e.target.style.background = '#fff';
+              e.target.style.transform = 'translateY(0)';
             }}
           >
             Login
@@ -140,39 +157,52 @@ const Navbar = () => {
       </nav>
 
       {/* Mobile Drawer */}
-      <div 
+      <div
         className={`athena-drawer ${drawerOpen ? 'open' : ''}`}
         style={{
-          position: "fixed", 
-          top: "20px", 
-          right: 0, 
-          bottom: "20px", 
-          width: "min(85vw, 300px)", 
-          maxWidth: "300px",
-          minWidth: "280px",
-          background: "linear-gradient(180deg, #7fb3ff 0%, #6fa4f7 100%)",
-          boxShadow: "-10px 0 24px rgba(0,0,0,0.12)",
-          transform: drawerOpen ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.3s ease", 
-          zIndex: 120, 
-          padding: "16px 14px",
-          display: "flex", 
-          flexDirection: "column", 
-          gap: "1px",
-          color: "#fff",
-          overflowY: "auto",
-          borderRadius: "12px 0 0 12px",
+          position: 'fixed',
+          top: '20px',
+          right: 0,
+          bottom: '20px',
+          width: 'min(85vw, 300px)',
+          maxWidth: '300px',
+          minWidth: '280px',
+          background: 'linear-gradient(180deg, #7fb3ff 0%, #6fa4f7 100%)',
+          boxShadow: '-10px 0 24px rgba(0,0,0,0.12)',
+          transform: drawerOpen ? 'translateX(0)' : 'translateX(100%)',
+          transition: 'transform 0.3s ease',
+          zIndex: 120,
+          padding: '16px 14px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1px',
+          color: '#fff',
+          overflowY: 'auto',
+          borderRadius: '12px 0 0 12px',
         }}
       >
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.2)'}}>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: 0.5 }}>Menu</div>
-          <button 
-            onClick={() => setDrawerOpen(false)} 
-            style={{ 
-              background: 'rgba(255,255,255,0.25)', 
-              color: '#fff', 
-              border: '1px solid rgba(255,255,255,0.6)', 
-              borderRadius: 6, 
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '8px',
+            paddingBottom: '8px',
+            borderBottom: '1px solid rgba(255,255,255,0.2)',
+          }}
+        >
+          <div
+            style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: 0.5 }}
+          >
+            Menu
+          </div>
+          <button
+            onClick={() => setDrawerOpen(false)}
+            style={{
+              background: 'rgba(255,255,255,0.25)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.6)',
+              borderRadius: 6,
               padding: '3px 6px',
               cursor: 'pointer',
               fontSize: '0.9rem',
@@ -180,41 +210,64 @@ const Navbar = () => {
               height: '28px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
             }}
           >
             ✕
           </button>
         </div>
-        
-        <Link to="/about" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>About Us</Link>
-        <Link to="/product" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Product</Link>
-        <Link to="/plans" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Plans</Link>
-        {/* <Link to="/features" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Features</Link> */}
-        {/* <Link to="/whyus" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Why Us</Link> */}
-        <Link to="/faq" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Resources</Link>
-        <Link to="/contact" style={drawerLinkStyle} onClick={() => setDrawerOpen(false)}>Contact Us</Link>
-        
-        <a 
+
+        <Link
+          to="/about"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          About Us
+        </Link>
+        <div style={drawerLinkStyle}>Solutions</div>
+        <div style={drawerLinkStyle}>Platform</div>
+        <Link
+          to="/website"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          Website
+        </Link>
+        <Link
+          to="/pricing"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          Pricing
+        </Link>
+        <Link
+          to="/contact"
+          style={drawerLinkStyle}
+          onClick={() => setDrawerOpen(false)}
+        >
+          Contact Us
+        </Link>
+
+        <a
           href="#"
-          onClick={(e) => {
+          onClick={e => {
             e.preventDefault();
             navigate('/login');
             setDrawerOpen(false);
           }}
           style={{
-            background: "#fff",
-            color: "#3182f6",
-            borderRadius: "8px",
-            padding: "8px 12px",
-            border: "none",
-            marginTop: "8px",
-            textAlign: "center",
-            fontWeight: "600",
-            textDecoration: "none",
-            fontSize: "0.95rem",
-            display: "block",
-            cursor: "pointer"
+            background: '#fff',
+            color: '#3182f6',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            border: 'none',
+            marginTop: '8px',
+            textAlign: 'center',
+            fontWeight: '600',
+            textDecoration: 'none',
+            fontSize: '0.95rem',
+            display: 'block',
+            cursor: 'pointer',
           }}
         >
           Login
@@ -223,21 +276,21 @@ const Navbar = () => {
 
       {/* Backdrop overlay for drawer */}
       {drawerOpen && (
-        <div 
+        <div
           style={{
-            position: "fixed",
+            position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
             zIndex: 110,
           }}
           onClick={() => setDrawerOpen(false)}
         />
       )}
 
-      <style >{`
+      <style>{`
         @media (max-width: 900px) {
           .athena-navbar { 
             padding: 10px 16px; 
@@ -326,6 +379,17 @@ const Navbar = () => {
           right: 0 !important;
           z-index: 1000 !important;
           border-radius: 0 !important;
+          overflow: visible !important;
+        }
+        
+        /* Ensure dropdowns can extend beyond navbar */
+        .athena-links {
+          overflow: visible !important;
+        }
+        
+        /* Allow full-width dropdowns */
+        .athena-navbar {
+          overflow: visible !important;
         }
         
         /* Drawer content optimization */
@@ -352,25 +416,25 @@ const Navbar = () => {
 };
 
 const navLinkStyle = {
-  color: "#fff",
-  fontWeight: "600",
-  fontSize: "1.1rem",
-  textDecoration: "none",
-  transition: "all 0.2s ease",
-  padding: "6px 0",
-  position: "relative",
+  color: '#fff',
+  fontWeight: '600',
+  fontSize: '1.1rem',
+  textDecoration: 'none',
+  transition: 'all 0.2s ease',
+  padding: '6px 0',
+  position: 'relative',
 };
 
 const drawerLinkStyle = {
-  color: "#fff", 
-  textDecoration: "none", 
-  fontWeight: "600", 
-  padding: "8px 6px", 
-  borderBottom: "1px solid rgba(255,255,255,0.15)", 
-  fontSize: "0.95rem",
-  transition: "all 0.2s ease",
-  borderRadius: "6px",
-  margin: "1px 0",
+  color: '#fff',
+  textDecoration: 'none',
+  fontWeight: '600',
+  padding: '8px 6px',
+  borderBottom: '1px solid rgba(255,255,255,0.15)',
+  fontSize: '0.95rem',
+  transition: 'all 0.2s ease',
+  borderRadius: '6px',
+  margin: '1px 0',
 };
 
 // Add hover effects

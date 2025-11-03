@@ -1,42 +1,44 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Outlet } from "react-router-dom";
-import CreateCourse from "./CreateCourse";
-import CourseLessonsPage from "./CourseLessonsPage";
-import AddEvent from "./AddEvent";
-import AddCatelog from "./AddCatelog";
-import AddUsersForm from "./AddUsersPage";
-import ManageUsers from "./ManageUsers";
-import AddQuiz from "./AddQuiz";
-import AddGroups from "./AddGroups";
-import SupportTickets from "./Support";
-import Resources from "@/components/Resources";
-import AdminPayments from "@/components/credits/AdminPayments";
-import PrivateGroupsAdmin from "@/components/messages/PrivateGroupsAdmin";
-import Sidebar from "@/components/layout/Sidebar";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import { useAuth } from "@/contexts/AuthContext";
-import { 
-  FaBook, 
-  FaUsers, 
-  FaBookOpen, 
-  FaEdit, 
-  FaFolder, 
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import CreateCourse from './CreateCourse';
+import CourseLessonsPage from './CourseLessonsPage';
+import AddEvent from './AddEvent';
+import AddCatelog from './AddCatelog';
+import AddUsersForm from './AddUsersPage';
+import ManageUsers from './ManageUsers';
+import AddQuiz from './AddQuiz';
+import AddGroups from './AddGroups';
+import SupportTickets from './Support';
+import Resources from '@/components/Resources';
+import AdminPayments from '@/components/credits/AdminPayments';
+import CourseActivityAnalytics from '@/pages/CourseActivityAnalytics';
+import PrivateGroupsAdmin from '@/components/messages/PrivateGroupsAdmin';
+import Sidebar from '@/components/layout/Sidebar';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  FaBook,
+  FaUsers,
+  FaBookOpen,
+  FaEdit,
+  FaFolder,
   FaCalendarAlt,
   FaTicketAlt,
   FaExclamationTriangle,
   FaArrowLeft,
   FaFileAlt,
   FaImages,
-  FaCreditCard
-} from "react-icons/fa";
+  FaCreditCard,
+  FaChartLine,
+} from 'react-icons/fa';
 
 const InstructorPage = () => {
   const { isInstructorOrAdmin } = useAuth();
   const isAllowed = isInstructorOrAdmin();
   const [collapsed, setCollapsed] = useState(true); // Start with sidebar collapsed
   const [userManagementView, setUserManagementView] = useState(() => {
-    const saved = localStorage.getItem("userManagementView");
-    return saved || "add";
+    const saved = localStorage.getItem('userManagementView');
+    return saved || 'add';
   });
 
   const navigate = useNavigate();
@@ -57,25 +59,25 @@ const InstructorPage = () => {
     if (path.includes('/payments')) return 'payments';
     return 'course'; // default
   };
-  
+
   const [activeTab, setActiveTab] = useState(getActiveTabFromPath());
 
   useEffect(() => {
-    localStorage.setItem("userManagementView", userManagementView);
+    localStorage.setItem('userManagementView', userManagementView);
   }, [userManagementView]);
-  
+
   // Update active tab when URL changes
   useEffect(() => {
     setActiveTab(getActiveTabFromPath());
   }, [location.pathname]);
-  
+
   // Redirect to default section if on base instructor path
   useEffect(() => {
     if (location.pathname === '/instructor') {
       navigate('/instructor/course-management', { replace: true });
     }
   }, [location.pathname, navigate]);
-  
+
   // Navigation handlers
   const handleNavigation = (tab, path) => {
     setActiveTab(tab);
@@ -121,126 +123,152 @@ const InstructorPage = () => {
       </div>
 
       {/* Sub Sidebar - Always show when on instructor page */}
-      <div 
+      <div
         className="fixed top-0 h-screen z-20 bg-white shadow-sm border-r border-gray-200 transition-all duration-300 overflow-y-auto w-52"
         style={{
-          left: collapsed ? "4.5rem" : "17rem"
+          left: collapsed ? '4.5rem' : '17rem',
         }}
       >
         {/* Sub Sidebar Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
-          <h2 className="text-lg font-semibold text-gray-800">Instructor Tools</h2>
+          <h2 className="text-lg font-semibold text-gray-800">
+            Instructor Tools
+          </h2>
           <p className="text-xs text-gray-500">Manage your content</p>
         </div>
 
         {/* Sub Sidebar Navigation */}
         <div className="flex flex-col p-4 gap-3 text-sm">
-          <button 
-            onClick={() => handleNavigation("course", "/instructor/course-management")} 
+          <button
+            onClick={() =>
+              handleNavigation('course', '/instructor/course-management')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "course" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'course'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaBook /> Course Management
           </button>
-          <button 
-            onClick={() => handleNavigation("users", "/instructor/user-management")} 
+          <button
+            onClick={() =>
+              handleNavigation('users', '/instructor/user-management')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "users" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'users'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaUsers /> User Management
           </button>
-          <button 
-            onClick={() => handleNavigation("catalog", "/instructor/course-catalog")} 
+          <button
+            onClick={() =>
+              handleNavigation('catalog', '/instructor/course-catalog')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "catalog" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'catalog'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaBookOpen /> Course Catalog
           </button>
-          <button 
-            onClick={() => handleNavigation("quiz", "/instructor/create-quiz")} 
+          <button
+            onClick={() => handleNavigation('quiz', '/instructor/create-quiz')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "quiz" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'quiz'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaEdit /> Manage Assessments
           </button>
-          <button 
-            onClick={() => handleNavigation("lessons", "/instructor/course-lessons")} 
+          <button
+            onClick={() =>
+              handleNavigation('lessons', '/instructor/course-lessons')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "lessons" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'lessons'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaFileAlt /> Course Lessons
           </button>
-          <button 
-            onClick={() => handleNavigation("groups", "/instructor/group-management")} 
+          <button
+            onClick={() =>
+              handleNavigation('groups', '/instructor/group-management')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "groups" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'groups'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaUsers /> Group Management
           </button>
-          <button 
-            onClick={() => handleNavigation("events", "/instructor/event-management")} 
+          <button
+            onClick={() =>
+              handleNavigation('events', '/instructor/event-management')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "events" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'events'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaCalendarAlt /> Event Management
           </button>
-          <button 
-            onClick={() => handleNavigation("tickets", "/instructor/support-tickets")} 
+          <button
+            onClick={() =>
+              handleNavigation('tickets', '/instructor/support-tickets')
+            }
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "tickets" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'tickets'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaTicketAlt /> Support Tickets
           </button>
-          <button 
-            onClick={() => handleNavigation("resources", "/instructor/assets")} 
+          <button
+            onClick={() => handleNavigation('resources', '/instructor/assets')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "resources" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'resources'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaImages /> Assets
           </button>
-          <button 
-            onClick={() => handleNavigation("payments", "/instructor/payments")} 
+          <button
+            onClick={() => handleNavigation('payments', '/instructor/payments')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "payments" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'payments'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaCreditCard /> Payments
           </button>
-          <button 
-            onClick={() => setActiveTab("adminPrivateGroups")} 
+          <button
+            onClick={() => setActiveTab('analytics')}
             className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              activeTab === "adminPrivateGroups" 
-                ? "bg-blue-100 text-blue-700 font-semibold" 
-                : "hover:bg-gray-100 text-gray-700"
+              activeTab === 'analytics'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <FaChartLine /> Course Analytics
+          </button>
+          <button
+            onClick={() => setActiveTab('adminPrivateGroups')}
+            className={`text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              activeTab === 'adminPrivateGroups'
+                ? 'bg-blue-100 text-blue-700 font-semibold'
+                : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
             <FaUsers /> Private Groups (Admin)
@@ -251,14 +279,18 @@ const InstructorPage = () => {
       {/* Main Content Area */}
       <div
         className="flex-1 flex flex-col min-h-screen transition-all duration-300"
-        style={{ 
-          marginLeft: collapsed ? "calc(4.5rem + 13rem)" : "calc(17rem + 13rem)"
+        style={{
+          marginLeft: collapsed
+            ? 'calc(4.5rem + 13rem)'
+            : 'calc(17rem + 13rem)',
         }}
       >
         <header
           className="fixed top-0 left-0 right-0 z-10 bg-white border-b border-gray-200 h-16 transition-all duration-300"
-          style={{ 
-            marginLeft: collapsed ? "calc(4.5rem + 13rem)" : "calc(17rem + 13rem)"
+          style={{
+            marginLeft: collapsed
+              ? 'calc(4.5rem + 13rem)'
+              : 'calc(17rem + 13rem)',
           }}
         >
           <div className="max-w-7xl mx-auto w-full">
@@ -267,12 +299,12 @@ const InstructorPage = () => {
         </header>
 
         {/* Fixed Dashboard Header */}
-        <div 
+        <div
           className="fixed bg-white/95 border-b border-gray-200/60 backdrop-blur-md z-10 transition-all duration-300"
-          style={{ 
+          style={{
             top: '4rem',
-            left: collapsed ? "calc(4.5rem + 13rem)" : "calc(17rem + 13rem)",
-            right: '0'
+            left: collapsed ? 'calc(4.5rem + 13rem)' : 'calc(17rem + 13rem)',
+            right: '0',
           }}
         >
           <div className="max-w-7xl mx-auto w-full px-6 py-5">
@@ -300,92 +332,99 @@ const InstructorPage = () => {
         {/* Content */}
         <div className="flex-1 overflow-y-auto" style={{ paddingTop: '8rem' }}>
           <div className="max-w-7xl mx-auto w-full px-6 pb-14 pt-6">
-
             {/* Tabs Content */}
-            {activeTab === "course" && (
+            {activeTab === 'course' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CreateCourse />
               </section>
             )}
 
-            {activeTab === "users" && (
+            {activeTab === 'users' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <div className="flex gap-2 mb-4">
                   <button
-                    onClick={() => setUserManagementView("add")}
+                    onClick={() => setUserManagementView('add')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                      userManagementView === "add"
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                      userManagementView === 'add'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <FaUsers /> Add Users
                   </button>
                   <button
-                    onClick={() => setUserManagementView("manage")}
+                    onClick={() => setUserManagementView('manage')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
-                      userManagementView === "manage"
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                      userManagementView === 'manage'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <FaUsers /> Manage Users
                   </button>
                 </div>
-                {userManagementView === "add" ? <AddUsersForm /> : <ManageUsers />}
+                {userManagementView === 'add' ? (
+                  <AddUsersForm />
+                ) : (
+                  <ManageUsers />
+                )}
               </section>
             )}
 
-            {activeTab === "catalog" && (
+            {activeTab === 'catalog' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddCatelog />
               </section>
             )}
 
-            {activeTab === "quiz" && (
+            {activeTab === 'quiz' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddQuiz />
               </section>
             )}
 
-
-            {activeTab === "lessons" && (
+            {activeTab === 'lessons' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <CourseLessonsPage />
               </section>
             )}
 
-            {activeTab === "groups" && (
+            {activeTab === 'groups' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddGroups />
               </section>
             )}
 
-            {activeTab === "events" && (
+            {activeTab === 'events' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AddEvent />
               </section>
             )}
-            {activeTab === "tickets" && (
+            {activeTab === 'tickets' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <SupportTickets />
               </section>
             )}
-            {activeTab === "resources" && (
+            {activeTab === 'resources' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <Resources />
               </section>
             )}
-            {activeTab === "payments" && (
+            {activeTab === 'payments' && (
               <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <AdminPayments />
               </section>
             )}
-          {activeTab === "adminPrivateGroups" && (
-            <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <PrivateGroupsAdmin />
-            </section>
-          )}
+            {activeTab === 'analytics' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <CourseActivityAnalytics />
+              </section>
+            )}
+            {activeTab === 'adminPrivateGroups' && (
+              <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <PrivateGroupsAdmin />
+              </section>
+            )}
           </div>
         </div>
       </div>

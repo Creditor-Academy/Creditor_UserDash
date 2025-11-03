@@ -1,495 +1,340 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import ochiside from "../../assets/AthenaDash.png";
-import eyesImage from "../../assets/eyes.svg";
+import React from 'react';
+import { ArrowUpRight } from 'lucide-react';
+import ochiside from '../../assets/dashlogo.webp';
 
 const Hero = () => {
   return (
-    <section
-      style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        overflow: 'hidden',
-        background: 'linear-gradient(to bottom, #f0f7ff, #e6f2ff, #d9ecff)',
-      }}
-    >
-      {/* Floating Particles Background */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: 'hidden',
-          zIndex: 0,
-          filter: 'blur(2px)',
-        }}
-      >
-        {[...Array(30)].map((_, i) => (
-          <motion.div
-            key={i}
-            style={{
-              position: 'absolute',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(173, 216, 230, 0.4)',
-              x: Math.random() * 100,
-              y: Math.random() * 100,
-              width: Math.random() * 15 + 10,
-              height: Math.random() * 15 + 10,
-              opacity: 0.8,
-            }}
-            animate={{
-              y: [0, Math.random() * 100 - 50],
-              transition: {
-                duration: Math.random() * 8 + 6,
-                repeat: Infinity,
-                repeatType: "reverse",
-                ease: "easeInOut",
-              },
-            }}
-          />
-        ))}
-      </div>
+    <section className="hero-section">
+      {/* Internal CSS Styles */}
+      <style>
+        {`
+          .hero-section {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            overflow: hidden;
+            margin-top: 0;
+            padding-top: 0;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+          }
+          
+          .hero-aurora {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            overflow: hidden;
+          }
 
-      {/* Top Heading */}
-      <div
-        style={{
-          padding: '0 24px',
-          paddingTop: '96px',
-          position: 'relative',
-          zIndex: 10,
-        }}
-      >
-        <motion.h1
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1, ease: [0.86, 0, 0.07, 0.995] }}
-          style={{
-            fontSize: 'clamp(3rem, 10vw, 6rem)',
-            letterSpacing: '-2px',
-            color: '#0f172a',
-            fontWeight: 'bold',
-            fontFamily: '"FoundersGrotesk", sans-serif',
-            textTransform: 'uppercase',
-            lineHeight: 1.1,
-            margin: 0,
-          }}
-        >
-          We are
+          .hero-aurora::before,
+          .hero-aurora::after {
+            content: '';
+            position: absolute;
+            inset: -20% -10% -10% -20%;
+            filter: blur(40px);
+            opacity: 0.55;
+            animation: auroraShift 18s ease-in-out infinite alternate;
+            background:
+              radial-gradient(40% 50% at 20% 30%, rgba(99, 102, 241, 0.6), transparent 60%),
+              radial-gradient(35% 45% at 80% 20%, rgba(59, 130, 246, 0.55), transparent 60%),
+              radial-gradient(45% 55% at 60% 80%, rgba(16, 185, 129, 0.45), transparent 60%),
+              radial-gradient(35% 45% at 30% 70%, rgba(236, 72, 153, 0.35), transparent 60%);
+          }
+
+          .hero-aurora::after {
+            inset: -10% -20% -20% -10%;
+            opacity: 0.45;
+            animation-duration: 22s;
+            animation-delay: 1.5s;
+            background:
+              radial-gradient(45% 55% at 75% 65%, rgba(99, 102, 241, 0.45), transparent 60%),
+              radial-gradient(35% 45% at 30% 25%, rgba(6, 182, 212, 0.4), transparent 60%),
+              radial-gradient(40% 50% at 55% 35%, rgba(59, 130, 246, 0.35), transparent 60%);
+          }
+
+          /* Subtle grid overlay */
+          .hero-aurora-grid {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background-image:
+              linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 40px 40px, 40px 40px;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+          }
+
+          @keyframes auroraShift {
+            0% { transform: translate3d(-2%, -2%, 0) scale(1.05); }
+            50% { transform: translate3d(2%, 1%, 0) scale(1.1); }
+            100% { transform: translate3d(-1%, 2%, 0) scale(1.06); }
+          }
+          
+          .hero-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+          }
+          
+          .hero-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
+          }
+          
+          .hero-heading {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 3.5rem;
+            font-weight: 400;
+            color: #fff;
+            line-height: 1.1;
+            letter-spacing: -1px;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+          }
+          
+          .hero-description {
+            font-family: 'Arial', sans-serif;
+            font-size: 1.1rem;
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            max-width: 500px;
+          }
+          
+          .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+          }
+          
+          .btn-primary {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: #000;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Arial', sans-serif;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+          }
+          
+          .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+          }
+          
+          .btn-secondary {
+            background: transparent;
+            color: #fff;
+            padding: 12px 24px;
+            border: 1px solid #fff;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Arial', sans-serif;
+            text-decoration: none;
+            transition: all 0.3s ease;
+          }
+          
+          .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+          }
+          
+          .hero-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            position: relative;
+          }
+          
+          /* Large Desktop */
+          @media (min-width: 1400px) {
+            .hero-container {
+              max-width: 1600px;
+              padding: 0 4rem;
+            }
+            .hero-heading {
+              font-size: 4rem;
+            }
+          }
+          
+          /* Desktop */
+          @media (max-width: 1200px) {
+            .hero-container {
+              padding: 0 2.5rem;
+              gap: 3rem;
+            }
+            .hero-heading {
+              font-size: 3rem;
+            }
+          }
+          
+          /* Tablet */
+          @media (max-width: 900px) {
+            .hero-container {
+              grid-template-columns: 1fr;
+              gap: 2rem;
+              padding: 2rem;
+              text-align: center;
+            }
+            .hero-left {
+              order: 2;
+            }
+            .hero-right {
+              order: 1;
+            }
+            .hero-heading {
+              font-size: 2.5rem;
+            }
+          }
+          
+          /* Mobile */
+          @media (max-width: 768px) {
+            .hero-container {
+              padding: 1.5rem;
+              gap: 1.5rem;
+            }
+            .hero-heading {
+              font-size: 2.2rem;
+            }
+            .hero-description {
+              font-size: 1rem;
+            }
+            .hero-buttons {
+              flex-direction: column;
+              align-items: center;
+              gap: 0.8rem;
+            }
+            .btn-primary,
+            .btn-secondary {
+              width: 100%;
+              max-width: 250px;
+              justify-content: center;
+            }
+          }
+          
+          @media (max-width: 480px) {
+            .hero-container {
+              padding: 1rem;
+            }
+            .hero-heading {
+              font-size: 1.8rem;
+            }
+            .hero-description {
+              font-size: 0.95rem;
+            }
+          }
+        `}
+      </style>
+
+      <div className="hero-aurora" />
+      <div className="hero-aurora-grid" />
+      <div className="hero-container">
+        <div className="hero-left">
+          <div
+            className="text-sm"
+            style={{
+              color: '#fff',
+              fontWeight: 600,
+              opacity: 0.9,
+              marginBottom: '0.75rem',
+            }}
+          >
+            About | Athena LMS
+          </div>
+          <h1 className="hero-heading" style={{ marginBottom: '1.5rem' }}>
+            Empowering Learning.{' '}
+            <span style={{ color: '#fbbf24' }}>Built for Impact.</span>
+          </h1>
+          <p className="hero-description">
+            We combine instructional design thinking with modern technology to
+            craft meaningful learning experiences for organisations and
+            individuals.
+          </p>
+          <div className="hero-buttons">
+            <a href="/about" className="btn-primary">
+              Learn More
+              <ArrowUpRight size={16} strokeWidth={2} />
+            </a>
+            <a href="/contact" className="btn-secondary">
+              Contact Us
+            </a>
+          </div>
+        </div>
+        <div className="hero-right">
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              marginTop: '12px',
+              position: 'relative',
+              width: '100%',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.35)',
             }}
           >
-            <motion.div
-              initial={{ scale: 0, rotate: -45 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
-                delay: 0.8,
-                type: "spring",
-                stiffness: 200,
-                damping: 10,
-              }}
+            <img
+              src={ochiside}
+              alt="About Athena"
+              style={{ width: '100%', height: '400px', objectFit: 'cover' }}
+            />
+            <div
               style={{
-                overflow: 'hidden',
-                borderRadius: '12px',
-                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
-                transition: 'box-shadow 0.3s',
-              }}
-              whileHover={{ scale: 1.05 }}
-            >
-              <img
-                width={150}
-                height={110}
-                src={ochiside}
-                alt="Athena Logo"
-                style={{
-                  height: '110px',
-                  width: 'auto',
-                  objectFit: 'cover',
-                  borderRadius: '12px',
-                }}
-              />
-            </motion.div>
-            <motion.span
-              style={{
-                fontSize: 'clamp(3rem, 10vw, 6rem)',
-                fontFamily: '"FoundersGrotesk", sans-serif',
-                color: '#0f172a',
-              }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              Athena LMS
-            </motion.span>
-          </div>
-        </motion.h1>
-      </div>
-
-      {/* Content Row */}
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          gap: '80px',
-          marginTop: '64px',
-          position: 'relative',
-          width: '100%',
-          minHeight: '400px',
-        }}
-      >
-        {/* Left - CTA Buttons and Transform Text */}
-        <motion.div
-          initial={{ x: -80, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 1, delay: 0.3 }}
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '40px',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          {/* CTA Buttons */}
-          <motion.div
-            style={{
-              display: 'flex',
-              gap: '20px',
-              alignItems: 'center',
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <a
-              href="/product"
-              style={{
-                padding: '14px 28px',
-                borderRadius: '9999px',
-                backgroundColor: '#0f172a',
-                color: 'white',
-                fontFamily: '"NeueMontreal", sans-serif',
-                textTransform: 'uppercase',
-                fontSize: '15px',
-                letterSpacing: '1px',
-                textDecoration: 'none',
-                transition: 'all 0.3s',
-                position: 'relative',
-                overflow: 'hidden',
-                display: 'inline-block',
-                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.2)',
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = '#1e293b';
-                e.target.style.boxShadow = '0 12px 30px rgba(0, 0, 0, 0.25)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = '#0f172a';
-                e.target.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.2)';
-              }}
-            >
-              Explore
-            </a>
-            <a
-              href="/contact"
-              style={{
-                padding: '14px',
-                border: '2px solid #0f172a',
-                borderRadius: '9999px',
-                transition: 'all 0.3s',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onMouseOver={(e) => {
-                e.target.style.backgroundColor = '#0f172a';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.backgroundColor = 'transparent';
-              }}
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                style={{
-                  transition: 'transform 0.3s, stroke 0.3s',
-                  color: 'inherit',
-                }}
-              >
-                <path d="M7 17L17 7M17 7H7M17 7V17" />
-              </svg>
-              <span style={{
                 position: 'absolute',
                 inset: 0,
-                borderRadius: '9999px',
-                border: '2px solid rgba(15, 23, 42, 0.1)',
-                animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
-                opacity: 0,
-                transition: 'all 0.3s',
-              }}></span>
-            </a>
-          </motion.div>
-          {/* Transform Text below Explore button */}
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            style={{
-              fontSize: 'clamp(1.5rem, 4vw, 2rem)',
-              fontWeight: 500,
-              fontFamily: '"NeueMontreal", sans-serif',
-              color: '#0f172a',
-              margin: 0,
-              lineHeight: 1.4,
-              maxWidth: '600px',
-            }}
-          >
-            We transform complex ideas into engaging and effective learning experiences.
-          </motion.h2>
-        </motion.div>
-
-        {/* Right - Eyes component with simpler design */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 1, delay: 0.6 }}
-          style={{
-            flex: 1,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            position: 'relative',
-          }}
-          whileHover={{ scale: 1.05 }}
-        >
-          <Eyes />
-        </motion.div>
+                background:
+                  'linear-gradient(to top, rgba(0,0,0,0.35), transparent 50%)',
+              }}
+            ></div>
+            {/* <div style={{ position: 'absolute', bottom: '16px', right: '16px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(6px)', padding: '12px 16px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px', fontWeight: 800, color: '#111827' }}>ATHENA</span>
+                  <div style={{ background: '#2563eb', color: '#fff', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 700 }}>
+                    ABOUT
+                  </div>
+                </div>
+              </div>
+            </div> */}
+          </div>
+        </div>
       </div>
-
-      {/* Floating CTA at bottom */}
-      <motion.div
-        style={{
-          position: 'fixed',
-          bottom: '32px',
-          right: '32px',
-          zIndex: 50,
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.5 }}
-      >
+      {/* <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 50 }}>
         <a
-          href="/demo"
+          href="/contact"
+          className="btn-primary"
           style={{
-            padding: '14px 28px',
-            borderRadius: '9999px',
-            background: 'linear-gradient(to right, #2563eb, #9333ea)',
-            color: 'white',
-            fontWeight: 500,
-            boxShadow: '0 12px 30px rgba(37, 99, 235, 0.3)',
-            transition: 'all 0.3s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            textDecoration: 'none',
-          }}
-          onMouseOver={(e) => {
-            e.target.style.boxShadow = '0 18px 40px rgba(37, 99, 235, 0.4)';
-          }}
-          onMouseOut={(e) => {
-            e.target.style.boxShadow = '0 12px 30px rgba(37, 99, 235, 0.3)';
+            background: 'linear-gradient(90deg, #fb923c, #f97316)',
+            color: '#fff',
+            boxShadow: '0 12px 25px rgba(249, 115, 22, 0.35)'
           }}
         >
-          Get Demo
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            style={{
-              transition: 'transform 0.3s',
-            }}
-          >
-            <path d="M7 17L17 7M17 7H7M17 7V17" />
-          </svg>
+          Talk to Us
         </a>
-      </motion.div>
-
-      {/* Animation keyframes */}
-      <style>{`
-        @keyframes ping {
-          0% {
-            transform: scale(1);
-            opacity: 1;
-          }
-          75%, 100% {
-            transform: scale(2);
-            opacity: 0;
-          }
-        }
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        
-        @keyframes glow {
-          0%, 100% {
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.1);
-          }
-          50% {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2);
-          }
-        }
-        
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-          .content-row {
-            flex-direction: column !important;
-            gap: 40px !important;
-            min-height: auto !important;
-          }
-        }
-      `}</style>
+      </div> */}
     </section>
-  );
-};
-
-// Eyes Component (Simplified)
-const Eyes = () => {
-  const [rotate, setRotate] = useState(0);
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      let mouseX = e.clientX;
-      let mouseY = e.clientY;
-
-      let deltaX = mouseX - window.innerWidth / 2;
-      let deltaY = mouseY - window.innerHeight / 2;
-
-      let angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-      setRotate(angle - 280);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  const eyeContainerStyle = {
-    width: "280px",
-    height: "280px",
-    borderRadius: "50%",
-    border: "6px solid rgba(15, 23, 42, 0.8)",
-    backgroundColor: "#F7F7F7",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 0 0 16px rgba(59, 130, 246, 0.08)",
-  };
-
-  const innerImageStyle = {
-    transform: `rotate(${rotate}deg)`,
-    width: "240px",
-    height: "240px",
-    objectFit: "cover",
-    transition: 'transform 0.1s ease-out, scale 0.2s',
-  };
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "60px",
-        position: "relative",
-      }}
-    >
-      {/* Eye with subtle glow */}
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1,
-        }}
-      >
-        <div style={{ ...eyeContainerStyle }}>
-          <motion.img
-            style={innerImageStyle}
-            src={eyesImage}
-            alt="Eye"
-            whileHover={{ scale: 1.05 }}
-          />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            animation: 'glow 3s infinite ease-in-out',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        ></div>
-      </div>
-
-      {/* Second Eye with subtle glow */}
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 1,
-        }}
-      >
-        <div style={{ ...eyeContainerStyle }}>
-          <motion.img
-            style={innerImageStyle}
-            src={eyesImage}
-            alt="Eye"
-            whileHover={{ scale: 1.05 }}
-          />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            animation: 'glow 3s infinite ease-in-out',
-            animationDelay: '1.5s',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        ></div>
-      </div>
-    </div>
   );
 };
 

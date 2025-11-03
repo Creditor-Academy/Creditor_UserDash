@@ -1,26 +1,40 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle, Sparkles, Users, TrendingUp, Award, Shield, Zap, Clock } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle,
+  Sparkles,
+  Users,
+  TrendingUp,
+  Award,
+  Shield,
+  Zap,
+  Clock,
+} from 'lucide-react';
 
 const ProductCTA = () => {
   const features = [
-    { icon: Sparkles, title: "AI-Powered", desc: "Smart content generation" },
-    { icon: Users, title: "Collaborative", desc: "Team-friendly platform" },
-    { icon: Shield, title: "Secure", desc: "Enterprise-grade security" },
-    { icon: Clock, title: "24/7 Support", desc: "Always here to help" },
+    { icon: Sparkles, title: 'AI-Powered', desc: 'Smart content generation' },
+    { icon: Users, title: 'Collaborative', desc: 'Team-friendly platform' },
+    { icon: Shield, title: 'Secure', desc: 'Enterprise-grade security' },
+    { icon: Clock, title: '24/7 Support', desc: 'Always here to help' },
   ];
 
   const benefits = [
-    "No credit card required",
-    "Cancel anytime",
-    "14-day free trial",
-    "Full feature access"
+    'No credit card required',
+    'Cancel anytime',
+    '14-day free trial',
+    'Full feature access',
   ];
 
   return (
-    <section className="py-20 relative overflow-hidden" style={{
-      background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
-    }}>
+    <section
+      className="py-20 relative overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+      }}
+    >
       {/* Decorative Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
@@ -44,7 +58,8 @@ const ProductCTA = () => {
             Transform Your Learning Experience
           </h2>
           <p className="text-lg text-slate-300 max-w-2xl mx-auto">
-            Join thousands of educators and institutions using Athena to create engaging, personalized learning experiences
+            Join thousands of educators and institutions using Athena to create
+            engaging, personalized learning experiences
           </p>
         </motion.div>
 
@@ -72,7 +87,9 @@ const ProductCTA = () => {
                     <div className="w-10 h-10 bg-sky-500/20 rounded-lg flex items-center justify-center mb-3">
                       <feature.icon className="w-5 h-5 text-sky-400" />
                     </div>
-                    <h4 className="font-bold text-white mb-1">{feature.title}</h4>
+                    <h4 className="font-bold text-white mb-1">
+                      {feature.title}
+                    </h4>
                     <p className="text-sm text-slate-300">{feature.desc}</p>
                   </motion.div>
                 ))}
@@ -91,13 +108,15 @@ const ProductCTA = () => {
                 </h4>
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { icon: Users, value: "450+", label: "Active Users" },
-                    { icon: Award, value: "20+", label: "Courses" },
-                    { icon: TrendingUp, value: "95%", label: "Satisfaction" }
+                    { icon: Users, value: '450+', label: 'Active Users' },
+                    { icon: Award, value: '20+', label: 'Courses' },
+                    { icon: TrendingUp, value: '95%', label: 'Satisfaction' },
                   ].map((stat, index) => (
                     <div key={index} className="text-center">
                       <stat.icon className="w-5 h-5 text-sky-400 mx-auto mb-1" />
-                      <div className="text-xl font-bold text-white">{stat.value}</div>
+                      <div className="text-xl font-bold text-white">
+                        {stat.value}
+                      </div>
                       <div className="text-xs text-slate-300">{stat.label}</div>
                     </div>
                   ))}
@@ -115,7 +134,7 @@ const ProductCTA = () => {
             >
               <div className="text-center mb-6">
                 <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
-                  Start Your Free Trial
+                  Join Now
                 </h3>
                 <p className="text-slate-300">
                   Experience the full power of Athena with no commitments
@@ -148,7 +167,7 @@ const ProductCTA = () => {
                   whileTap={{ scale: 0.98 }}
                   className="w-full px-8 py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg transition-all duration-300 inline-flex items-center justify-center group"
                 >
-                  Start Free Trial
+                  Join Now
                   <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </motion.button>
                 <motion.button

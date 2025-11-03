@@ -1,13 +1,13 @@
 import React from 'react';
 import { Edit, Trash2, Plus } from 'lucide-react';
 
-const CourseModulesSection = ({ 
-  courseId, 
-  modules, 
-  isLoading, 
-  onCreateModule, 
-  onEditModule, 
-  onDeleteModule 
+const CourseModulesSection = ({
+  courseId,
+  modules,
+  isLoading,
+  onCreateModule,
+  onEditModule,
+  onDeleteModule,
 }) => {
   if (isLoading) {
     return (
@@ -30,24 +30,51 @@ const CourseModulesSection = ({
           Add Module
         </button>
       </div>
-      
+
       {modules && modules.length > 0 ? (
         <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-          {modules.map((module) => (
-            <div key={module.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+          {modules.map(module => (
+            <div
+              key={module.id}
+              className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+            >
               <div>
                 <h5 className="font-medium text-gray-900">{module.title}</h5>
                 {module.description && (
-                  <p className="text-sm text-gray-600 mt-1">{module.description}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {module.description}
+                  </p>
                 )}
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Order: {module.order || 'N/A'}</span>
-                  <span className="text-xs text-gray-500">Duration: {module.estimated_duration || 0} min</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    module.module_status === 'PUBLISHED' ? 'bg-green-100 text-green-800' :
-                    module.module_status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span className="text-xs text-gray-500">
+                    {(() => {
+                      const title = (
+                        module.title ||
+                        module.name ||
+                        ''
+                      ).toLowerCase();
+                      const isIntroModule =
+                        title.includes('why you must exit') &&
+                        (title.includes('llc') ||
+                          title.includes('corporation')) &&
+                        title.includes('structure');
+                      return isIntroModule
+                        ? 'Intro Module'
+                        : `Order: ${module.order || 'N/A'}`;
+                    })()}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    Duration: {module.estimated_duration || 0} min
+                  </span>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      module.module_status === 'PUBLISHED'
+                        ? 'bg-green-100 text-green-800'
+                        : module.module_status === 'DRAFT'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {module.module_status}
                   </span>
                 </div>
@@ -75,10 +102,12 @@ const CourseModulesSection = ({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-gray-500">No modules found for this course</p>
+        <p className="text-sm text-gray-500">
+          No modules found for this course
+        </p>
       )}
     </div>
   );
 };
 
-export default CourseModulesSection; 
+export default CourseModulesSection;

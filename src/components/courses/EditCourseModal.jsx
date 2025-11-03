@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { updateCourse } from '../../services/courseService';
+import { createCourseNotification } from '@/services/notificationService';
 
 const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
   const [editCourseData, setEditCourseData] = useState(courseData || {});
   const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
+  const [editError, setEditError] = useState('');
   const editFormRef = useRef(null);
 
   // Update form data when courseData changes
@@ -14,33 +15,83 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
     }
   }, [courseData]);
 
-  const handleEditInputChange = (e) => {
+  const handleEditInputChange = e => {
     const { name, value, type, checked } = e.target;
-    setEditCourseData((prev) => ({
+    setEditCourseData(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleEditSubmit = async (e) => {
+  const handleEditSubmit = async e => {
     e.preventDefault();
     setEditLoading(true);
-    setEditError("");
+    setEditError('');
     try {
       const payload = { ...editCourseData };
       delete payload.id;
       // Remove any fields not needed by backend
-      ["created_at", "updated_at", "createdBy", "updatedBy", "deleted_at"].forEach(f => delete payload[f]);
+      [
+        'created_at',
+        'updated_at',
+        'createdBy',
+        'updatedBy',
+        'deleted_at',
+      ].forEach(f => delete payload[f]);
       // Ensure thumbnail is included as a string
       if (editCourseData.thumbnail) {
         payload.thumbnail = editCourseData.thumbnail;
       }
-      
+
+      // Check if course status is changing to PUBLISHED
+      const oldStatus = (courseData.course_status || '').toUpperCase();
+      const newStatus = (editCourseData.course_status || '').toUpperCase();
+      const isBeingPublished =
+        oldStatus !== 'PUBLISHED' && newStatus === 'PUBLISHED';
+
       await updateCourse(editCourseData.id, payload);
+
+      // If course is being published, send notification to all users
+      if (isBeingPublished) {
+        try {
+          console.log(
+            'Course status changed to PUBLISHED - sending notification for course ID:',
+            editCourseData.id
+          );
+          await createCourseNotification(editCourseData.id);
+          console.log('Course publication notification sent successfully');
+        } catch (err) {
+          console.warn(
+            'Course notification failed (route might be disabled); continuing.',
+            err
+          );
+          // Add local fallback notification
+          const now = new Date();
+          const localNotification = {
+            id: `local-course-${editCourseData.id}-${now.getTime()}`,
+            type: 'course',
+            title: 'New Course Available',
+            message: `"${editCourseData.title}" has been published and is now available`,
+            created_at: now.toISOString(),
+            read: false,
+            courseId: editCourseData.id,
+          };
+          window.dispatchEvent(
+            new CustomEvent('add-local-notification', {
+              detail: localNotification,
+            })
+          );
+        }
+
+        // Trigger UI to refresh notifications
+        console.log('Dispatching refresh-notifications event');
+        window.dispatchEvent(new Event('refresh-notifications'));
+      }
+
       onCourseUpdated(editCourseData);
       onClose();
     } catch (err) {
-      setEditError(err.message || "Failed to update course");
+      setEditError(err.message || 'Failed to update course');
     } finally {
       setEditLoading(false);
     }
@@ -58,10 +109,18 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
         >
           &times;
         </button>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">Edit Course</h2>
-        <form onSubmit={handleEditSubmit} ref={editFormRef} className="space-y-4">
+        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+          Edit Course
+        </h2>
+        <form
+          onSubmit={handleEditSubmit}
+          ref={editFormRef}
+          className="space-y-4"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Course Title*</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Course Title*
+            </label>
             <input
               type="text"
               name="title"
@@ -72,7 +131,9 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
             <textarea
               name="description"
               value={editCourseData.description || ''}
@@ -83,7 +144,9 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Duration*</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Duration*
+              </label>
               <input
                 type="text"
                 name="estimated_duration"
@@ -94,7 +157,9 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price*</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Price*
+              </label>
               <input
                 type="number"
                 name="price"
@@ -109,7 +174,9 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Students</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Max Students
+              </label>
               <input
                 type="number"
                 name="max_students"
@@ -120,7 +187,9 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Course Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Course Status
+              </label>
               <select
                 name="course_status"
                 value={editCourseData.course_status || 'DRAFT'}
@@ -154,7 +223,9 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
             </label>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail Image URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Thumbnail Image URL
+            </label>
             <input
               type="url"
               name="thumbnail"
@@ -164,10 +235,17 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
             {editCourseData.thumbnail && (
-              <img src={editCourseData.thumbnail} alt="Preview" className="mt-2 h-24 rounded shadow" onError={(e) => e.target.style.display = 'none'} />
+              <img
+                src={editCourseData.thumbnail}
+                alt="Preview"
+                className="mt-2 h-24 rounded shadow"
+                onError={e => (e.target.style.display = 'none')}
+              />
             )}
           </div>
-          {editError && <div className="text-sm text-red-600 py-2">{editError}</div>}
+          {editError && (
+            <div className="text-sm text-red-600 py-2">{editError}</div>
+          )}
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -190,4 +268,4 @@ const EditCourseModal = ({ isOpen, onClose, courseData, onCourseUpdated }) => {
   );
 };
 
-export default EditCourseModal; 
+export default EditCourseModal;
