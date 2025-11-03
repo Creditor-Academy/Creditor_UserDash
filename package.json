@@ -137,12 +137,12 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write",
-      "vitest related --run"
+      "npx eslint --fix",
+      "npx prettier --write",
+      "npx vitest related --run"
     ],
     "*.{json,css,md}": [
-      "prettier --write"
+      "npx prettier --write"
     ]
   }
 }
