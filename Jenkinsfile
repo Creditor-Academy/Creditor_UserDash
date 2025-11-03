@@ -1,13 +1,11 @@
-pipeline 
+pipeline {
     agent any
 
-    stages 
+    stages {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    credentialsId: 'github',
-                    git url: 'https://github.com/Creditor-Academy/Creditor_UserDash.git'
+                git url: 'https://github.com/Creditor-Academy/Creditor_UserDash.git', branch: 'main', credentialsId: 'github'
             }
         }
 
@@ -29,8 +27,8 @@ pipeline
             }
         }
 
-        stage('Deploy to Nginx Folder') 
-            steps 
+        stage('Deploy to Nginx Folder') { 
+            steps {
                 sh '''
 
                     echo " Copying new build files..."
