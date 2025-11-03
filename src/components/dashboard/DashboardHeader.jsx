@@ -503,12 +503,11 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
     const locals = readLocalNotifications();
     const updatedLocals = locals.map(n => ({ ...n, read: true }));
     writeLocalNotifications(updatedLocals);
-    
-    // Update state
+
     setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadNotifications(0);
-    
-    // Refresh notifications from backend to ensure consistency
+
+    // Optionally re-fetch for UI sync
     setTimeout(() => {
       refreshNotifications();
     }, 500);
