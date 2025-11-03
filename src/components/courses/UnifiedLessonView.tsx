@@ -1,13 +1,13 @@
 // This component has been disabled - UnifiedLessonView functionality removed
 
 interface UnifiedLessonViewProps {
-  lesson?: any;
+  lesson?: Record<string, unknown>;
   isOpen?: boolean;
   onClose?: () => void;
   isAILesson?: boolean;
   onSectionComplete?: (sectionId: string) => void;
   completedSections?: Set<string>;
-  onSave?: (updatedLesson: any) => void;
+  onSave?: (updatedLesson: Record<string, unknown>) => void;
 }
 
 function UnifiedLessonView(props: UnifiedLessonViewProps) {

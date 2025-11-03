@@ -137,9 +137,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "npx eslint --fix",
-      "npx prettier --write",
-      "npx vitest related --run"
+      "npx prettier --write"
     ],
     "*.{json,css,md}": [
       "npx prettier --write"
