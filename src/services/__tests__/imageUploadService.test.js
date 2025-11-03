@@ -100,7 +100,7 @@ describe('ImageUploadService', () => {
       expect.stringContaining('/api/resource/upload-resource'),
       expect.any(FormData),
       expect.objectContaining({
-        timeout: 120000,
+        timeout: 300000,
         withCredentials: true,
       })
     );
