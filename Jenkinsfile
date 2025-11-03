@@ -5,9 +5,7 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    credentialsId: 'github',
-                    git url: 'https://github.com/Creditor-Academy/Creditor_UserDash.git'
+                git url: 'https://github.com/Creditor-Academy/Creditor_UserDash.git', branch: 'main', credentialsId: 'github'
             }
         }
 
