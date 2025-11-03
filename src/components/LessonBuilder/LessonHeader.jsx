@@ -1,15 +1,16 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, Loader2, Sparkles } from 'lucide-react';
 
-const LessonHeader = ({ 
+const LessonHeader = ({
   lessonTitle,
   lessonData,
   onBack,
   onView,
   onSave,
   onUpdate,
-  isUploading
+  isUploading,
+  onAIEnhance,
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
@@ -28,8 +29,17 @@ const LessonHeader = ({
             {lessonData?.title || lessonTitle || 'Untitled Lesson'}
           </h1>
         </div>
-       
+
         <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onAIEnhance}
+            className="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+          >
+            <Sparkles className="h-4 w-4" />
+            AI Enhance
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -39,15 +49,11 @@ const LessonHeader = ({
             <Eye className="h-4 w-4 mr-1" />
             View
           </Button>
-         
+
           <Button variant="outline" size="sm" onClick={onSave}>
             Save as Draft
           </Button>
-          <Button
-            size="sm"
-            onClick={onUpdate}
-            disabled={isUploading}
-          >
+          <Button size="sm" onClick={onUpdate} disabled={isUploading}>
             {isUploading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

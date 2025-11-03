@@ -10,22 +10,22 @@ import Expertfeatures from '../components/solutions/expert_athena/expert_feature
 import ExpertScale from '../components/solutions/expert_athena/expert_scale.jsx';
 
 export const ExpertAthena = () => {
-    return (
-        <div className="min-h-screen bg-white">
-            <Navbar />
-            <ExpertHero />
-            <ExpertChoose />
-            <ExpertAnswers />
-             <Expertfeatures />
-             {/* <ExpertCase /> */}
-             <ExpertScale />
-             {/*  
+  return (
+    <div className="min-h-screen bg-white">
+      <Navbar />
+      <ExpertHero />
+      <ExpertChoose />
+      <ExpertAnswers />
+      <Expertfeatures />
+      {/* <ExpertCase /> */}
+      <ExpertScale />
+      {/*  
             <ExpertEnterprise />
                <ExpertCase />
            
              */}
-            <Footer />
-        </div>
-    );
+      <Footer />
+    </div>
+  );
 };
 export default ExpertAthena;

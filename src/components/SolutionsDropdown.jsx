@@ -6,7 +6,7 @@ const SolutionsDropdown = () => {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = event => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
@@ -19,18 +19,22 @@ const SolutionsDropdown = () => {
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef} style={{ position: 'relative' }}>
+    <div
+      className="relative"
+      ref={dropdownRef}
+      style={{ position: 'relative' }}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="solutions-button flex items-center gap-1 text-white font-semibold text-lg transition-all duration-200 relative"
         style={{
-          color: "#fff",
-          fontWeight: "600",
-          fontSize: "1.1rem",
-          textDecoration: "none",
-          transition: "all 0.2s ease",
-          padding: "6px 0",
-          position: "relative",
+          color: '#fff',
+          fontWeight: '600',
+          fontSize: '1.1rem',
+          textDecoration: 'none',
+          transition: 'all 0.2s ease',
+          padding: '6px 0',
+          position: 'relative',
         }}
       >
         Solutions
@@ -46,38 +50,84 @@ const SolutionsDropdown = () => {
           <div className="flex flex-col lg:flex-row">
             {/* Left Column - "Athena LMS for" */}
             <div className="flex-1 p-6 lg:p-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Athena LMS for</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                Athena LMS for
+              </h3>
               <div className="flex flex-col gap-6">
-                <a href="/academic_athena" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Academies</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Scale your professional training programs</p>
+                <a
+                  href="/academic_athena"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Academies
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Scale your professional training programs
+                  </p>
                 </a>
-                <a href="/company_athena" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Companies</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Surpass revenue targets and reduce churn</p>
+                <a
+                  href="/company_athena"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Companies
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Surpass revenue targets and reduce churn
+                  </p>
                 </a>
-                <a href="/expert_athena" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Experts</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Turn your knowledge into new revenue streams</p>
+                <a
+                  href="/expert_athena"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Experts
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Turn your knowledge into new revenue streams
+                  </p>
                 </a>
               </div>
             </div>
 
             {/* Right Column - "Solutions for" */}
             <div className="flex-1 p-6 lg:p-8 border-t lg:border-t-0 lg:border-l border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Solutions for</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                Solutions for
+              </h3>
               <div className="flex flex-col gap-6">
-                <a href="/revenue_generation" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Revenue generation</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Sell more with profitable learning experiences</p>
+                <a
+                  href="/revenue_generation"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Revenue generation
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Sell more with profitable learning experiences
+                  </p>
                 </a>
-                <a href="/customer_training" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Customer training</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Maximize customer success — and revenue</p>
+                <a
+                  href="/customer_training"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Customer training
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Maximize customer success — and revenue
+                  </p>
                 </a>
-                <a href="/lead_generation" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
-                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Lead generation</h4>
-                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Fill your sales funnel with learning content</p>
+                <a
+                  href="/lead_generation"
+                  className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
+                >
+                  <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    Lead generation
+                  </h4>
+                  <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">
+                    Fill your sales funnel with learning content
+                  </p>
                 </a>
               </div>
             </div>
@@ -93,16 +143,21 @@ const SolutionsDropdown = () => {
               </div>
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg font-bold text-gray-900">ATHENA</span>
+                  <span className="text-lg font-bold text-gray-900">
+                    ATHENA
+                  </span>
                   <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full">
                     Instructional Design
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
-                  Create engaging and effective learning experiences with our instructional design expertise
+                  Create engaging and effective learning experiences with our
+                  instructional design expertise
                 </p>
                 <button
-                  onClick={() => window.location.href = '/instructionaldesign'}
+                  onClick={() =>
+                    (window.location.href = '/instructionaldesign')
+                  }
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   Explore Design Solutions

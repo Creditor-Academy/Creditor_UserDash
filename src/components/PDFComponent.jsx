@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, X, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
@@ -9,7 +15,7 @@ const PDFComponent = ({
   showPdfDialog,
   setShowPdfDialog,
   onPdfUpdate,
-  editingPdfBlock
+  editingPdfBlock,
 }) => {
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfDescription, setPdfDescription] = useState('');
@@ -25,9 +31,13 @@ const PDFComponent = ({
       // Editing mode - populate with existing data
       setPdfTitle(editingPdfBlock.pdfTitle || '');
       setPdfDescription(editingPdfBlock.pdfDescription || '');
-      setPdfUrl(editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || '');
+      setPdfUrl(
+        editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || ''
+      );
       setPdfUploadMethod(editingPdfBlock.uploadMethod || 'file');
-      setPdfPreview(editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || '');
+      setPdfPreview(
+        editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || ''
+      );
     } else if (showPdfDialog && !editingPdfBlock) {
       // New PDF mode - reset form
       resetForm();
@@ -48,7 +58,7 @@ const PDFComponent = ({
     resetForm();
   };
 
-  const handlePdfInputChange = (e) => {
+  const handlePdfInputChange = e => {
     const { name, value, files } = e.target;
     if (name === 'file' && files && files[0]) {
       setPdfFile(files[0]);
@@ -68,12 +78,12 @@ const PDFComponent = ({
       alert('Please enter a PDF title');
       return;
     }
-   
+
     if (pdfUploadMethod === 'file' && !pdfFile) {
       alert('Please select a PDF file');
       return;
     }
-   
+
     if (pdfUploadMethod === 'url' && !pdfUrl) {
       alert('Please enter a PDF URL');
       return;
@@ -85,16 +95,16 @@ const PDFComponent = ({
       // Create PDF URL based on upload method
       let finalPdfUrl = '';
       let uploadedPdfData = null;
-      
+
       if (pdfUploadMethod === 'file') {
         try {
-          const result = await uploadImage(pdfFile, { 
-            fieldName: 'resource', 
-            folder: 'lesson-resources', 
-            public: true, 
-            type: 'pdf' 
+          const result = await uploadImage(pdfFile, {
+            fieldName: 'resource',
+            folder: 'lesson-resources',
+            public: true,
+            type: 'pdf',
           });
-          
+
           if (result?.success && result?.imageUrl) {
             finalPdfUrl = result.imageUrl;
             uploadedPdfData = result;
@@ -104,7 +114,9 @@ const PDFComponent = ({
           }
         } catch (err) {
           console.error('PDF upload error:', err);
-          toast.error(err.message || 'Failed to upload PDF. Using local preview.');
+          toast.error(
+            err.message || 'Failed to upload PDF. Using local preview.'
+          );
           finalPdfUrl = URL.createObjectURL(pdfFile);
         }
       } else {
@@ -135,12 +147,12 @@ const PDFComponent = ({
             ${pdfDescription ? `<p class="pdf-description">${pdfDescription}</p>` : ''}
             <iframe src="${finalPdfUrl}" class="pdf-iframe" style="width: 100%; height: 600px; border: none; border-radius: 12px;"></iframe>
           </div>
-        `
+        `,
       };
 
       // Call the parent's onPdfUpdate callback
       onPdfUpdate(pdfBlock);
-      
+
       // Close dialog and reset
       handlePdfDialogClose();
     } catch (error) {
@@ -157,7 +169,9 @@ const PDFComponent = ({
       <Dialog open={showPdfDialog} onOpenChange={handlePdfDialogClose}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingPdfBlock ? 'Edit PDF' : 'Add PDF'}</DialogTitle>
+            <DialogTitle>
+              {editingPdfBlock ? 'Edit PDF' : 'Add PDF'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -187,7 +201,7 @@ const PDFComponent = ({
                     name="pdfUploadMethod"
                     value="file"
                     checked={pdfUploadMethod === 'file'}
-                    onChange={(e) => setPdfUploadMethod(e.target.value)}
+                    onChange={e => setPdfUploadMethod(e.target.value)}
                     className="mr-2"
                   />
                   Upload File
@@ -198,7 +212,7 @@ const PDFComponent = ({
                     name="pdfUploadMethod"
                     value="url"
                     checked={pdfUploadMethod === 'url'}
-                    onChange={(e) => setPdfUploadMethod(e.target.value)}
+                    onChange={e => setPdfUploadMethod(e.target.value)}
                     className="mr-2"
                   />
                   PDF URL
@@ -227,14 +241,14 @@ const PDFComponent = ({
                       </label>
                       <p className="pl-1">or drag and drop</p>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      PDF up to 20MB
-                    </p>
+                    <p className="text-xs text-gray-500">PDF up to 200MB</p>
                   </div>
                 </div>
                 {pdfPreview && pdfUploadMethod === 'file' && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      Preview:
+                    </p>
                     <embed
                       src={pdfPreview}
                       type="application/pdf"
@@ -256,21 +270,27 @@ const PDFComponent = ({
                 <input
                   type="url"
                   value={pdfUrl}
-                  onChange={(e) => setPdfUrl(e.target.value)}
+                  onChange={e => setPdfUrl(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Enter PDF URL (e.g., https://example.com/document.pdf)"
                   required
                 />
                 {pdfUrl && pdfUploadMethod === 'url' && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Preview:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-1">
+                      Preview:
+                    </p>
                     <embed
                       src={pdfUrl}
                       type="application/pdf"
                       width="100%"
                       height="500"
                       className="rounded-lg border border-gray-200"
-                      onError={() => alert('Could not load PDF. Please check the URL and try again.')}
+                      onError={() =>
+                        alert(
+                          'Could not load PDF. Please check the URL and try again.'
+                        )
+                      }
                     />
                   </div>
                 )}
@@ -292,21 +312,34 @@ const PDFComponent = ({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handlePdfDialogClose} disabled={mainPdfUploading}>
+            <Button
+              variant="outline"
+              onClick={handlePdfDialogClose}
+              disabled={mainPdfUploading}
+            >
               Cancel
             </Button>
             <Button
               onClick={handleAddPdf}
-              disabled={mainPdfUploading || !pdfTitle || (pdfUploadMethod === 'file' && !pdfFile) || (pdfUploadMethod === 'url' && !pdfUrl)}
+              disabled={
+                mainPdfUploading ||
+                !pdfTitle ||
+                (pdfUploadMethod === 'file' && !pdfFile) ||
+                (pdfUploadMethod === 'url' && !pdfUrl)
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
               {mainPdfUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {pdfUploadMethod === 'file' ? 'Uploading PDF...' : 'Adding PDF...'}
+                  {pdfUploadMethod === 'file'
+                    ? 'Uploading PDF...'
+                    : 'Adding PDF...'}
                 </>
+              ) : editingPdfBlock ? (
+                'Update PDF'
               ) : (
-                editingPdfBlock ? 'Update PDF' : 'Add PDF'
+                'Add PDF'
               )}
             </Button>
           </DialogFooter>

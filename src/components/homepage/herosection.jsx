@@ -1,5 +1,5 @@
-import { ArrowUpRight } from "lucide-react";
-import Logo from "../../assets/logo.webp";
+import { ArrowUpRight } from 'lucide-react';
+import Logo from '../../assets/logo.webp';
 
 export default function Hero() {
   return (
@@ -222,7 +222,9 @@ export default function Hero() {
             Reimagine Learning. Build, Design, and Deliver Courses with AI.
           </h1>
           <p className="hero-description">
-            Athena LMS is where Instructional Design meets Artificial Intelligence — a unified platform that helps you create engaging, research-backed courses in minutes.
+            Athena LMS is where Instructional Design meets Artificial
+            Intelligence — a unified platform that helps you create engaging,
+            research-backed courses in minutes.
           </p>
           <div className="hero-buttons">
             <a href="/contact" className="btn-primary">
@@ -235,9 +237,9 @@ export default function Hero() {
           </div>
         </div>
         <div className="hero-right">
-          <img 
-            src={Logo} 
-            alt="Athena LMS Logo" 
+          <img
+            src={Logo}
+            alt="Athena LMS Logo"
             className="w-95 h-95 object-contain rounded-3xl"
           />
         </div>

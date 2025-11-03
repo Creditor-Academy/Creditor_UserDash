@@ -10,4 +10,3 @@ const Digitalhero = () => {
 };
 
 export default Digitalhero;
-

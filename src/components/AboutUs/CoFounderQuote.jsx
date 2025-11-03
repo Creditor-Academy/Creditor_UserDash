@@ -4,9 +4,15 @@ import Logo from '../../assets/logo.webp';
 
 const CoFounderQuote = () => {
   return (
-    <section className="py-20 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)' }}>
+    <section
+      className="py-20 relative overflow-hidden"
+      style={{
+        background:
+          'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
+      }}
+    >
       {/* Animated Grid Background - Right Side */}
-      <div 
+      <div
         className="absolute right-0 top-0 bottom-0 pointer-events-none"
         style={{
           width: '60%',
@@ -28,21 +34,18 @@ const CoFounderQuote = () => {
             )
           `,
           maskImage: 'linear-gradient(to left, black 30%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to left, black 30%, transparent 100%)',
-          animation: 'gridPulse 4s ease-in-out infinite'
+          WebkitMaskImage:
+            'linear-gradient(to left, black 30%, transparent 100%)',
+          animation: 'gridPulse 4s ease-in-out infinite',
         }}
       />
-      
+
       {/* Background Logo - Visible on the left */}
-      <div 
+      <div
         className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/4 opacity-10 pointer-events-none"
         style={{ width: '700px', height: '700px' }}
       >
-        <img 
-          src={Logo} 
-          alt="" 
-          className="w-full h-full object-contain"
-        />
+        <img src={Logo} alt="" className="w-full h-full object-contain" />
       </div>
 
       {/* Keyframe Animation */}
@@ -56,19 +59,31 @@ const CoFounderQuote = () => {
           }
         }
       `}</style>
-      
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Text Section */}
           <div className="space-y-6">
-            <blockquote className="text-2xl md:text-3xl font-normal text-white leading-relaxed" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
-              Visionary leader with over 15 years of experience in educational technology. Passionate about creating learning solutions that transform lives and bridge the gap between traditional and digital education.
+            <blockquote
+              className="text-2xl md:text-3xl font-normal text-white leading-relaxed"
+              style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+            >
+              Visionary leader with over 15 years of experience in educational
+              technology. Passionate about creating learning solutions that
+              transform lives and bridge the gap between traditional and digital
+              education.
             </blockquote>
             <div className="space-y-1">
-              <p className="text-lg font-semibold text-white" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+              <p
+                className="text-lg font-semibold text-white"
+                style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+              >
                 Mr. PaulMichael Rowland
               </p>
-              <p className="text-base text-gray-300" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <p
+                className="text-base text-gray-300"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+              >
                 Co-Founder
               </p>
             </div>
@@ -78,8 +93,8 @@ const CoFounderQuote = () => {
           <div className="flex justify-center md:justify-end">
             <div className="relative">
               <div className="w-64 h-64">
-                <img 
-                  src={PaulImage} 
+                <img
+                  src={PaulImage}
                   alt="Mr. PaulMichael Rowland - Co-Founder"
                   className="w-full h-full object-cover rounded-full"
                 />
@@ -95,5 +110,3 @@ const CoFounderQuote = () => {
 };
 
 export default CoFounderQuote;
-
-

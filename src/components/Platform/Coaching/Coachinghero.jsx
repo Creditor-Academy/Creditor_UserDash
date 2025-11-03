@@ -24,9 +24,13 @@ const Coachinghero = () => {
           >
             {/* Breadcrumb */}
             <div className="flex items-center gap-3 text-sm text-gray-600 mb-8">
-              <span className="font-medium hover:text-gray-900 cursor-pointer transition">Features</span>
+              <span className="font-medium hover:text-gray-900 cursor-pointer transition">
+                Features
+              </span>
               <span className="text-gray-400">|</span>
-              <span className="font-semibold text-gray-900">Coaching and Webinars</span>
+              <span className="font-semibold text-gray-900">
+                Coaching and Webinars
+              </span>
             </div>
 
             {/* Heading */}
@@ -36,15 +40,16 @@ const Coachinghero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              Build real relationships with your audience — and ultimately drive business growth. Connect
-              interactively and authentically to increase engagement, expand reach, and turn more leads into
-              paying customers.
+              Build real relationships with your audience — and ultimately drive
+              business growth. Connect interactively and authentically to
+              increase engagement, expand reach, and turn more leads into paying
+              customers.
             </p>
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-4">
               <button className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-full shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5">
-                Join Now 
+                Join Now
                 <ArrowRight className="w-4 h-4" />
               </button>
               <button className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border-2 border-gray-900 text-gray-900 font-semibold rounded-full hover:bg-gray-900 hover:text-white transition-all duration-300">
@@ -66,7 +71,11 @@ const Coachinghero = () => {
               <div className="relative w-full max-w-[620px] aspect-[4/3] bg-[#0f4c81] flex items-center justify-center overflow-hidden shadow-2xl">
                 {/* Embedded video frame */}
                 <div className="relative w-[88%] h-[76%] bg-black/5 overflow-hidden">
-                  <img src={clientImage} alt="Live coaching" className="w-full h-full object-cover" />
+                  <img
+                    src={clientImage}
+                    alt="Live coaching"
+                    className="w-full h-full object-cover"
+                  />
 
                   {/* LIVE badge */}
                   <div className="absolute top-3 left-3 bg-white rounded-md px-3 py-1 text-xs font-semibold text-gray-900 flex items-center gap-2 shadow">
@@ -88,8 +97,13 @@ const Coachinghero = () => {
 
                   {/* Controls bar */}
                   <div className="absolute bottom-6 left-6 right-6 h-1.5 bg-white/40 rounded">
-                    <div className="h-full bg-white rounded" style={{ width: '78%' }} />
-                    <div className="absolute -bottom-2 left-0 text-white">﹁</div>
+                    <div
+                      className="h-full bg-white rounded"
+                      style={{ width: '78%' }}
+                    />
+                    <div className="absolute -bottom-2 left-0 text-white">
+                      ﹁
+                    </div>
                   </div>
                 </div>
               </div>
@@ -102,4 +116,3 @@ const Coachinghero = () => {
 };
 
 export default Coachinghero;
-

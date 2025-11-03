@@ -13,11 +13,10 @@ const CoachingPage = () => {
       <Coachingvisitor />
       <Coachingfaq />
       <Coachingcta />
-        {/* Add more coaching-related components here */}
+      {/* Add more coaching-related components here */}
       <Footer />
     </div>
   );
 };
 
 export default CoachingPage;
-

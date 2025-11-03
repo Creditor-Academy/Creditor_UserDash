@@ -1,6 +1,6 @@
 import React from 'react';
-import { motion } from "framer-motion";
-import { ArrowRight, Lock, Download } from "lucide-react";
+import { motion } from 'framer-motion';
+import { ArrowRight, Lock, Download } from 'lucide-react';
 import clientImage from '../../../assets/client.jpg';
 
 const Digitalhero = () => {
@@ -40,7 +40,9 @@ const Digitalhero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              With Digital Downloads on Athena LMS, you can earn new leads, expand your reach, and create new revenue streams — helping you scale with less effort.
+              With Digital Downloads on Athena LMS, you can earn new leads,
+              expand your reach, and create new revenue streams — helping you
+              scale with less effort.
             </p>
 
             {/* CTA Buttons */}
@@ -68,7 +70,11 @@ const Digitalhero = () => {
               <div className="relative w-full max-w-[700px] aspect-[4/3] bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 flex items-center justify-center overflow-hidden shadow-2xl">
                 {/* Radiating lines effect - emanating from center */}
                 <div className="absolute inset-0">
-                  <svg className="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+                  <svg
+                    className="w-full h-full"
+                    viewBox="0 0 800 600"
+                    preserveAspectRatio="xMidYMid slice"
+                  >
                     <defs>
                       <radialGradient id="rays">
                         <stop offset="0%" stopColor="white" stopOpacity="0.3" />
@@ -80,8 +86,10 @@ const Digitalhero = () => {
                       const x1 = 400;
                       const y1 = 300;
                       const length = 1000;
-                      const x2 = x1 + Math.cos((angle * Math.PI) / 180) * length;
-                      const y2 = y1 + Math.sin((angle * Math.PI) / 180) * length;
+                      const x2 =
+                        x1 + Math.cos((angle * Math.PI) / 180) * length;
+                      const y2 =
+                        y1 + Math.sin((angle * Math.PI) / 180) * length;
                       return (
                         <line
                           key={i}
@@ -99,7 +107,7 @@ const Digitalhero = () => {
                 </div>
 
                 {/* Download Card - centered */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.4 }}
@@ -107,9 +115,9 @@ const Digitalhero = () => {
                 >
                   {/* Card Image */}
                   <div className="w-full h-44 overflow-hidden relative">
-                    <img 
-                      src={clientImage} 
-                      alt="Connected Learning Team" 
+                    <img
+                      src={clientImage}
+                      alt="Connected Learning Team"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
                     {/* Gradient overlay on hover */}
@@ -118,14 +126,19 @@ const Digitalhero = () => {
 
                   {/* Card Content */}
                   <div className="p-6 bg-white">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 leading-tight transition-colors duration-300 group-hover:text-blue-600" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                    <h3
+                      className="text-lg font-semibold text-gray-900 mb-4 leading-tight transition-colors duration-300 group-hover:text-blue-600"
+                      style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                    >
                       Connected Learning: Smarter Training for Smarter Teams
                     </h3>
 
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-center gap-2 text-sm text-gray-700">
                         <Lock className="w-4 h-4 text-gray-600 group-hover:text-blue-500 transition-colors duration-300 flex-shrink-0" />
-                        <span className="font-medium">Sign up to access our mini guide</span>
+                        <span className="font-medium">
+                          Sign up to access our mini guide
+                        </span>
                       </div>
 
                       {/* Download Button - aligned with paragraph */}
@@ -146,4 +159,3 @@ const Digitalhero = () => {
 };
 
 export default Digitalhero;
-

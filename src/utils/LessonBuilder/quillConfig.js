@@ -2,12 +2,37 @@ import { Quill } from 'react-quill';
 
 // Register font families with proper display names
 const Font = Quill.import('formats/font');
-Font.whitelist = ['arial', 'helvetica', 'times', 'courier', 'verdana', 'georgia', 'impact', 'roboto'];
+Font.whitelist = [
+  'arial',
+  'helvetica',
+  'times',
+  'courier',
+  'verdana',
+  'georgia',
+  'impact',
+  'roboto',
+];
 Quill.register(Font, true);
 
 // Register custom font sizes with expanded options
 const Size = Quill.import('formats/size');
-Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '40px', '48px', '56px', '64px', '72px'];
+Size.whitelist = [
+  '10px',
+  '12px',
+  '14px',
+  '16px',
+  '18px',
+  '20px',
+  '24px',
+  '28px',
+  '32px',
+  '36px',
+  '40px',
+  '48px',
+  '56px',
+  '64px',
+  '72px',
+];
 Quill.register(Size, true);
 
 // Add custom CSS for Quill picker dropdowns to prevent overflow issues
@@ -64,7 +89,10 @@ const quillOverflowCSS = `
 `;
 
 // Inject the CSS
-if (typeof document !== 'undefined' && !document.getElementById('quill-overflow-css')) {
+if (
+  typeof document !== 'undefined' &&
+  !document.getElementById('quill-overflow-css')
+) {
   const style = document.createElement('style');
   style.id = 'quill-overflow-css';
   style.textContent = quillOverflowCSS;
@@ -75,65 +103,62 @@ if (typeof document !== 'undefined' && !document.getElementById('quill-overflow-
 export const getToolbarModules = (type = 'full') => {
   // Default base toolbar (includes size picker)
   const baseToolbar = [
-    [{ 'font': Font.whitelist }],
-    [{ 'size': Size.whitelist }],
+    [{ font: Font.whitelist }],
+    [{ size: Size.whitelist }],
     ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }],
-    [{ 'align': [] }]
+    [{ color: [] }],
+    [{ align: [] }],
   ];
 
   // For heading-only and subheading-only editors, include size picker and custom alignment
   if (type === 'heading' || type === 'subheading') {
     return {
       toolbar: [
-        [{ 'font': Font.whitelist }],
-        [{ 'size': Size.whitelist }],
+        [{ font: Font.whitelist }],
+        [{ size: Size.whitelist }],
         ['bold', 'italic', 'underline'],
-        [{ 'color': [] }],
+        [{ color: [] }],
         [
-          { 'align': '' },
-          { 'align': 'center' },
-          { 'align': 'right' },
-          { 'align': 'justify' }
-        ]
-      ]
+          { align: '' },
+          { align: 'center' },
+          { align: 'right' },
+          { align: 'justify' },
+        ],
+      ],
     };
   }
-  
+
   // Simplified toolbar for paragraph blocks with alignment
   if (type === 'paragraph') {
     return {
       toolbar: [
-        [{ 'font': Font.whitelist }],
-        [{ 'size': Size.whitelist }],
+        [{ font: Font.whitelist }],
+        [{ size: Size.whitelist }],
         ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }],
+        [{ color: [] }],
         [
-          { 'align': '' },
-          { 'align': 'center' },
-          { 'align': 'right' },
-          { 'align': 'justify' }
-        ]
-      ]
+          { align: '' },
+          { align: 'center' },
+          { align: 'right' },
+          { align: 'justify' },
+        ],
+      ],
     };
   }
-  
+
   if (type === 'full') {
     return {
       toolbar: [
         ...baseToolbar,
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
         ['link', 'image'],
-        ['clean']
-      ]
+        ['clean'],
+      ],
     };
   }
-  
+
   return {
-    toolbar: [
-      ...baseToolbar,
-      ['clean']
-    ]
+    toolbar: [...baseToolbar, ['clean']],
   };
 };
 

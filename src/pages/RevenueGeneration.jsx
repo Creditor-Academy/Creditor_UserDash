@@ -31,9 +31,8 @@ export const RevenueGeneration = () => {
       {/* <RevenuePricing /> */}
       {/* <RevenueCTA /> */}
       <Footer />
-    </>  
+    </>
   );
 };
 
 export default RevenueGeneration;
-

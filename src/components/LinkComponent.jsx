@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link as LinkIcon, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 const LinkComponent = ({
   showLinkDialog,
   setShowLinkDialog,
   onLinkUpdate,
-  editingLinkBlock
+  editingLinkBlock,
 }) => {
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -46,7 +52,7 @@ const LinkComponent = ({
     resetForm();
   };
 
-  const handleLinkInputChange = (e) => {
+  const handleLinkInputChange = e => {
     const { name, value } = e.target;
     if (name === 'title') {
       setLinkTitle(value);
@@ -79,7 +85,8 @@ const LinkComponent = ({
     const buttonStyles = {
       primary: 'background-color: #3B82F6; color: white; border: none;',
       secondary: 'background-color: #6B7280; color: white; border: none;',
-      outline: 'background-color: transparent; color: #3B82F6; border: 2px solid #3B82F6;'
+      outline:
+        'background-color: transparent; color: #3B82F6; border: 2px solid #3B82F6;',
     };
 
     const htmlContent = `
@@ -105,12 +112,12 @@ const LinkComponent = ({
       linkButtonStyle: linkButtonStyle,
       timestamp: new Date().toISOString(),
       html_css: htmlContent,
-      order: 0 // Will be set by parent
+      order: 0, // Will be set by parent
     };
 
     // Call the parent's onLinkUpdate callback
     onLinkUpdate(newBlock);
-    
+
     // Close dialog and reset
     handleLinkDialogClose();
   };
@@ -121,7 +128,9 @@ const LinkComponent = ({
       <Dialog open={showLinkDialog} onOpenChange={handleLinkDialogClose}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingLinkBlock ? 'Edit Link' : 'Add Link'}</DialogTitle>
+            <DialogTitle>
+              {editingLinkBlock ? 'Edit Link' : 'Add Link'}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
@@ -228,4 +237,3 @@ const LinkComponent = ({
 LinkComponent.displayName = 'LinkComponent';
 
 export default LinkComponent;
-

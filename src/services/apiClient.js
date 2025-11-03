@@ -1,146 +1,407 @@
 import axios from 'axios';
-import { getAccessToken, setAccessToken, clearAccessToken } from './tokenService';
+import {
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
+} from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL || 'https://creditor.onrender.com';
 
+// Enhanced API client with reliability improvements
 export const api = axios.create({
-	baseURL: API_BASE,
-	withCredentials: true,
+  baseURL: API_BASE,
+  withCredentials: true,
+  timeout: 30000, // 30 second timeout
+  retry: 3, // Custom retry count
+  retryDelay: 1000, // 1 second base delay
 });
 
-// Helper: decode and check JWT expiry
-function isJwtExpired(token) {
-	try {
-		const base64Url = token.split('.')[1];
-		if (!base64Url) {
-			console.warn('[Auth] JWT token missing payload section');
-			return true;
-		}
-		
-		// Fix base64 padding
-		const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-		const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
-		
-		// Decode base64
-		const decoded = atob(padded);
-		const jsonPayload = JSON.parse(decoded);
-		
-		if (!jsonPayload?.exp) {
-			console.warn('[Auth] JWT token missing expiration claim');
-			return true;
-		}
-		
-		const expirationTime = jsonPayload.exp * 1000;
-		const currentTime = Date.now();
-		const isExpired = currentTime >= expirationTime;
-		
-		// Add some buffer (5 minutes) to avoid edge cases
-		const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
-		const isExpiredWithBuffer = currentTime >= (expirationTime - bufferTime);
-		
-		if (isExpiredWithBuffer) {
-			console.log('[Auth] JWT token is expired or will expire soon:', {
-				expiresAt: new Date(expirationTime).toISOString(),
-				currentTime: new Date(currentTime).toISOString(),
-				timeUntilExpiry: Math.round((expirationTime - currentTime) / 1000) + ' seconds'
-			});
-		}
-		
-		return isExpiredWithBuffer;
-	} catch (error) {
-		console.error('[Auth] Error parsing JWT token:', error.message);
-		return true;
-	}
-}
+// Rate limiting configuration
+const rateLimiter = {
+  requests: new Map(),
+  limits: {
+    default: { max: 100, window: 60000 }, // 100 requests per minute
+    auth: { max: 10, window: 60000 }, // 10 auth requests per minute
+    upload: { max: 20, window: 60000 }, // 20 upload requests per minute
+  },
+  checkLimit(endpoint) {
+    const now = Date.now();
+    let limitType = 'default';
 
-// Attach bearer token; if expired by validation, try refresh first
-api.interceptors.request.use(async (config) => {
-	const token = getAccessToken();
-	if (token) {
-		// Temporarily disable aggressive token refresh to prevent token clearing
-		// TODO: Re-enable once JWT expiration logic is properly tested
-		const expired = isJwtExpired(token);
-		if (expired) {
-			console.warn('[Auth] Access token appears expired, but skipping refresh to prevent token clearing:', config?.url);
-			// Don't attempt refresh for now - let the server handle it
-		}
-		
-		config.headers = config.headers || {};
-		// Only add Authorization header if we have a token that we can read
-		// If backend uses HttpOnly cookies, this won't interfere
-		config.headers['Authorization'] = `Bearer ${token}`;
-		console.debug('[Auth] Attached access token to request:', { url: config?.url, hasToken: !!token });
-	} else {
-		// No token found in client storage, rely on HttpOnly cookies sent automatically
-		console.debug('[Auth] No access token in client storage, relying on cookie authentication:', { url: config?.url });
-	}
-	
-	// Ensure credentials are sent (cookies will be included automatically)
-	config.withCredentials = true;
-	
-	return config;
-});
+    // Determine limit type based on endpoint
+    if (endpoint.includes('/auth/')) limitType = 'auth';
+    else if (
+      endpoint.includes('/upload') ||
+      endpoint.includes('/image') ||
+      endpoint.includes('/video')
+    )
+      limitType = 'upload';
 
-let isRefreshing = false;
-let pendingQueue = [];
+    const limit = this.limits[limitType];
+    const key = `${limitType}_requests`;
+    const requests = this.requests.get(key) || [];
 
-async function refreshAccessToken() {
-	try {
-		console.log('[Auth] Attempting token refresh via GET', `${API_BASE}/api/auth/refresh`);
-		const response = await axios.get(`${API_BASE}/api/auth/refresh`, { withCredentials: true });
-		const newToken = response.data?.token || response.data?.accessToken || response.data?.data?.token || response.headers?.['x-access-token'];
-		if (!newToken) throw new Error('No token in refresh response');
-		setAccessToken(newToken);
-		console.log('[Auth] Refresh successful. New access token stored.');
-		// Respect 14-day refresh validity: if server signals refresh token expired, throw to logout via response interceptor
-		return newToken;
-	} catch (err) {
-		console.error('[Auth] Refresh failed:', {
-			status: err?.response?.status,
-			data: err?.response?.data,
-			message: err?.message,
-		});
-		
-		// Only clear tokens if it's a definitive authentication failure
-		// Don't clear tokens for network errors or temporary server issues
-		if (err?.response?.status === 401 || err?.response?.status === 403) {
-			console.warn('[Auth] Authentication failed during refresh, clearing tokens');
-			clearAccessToken();
-		} else {
-			console.warn('[Auth] Refresh failed due to network/server error, keeping tokens');
-		}
-		
-		throw err;
-	}
-}
+    // Remove old requests outside the window
+    const validRequests = requests.filter(
+      timestamp => now - timestamp < limit.window
+    );
 
-api.interceptors.response.use(
-	(res) => res,
-	async (error) => {
-		const status = error.response?.status;
-		const isAuthError = status === 401 || status === 403;
-		const url = error.config?.url;
+    // Check if we're under the limit
+    if (validRequests.length >= limit.max) {
+      return false;
+    }
 
-		// Only force logout for specific auth-related endpoints, not login attempts or general API calls
-		if (isAuthError && url && (
-			url.includes('/user/getUserProfile') || 
-			url.includes('/auth/refresh') ||
-			url.includes('/auth/logout')
-		)) {
-			console.warn('[Auth] Received', status, 'for', url, '- clearing tokens and forcing logout');
-			clearAccessToken();
-			// Broadcast logout event
-			window.dispatchEvent(new CustomEvent('userLoggedOut'));
-			// Navigate to login page
-			if (typeof window !== 'undefined') {
-				setTimeout(() => { window.location.href = '/login'; }, 0);
-			}
-		} else if (isAuthError) {
-			console.warn('[Auth] Received', status, 'for', url, '- not forcing logout, letting component handle error');
-		}
+    // Add current request
+    validRequests.push(now);
+    this.requests.set(key, validRequests);
 
-		return Promise.reject(error);
-	}
+    return true;
+  },
+};
+
+// Enhanced request interceptor with reliability improvements
+api.interceptors.request.use(
+  async config => {
+    try {
+      // Rate limiting check
+      if (!rateLimiter.checkLimit(config.url || '')) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+
+      // Request validation
+      if (!config.url) {
+        throw new Error('Request URL is required');
+      }
+
+      // Add request ID for tracking
+      config.metadata = {
+        requestId: generateRequestId(),
+        startTime: Date.now(),
+        retryCount: config.retryCount || 0,
+      };
+
+      // Enhanced headers
+      config.headers = config.headers || {};
+      config.headers['X-Request-ID'] = config.metadata.requestId;
+      config.headers['X-Client-Version'] = '1.0.0';
+
+      // Simple token management
+      const token = getAccessToken();
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        console.debug('[Auth] Attached access token to request:', {
+          url: config?.url,
+          requestId: config.metadata.requestId,
+        });
+      } else {
+        console.debug('[Auth] No access token present for request:', {
+          url: config?.url,
+          requestId: config.metadata.requestId,
+        });
+      }
+
+      return config;
+    } catch (error) {
+      console.error('[API] Request interceptor error:', error);
+      return Promise.reject(error);
+    }
+  },
+  error => {
+    console.error('[API] Request interceptor error:', error);
+    return Promise.reject(error);
+  }
 );
+
+// Utility functions
+function generateRequestId() {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function getRetryDelay(retryCount, baseDelay = 1000) {
+  // Exponential backoff with jitter
+  const delay = baseDelay * Math.pow(2, retryCount);
+  const jitter = Math.random() * 0.1 * delay;
+  return Math.min(delay + jitter, 10000); // Max 10 seconds
+}
+
+function shouldRetry(error, retryCount, maxRetries = 3) {
+  if (retryCount >= maxRetries) return false;
+
+  const status = error.response?.status;
+
+  // Don't retry client errors (4xx) except for specific cases
+  if (status >= 400 && status < 500) {
+    // Retry only for rate limiting and temporary auth issues
+    return status === 429 || status === 408;
+  }
+
+  // Retry server errors (5xx) and network errors
+  return status >= 500 || !status;
+}
+
+function isNetworkError(error) {
+  return (
+    !error.response &&
+    (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error'))
+  );
+}
+
+function getErrorMessage(error) {
+  if (isNetworkError(error)) {
+    return 'Network connection failed. Please check your internet connection.';
+  }
+
+  const status = error.response?.status;
+  const message = error.response?.data?.message || error.message;
+
+  switch (status) {
+    case 400:
+      return 'Invalid request. Please check your input.';
+    case 401:
+      return 'Authentication required. Please log in again.';
+    case 403:
+      return 'Access denied. You do not have permission for this action.';
+    case 404:
+      return 'Resource not found.';
+    case 408:
+      return 'Request timeout. Please try again.';
+    case 429:
+      return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+      return 'Server error. Please try again later.';
+    case 502:
+      return 'Bad gateway. The server is temporarily unavailable.';
+    case 503:
+      return 'Service unavailable. Please try again later.';
+    case 504:
+      return 'Gateway timeout. The server took too long to respond.';
+    default:
+      return message || 'An unexpected error occurred.';
+  }
+}
+
+// Enhanced response interceptor with retry logic and better error handling
+api.interceptors.response.use(
+  response => {
+    // Log successful requests for debugging
+    const requestId = response.config?.metadata?.requestId;
+    const duration = Date.now() - (response.config?.metadata?.startTime || 0);
+
+    console.debug('[API] Request successful:', {
+      url: response.config?.url,
+      requestId,
+      status: response.status,
+      duration: `${duration}ms`,
+    });
+
+    return response;
+  },
+  async error => {
+    const originalRequest = error.config;
+    const status = error.response?.status;
+    const url = originalRequest?.url;
+    const requestId = originalRequest?.metadata?.requestId;
+
+    // Ensure metadata exists and get retry count
+    originalRequest.metadata = originalRequest.metadata || {};
+    const retryCount = originalRequest.metadata.retryCount || 0;
+
+    // Prevent infinite retries by adding a safety check
+    if (retryCount >= 5) {
+      console.error(`[API] Safety limit reached - stopping retries for:`, url);
+      error.userMessage =
+        'Request failed after multiple attempts. Please try again later.';
+      return Promise.reject(error);
+    }
+
+    console.warn('[API] Request failed:', {
+      url,
+      requestId,
+      status,
+      retryCount,
+      error: error.message,
+      backendError:
+        error.response?.data?.message || error.response?.data?.error,
+      responseData: status >= 500 ? error.response?.data : undefined,
+    });
+
+    // Handle network errors
+    if (isNetworkError(error)) {
+      console.error('[API] Network error detected:', error.message);
+
+      // Retry network errors
+      if (shouldRetry(error, retryCount)) {
+        const delay = getRetryDelay(retryCount);
+        console.log(
+          `[API] Retrying network request in ${delay}ms (attempt ${retryCount + 1}/${3})`
+        );
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Properly increment retry count
+        originalRequest.metadata = originalRequest.metadata || {};
+        originalRequest.metadata.retryCount = retryCount + 1;
+        originalRequest.metadata.startTime = Date.now();
+
+        return api(originalRequest);
+      }
+    }
+
+    // Handle rate limiting
+    if (status === 429) {
+      const retryAfter = error.response?.headers['retry-after'];
+      const delay = retryAfter
+        ? parseInt(retryAfter) * 1000
+        : getRetryDelay(retryCount, 2000);
+
+      if (shouldRetry(error, retryCount)) {
+        console.log(
+          `[API] Rate limited, retrying in ${delay}ms (attempt ${retryCount + 1}/${3})`
+        );
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Properly increment retry count
+        originalRequest.metadata = originalRequest.metadata || {};
+        originalRequest.metadata.retryCount = retryCount + 1;
+        originalRequest.metadata.startTime = Date.now();
+
+        return api(originalRequest);
+      }
+    }
+
+    // Handle server errors with retry
+    if (status >= 500 && shouldRetry(error, retryCount)) {
+      const delay = getRetryDelay(retryCount);
+      console.log(
+        `[API] Server error (${status}), retrying in ${delay}ms (attempt ${retryCount + 1}/${3})`
+      );
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+
+      // Properly increment retry count
+      originalRequest.metadata = originalRequest.metadata || {};
+      originalRequest.metadata.retryCount = retryCount + 1;
+      originalRequest.metadata.startTime = Date.now();
+
+      return api(originalRequest);
+    } else if (status >= 500) {
+      console.error(
+        `[API] Server error (${status}) - max retries (${3}) exceeded for:`,
+        url
+      );
+    }
+
+    // Handle authentication errors
+    const isAuthError = status === 401 || status === 403;
+    if (
+      isAuthError &&
+      url &&
+      (url.includes('/user/getUserProfile') || url.includes('/auth/logout'))
+    ) {
+      console.warn(
+        '[Auth] Received',
+        status,
+        'for',
+        url,
+        '- clearing tokens and forcing logout'
+      );
+      clearAccessToken();
+
+      // Broadcast logout event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('userLoggedOut'));
+        // Navigate to login page
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 0);
+      }
+    } else if (isAuthError) {
+      console.warn(
+        '[Auth] Received',
+        status,
+        'for',
+        url,
+        '- not forcing logout, letting component handle error'
+      );
+    }
+
+    // Enhance error with user-friendly message
+    error.userMessage = getErrorMessage(error);
+
+    return Promise.reject(error);
+  }
+);
+
+// Enhanced API client methods
+api.getStatus = () => {
+  return {
+    baseURL: API_BASE,
+    timeout: api.defaults.timeout,
+    rateLimits: rateLimiter.limits,
+  };
+};
+
+api.clearRateLimit = () => {
+  rateLimiter.requests.clear();
+  console.log('[API] Rate limit counters cleared');
+};
+
+api.setRateLimit = (type, max, window) => {
+  if (rateLimiter.limits[type]) {
+    rateLimiter.limits[type] = { max, window };
+    console.log(`[API] Rate limit updated for ${type}:`, { max, window });
+  }
+};
+
+// Enhanced request methods with better error handling
+api.safeGet = async (url, config = {}) => {
+  try {
+    return await api.get(url, config);
+  } catch (error) {
+    console.error('[API] GET request failed:', {
+      url,
+      error: error.userMessage || error.message,
+    });
+    throw error;
+  }
+};
+
+api.safePost = async (url, data, config = {}) => {
+  try {
+    return await api.post(url, data, config);
+  } catch (error) {
+    console.error('[API] POST request failed:', {
+      url,
+      error: error.userMessage || error.message,
+    });
+    throw error;
+  }
+};
+
+api.safePut = async (url, data, config = {}) => {
+  try {
+    return await api.put(url, data, config);
+  } catch (error) {
+    console.error('[API] PUT request failed:', {
+      url,
+      error: error.userMessage || error.message,
+    });
+    throw error;
+  }
+};
+
+api.safeDelete = async (url, config = {}) => {
+  try {
+    return await api.delete(url, config);
+  } catch (error) {
+    console.error('[API] DELETE request failed:', {
+      url,
+      error: error.userMessage || error.message,
+    });
+    throw error;
+  }
+};
 
 export default api;

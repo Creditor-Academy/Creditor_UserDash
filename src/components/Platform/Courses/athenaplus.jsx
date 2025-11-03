@@ -6,29 +6,34 @@ const Athenaplus = () => {
   const features = [
     {
       id: 1,
-      title: "Boost success with Learning Recommendations",
-      description: "Guide learners with structured paths and relevant recommendations that keep them motivated and on track."
+      title: 'Boost success with Learning Recommendations',
+      description:
+        'Guide learners with structured paths and relevant recommendations that keep them motivated and on track.',
     },
     {
       id: 2,
-      title: "Increase engagement with gamification",
-      description: "Boost engagement with badges, interactive games, and apps that make learning fun and rewarding."
+      title: 'Increase engagement with gamification',
+      description:
+        'Boost engagement with badges, interactive games, and apps that make learning fun and rewarding.',
     },
     {
       id: 3,
-      title: "Harness the power of SCORM",
-      description: "Easily migrate your LMS content and enhance it with interactive features that drive learner engagement."
+      title: 'Harness the power of SCORM',
+      description:
+        'Easily migrate your LMS content and enhance it with interactive features that drive learner engagement.',
     },
     {
       id: 4,
-      title: "Tap into Advanced Analytics",
-      description: "Use course analytics to make smarter decisions and build customizable dashboards that spotlight your most important course data."
+      title: 'Tap into Advanced Analytics',
+      description:
+        'Use course analytics to make smarter decisions and build customizable dashboards that spotlight your most important course data.',
     },
     {
       id: 5,
-      title: "Do even more with apps",
-      description: "Improve engagement, boost sales, and customize your learning environment with apps from the Athena App Store."
-    }
+      title: 'Do even more with apps',
+      description:
+        'Improve engagement, boost sales, and customize your learning environment with apps from the Athena App Store.',
+    },
   ];
 
   return (
@@ -63,7 +68,8 @@ const Athenaplus = () => {
 
           {/* Description */}
           <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            You're serious about creating and selling more courses. Athena Plus is serious about helping you do it right.
+            You're serious about creating and selling more courses. Athena Plus
+            is serious about helping you do it right.
           </p>
         </motion.div>
 
@@ -78,9 +84,9 @@ const Athenaplus = () => {
           {/* Outer blur box */}
           <div className="relative w-full max-w-5xl mx-auto p-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl">
             <div className="relative w-full overflow-hidden shadow-xl">
-              <img 
-                src={courseImage} 
-                alt="Athena LMS Course Management Dashboard" 
+              <img
+                src={courseImage}
+                alt="Athena LMS Course Management Dashboard"
                 className="w-full h-auto"
               />
             </div>
@@ -106,10 +112,13 @@ const Athenaplus = () => {
             >
               <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
                 {/* Title */}
-                <h3 className="text-2xl lg:text-3xl font-normal text-white leading-relaxed" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                <h3
+                  className="text-2xl lg:text-3xl font-normal text-white leading-relaxed"
+                  style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                >
                   {feature.title}
                 </h3>
-                
+
                 {/* Description */}
                 <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
                   {feature.description}
@@ -124,4 +133,3 @@ const Athenaplus = () => {
 };
 
 export default Athenaplus;
-

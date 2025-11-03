@@ -13,18 +13,24 @@ const RESOURCE_UPLOAD_API = `${API_BASE}/api/resource/upload-resource`;
 export async function uploadImage(file, options = {}) {
   try {
     // Validate file type/size
-    const isPdf = (options.type === 'pdf') || file.type === 'application/pdf';
+    const isPdf = options.type === 'pdf' || file.type === 'application/pdf';
     if (isPdf) {
       const validPdfTypes = ['application/pdf'];
       if (!validPdfTypes.includes(file.type)) {
         throw new Error('Please upload a valid PDF file');
       }
-      // PDF size limit (e.g., 25MB)
-      if (file.size > 25 * 1024 * 1024) {
-        throw new Error('PDF size should be less than 25MB');
+      // PDF size limit (200MB)
+      if (file.size > 200 * 1024 * 1024) {
+        throw new Error('PDF size should be less than 200MB');
       }
     } else {
-      const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      const validImageTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/jpg',
+        'image/gif',
+        'image/webp',
+      ];
       if (!validImageTypes.includes(file.type)) {
         throw new Error('Please upload only JPG, PNG, GIF, or WebP images');
       }
@@ -40,19 +46,21 @@ export async function uploadImage(file, options = {}) {
     const formData = new FormData();
     formData.append(fieldName, file);
     if (options.folder) formData.append('folder', options.folder);
-    if (typeof options.public !== 'undefined') formData.append('public', String(options.public));
+    if (typeof options.public !== 'undefined')
+      formData.append('public', String(options.public));
     if (options.type) formData.append('type', options.type);
 
     // Let the browser set the correct Content-Type with boundary
     const response = await api.post(RESOURCE_UPLOAD_API, formData, {
-      timeout: 120000, // 120 seconds for larger files
+      timeout: 300000, // 300 seconds (5 minutes) for larger files up to 200MB
       withCredentials: true,
     });
 
     if (response?.data) {
       const { data, url, success, message } = response.data;
       const finalUrl = data?.url || url;
-      const isSuccess = typeof success === 'boolean' ? success : Boolean(finalUrl);
+      const isSuccess =
+        typeof success === 'boolean' ? success : Boolean(finalUrl);
       if (!isSuccess) throw new Error(message || 'Upload failed');
       return {
         success: true,
@@ -64,20 +72,22 @@ export async function uploadImage(file, options = {}) {
       };
     }
     throw new Error('Upload failed');
-
   } catch (error) {
     console.error('Error uploading image:', error);
-    
+
     // Handle different types of errors
     if (error.response) {
       // Server responded with error status
-      const errorMessage = error.response.data?.message || 
-                          error.response.data?.error || 
-                          `Upload failed with status ${error.response.status}`;
+      const errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        `Upload failed with status ${error.response.status}`;
       throw new Error(errorMessage);
     } else if (error.request) {
       // Network error
-      throw new Error('Network error. Please check your connection and try again.');
+      throw new Error(
+        'Network error. Please check your connection and try again.'
+      );
     } else {
       // Other error (validation, etc.)
       throw new Error(error.message || 'An unexpected error occurred');
@@ -95,12 +105,12 @@ export async function uploadMultipleImages(files, options = {}) {
   try {
     const uploadPromises = files.map(file => uploadImage(file, options));
     const results = await Promise.allSettled(uploadPromises);
-    
+
     return results.map((result, index) => ({
       file: files[index],
       success: result.status === 'fulfilled',
       data: result.status === 'fulfilled' ? result.value : null,
-      error: result.status === 'rejected' ? result.reason.message : null
+      error: result.status === 'rejected' ? result.reason.message : null,
     }));
   } catch (error) {
     console.error('Error uploading multiple images:', error);

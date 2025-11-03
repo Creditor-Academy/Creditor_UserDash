@@ -16,6 +16,7 @@ dist-ssr
 # Environment variables
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -23,8 +24,6 @@ dist-ssr
 # AI Service Configuration (Keep private)
 ai-config.json
 ai-models.json
-bytez-config.js
-**/bytezAPI.js
 ai-provider-config.js
 
 # Editor directories and files

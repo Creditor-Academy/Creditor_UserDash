@@ -4,7 +4,7 @@ import Footer from '../../components/Footer';
 import Communityhero from '../../components/Platform/Communities/Communityhero';
 import Communitydeliver from '../../components/Platform/Communities/Communitydeliver';
 import Communityplus from '../../components/Platform/Communities/Communityplus';
-import Communitybuild from '../../components/Platform/Communities/Communitybuild';    
+import Communitybuild from '../../components/Platform/Communities/Communitybuild';
 import Communitycta from '../../components/Platform/Communities/Communitycta';
 const CommunitiesPage = () => {
   return (
@@ -22,4 +22,3 @@ const CommunitiesPage = () => {
 };
 
 export default CommunitiesPage;
-

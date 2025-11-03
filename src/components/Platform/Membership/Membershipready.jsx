@@ -6,26 +6,30 @@ const Courseready = () => {
   const features = [
     {
       id: 1,
-      title: "Communities",
-      description: "Grant exclusive access to your online community where members can connect, ask questions, and learn from like-minded peers.",
+      title: 'Communities',
+      description:
+        'Grant exclusive access to your online community where members can connect, ask questions, and learn from like-minded peers.',
       icon: Sparkles,
     },
     {
       id: 2,
-      title: "Courses",
-      description: "Include a curated selection of your courses that you can easily update and add to regularly.",
+      title: 'Courses',
+      description:
+        'Include a curated selection of your courses that you can easily update and add to regularly.',
       icon: Wand2,
     },
     {
       id: 3,
-      title: "Digital downloads",
-      description: "Offer downloadable products like eBooks, guides, templates, and more as part of your membership.",
+      title: 'Digital downloads',
+      description:
+        'Offer downloadable products like eBooks, guides, templates, and more as part of your membership.',
       icon: Box,
     },
     {
       id: 4,
-      title: "Live events",
-      description: "From interactive Q&As to coaching sessions, webinars, and more, your membership can include exclusive access to engaging live events.",
+      title: 'Live events',
+      description:
+        'From interactive Q&As to coaching sessions, webinars, and more, your membership can include exclusive access to engaging live events.',
       icon: Rocket,
     },
   ];
@@ -48,10 +52,14 @@ const Courseready = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-white mb-6 leading-tight">
-            Ready to experience an elevated<br />course creation process?
+            Ready to experience an elevated
+            <br />
+            course creation process?
           </h2>
           <p className="text-base sm:text-lg text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            With AI-powered tools and an easy-to-use interface, Athena LMS helps you create and launch your course faster — with no technical skills or design experience required.
+            With AI-powered tools and an easy-to-use interface, Athena LMS helps
+            you create and launch your course faster — with no technical skills
+            or design experience required.
           </p>
         </motion.div>
 
@@ -69,10 +77,13 @@ const Courseready = () => {
               <div className="relative pb-8 border-b border-white/20">
                 <div className="flex items-start justify-between gap-6 mb-4">
                   {/* Title */}
-                  <h3 className="text-2xl font-normal text-white leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+                  <h3
+                    className="text-2xl font-normal text-white leading-tight"
+                    style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+                  >
                     {feature.title}
                   </h3>
-                  
+
                   {/* Icon */}
                   <div className="flex-shrink-0 w-14 h-14 bg-gray-700/50 rounded-lg flex items-center justify-center group-hover:bg-gray-600/50 transition-colors duration-300">
                     <feature.icon className="w-6 h-6 text-white" />
@@ -93,4 +104,3 @@ const Courseready = () => {
 };
 
 export default Courseready;
-
