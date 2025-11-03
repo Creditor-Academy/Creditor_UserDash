@@ -3301,6 +3301,12 @@ function LessonBuilder() {
           .join('\\n'),
       };
 
+      // Optimize: Remove redundant combined content if blocks already have html_css
+      // This significantly reduces payload size
+      const shouldIncludeCombinedContent = blocksToUpdate.some(
+        block => !block.html_css || block.html_css.trim() === ''
+      );
+
       // Format content blocks into a simpler structure
       const formattedContent = blocksToUpdate.map(block => {
         let htmlContent = '';
@@ -3434,12 +3440,30 @@ function LessonBuilder() {
       console.log('Processed content:', content);
       console.log('Formatted content:', formattedContent);
 
-      // Update the lesson content
+      // Optimize payload: remove unnecessary whitespace from HTML to reduce size
+      const optimizeHtml = html => {
+        if (!html) return '';
+        // Remove excessive whitespace while preserving structure
+        return html
+          .replace(/\n\s+/g, '\n') // Remove leading whitespace on each line
+          .replace(/\s+/g, ' ') // Collapse multiple spaces
+          .replace(/>\s+</g, '><') // Remove spaces between tags
+          .trim();
+      };
+
+      // Update the lesson content with optimized payload
       const lessonDataToUpdate = {
         lesson_id: lessonId,
         content: content,
-        html_css: formattedContent.map(content => content.html_css).join('\\n'),
-        css: formattedContent.map(content => content.css).join('\\n'),
+        // Optimize html_css by removing excessive whitespace
+        html_css: formattedContent
+          .map(content => optimizeHtml(content.html_css))
+          .filter(html => html) // Remove empty strings
+          .join('\n'),
+        css: formattedContent
+          .map(content => content.css)
+          .filter(css => css) // Remove empty strings
+          .join('\n'),
         script: '', // Add script if needed in the future
       };
 
@@ -3447,7 +3471,29 @@ function LessonBuilder() {
 
       // Log payload size for debugging
       const payloadSize = JSON.stringify(lessonDataToUpdate).length;
-      console.log('Payload size:', Math.round(payloadSize / 1024 / 1024), 'MB');
+      const payloadSizeMB = (payloadSize / (1024 * 1024)).toFixed(2);
+      console.log('Payload size:', payloadSizeMB, 'MB');
+
+      // Warn user if payload is getting large
+      if (payloadSize > 10 * 1024 * 1024) {
+        // > 10MB - Critical
+        toast.warning(
+          `⚠️ Large content detected (${payloadSizeMB}MB). If save fails, contact your administrator to increase server limits.`,
+          { duration: 6000 }
+        );
+        console.warn(
+          '⚠️ CRITICAL: Large payload detected:',
+          payloadSizeMB,
+          'MB'
+        );
+      } else if (payloadSize > 5 * 1024 * 1024) {
+        // > 5MB - Warning
+        console.warn(
+          '⚠️ Large payload detected:',
+          payloadSizeMB,
+          'MB - May need higher backend limits'
+        );
+      }
 
       const response = await axios.put(
         `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
@@ -3457,6 +3503,8 @@ function LessonBuilder() {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json',
           },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         }
       );
 
@@ -3464,6 +3512,22 @@ function LessonBuilder() {
       console.log('Full response:', response);
       console.log('Response status:', response.status);
       console.log('Response data:', response.data);
+
+      // Check if response is HTML (error page) instead of JSON
+      const isHtmlError =
+        typeof response.data === 'string' &&
+        response.data.trim().startsWith('<!DOCTYPE html>');
+
+      if (isHtmlError) {
+        // Parse HTML error message
+        if (
+          response.data.includes('PayloadTooLargeError') ||
+          response.data.includes('request entity too large')
+        ) {
+          throw new Error('PAYLOAD_TOO_LARGE');
+        }
+        throw new Error('Server returned an error page. Please try again.');
+      }
 
       // Check for any error indicators in the response
       const hasError =
@@ -3537,22 +3601,37 @@ function LessonBuilder() {
       // Handle different error types
       let errorMessage = 'Failed to update lesson. Please try again.';
 
-      if (error.response) {
+      // Check for custom PAYLOAD_TOO_LARGE error
+      if (error.message === 'PAYLOAD_TOO_LARGE') {
+        errorMessage =
+          '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit (typically in server configuration: app.use(express.json({ limit: "50mb" }))).';
+        console.error('PAYLOAD TOO LARGE - Backend configuration needed');
+      } else if (error.response) {
         // Server responded with error status
         const status = error.response.status;
         const responseData = error.response.data;
 
         console.log('Server error response:', { status, data: responseData });
-        console.log(
-          '413 Error detected! Status:',
-          status,
-          'Data:',
-          responseData
-        );
 
-        if (status === 413) {
+        // Check if response is HTML error page
+        const isHtmlError =
+          typeof responseData === 'string' &&
+          responseData.trim().startsWith('<!DOCTYPE html>');
+
+        if (isHtmlError) {
+          if (
+            responseData.includes('PayloadTooLargeError') ||
+            responseData.includes('request entity too large')
+          ) {
+            errorMessage =
+              '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator to increase the Express body parser limit.';
+            console.error('413 Payload Too Large - HTML error page received');
+          } else {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        } else if (status === 413) {
           errorMessage =
-            'Content is too large. Please reduce the size of your content and try again.';
+            '⚠️ Content size exceeds server limit. The backend server needs to increase its payload limit. Please contact your system administrator.';
           console.log('Setting 413 error message:', errorMessage);
         } else if (status === 400) {
           errorMessage =
