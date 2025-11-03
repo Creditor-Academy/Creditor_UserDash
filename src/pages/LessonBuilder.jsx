@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { uploadImage } from '@/services/imageUploadService';
 import VideoComponent from '@/components/VideoComponent';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -11,10 +10,6 @@ import {
   ArrowLeft, Plus, Eye, Pencil, Trash2, GripVertical,
   Image, Video,
   FileText as FileTextIcon, Link as LinkIcon,
-  Type,
-  Heading1,
-  Heading2,
-  Text,
   List,
   Table,
   Loader2,
@@ -33,651 +28,25 @@ import TableComponent from '@/components/TableComponent';
 import ListComponent from '@/components/ListComponent';
 import InteractiveComponent from '@/components/InteractiveComponent';
 import axios from 'axios';
-import ReactQuill, { Quill } from 'react-quill';
+import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
-import ImageEditor from '@/components/ImageEditor';
 import PDFComponent from '@/components/PDFComponent';
 import LinkComponent from '@/components/LinkComponent';
 import ImageBlockComponent from '@/components/ImageBlockComponent';
+import TextBlockComponent from '@/components/TextBlockComponent';
+import InteractiveListRenderer from '@/components/InteractiveListRenderer';
+import { injectStyles, initializeGlobalFunctions } from '@/utils/LessonBuilder/styleSheets';
+import '@/utils/LessonBuilder/quillConfig';
+import { getToolbarModules } from '@/utils/LessonBuilder/quillConfig';
+import { textTypes } from '@/constants/LessonBuilder/textTypesConfig';
 
-// Add custom CSS for slide animation and font families
-const slideInLeftStyle = `
-  @keyframes slide-in-left {
-    0% {
-      transform: translateX(-100%);
-      opacity: 0;
-    }
-    100% {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  } 
-  .animate-slide-in-left {
-    animation: slide-in-left 0.3s ease-out;
-  }
-  
-  /* Font family CSS for Quill editor */
-  .ql-font-arial {
-    font-family: Arial, sans-serif;
-  }
-  .ql-font-helvetica {
-    font-family: Helvetica, sans-serif;
-  }
-  .ql-font-times {
-    font-family: Times, serif;
-  }
-  .ql-font-courier {
-    font-family: Courier, monospace;
-  }
-  .ql-font-verdana {
-    font-family: Verdana, sans-serif;
-  }
-  .ql-font-georgia {
-    font-family: Georgia, serif;
-  }
-  .ql-font-impact {
-    font-family: Impact, sans-serif;
-  }
-  .ql-font-roboto {
-    font-family: Roboto, sans-serif;
-  }
-  
-  /* Fix font picker to show actual font names */
-  .ql-picker.ql-font .ql-picker-item[data-value=""]::before {
-    content: "Sans Serif" !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="arial"]::before {
-    content: "Arial" !important;
-    font-family: Arial, sans-serif !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="helvetica"]::before {
-    content: "Helvetica" !important;
-    font-family: Helvetica, sans-serif !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="times"]::before {
-    content: "Times New Roman" !important;
-    font-family: Times, serif !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="courier"]::before {
-    content: "Courier New" !important;
-    font-family: Courier, monospace !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="verdana"]::before {
-    content: "Verdana" !important;
-    font-family: Verdana, sans-serif !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="georgia"]::before {
-    content: "Georgia" !important;
-    font-family: Georgia, serif !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="impact"]::before {
-    content: "Impact" !important;
-    font-family: Impact, sans-serif !important;
-  }
-  .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
-    content: "Roboto" !important;
-    font-family: Roboto, sans-serif !important;
-  }
-  
-  /* Hide original text and show only ::before content */
-  .ql-picker.ql-font .ql-picker-item {
-    font-size: 0 !important;
-    position: relative !important;
-    height: 32px !important;
-  }
-  
-  .ql-picker.ql-font .ql-picker-item::before {
-    font-size: 14px !important;
-    position: absolute !important;
-    left: 12px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    white-space: nowrap !important;
-  }
-  
-  /* Fix size picker to show actual size names */
-  .ql-picker.ql-size .ql-picker-item[data-value="small"]::before {
-    content: "Small" !important;
-  }
-  .ql-picker.ql-size .ql-picker-item[data-value=""]::before {
-    content: "Normal" !important;
-  }
-  .ql-picker.ql-size .ql-picker-item[data-value="large"]::before {
-    content: "Large" !important;
-  }
-  .ql-picker.ql-size .ql-picker-item[data-value="huge"]::before {
-    content: "Huge" !important;
-  }
-  
-  .ql-picker.ql-size .ql-picker-item {
-    font-size: 0 !important;
-    position: relative !important;
-    height: 32px !important;
-  }
-  
-  .ql-picker.ql-size .ql-picker-item::before {
-    font-size: 14px !important;
-    position: absolute !important;
-    left: 12px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    white-space: nowrap !important;
-  }
-  
-  /* Ensure dropdown positioning works properly */
-  .ql-picker-options {
-    position: absolute !important;
-    top: 100% !important;
-    left: 0 !important;
-    z-index: 10000 !important;
-    background: white !important;
-    border: 1px solid #ccc !important;
-    border-radius: 4px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-    min-width: 120px !important;
-  }
-  
-  .ql-picker-item {
-    padding: 8px 12px !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-  }
-  
-  .ql-picker-item:hover {
-    background-color: #f5f5f5 !important;
-  }
-  
-  /* Font size CSS for Quill editor */
-  .ql-size-small {
-    font-size: 0.75em;
-  }
-  .ql-size-large {
-    font-size: 1.5em;
-  }
-  .ql-size-huge {
-    font-size: 3em;
-  }
-`;
-
-// Inject the CSS
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.type = 'text/css';
-  styleSheet.innerText = slideInLeftStyle;
-  document.head.appendChild(styleSheet);
-}
-
-// Global functions for interactive components
-if (typeof window !== 'undefined') {
-  window.switchTab = function(containerId, activeIndex) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const tabButtons = container.querySelectorAll('.tab-button');
-    const tabPanels = container.querySelectorAll('.tab-panel');
-    
-    tabButtons.forEach((button, index) => {
-      if (index === activeIndex) {
-        button.classList.add('border-b-2', 'border-blue-500', 'text-blue-600', 'bg-blue-50');
-        button.classList.remove('text-gray-500');
-      } else {
-        button.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600', 'bg-blue-50');
-        button.classList.add('text-gray-500');
-      }
-    });
-    
-    tabPanels.forEach((panel, index) => {
-      if (index === activeIndex) {
-        panel.classList.remove('hidden');
-        panel.classList.add('block');
-      } else {
-        panel.classList.add('hidden');
-        panel.classList.remove('block');
-      }
-    });
-  };
-
-  window.toggleAccordion = function(containerId, index) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const content = container.querySelector(`[data-content="${index}"]`);
-    const icon = container.querySelector(`[data-icon="${index}"]`);
-    
-    if (!content || !icon) return;
-    
-    if (content.classList.contains('max-h-0')) {
-      content.classList.remove('max-h-0');
-      content.classList.add('max-h-96', 'pb-4');
-      icon.classList.add('rotate-180');
-    } else {
-      content.classList.add('max-h-0');
-      content.classList.remove('max-h-96', 'pb-4');
-      icon.classList.remove('rotate-180');
-    }
-  };
-
-  // Labeled Graphic functions
-  window.toggleHotspotContent = function(containerId, hotspotId) {
-    // Hide all other content overlays in this container
-    const container = document.getElementById(containerId);
-    if (container) {
-      const allContents = container.querySelectorAll('.hotspot-content');
-      allContents.forEach(content => {
-        if (content.id !== 'content-' + containerId + '-' + hotspotId) {
-          content.classList.add('hidden');
-        }
-      });
-    }
-    
-    // Toggle the clicked hotspot content
-    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
-    if (contentElement) {
-      if (contentElement.classList.contains('hidden')) {
-        contentElement.classList.remove('hidden');
-        // Add fade-in animation
-        contentElement.style.opacity = '0';
-        contentElement.style.transform = 'scale(0.9)';
-        setTimeout(() => {
-          contentElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          contentElement.style.opacity = '1';
-          contentElement.style.transform = 'scale(1)';
-        }, 10);
-      } else {
-        contentElement.classList.add('hidden');
-      }
-    }
-  };
-  
-  window.hideHotspotContent = function(containerId, hotspotId) {
-    const contentElement = document.getElementById('content-' + containerId + '-' + hotspotId);
-    if (contentElement) {
-      contentElement.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-      contentElement.style.opacity = '0';
-      contentElement.style.transform = 'scale(0.9)';
-      setTimeout(() => {
-        contentElement.classList.add('hidden');
-      }, 200);
-    }
-  };
-  
-  // Close hotspot content when clicking outside (only add once)
-  if (!window.labeledGraphicClickHandler) {
-    window.labeledGraphicClickHandler = function(event) {
-      if (!event.target.closest('.hotspot') && !event.target.closest('.hotspot-content')) {
-        const allContents = document.querySelectorAll('.hotspot-content');
-        allContents.forEach(content => {
-          content.classList.add('hidden');
-        });
-      }
-    };
-    document.addEventListener('click', window.labeledGraphicClickHandler);
-  }
-}
-
-// Register font families with proper display names
-const Font = Quill.import('formats/font');
-Font.whitelist = ['arial', 'helvetica', 'times', 'courier', 'verdana', 'georgia', 'impact', 'roboto'];
-Quill.register(Font, true);
-
-// Override font display names for better readability
-const fontNames = {
-  'arial': 'Arial',
-  'helvetica': 'Helvetica', 
-  'times': 'Times Roman',
-  'courier': 'Courier New',
-  'verdana': 'Verdana',
-  'georgia': 'Georgia',
-  'impact': 'Impact',
-  'roboto': 'Roboto'
-};
-
-// Apply custom font names and override Quill's font labels
-if (typeof document !== 'undefined') {
-  const fontCSS = Object.entries(fontNames).map(([key, value]) => 
-    `.ql-font-${key} { font-family: "${value}"; }`
-  ).join('\n');
-  
-  if (!document.getElementById('custom-font-names')) {
-    const style = document.createElement('style');
-    style.id = 'custom-font-names';
-    style.textContent = fontCSS + `
-      /* Override dropdown options text only - not content */
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="arial"]::before { content: "Arial"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="helvetica"]::before { content: "Helvetica"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="times"]::before { content: "Times Roman"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="courier"]::before { content: "Courier New"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="verdana"]::before { content: "Verdana"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="georgia"]::before { content: "Georgia"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="impact"]::before { content: "Impact"; }
-      .ql-toolbar .ql-font .ql-picker-options .ql-picker-item[data-value="roboto"]::before { content: "Roboto"; }
-      
-      /* Ensure font names don't appear in content area */
-      .ql-editor .ql-font-arial::before,
-      .ql-editor .ql-font-helvetica::before,
-      .ql-editor .ql-font-times::before,
-      .ql-editor .ql-font-courier::before,
-      .ql-editor .ql-font-verdana::before,
-      .ql-editor .ql-font-georgia::before,
-      .ql-editor .ql-font-impact::before,
-      .ql-editor .ql-font-roboto::before {
-        content: none !important;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-}
-
-
-// Register font sizes - simplified to 4 options
-const Size = Quill.import('formats/size');
-Size.whitelist = ['small', 'normal', 'large', 'huge'];
-Quill.register(Size, true);
-
-// Add CSS for Quill editor overflow handling and improved alignment display
-const quillOverflowCSS = `
-  .quill-editor-overflow-visible .ql-toolbar {
-    overflow: visible !important;
-  }
-  .quill-editor-overflow-visible .ql-toolbar .ql-picker {
-    overflow: visible !important;
-  }
-  .quill-editor-overflow-visible .ql-toolbar .ql-picker-options {
-    z-index: 9999 !important;
-    position: absolute !important;
-    overflow: visible !important;
-    min-width: 180px !important;
-    max-width: 250px !important;
-  }
-  .quill-editor-overflow-visible .ql-toolbar .ql-picker-label {
-    overflow: visible !important;
-  }
-  .quill-editor-overflow-visible .ql-toolbar .ql-picker-options .ql-picker-item {
-    white-space: nowrap !important;
-    overflow: visible !important;
-    padding: 5px 10px !important;
-    min-width: 160px !important;
-  }
-  .quill-editor-overflow-visible .ql-toolbar .ql-font .ql-picker-options {
-    min-width: 200px !important;
-    max-width: 300px !important;
-  }
-  
-  /* Improve alignment picker display */
-  .ql-align .ql-picker-options .ql-picker-item {
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    padding: 8px 12px !important;
-    font-size: 14px !important;
-    position: relative !important;
-  }
-  
-  /* Completely hide all horizontal line icons and replace with text */
-  .ql-align .ql-picker-options .ql-picker-item {
-    position: relative !important;
-    min-height: 32px !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-  
-  .ql-align .ql-picker-options .ql-picker-item svg,
-  .ql-align .ql-picker-options .ql-picker-item .ql-stroke,
-  .ql-align .ql-picker-options .ql-picker-item .ql-stroke-miter,
-  .ql-align .ql-picker-options .ql-picker-item .ql-fill {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-  }
-  
-  /* Replace with clear text labels */
-  .ql-align .ql-picker-options .ql-picker-item[data-value=""] {
-    background-image: none !important;
-  }
-  .ql-align .ql-picker-options .ql-picker-item[data-value=""]:after {
-    content: "⬅️ Left Align";
-    display: block !important;
-    width: 100% !important;
-    text-align: left !important;
-    font-size: 14px !important;
-    color: #333 !important;
-    padding: 6px 8px !important;
-  }
-  
-  .ql-align .ql-picker-options .ql-picker-item[data-value="center"] {
-    background-image: none !important;
-  }
-  .ql-align .ql-picker-options .ql-picker-item[data-value="center"]:after {
-    content: "↔️ Center Align";
-    display: block !important;
-    width: 100% !important;
-    text-align: left !important;
-    font-size: 14px !important;
-    color: #333 !important;
-    padding: 6px 8px !important;
-  }
-  
-  .ql-align .ql-picker-options .ql-picker-item[data-value="right"] {
-    background-image: none !important;
-  }
-  .ql-align .ql-picker-options .ql-picker-item[data-value="right"]:after {
-    content: "➡️ Right Align";
-    display: block !important;
-    width: 100% !important;
-    text-align: left !important;
-    font-size: 14px !important;
-    color: #333 !important;
-    padding: 6px 8px !important;
-  }
-  
-  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"] {
-    background-image: none !important;
-  }
-  .ql-align .ql-picker-options .ql-picker-item[data-value="justify"]:after {
-    content: "⬌ Justify";
-    display: block !important;
-    width: 100% !important;
-    text-align: left !important;
-    font-size: 14px !important;
-    color: #333 !important;
-    padding: 6px 8px !important;
-  }
-`;
-
-// Inject the CSS
-if (typeof document !== 'undefined' && !document.getElementById('quill-overflow-css')) {
-  const style = document.createElement('style');
-  style.id = 'quill-overflow-css';
-  style.textContent = quillOverflowCSS;
-  document.head.appendChild(style);
-}
-
-// Comprehensive toolbar modules for all text types
-const getToolbarModules = (type = 'full') => {
-  // Default base toolbar (includes size picker)
-  const baseToolbar = [
-    [{ 'font': Font.whitelist }],
-    [{ 'size': Size.whitelist }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }],
-    [{ 'align': [] }]
-  ];
-
-  // For heading-only and subheading-only editors, include size picker and custom alignment
-  if (type === 'heading' || type === 'subheading') {
-    return {
-      toolbar: [
-        [{ 'font': Font.whitelist }],
-        [{ 'size': Size.whitelist }],
-        ['bold', 'italic', 'underline'],
-        [{ 'color': [] }],
-        [
-          { 'align': '' },
-          { 'align': 'center' },
-          { 'align': 'right' },
-          { 'align': 'justify' }
-        ]
-      ]
-    };
-  }
-  
-  // Simplified toolbar for paragraph blocks with alignment
-  if (type === 'paragraph') {
-    return {
-      toolbar: [
-        [{ 'font': Font.whitelist }],
-        [{ 'size': Size.whitelist }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'color': [] }],
-        [
-          { 'align': '' },
-          { 'align': 'center' },
-          { 'align': 'right' },
-          { 'align': 'justify' }
-        ]
-      ]
-    };
-  }
-  
-  if (type === 'full') {
-    return {
-      toolbar: [
-        ...baseToolbar,
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        ['link', 'image'],
-        ['clean']
-      ]
-    };
-  }
-  
-  return {
-    toolbar: [
-      ...baseToolbar,
-      ['clean']
-    ]
-  };
-};
-
-// Interactive List Renderer Component
-const InteractiveListRenderer = ({ block, onCheckboxToggle }) => {
-  const containerRef = React.useRef(null);
-
-  React.useEffect(() => {
-    console.log('InteractiveListRenderer useEffect triggered for block:', block.id);
-    if (!containerRef.current) {
-      console.log('No containerRef.current found');
-      return;
-    }
-
-    const handleCheckboxClick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      console.log('Checkbox click detected:', e.target);
-      
-      // Find the checkbox container - could be the clicked element or a parent
-      let checkboxContainer = e.target.closest('.checkbox-container');
-      
-      // If not found, try looking for checkbox wrapper or checkbox item
-      if (!checkboxContainer) {
-        const checkboxWrapper = e.target.closest('.checkbox-wrapper');
-        if (checkboxWrapper) {
-          checkboxContainer = checkboxWrapper.closest('.checkbox-container');
-        }
-      }
-      
-      if (!checkboxContainer) {
-        console.log('No checkbox-container found');
-        return;
-      }
-
-      const itemIndex = parseInt(checkboxContainer.dataset.index);
-      const hiddenCheckbox = checkboxContainer.querySelector('.checkbox-item');
-      const visualCheckbox = checkboxContainer.querySelector('.checkbox-visual');
-      const textElement = checkboxContainer.querySelector('.flex-1');
-
-      console.log('Checkbox elements found:', {
-        itemIndex,
-        hiddenCheckbox: !!hiddenCheckbox,
-        visualCheckbox: !!visualCheckbox,
-        textElement: !!textElement
-      });
-
-      if (hiddenCheckbox && visualCheckbox) {
-        const newChecked = !hiddenCheckbox.checked;
-        
-        // Update visual state immediately for better UX
-        if (newChecked) {
-          visualCheckbox.classList.remove('opacity-0');
-          visualCheckbox.classList.add('opacity-100');
-          if (textElement) {
-            textElement.classList.add('line-through', 'text-gray-500');
-          }
-        } else {
-          visualCheckbox.classList.remove('opacity-100');
-          visualCheckbox.classList.add('opacity-0');
-          if (textElement) {
-            textElement.classList.remove('line-through', 'text-gray-500');
-          }
-        }
-
-        console.log('Calling onCheckboxToggle:', {
-          blockId: block.id || block.block_id,
-          itemIndex,
-          newChecked
-        });
-
-        // Call the callback to update the block state
-        onCheckboxToggle(block.id || block.block_id, itemIndex, newChecked);
-      }
-    };
-
-    // Add click event listeners to all checkbox containers and their children
-    const checkboxContainers = containerRef.current.querySelectorAll('.checkbox-container');
-    const checkboxWrappers = containerRef.current.querySelectorAll('.checkbox-wrapper');
-    
-    console.log('Found checkbox containers:', checkboxContainers.length);
-    console.log('Found checkbox wrappers:', checkboxWrappers.length);
-    
-    // Add listeners to containers
-    checkboxContainers.forEach((container, index) => {
-      console.log(`Adding listener to container ${index}:`, container);
-      container.addEventListener('click', handleCheckboxClick);
-    });
-
-    // Add listeners to wrappers for more precise clicking
-    checkboxWrappers.forEach((wrapper, index) => {
-      console.log(`Adding listener to wrapper ${index}:`, wrapper);
-      wrapper.addEventListener('click', handleCheckboxClick);
-    });
-
-    // Cleanup
-    return () => {
-      checkboxContainers.forEach(container => {
-        container.removeEventListener('click', handleCheckboxClick);
-      });
-      checkboxWrappers.forEach(wrapper => {
-        wrapper.removeEventListener('click', handleCheckboxClick);
-      });
-    };
-  }, [block.html_css, onCheckboxToggle, block.id, block.block_id]);
-
-  console.log('InteractiveListRenderer rendering with HTML:', block.html_css?.substring(0, 200));
-
-  return (
-    <div 
-      ref={containerRef}
-      className="max-w-none"
-      dangerouslySetInnerHTML={{ __html: block.html_css }}
-    />
-  );
-};
+// Initialize styles and global functions
+injectStyles();
+initializeGlobalFunctions();
 
 function LessonBuilder() {
   const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
@@ -699,52 +68,6 @@ function LessonBuilder() {
   const [editingVideoBlock, setEditingVideoBlock] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showTextEditorDialog, setShowTextEditorDialog] = useState(false);
-  const [editorTitle, setEditorTitle] = useState('');
-  const [editorHtml, setEditorHtml] = useState('');
-  const [editorHeading, setEditorHeading] = useState('');
-  const [editorSubheading, setEditorSubheading] = useState('');
-  const [editorContent, setEditorContent] = useState('');
-  const [masterHeadingGradient, setMasterHeadingGradient] = useState('gradient1');
-  
-  // Gradient color options for master heading
-  const gradientOptions = [
-    {
-      id: 'gradient1',
-      name: 'Purple to Blue',
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      preview: 'from-indigo-500 to-purple-600'
-    },
-    {
-      id: 'gradient2', 
-      name: 'Blue to Pink',
-      gradient: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-      preview: 'from-blue-500 via-purple-500 to-pink-500'
-    },
-    {
-      id: 'gradient3',
-      name: 'Green to Blue',
-      gradient: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
-      preview: 'from-emerald-500 to-blue-500'
-    },
-    {
-      id: 'gradient4',
-      name: 'Orange to Red',
-      gradient: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-      preview: 'from-amber-500 to-red-500'
-    },
-    {
-      id: 'gradient5',
-      name: 'Pink to Purple',
-      gradient: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
-      preview: 'from-pink-500 to-purple-500'
-    },
-    {
-      id: 'gradient6',
-      name: 'Teal to Cyan',
-      gradient: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
-      preview: 'from-teal-500 to-cyan-500'
-    }
-  ];
   const [currentTextBlockId, setCurrentTextBlockId] = useState(null);
   const [currentTextType, setCurrentTextType] = useState(null);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -848,85 +171,6 @@ function LessonBuilder() {
     }
   ];
 
-
-  const textTypes = [
-    {
-      id: 'heading',
-      icon: <Heading1 className="h-5 w-5" />,
-      preview: <h1 className="text-2xl font-bold mb-2">Heading</h1>,
-      defaultContent: '<h1 class="text-2xl font-bold text-gray-800">Heading</h1>',
-      style: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        color: '#1F2937'
-      }
-    },
-    {
-      id: 'master_heading',
-      icon: <Heading1 className="h-5 w-5" />,
-      preview: (
-        <div className="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Master Heading</h1>
-        </div>
-      ),
-      defaultContent:
-        '<div class="rounded-xl p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white"><h1 class="text-4xl font-extrabold tracking-tight">Master Heading</h1></div>',
-      style: {
-        fontSize: '32px',
-        fontWeight: '800',
-        color: '#FFFFFF',
-        background: 'linear-gradient(90deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
-        padding: '16px',
-        borderRadius: '12px'
-      }
-    },
-    {
-      id: 'subheading',
-      icon: <Heading2 className="h-5 w-5" />,
-      preview: <h2 className="text-xl font-semibold mb-2">Subheading</h2>,
-      defaultContent: '<h2 class="text-xl font-semibold text-gray-800">Subheading</h2>',
-      style: {
-        fontSize: '20px',
-        fontWeight: '600',
-        color: '#374151'
-      }
-    },
-    {
-      id: 'paragraph',
-      icon: <Text className="h-5 w-5" />,
-      preview: <p className="text-gray-700">This is a paragraph of text.</p>,
-      defaultContent: '<p class="text-base text-gray-700">Start typing your text here...</p>',
-      style: {
-        fontSize: '16px',
-        lineHeight: '1.6',
-        color: '#4B5563'
-      }
-    },
-    {
-      id: 'heading_paragraph',
-      icon: <Type className="h-5 w-5" />,
-      preview: (
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Heading</h1>
-          <p className="text-gray-700">This is a paragraph below the heading.</p>
-          </div>
-      ),
-      defaultContent: '<h1>Heading</h1><p>This is a paragraph below the heading.</p>'
-    },
-    {
-      id: 'subheading_paragraph',
-      icon: <Type className="h-5 w-5" />,
-      preview: (
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Subheading</h2>
-          <p className="text-gray-700">This is a paragraph below the subheading.</p>
-        </div>
-      ),
-      defaultContent: '<h2>Subheading</h2><p>This is a paragraph below the subheading.</p>'
-    }
-   
-  ];
-
   const statementComponentRef = React.useRef();
   const listComponentRef = React.useRef();
   const quoteComponentRef = React.useRef();
@@ -951,6 +195,7 @@ function LessonBuilder() {
 
   // Track previous contentBlocks to detect actual changes
   const prevContentBlocksRef = React.useRef([]);
+  const prevLessonContentRef = React.useRef(null);
   const isInitialLoadRef = React.useRef(true);
 
 
@@ -1058,103 +303,6 @@ function LessonBuilder() {
         return newBlocks;
       });
     }
-  };
-
-  const handleTextTypeSelect = (textType) => {
-    // Check if the block is already being added
-    if (contentBlocks.some(block => block.id === `block_${Date.now()}`)) {
-      return;
-    }
-
-    // For combined templates, split heading/subheading from paragraph so preview styles apply
-    let heading = null;
-    let subheading = null;
-    let contentHtml = textType.defaultContent || '';
-
-    if (textType.id === 'heading_paragraph' || textType.id === 'subheading_paragraph') {
-      try {
-        const temp = document.createElement('div');
-        temp.innerHTML = contentHtml;
-        const h1 = temp.querySelector('h1');
-        const h2 = temp.querySelector('h2');
-        const p = temp.querySelector('p');
-        if (textType.id === 'heading_paragraph') {
-          heading = h1 ? h1.innerHTML : '';
-        } else if (textType.id === 'subheading_paragraph') {
-          subheading = h2 ? h2.innerHTML : '';
-        }
-        contentHtml = p ? p.innerHTML : '';
-      } catch (e) {
-        // ignore parsing errors and keep contentHtml as-is
-      }
-    }
-
-    // Generate proper HTML content with exact same container structure as existing blocks
-    let innerContent = '';
-    if (textType.id === 'heading_paragraph') {
-      innerContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin-bottom: 1rem;">${heading || 'Heading'}</h1><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the heading.'}</p>`;
-    } else if (textType.id === 'subheading_paragraph') {
-      innerContent = `<h2 style="font-size: 20px; font-weight: 600; color: #374151; margin-bottom: 0.75rem;">${subheading || 'Subheading'}</h2><p style="font-size: 16px; line-height: 1.6; color: #4B5563; margin: 0;">${contentHtml || 'This is a paragraph below the subheading.'}</p>`;
-    } else if (textType.id === 'master_heading') {
-      innerContent = `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${'Master Heading'}</h1>`;
-    } else {
-      innerContent = textType.defaultContent || contentHtml;
-    }
-
-    // Generate HTML content with proper card styling to match existing blocks
-    const htmlContent = textType.id === 'master_heading' ? innerContent : `
-      <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-        <div class="pl-4">
-          ${innerContent}
-        </div>
-      </div>
-    `;
-
-    const newBlock = {
-      id: `block_${Date.now()}`,
-      block_id: `block_${Date.now()}`,
-      type: 'text',
-      title: textType.title || 'Text Block',
-      textType: textType.id,
-      content: contentHtml,
-      html_css: htmlContent,
-      ...(heading !== null && { heading }),
-      ...(subheading !== null && { subheading }),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-    };
-
-    // Check if we're inserting at a specific position
-    if (insertionPosition !== null) {
-      // Insert at specific position in contentBlocks (always update this for immediate UI)
-      setContentBlocks(prevBlocks => {
-        const newBlocks = [...prevBlocks];
-        newBlocks.splice(insertionPosition, 0, newBlock);
-        return newBlocks;
-      });
-      
-      // Also update lessonContent if it exists
-      if (lessonContent?.data?.content) {
-        setLessonContent(prevLessonContent => {
-          const newContent = [...prevLessonContent.data.content];
-          newContent.splice(insertionPosition, 0, newBlock);
-          return {
-            ...prevLessonContent,
-            data: {
-              ...prevLessonContent.data,
-              content: newContent
-            }
-          };
-        });
-      }
-      setInsertionPosition(null);
-    } else {
-      // Always add to local edit list so it appears immediately in edit mode
-      setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
-    }
-   
-    // Close the sidebar
-    setShowTextTypeSidebar(false);
-    setSidebarCollapsed(true);
   };
 
   const handleStatementSelect = (statementBlock) => {
@@ -1815,7 +963,7 @@ function LessonBuilder() {
         newHtmlContent = `
           <div class="relative bg-white py-16 px-8 max-w-5xl mx-auto">
             <div class="text-center">
-              <blockquote class="text-xl md:text-2xl text-gray-800 mb-12 leading-relaxed font-light tracking-wide">
+              <blockquote class="text-3xl md:text-4xl text-gray-800 mb-12 leading-relaxed font-thin tracking-wide">
                 ${updatedQuoteContent.quote}
               </blockquote>
               <cite class="text-lg font-medium text-orange-500 not-italic tracking-wider">${updatedQuoteContent.author}</cite>
@@ -1848,7 +996,7 @@ function LessonBuilder() {
                 <svg class="w-12 h-12 text-slate-300 mb-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
                 </svg>
-                <blockquote class="text-lg md:text-xl text-slate-700 leading-relaxed font-light mb-8">
+                <blockquote class="text-2xl md:text-3xl text-slate-700 leading-relaxed font-light mb-8">
                   ${updatedQuoteContent.quote}
                 </blockquote>
               </div>
@@ -1862,22 +1010,22 @@ function LessonBuilder() {
         break;
       case 'quote_on_image':
         newHtmlContent = `
-          <div class="relative rounded-2xl overflow-hidden shadow-2xl max-w-3xl mx-auto h-[300px]" style="background-image: url('${updatedQuoteContent.backgroundImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}'); background-size: cover; background-position: center;">
+          <div class="relative rounded-3xl overflow-hidden shadow-2xl max-w-6xl mx-auto min-h-[600px]" style="background-image: url('${updatedQuoteContent.backgroundImage || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}'); background-size: cover; background-position: center;">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20"></div>
-            <div class="relative z-10 flex items-center justify-center h-full p-4 md:p-6">
-              <div class="text-center max-w-xl w-full">
-                <div class="mb-3">
-                  <svg class="w-6 h-6 text-white/30 mx-auto mb-3" fill="currentColor" viewBox="0 0 24 24">
+            <div class="relative z-10 flex items-center justify-center h-full p-16">
+              <div class="text-center max-w-4xl">
+                <div class="mb-8">
+                  <svg class="w-16 h-16 text-white/30 mx-auto mb-8" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h4v10h-10z"/>
                   </svg>
-                  <blockquote class="text-base md:text-lg lg:text-xl text-white leading-tight font-extralight mb-4 tracking-wide">
+                  <blockquote class="text-4xl md:text-5xl lg:text-6xl text-white leading-tight font-extralight mb-12 tracking-wide">
                     ${updatedQuoteContent.quote}
                   </blockquote>
                 </div>
                 <div class="flex items-center justify-center">
-                  <div class="w-8 h-px bg-white/60 mr-4"></div>
-                  <cite class="text-lg font-light text-white/95 not-italic uppercase tracking-[0.2em]">${updatedQuoteContent.author}</cite>
-                  <div class="w-8 h-px bg-white/60 ml-4"></div>
+                  <div class="w-12 h-px bg-white/60 mr-6"></div>
+                  <cite class="text-xl font-light text-white/95 not-italic uppercase tracking-[0.2em]">${updatedQuoteContent.author}</cite>
+                  <div class="w-12 h-px bg-white/60 ml-6"></div>
                 </div>
               </div>
             </div>
@@ -2704,49 +1852,11 @@ function LessonBuilder() {
     }
    
     if (block.type === 'text') {
+      // Handle text block editing - delegate to TextBlockComponent
       setCurrentTextBlockId(blockId);
-      setCurrentTextType(block.textType);
+      setCurrentTextType(block.textType || 'paragraph');
       setShowTextEditorDialog(true);
-
-      // Reset editors
-      setEditorHtml('');
-      setEditorHeading('');
-      setEditorSubheading('');
-      setEditorContent('');
-     
-      // Set content based on block type
-      if (block.textType === 'heading_paragraph') {
-        // Parse existing content to extract heading and paragraph
-        if (block.heading !== undefined && block.content !== undefined) {
-          setEditorHeading(block.heading || '');
-          setEditorContent(block.content || '');
-        } else {
-          // Fallback: try to parse from HTML content
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = block.html_css || block.content || '';
-          const h1 = tempDiv.querySelector('h1');
-          const p = tempDiv.querySelector('p');
-          setEditorHeading(h1 ? h1.innerHTML : '');
-          setEditorContent(p ? p.innerHTML : '');
-        }
-      } else if (block.textType === 'subheading_paragraph') {
-        // Parse existing content to extract subheading and paragraph
-        if (block.subheading !== undefined && block.content !== undefined) {
-          setEditorSubheading(block.subheading || '');
-          setEditorContent(block.content || '');
-        } else {
-          // Fallback: try to parse from HTML content
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = block.html_css || block.content || '';
-          const h2 = tempDiv.querySelector('h2');
-          const p = tempDiv.querySelector('p');
-          setEditorSubheading(h2 ? h2.innerHTML : '');
-          setEditorContent(p ? p.innerHTML : '');
-        }
-      } else {
-        setEditorContent(block.content || '');
-        setEditorHtml(block.content || '');
-      }
+      return;
     } else if (block.type === 'table') {
       // Handle table block editing - open edit dialog directly
       console.log('Table block detected for editing:', block);
@@ -4115,35 +3225,38 @@ function LessonBuilder() {
     }
   };
 
-  // Simple debounced auto-save function
-  const debouncedAutoSave = React.useMemo(() => {
-    let timeoutId = null;
+  // Debounced auto-save function with useRef to maintain timeout across renders
+  const autoSaveTimeoutRef = React.useRef(null);
+  const handleUpdateRef = React.useRef(handleUpdate);
+  
+  // Keep handleUpdate reference up to date
+  React.useEffect(() => {
+    handleUpdateRef.current = handleUpdate;
+  }, [handleUpdate]);
+  
+  const debouncedAutoSave = React.useCallback((content) => {
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
     
-    return (content) => {
-      // Clear existing timeout
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+    // Set new timeout
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      if (!lessonId || !content || content.length === 0) {
+        return;
       }
       
-      // Set new timeout
-      timeoutId = setTimeout(async () => {
-        if (!lessonId || !content || content.length === 0) {
-          return;
-        }
-        
-        try {
-          setAutoSaveStatus('saving');
-          await handleUpdate();
-          // handleUpdate() will set the status to 'saved' on success
-          // No need to set it here as it's already handled in handleUpdate()
-        } catch (error) {
-          console.error('Auto-save failed:', error);
-          // handleUpdate() will set the status to 'error' and show the specific error message
-          // No need to override it here
-        }
-      }, 1000); // 1 second debounce
-    };
-  }, [lessonId, handleUpdate]);
+      try {
+        console.log('💾 Auto-save executing for', content.length, 'blocks');
+        setAutoSaveStatus('saving');
+        await handleUpdateRef.current();
+        // handleUpdate() will set the status to 'saved' on success
+      } catch (error) {
+        console.error('❌ Auto-save failed:', error);
+        // handleUpdate() will set the status to 'error' and show the specific error message
+      }
+    }, 2000); // 2 second debounce for better stability
+  }, [lessonId]);
 
   // Auto-save when content blocks change
   React.useEffect(() => {
@@ -4154,18 +3267,49 @@ function LessonBuilder() {
     if (isInitialLoadRef.current) {
       isInitialLoadRef.current = false;
       prevContentBlocksRef.current = [...contentBlocks];
+      prevLessonContentRef.current = lessonContent ? JSON.parse(JSON.stringify(lessonContent)) : null;
       return;
     }
 
     // Check if contentBlocks actually changed
-    const hasChanged = JSON.stringify(prevContentBlocksRef.current) !== JSON.stringify(contentBlocks);
+    const contentBlocksChanged = JSON.stringify(prevContentBlocksRef.current) !== JSON.stringify(contentBlocks);
+    
+    // Check if lessonContent changed
+    const lessonContentChanged = JSON.stringify(prevLessonContentRef.current) !== JSON.stringify(lessonContent);
+    
+    // Trigger auto-save if either changed
+    const hasChanged = contentBlocksChanged || lessonContentChanged;
     
     if (hasChanged && contentBlocks.length > 0) {
+      // Detailed logging for debugging
+      const changedBlocks = contentBlocks.filter((block, index) => {
+        const prevBlock = prevContentBlocksRef.current[index];
+        if (!prevBlock) return true; // New block
+        return JSON.stringify(prevBlock) !== JSON.stringify(block);
+      });
+      
+      console.log('🔄 Auto-save triggered:', {
+        contentBlocksChanged,
+        lessonContentChanged,
+        totalBlocks: contentBlocks.length,
+        previousBlocks: prevContentBlocksRef.current.length,
+        changedBlocks: changedBlocks.map(b => ({
+          id: b.id || b.block_id,
+          type: b.type,
+          textType: b.textType,
+          hasContent: !!b.content,
+          hasHtmlCss: !!b.html_css
+        })),
+        blockTypes: contentBlocks.map(b => b.type),
+        source: lessonContent?.data?.content ? 'lessonContent' : 'contentBlocks'
+      });
+      
       setHasUnsavedChanges(true);
       debouncedAutoSave(contentBlocks);
       prevContentBlocksRef.current = [...contentBlocks];
+      prevLessonContentRef.current = lessonContent ? JSON.parse(JSON.stringify(lessonContent)) : null;
     }
-  }, [contentBlocks, loading, fetchingContent, debouncedAutoSave]);
+  }, [contentBlocks, lessonContent, loading, fetchingContent, debouncedAutoSave]);
 
   const handleImageTemplateSelect = (newBlock) => {
     // Check if we're inserting at a specific position
@@ -4292,739 +3436,6 @@ function LessonBuilder() {
     if (imageBlockComponentRef.current && imageBlockComponentRef.current.handleInlineImageFileUpload) {
       imageBlockComponentRef.current.handleInlineImageFileUpload(blockId, file);
     }
-  };
-
-  const handleTextEditorOpen = (block = null) => {
-    setShowTextEditorDialog(true);
-    if (block) {
-      setEditorTitle(block.title || '');
-      
-      // Properly detect and set the text type
-      let detectedTextType = block.textType || 'paragraph';
-      
-      // If textType is not set or unreliable, detect from HTML content
-      if (!block.textType || block.textType === 'heading') {
-        const htmlContent = block.html_css || block.content || '';
-        
-        // Check for master heading first (has gradient background)
-        if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
-          detectedTextType = 'master_heading';
-        } else if (htmlContent.includes('<h1') && htmlContent.includes('<p')) {
-          detectedTextType = 'heading_paragraph';
-        } else if (htmlContent.includes('<h2') && htmlContent.includes('<p')) {
-          detectedTextType = 'subheading_paragraph';
-        } else if (htmlContent.includes('<h1')) {
-          detectedTextType = 'heading';
-        } else if (htmlContent.includes('<h2')) {
-          detectedTextType = 'subheading';
-        }
-      }
-      
-      setCurrentTextType(detectedTextType);
-      setCurrentTextBlockId(block.id || block.block_id);
-      
-      // Reset all editors first
-      setEditorHtml('');
-      setEditorHeading('');
-      setEditorSubheading('');
-      setEditorContent('');
-      
-      // Set content based on the detected text type
-      if (detectedTextType === 'heading_paragraph') {
-        // For heading + paragraph, try to get from stored properties first
-        if (block.heading !== undefined && block.content !== undefined) {
-          setEditorHeading(block.heading || 'Heading');
-          // Extract paragraph content from the stored content or html_css
-          const htmlContent = block.html_css || block.content || '';
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          const proseDiv = tempDiv.querySelector('.prose');
-          if (proseDiv) {
-            setEditorContent(proseDiv.innerHTML || 'Enter your content here...');
-          } else {
-            setEditorContent(block.content || 'Enter your content here...');
-          }
-        } else {
-          // Fallback: parse from HTML
-          const htmlContent = block.html_css || block.content || '';
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          
-          const h1Element = tempDiv.querySelector('h1');
-          const proseDiv = tempDiv.querySelector('.prose');
-          
-          setEditorHeading(h1Element ? h1Element.innerHTML : 'Heading');
-          setEditorContent(proseDiv ? proseDiv.innerHTML : 'Enter your content here...');
-        }
-      } else if (detectedTextType === 'subheading_paragraph') {
-        // For subheading + paragraph, try to get from stored properties first
-        if (block.subheading !== undefined && block.content !== undefined) {
-          setEditorSubheading(block.subheading || 'Subheading');
-          // Extract paragraph content from the stored content or html_css
-          const htmlContent = block.html_css || block.content || '';
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          const proseDiv = tempDiv.querySelector('.prose');
-          if (proseDiv) {
-            setEditorContent(proseDiv.innerHTML || 'Enter your content here...');
-          } else {
-            setEditorContent(block.content || 'Enter your content here...');
-          }
-        } else {
-          // Fallback: parse from HTML
-          const htmlContent = block.html_css || block.content || '';
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = htmlContent;
-          
-          const h2Element = tempDiv.querySelector('h2');
-          const proseDiv = tempDiv.querySelector('.prose');
-          
-          setEditorSubheading(h2Element ? h2Element.innerHTML : 'Subheading');
-          setEditorContent(proseDiv ? proseDiv.innerHTML : 'Enter your content here...');
-        }
-      } else {
-        // For single content blocks (heading, subheading, paragraph)
-        const htmlContent = block.html_css || block.content || '';
-        
-        // Special handling for master heading to preserve text content only
-        if (detectedTextType === 'master_heading') {
-          if (htmlContent.includes('<h1')) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlContent;
-            const h1Element = tempDiv.querySelector('h1');
-            if (h1Element) {
-              // Extract only the text content, not the styling
-              setEditorHtml(h1Element.textContent || h1Element.innerText || 'Master Heading');
-            } else {
-              setEditorHtml('Master Heading');
-            }
-            
-            // Detect gradient from existing content
-            const gradientDiv = tempDiv.querySelector('div[style*="linear-gradient"]');
-            if (gradientDiv) {
-              const style = gradientDiv.getAttribute('style') || '';
-              // Try to match with our gradient options
-              const matchedGradient = gradientOptions.find(option => 
-                style.includes(option.gradient.replace('linear-gradient(', '').replace(')', ''))
-              );
-              if (matchedGradient) {
-                setMasterHeadingGradient(matchedGradient.id);
-              } else {
-                setMasterHeadingGradient('gradient1'); // Default fallback
-              }
-            } else {
-              setMasterHeadingGradient('gradient1'); // Default
-            }
-          } else {
-            setEditorHtml(htmlContent || 'Master Heading');
-            setMasterHeadingGradient('gradient1'); // Default
-          }
-        } else {
-          // Extract the inner content while preserving rich text formatting for other types
-          if (htmlContent.includes('<')) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlContent;
-            
-            // Find the main content element
-            const contentElement = tempDiv.querySelector('h1, h2, h3, h4, h5, h6, p, div');
-            if (contentElement) {
-              setEditorHtml(contentElement.innerHTML);
-            } else {
-              setEditorHtml(htmlContent);
-            }
-          } else {
-            setEditorHtml(htmlContent);
-          }
-        }
-      }
-    } else {
-      setEditorTitle('');
-      setEditorHtml('');
-      setEditorHeading('');
-      setEditorSubheading('');
-      setEditorContent('');
-      setCurrentTextBlockId(null);
-      setCurrentTextType(null);
-    }
-  };
-
-  const handleTextEditorSave = () => {
-    try {
-      // First try to find block in contentBlocks (for new lessons)
-      let blockToUpdate = contentBlocks.find(b => b.id === currentTextBlockId);
-     
-      // If not found, try to find in lessonContent (for fetched lessons)
-      if (!blockToUpdate && lessonContent?.data?.content) {
-        blockToUpdate = lessonContent.data.content.find(b => b.block_id === currentTextBlockId);
-      }
-
-      if (blockToUpdate) {
-        let updatedContent = '';
-       
-        // Use currentTextType (detected type) or fallback to blockToUpdate.textType
-        let effectiveTextType = currentTextType || blockToUpdate.textType;
-        
-        // Double-check for master heading if textType seems wrong
-        if (effectiveTextType === 'heading' && blockToUpdate.html_css) {
-          const htmlContent = blockToUpdate.html_css || '';
-          if (htmlContent.includes('linear-gradient') && htmlContent.includes('<h1')) {
-            effectiveTextType = 'master_heading';
-          }
-        }
-       
-        // Always use consistent HTML generation for all text types to avoid double-update issues
-        const textType = textTypes.find(t => t.id === effectiveTextType);
-        
-        if (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'subheading_paragraph') {
-          // For compound templates, combine heading/subheading with paragraph in styled container
-          const headingTag = effectiveTextType === 'heading_paragraph' ? 'h1' : 'h2';
-          const headingFontSize = effectiveTextType === 'heading_paragraph' ? '24px' : '20px';
-          const headingFontWeight = effectiveTextType === 'heading_paragraph' ? 'bold' : '600';
-          
-          // Use the correct content variables for each template type
-          let headingContent = effectiveTextType === 'heading_paragraph' ? editorHeading : editorSubheading;
-          let paragraphContent = editorContent;
-          
-          console.log(`${effectiveTextType} - Original heading content:`, headingContent);
-          console.log(`${effectiveTextType} - Original paragraph content:`, paragraphContent);
-          
-          // Process heading content for alignment
-          if (headingContent) {
-            const hasHeadingAlignment = headingContent.includes('ql-align-center') || 
-                                      headingContent.includes('ql-align-right') || 
-                                      headingContent.includes('ql-align-justify') ||
-                                      headingContent.includes('text-align: center') ||
-                                      headingContent.includes('text-align: right') ||
-                                      headingContent.includes('text-align: justify');
-            
-            console.log(`${effectiveTextType} - Has heading alignment classes:`, hasHeadingAlignment);
-            
-            if (hasHeadingAlignment) {
-              headingContent = headingContent
-                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
-                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
-                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
-                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
-            }
-          }
-          
-          // Process paragraph content for alignment
-          if (paragraphContent) {
-            const hasParagraphAlignment = paragraphContent.includes('ql-align-center') || 
-                                        paragraphContent.includes('ql-align-right') || 
-                                        paragraphContent.includes('ql-align-justify') ||
-                                        paragraphContent.includes('text-align: center') ||
-                                        paragraphContent.includes('text-align: right') ||
-                                        paragraphContent.includes('text-align: justify');
-            
-            console.log(`${effectiveTextType} - Has paragraph alignment classes:`, hasParagraphAlignment);
-            
-            if (hasParagraphAlignment) {
-              paragraphContent = paragraphContent
-                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
-                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
-                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
-                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
-            }
-          }
-          
-          console.log(`${effectiveTextType} - Final heading content:`, headingContent);
-          console.log(`${effectiveTextType} - Final paragraph content:`, paragraphContent);
-          
-          updatedContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                <${headingTag} style="font-size: ${headingFontSize} !important; font-weight: ${headingFontWeight}; color: #1F2937; margin: 0 0 16px 0; line-height: 1.2;">${headingContent || (effectiveTextType === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
-                <div class="prose prose-lg max-w-none text-gray-700">
-                  ${paragraphContent || 'Start typing your content here...'}
-                </div>
-              </article>
-            </div>
-          `;
-        } else if (effectiveTextType === 'heading') {
-          // For heading blocks, preserve Quill editor styling including alignment
-          let styledContent = editorHtml || '<h1>Heading</h1>';
-          
-          console.log('Original editorHtml:', editorHtml);
-          
-          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
-          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
-            styledContent = `<h1 style="font-size: 24px; font-weight: bold; margin: 0;">${styledContent}</h1>`;
-          } else {
-            // Check if content has alignment classes from Quill
-            const hasAlignment = styledContent.includes('ql-align-center') || 
-                               styledContent.includes('ql-align-right') || 
-                               styledContent.includes('ql-align-justify') ||
-                               styledContent.includes('text-align: center') ||
-                               styledContent.includes('text-align: right') ||
-                               styledContent.includes('text-align: justify');
-            
-            console.log('Has alignment classes:', hasAlignment);
-            console.log('Styled content before processing:', styledContent);
-            
-            // If content has Quill alignment classes, convert them to inline styles
-            if (hasAlignment) {
-              styledContent = styledContent
-                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
-                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
-                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
-                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
-            }
-            
-            // Preserve existing styles but ensure proper default size if no size is specified
-            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              // Check if style attribute exists
-              if (attrs.includes('style=')) {
-                // Extract existing styles and add default size if not present
-                const styleMatch = attrs.match(/style="([^"]*)"/);
-                if (styleMatch) {
-                  let existingStyles = styleMatch[1];
-                  // Only add font-size if it's not already present
-                  if (!existingStyles.includes('font-size')) {
-                    existingStyles += '; font-size: 24px';
-                  }
-                  if (!existingStyles.includes('font-weight')) {
-                    existingStyles += '; font-weight: bold';
-                  }
-                  if (!existingStyles.includes('color')) {
-                    existingStyles += '; color: #1F2937';
-                  }
-                  if (!existingStyles.includes('margin')) {
-                    existingStyles += '; margin: 0';
-                  }
-                  if (!existingStyles.includes('line-height')) {
-                    existingStyles += '; line-height: 1.2';
-                  }
-                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
-                }
-              } else {
-                // No style attribute, add default styles
-                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
-              }
-              return match;
-            });
-          }
-          
-          console.log('Final styled content:', styledContent);
-          
-          updatedContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                  ${styledContent}
-              </article>
-            </div>
-          `;
-        } else if (effectiveTextType === 'subheading') {
-          // For subheading blocks, preserve Quill editor styling including alignment
-          let styledContent = editorHtml || '<h2>Subheading</h2>';
-          
-          console.log('Subheading - Original editorHtml:', editorHtml);
-          
-          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
-          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
-            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
-          } else {
-            // Check if content has alignment classes from Quill
-            const hasAlignment = styledContent.includes('ql-align-center') || 
-                               styledContent.includes('ql-align-right') || 
-                               styledContent.includes('ql-align-justify') ||
-                               styledContent.includes('text-align: center') ||
-                               styledContent.includes('text-align: right') ||
-                               styledContent.includes('text-align: justify');
-            
-            console.log('Subheading - Has alignment classes:', hasAlignment);
-            console.log('Subheading - Styled content before processing:', styledContent);
-            
-            // If content has Quill alignment classes, convert them to inline styles
-            if (hasAlignment) {
-              styledContent = styledContent
-                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
-                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
-                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
-                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
-            }
-            
-            // Preserve existing styles but ensure proper default size if no size is specified
-            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
-              // Check if style attribute exists
-              if (attrs.includes('style=')) {
-                // Extract existing styles and add default size if not present
-                const styleMatch = attrs.match(/style="([^"]*)"/);
-                if (styleMatch) {
-                  let existingStyles = styleMatch[1];
-                  // Only add font-size if it's not already present
-                  if (!existingStyles.includes('font-size')) {
-                    existingStyles += '; font-size: 20px';
-                  }
-                  if (!existingStyles.includes('font-weight')) {
-                    existingStyles += '; font-weight: 600';
-                  }
-                  if (!existingStyles.includes('color')) {
-                    existingStyles += '; color: #1F2937';
-                  }
-                  if (!existingStyles.includes('margin')) {
-                    existingStyles += '; margin: 0';
-                  }
-                  if (!existingStyles.includes('line-height')) {
-                    existingStyles += '; line-height: 1.2';
-                  }
-                  return `<h2${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
-                }
-              } else {
-                // No style attribute, add default styles
-                return `<h2${attrs} style="font-size: 20px; font-weight: 600; color: #1F2937; margin: 0; line-height: 1.2;">`;
-              }
-              return match;
-            });
-          }
-          
-          console.log('Subheading - Final styled content:', styledContent);
-          
-          updatedContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                  ${styledContent}
-              </article>
-            </div>`;
-        } else if (effectiveTextType === 'master_heading') {
-          // For master heading, preserve Quill editor styling including alignment and use selected gradient
-          let styledContent = editorHtml || 'Master Heading';
-          
-          // Get the selected gradient
-          const selectedGradient = gradientOptions.find(g => g.id === masterHeadingGradient) || gradientOptions[0];
-          
-          console.log('Master Heading - Original editorHtml:', editorHtml);
-          console.log('Master Heading - Selected gradient:', selectedGradient.name);
-          
-          // Ensure master heading has proper size if no size is specified
-          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
-            styledContent = `<h1 style="font-size: 40px; font-weight: 600; margin: 0;">${styledContent}</h1>`;
-          } else {
-            // Check if content has alignment classes from Quill
-            const hasAlignment = styledContent.includes('ql-align-center') || 
-                               styledContent.includes('ql-align-right') || 
-                               styledContent.includes('ql-align-justify') ||
-                               styledContent.includes('text-align: center') ||
-                               styledContent.includes('text-align: right') ||
-                               styledContent.includes('text-align: justify');
-            
-            console.log('Master Heading - Has alignment classes:', hasAlignment);
-            console.log('Master Heading - Styled content before processing:', styledContent);
-            
-            // If content has Quill alignment classes, convert them to inline styles
-            if (hasAlignment) {
-              styledContent = styledContent
-                .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
-                .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
-                .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
-                .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
-            }
-            
-            // Ensure h1 tags have proper default size for master heading if no size is specified
-            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              // Check if style attribute exists
-              if (attrs.includes('style=')) {
-                // Extract existing styles and add default size if not present
-                const styleMatch = attrs.match(/style="([^"]*)"/);
-                if (styleMatch) {
-                  let existingStyles = styleMatch[1];
-                  // Only add font-size if it's not already present
-                  if (!existingStyles.includes('font-size')) {
-                    existingStyles += '; font-size: 40px';
-                  }
-                  if (!existingStyles.includes('font-weight')) {
-                    existingStyles += '; font-weight: 600';
-                  }
-                  if (!existingStyles.includes('color')) {
-                    existingStyles += '; color: white';
-                  }
-                  if (!existingStyles.includes('margin')) {
-                    existingStyles += '; margin: 0';
-                  }
-                  if (!existingStyles.includes('line-height')) {
-                    existingStyles += '; line-height: 1.2';
-                  }
-                  return `<h1${attrs.replace(/style="[^"]*"/, `style="${existingStyles}"`)}>`;
-                }
-              } else {
-                // No style attribute, add default styles
-                return `<h1${attrs} style="font-size: 40px; font-weight: 600; color: white; margin: 0; line-height: 1.2;">`;
-              }
-              return match;
-            });
-          }
-          
-          console.log('Master Heading - Final styled content:', styledContent);
-          
-          updatedContent = `<div style="background: ${selectedGradient.gradient}; padding: 20px; border-radius: 8px; color: white;">${styledContent}</div>`;
-        } else {
-          // For paragraph and other single content blocks - preserve alignment
-          let styledContent = editorHtml || 'Enter your content here...';
-          
-          console.log('Paragraph - Original editorHtml:', editorHtml);
-          
-          // Check if content has alignment classes from Quill
-          const hasAlignment = styledContent.includes('ql-align-center') || 
-                             styledContent.includes('ql-align-right') || 
-                             styledContent.includes('ql-align-justify') ||
-                             styledContent.includes('text-align: center') ||
-                             styledContent.includes('text-align: right') ||
-                             styledContent.includes('text-align: justify');
-          
-          console.log('Paragraph - Has alignment classes:', hasAlignment);
-          console.log('Paragraph - Styled content before processing:', styledContent);
-          
-          // If content has Quill alignment classes, convert them to inline styles
-          if (hasAlignment) {
-            styledContent = styledContent
-              .replace(/class="[^"]*ql-align-center[^"]*"/g, 'style="text-align: center"')
-              .replace(/class="[^"]*ql-align-right[^"]*"/g, 'style="text-align: right"')
-              .replace(/class="[^"]*ql-align-justify[^"]*"/g, 'style="text-align: justify"')
-              .replace(/class="[^"]*ql-align-left[^"]*"/g, 'style="text-align: left"');
-          }
-          
-          console.log('Paragraph - Final styled content:', styledContent);
-          
-          updatedContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                <div class="prose prose-lg max-w-none text-gray-700">
-                  ${styledContent}
-                </div>
-              </article>
-            </div>
-          `;
-        }
-
-        // Ensure updatedContent is never empty
-        if (!updatedContent || updatedContent.trim() === '') {
-          updatedContent = `
-            <div class="content-block" style="font-size: 16px; line-height: 1.6; color: #4B5563;">
-              Enter your content here...
-            </div>
-          `;
-        }
-
-        // Update contentBlocks with error handling
-        setContentBlocks(blocks => {
-          try {
-            return blocks.map(block =>
-              block.id === currentTextBlockId
-                ? {
-                    ...block,
-                    content: updatedContent,
-                    html_css: updatedContent,
-                    heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
-                    subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
-                    updatedAt: new Date().toISOString(),
-                    textType: effectiveTextType || block.textType
-                  }
-                : block
-            );
-          } catch (error) {
-            console.error('Error updating contentBlocks:', error);
-            toast.error('Failed to update content blocks');
-            return blocks;
-          }
-        });
-
-        // Also update lessonContent if it exists (for fetched lessons)
-        if (lessonContent?.data?.content) {
-          setLessonContent(prevLessonContent => ({
-            ...prevLessonContent,
-            data: {
-              ...prevLessonContent.data,
-              content: prevLessonContent.data.content.map(block =>
-                block.block_id === currentTextBlockId ? {
-                  ...block,
-                  content: updatedContent,
-                  html_css: updatedContent,
-                  heading: effectiveTextType === 'heading_paragraph' ? (editorHeading || block.heading) : block.heading,
-                  subheading: effectiveTextType === 'subheading_paragraph' ? (editorSubheading || block.subheading) : block.subheading,
-                  updatedAt: new Date().toISOString(),
-                  textType: effectiveTextType || block.textType
-                } : block
-              )
-            }
-          }));
-        }
-      } else {
-        // For new blocks
-        const effectiveTextTypeForNew = currentTextType || 'paragraph';
-        let newBlockContent = '';
-        
-        // Generate content based on textType
-        if (effectiveTextTypeForNew === 'heading_paragraph' || effectiveTextTypeForNew === 'subheading_paragraph') {
-          const headingTag = effectiveTextTypeForNew === 'heading_paragraph' ? 'h1' : 'h2';
-          const headingClass = effectiveTextTypeForNew === 'heading_paragraph' ? 'text-2xl font-bold' : 'text-xl font-semibold';
-          
-          newBlockContent = `
-            <div class="content-block">
-              <${headingTag} class="${headingClass} text-gray-800 mb-4">${editorHeading || (effectiveTextTypeForNew === 'heading_paragraph' ? 'Heading' : 'Subheading')}</${headingTag}>
-              <div class="prose prose-lg max-w-none text-gray-700">
-                ${editorHtml || 'Start typing your content here...'}
-              </div>
-            </div>
-          `;
-        } else if (effectiveTextTypeForNew === 'heading') {
-          // Preserve Quill editor styling including alignment
-          let styledContent = editorHtml || 'Heading';
-          
-          // If the content doesn't have proper heading tags, wrap it in h1 with default styling
-          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
-            styledContent = `<h1 style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">${styledContent}</h1>`;
-          } else {
-            // Ensure h1 tags have proper default size if no size is specified, but preserve alignment
-            styledContent = styledContent.replace(/<h1([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h1${attrs} style="font-size: 24px; font-weight: bold; color: #1F2937; margin: 0; line-height: 1.2;">`;
-              }
-              return match;
-            });
-          }
-          
-          newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                ${styledContent}
-              </article>
-            </div>`;
-        } else if (effectiveTextTypeForNew === 'subheading') {
-          // Preserve Quill editor styling including alignment
-          let styledContent = editorHtml || 'Subheading';
-          
-          // If the content doesn't have proper heading tags, wrap it in h2 with default styling
-          if (!styledContent.includes('<h1') && !styledContent.includes('<h2') && !styledContent.includes('<h3')) {
-            styledContent = `<h2 style="font-size: 20px; font-weight: 600; margin: 0;">${styledContent}</h2>`;
-          } else {
-            // Ensure h2 tags have proper default size if no size is specified, but preserve alignment
-            styledContent = styledContent.replace(/<h2([^>]*?)>/g, (match, attrs) => {
-              if (!attrs.includes('style') || !attrs.includes('font-size')) {
-                return `<h2${attrs} style="font-size: 20px; font-weight: 600; margin: 0;">`;
-              }
-              return match;
-            });
-          }
-          
-          newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
-              <article class="max-w-none">
-                <div class="prose prose-lg max-w-none">
-                  ${styledContent}
-                </div>
-              </article>
-            </div>`;
-        }
-        
-        const newBlock = {
-          id: `text_${Date.now()}`,
-          block_id: `text_${Date.now()}`,
-          type: 'text',
-          title: editorTitle || 'Text Block',
-          content: newBlockContent,
-          html_css: newBlockContent,
-          textType: effectiveTextTypeForNew,
-          heading: effectiveTextTypeForNew === 'heading_paragraph' ? editorHeading : undefined,
-          subheading: effectiveTextTypeForNew === 'subheading_paragraph' ? editorSubheading : undefined,
-          style: textTypes.find(t => t.id === effectiveTextTypeForNew)?.style || {},
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
-        };
-        
-        // If we have existing lesson content, add to that structure
-        if (lessonContent?.data?.content) {
-          setLessonContent(prevLessonContent => ({
-            ...prevLessonContent,
-            data: {
-              ...prevLessonContent.data,
-              content: [...prevLessonContent.data.content, newBlock]
-            }
-          }));
-        } else {
-          setContentBlocks(prev => [...prev, newBlock]);
-        }
-      }
-     
-      // Close the dialog and reset form
-      handleTextEditorClose();
-      
-      // Show success message
-      toast.success('Text block updated successfully');
-      
-    } catch (error) {
-      console.error('Error in handleTextEditorSave:', error);
-      toast.error('Failed to save text block. Please try again.');
-    }
-  };
-
-  const handleTextEditorClose = () => {
-    setShowTextEditorDialog(false);
-    setEditorTitle('');
-    setEditorHtml('');
-    setCurrentTextBlockId(null);
-    setCurrentTextType(null);
-    setEditorHeading('');
-    setEditorSubheading('');
-    setEditorContent('');
-    setMasterHeadingGradient('gradient1');
-  };
-
-  const handleEditorSave = () => {
-    if (!currentBlock) return;
-
-    let updatedContent = '';
-    const effectiveTextType = currentBlock.textType;
-
-    // Generate updated content based on text type
-    if (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') {
-      updatedContent = `${editorHeading}|||${editorContent}`;
-    } else if (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') {
-      updatedContent = `${editorSubheading}|||${editorContent}`;
-    } else {
-      updatedContent = editorContent;
-    }
-
-    // Update contentBlocks for new lessons
-    setContentBlocks(blocks =>
-      blocks.map(block =>
-        block.id === currentBlock.id
-          ? {
-              ...block,
-              content: updatedContent,
-              heading: (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') ? editorHeading : block.heading,
-              subheading: (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') ? editorSubheading : block.subheading,
-              updatedAt: new Date().toISOString()
-            }
-          : block
-      )
-    );
-
-    // Also update lessonContent if it exists (for fetched lessons)
-    if (lessonContent?.data?.content) {
-      setLessonContent(prevLessonContent => ({
-        ...prevLessonContent,
-        data: {
-          ...prevLessonContent.data,
-          content: prevLessonContent.data.content.map(block =>
-            block.block_id === currentBlock.id ? {
-              ...block,
-              content: updatedContent,
-              heading: (effectiveTextType === 'heading_paragraph' || effectiveTextType === 'heading-paragraph') ? editorHeading : block.heading,
-              subheading: (effectiveTextType === 'subheading_paragraph' || effectiveTextType === 'subheading-paragraph') ? editorSubheading : block.subheading,
-              updatedAt: new Date().toISOString()
-            } : block
-          )
-        }
-      }));
-    }
-
-    // Close the modal and reset
-    setEditModalOpen(false);
-    setCurrentBlock(null);
-    setEditorHeading('');
-    setEditorSubheading('');
-    setEditorContent('');
   };
 
   const handleLinkUpdate = (linkBlock) => {
@@ -6630,290 +5041,6 @@ function LessonBuilder() {
       />
        
 
-      {/* Text Editor Dialog */}
-      <Dialog open={showTextEditorDialog} onOpenChange={handleTextEditorClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>
-              {currentTextBlockId ? 'Edit' : 'Add'} Text Block
-              {(() => {
-                const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
-                const textType = currentTextType || currentBlock?.textType;
-                if (textType) {
-                  const textTypeObj = textTypes.find(t => t.id === textType);
-                  return textTypeObj ? ` (${textTypeObj.title})` : '';
-                }
-                return '';
-              })()}
-            </DialogTitle>
-          </DialogHeader>
-         
-          <div className="flex-1 overflow-y-auto px-1" style={{ minHeight: 0 }}>
-            <div className="pr-4">
-              {(() => {
-                const currentBlock = contentBlocks.find(b => b.id === currentTextBlockId);
-                const textType = currentTextType || currentBlock?.textType;
-               
-                // Heading only
-                if (textType === 'heading') {
-                  return (
-                    <div className="flex-1 flex flex-col h-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Heading
-                      </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white" style={{ height: '350px' }}>
-                        <ReactQuill
-                          theme="snow"
-                          value={editorHtml}
-                          onChange={setEditorHtml}
-                          modules={getToolbarModules('heading')}
-                          placeholder="Enter your heading text..."
-                          style={{ height: '300px' }}
-                          className="quill-editor-overflow-visible"
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Subheading only
-                if (textType === 'subheading') {
-                  return (
-                    <div className="flex-1 flex flex-col h-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Subheading
-                      </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white" style={{ height: '350px' }}>
-                        <ReactQuill
-                          theme="snow"
-                          value={editorHtml}
-                          onChange={setEditorHtml}
-                          modules={getToolbarModules('heading')}
-                          placeholder="Enter your subheading text..."
-                          style={{ height: '300px' }}
-                          className="quill-editor-overflow-visible"
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Paragraph only
-                if (textType === 'paragraph') {
-                  return (
-                    <div className="flex-1 flex flex-col h-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Paragraph
-                      </label>
-                      <div className="flex-1 flex flex-col border rounded-md overflow-hidden bg-white" style={{ height: '350px' }}>
-                        <ReactQuill
-                          theme="snow"
-                          value={editorHtml}
-                          onChange={setEditorHtml}
-                          modules={getToolbarModules('paragraph')}
-                          placeholder="Enter your paragraph text..."
-                          style={{ height: '300px' }}
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Heading with Paragraph
-                if (textType === 'heading_paragraph') {
-                  return (
-                    <div className="flex-1 flex flex-col gap-4 h-full">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Heading
-                        </label>
-                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
-                          <ReactQuill
-                            theme="snow"
-                            value={editorHeading}
-                            onChange={setEditorHeading}
-                            modules={getToolbarModules('heading')}
-                            placeholder="Type and format your heading here"
-                            style={{ height: '80px' }}
-                            className="quill-editor-overflow-visible"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Paragraph
-                        </label>
-                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '230px' }}>
-                          <ReactQuill
-                            theme="snow"
-                            value={editorContent}
-                            onChange={setEditorContent}
-                            modules={getToolbarModules('paragraph')}
-                            placeholder="Type and format your paragraph text here"
-                            style={{ height: '180px' }}
-                            className="quill-editor-overflow-visible"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Subheading with Paragraph
-                if (textType === 'subheading_paragraph') {
-                  return (
-                    <div className="flex-1 flex flex-col gap-4 h-full">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Subheading
-                        </label>
-                        <div className="border rounded-md bg-white" style={{ height: '120px', overflow: 'visible' }}>
-                          <ReactQuill
-                            theme="snow"
-                            value={editorSubheading}
-                            onChange={setEditorSubheading}
-                            modules={getToolbarModules('heading')}
-                            placeholder="Type and format your subheading here"
-                            style={{ height: '80px' }}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Paragraph
-                        </label>
-                        <div className="border rounded-md bg-white" style={{ height: '230px', overflow: 'visible' }}>
-                          <ReactQuill
-                            theme="snow"
-                            value={editorContent}
-                            onChange={setEditorContent}
-                            modules={getToolbarModules('paragraph')}
-                            placeholder="Type and format your paragraph text here"
-                            style={{ height: '180px' }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Table
-                if (textType === 'table') {
-                  return (
-                    <div className="flex-1 flex flex-col h-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Table Content
-                      </label>
-                      <div className="flex-1 flex flex-col border rounded-md bg-white" style={{ overflow: 'visible' }}>
-                        <ReactQuill
-                          theme="snow"
-                          value={editorHtml}
-                          onChange={setEditorHtml}
-                          modules={getToolbarModules('full')}
-                          placeholder="Edit your table content..."
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Master Heading with gradient options
-                if (textType === 'master_heading') {
-                  return (
-                    <div className="flex-1 flex flex-col gap-4 h-full">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Master Heading
-                        </label>
-                        <div className="border rounded-md bg-white overflow-visible" style={{ height: '120px' }}>
-                          <ReactQuill
-                            theme="snow"
-                            value={editorHtml}
-                            onChange={setEditorHtml}
-                            modules={getToolbarModules('heading')}
-                            placeholder="Enter your master heading text..."
-                            style={{ height: '80px' }}
-                            className="quill-editor-overflow-visible"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="flex-shrink-0">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Gradient Color
-                        </label>
-                        <div className="grid grid-cols-3 gap-3">
-                          {gradientOptions.map((option) => (
-                            <div
-                              key={option.id}
-                              className={`relative cursor-pointer rounded-lg border-2 p-3 transition-all ${
-                                masterHeadingGradient === option.id
-                                  ? 'border-blue-500 ring-2 ring-blue-200'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => setMasterHeadingGradient(option.id)}
-                            >
-                              <div 
-                                className={`h-8 w-full rounded bg-gradient-to-r ${option.preview} mb-2`}
-                                style={{ background: option.gradient }}
-                              />
-                              <p className="text-xs text-center text-gray-600 font-medium">
-                                {option.name}
-                              </p>
-                              {masterHeadingGradient === option.id && (
-                                <div className="absolute top-1 right-1">
-                                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-               
-                // Default fallback for new blocks or unknown types
-                return (
-                  <div className="flex-1 flex flex-col h-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Heading
-                    </label>
-                    <div className="flex-1 flex flex-col border rounded-md overflow-visible bg-white">
-                      <ReactQuill
-                        theme="snow"
-                        value={editorHtml}
-                        onChange={setEditorHtml}
-                        modules={getToolbarModules('heading')}
-                        placeholder="Enter your heading text..."
-                        className="flex-1 quill-editor-overflow-visible"
-                      />
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-         
-          <DialogFooter className="border-t pt-4 flex justify-end gap-2 px-6 pb-4">
-            <Button variant="outline" onClick={handleTextEditorClose} className="min-w-[80px]">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleTextEditorSave}
-              className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
-            >
-              {currentTextBlockId ? 'Update' : 'Add'} Block
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Edit Block Modal */}
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -7066,65 +5193,6 @@ function LessonBuilder() {
         editingListBlock={editingListBlock}
       />
 
-      {/* Text Type Sidebar */}
-      {showTextTypeSidebar && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-25 transition-opacity duration-300"
-            onClick={() => setShowTextTypeSidebar(false)}
-          />
-         
-          {/* Sidebar */}
-          <div className="relative bg-white w-96 h-full shadow-xl overflow-y-auto animate-slide-in-left">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-                  <FileTextIcon className="h-6 w-6" />
-                  Text Types
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowTextTypeSidebar(false)}
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                >
-                  ×
-                </Button>
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Choose a text type to add to your lesson
-              </p>
-            </div>
-           
-            <div className="p-6 space-y-4">
-              {textTypes.map((textType) => (
-                <div
-                  key={textType.id}
-                  onClick={() => handleTextTypeSelect(textType)}
-                  className="p-5 border rounded-xl cursor-pointer hover:bg-gray-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="text-blue-600 mt-1 group-hover:text-blue-700">
-                      {textType.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-blue-900 text-base">{textType.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{textType.description}</p>
-                    </div>
-                  </div>
-                 
-                  {/* Mini Preview */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    {textType.preview}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Quote Component */}
       <QuoteComponent
         showQuoteTemplateSidebar={showQuoteTemplateSidebar}
@@ -7214,6 +5282,25 @@ function LessonBuilder() {
         onStatementSelect={handleStatementSelect}
         onStatementEdit={handleStatementEdit}
         sidebarCollapsed={sidebarCollapsed}
+        setSidebarCollapsed={setSidebarCollapsed}
+      />
+
+      {/* Text Block Component */}
+      <TextBlockComponent
+        showTextTypeSidebar={showTextTypeSidebar}
+        setShowTextTypeSidebar={setShowTextTypeSidebar}
+        showTextEditorDialog={showTextEditorDialog}
+        setShowTextEditorDialog={setShowTextEditorDialog}
+        currentTextBlockId={currentTextBlockId}
+        setCurrentTextBlockId={setCurrentTextBlockId}
+        currentTextType={currentTextType}
+        setCurrentTextType={setCurrentTextType}
+        contentBlocks={contentBlocks}
+        setContentBlocks={setContentBlocks}
+        lessonContent={lessonContent}
+        setLessonContent={setLessonContent}
+        insertionPosition={insertionPosition}
+        setInsertionPosition={setInsertionPosition}
         setSidebarCollapsed={setSidebarCollapsed}
       />
 
