@@ -104,6 +104,7 @@ import ReturnRefund from '@/pages/ReturnRefund';
 import MembershipTnC from '@/pages/MembershipTnC';
 import ContactSection from '@/components/ContactSection';
 import AddUsersPage from '@/pages/AddUsersPage';
+import AICourseCreator from '@/pages/AICourseCreator';
 import CreateScenario from '@/pages/CreateScenario';
 import PreviewScenario from '@/pages/PreviewScenario';
 import ScenarioTakePage from '@/pages/ScenarioTakePage';
