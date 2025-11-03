@@ -118,7 +118,7 @@ import CommunitiesPage from './pages/Platform/CommunitiesPage';
 import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
 import MembershipsPage from './pages/Platform/MembershipsPage';
 import CoachingPage from './pages/Platform/CoachingPage';
-
+import Emailautomation from './pages/Platform/Emailautomation';
 
 function App() {
   return (
@@ -163,6 +163,7 @@ function App() {
           <Route path="/platform/digital-downloads" element={<DigitalDownloadsPage/>}/>
           <Route path="/platform/memberships" element={<MembershipsPage/>}/>
           <Route path="/platform/coaching" element={<CoachingPage/>}/>
+          <Route path="/platform/email-automation" element={<Emailautomation/>}/>
           
           <Route
             path="/instructor"

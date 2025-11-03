@@ -79,7 +79,7 @@ const PlatformDropdown = () => {
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Landing Pages</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Use AI to quickly build a high-converting landing page</p>
                 </a>
-                <a href="/contact" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/platform/email-automation" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Email Automation</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Drive and recapture sales with automated emails</p>
                 </a>
