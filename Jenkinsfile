@@ -1,7 +1,7 @@
-pipeline 
+pipeline {
     agent any
 
-    stages 
+    stages {
 
         stage('Checkout Code') {
             steps {
@@ -29,8 +29,8 @@ pipeline
             }
         }
 
-        stage('Deploy to Nginx Folder') 
-            steps 
+        stage('Deploy to Nginx Folder') { 
+            steps {
                 sh '''
 
                     echo " Copying new build files..."
