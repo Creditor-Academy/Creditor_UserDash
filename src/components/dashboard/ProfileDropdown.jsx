@@ -159,13 +159,15 @@ export function ProfileDropdown() {
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="backdrop-blur-sm bg-background/95">
-                <DropdownMenuItem 
+                {/* Switch to Annual Membership - Commented out for future use */}
+                {/* <DropdownMenuItem 
                   className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/submenu rounded-md"
                   onClick={() => handleMembershipAction('annual')}
                 >
                   <Calendar className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-primary group-hover/submenu:scale-110" />
                   <span>Switch to Annual Membership</span>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
+                
                 <DropdownMenuItem 
                   className="cursor-pointer transition-colors duration-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 group/submenu rounded-md"
                   onClick={() => handleMembershipAction('cancel')}

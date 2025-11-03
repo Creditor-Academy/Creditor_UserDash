@@ -65,7 +65,7 @@ export function MembershipActionModal({ isOpen, onClose, actionType }) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${isCancellation ? 'sm:max-w-[600px]' : 'sm:max-w-[550px]'} ${isCancellation ? '' : 'max-h-[90vh] overflow-y-auto'}`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             {isAnnualSwitch ? (
@@ -87,7 +87,7 @@ export function MembershipActionModal({ isOpen, onClose, actionType }) {
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
+        <div className={`${isCancellation ? '' : 'space-y-6 py-4'}`}>
           {isAnnualSwitch ? (
             // Annual Switch Form
             <>
@@ -178,112 +178,48 @@ export function MembershipActionModal({ isOpen, onClose, actionType }) {
               </div>
             </>
           ) : (
-            // Cancellation Form
+            // Cancellation Form - WonderEngine Embedded Form
             <>
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" />
-                  <div className="space-y-1">
-                    <h4 className="font-semibold text-sm text-black dark:text-white">
-                      What you'll lose
-                    </h4>
-                    <ul className="text-xs text-black dark:text-white space-y-1">
-                      <li>• Access to all premium features</li>
-                      <li>• Priority support</li>
-                      <li>• Your saved preferences and settings</li>
-                      <li>• Exclusive member content</li>
-                    </ul>
-                  </div>
-                </div>
+              {/* WonderEngine Form Embedded */}
+              <div className="w-full -mt-4">
+                <iframe
+                  src="https://api.wonderengine.ai/widget/form/18fHPJOcQq2SuYq8fO2d"
+                  title="Membership Cancellation Form"
+                  className="w-full h-[450px] border-0 rounded-lg"
+                  style={{ minHeight: '450px' }}
+                />
               </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reason">Reason for Cancellation</Label>
-                  <select
-                    id="reason"
-                    className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    required
-                  >
-                    <option value="">Select a reason...</option>
-                    <option value="too-expensive">Too expensive</option>
-                    <option value="not-using">Not using enough</option>
-                    <option value="missing-features">Missing features</option>
-                    <option value="found-alternative">Found alternative</option>
-                    <option value="technical-issues">Technical issues</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="feedback">Additional Feedback</Label>
-                  <Textarea
-                    id="feedback"
-                    placeholder="Help us improve by sharing your thoughts..."
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    rows={4}
-                    className="resize-none"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm" className="text-red-600 dark:text-red-400">
-                    Type "CANCEL" to confirm
-                  </Label>
-                  <Input
-                    id="confirm"
-                    type="text"
-                    placeholder="Type CANCEL"
-                    value={confirmText}
-                    onChange={(e) => setConfirmText(e.target.value)}
-                    required
-                    className="border-red-200 focus:ring-red-500"
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Your membership will remain active until the end of your current billing period.
-                You can reactivate anytime before then to avoid losing access.
-              </p>
             </>
           )}
 
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className={
-                isCancellation
-                  ? "bg-red-600 hover:bg-red-700 text-white"
-                  : ""
-              }
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Processing...
-                </>
-              ) : isAnnualSwitch ? (
-                "Upgrade to Annual"
-              ) : (
-                "Confirm Cancellation"
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+          {/* Only show footer buttons for annual membership, not for cancellation */}
+          {isAnnualSwitch && (
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Processing...
+                  </>
+                ) : (
+                  "Upgrade to Annual"
+                )}
+              </Button>
+            </DialogFooter>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
