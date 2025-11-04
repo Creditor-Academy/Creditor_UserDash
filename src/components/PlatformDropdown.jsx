@@ -102,7 +102,7 @@ const PlatformDropdown = () => {
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Take Payments</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Increase average transaction size by up to 31% with Athena Payments</p>
                 </a>
-                <a href="/merchant-processing" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/platform/selling" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Selling Tools</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Boost sales, conversions, and order value with advanced sales tools</p>
                 </a>

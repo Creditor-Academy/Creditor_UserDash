@@ -121,7 +121,7 @@ import CoachingPage from './pages/Platform/CoachingPage';
 import Emailautomation from './pages/Platform/Emailautomation';
 import Analyticspage from './pages/Platform/Analyticspage';
 import Brandpage from './pages/Platform/Brandpage';
-
+import Sellingpage from './pages/Platform/Sellingpage';
 function App() {
   return (
     <ThemeProvider>
@@ -168,6 +168,7 @@ function App() {
           <Route path="/platform/email-automation" element={<Emailautomation/>}/>
           <Route path="/platform/analytics" element={<Analyticspage/>}/>
           <Route path="/platform/brand" element={<Brandpage/>}/>
+          <Route path="/platform/selling" element={<Sellingpage/>}/>
           <Route
             path="/instructor"
             element={
