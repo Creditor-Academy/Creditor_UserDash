@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchUserProfile } from '@/services/userService';
+import { fetchUserProfile, setUserRole, setUserRoles } from '@/services/userService';
 import Cookies from 'js-cookie';
 import { refreshAvatarFromBackend } from '@/lib/avatar-utils';
 
@@ -12,26 +12,42 @@ export const useUser = () => {
   }
   return context;
 };
-
 export const UserProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch user profile on mount
+  // Fetch user profile on mount only if authenticated
   useEffect(() => {
-    loadUserProfile();
+    // Check if user is authenticated before making API calls
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+    if (token) {
+      loadUserProfile();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   // Listen for authentication changes
   useEffect(() => {
     const handleAuthChange = () => {
-      // Always try to refresh profile when auth changes
-      loadUserProfile();
+      // Only fetch if authenticated and no existing profile
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+      if (token && !userProfile) {
+        loadUserProfile();
+      }
+    };
+
+    const handleUserLoggedIn = () => {
+      // Add small delay to ensure token is properly stored before making API calls
+      setTimeout(() => {
+        loadUserProfile();
+      }, 100);
     };
 
     // Listen for custom events
     window.addEventListener('userRoleChanged', handleAuthChange);
+    window.addEventListener('userLoggedIn', handleUserLoggedIn);
     window.addEventListener('userLoggedOut', () => {
       setUserProfile(null);
       setIsLoading(false);
@@ -39,21 +55,47 @@ export const UserProvider = ({ children }) => {
 
     return () => {
       window.removeEventListener('userRoleChanged', handleAuthChange);
+      window.removeEventListener('userLoggedIn', handleUserLoggedIn);
       window.removeEventListener('userLoggedOut', () => {
         setUserProfile(null);
         setIsLoading(false);
       });
     };
-  }, []);
+  }, [userProfile]);
 
   const loadUserProfile = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Try to fetch user profile - backend will determine if user is authenticated
+      // Check if user is authenticated before making API calls
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token') || Cookies.get('accesstoken');
+      if (!token) {
+        setUserProfile(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Try to fetch user profile
       const data = await fetchUserProfile();
       setUserProfile(data);
+      
+      // Set user role based on profile data
+      if (Array.isArray(data.user_roles) && data.user_roles.length > 0) {
+        const roles = data.user_roles.map(roleObj => roleObj.role);
+        const priorityRoles = ['admin', 'instructor', 'user'];
+        const highestRole = priorityRoles.find(role => roles.includes(role)) || 'user';
+        
+        console.log('UserContext: Setting user role to:', highestRole, 'from roles:', roles);
+        setUserRole(highestRole);
+        
+        // Dispatch event to notify other components about role change
+        window.dispatchEvent(new Event('userRoleChanged'));
+      } else {
+        // Default to user role if no roles found
+        console.log('UserContext: No user_roles found, defaulting to user');
+        setUserRole('user');
+      }
       
       // Also load the user's avatar
       try {

@@ -32,8 +32,10 @@ const data = await response.json();
 return data.data || data;
 }
 
-export async function fetchUserCourses() {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`, {
+export async function fetchUserCourses(withModules = false) {
+  const url = new URL(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`);
+  
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -41,9 +43,11 @@ export async function fetchUserCourses() {
     },
     credentials: 'include',
   });
+  
   if (!response.ok) {
     throw new Error('Failed to fetch user courses');
   }
+  
   const data = await response.json();
   return data.data;
 }
@@ -205,6 +209,7 @@ export async function unenrollUser(courseId, userId) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeader(),
     },
     credentials: 'include',
     body: JSON.stringify({ userId }),
@@ -217,6 +222,59 @@ export async function unenrollUser(courseId, userId) {
   
   const data = await response.json();
   return data;
+}
+
+export async function fetchCoursePrice(courseId) {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/price`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader(),
+    },
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    // If price endpoint doesn't exist, return null to use fallback pricing
+    return null;
+  }
+  
+  const data = await response.json();
+  return data.data || data;
+}
+
+// Fetch purchased/individually unlocked modules for a given course.
+// Optional userId can be supplied to fetch for a specific user (e.g., admin view).
+export async function fetchPurchasedModulesByCourse(courseId, userId) {
+  if (!courseId) throw new Error('fetchPurchasedModulesByCourse: courseId is required');
+
+  const base = import.meta.env.VITE_API_BASE_URL;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...getAuthHeader(),
+  };
+
+  // Use the exact backend route first and only
+  const url = `${base}/api/course/${encodeURIComponent(courseId)}/modules/getPurchasedModules`;
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      credentials: 'include',
+    });
+    // Treat 404 as "no purchased modules" rather than an error
+    if (response.status === 404) return [];
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json().catch(() => ({}));
+    const payload = data?.data ?? data ?? [];
+    return Array.isArray(payload) ? payload : (Array.isArray(payload?.items) ? payload.items : []);
+  } catch (err) {
+    // Fail silently with [] so UI can continue rendering other courses
+    console.warn('[fetchPurchasedModulesByCourse] failed', { courseId, message: err?.message });
+    return [];
+  }
 }
 
 // Example usage in a fetch call:
