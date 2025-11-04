@@ -2,7 +2,7 @@ import React from 'react'
 import Navbar from '../../components/navbar.jsx';
 import Footer from '../../components/Footer.jsx';
 import Hero from '../../components/contactus/hero'
-import ContactOptions from '../../components/contactus/ContactOptions'
+// import ContactOptions from '../../components/contactus/ContactOptions'
 // import Form from '../../components/contactus/form'
 // import CommunityLinks from '../../components/contactus/CommunityLinks'
 // import Readycontact from '../../components/contactus/readycontact'
@@ -13,7 +13,7 @@ const Contact = () => {
       <Navbar />
       <div>
           <Hero/>
-          <ContactOptions/>
+          {/* <ContactOptions/> */}
           {/* <Form/> */}
           {/* <CommunityLinks/> */}
           {/* <Readycontact/> */}

@@ -5,23 +5,23 @@ import { Plus, X } from 'lucide-react';
 const faqs = [
   {
     id: 1,
-    q: 'What can you host on Athena LMS?',
-    a: `You can host live coaching and webinars that build trust, grow your audience and drive revenue — all in one digital learning product. Set up and promote events that turn your expertise into real relationships and business growth.`,
+    q: 'What is email automation?',
+    a: `Email automation is a feature that helps you market and sell to your leads. With this feature, you can grow and manage your email list as well as launch automated sales flows and abandoned cart reminder emails designed to help drive and recapture sales.`,
   },
   {
     id: 2,
-    q: 'How can Coaching and Webinars be priced?',
-    a: `A coaching session or webinar can be offered for free or for purchase at checkout.`,
+    q: 'What is the difference between a sales sequence and abandoned cart emails?',
+    a: `An abandoned cart email automatically sends a follow-up email to learners who have abandoned their cart, helping you convert missed opportunities into sales. Meanwhile, a sales sequence is a series of emails designed to guide email recipients to purchase your product or service.`,
   },
   {
     id: 3,
-    q: 'What is the difference between Coaching and Webinar, and a live event in Athena LMSCommunities?',
-    a: `Coaching and Webinars are digital learning products that can be offered either for free or for purchase, and can be hosted outside of a Athena LMS Community.`,
+    q: 'How does the abandoned cart email work?',
+    a: `The abandoned cart email automatically sends a follow-up email to learners who abandon their cart, reminding them to complete their purchase and helping you convert missed opportunities into sales.`,
   },
   {
     id: 4,
-    q: 'Do I need an existing video conference platform to host an event?',
-    a: `No, Athena LMS integrates with Zoom, Google Meet, and Microsoft Teams, so you can host your events directly from your Athena LMS account.`,
+    q: 'How does the email sales sequence work?',
+    a: `The sales sequence is a series of emails designed to guide email recipients to purchase your product or service. It is a great way to nurture leads and convert them into customers.`,
   },
 ];
 
