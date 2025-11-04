@@ -570,9 +570,49 @@ const ModuleLessonsView = () => {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center min-h-[200px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading lessons...</span>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map(index => (
+            <Card key={index} className="overflow-hidden">
+              {/* Shimmer Thumbnail */}
+              <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
+
+              {/* Shimmer Header */}
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start gap-2">
+                  {/* Title shimmer */}
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                    <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                  </div>
+                  {/* Badge shimmer */}
+                  <div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse"></div>
+                </div>
+              </CardHeader>
+
+              {/* Shimmer Content */}
+              <CardContent className="pb-4">
+                <div className="space-y-2 mb-4">
+                  <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/6 animate-pulse"></div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24 animate-pulse"></div>
+                </div>
+              </CardContent>
+
+              {/* Shimmer Footer */}
+              <CardFooter className="pt-0">
+                <div className="h-9 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="flex items-center space-x-2 ml-4">
+                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       ) : error ? (
         <div className="text-center p-6 bg-red-50 rounded-lg">

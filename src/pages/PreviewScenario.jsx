@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Brain, 
+import {
+  Brain,
   ArrowLeft,
   Save,
   Eye,
@@ -13,34 +13,106 @@ import {
   XCircle,
   AlertTriangle,
   Circle,
-  PartyPopper
+  PartyPopper,
 } from 'lucide-react';
-import { toast } from "sonner";
+import { toast } from 'sonner';
 import { getSpecificScenario } from '@/services/scenarioService';
 
 const AVATAR_OPTIONS = [
-  { id: 'business-woman', name: 'Business Woman', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_women.png', description: 'Professional female executive' },
-  { id: 'business-man', name: 'Business Man', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_man.png', description: 'Professional male executive' },
-  { id: 'teacher-male', name: 'Teacher Male', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Teacher+male.png', description: 'Educational instructor (male)' },
-  { id: 'teacher', name: 'Teacher Female', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Teacher.png', description: 'Educational instructor (female)' },
-  { id: 'manager-male', name: 'Manager Male', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Manager+male.png', description: 'Team leader avatar (male)' },
-  { id: 'manager', name: 'Manager Female', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Manager.png', description: 'Team leader avatar (female)' },
+  {
+    id: 'business-woman',
+    name: 'Business Woman',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_women.png',
+    description: 'Professional female executive',
+  },
+  {
+    id: 'business-man',
+    name: 'Business Man',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/business_man.png',
+    description: 'Professional male executive',
+  },
+  {
+    id: 'teacher-male',
+    name: 'Teacher Male',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Teacher+male.png',
+    description: 'Educational instructor (male)',
+  },
+  {
+    id: 'teacher',
+    name: 'Teacher Female',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Teacher.png',
+    description: 'Educational instructor (female)',
+  },
+  {
+    id: 'manager-male',
+    name: 'Manager Male',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Manager+male.png',
+    description: 'Team leader avatar (male)',
+  },
+  {
+    id: 'manager',
+    name: 'Manager Female',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Manager.png',
+    description: 'Team leader avatar (female)',
+  },
 ];
 
 const BACKGROUND_OPTIONS = [
-  { id: 'workspace', name: 'Workspace', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Workspace.jpg', description: 'Modern workspace environment' },
-  { id: 'empty-room', name: 'Empty Room', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Empty+room.jpg', description: 'Minimal empty room setting' },
-  { id: 'library', name: 'Library', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Library.jpg', description: 'Quiet study environment' },
-  { id: 'meeting', name: 'Meeting Room', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Meeting.jpg', description: 'Professional meeting space' },
-  { id: 'office-blue', name: 'Office (Blue)', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Office_blue.jpg', description: 'Blue-themed office environment' },
-  { id: 'office', name: 'Office', image: 'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Office.jpg', description: 'Professional office environment' },
+  {
+    id: 'workspace',
+    name: 'Workspace',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Workspace.jpg',
+    description: 'Modern workspace environment',
+  },
+  {
+    id: 'empty-room',
+    name: 'Empty Room',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Empty+room.jpg',
+    description: 'Minimal empty room setting',
+  },
+  {
+    id: 'library',
+    name: 'Library',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Library.jpg',
+    description: 'Quiet study environment',
+  },
+  {
+    id: 'meeting',
+    name: 'Meeting Room',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Meeting.jpg',
+    description: 'Professional meeting space',
+  },
+  {
+    id: 'office-blue',
+    name: 'Office (Blue)',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Office_blue.jpg',
+    description: 'Blue-themed office environment',
+  },
+  {
+    id: 'office',
+    name: 'Office',
+    image:
+      'https://athena-user-assets.s3.eu-north-1.amazonaws.com/Scenario_assests/Office.jpg',
+    description: 'Professional office environment',
+  },
 ];
 
 const PreviewScenario = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { scenarioData, scenarioId } = location.state || {};
-  
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [form, setForm] = useState({
@@ -51,7 +123,7 @@ const PreviewScenario = () => {
     totalAttempts: 3,
   });
   const [decisions, setDecisions] = useState([]);
-  
+
   // Interactive preview state
   const [previewMode, setPreviewMode] = useState(false);
   const [currentDecision, setCurrentDecision] = useState(null);
@@ -63,22 +135,24 @@ const PreviewScenario = () => {
   const [showDecisionModal, setShowDecisionModal] = useState(false);
 
   // Transform API data to match component format
-  const transformApiData = (apiData) => {
-    const decisions = apiData.decisions?.map(decision => ({
-      id: decision.id,
-      level: decision.decisionOrder || 1,
-      title: decision.description || '',
-      description: decision.description || '',
-      choices: decision.choices?.map(choice => ({
-        id: choice.id,
-        text: choice.text || '',
-        branchType: choice.branch_type?.toLowerCase() || 'neutral',
-       
-        feedback: choice.feedback || '',
-        nextDecisionId: choice.next_decision_id,
-        points: choice.points || 0
-      })) || []
-    })) || [];
+  const transformApiData = apiData => {
+    const decisions =
+      apiData.decisions?.map(decision => ({
+        id: decision.id,
+        level: decision.decisionOrder || 1,
+        title: decision.description || '',
+        description: decision.description || '',
+        choices:
+          decision.choices?.map(choice => ({
+            id: choice.id,
+            text: choice.text || '',
+            branchType: choice.branch_type?.toLowerCase() || 'neutral',
+
+            feedback: choice.feedback || '',
+            nextDecisionId: choice.next_decision_id,
+            points: choice.points || 0,
+          })) || [],
+      })) || [];
 
     return {
       title: apiData.title || '',
@@ -86,7 +160,7 @@ const PreviewScenario = () => {
       avatar: apiData.avatar_url || '',
       background: apiData.background_url || '',
       totalAttempts: apiData.max_attempts || 3,
-      decisions: decisions
+      decisions: decisions,
     };
   };
 
@@ -100,8 +174,10 @@ const PreviewScenario = () => {
           title: scenarioData.title || '',
           description: scenarioData.description || '',
           avatar: scenarioData.avatar_url || scenarioData.avatar || '',
-          background: scenarioData.background_url || scenarioData.background || '',
-          totalAttempts: scenarioData.max_attempts || scenarioData.totalAttempts || 3,
+          background:
+            scenarioData.background_url || scenarioData.background || '',
+          totalAttempts:
+            scenarioData.max_attempts || scenarioData.totalAttempts || 3,
         });
         setDecisions(scenarioData.decisions || []);
       } else if (scenarioId) {
@@ -110,7 +186,7 @@ const PreviewScenario = () => {
         try {
           const apiData = await getSpecificScenario(scenarioId);
           const transformedData = transformApiData(apiData);
-          
+
           setForm({
             title: transformedData.title,
             description: transformedData.description,
@@ -134,36 +210,46 @@ const PreviewScenario = () => {
   // Setup Process carousel functions for preview mode
   useEffect(() => {
     // Process carousel navigation functions (based on quotes carousel logic)
-    window.processCarouselPrev = (button) => {
+    window.processCarouselPrev = button => {
       console.log('Process Carousel Prev clicked');
       const carousel = button.closest('.process-carousel');
       if (!carousel) {
         console.log('No process carousel found for prev button');
         return;
       }
-      
+
       const slides = carousel.querySelectorAll('.process-step');
       const dots = carousel.querySelectorAll('.process-carousel-dot');
       let currentIndex = parseInt(carousel.dataset.current || '0');
-      
-      console.log('Process carousel prev - current index:', currentIndex, 'total slides:', slides.length);
+
+      console.log(
+        'Process carousel prev - current index:',
+        currentIndex,
+        'total slides:',
+        slides.length
+      );
       const newIndex = currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
       showProcessCarouselSlide(carousel, slides, dots, newIndex);
     };
 
-    window.processCarouselNext = (button) => {
+    window.processCarouselNext = button => {
       console.log('Process Carousel Next clicked');
       const carousel = button.closest('.process-carousel');
       if (!carousel) {
         console.log('No process carousel found for next button');
         return;
       }
-      
+
       const slides = carousel.querySelectorAll('.process-step');
       const dots = carousel.querySelectorAll('.process-carousel-dot');
       let currentIndex = parseInt(carousel.dataset.current || '0');
-      
-      console.log('Process carousel next - current index:', currentIndex, 'total slides:', slides.length);
+
+      console.log(
+        'Process carousel next - current index:',
+        currentIndex,
+        'total slides:',
+        slides.length
+      );
       const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
       showProcessCarouselSlide(carousel, slides, dots, newIndex);
     };
@@ -175,11 +261,16 @@ const PreviewScenario = () => {
         console.log('No process carousel found for goTo button');
         return;
       }
-      
+
       const slides = carousel.querySelectorAll('.process-step');
       const dots = carousel.querySelectorAll('.process-carousel-dot');
-      
-      console.log('Process carousel goTo - target index:', index, 'total slides:', slides.length);
+
+      console.log(
+        'Process carousel goTo - target index:',
+        index,
+        'total slides:',
+        slides.length
+      );
       showProcessCarouselSlide(carousel, slides, dots, index);
     };
 
@@ -193,48 +284,68 @@ const PreviewScenario = () => {
           slide.classList.add('hidden');
         }
       });
-      
+
       dots.forEach((dot, i) => {
         // Normalize: remove all known active/inactive styles first
         dot.classList.remove(
           // inactive variants
-          'bg-gray-300','hover:bg-gray-400','bg-slate-300','hover:bg-slate-400','hover:scale-105',
+          'bg-gray-300',
+          'hover:bg-gray-400',
+          'bg-slate-300',
+          'hover:bg-slate-400',
+          'hover:scale-105',
           // active variants
-          'bg-white','scale-110','shadow-md',
-          'bg-gradient-to-r','from-blue-500','to-purple-500'
+          'bg-white',
+          'scale-110',
+          'shadow-md',
+          'bg-gradient-to-r',
+          'from-blue-500',
+          'to-purple-500'
         );
 
         if (i === index) {
           // Active state: use gradient styling like quotes carousel
-          dot.classList.add('bg-gradient-to-r','from-blue-500','to-purple-500','scale-110','shadow-md');
+          dot.classList.add(
+            'bg-gradient-to-r',
+            'from-blue-500',
+            'to-purple-500',
+            'scale-110',
+            'shadow-md'
+          );
         } else {
           // Inactive state: use slate gray like quotes carousel
-          dot.classList.add('bg-slate-300','hover:bg-slate-400','hover:scale-105');
+          dot.classList.add(
+            'bg-slate-300',
+            'hover:bg-slate-400',
+            'hover:scale-105'
+          );
         }
       });
-      
+
       carousel.dataset.current = index.toString();
     };
 
     // Add keyboard navigation support
-    window.addEventListener('keydown', (event) => {
+    window.addEventListener('keydown', event => {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         const focusedElement = document.activeElement;
         const processContainer = focusedElement?.closest('.process-carousel');
-        
+
         if (processContainer && processContainer.id) {
           event.preventDefault();
           if (event.key === 'ArrowLeft') {
-            window.processCarouselPrev && window.processCarouselPrev({ closest: () => processContainer });
+            window.processCarouselPrev &&
+              window.processCarouselPrev({ closest: () => processContainer });
           } else {
-            window.processCarouselNext && window.processCarouselNext({ closest: () => processContainer });
+            window.processCarouselNext &&
+              window.processCarouselNext({ closest: () => processContainer });
           }
         }
       }
     });
 
     // Add click navigation to process content area
-    window.addEventListener('click', (event) => {
+    window.addEventListener('click', event => {
       const processContainer = event.target?.closest('.process-carousel');
       if (processContainer && processContainer.id) {
         // Focus the container for keyboard navigation
@@ -253,12 +364,12 @@ const PreviewScenario = () => {
   const handleBack = () => {
     if (scenarioData) {
       // Coming from create scenario flow
-      navigate('/create-scenario', { 
-        state: { 
+      navigate('/create-scenario', {
+        state: {
           moduleId: scenarioData?.moduleId,
           editingScenario: scenarioData,
-          returnToStep: 2
-        } 
+          returnToStep: 2,
+        },
       });
     } else {
       // Coming from scenario list
@@ -288,7 +399,7 @@ const PreviewScenario = () => {
     setShowFeedback(false);
     setLastChoice(null);
     setShowDecisionModal(false);
-    
+
     // Find the first decision (level 1)
     const firstDecision = decisions.find(d => d.level === 1);
     if (firstDecision) {
@@ -308,15 +419,18 @@ const PreviewScenario = () => {
     setShowDecisionModal(false);
   };
 
-  const handleChoiceSelect = (choice) => {
+  const handleChoiceSelect = choice => {
     if (!currentDecision) return;
 
-    const newSelectedChoices = [...selectedChoices, {
-      decisionId: currentDecision.id,
-      decisionTitle: currentDecision.title,
-      choice: choice,
-      points: choice.points || 0
-    }];
+    const newSelectedChoices = [
+      ...selectedChoices,
+      {
+        decisionId: currentDecision.id,
+        decisionTitle: currentDecision.title,
+        choice: choice,
+        points: choice.points || 0,
+      },
+    ];
 
     setSelectedChoices(newSelectedChoices);
     setTotalPoints(prev => prev + (choice.points || 0));
@@ -327,10 +441,12 @@ const PreviewScenario = () => {
     // Auto-advance after showing feedback
     setTimeout(() => {
       setShowFeedback(false);
-      
+
       // Check if there's a next decision
       if (choice.nextDecisionId) {
-        const nextDecision = decisions.find(d => d.id === choice.nextDecisionId);
+        const nextDecision = decisions.find(
+          d => d.id === choice.nextDecisionId
+        );
         if (nextDecision) {
           setCurrentDecision(nextDecision);
           setShowDecisionModal(true);
@@ -349,9 +465,11 @@ const PreviewScenario = () => {
 
   const continueToNextDecision = () => {
     setShowFeedback(false);
-    
+
     if (lastChoice && lastChoice.nextDecisionId) {
-      const nextDecision = decisions.find(d => d.id === lastChoice.nextDecisionId);
+      const nextDecision = decisions.find(
+        d => d.id === lastChoice.nextDecisionId
+      );
       if (nextDecision) {
         setCurrentDecision(nextDecision);
         setShowDecisionModal(true);
@@ -365,16 +483,20 @@ const PreviewScenario = () => {
     }
   };
 
-  const getBranchTypeColor = (branchType) => {
+  const getBranchTypeColor = branchType => {
     switch (branchType?.toLowerCase()) {
-      case 'success': return 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100';
-      case 'failure': return 'border-red-500 bg-red-50 text-red-700 hover:bg-red-100';
-      case 'neutral': return 'border-yellow-500 bg-yellow-50 text-yellow-700 hover:bg-yellow-100';
-      default: return 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100';
+      case 'success':
+        return 'border-green-500 bg-green-50 text-green-700 hover:bg-green-100';
+      case 'failure':
+        return 'border-red-500 bg-red-50 text-red-700 hover:bg-red-100';
+      case 'neutral':
+        return 'border-yellow-500 bg-yellow-50 text-yellow-700 hover:bg-yellow-100';
+      default:
+        return 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100';
     }
   };
 
-  const getBranchTypeIcon = (branchType) => {
+  const getBranchTypeIcon = branchType => {
     switch (branchType?.toLowerCase()) {
       case 'success':
         return <CheckCircle2 className="w-5 h-5 text-green-600" />;
@@ -387,20 +509,19 @@ const PreviewScenario = () => {
     }
   };
 
-  const getAvatarImage = (value) => {
+  const getAvatarImage = value => {
     if (!value) return '';
     if (value.startsWith('http')) return value;
-    const preset = AVATAR_OPTIONS.find((opt) => opt.id === value);
+    const preset = AVATAR_OPTIONS.find(opt => opt.id === value);
     return preset?.image || '';
   };
 
-  const getBackgroundImage = (value) => {
+  const getBackgroundImage = value => {
     if (!value) return '';
     if (value.startsWith('http')) return value;
-    const preset = BACKGROUND_OPTIONS.find((opt) => opt.id === value);
+    const preset = BACKGROUND_OPTIONS.find(opt => opt.id === value);
     return preset?.image || '';
   };
-
 
   // Enhanced flowchart logic to handle branch tracking and duplicate prevention
   const analyzeBranchStructure = () => {
@@ -408,41 +529,48 @@ const PreviewScenario = () => {
     const decisionMap = new Map();
     const visitedDecisions = new Set();
     const decisionPaths = new Map();
-    
+
     decisions.forEach(decision => {
       decisionMap.set(decision.id, decision);
       decisionPaths.set(decision.id, new Set());
     });
-    
-    const analyzeDecision = (decisionId, currentPath = [], branchType = 'neutral') => {
-      if (visitedDecisions.has(decisionId) || currentPath.includes(decisionId)) {
+
+    const analyzeDecision = (
+      decisionId,
+      currentPath = [],
+      branchType = 'neutral'
+    ) => {
+      if (
+        visitedDecisions.has(decisionId) ||
+        currentPath.includes(decisionId)
+      ) {
         return;
       }
-      
+
       visitedDecisions.add(decisionId);
       const decision = decisionMap.get(decisionId);
       if (!decision) return;
-      
+
       const pathKey = `${currentPath.join('->')}->${decisionId}`;
       decisionPaths.get(decisionId).add(pathKey);
-      
+
       if (!levelConnections.has(decision.level)) {
         levelConnections.set(decision.level, {
           success: new Set(),
           neutral: new Set(),
           all: new Set(),
-          paths: new Map()
+          paths: new Map(),
         });
       }
-      
+
       const levelData = levelConnections.get(decision.level);
       levelData.all.add(decisionId);
-      
+
       if (!levelData.paths.has(decisionId)) {
         levelData.paths.set(decisionId, new Set());
       }
       levelData.paths.get(decisionId).add(branchType);
-      
+
       decision.choices.forEach(choice => {
         if (choice.nextDecisionId) {
           const nextDecision = decisionMap.get(choice.nextDecisionId);
@@ -452,18 +580,22 @@ const PreviewScenario = () => {
             } else if (choice.branchType === 'neutral') {
               levelData.neutral.add(nextDecision.id);
             }
-            
-            analyzeDecision(choice.nextDecisionId, [...currentPath, decisionId], choice.branchType);
+
+            analyzeDecision(
+              choice.nextDecisionId,
+              [...currentPath, decisionId],
+              choice.branchType
+            );
           }
         }
       });
     };
-    
+
     const mainDecisions = decisions.filter(d => d.level === 1);
     mainDecisions.forEach(decision => {
       analyzeDecision(decision.id, [], 'neutral');
     });
-    
+
     return { levelConnections, decisionPaths };
   };
 
@@ -471,7 +603,7 @@ const PreviewScenario = () => {
     const mainDecisions = decisions.filter(d => d.level === 1);
     const { levelConnections } = analyzeBranchStructure();
     const renderedLevels = new Set();
-    
+
     return (
       <div className="flowchart">
         {mainDecisions.map(decision => (
@@ -487,7 +619,9 @@ const PreviewScenario = () => {
   const renderLevelMap = () => {
     if (!decisions || decisions.length === 0) return null;
 
-    const levels = Array.from(new Set(decisions.map(d => d.level))).sort((a,b) => a-b);
+    const levels = Array.from(new Set(decisions.map(d => d.level))).sort(
+      (a, b) => a - b
+    );
     const decisionById = new Map(decisions.map(d => [d.id, d]));
 
     return (
@@ -495,60 +629,90 @@ const PreviewScenario = () => {
         {levels.map(level => (
           <div key={level} className="levelmap-col">
             <div className="levelmap-col-header">Level {level}</div>
-            {decisions.filter(d => d.level === level).map(decision => (
-              <div key={decision.id} className="levelmap-decision">
-                <div className="levelmap-decision-title">
-                  {decision.title}
-                </div>
-                <div className="levelmap-choices">
-                  {decision.choices.map(choice => (
-                    <div key={choice.id} className={`levelmap-choice ${choice.branchType?.toLowerCase() || 'neutral'}`}>
-                      <div className="levelmap-choice-main">
-                        <span className="levelmap-choice-icon">{getBranchTypeIcon(choice.branchType)}</span>
-                        <span className="levelmap-choice-text">{choice.text}</span>
-                        {choice.points ? (
-                          <span className="levelmap-choice-points">+{choice.points}</span>
-                        ) : null}
+            {decisions
+              .filter(d => d.level === level)
+              .map(decision => (
+                <div key={decision.id} className="levelmap-decision">
+                  <div className="levelmap-decision-title">
+                    {decision.title}
+                  </div>
+                  <div className="levelmap-choices">
+                    {decision.choices.map(choice => (
+                      <div
+                        key={choice.id}
+                        className={`levelmap-choice ${choice.branchType?.toLowerCase() || 'neutral'}`}
+                      >
+                        <div className="levelmap-choice-main">
+                          <span className="levelmap-choice-icon">
+                            {getBranchTypeIcon(choice.branchType)}
+                          </span>
+                          <span className="levelmap-choice-text">
+                            {choice.text}
+                          </span>
+                          {choice.points ? (
+                            <span className="levelmap-choice-points">
+                              +{choice.points}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="levelmap-next">
+                          {choice.nextDecisionId &&
+                          decisionById.get(choice.nextDecisionId) ? (
+                            <>
+                              <span className="levelmap-next-pill">
+                                L{decisionById.get(choice.nextDecisionId).level}
+                              </span>
+                              <span
+                                className="levelmap-right-arrow"
+                                aria-hidden
+                              >
+                                ➜
+                              </span>
+                            </>
+                          ) : (
+                            <span className="levelmap-end-pill">End</span>
+                          )}
+                        </div>
+                        {choice.nextDecisionId &&
+                          decisionById.get(choice.nextDecisionId) && (
+                            <div className="levelmap-connector" />
+                          )}
                       </div>
-                      <div className="levelmap-next">
-                        {choice.nextDecisionId && decisionById.get(choice.nextDecisionId) ? (
-                          <>
-                            <span className="levelmap-next-pill">L{decisionById.get(choice.nextDecisionId).level}</span>
-                            <span className="levelmap-right-arrow" aria-hidden>➜</span>
-                          </>
-                        ) : (
-                          <span className="levelmap-end-pill">End</span>
-                        )}
-                      </div>
-                      {choice.nextDecisionId && decisionById.get(choice.nextDecisionId) && (
-                        <div className="levelmap-connector" />
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         ))}
       </div>
     );
   };
 
-  const renderChoicesHorizontally = (choices, level, branchStructure, parentDecisionId = null, renderedLevels) => {
+  const renderChoicesHorizontally = (
+    choices,
+    level,
+    branchStructure,
+    parentDecisionId = null,
+    renderedLevels
+  ) => {
     return (
       <div className="flowchart-choices-horizontal" data-level={level}>
         {choices.map((choice, cIdx) => (
           <div key={choice.id} className="flowchart-choice-wrapper">
             <div className="flowchart-choice-node">
               <div className="flowchart-badges">
-                <span className={`pill pill-branch ${choice.branchType?.toLowerCase()}`}>{getBranchTypeIcon(choice.branchType)}</span>
+                <span
+                  className={`pill pill-branch ${choice.branchType?.toLowerCase()}`}
+                >
+                  {getBranchTypeIcon(choice.branchType)}
+                </span>
                 {typeof choice.points === 'number' && (
                   <span className="pill pill-points">+{choice.points}</span>
                 )}
               </div>
               <div className="flowchart-choice-text">{choice.text}</div>
             </div>
-            
+
             {choice.nextDecisionId ? (
               <div className="flowchart-choice-connector">
                 <div className="flowchart-choice-arrow">↓</div>
@@ -558,34 +722,49 @@ const PreviewScenario = () => {
                 <div className="flowchart-end-arrow">●</div>
               </div>
             )}
-            
+
             {choice.nextDecisionId ? (
               <div className="flowchart-next-decision">
-                {decisions.find(d => d.id === choice.nextDecisionId) && (
+                {decisions.find(d => d.id === choice.nextDecisionId) &&
                   (() => {
-                    const nextDecision = decisions.find(d => d.id === choice.nextDecisionId);
+                    const nextDecision = decisions.find(
+                      d => d.id === choice.nextDecisionId
+                    );
                     const shouldRenderDecision = shouldRenderDecisionNode(
-                      nextDecision, 
-                      choice.branchType, 
-                      branchStructure, 
+                      nextDecision,
+                      choice.branchType,
+                      branchStructure,
                       parentDecisionId,
                       renderedLevels
                     );
-                    
+
                     if (shouldRenderDecision.shouldRender) {
                       renderedLevels.add(nextDecision.level);
                       return (
-                        <div className="flowchart-node-container" data-level={nextDecision.level}>
+                        <div
+                          className="flowchart-node-container"
+                          data-level={nextDecision.level}
+                        >
                           <div className="flowchart-decision-node">
                             <div className="flowchart-decision-title">
-                              <div className="flowchart-level-badge">L{nextDecision.level}</div>
-                              <div className="flowchart-decision-text">{nextDecision.title}</div>
+                              <div className="flowchart-level-badge">
+                                L{nextDecision.level}
+                              </div>
+                              <div className="flowchart-decision-text">
+                                {nextDecision.title}
+                              </div>
                             </div>
                           </div>
-                          
+
                           <div className="flowchart-decision-connector"></div>
-                          
-                          {renderChoicesHorizontally(nextDecision.choices, nextDecision.level, branchStructure, nextDecision.id, renderedLevels)}
+
+                          {renderChoicesHorizontally(
+                            nextDecision.choices,
+                            nextDecision.level,
+                            branchStructure,
+                            nextDecision.id,
+                            renderedLevels
+                          )}
                         </div>
                       );
                     } else if (shouldRenderDecision.showArrow) {
@@ -593,19 +772,22 @@ const PreviewScenario = () => {
                         <div className="flowchart-reference-arrow">
                           <div className="flowchart-arrow-to-existing">
                             <div className="flowchart-arrow-line">↗</div>
-                            <div className="flowchart-arrow-label">→ L{nextDecision.level}: {nextDecision.title}</div>
+                            <div className="flowchart-arrow-label">
+                              → L{nextDecision.level}: {nextDecision.title}
+                            </div>
                           </div>
                         </div>
                       );
                     }
                     return null;
-                  })()
-                )}
+                  })()}
               </div>
             ) : (
               <div className="flowchart-end-node">
                 <div className="flowchart-end-text">End</div>
-                <div className={`flowchart-end-badge ${getBranchTypeColor(choice.branchType)}`}>
+                <div
+                  className={`flowchart-end-badge ${getBranchTypeColor(choice.branchType)}`}
+                >
                   {getBranchTypeIcon(choice.branchType)}
                 </div>
               </div>
@@ -616,16 +798,22 @@ const PreviewScenario = () => {
     );
   };
 
-  const shouldRenderDecisionNode = (decision, branchType, branchStructure, parentDecisionId, renderedLevels) => {
+  const shouldRenderDecisionNode = (
+    decision,
+    branchType,
+    branchStructure,
+    parentDecisionId,
+    renderedLevels
+  ) => {
     if (!decision || !branchStructure) {
       return { shouldRender: true, showArrow: false };
     }
-    
+
     const levelData = branchStructure.get(decision.level);
     if (!levelData) {
       return { shouldRender: true, showArrow: false };
     }
-    
+
     if (renderedLevels && renderedLevels.has(decision.level)) {
       return { shouldRender: false, showArrow: true };
     }
@@ -634,26 +822,26 @@ const PreviewScenario = () => {
     if (!decisionPaths) {
       return { shouldRender: true, showArrow: false };
     }
-    
+
     const hasSuccessPath = levelData.success.has(decision.id);
     const hasNeutralPath = levelData.neutral.has(decision.id);
-    
+
     if (branchType === 'neutral' && hasSuccessPath) {
       return { shouldRender: false, showArrow: true };
     }
-    
+
     if (branchType === 'neutral' && !hasSuccessPath && hasNeutralPath) {
       return { shouldRender: true, showArrow: false };
     }
-    
+
     if (branchType === 'success') {
       return { shouldRender: true, showArrow: false };
     }
-    
+
     if (branchType === 'failure') {
       return { shouldRender: true, showArrow: false };
     }
-    
+
     return { shouldRender: true, showArrow: false };
   };
 
@@ -663,7 +851,9 @@ const PreviewScenario = () => {
         <div className="flowchart-reference-arrow">
           <div className="flowchart-arrow-to-existing">
             <div className="flowchart-arrow-line">↗</div>
-            <div className="flowchart-arrow-label">→ L{decision.level}: {decision.title}</div>
+            <div className="flowchart-arrow-label">
+              → L{decision.level}: {decision.title}
+            </div>
           </div>
         </div>
       );
@@ -678,10 +868,16 @@ const PreviewScenario = () => {
             <div className="flowchart-decision-text">{decision.title}</div>
           </div>
         </div>
-        
+
         <div className="flowchart-decision-connector"></div>
-        
-        {renderChoicesHorizontally(decision.choices, decision.level, branchStructure, decision.id, renderedLevels)}
+
+        {renderChoicesHorizontally(
+          decision.choices,
+          decision.level,
+          branchStructure,
+          decision.id,
+          renderedLevels
+        )}
       </div>
     );
   };
@@ -691,8 +887,12 @@ const PreviewScenario = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Loading Scenario...</h3>
-          <p className="text-gray-500">Please wait while we fetch the scenario data.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Loading Scenario...
+          </h3>
+          <p className="text-gray-500">
+            Please wait while we fetch the scenario data.
+          </p>
         </div>
       </div>
     );
@@ -710,8 +910,12 @@ const PreviewScenario = () => {
                 {scenarioData ? 'Back to Edit' : 'Back to List'}
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Preview Scenario</h1>
-                <p className="text-sm text-gray-600">Review your scenario and flowchart before publishing</p>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  Preview Scenario
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Review your scenario and flowchart before publishing
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -759,9 +963,16 @@ const PreviewScenario = () => {
                       <span className="opacity-90">Score: {totalPoints}</span>
                     </div>
                     <div className="text-sm">
-                      <span className="opacity-90">{selectedChoices.length} Completed</span>
+                      <span className="opacity-90">
+                        {selectedChoices.length} Completed
+                      </span>
                     </div>
-                    <Button variant="outline" size="sm" onClick={resetPreview} className="text-white border-white hover:bg-white hover:text-blue-600">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetPreview}
+                      className="text-white border-white hover:bg-white hover:text-blue-600"
+                    >
                       Exit Preview
                     </Button>
                   </div>
@@ -771,27 +982,26 @@ const PreviewScenario = () => {
               {/* Main Preview Area */}
               <div className="relative bg-gray-100 rounded-lg p-8 min-h-[500px]">
                 {/* Background Image */}
-                <div 
+                <div
                   className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-lg opacity-20"
                   style={{
-                    backgroundImage: `url(${getBackgroundImage(form.background)})`
+                    backgroundImage: `url(${getBackgroundImage(form.background)})`,
                   }}
                 />
-                
+
                 <div className="relative z-10">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Left Side - Avatar */}
                     <div className="flex justify-center lg:justify-start">
                       <div className="relative">
                         {/* Avatar Image - Overlapping on background */}
-                          <div className="w-80 h-[32rem] relative">
-                            <img 
-                              src={getAvatarImage(form.avatar)} 
-                              alt="Avatar" 
-                              className="w-full h-full object-cover drop-shadow-lg rounded-lg"
-                            />
-                          </div>
-
+                        <div className="w-80 h-[32rem] relative">
+                          <img
+                            src={getAvatarImage(form.avatar)}
+                            alt="Avatar"
+                            className="w-full h-full object-cover drop-shadow-lg rounded-lg"
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -801,17 +1011,20 @@ const PreviewScenario = () => {
                         <div className="bg-white rounded-lg p-6 shadow-lg border-2 border-blue-200 max-w-lg w-full">
                           <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xl font-bold text-gray-800">
-                              Decision {currentDecision.level}: {currentDecision.title}
+                              Decision {currentDecision.level}:{' '}
+                              {currentDecision.title}
                             </h3>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => setCurrentDecision(null)}
                             >
                               ✕
                             </Button>
                           </div>
-                          <p className="text-gray-600 mb-6">{currentDecision.description}</p>
+                          <p className="text-gray-600 mb-6">
+                            {currentDecision.description}
+                          </p>
                           <div className="space-y-3">
                             {currentDecision.choices.map((choice, index) => (
                               <button
@@ -820,11 +1033,17 @@ const PreviewScenario = () => {
                                 className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${getBranchTypeColor(choice.branchType)}`}
                               >
                                 <div className="flex items-center space-x-3">
-                                  <span className="text-xl">{getBranchTypeIcon(choice.branchType)}</span>
+                                  <span className="text-xl">
+                                    {getBranchTypeIcon(choice.branchType)}
+                                  </span>
                                   <div className="flex-1">
-                                    <div className="font-medium">{choice.text}</div>
+                                    <div className="font-medium">
+                                      {choice.text}
+                                    </div>
                                     {choice.points > 0 && (
-                                      <div className="text-sm opacity-75">+{choice.points} points</div>
+                                      <div className="text-sm opacity-75">
+                                        +{choice.points} points
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -835,17 +1054,33 @@ const PreviewScenario = () => {
                       ) : scenarioComplete ? (
                         <div className="bg-white rounded-lg p-8 shadow-lg border-2 border-green-200 max-w-lg w-full text-center">
                           <PartyPopper className="w-16 h-16 mx-auto mb-4 text-green-600" />
-                          <h3 className="text-2xl font-bold mb-4 text-green-600">Scenario Complete!</h3>
-                          <p className="text-gray-600 mb-6">You have successfully completed the interactive preview</p>
+                          <h3 className="text-2xl font-bold mb-4 text-green-600">
+                            Scenario Complete!
+                          </h3>
+                          <p className="text-gray-600 mb-6">
+                            You have successfully completed the interactive
+                            preview
+                          </p>
                           <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                            <div className="text-2xl font-bold text-green-600 mb-2">Total Score: {totalPoints}</div>
-                            <div className="text-sm text-green-700">Decisions Made: {selectedChoices.length}</div>
+                            <div className="text-2xl font-bold text-green-600 mb-2">
+                              Total Score: {totalPoints}
+                            </div>
+                            <div className="text-sm text-green-700">
+                              Decisions Made: {selectedChoices.length}
+                            </div>
                           </div>
                           <div className="flex space-x-3">
-                            <Button onClick={resetPreview} variant="outline" className="flex-1">
+                            <Button
+                              onClick={resetPreview}
+                              variant="outline"
+                              className="flex-1"
+                            >
                               Try Again
                             </Button>
-                            <Button onClick={resetPreview} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                            <Button
+                              onClick={resetPreview}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            >
                               Exit Preview
                             </Button>
                           </div>
@@ -865,14 +1100,18 @@ const PreviewScenario = () => {
                             {form.description}
                           </p>
                           <div className="text-center">
-                            <p className="text-gray-700 mb-4 font-medium">Ready to experience the scenario?</p>
-                            <Button 
+                            <p className="text-gray-700 mb-4 font-medium">
+                              Ready to experience the scenario?
+                            </p>
+                            <Button
                               onClick={() => {
-                                const firstDecision = decisions.find(d => d.level === 1);
+                                const firstDecision = decisions.find(
+                                  d => d.level === 1
+                                );
                                 if (firstDecision) {
                                   setCurrentDecision(firstDecision);
                                 }
-                              }} 
+                              }}
                               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
                             >
                               Begin Interactive Preview
@@ -890,14 +1129,20 @@ const PreviewScenario = () => {
                 <div className="fixed top-4 right-4 z-50">
                   <div className="bg-white rounded-lg shadow-xl border-2 border-gray-200 p-6 max-w-sm">
                     <div className="text-center">
-                      <div className="mb-4 flex justify-center">{getBranchTypeIcon(lastChoice.branchType)}</div>
+                      <div className="mb-4 flex justify-center">
+                        {getBranchTypeIcon(lastChoice.branchType)}
+                      </div>
                       <h3 className="text-lg font-bold mb-2">
-                        {lastChoice.branchType?.toLowerCase() === 'success' ? 'Great Choice!' : 
-                         lastChoice.branchType?.toLowerCase() === 'failure' ? 'Not Quite Right' : 
-                         'Good Choice'}
+                        {lastChoice.branchType?.toLowerCase() === 'success'
+                          ? 'Great Choice!'
+                          : lastChoice.branchType?.toLowerCase() === 'failure'
+                            ? 'Not Quite Right'
+                            : 'Good Choice'}
                       </h3>
                       <div className="bg-gray-50 rounded-lg p-3 mb-3">
-                        <p className="text-gray-700 text-sm mb-1">{lastChoice.feedback}</p>
+                        <p className="text-gray-700 text-sm mb-1">
+                          {lastChoice.feedback}
+                        </p>
                         <div className="text-lg font-bold text-blue-600">
                           +{lastChoice.points || 0} points
                         </div>
@@ -905,7 +1150,7 @@ const PreviewScenario = () => {
                       <div className="text-xs text-gray-500 mb-3">
                         Total Score: {totalPoints} points
                       </div>
-                      <Button 
+                      <Button
                         onClick={continueToNextDecision}
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -920,177 +1165,222 @@ const PreviewScenario = () => {
           ) : (
             /* Regular Preview Mode */
             <>
-          {/* Scenario Overview */}
+              {/* Scenario Overview */}
               <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-2xl border border-gray-100">
-  <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-2xl border-b">
-    <CardTitle className="flex items-center text-purple-700 text-xl font-bold">
-      <Eye className="w-6 h-6 mr-2 text-purple-600 animate-pulse" />
-                Scenario Overview
-              </CardTitle>
-            </CardHeader>
-  <CardContent className="p-6">
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      
-      {/* Left Section */}
-      <div className="flex flex-col justify-between">
-                <div>
-          <h3 className="text-xl font-semibold mb-3 text-gray-900">{form.title}</h3>
-          <p className="text-gray-600 mb-6 leading-relaxed">{form.description}</p>
-          <div className="space-y-3 text-sm bg-gray-50 p-4 rounded-lg shadow-inner">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-700">Total Attempts:</span>
-              <span className="text-gray-900">{form.totalAttempts}</span>
-                  </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-700">Decision Points:</span>
-              <span className="text-gray-900">{decisions.length}</span>
-                </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-700">Total Choices:</span>
-              <span className="text-gray-900">
-                {decisions.reduce((acc, d) => acc + d.choices.length, 0)}
-              </span>
-            </div>
-          </div>
-        </div>
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-t-2xl border-b">
+                  <CardTitle className="flex items-center text-purple-700 text-xl font-bold">
+                    <Eye className="w-6 h-6 mr-2 text-purple-600 animate-pulse" />
+                    Scenario Overview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Left Section */}
+                    <div className="flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-semibold mb-3 text-gray-900">
+                          {form.title}
+                        </h3>
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                          {form.description}
+                        </p>
+                        <div className="space-y-3 text-sm bg-gray-50 p-4 rounded-lg shadow-inner">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              Total Attempts:
+                            </span>
+                            <span className="text-gray-900">
+                              {form.totalAttempts}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              Decision Points:
+                            </span>
+                            <span className="text-gray-900">
+                              {decisions.length}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              Total Choices:
+                            </span>
+                            <span className="text-gray-900">
+                              {decisions.reduce(
+                                (acc, d) => acc + d.choices.length,
+                                0
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-        <div className="mt-6">
-          <Button 
-            onClick={startPreview} 
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-transform transform hover:scale-[1.02]"
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            Start Interactive Preview
-          </Button>
-        </div>
-      </div>
+                      <div className="mt-6">
+                        <Button
+                          onClick={startPreview}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-transform transform hover:scale-[1.02]"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Start Interactive Preview
+                        </Button>
+                      </div>
+                    </div>
 
-      {/* Right Section */}
-      <div className="flex justify-center items-center">
-  <div className="relative w-44 h-60 overflow-hidden border-2 border-purple-300 shadow-md group">
-    {/* Background */}
-                    <img 
-                      src={getBackgroundImage(form.background)} 
-                      alt="Background" 
-      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-    />
-    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent"></div>
-    
-    {/* Avatar */}
-    <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
-                      <img 
-                        src={getAvatarImage(form.avatar)} 
-                        alt="Avatar" 
-        className="w-20 h-56 object-cover drop-shadow-lg"
-                      />
+                    {/* Right Section */}
+                    <div className="flex justify-center items-center">
+                      <div className="relative w-44 h-60 overflow-hidden border-2 border-purple-300 shadow-md group">
+                        {/* Background */}
+                        <img
+                          src={getBackgroundImage(form.background)}
+                          alt="Background"
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent"></div>
+
+                        {/* Avatar */}
+                        <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
+                          <img
+                            src={getAvatarImage(form.avatar)}
+                            alt="Avatar"
+                            className="w-20 h-56 object-cover drop-shadow-lg"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-      
-              </div>
-            </CardContent>
-          </Card>
-
+                </CardContent>
+              </Card>
             </>
           )}
 
           {/* Only show flowchart and details in regular preview mode */}
           {!previewMode && (
             <>
-          {/* Decision Tree Flowchart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Brain className="w-5 h-5 mr-2 text-purple-600" />
+              {/* Decision Tree Flowchart */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Brain className="w-5 h-5 mr-2 text-purple-600" />
                     Decision Tree Flowchart
-              </CardTitle>
-              <p className="text-sm text-gray-600">
-                Visual representation with smart branch management - neutral branches that connect to existing success levels show as reference arrows
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
-                <div className="levelmap-container">
-                  {renderLevelMap()}
-                </div>
-              </div>
-              
-              {/* Enhanced Legend */}
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="text-sm font-semibold text-blue-800 mb-2">Enhanced Flowchart Features:</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-700">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center">
-                      <span className="text-xs">↗</span>
-                    </div>
-                    <span><strong>Reference Arrow:</strong> Neutral branch connecting to existing success level</span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Visual representation with smart branch management - neutral
+                    branches that connect to existing success levels show as
+                    reference arrows
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-gray-50 rounded-lg p-6 min-h-[400px]">
+                    <div className="levelmap-container">{renderLevelMap()}</div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-green-200 border border-green-400 rounded flex items-center justify-center">
-                      <span className="text-xs">✅</span>
-                    </div>
-                    <span><strong>Success Path:</strong> Always renders decision nodes</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center">
-                      <span className="text-xs">⚠️</span>
-                    </div>
-                    <span><strong>Neutral Path:</strong> Renders if not connected to success</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 bg-red-200 border border-red-400 rounded flex items-center justify-center">
-                      <span className="text-xs">❌</span>
-                    </div>
-                    <span><strong>Failure Path:</strong> Always renders decision nodes</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
-          {/* Decision Points List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Settings className="w-5 h-5 mr-2 text-purple-600" />
-                Decision Points Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {decisions.map((decision, dIdx) => (
-                  <div key={decision.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-lg">Level {decision.level}: {decision.title}</h4>
-                      <Badge variant="outline">Decision {dIdx + 1}</Badge>
-                    </div>
-                    <p className="text-gray-600 mb-3">{decision.description}</p>
-                    <div className="space-y-2">
-                      <h5 className="font-medium text-sm text-gray-700">Choices:</h5>
-                      {decision.choices.map((choice, cIdx) => (
-                        <div key={choice.id} className={`p-3 rounded-lg border-l-4 ${getBranchTypeColor(choice.branchType)}`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium">{cIdx + 1}. {choice.text}</span>
-                              <span className="text-lg">{getBranchTypeIcon(choice.branchType)}</span>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {choice.nextDecisionId ? `→ Decision ${choice.nextDecisionId}` : 'End Scenario'}
-                            </div>
-                          </div>
-                          
-                          <div className="text-xs text-gray-600">
-                            <strong>Feedback:</strong> {choice.feedback}
-                          </div>
+                  {/* Enhanced Legend */}
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                      Enhanced Flowchart Features:
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-blue-700">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center">
+                          <span className="text-xs">↗</span>
                         </div>
-                      ))}
+                        <span>
+                          <strong>Reference Arrow:</strong> Neutral branch
+                          connecting to existing success level
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-green-200 border border-green-400 rounded flex items-center justify-center">
+                          <span className="text-xs">✅</span>
+                        </div>
+                        <span>
+                          <strong>Success Path:</strong> Always renders decision
+                          nodes
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded flex items-center justify-center">
+                          <span className="text-xs">⚠️</span>
+                        </div>
+                        <span>
+                          <strong>Neutral Path:</strong> Renders if not
+                          connected to success
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 bg-red-200 border border-red-400 rounded flex items-center justify-center">
+                          <span className="text-xs">❌</span>
+                        </div>
+                        <span>
+                          <strong>Failure Path:</strong> Always renders decision
+                          nodes
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+
+              {/* Decision Points List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Settings className="w-5 h-5 mr-2 text-purple-600" />
+                    Decision Points Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {decisions.map((decision, dIdx) => (
+                      <div
+                        key={decision.id}
+                        className="border border-gray-200 rounded-lg p-4"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-lg">
+                            Level {decision.level}: {decision.title}
+                          </h4>
+                          <Badge variant="outline">Decision {dIdx + 1}</Badge>
+                        </div>
+                        <p className="text-gray-600 mb-3">
+                          {decision.description}
+                        </p>
+                        <div className="space-y-2">
+                          <h5 className="font-medium text-sm text-gray-700">
+                            Choices:
+                          </h5>
+                          {decision.choices.map((choice, cIdx) => (
+                            <div
+                              key={choice.id}
+                              className={`p-3 rounded-lg border-l-4 ${getBranchTypeColor(choice.branchType)}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-medium">
+                                    {cIdx + 1}. {choice.text}
+                                  </span>
+                                  <span className="text-lg">
+                                    {getBranchTypeIcon(choice.branchType)}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {choice.nextDecisionId
+                                    ? `→ Decision ${choice.nextDecisionId}`
+                                    : 'End Scenario'}
+                                </div>
+                              </div>
+
+                              <div className="text-xs text-gray-600">
+                                <strong>Feedback:</strong> {choice.feedback}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </>
           )}
         </div>

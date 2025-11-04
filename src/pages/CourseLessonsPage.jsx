@@ -273,10 +273,54 @@ const CourseLessonsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-600">Loading courses...</p>
+      <div className="max-w-7xl mx-auto py-8 px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Course Lessons Management
+          </h1>
+          <p className="text-gray-600">
+            Manage lesson content for your course modules
+          </p>
+        </div>
+
+        <div className="mb-6 flex items-center gap-2">
+          <div className="h-10 bg-gray-200 rounded-md w-full max-w-md animate-pulse"></div>
+        </div>
+
+        <div className="space-y-8">
+          {[1, 2, 3].map(index => (
+            <Card key={index} className="overflow-hidden">
+              <div className="flex">
+                {/* Shimmer Image */}
+                <div className="w-48 flex-shrink-0 bg-gray-200 animate-pulse"></div>
+
+                {/* Shimmer Content */}
+                <div className="flex-1 p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 space-y-4">
+                      {/* Title shimmer */}
+                      <div className="h-6 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+
+                      {/* Description shimmer */}
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                      </div>
+
+                      {/* Stats shimmer */}
+                      <div className="flex items-center gap-6">
+                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                      </div>
+                    </div>
+
+                    {/* Button shimmer */}
+                    <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
       </div>
     );
@@ -321,7 +365,7 @@ const CourseLessonsPage = () => {
               <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
                 <div className="flex">
                   {/* Course Image */}
-                  <div className="w-48 h-32 flex-shrink-0">
+                  <div className="w-48 flex-shrink-0">
                     <img
                       src={
                         course.thumbnail ||
