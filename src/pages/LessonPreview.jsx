@@ -996,10 +996,105 @@ const LessonPreview = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading lesson content...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+        {/* Shimmer Sidebar */}
+        <div className="fixed inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-blue-600 to-blue-800 text-white">
+          <div className="h-screen flex flex-col overflow-hidden">
+            {/* Shimmer Lesson Header */}
+            <div className="p-6 pb-4 flex-shrink-0">
+              <div className="h-4 bg-blue-500 rounded w-20 animate-pulse mb-2"></div>
+              <div className="h-6 bg-blue-500 rounded w-full animate-pulse mb-3"></div>
+              <div className="h-4 bg-blue-500 rounded w-24 animate-pulse mb-3"></div>
+              <div className="bg-blue-700 rounded-full h-2 mb-2">
+                <div className="bg-blue-500 rounded-full h-2 w-1/3 animate-pulse"></div>
+              </div>
+              <div className="h-3 bg-blue-500 rounded w-32 animate-pulse"></div>
+            </div>
+
+            {/* Shimmer Navigation Menu */}
+            <nav className="flex-1 overflow-y-auto px-6 pb-6 space-y-2">
+              {[1, 2, 3, 4, 5].map(index => (
+                <div key={index} className="w-full p-3 rounded-lg bg-blue-700">
+                  <div className="flex items-center">
+                    <div className="w-5 h-5 rounded-full bg-blue-500 animate-pulse mr-3"></div>
+                    <div className="h-4 bg-blue-500 rounded w-3/4 animate-pulse"></div>
+                  </div>
+                </div>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Shimmer Main Content */}
+        <div className="flex-1 ml-80">
+          {/* Shimmer Fixed Header */}
+          <header
+            className="fixed right-0 z-40 bg-white/98 backdrop-blur-md shadow-sm border-b border-gray-200/80"
+            style={{ left: '320px' }}
+          >
+            <div className="flex items-center justify-between px-6 py-3">
+              {/* Left Section */}
+              <div className="flex items-center space-x-4">
+                <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+
+              {/* Center Section */}
+              <div className="flex flex-col items-center">
+                <div className="h-3 bg-gray-200 rounded w-16 animate-pulse mb-1"></div>
+                <div className="h-5 bg-gray-200 rounded w-32 animate-pulse"></div>
+              </div>
+
+              {/* Right Section */}
+              <div className="flex items-center space-x-3">
+                <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </header>
+
+          {/* Shimmer Content Area */}
+          <main className="pt-20 p-6">
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Master Heading Shimmer */}
+              <div className="bg-white rounded-lg p-6">
+                <div className="h-16 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-xl animate-pulse"></div>
+              </div>
+
+              {/* Image Shimmer */}
+              <div className="bg-white rounded-lg overflow-hidden">
+                <div className="w-full h-64 bg-gray-200 animate-pulse"></div>
+                <div className="p-6 space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Paragraph Shimmer */}
+              <div className="bg-white rounded-lg p-6">
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Heading Shimmer */}
+              <div className="bg-white rounded-lg p-6">
+                <div className="h-8 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+              </div>
+
+              {/* Paragraph Shimmer */}
+              <div className="bg-white rounded-lg p-6">
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
