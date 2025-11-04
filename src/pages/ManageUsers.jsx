@@ -1042,9 +1042,9 @@ const ManageUsers = () => {
       //   selectedUsers
       // });
       
-      // Make API call to make users admins
-      const response = await axios.post(
-        `${API_BASE}/api/user/make-admins`,
+      // Make API call to convert selected users/instructors to admin
+      const response = await axios.put(
+        `${API_BASE}/api/user/convert-to-admin`,
         { user_ids: selectedUsers },
         getAuthConfig()
       );
