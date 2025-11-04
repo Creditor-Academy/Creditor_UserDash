@@ -83,11 +83,11 @@ const PlatformDropdown = () => {
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Email Automation</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Drive and recapture sales with automated emails</p>
                 </a>
-                <a href="/dashboard/progress" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/platform/analytics" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Analytics</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Get actionable data to optimize products for profitability</p>
                 </a>
-                <a href="/dashboard" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
+                <a href="/platform/brand" className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50">
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">Branded Mobile</h4>
                   <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors">Get a custom, on-brand mobile app for your business</p>
                 </a>

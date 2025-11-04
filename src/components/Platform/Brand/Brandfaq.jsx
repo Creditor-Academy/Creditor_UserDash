@@ -5,23 +5,23 @@ import { Plus, X } from 'lucide-react';
 const faqs = [
   {
     id: 1,
-    q: 'What can you host on Athena LMS?',
-    a: `You can host live coaching and webinars that build trust, grow your audience and drive revenue — all in one digital learning product. Set up and promote events that turn your expertise into real relationships and business growth.`,
+    q: 'Can learners do everything on the app without going on the web version?',
+    a: `The app is considered an additive complement to the web experience. Learners can use the app to learn on the go and access creators’ content in the most convenient way for them. This includes accessing lessons, interacting in communities, staying up-to-date with push notifications, and enrolling in or purchasing new products.`,
   },
   {
     id: 2,
-    q: 'How can Coaching and Webinars be priced?',
-    a: `A coaching session or webinar can be offered for free or for purchase at checkout.`,
+    q: 'Will my learners be able to access both my courses and communities on the app?',
+    a: `Yes, your learners will be able to access both communities and courses on your mobile app.`,
   },
   {
     id: 3,
-    q: 'What is the difference between Coaching and Webinar, and a live event in Athena LMSCommunities?',
-    a: `Coaching and Webinars are digital learning products that can be offered either for free or for purchase, and can be hosted outside of a Athena LMS Community.`,
+    q: 'Can my learners download files from lessons?',
+    a: `Yes! Both downloads and PDF lesson types are available on Branded Mobile. You can also allow your students to download certain lesson content (videos, PDFs and audio) and they can view it directly on their device.`,
   },
   {
     id: 4,
-    q: 'Do I need an existing video conference platform to host an event?',
-    a: `No, Athena LMS integrates with Zoom, Google Meet, and Microsoft Teams, so you can host your events directly from your Athena LMS account.`,
+    q: 'What can I customize with my own branded mobile app?',
+    a: `With Branded Mobile, you can customize your app to reflect your company’s brand identity, including the imagery and descriptions on the Google Play and Apple App Store listings. Additionally, you can customize your app name, app icon, and load screen. From within the app, you can choose your app’s primary colours, button styles and text colours.`,
   },
 ];
 

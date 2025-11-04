@@ -1,9 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
-import showcase6 from "../../../assets/showcase6.jpeg";
+import team from "../../../assets/Brandmobile.jpg";
 
-export default function ExpertScale() {
+export default function AnalyticsCta() {
   return (
     <section className="relative overflow-hidden bg-[#1e3a5f] py-20 lg:py-32">
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
@@ -19,17 +19,21 @@ export default function ExpertScale() {
             {/* Small Label */}
             <p className="text-xs font-medium text-blue-300 mb-3">
               The platform for experts
-            </p>    
+            </p>
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal mb-5 leading-tight">
-            You’re one <span className="block">email away 
-                <span className="block">from the sale</span></span>
+            Ready to grow
+             <span className="block">revenue with a</span>
+                 <span className="block">mobile app?</span>
+             
+             
               
             </h1>
-            <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">Turn your audience into loyal, paying customers with email
-                <span className="block">automation on Athena LMS.</span></p>
+
+
            
+
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <button className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg">
@@ -52,9 +56,9 @@ export default function ExpertScale() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            <div className="relative shadow-2xl overflow-hidden aspect-[4/3] w-full max-w-3xl lg:max-w-4xl mx-auto">
+            <div className="relative shadow-2xl overflow-hidden aspect-square w-full max-w-2xl mx-auto">
               <img 
-                src={showcase6} 
+                src={team} 
                 alt="Athena LMS Course Dashboard" 
                 className="w-full h-full object-contain"
               />
@@ -69,4 +73,3 @@ export default function ExpertScale() {
   );
 }
 
- 
