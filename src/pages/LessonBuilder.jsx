@@ -61,6 +61,7 @@ import {
 import '@/utils/LessonBuilder/quillConfig';
 import { getToolbarModules } from '@/utils/LessonBuilder/quillConfig';
 import { textTypes } from '@/constants/LessonBuilder/textTypesConfig';
+import { getPlainText } from '@/utils/LessonBuilder/blockHelpers';
 
 // Initialize styles and global functions
 injectStyles();
@@ -78,12 +79,9 @@ function LessonBuilder() {
   );
   const [loading, setLoading] = useState(true);
   const [imageUploading, setImageUploading] = useState({});
-  const [mainImageUploading, setMainImageUploading] = useState(false);
   const [draggedBlockId, setDraggedBlockId] = useState(null);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [currentBlock, setCurrentBlock] = useState(null);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [editingVideoBlock, setEditingVideoBlock] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -128,6 +126,7 @@ function LessonBuilder() {
   const [insertionPosition, setInsertionPosition] = useState(null);
   const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false); // Show insert block dialog
 
+  // Content block types with icons for the sidebar
   const contentBlockTypes = [
     {
       id: 'text',
@@ -2228,27 +2227,11 @@ function LessonBuilder() {
       console.log('Link block detected for editing:', block);
       setEditingLinkBlock(block);
       setShowLinkDialog(true);
-    } else {
-      setCurrentBlock(block);
-      setEditModalOpen(true);
-
-      // Reset editors
-      setEditorHeading('');
-      setEditorSubheading('');
-      setEditorContent('');
-
-      // Set content based on block type
-      if (block.textType === 'heading_paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorHeading(parts[0] || '');
-        setEditorContent(parts[1] || '');
-      } else if (block.textType === 'subheading_paragraph') {
-        const parts = block.content ? block.content.split('|||') : ['', ''];
-        setEditorSubheading(parts[0] || '');
-        setEditorContent(parts[1] || '');
-      } else {
-        setEditorContent(block.content || '');
-      }
+    } else if (block.type === 'pdf') {
+      // Handle PDF block editing
+      console.log('PDF block detected for editing:', block);
+      setEditingPdfBlock(block);
+      setShowPdfDialog(true);
     }
   };
 
@@ -4581,14 +4564,6 @@ function LessonBuilder() {
     );
   }
 
-  const getPlainText = html => {
-    const temp =
-      typeof document !== 'undefined' ? document.createElement('div') : null;
-    if (!temp) return html || '';
-    temp.innerHTML = html || '';
-    return temp.textContent || temp.innerText || '';
-  };
-
   return (
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
@@ -6106,145 +6081,6 @@ function LessonBuilder() {
         onVideoUpdate={handleVideoUpdate}
         editingVideoBlock={editingVideoBlock}
       />
-
-      {/* Edit Block Modal */}
-      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit {currentBlock?.title}</DialogTitle>
-          </DialogHeader>
-          {currentBlock && (
-            <div className="space-y-4 overflow-y-auto pr-2">
-              {/* Heading + Paragraph */}
-              {currentBlock.type === 'text' &&
-                currentBlock.textType === 'heading-paragraph' && (
-                  <>
-                    <label className="block font-medium mb-2">Heading</label>
-                    <div style={{ height: '120px', overflowY: 'auto' }}>
-                      <ReactQuill
-                        value={editorHeading}
-                        onChange={setEditorHeading}
-                        theme="snow"
-                        modules={getToolbarModules('heading')}
-                        placeholder="Type and format your heading here"
-                        style={{ height: '80px' }}
-                      />
-                    </div>
-                    <label className="block font-medium mb-2 mt-4">
-                      Paragraph
-                    </label>
-                    <div style={{ height: '230px', overflowY: 'auto' }}>
-                      <ReactQuill
-                        value={editorContent}
-                        onChange={setEditorContent}
-                        theme="snow"
-                        modules={getToolbarModules('full')}
-                        placeholder="Type and format your content here"
-                        style={{ height: '180px' }}
-                      />
-                    </div>
-                  </>
-                )}
-
-              {/* Subheading + Paragraph */}
-              {currentBlock.type === 'text' &&
-                currentBlock.textType === 'subheading-paragraph' && (
-                  <>
-                    <label className="block font-medium mb-2">Subheading</label>
-                    <div style={{ height: '120px', overflowY: 'auto' }}>
-                      <ReactQuill
-                        value={editorSubheading}
-                        onChange={setEditorSubheading}
-                        theme="snow"
-                        modules={getToolbarModules('heading')}
-                        placeholder="Type and format your subheading here"
-                        style={{ height: '80px' }}
-                      />
-                    </div>
-                    <label className="block font-medium mb-2 mt-4">
-                      Paragraph
-                    </label>
-                    <div style={{ height: '230px', overflowY: 'auto' }}>
-                      <ReactQuill
-                        value={editorContent}
-                        onChange={setEditorContent}
-                        theme="snow"
-                        modules={getToolbarModules('full')}
-                        placeholder="Type and format your content here"
-                        style={{ height: '180px' }}
-                      />
-                    </div>
-                  </>
-                )}
-
-              {/* Paragraph only */}
-              {currentBlock.type === 'text' &&
-                currentBlock.textType === 'paragraph' && (
-                  <>
-                    <label className="block font-medium mb-2">Paragraph</label>
-                    <div style={{ height: '350px', overflowY: 'auto' }}>
-                      <ReactQuill
-                        value={editorContent}
-                        onChange={setEditorContent}
-                        theme="snow"
-                        modules={getToolbarModules('paragraph')}
-                        placeholder="Type and format your content here"
-                        style={{ height: '300px' }}
-                      />
-                    </div>
-                  </>
-                )}
-
-              {/* Other block types */}
-              {(currentBlock.type === 'statement' ||
-                currentBlock.type === 'quote') && (
-                <>
-                  <label className="block font-medium mb-2">
-                    {currentBlock.type === 'statement' ? 'Statement' : 'Quote'}
-                  </label>
-                  <div style={{ height: '350px', overflowY: 'auto' }}>
-                    <ReactQuill
-                      value={editorContent}
-                      onChange={setEditorContent}
-                      theme="snow"
-                      modules={getToolbarModules('full')}
-                      placeholder={`Type and format your ${currentBlock.type} here`}
-                      style={{ height: '300px' }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* List block type */}
-              {currentBlock.type === 'list' && (
-                <>
-                  <label className="block font-medium mb-2">List Items</label>
-                  <div style={{ height: '350px', overflowY: 'auto' }}>
-                    <ReactQuill
-                      value={editorContent}
-                      onChange={setEditorContent}
-                      theme="snow"
-                      modules={getToolbarModules('full')}
-                      placeholder="Type and format your list here"
-                      style={{ height: '300px' }}
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-end gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setEditModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleEditorSave}>Save</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Table Component */}
       {showTableComponent && (

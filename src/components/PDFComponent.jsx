@@ -29,15 +29,24 @@ const PDFComponent = ({
   useEffect(() => {
     if (showPdfDialog && editingPdfBlock) {
       // Editing mode - populate with existing data
-      setPdfTitle(editingPdfBlock.pdfTitle || '');
-      setPdfDescription(editingPdfBlock.pdfDescription || '');
-      setPdfUrl(
-        editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || ''
+      setPdfTitle(
+        editingPdfBlock.pdfTitle || editingPdfBlock.details?.caption || ''
       );
-      setPdfUploadMethod(editingPdfBlock.uploadMethod || 'file');
-      setPdfPreview(
-        editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || ''
+      setPdfDescription(
+        editingPdfBlock.pdfDescription ||
+          editingPdfBlock.details?.description ||
+          ''
       );
+      const existingUrl =
+        editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || '';
+      setPdfUrl(existingUrl);
+      // Determine upload method based on existing data
+      const method =
+        editingPdfBlock.uploadMethod || (existingUrl ? 'url' : 'file');
+      setPdfUploadMethod(method);
+      setPdfPreview(existingUrl);
+      // Clear file input when editing
+      setPdfFile(null);
     } else if (showPdfDialog && !editingPdfBlock) {
       // New PDF mode - reset form
       resetForm();
@@ -55,7 +64,9 @@ const PDFComponent = ({
 
   const handlePdfDialogClose = () => {
     setShowPdfDialog(false);
-    resetForm();
+    setTimeout(() => {
+      resetForm();
+    }, 100);
   };
 
   const handlePdfInputChange = e => {
@@ -75,18 +86,32 @@ const PDFComponent = ({
   const handleAddPdf = async () => {
     // Validate required fields based on upload method
     if (!pdfTitle) {
-      alert('Please enter a PDF title');
+      toast.error('Please enter a PDF title');
       return;
     }
 
-    if (pdfUploadMethod === 'file' && !pdfFile) {
-      alert('Please select a PDF file');
-      return;
-    }
-
-    if (pdfUploadMethod === 'url' && !pdfUrl) {
-      alert('Please enter a PDF URL');
-      return;
+    // For editing mode, allow keeping existing PDF if no new file/URL is provided
+    if (editingPdfBlock) {
+      const hasExistingPdf =
+        editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url;
+      if (pdfUploadMethod === 'file' && !pdfFile && !hasExistingPdf) {
+        toast.error('Please select a PDF file');
+        return;
+      }
+      if (pdfUploadMethod === 'url' && !pdfUrl) {
+        toast.error('Please enter a PDF URL');
+        return;
+      }
+    } else {
+      // For new PDFs, require file or URL
+      if (pdfUploadMethod === 'file' && !pdfFile) {
+        toast.error('Please select a PDF file');
+        return;
+      }
+      if (pdfUploadMethod === 'url' && !pdfUrl) {
+        toast.error('Please enter a PDF URL');
+        return;
+      }
     }
 
     setMainPdfUploading(true);
@@ -97,27 +122,35 @@ const PDFComponent = ({
       let uploadedPdfData = null;
 
       if (pdfUploadMethod === 'file') {
-        try {
-          const result = await uploadImage(pdfFile, {
-            fieldName: 'resource',
-            folder: 'lesson-resources',
-            public: true,
-            type: 'pdf',
-          });
+        // If editing and no new file selected, keep existing URL
+        if (editingPdfBlock && !pdfFile) {
+          finalPdfUrl =
+            editingPdfBlock.pdfUrl || editingPdfBlock.details?.pdf_url || '';
+          uploadedPdfData = editingPdfBlock.uploadedPdfData || null;
+        } else if (pdfFile) {
+          // Upload new file
+          try {
+            const result = await uploadImage(pdfFile, {
+              fieldName: 'resource',
+              folder: 'lesson-resources',
+              public: true,
+              type: 'pdf',
+            });
 
-          if (result?.success && result?.imageUrl) {
-            finalPdfUrl = result.imageUrl;
-            uploadedPdfData = result;
-            toast.success('PDF uploaded successfully!');
-          } else {
-            throw new Error('Upload failed - no URL returned');
+            if (result?.success && result?.imageUrl) {
+              finalPdfUrl = result.imageUrl;
+              uploadedPdfData = result;
+              toast.success('PDF uploaded successfully!');
+            } else {
+              throw new Error('Upload failed - no URL returned');
+            }
+          } catch (err) {
+            console.error('PDF upload error:', err);
+            toast.error(
+              err.message || 'Failed to upload PDF. Using local preview.'
+            );
+            finalPdfUrl = URL.createObjectURL(pdfFile);
           }
-        } catch (err) {
-          console.error('PDF upload error:', err);
-          toast.error(
-            err.message || 'Failed to upload PDF. Using local preview.'
-          );
-          finalPdfUrl = URL.createObjectURL(pdfFile);
         }
       } else {
         finalPdfUrl = pdfUrl;
@@ -226,11 +259,28 @@ const PDFComponent = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   PDF File <span className="text-red-500">*</span>
                 </label>
+
+                {/* Show existing PDF info when editing */}
+                {editingPdfBlock && pdfPreview && !pdfFile && (
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800 font-medium mb-1">
+                      Current PDF: {editingPdfBlock.pdfTitle}
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      Upload a new file below to replace it
+                    </p>
+                  </div>
+                )}
+
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
                   <div className="space-y-1 text-center">
                     <div className="flex text-sm text-gray-600">
                       <label className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                        <span>Upload a file</span>
+                        <span>
+                          {editingPdfBlock && pdfPreview
+                            ? 'Upload new file'
+                            : 'Upload a file'}
+                        </span>
                         <input
                           type="file"
                           name="file"
@@ -242,12 +292,17 @@ const PDFComponent = ({
                       <p className="pl-1">or drag and drop</p>
                     </div>
                     <p className="text-xs text-gray-500">PDF up to 200MB</p>
+                    {pdfFile && (
+                      <p className="text-xs text-green-600 font-medium mt-2">
+                        New file selected: {pdfFile.name}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {pdfPreview && pdfUploadMethod === 'file' && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 mb-1">
-                      Preview:
+                      {pdfFile ? 'New PDF Preview:' : 'Current PDF Preview:'}
                     </p>
                     <embed
                       src={pdfPreview}
@@ -267,6 +322,23 @@ const PDFComponent = ({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   PDF URL <span className="text-red-500">*</span>
                 </label>
+
+                {/* Show existing URL info when editing */}
+                {editingPdfBlock && pdfUrl && (
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800 font-medium mb-1">
+                      {editingPdfBlock.pdfUrl === pdfUrl
+                        ? 'Current URL'
+                        : 'URL Changed'}
+                    </p>
+                    <p className="text-xs text-blue-600">
+                      {editingPdfBlock.pdfUrl === pdfUrl
+                        ? 'You can modify the URL below to use a different PDF'
+                        : 'The PDF URL has been updated'}
+                    </p>
+                  </div>
+                )}
+
                 <input
                   type="url"
                   value={pdfUrl}
@@ -287,7 +359,7 @@ const PDFComponent = ({
                       height="500"
                       className="rounded-lg border border-gray-200"
                       onError={() =>
-                        alert(
+                        toast.error(
                           'Could not load PDF. Please check the URL and try again.'
                         )
                       }
@@ -324,7 +396,7 @@ const PDFComponent = ({
               disabled={
                 mainPdfUploading ||
                 !pdfTitle ||
-                (pdfUploadMethod === 'file' && !pdfFile) ||
+                (pdfUploadMethod === 'file' && !pdfFile && !editingPdfBlock) ||
                 (pdfUploadMethod === 'url' && !pdfUrl)
               }
               className="bg-blue-600 hover:bg-blue-700"
@@ -333,8 +405,14 @@ const PDFComponent = ({
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   {pdfUploadMethod === 'file'
-                    ? 'Uploading PDF...'
-                    : 'Adding PDF...'}
+                    ? editingPdfBlock && pdfFile
+                      ? 'Uploading New PDF...'
+                      : editingPdfBlock
+                        ? 'Updating...'
+                        : 'Uploading PDF...'
+                    : editingPdfBlock
+                      ? 'Updating...'
+                      : 'Adding PDF...'}
                 </>
               ) : editingPdfBlock ? (
                 'Update PDF'
