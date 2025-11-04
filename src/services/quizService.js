@@ -132,6 +132,33 @@ export async function getQuizById(quizId) {
 }
 
 /**
+ * Get quiz meta/overview by quizId (custom endpoint)
+ * Example path: api/quiz/quiz-2/getQuizById
+ * @param {string} quizId - e.g., "quiz-2"
+ * @returns {Promise<Object>} Quiz overview data (maxAttempts, questionCount, totalScore, min_score, etc.)
+ */
+export async function getQuizMetaById(quizId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/quiz/${quizId}/getQuizById`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch quiz meta: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('Error fetching quiz meta by id:', error);
+    throw error;
+  }
+}
+
+/**
  * Get quiz questions for a specific quiz
  * @param {string} quizId - The ID of the quiz
  * @returns {Promise<Array>} Array of quiz questions

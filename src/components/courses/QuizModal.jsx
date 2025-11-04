@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createQuiz, bulkUploadQuestions, updateQuiz } from '@/services/quizServices';
+import { createNotification } from '@/services/notificationService';
 
 const QUIZ_TYPES = [
   { label: 'Final', value: 'FINAL' },
@@ -14,6 +15,8 @@ const QUESTION_TYPES = [
   { label: 'True/False', value: 'TRUE_FALSE' },
   { label: 'Fill in the Blanks', value: 'FILL_UPS' },
   { label: 'One Word Answer', value: 'ONE_WORD' },
+  { label: 'Sequence Ordering', value: 'SEQUENCE' },
+  { label: 'Drag and Drop Categories', value: 'CATEGORIZATION' },
 ];
 
 // Alternative question type values that might be expected by the backend
@@ -22,7 +25,9 @@ const BACKEND_QUESTION_TYPES = {
   MCQ_MULTIPLE: 'MCQ_MULTIPLE', 
   TRUE_FALSE: 'TRUE_FALSE',
   FILL_UPS: 'FILL_UPS',
-  ONE_WORD: 'ONE_WORD'
+  ONE_WORD: 'ONE_WORD',
+  SEQUENCE: 'SEQUENCE',
+  CATEGORIZATION: 'CATEGORIZATION'
 };
 
 const QuizModal = ({ 
@@ -121,19 +126,41 @@ const QuizModal = ({
     setError('');
     try {
       if (editingQuiz && !isAddingQuestions) {
-        // Update existing quiz
-        const quizData = {
-          module_id: moduleId,
-          ...form,
+        // Update existing quiz - send only changed fields
+        const normalizedForm = {
+          title: form.title,
+          type: form.type,
           maxAttempts: Number(form.maxAttempts),
           time_estimate: Number(form.time_estimate),
           max_score: Number(form.max_score),
           min_score: Number(form.min_score),
         };
-        const updated = await updateQuiz(editingQuiz.id, quizData);
-        setCreatedQuiz({ ...updated, id: editingQuiz.id });
-        setStep(2);
-        if (onQuizUpdated) onQuizUpdated(updated);
+
+        // Build payload with only changed fields compared to editingQuiz
+        const changedPayload = Object.entries(normalizedForm).reduce((acc, [key, value]) => {
+          const prev = editingQuiz?.[key];
+          if (String(prev) !== String(value)) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {});
+
+        // If module is being changed explicitly, include it
+        if (moduleId && editingQuiz?.module_id && String(editingQuiz.module_id) !== String(moduleId)) {
+          changedPayload.module_id = moduleId;
+        }
+
+        // If nothing changed, just notify and close (stay within step 1 behavior)
+        if (Object.keys(changedPayload).length === 0) {
+          if (onQuizUpdated) onQuizUpdated(editingQuiz);
+          onClose();
+        } else {
+          const updated = await updateQuiz(editingQuiz.id, changedPayload);
+          setCreatedQuiz({ ...editingQuiz, ...changedPayload, id: editingQuiz.id });
+          if (onQuizUpdated) onQuizUpdated(updated);
+          onClose();
+        }
+        return;
       } else {
         // Create new quiz
         const quizData = {
@@ -151,8 +178,30 @@ const QuizModal = ({
         setStep(2);
         if (onQuizCreated) onQuizCreated(created);
       }
+
+      // Notify globally (backend + local fallback)
+      try {
+        await createNotification({
+          title: 'Quiz Created',
+          message: `Quiz "${form.title}" has been created`,
+          type: 'quiz',
+          audience: 'all',
+        });
+      } catch (err) {
+        console.warn('Backend quiz notification failed; using local fallback.', err);
+      }
+      window.dispatchEvent(new Event('refresh-notifications'));
+      const now = new Date();
+      window.dispatchEvent(new CustomEvent('add-local-notification', { detail: {
+        id: `local-${now.getTime()}`,
+        type: 'quiz',
+        title: 'Quiz Created',
+        message: `Quiz "${form.title}" has been created`,
+        created_at: now.toISOString(),
+        read: false,
+      }}));
     } catch (err) {
-      setError('Failed to create quiz. Please try again.');
+      setError(editingQuiz && !isAddingQuestions ? 'Failed to update quiz. Please try again.' : 'Failed to create quiz. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -187,15 +236,80 @@ const QuizModal = ({
   };
 
   const handleAddOption = (qIdx) => {
-    setQuestions((prev) => prev.map((q, i) =>
-      i === qIdx ? { ...q, options: [...q.options, { text: '', isCorrect: false }] } : q
-    ));
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      if (q.type === 'SEQUENCE') {
+        const nextIndex = q.options.length;
+        return { ...q, options: [...q.options, { text: '', orderIndex: nextIndex }] };
+      }
+      return { ...q, options: [...q.options, { text: '', isCorrect: false }] };
+    }));
   };
 
   const handleRemoveOption = (qIdx, optIdx) => {
-    setQuestions((prev) => prev.map((q, i) =>
-      i === qIdx ? { ...q, options: q.options.filter((_, oi) => oi !== optIdx) } : q
-    ));
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const filtered = q.options.filter((_, oi) => oi !== optIdx);
+      if (q.type === 'SEQUENCE') {
+        const renumbered = filtered.map((opt, idx) => ({ ...opt, orderIndex: idx }));
+        return { ...q, options: renumbered };
+      }
+      return { ...q, options: filtered };
+    }));
+  };
+
+  const handleOrderIndexChange = (qIdx, optIdx, value) => {
+    const parsed = Number(value);
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => oi === optIdx ? { ...opt, orderIndex: isNaN(parsed) ? '' : parsed } : opt);
+      return { ...q, options: updated };
+    }));
+  };
+
+  // Handlers for CATEGORIZATION questions
+  const handleCategoryChange = (qIdx, optIdx, value) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => 
+        oi === optIdx ? { ...opt, text: value } : opt
+      );
+      return { ...q, options: updated };
+    }));
+  };
+
+  const handleDraggableItemChange = (qIdx, optIdx, value) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => 
+        oi === optIdx ? { ...opt, text: value } : opt
+      );
+      return { ...q, options: updated };
+    }));
+  };
+
+  const handleDraggableCategoryChange = (qIdx, optIdx, categoryValue) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      const updated = q.options.map((opt, oi) => 
+        oi === optIdx ? { ...opt, category: categoryValue } : opt
+      );
+      return { ...q, options: updated };
+    }));
+  };
+
+  const handleAddCategory = (qIdx) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      return { ...q, options: [...q.options, { text: '', isCategory: true }] };
+    }));
+  };
+
+  const handleAddDraggableItem = (qIdx) => {
+    setQuestions((prev) => prev.map((q, i) => {
+      if (i !== qIdx) return q;
+      return { ...q, options: [...q.options, { text: '', category: '', isCategory: false }] };
+    }));
   };
 
   // Ensure MCQ questions always have at least 2 options
@@ -220,6 +334,18 @@ const QuizModal = ({
       newOptions = [
         { text: 'True', isCorrect: false },
         { text: 'False', isCorrect: false }
+      ];
+    } else if (newType === 'SEQUENCE') {
+      newOptions = [
+        { text: '', orderIndex: 0 },
+        { text: '', orderIndex: 1 }
+      ];
+    } else if (newType === 'CATEGORIZATION') {
+      newOptions = [
+        { text: '', isCategory: true },
+        { text: '', isCategory: true },
+        { text: '', category: '', isCategory: false },
+        { text: '', category: '', isCategory: false }
       ];
     } else if (newType === 'FILL_UPS' || newType === 'ONE_WORD') {
       newOptions = [];
@@ -258,29 +384,91 @@ const QuizModal = ({
       // Debug: Log the questions state
       console.log('Questions state before creating payload:', questions);
       
+      const mapFrontendTypeToBackend = (t) => {
+        switch (t) {
+          case 'MCQ_SINGLE':
+            return 'SCQ';
+          case 'MCQ_MULTIPLE':
+            return 'MCQ';
+          case 'TRUE_FALSE':
+            return 'TRUE_FALSE';
+          case 'FILL_UPS':
+            return 'FILL_UPS';
+          case 'ONE_WORD':
+            return 'ONE_WORD';
+          case 'SEQUENCE':
+            return 'SEQUENCE';
+          case 'CATEGORIZATION':
+            return 'CATEGORIZATION';
+          default:
+            return t;
+        }
+      };
+
       const payload = {
         texts: questions.map(q => q.text),
         correctAnswers: questions.map(q => {
           if (q.type === 'MCQ_SINGLE') {
             const correct = q.options.find(opt => opt.isCorrect);
-            return correct ? correct.text : '';
+            return correct ? String(correct.text || '').trim() : '';
           } else if (q.type === 'MCQ_MULTIPLE') {
-            // For multiple correct, join all correct answers with comma
-            const correctOptions = q.options.filter(opt => opt.isCorrect).map(opt => opt.text);
-            return correctOptions.join(', ');
+            const correctOptions = q.options
+              .filter(opt => opt.isCorrect)
+              .map(opt => String(opt.text || '').trim());
+            // Join without spaces to match backend examples: "2,3,5,7"
+            return correctOptions.join(',');
           } else if (q.type === 'TRUE_FALSE') {
             const correct = q.options.find(opt => opt.isCorrect);
-            return correct ? correct.text : '';
-          } else if (q.type === 'FILL_UPS' || q.type === 'ONE_WORD') {
-            return q.correctAnswer;
+            return correct ? String(correct.text || '').toLowerCase().trim() : '';
+          } else if (q.type === 'FILL_UPS') {
+            // Normalize multiple blanks: remove extra spaces around commas
+            return String(q.correctAnswer || '')
+              .split(',')
+              .map(s => s.trim())
+              .join(',');
+          } else if (q.type === 'ONE_WORD') {
+            return String(q.correctAnswer || '').trim();
+          } else if (q.type === 'SEQUENCE') {
+            const ordered = (q.options || [])
+              .slice()
+              .sort((a, b) => Number(a.orderIndex ?? 0) - Number(b.orderIndex ?? 0))
+              .map(opt => String(opt.text || '').trim());
+            return ordered.join(',');
+          } else if (q.type === 'CATEGORIZATION') {
+            // For categorization, we don't need a correct answer string as the mapping is in question_options
+            return '';
           }
           return '';
         }),
-        question_types: questions.map(q => q.type),
+        question_types: questions.map(q => mapFrontendTypeToBackend(q.type)),
         question_options: questions.map(q => {
-          if (q.type === 'MCQ_SINGLE' || q.type === 'MCQ_MULTIPLE' || q.type === 'TRUE_FALSE') {
-            return q.options;
+          if (q.type === 'MCQ_SINGLE' || q.type === 'MCQ_MULTIPLE') {
+            return q.options.map(opt => ({
+              text: String(opt.text || '').trim(),
+              isCorrect: Boolean(opt.isCorrect),
+            }));
           }
+          if (q.type === 'TRUE_FALSE') {
+            // Ensure lowercase true/false option texts for backend consistency
+            return q.options.map((opt, idx) => ({
+              text: String(opt.text || (idx === 0 ? 'true' : 'false')).toLowerCase(),
+              isCorrect: Boolean(opt.isCorrect),
+            }));
+          }
+          if (q.type === 'SEQUENCE') {
+            return (q.options || []).map((opt, idx) => ({
+              text: String(opt.text || '').trim(),
+              orderIndex: Number(opt.orderIndex ?? idx)
+            }));
+          }
+          if (q.type === 'CATEGORIZATION') {
+            return (q.options || []).map(opt => ({
+              text: String(opt.text || '').trim(),
+              isCategory: Boolean(opt.isCategory),
+              category: opt.category ? String(opt.category).trim() : undefined
+            }));
+          }
+          // For non-option types, send empty array to preserve index alignment
           return [];
         }),
       };
@@ -311,9 +499,65 @@ const QuizModal = ({
           if (correctOptions.length !== 1) {
             validationErrors.push(`Question ${index + 1} must have exactly one correct answer`);
           }
+        } else if (q.type === 'SEQUENCE') {
+          if (q.options.length < 2) {
+            validationErrors.push(`Question ${index + 1} needs at least 2 sequence steps`);
+          }
+          const textsValid = q.options.every(opt => String(opt.text || '').trim().length > 0);
+          if (!textsValid) {
+            validationErrors.push(`Question ${index + 1} has empty sequence step text`);
+          }
+          const orderValues = q.options.map(opt => Number(opt.orderIndex));
+          const hasNaN = orderValues.some(v => Number.isNaN(v));
+          if (hasNaN) {
+            validationErrors.push(`Question ${index + 1} has invalid order index values`);
+          } else {
+            const unique = new Set(orderValues);
+            if (unique.size !== orderValues.length) {
+              validationErrors.push(`Question ${index + 1} has duplicate order index values`);
+            }
+            const min = Math.min(...orderValues);
+            const max = Math.max(...orderValues);
+            if (min !== 0 || max !== q.options.length - 1) {
+              validationErrors.push(`Question ${index + 1} orderIndex must be 0..${q.options.length - 1}`);
+            }
+          }
         } else if (q.type === 'FILL_UPS' || q.type === 'ONE_WORD') {
           if (!q.correctAnswer.trim()) {
             validationErrors.push(`Question ${index + 1} is missing correct answer`);
+          }
+        } else if (q.type === 'CATEGORIZATION') {
+          const categories = q.options.filter(opt => opt.isCategory);
+          const draggableItems = q.options.filter(opt => !opt.isCategory);
+          
+          if (categories.length < 2) {
+            validationErrors.push(`Question ${index + 1} needs at least 2 categories`);
+          }
+          
+          const categoryTexts = categories.map(cat => cat.text.trim()).filter(Boolean);
+          if (categoryTexts.length !== categories.length) {
+            validationErrors.push(`Question ${index + 1} has empty category names`);
+          }
+          
+          if (draggableItems.length < 2) {
+            validationErrors.push(`Question ${index + 1} needs at least 2 draggable items`);
+          }
+          
+          const itemTexts = draggableItems.map(item => item.text.trim()).filter(Boolean);
+          if (itemTexts.length !== draggableItems.length) {
+            validationErrors.push(`Question ${index + 1} has empty draggable item names`);
+          }
+          
+          const itemsWithCategories = draggableItems.filter(item => item.category && item.category.trim());
+          if (itemsWithCategories.length !== draggableItems.length) {
+            validationErrors.push(`Question ${index + 1} has draggable items without assigned categories`);
+          }
+          
+          // Check that all assigned categories exist in the category list
+          const assignedCategories = draggableItems.map(item => item.category).filter(Boolean);
+          const invalidCategories = assignedCategories.filter(cat => !categoryTexts.includes(cat));
+          if (invalidCategories.length > 0) {
+            validationErrors.push(`Question ${index + 1} has items assigned to non-existent categories`);
           }
         }
       });
@@ -331,6 +575,26 @@ const QuizModal = ({
       setStep(3);
       if (onQuizCreated) onQuizCreated();
       if (onQuizUpdated) onQuizUpdated();
+
+      // Notify globally about questions submission
+      try {
+        await createNotification({
+          title: 'Quiz Questions Added',
+          message: `Questions added to quiz "${form.title}"`,
+          type: 'quiz',
+          audience: 'all',
+        });
+      } catch {}
+      window.dispatchEvent(new Event('refresh-notifications'));
+      const now = new Date();
+      window.dispatchEvent(new CustomEvent('add-local-notification', { detail: {
+        id: `local-${now.getTime()}`,
+        type: 'quiz',
+        title: 'Quiz Questions Added',
+        message: `Questions added to quiz "${form.title}"`,
+        created_at: now.toISOString(),
+        read: false,
+      }}));
     } catch (err) {
       console.error('Bulk upload error:', err);
       setError(`Failed to upload questions: ${err.message || 'Please try again.'}`);
@@ -427,6 +691,31 @@ const QuizModal = ({
                   ))}
                 </div>
               )}
+              {q.type === 'SEQUENCE' && (
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sequence Steps (ordered)</label>
+                  {q.options.map((opt, optIdx) => (
+                    <div key={optIdx} className="flex items-center gap-2 mb-1">
+                      <Input
+                        placeholder={`Step ${optIdx + 1}`}
+                        value={opt.text}
+                        onChange={e => handleOptionChange(qIdx, optIdx, e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        className="w-24 border rounded px-2 py-1"
+                        value={opt.orderIndex ?? optIdx}
+                        min={0}
+                        max={q.options.length - 1}
+                        onChange={e => handleOrderIndexChange(qIdx, optIdx, e.target.value)}
+                      />
+                      <span className="text-xs">Order</span>
+                      <Button size="sm" variant="outline" onClick={() => handleRemoveOption(qIdx, optIdx)} disabled={q.options.length === 1}>Remove</Button>
+                    </div>
+                  ))}
+                  <Button size="sm" variant="outline" onClick={() => handleAddOption(qIdx)}>Add Step</Button>
+                </div>
+              )}
               {(q.type === 'FILL_UPS' || q.type === 'ONE_WORD') && (
                 <div className="mb-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
@@ -435,6 +724,73 @@ const QuizModal = ({
                     value={q.correctAnswer}
                     onChange={e => handleQuestionChange(qIdx, 'correctAnswer', e.target.value)}
                   />
+                </div>
+              )}
+              {q.type === 'CATEGORIZATION' && (
+                <div className="mb-2">
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Categories (Drop Zones)</label>
+                    {q.options.filter(opt => opt.isCategory).map((opt, optIdx) => (
+                      <div key={optIdx} className="flex items-center gap-2 mb-2">
+                        <Input
+                          placeholder={`Category ${optIdx + 1}`}
+                          value={opt.text}
+                          onChange={e => handleCategoryChange(qIdx, q.options.findIndex(o => o === opt), e.target.value)}
+                        />
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleRemoveOption(qIdx, q.options.findIndex(o => o === opt))}
+                          disabled={q.options.filter(o => o.isCategory).length <= 1}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                    <Button size="sm" variant="outline" onClick={() => handleAddCategory(qIdx)}>
+                      Add Category
+                    </Button>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Draggable Items</label>
+                    {q.options.filter(opt => !opt.isCategory).map((opt, optIdx) => {
+                      const actualIdx = q.options.findIndex(o => o === opt);
+                      const categories = q.options.filter(o => o.isCategory && o.text.trim());
+                      return (
+                        <div key={optIdx} className="flex items-center gap-2 mb-2">
+                          <Input
+                            placeholder={`Item ${optIdx + 1}`}
+                            value={opt.text}
+                            onChange={e => handleDraggableItemChange(qIdx, actualIdx, e.target.value)}
+                          />
+                          <select
+                            value={opt.category}
+                            onChange={e => handleDraggableCategoryChange(qIdx, actualIdx, e.target.value)}
+                            className="border rounded px-3 py-2 min-w-[120px]"
+                          >
+                            <option value="">Select Category</option>
+                            {categories.map((cat, catIdx) => (
+                              <option key={catIdx} value={cat.text}>
+                                {cat.text}
+                              </option>
+                            ))}
+                          </select>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleRemoveOption(qIdx, actualIdx)}
+                            disabled={q.options.filter(o => !o.isCategory).length <= 1}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      );
+                    })}
+                    <Button size="sm" variant="outline" onClick={() => handleAddDraggableItem(qIdx)}>
+                      Add Item
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -500,14 +856,6 @@ const QuizModal = ({
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Max Attempts</label>
               <Input name="maxAttempts" type="number" value={form.maxAttempts} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time Estimate (min)</label>
-              <Input name="time_estimate" type="number" value={form.time_estimate} onChange={handleChange} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Score</label>
-              <Input name="max_score" type="number" value={form.max_score} onChange={handleChange} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Min Score</label>

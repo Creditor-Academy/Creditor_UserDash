@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCourseUsers, unenrollUser } from '../../services/courseService';
-import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown } from 'lucide-react';
+import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus, Download } from 'lucide-react';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
+import AddToGroupModal from './AddToGroupModal';
+import * as XLSX from 'xlsx';
 
 const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [courseUsers, setCourseUsers] = useState([]);
@@ -11,6 +13,8 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUnenrollConfirm, setShowUnenrollConfirm] = useState(false);
   const [userToUnenroll, setUserToUnenroll] = useState(null);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showAddToGroupModal, setShowAddToGroupModal] = useState(false);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -39,6 +43,9 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   useEffect(() => {
     if (isOpen && courseId) {
       fetchUsers();
+    } else if (!isOpen) {
+      // Clear selected users when modal is closed
+      setSelectedUsers([]);
     }
   }, [isOpen, courseId]);
 
@@ -90,6 +97,50 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
     setUserToUnenroll(null);
   };
 
+  // Handle individual user selection
+  const handleUserSelection = (userId) => {
+    setSelectedUsers(prev => {
+      if (prev.includes(userId)) {
+        return prev.filter(id => id !== userId);
+      } else {
+        return [...prev, userId];
+      }
+    });
+  };
+
+  // Handle select all users
+  const handleSelectAll = () => {
+    const allUserIds = filteredUsers.map(user => user.user_id);
+    const allSelected = allUserIds.every(id => selectedUsers.includes(id));
+    
+    if (allSelected) {
+      // If all are selected, deselect all
+      setSelectedUsers([]);
+    } else {
+      // If not all are selected, select all
+      setSelectedUsers(allUserIds);
+    }
+  };
+
+  // Check if all filtered users are selected
+  const isAllSelected = () => {
+    if (filteredUsers.length === 0) return false;
+    const allUserIds = filteredUsers.map(user => user.user_id);
+    return allUserIds.every(id => selectedUsers.includes(id));
+  };
+
+  // Check if some users are selected
+  const isSomeSelected = () => {
+    return selectedUsers.length > 0;
+  };
+
+  // Handle successful group addition
+  const handleGroupAdditionSuccess = () => {
+    // Clear selected users after successful addition
+    setSelectedUsers([]);
+    // Optionally refresh the users list or show a success message
+  };
+
   // Filter users based on search term
   const filteredUsers = courseUsers.filter(user => {
     const fullName = `${user.user.first_name} ${user.user.last_name}`.toLowerCase();
@@ -122,6 +173,60 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
     }
   };
 
+  // Export users to Excel
+  const handleExportToExcel = () => {
+    if (!filteredUsers || filteredUsers.length === 0) {
+      alert('No users to export');
+      return;
+    }
+
+    // Prepare data for Excel
+    const excelData = filteredUsers.map((userData, index) => {
+      // Get the highest priority role
+      let userRole = 'user';
+      if (userData.user.user_roles && userData.user.user_roles.length > 0) {
+        const roles = userData.user.user_roles.map(roleObj => roleObj.role);
+        const priorityRoles = ['admin', 'instructor', 'user'];
+        userRole = priorityRoles.find(role => roles.includes(role)) || 'user';
+      }
+
+      return {
+        'S.No': index + 1,
+        'User ID': userData.user_id,
+        'First Name': userData.user.first_name || '',
+        'Last Name': userData.user.last_name || '',
+        'Email': userData.user.email || '',
+        'Role': userRole,
+        'Enrolled Date': userData.enrolled_at ? new Date(userData.enrolled_at).toLocaleDateString() : 'N/A'
+      };
+    });
+
+    // Create a new workbook
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Enrolled Users');
+
+    // Auto-size columns
+    const maxWidth = 50;
+    const columnWidths = Object.keys(excelData[0]).map(key => ({
+      wch: Math.min(
+        Math.max(
+          key.length,
+          ...excelData.map(row => String(row[key]).length)
+        ),
+        maxWidth
+      )
+    }));
+    worksheet['!cols'] = columnWidths;
+
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `Course_Enrolled_Users_${courseId}_${date}.xlsx`;
+
+    // Download the file
+    XLSX.writeFile(workbook, filename);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -140,13 +245,24 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            aria-label="Close"
-          >
-            <X className="w-6 h-6 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportToExcel}
+              disabled={!filteredUsers || filteredUsers.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Export to Excel"
+            >
+              <Download className="w-4 h-4" />
+              Export to Excel
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              aria-label="Close"
+            >
+              <X className="w-6 h-6 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -161,6 +277,40 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
             />
           </div>
+          
+          {/* Selection Controls */}
+          {filteredUsers.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                >
+                  {isAllSelected() ? (
+                    <CheckSquare className="w-4 h-4 text-blue-600" />
+                  ) : (
+                    <Square className="w-4 h-4 text-gray-400" />
+                  )}
+                  {isAllSelected() ? 'Deselect All' : 'Select All'}
+                </button>
+                {isSomeSelected() && (
+                  <span className="text-sm text-gray-600">
+                    {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+                  </span>
+                )}
+              </div>
+              
+              {isSomeSelected() && (
+                <button
+                  onClick={() => setShowAddToGroupModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add to Group
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -184,10 +334,25 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               {filteredUsers.map((userData, index) => (
                 <div 
                   key={userData.user_id} 
-                  className="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200"
+                  className={`group bg-white border rounded-xl p-6 hover:shadow-lg transition-all duration-200 ${
+                    selectedUsers.includes(userData.user_id) 
+                      ? 'border-blue-300 bg-blue-50' 
+                      : 'border-gray-200 hover:border-blue-200'
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
+                      {/* Selection Checkbox */}
+                      <button
+                        onClick={() => handleUserSelection(userData.user_id)}
+                        className="flex-shrink-0 p-1 hover:bg-gray-100 rounded transition-colors duration-200"
+                      >
+                        {selectedUsers.includes(userData.user_id) ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <Square className="w-5 h-5 text-gray-400" />
+                        )}
+                      </button>
                       {/* Avatar */}
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-lg">
@@ -316,6 +481,15 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
           type="danger"
         />
       )}
+
+      {/* Add to Group Modal */}
+      <AddToGroupModal
+        isOpen={showAddToGroupModal}
+        onClose={() => setShowAddToGroupModal(false)}
+        selectedUsers={selectedUsers}
+        courseId={courseId}
+        onSuccess={handleGroupAdditionSuccess}
+      />
     </div>
   );
 };

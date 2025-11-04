@@ -64,7 +64,7 @@ const priorityColor = (priority) => {
 };
 
 export default function MyTickets() {
-  const { isInstructorOrAdmin } = useAuth();
+  const { isInstructorOrAdmin, hasRole } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -74,8 +74,8 @@ export default function MyTickets() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [showTicketDialog, setShowTicketDialog] = useState(false);
 
-  // Check if user is instructor or admin
-  const isInstructor = isInstructorOrAdmin();
+  // Check if user is admin (admins should not access this page)
+  const isAdmin = hasRole('admin');
 
   // Fetch tickets from backend
   const fetchTickets = async () => {
@@ -189,7 +189,7 @@ export default function MyTickets() {
     }
   };
 
-  if (isInstructor) {
+  if (isAdmin) {
     return (
       <div className="fixed inset-0 bg-blue-900/50 backdrop-blur-sm flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl">
@@ -199,7 +199,7 @@ export default function MyTickets() {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-          <p className="text-gray-600 mb-6">Only users can access this page.</p>
+          <p className="text-gray-600 mb-6">Admins cannot access this page. Please use the Support Tickets admin view.</p>
           <Button asChild>
             <Link to="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white">
               Go to Dashboard

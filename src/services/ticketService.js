@@ -24,11 +24,16 @@ export const getAllTickets = async () => {
 
 // Add a new support ticket
 export const createSupportTicket = async (ticketData) => {
+  // Check if ticketData is FormData to set appropriate headers
+  const isFormData = ticketData instanceof FormData;
+  
   return axios.post(
     joinUrl(baseUrl, 'api/support-tickets/create'),
     ticketData,
     {
       headers: {
+        // Don't set Content-Type for FormData - let axios set it with boundary
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...getAuthHeader(),
       },
       withCredentials: true

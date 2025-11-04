@@ -185,3 +185,81 @@ export async function getAllUpcomingEvents(params = {}) {
     throw error;
   }
 }
+
+export async function getCourseEvents(courseId) {
+  try {
+    const url = `${import.meta.env.VITE_API_BASE_URL}/calendar/events/course-event/${courseId}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to fetch course events:', response.status, errorText);
+      throw new Error(`Failed to fetch course events: ${response.status} ${errorText}`);
+    }
+    
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error in getCourseEvents:', error);
+    throw error;
+  }
+}
+
+export async function getPastCourseEvents(courseId) {
+  try {
+    // Get first day of current month
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Current date/time as end date
+    const endDate = new Date();
+    
+    const events = await getCourseEvents(courseId);
+    
+    // Filter events that are in the past (within current month)
+    const pastEvents = events.filter(event => {
+      const eventStart = new Date(event.startTime);
+      return eventStart >= startDate && eventStart < endDate;
+    });
+    
+    return pastEvents;
+  } catch (error) {
+    console.error('Error in getPastCourseEvents:', error);
+    throw error;
+  }
+}
+
+export async function getAllEventsWithCount(count) {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/calendar/events/get-all-events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      credentials: 'include',
+      body: JSON.stringify({ count })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to fetch all events:', response.status, errorText);
+      throw new Error(`Failed to fetch all events: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error in getAllEventsWithCount:', error);
+    throw error;
+  }
+}

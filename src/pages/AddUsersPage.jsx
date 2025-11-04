@@ -306,10 +306,14 @@ const AddUsersForm = () => {
           return;
         }
         
-                 // Track both added and failed users
+                // Track both added and failed users
         
+        // Remove any overlap: if a user is in addedUsers, do not include in existing/failed list
+        const addedEmailsSet = new Set(addedUsers.map(u => u.email.toLowerCase()));
+        const nonOverlappingExistingUsers = existingUsers.filter(u => !addedEmailsSet.has((u.email || '').toLowerCase()));
+
         // Try to match failed users with original user data to get names
-        const enhancedFailedUsers = existingUsers.map(failedUser => {
+        const enhancedFailedUsers = nonOverlappingExistingUsers.map(failedUser => {
           // Try to find the original user data by email
           const originalUser = validUsers.find(user => 
             user.email.toLowerCase() === failedUser.email.toLowerCase()
@@ -345,10 +349,10 @@ const AddUsersForm = () => {
         });
         
                  // Show success message with details about existing users if any
-        if (existingUsers.length > 0) {
-          let message = `Successfully added ${addedUsers.length} user(s). ${existingUsers.length} user(s) already exist in the database and were skipped.\n\n`;
+        if (nonOverlappingExistingUsers.length > 0) {
+          let message = `Successfully added ${addedUsers.length} user(s). ${nonOverlappingExistingUsers.length} user(s) already exist in the database and were skipped.\n\n`;
           message += `Users that were NOT added (already exist):\n`;
-          existingUsers.forEach(user => {
+          nonOverlappingExistingUsers.forEach(user => {
             const firstName = user.first_name || user.firstName || '';
             const lastName = user.last_name || user.lastName || '';
             message += `• ${user.email} (${firstName} ${lastName})\n`;
@@ -403,8 +407,12 @@ const AddUsersForm = () => {
           
                      // Track both added and failed users
            
+           // Remove any overlap: if a user is in addedUsers, do not include in existing/failed list
+           const addedEmailsSet = new Set(addedUsers.map(u => u.email.toLowerCase()));
+           const nonOverlappingExistingUsers = existingUsers.filter(u => !addedEmailsSet.has((u.email || '').toLowerCase()));
+
            // Try to match failed users with original user data to get names
-           const enhancedFailedUsers = existingUsers.map(failedUser => {
+           const enhancedFailedUsers = nonOverlappingExistingUsers.map(failedUser => {
              // Try to find the original user data by email
              const originalUser = validUsers.find(user => 
                user.email.toLowerCase() === failedUser.email.toLowerCase()
@@ -439,10 +447,10 @@ const AddUsersForm = () => {
            });
            
            // Show success message with details about existing users
-           if (existingUsers.length > 0) {
-             let message = `Successfully added ${addedUsers.length} user(s). ${existingUsers.length} user(s) already exist in the database and were skipped.\n\n`;
+           if (nonOverlappingExistingUsers.length > 0) {
+             let message = `Successfully added ${addedUsers.length} user(s). ${nonOverlappingExistingUsers.length} user(s) already exist in the database and were skipped.\n\n`;
              message += `Users that were NOT added (already exist):\n`;
-                         existingUsers.forEach(user => {
+                        nonOverlappingExistingUsers.forEach(user => {
               const firstName = user.first_name || user.firstName || '';
               const lastName = user.last_name || user.lastName || '';
               message += `• ${user.email} (${firstName} ${lastName})\n`;

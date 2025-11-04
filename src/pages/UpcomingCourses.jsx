@@ -2,35 +2,96 @@ import React, { useRef, useState, useEffect } from "react";
 import { ChevronRight, ChevronLeft, Clock, Zap, BookOpen } from "lucide-react";
 
 const UPCOMING_COURSES = [
+  // Become Private
   {
-    id: "become-private-acts-of-expatriation",
-    title: "Acts of Expatriation (Multiple Name Variants)",
+    id: "become-private-security-agreement-and-collateralization",
+    title: "Security Agreement and Collateralization",
     course: "Become Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/become-private/Lesson+8.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp9.png",
   },
   {
-    id: "sovereignty-101-commerce-banking-control",
-    title: "Commerce, Banking, and Control",
-    course: "Sovereignty 101",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/SOV/Lesson+5.png",
+    id: "become-private-legal-protections-and-risk-management",
+    title: "Legal Protections and Risk Management",
+    course: "Become Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp10.png",
   },
   {
-    id: "operate-private-business-trust-expenses-b",
-    title: "Business Trust Expenses - Part B",
+    id: "become-private-sample-trust-implementation",
+    title: "Sample Trust Implementation",
+    course: "Become Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp11.png",
+  },
+  {
+    id: "become-private-closing-and-continuation",
+    title: "Closing and Continuation",
+    course: "Become Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/bp12.png",
+  },
+
+  // Private Merchant
+  {
+    id: "private-merchant-showdown-merchant-account-provider-vs-aggregators-1",
+    title: "Showdown: Merchant Account Provider vs Agrgegators 1",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm22.png",
+  },
+  {
+    id: "private-merchant-how-to-find-your-payment-processing-soul-mate",
+    title: "How To Find Your Payment Processing Soul Mate",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm29.png",
+  },
+  {
+    id: "private-merchant-the-future-of-payments",
+    title: "The Future of Payments",
+    course: "Private Merchant",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pm30.png",
+  },
+
+  // Operate Private
+  {
+    id: "operate-private-business-trust-part-17-appendix-c-trustee-liability-protection-provisions",
+    title: "Business Trust Part 17 ( Appendix “C” ~ Trustee Liability Protection Provisions )",
     course: "Operate Private",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+7.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Operate-Private/Lesson+17.png",
   },
   {
-    id: "business-credit-ecredable-business-lift",
-    title: "ECREDABLE Business Lift: Sign Up Here",
+    id: "operate-private-pma-articles-of-association",
+    title: "PMA Articles of Association",
+    course: "Operate Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pma1.png",
+  },
+  {
+    id: "operate-private-pma-ein-application-process-of-church-based-ministry",
+    title: "PMA EIN Application Process Of Church Based Ministry",
+    course: "Operate Private",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/pma2.png",
+  },
+
+  // Business Credit
+  {
+    id: "business-credit-maverick-office-supplies-net-30-account",
+    title: "Maverick Office Supplies - Sign Up for a Free NET 30 Account",
     course: "Business Credit",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Business-credit/Lesson+6.png",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+7+(3).png",
   },
   {
-    id: "iwrn-collections-chargeoffs-negative",
-    title: "Collections, Charge-Offs, and Negative Accounts",
-    course: "I Want Remedy Now",
-    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/I-want-remedy/Lesson+6.png",
+    id: "business-credit-list-of-tier-1-tradelines-to-get-started",
+    title: "List of Tier 1 Tradelines to Get Started",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+8+(4).png",
+  },
+  {
+    id: "business-credit-section-5-tier-2-business-credit-cards",
+    title: "Section 5: Tier 2 – Business Credit Cards",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+9+(3).png",
+  },
+  {
+    id: "business-credit-tier-3-credit-unions-and-community-banks",
+    title: "Tier 3 – Credit Unions and Community Banks",
+    course: "Business Credit",
+    image: "https://lesson-banners.s3.us-east-1.amazonaws.com/Upcoming_Courses_Banner/Lesson+10+(4).png",
   },
 ];
 
@@ -38,6 +99,16 @@ function UpcomingCourses() {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState("All");
+
+  const courseFilters = [
+    "All",
+    ...Array.from(new Set(UPCOMING_COURSES.map((c) => c.course))),
+  ];
+
+  const visibleCourses = selectedCourse === "All"
+    ? UPCOMING_COURSES
+    : UPCOMING_COURSES.filter((c) => c.course === selectedCourse);
 
   const updateScrollButtons = () => {
     const el = scrollRef.current;
@@ -70,10 +141,28 @@ function UpcomingCourses() {
   return (
     <div className="mb-16 relative max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 px-1">
+      <div className="mb-8 px-1">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Upcoming This Week</h2>
           <p className="text-gray-500">New content launching soon</p>
+        </div>
+        {/* Course filters placed below header */}
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto hide-scrollbar py-1">
+          {courseFilters.map((course) => (
+            <button
+              key={course}
+              onClick={() => setSelectedCourse(course)}
+              className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 
+                ${selectedCourse === course
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-transparent shadow-md ring-1 ring-blue-500/40 hover:shadow-lg hover:brightness-105'
+                  : 'bg-white/70 text-gray-700 border-gray-200 hover:bg-white hover:text-gray-900 hover:border-blue-200 shadow-sm backdrop-blur supports-backdrop:backdrop-blur-md hover:shadow-md'}
+              `}
+              aria-pressed={selectedCourse === course}
+            >
+              {course}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -102,7 +191,7 @@ function UpcomingCourses() {
         ref={scrollRef}
         className="flex space-x-6 overflow-x-auto scroll-smooth snap-x snap-mandatory hide-scrollbar pb-6 px-1"
       >
-        {UPCOMING_COURSES.map((item, index) => (
+        {visibleCourses.map((item, index) => (
           <div
             key={item.id}
             className={`flex-shrink-0 w-80 rounded-xl border border-white/20 overflow-hidden snap-start 

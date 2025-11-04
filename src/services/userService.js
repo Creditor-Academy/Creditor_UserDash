@@ -80,56 +80,48 @@ export function clearUserData() {
 }
 
 import { getAuthHeader } from './authHeader';
+import api from './apiClient';
 
 export async function fetchUserProfile() {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/getUserProfile`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader()
-      },
-      credentials: 'include',
+    const response = await api.get('/api/user/getUserProfile', {
+      withCredentials: true,
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch user profile: ${response.status} ${errorText}`);
-    }
-
-    const result = await response.json();
-    return result.data;
+    return response.data?.data ?? response.data;
   } catch (error) {
+    throw error;
+  }
+}
+
+export async function fetchAllUsers() {
+  try {
+    console.log("📤 userService: Fetching all users");
+    const response = await api.get('/api/user/all', {
+      withCredentials: true,
+    });
+    
+    if (response.data && response.data.code === 200) {
+      const users = response.data.data || [];
+      console.log("✅ userService: Users fetched successfully:", users.length);
+      return users;
+    } else {
+      throw new Error('Failed to fetch users');
+    }
+  } catch (error) {
+    console.error("❌ userService: Error fetching users:", error);
     throw error;
   }
 }
 
 export async function updateUserProfile(profileData) {
   try {
-    console.log("📤 userService: Updating profile to:", `${import.meta.env.VITE_API_BASE_URL}/api/user/updateUserProfile`);
+    console.log("📤 userService: Updating profile to:", `/api/user/updateUserProfile`);
     console.log("📤 userService: Update data:", profileData);
     
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/updateUserProfile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-      body: JSON.stringify(profileData),
-    });
+    const response = await api.put('/api/user/updateUserProfile', profileData);
     
-    console.log("🔍 userService: Update response status:", response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ userService: Update profile failed:", response.status, errorText);
-      throw new Error(`Failed to update user profile: ${response.status} ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log("✅ userService: Update profile success:", result);
-    return result;
+    console.log("✅ userService: Update profile success:", response.data);
+    return response.data;
   } catch (error) {
     console.error("❌ userService: Update profile error:", error);
     throw error;
@@ -138,27 +130,10 @@ export async function updateUserProfile(profileData) {
 
 export async function fetchAllCourses() {
   try {
-    console.log("🔍 userService: Fetching all courses from:", `${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`);
-    
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/course/getCourses`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-    
-    console.log("🔍 userService: Courses response status:", response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ userService: Fetch courses failed:", response.status, errorText);
-      throw new Error(`Failed to fetch courses: ${response.status} ${errorText}`);
-    }
-    
-    const result = await response.json();
-    console.log("✅ userService: Fetch courses success:", result);
-    return result.data || result; // Return data if it exists, otherwise return the full result
+    console.log("🔍 userService: Fetching all courses from:", `/api/course/getCourses`);
+    const response = await api.get('/api/course/getCourses');
+    console.log("✅ userService: Fetch courses success:", response.data);
+    return response.data?.data || response.data;
   } catch (error) {
     console.error("❌ userService: Fetch courses error:", error);
     throw error;
@@ -177,26 +152,10 @@ export async function fetchUserCoursesByUserId(userId) {
 
     console.log("🔍 userService: Fetching courses for user (POST with body { userId }):", { url, userId });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json', 
-        'Accept': 'application/json',
-        ...getAuthHeader()
-      },
-      credentials: 'include',
-      body: JSON.stringify({ userId }),
-    });
+    const response = await api.post('/api/course/getUserCoursesByUserId', { userId });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ userService: Fetch user courses failed:", response.status, errorText);
-      throw new Error(`Failed to fetch user courses: ${response.status} ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log("✅ userService: Fetch user courses success:", result);
-    return result.data || result;
+    console.log("✅ userService: Fetch user courses success:", response.data);
+    return response.data?.data || response.data;
   } catch (error) {
     console.error("❌ userService: Fetch user courses error:", error);
     throw error;
@@ -205,22 +164,11 @@ export async function fetchUserCoursesByUserId(userId) {
 
 export async function updateProfilePicture(formData) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/updateProfilePictureS3`, {
-      method: 'POST',
-      headers: {
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-      body: formData,
+    const response = await api.post('/api/user/updateProfilePictureS3', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update profile picture: ${response.status} ${errorText}`);
-    }
-
-    const result = await response.json();
-    return result;
+    return response.data;
   } catch (error) {
     console.error("❌ userService: Update profile picture error:", error);
     throw error;
@@ -229,24 +177,9 @@ export async function updateProfilePicture(formData) {
 
 export async function fetchDetailedUserProfile(userId) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/instructor/getUserAllData`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        userId: userId
-      }),
-    });
+    const response = await api.post('/api/instructor/getUserAllData', { userId });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
+    const data = response.data;
     if (data.success && data.code === 200) {
       return data.data;
     } else {
@@ -258,15 +191,58 @@ export async function fetchDetailedUserProfile(userId) {
   }
 }
 
+// Public profile for regular users: limited-safe fields
+export async function fetchPublicUserProfile(userId) {
+  try {
+    const response = await api.get(`/api/user/profile/${userId}`);
+    const data = response.data;
+    if (data && (data.success === true || data.code === 200)) {
+      const payload = data.data || {};
+      // Normalize to match consumer expectations
+      return {
+        ...payload,
+        image: payload.profile_photo || payload.image || null,
+        user_roles: payload.user_roles || [{ role: 'user' }], // Add default role if not present
+      };
+    }
+    throw new Error(data?.message || 'Failed to fetch public user profile');
+  } catch (error) {
+    console.error('Error fetching public user profile:', error);
+    throw error;
+  }
+}
+
+
+// Admin/Instructor: fetch all users (includes activity_log for last visited)
+export async function fetchAllUsersAdmin() {
+  try {
+    const response = await api.get('/api/user/all', {
+      withCredentials: true,
+    });
+
+    const data = response.data;
+    if (data && (data.success === true || data.code === 200)) {
+      return data.data || [];
+    }
+    return data?.data || [];
+  } catch (error) {
+    console.error('Error fetching all users (admin):', error);
+    throw error;
+  }
+}
+
 
 export async function logoutUser() {
   try {
-    const response = await fetch('https://creditor-backend-1-iijy.onrender.com/api/auth/logout', {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    
+    const response = await fetch(`${baseUrl}/api/auth/logout`, {
       method: 'GET',
-      credentials: 'include', // Important for sending cookies
+      credentials: 'include', // Keep for any same-domain cookies
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -282,3 +258,4 @@ export async function logoutUser() {
     return false;
   }
 }
+

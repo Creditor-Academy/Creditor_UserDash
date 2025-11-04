@@ -164,7 +164,7 @@ function QuizResultsPage() {
     <div className="container py-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(-3)}>
           <BookOpen size={16} />
           Back to Quiz
         </Button>
@@ -197,13 +197,7 @@ function QuizResultsPage() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
-                    <Clock className="h-6 w-6 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">Duration</p>
-                      <p className="text-lg font-semibold text-gray-900">{quizData?.quiz?.time_limit || quizData?.timeLimit || 25} minutes</p>
-                    </div>
-                  </div>
+                  
                   
                   <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
                     <CheckCircle className="h-6 w-6 text-purple-600" />
@@ -356,21 +350,94 @@ function QuizResultsPage() {
                               <p className="font-medium mb-3 text-lg">
                                 {questionData?.question || questionData?.questionText || questionData?.text || questionData?.content || `Question ${index + 1}`}
                               </p>
+                              {/* CATEGORIZATION Visualization */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                if (typeLower !== 'categorization') return null;
+                                const opts = Array.isArray(questionData?.options) ? questionData.options : [];
+                                const categories = opts.filter(o => o?.isCategory === true || (!('isCategory' in (o || {})) && !o?.category));
+                                const items = opts.filter(o => o?.isCategory === false || (!!o?.category && !o?.isCategory));
+                                const selected = Array.isArray(answer?.selected) ? answer.selected : [];
+                                const itemTextById = new Map(items.map(o => [String(o.id), o.text]));
+                                // Group selected items by category name
+                                const categoryToItems = new Map();
+                                selected.forEach(s => {
+                                  const cat = String(s?.category || '').trim();
+                                  const id = String(s?.optionId || '');
+                                  const text = itemTextById.get(id) || id;
+                                  if (!cat) return;
+                                  if (!categoryToItems.has(cat)) categoryToItems.set(cat, []);
+                                  categoryToItems.get(cat).push({ id, text });
+                                });
+                                // Unassigned items (not in selected list)
+                                const assignedSet = new Set(selected.map(s => String(s?.optionId || '')));
+                                const unassigned = items.filter(it => !assignedSet.has(String(it.id)));
+                                return (
+                                  <div className="space-y-4 mb-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                      {categories.map(cat => {
+                                        const catName = cat.text;
+                                        const catItems = categoryToItems.get(catName) || [];
+                                        return (
+                                          <div key={cat.id} className="group rounded-2xl border-2 border-dashed border-blue-200 bg-gradient-to-b from-blue-50 to-blue-100/40 p-5 min-h-[160px] shadow-sm">
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-600 text-white text-xs font-semibold shadow">
+                                                <span className="inline-block w-2 h-2 bg-white rounded-full mr-2" />
+                                                {catName}
+                                              </div>
+                                              <span className="ml-2 inline-flex items-center justify-center text-xs font-semibold text-blue-700 bg-white/70 border border-blue-200 rounded-full h-6 px-2">
+                                                {catItems.length}
+                                              </span>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-2 min-h-[90px]">
+                                              {catItems.length ? catItems.map(item => (
+                                                <div key={item.id} className="bg-white/95 border border-gray-200 rounded-lg px-3 py-2 text-sm shadow-sm">
+                                                  <div className="flex items-center">
+                                                    <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-2" />
+                                                    <span className="text-gray-800">{item.text}</span>
+                                                  </div>
+                                                </div>
+                                              )) : (
+                                                <div className="flex items-center justify-center text-gray-400 text-sm py-6">No items</div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                    {unassigned.length > 0 && (
+                                      <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                          <h5 className="text-xs font-semibold text-gray-800">Unassigned Items</h5>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {unassigned.map(item => (
+                                            <div key={item.id} className="bg-yellow-50 border border-yellow-200 rounded-md px-3 py-1.5 text-xs">
+                                              <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2 align-middle" />
+                                              <span className="text-gray-800 align-middle">{item.text}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                               
-                              {/* Options Display for MCQ/SCQ questions */}
-                              {questionData?.options && Array.isArray(questionData.options) && questionData.options.length > 0 && (
+                              {/* Options Display for MCQ/SCQ questions - hide for categorization */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                if (typeLower === 'categorization') return null;
+                                if (!(questionData?.options && Array.isArray(questionData.options) && questionData.options.length > 0)) return null;
+                                return (
                                 <div className="space-y-2 mb-3">
                                   <p className="text-sm font-medium text-gray-700 mb-2">Options:</p>
                                   {questionData.options.map((option, optIndex) => {
                                     const optionText = option?.text || option?.label || option?.value || String(option);
                                     const optionId = option?.id || option?._id || option?.optionId || option?.value || optIndex;
-                                    
-                                    // Check if this option was selected by user
                                     const isSelected = Array.isArray(userAnswerData) 
                                       ? userAnswerData.some(ans => String(ans) === String(optionId) || String(ans) === String(optIndex))
                                       : String(userAnswerData) === String(optionId) || String(userAnswerData) === String(optIndex);
-                                    
-                                    // Determine option styling based on selection and correctness
                                     let optionStyle = "p-2 rounded border";
                                     if (isSelected && answer.isCorrect) {
                                       optionStyle += " bg-green-100 border-green-300 text-green-800";
@@ -379,7 +446,6 @@ function QuizResultsPage() {
                                     } else {
                                       optionStyle += " bg-gray-50 border-gray-200 text-gray-700";
                                     }
-                                    
                                     return (
                                       <div key={optIndex} className={optionStyle}>
                                         <span className="font-medium">{optionText}</span>
@@ -387,7 +453,46 @@ function QuizResultsPage() {
                                     );
                                   })}
                                 </div>
-                              )}
+                                );
+                              })()}
+
+                              {/* Your Answer display for text/optionless questions (fill-ups, one-word, descriptive, etc.) */}
+                              {(() => {
+                                const typeLower = (questionData?.type || questionData?.question_type || '').toLowerCase();
+                                const hasOptions = Array.isArray(questionData?.options) && questionData.options.length > 0;
+                                const isTextualType = [
+                                  'fill_blank', 'fill_ups', 'fill in the blank', 'fillintheblank',
+                                  'one_word', 'oneword', 'one word',
+                                  'descriptive', 'text', 'essay', 'long_answer', 'long answer'
+                                ].includes(typeLower);
+                                const shouldShow = isTextualType || !hasOptions;
+                                if (!shouldShow) return null;
+
+                                const fromResult = Array.isArray(answer?.selected)
+                                  ? answer.selected
+                                  : (answer?.selected != null ? [answer.selected] : undefined);
+                                const fromState = Array.isArray(userAnswerData)
+                                  ? userAnswerData
+                                  : (userAnswerData != null ? [userAnswerData] : []);
+                                const values = fromResult ?? fromState;
+
+                                return (
+                                  <div className="space-y-2 mb-3">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Your Answer:</p>
+                                    {values && values.length > 0 ? (
+                                      <div className="flex flex-wrap gap-2">
+                                        {values.map((val, i) => (
+                                          <span key={i} className="px-2 py-1 rounded bg-gray-100 border border-gray-200 text-gray-800">
+                                            {String(val)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span className="text-gray-500">No answer</span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                     
                               
                               
@@ -450,29 +555,6 @@ function QuizResultsPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between">
-        
-        
-        <div className="flex gap-3">
-          <Button 
-            variant="outline"
-            onClick={() => navigate(`/dashboard/courses/${moduleId}/modules/${moduleId}/assessments`)}
-          >
-            <BookOpen className="mr-2 h-4 w-4" />
-            View All Assessments
-          </Button>
-          
-          <Button 
-            onClick={() => navigate(`/dashboard/quiz/take/${quizId}?module=${moduleId}&category=${category}`)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Trophy className="mr-2 h-4 w-4" />
-            Retake Quiz
-          </Button>
-        </div>
-      </div>
 
 
       

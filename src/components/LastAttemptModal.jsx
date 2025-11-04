@@ -64,8 +64,16 @@ export default function LastAttemptModal({ isOpen, onClose, attempt }) {
   let correctAnswers = 0;
   let totalQuestions = 0;
   
+  // Prefer new API fields when available
+  if (attempt?.percentage !== undefined) {
+    totalQuestions = attempt.questionCount ?? attempt.total_questions ?? 0;
+    correctAnswers = attempt.totalCorrectAnswers ?? 0;
+    scorePercentage = Math.round(Number(attempt.percentage));
+    if (!correctAnswers && totalQuestions > 0) {
+      correctAnswers = Math.round((scorePercentage / 100) * totalQuestions);
+    }
   // Try to get detailed answer information first
-  if (attempt?.answers && Array.isArray(attempt.answers)) {
+  } else if (attempt?.answers && Array.isArray(attempt.answers)) {
     totalQuestions = attempt.answers.length;
     correctAnswers = attempt.answers.filter(a => a?.isCorrect === true || a?.correct === true).length;
     if (totalQuestions > 0) {
@@ -136,7 +144,8 @@ export default function LastAttemptModal({ isOpen, onClose, attempt }) {
     }
   }
   
-  const isPassed = scorePercentage >= 70;
+  const rawPercentage = attempt?.percentage !== undefined ? Number(attempt.percentage) : scorePercentage;
+  const isPassed = rawPercentage > 50;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -224,7 +233,11 @@ export default function LastAttemptModal({ isOpen, onClose, attempt }) {
                   ) : (
                     <div className="text-center py-3">
                       <div className="text-lg font-semibold text-gray-900">
-                        {attempt?.score !== undefined ? `${attempt.score} points` : 'No score available'}
+                        {attempt?.userScored !== undefined
+                          ? `${attempt.userScored}${attempt?.quizScore !== undefined ? ` / ${attempt.quizScore}` : ''} points`
+                          : attempt?.score !== undefined
+                            ? `${attempt.score} points`
+                            : 'No score available'}
                       </div>
                     </div>
                   )}
@@ -278,10 +291,20 @@ export default function LastAttemptModal({ isOpen, onClose, attempt }) {
                 </div>
 
                 {/* Additional score details */}
-                {attempt?.score !== undefined && (
+                {(attempt?.score !== undefined || attempt?.quizScore !== undefined || attempt?.userScored !== undefined || attempt?.questionCount !== undefined || attempt?.total_questions !== undefined || attempt?.questions_count !== undefined) && (
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                     <h5 className="text-sm font-medium text-gray-700 mb-3">Score Details</h5>
                     <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+                      {attempt.quizScore !== undefined && (
+                        <div>
+                          <span className="font-medium">Total points:</span> {attempt.quizScore}
+                        </div>
+                      )}
+                      {attempt.userScored !== undefined && (
+                        <div>
+                          <span className="font-medium">Points scored:</span> {attempt.userScored}{attempt.quizScore !== undefined ? ` / ${attempt.quizScore}` : ''}
+                        </div>
+                      )}
                       {attempt.marksPerQuestion && (
                         <div>
                           <span className="font-medium">Marks per question:</span> {attempt.marksPerQuestion}
@@ -297,9 +320,16 @@ export default function LastAttemptModal({ isOpen, onClose, attempt }) {
                           <span className="font-medium">Questions count:</span> {attempt.questions_count}
                         </div>
                       )}
-                      <div>
-                        <span className="font-medium">Raw Score:</span> {attempt.score}
-                      </div>
+                      {attempt.questionCount !== undefined && (
+                        <div>
+                          <span className="font-medium">Question count (latest):</span> {attempt.questionCount}
+                        </div>
+                      )}
+                      {attempt.score !== undefined && (
+                        <div>
+                          <span className="font-medium">Raw Score:</span> {attempt.score}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
