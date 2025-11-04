@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle, 
-  Circle, 
-  Wand2, 
-  Edit3, 
-  Brain, 
+import {
+  Sparkles,
+  ArrowRight,
+  CheckCircle,
+  Circle,
+  Wand2,
+  Edit3,
+  Brain,
   Zap,
   Target,
   BookOpen,
@@ -18,7 +18,7 @@ import {
   Image as ImageIcon,
   Play,
   Pause,
-  RotateCcw
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,12 +26,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import unifiedAIContentService from '@/services/unifiedAIContentService';
 
-const AIWorkflowManager = ({ 
-  lessonTitle, 
-  contentBlocks, 
-  onBlockGenerated, 
+const AIWorkflowManager = ({
+  lessonTitle,
+  contentBlocks,
+  onBlockGenerated,
   onWorkflowComplete,
-  isActive = false 
+  isActive = false,
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -47,8 +47,9 @@ const AIWorkflowManager = ({
       description: 'Create an engaging lesson introduction',
       blockType: 'text',
       icon: <BookOpen className="w-4 h-4" />,
-      prompt: 'Create an engaging introduction that hooks learners and introduces the main topic',
-      essential: true
+      prompt:
+        'Create an engaging introduction that hooks learners and introduces the main topic',
+      essential: true,
     },
     {
       id: 'objectives',
@@ -57,7 +58,7 @@ const AIWorkflowManager = ({
       blockType: 'list',
       icon: <Target className="w-4 h-4" />,
       prompt: 'Create 3-5 clear, measurable learning objectives',
-      essential: true
+      essential: true,
     },
     {
       id: 'main-content',
@@ -66,7 +67,7 @@ const AIWorkflowManager = ({
       blockType: 'text',
       icon: <FileText className="w-4 h-4" />,
       prompt: 'Provide detailed explanation of the main concepts with examples',
-      essential: true
+      essential: true,
     },
     {
       id: 'key-points',
@@ -75,7 +76,7 @@ const AIWorkflowManager = ({
       blockType: 'list',
       icon: <List className="w-4 h-4" />,
       prompt: 'List the most important points students should remember',
-      essential: false
+      essential: false,
     },
     {
       id: 'insight',
@@ -83,8 +84,9 @@ const AIWorkflowManager = ({
       description: 'Important note or tip',
       blockType: 'quote',
       icon: <Quote className="w-4 h-4" />,
-      prompt: 'Create an insightful quote or important tip that reinforces learning',
-      essential: false
+      prompt:
+        'Create an insightful quote or important tip that reinforces learning',
+      essential: false,
     },
     {
       id: 'summary',
@@ -93,29 +95,32 @@ const AIWorkflowManager = ({
       blockType: 'text',
       icon: <CheckCircle className="w-4 h-4" />,
       prompt: 'Summarize the lesson and provide actionable next steps',
-      essential: true
-    }
+      essential: true,
+    },
   ];
 
   // Calculate workflow progress
   const progress = (completedSteps.size / workflowSteps.length) * 100;
   const essentialSteps = workflowSteps.filter(step => step.essential);
-  const essentialProgress = (essentialSteps.filter(step => completedSteps.has(step.id)).length / essentialSteps.length) * 100;
+  const essentialProgress =
+    (essentialSteps.filter(step => completedSteps.has(step.id)).length /
+      essentialSteps.length) *
+    100;
 
   // Start AI workflow
   const startWorkflow = async () => {
     setWorkflowActive(true);
     setCurrentStep(0);
-    
+
     // Generate content for all steps automatically
     for (let i = 0; i < workflowSteps.length; i++) {
       await generateStepContent(i);
       setCurrentStep(i + 1);
-      
+
       // Small delay between generations for better UX
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
+
     setWorkflowActive(false);
     if (onWorkflowComplete) {
       onWorkflowComplete(generatedContent);
@@ -123,12 +128,12 @@ const AIWorkflowManager = ({
   };
 
   // Generate content for specific step
-  const generateStepContent = async (stepIndex) => {
+  const generateStepContent = async stepIndex => {
     const step = workflowSteps[stepIndex];
     if (!step) return;
 
     setIsGenerating(true);
-    
+
     try {
       const result = await unifiedAIContentService.generateContextualContent(
         lessonTitle,
@@ -142,12 +147,12 @@ const AIWorkflowManager = ({
           ...result,
           stepId: step.id,
           stepTitle: step.title,
-          blockType: step.blockType
+          blockType: step.blockType,
         };
 
         setGeneratedContent(prev => ({
           ...prev,
-          [step.id]: newContent
+          [step.id]: newContent,
         }));
 
         setCompletedSteps(prev => new Set([...prev, step.id]));
@@ -161,8 +166,8 @@ const AIWorkflowManager = ({
             metadata: {
               ...result.metadata,
               workflowStep: step.id,
-              stepTitle: step.title
-            }
+              stepTitle: step.title,
+            },
           });
         }
       }
@@ -174,7 +179,7 @@ const AIWorkflowManager = ({
   };
 
   // Generate individual step on demand
-  const generateSingleStep = async (stepIndex) => {
+  const generateSingleStep = async stepIndex => {
     setCurrentStep(stepIndex);
     await generateStepContent(stepIndex);
   };
@@ -188,15 +193,15 @@ const AIWorkflowManager = ({
   };
 
   // Check if step is available (previous essential steps completed)
-  const isStepAvailable = (stepIndex) => {
+  const isStepAvailable = stepIndex => {
     const step = workflowSteps[stepIndex];
     if (stepIndex === 0) return true;
-    
+
     // Check if all previous essential steps are completed
     const previousEssentialSteps = workflowSteps
       .slice(0, stepIndex)
       .filter(s => s.essential);
-    
+
     return previousEssentialSteps.every(s => completedSteps.has(s.id));
   };
 
@@ -213,7 +218,7 @@ const AIWorkflowManager = ({
             Automated content generation for "{lessonTitle}"
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             onClick={startWorkflow}
@@ -232,12 +237,8 @@ const AIWorkflowManager = ({
               </>
             )}
           </Button>
-          
-          <Button
-            onClick={resetWorkflow}
-            variant="outline"
-            size="sm"
-          >
+
+          <Button onClick={resetWorkflow} variant="outline" size="sm">
             <RotateCcw className="w-4 h-4" />
           </Button>
         </div>
@@ -249,13 +250,18 @@ const AIWorkflowManager = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Overall Progress</span>
-              <span className="text-sm text-gray-600">{completedSteps.size}/{workflowSteps.length} steps</span>
+              <span className="text-sm text-gray-600">
+                {completedSteps.size}/{workflowSteps.length} steps
+              </span>
             </div>
             <Progress value={progress} className="h-2" />
-            
+
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Essential Steps</span>
-              <span className="text-sm text-gray-600">{essentialSteps.filter(s => completedSteps.has(s.id)).length}/{essentialSteps.length} completed</span>
+              <span className="text-sm text-gray-600">
+                {essentialSteps.filter(s => completedSteps.has(s.id)).length}/
+                {essentialSteps.length} completed
+              </span>
             </div>
             <Progress value={essentialProgress} className="h-2" />
           </div>
@@ -277,22 +283,32 @@ const AIWorkflowManager = ({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className={`transition-all duration-200 ${
-                isCurrent ? 'border-purple-500 shadow-md' : 
-                isCompleted ? 'border-green-500 bg-green-50' : 
-                isAvailable ? 'border-gray-200 hover:border-gray-300' : 
-                'border-gray-100 opacity-60'
-              }`}>
+              <Card
+                className={`transition-all duration-200 ${
+                  isCurrent
+                    ? 'border-purple-500 shadow-md'
+                    : isCompleted
+                      ? 'border-green-500 bg-green-50'
+                      : isAvailable
+                        ? 'border-gray-200 hover:border-gray-300'
+                        : 'border-gray-100 opacity-60'
+                }`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {/* Step Status Icon */}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        isCompleted ? 'bg-green-500 text-white' :
-                        isCurrent ? 'bg-purple-500 text-white animate-pulse' :
-                        isAvailable ? 'bg-gray-200 text-gray-600' :
-                        'bg-gray-100 text-gray-400'
-                      }`}>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          isCompleted
+                            ? 'bg-green-500 text-white'
+                            : isCurrent
+                              ? 'bg-purple-500 text-white animate-pulse'
+                              : isAvailable
+                                ? 'bg-gray-200 text-gray-600'
+                                : 'bg-gray-100 text-gray-400'
+                        }`}
+                      >
                         {isCompleted ? (
                           <CheckCircle className="w-4 h-4" />
                         ) : isCurrent ? (
@@ -306,12 +322,18 @@ const AIWorkflowManager = ({
                       <div>
                         <div className="flex items-center gap-2">
                           {step.icon}
-                          <h4 className="font-medium text-gray-900">{step.title}</h4>
+                          <h4 className="font-medium text-gray-900">
+                            {step.title}
+                          </h4>
                           {step.essential && (
-                            <Badge variant="secondary" className="text-xs">Essential</Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Essential
+                            </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{step.description}</p>
+                        <p className="text-sm text-gray-600">
+                          {step.description}
+                        </p>
                       </div>
                     </div>
 
@@ -323,7 +345,7 @@ const AIWorkflowManager = ({
                           Generated
                         </Badge>
                       )}
-                      
+
                       <Button
                         size="sm"
                         variant="outline"
@@ -333,7 +355,11 @@ const AIWorkflowManager = ({
                         {isGenerating && isCurrent ? (
                           <motion.div
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: 'linear',
+                            }}
                           >
                             <Wand2 className="w-4 h-4" />
                           </motion.div>
@@ -356,13 +382,16 @@ const AIWorkflowManager = ({
                         <div className="bg-gray-50 rounded-lg p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <Zap className="w-3 h-3 text-purple-600" />
-                            <span className="text-xs font-medium text-gray-700">AI Generated Content</span>
+                            <span className="text-xs font-medium text-gray-700">
+                              AI Generated Content
+                            </span>
                           </div>
                           <div className="text-sm text-gray-600 line-clamp-2">
-                            {typeof hasContent.content === 'string' 
-                              ? hasContent.content.replace(/<[^>]*>/g, '').substring(0, 100) + '...'
-                              : 'Content generated successfully'
-                            }
+                            {typeof hasContent.content === 'string'
+                              ? hasContent.content
+                                  .replace(/<[^>]*>/g, '')
+                                  .substring(0, 100) + '...'
+                              : 'Content generated successfully'}
                           </div>
                         </div>
                       </motion.div>
@@ -381,11 +410,14 @@ const AIWorkflowManager = ({
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="font-medium text-green-800">Workflow Progress</span>
+              <span className="font-medium text-green-800">
+                Workflow Progress
+              </span>
             </div>
             <p className="text-sm text-green-700">
-              {completedSteps.size} of {workflowSteps.length} steps completed. 
-              {essentialProgress === 100 && " All essential content has been generated!"}
+              {completedSteps.size} of {workflowSteps.length} steps completed.
+              {essentialProgress === 100 &&
+                ' All essential content has been generated!'}
             </p>
           </CardContent>
         </Card>

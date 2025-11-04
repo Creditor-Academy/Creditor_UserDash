@@ -13,7 +13,7 @@ class ApiKeyManager {
       // Demo/test keys for development (limited functionality)
       openai: null, // Will use rate-limited free tier if available
       huggingface: null,
-      deepai: null
+      deepai: null,
     };
   }
 
@@ -25,7 +25,7 @@ class ApiKeyManager {
    */
   getApiKey(service, keyIndex = 0) {
     const cacheKey = `${service}_${keyIndex}`;
-    
+
     // Check cache first
     if (this.keyCache.has(cacheKey)) {
       return this.keyCache.get(cacheKey);
@@ -47,7 +47,7 @@ class ApiKeyManager {
 
     // Cache the result (even if null)
     this.keyCache.set(cacheKey, apiKey);
-    
+
     return apiKey;
   }
 
@@ -79,9 +79,9 @@ class ApiKeyManager {
           'VITE_HF_API_KEY',
           'VITE_HF_API_KEY_2',
           'HF_API_KEY',
-          'HUGGINGFACE_API_KEY'
+          'HUGGINGFACE_API_KEY',
         ];
-        
+
         if (keyIndex < hfKeys.length) {
           const envKey = hfKeys[keyIndex];
           sources.push(
@@ -90,7 +90,7 @@ class ApiKeyManager {
             () => localStorage.getItem('huggingface_api_key')
           );
         }
-        
+
         sources.push(() => this.fallbackKeys.huggingface);
         break;
 
@@ -132,7 +132,7 @@ class ApiKeyManager {
     }
 
     const trimmed = key.trim();
-    
+
     // Check for placeholder values
     const placeholders = [
       'your_api_key_here',
@@ -141,7 +141,7 @@ class ApiKeyManager {
       'hf_placeholder',
       'test_key',
       'demo_key',
-      ''
+      '',
     ];
 
     if (placeholders.includes(trimmed.toLowerCase())) {
@@ -163,7 +163,7 @@ class ApiKeyManager {
    */
   getAllKeys(service) {
     const keys = [];
-    
+
     if (service === 'huggingface') {
       // For HuggingFace, try to get up to 6 keys (multiple accounts)
       for (let i = 0; i < 6; i++) {
@@ -189,13 +189,13 @@ class ApiKeyManager {
    */
   getServiceStatus(service) {
     const keys = this.getAllKeys(service);
-    
+
     return {
       service: service,
       available: keys.length > 0,
       keyCount: keys.length,
       hasValidKeys: keys.length > 0,
-      status: keys.length > 0 ? 'ready' : 'no_keys'
+      status: keys.length > 0 ? 'ready' : 'no_keys',
     };
   }
 
@@ -220,7 +220,7 @@ class ApiKeyManager {
       availableServices: availableServices,
       totalServices: services.length,
       hasAnyKeys: availableServices > 0,
-      readyForGeneration: availableServices > 0
+      readyForGeneration: availableServices > 0,
     };
   }
 
@@ -239,10 +239,10 @@ class ApiKeyManager {
     storageKey = `${service}_api_key`;
 
     localStorage.setItem(storageKey, key);
-    
+
     // Clear cache to force refresh
     this.clearCache(service);
-    
+
     console.log(`✅ ${service} API key ${keyIndex + 1} saved to localStorage`);
   }
 
@@ -252,13 +252,13 @@ class ApiKeyManager {
    */
   clearCache(service) {
     const keysToRemove = [];
-    
+
     for (const [key] of this.keyCache) {
       if (key.startsWith(`${service}_`)) {
         keysToRemove.push(key);
       }
     }
-    
+
     keysToRemove.forEach(key => this.keyCache.delete(key));
   }
 
@@ -268,9 +268,11 @@ class ApiKeyManager {
    * @returns {Promise<string|null>} API key or null
    */
   async promptForApiKey(service) {
-    return new Promise((resolve) => {
-      const key = prompt(`Please enter your ${service.toUpperCase()} API key (optional for testing):`);
-      
+    return new Promise(resolve => {
+      const key = prompt(
+        `Please enter your ${service.toUpperCase()} API key (optional for testing):`
+      );
+
       if (key && this.isValidKey(key)) {
         try {
           this.setApiKey(service, key);
@@ -291,23 +293,27 @@ class ApiKeyManager {
    */
   async initializeKeys() {
     const status = this.getOverallStatus();
-    
+
     if (status.hasAnyKeys) {
       console.log('✅ API keys are configured and ready');
       return { success: true, status };
     }
 
-    console.log('⚠️ No API keys configured. Course generation will use fallback methods.');
-    
+    console.log(
+      '⚠️ No API keys configured. Course generation will use fallback methods.'
+    );
+
     // In development, optionally prompt for keys
     if (import.meta.env.DEV) {
-      const shouldPrompt = confirm('No API keys found. Would you like to configure them now? (Cancel to use offline mode)');
-      
+      const shouldPrompt = confirm(
+        'No API keys found. Would you like to configure them now? (Cancel to use offline mode)'
+      );
+
       if (shouldPrompt) {
         // Prompt for the most important keys
         await this.promptForApiKey('openai');
         // bytez prompting removed
-        
+
         return { success: true, status: this.getOverallStatus() };
       }
     }
@@ -327,5 +333,5 @@ export const {
   getServiceStatus,
   getOverallStatus,
   setApiKey,
-  initializeKeys
+  initializeKeys,
 } = apiKeyManager;

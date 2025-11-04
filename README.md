@@ -11,6 +11,7 @@
 ## 🏗️ **System Architecture**
 
 ### **Frontend Architecture**
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    CREDITOR ACADEMY LMS                         │
@@ -63,6 +64,7 @@
 ## 🚀 **Technology Stack**
 
 ### **Core Technologies**
+
 - **Frontend**: React 18.3.1 + TypeScript 5.5.3
 - **Build Tool**: Vite 5.4.1 (Lightning-fast HMR)
 - **Styling**: TailwindCSS 3.4.17 + Shadcn/UI
@@ -71,6 +73,7 @@
 - **Forms**: React Hook Form 7.53.0 + Zod Validation
 
 ### **UI & Design**
+
 - **Components**: Radix UI Primitives (Accessible)
 - **Icons**: Lucide React (540+ icons)
 - **Animations**: Framer Motion 12.23.12
@@ -79,6 +82,7 @@
 - **Notifications**: React Hot Toast 2.6.0
 
 ### **AI & Advanced Features**
+
 - **AI Integration**: Bytez.js 1.1.15 (Multi-model)
 - **Real-time**: Socket.IO Client 4.8.1
 - **File Processing**: XLSX 0.18.5
@@ -130,6 +134,7 @@ creditor-academy/
 ## 🎯 **Core Features**
 
 ### **🎓 Learning Management**
+
 - **Course Creation**: Manual & AI-powered generation
 - **Lesson Builder**: Rich multimedia editor
 - **Module Organization**: Structured learning paths
@@ -137,6 +142,7 @@ creditor-academy/
 - **Certificates**: Automated generation
 
 ### **🤖 AI-Powered Tools**
+
 - **AI Course Generator**: Complete course creation
 - **AI Image Generation**: Custom thumbnails
 - **Content Summarization**: Auto text condensation
@@ -144,6 +150,7 @@ creditor-academy/
 - **Multi-model Support**: Bytez.js with fallbacks
 
 ### **📝 Assessment Engine**
+
 - **Quiz Builder**: Multiple question types
 - **Assignment System**: File submissions & grading
 - **Survey Tools**: Feedback collection
@@ -151,6 +158,7 @@ creditor-academy/
 - **Auto-grading**: Intelligent scoring
 
 ### **👥 Collaboration**
+
 - **Group Management**: Student teams
 - **Real-time Chat**: Socket.IO messaging
 - **Discussion Forums**: Threaded conversations
@@ -160,6 +168,7 @@ creditor-academy/
 ## 🔧 **Development Setup**
 
 ### **Installation**
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -177,6 +186,7 @@ npm run dev
 ```
 
 ### **Environment Variables**
+
 ```env
 VITE_API_BASE_URL=https://creditor-backend-ceds.onrender.com
 VITE_BYTEZ_KEY=your_primary_api_key
@@ -186,6 +196,7 @@ VITE_BYTEZ_KEY_4=your_quaternary_api_key
 ```
 
 ### **Scripts**
+
 ```bash
 npm run dev          # Development server
 npm run build        # Production build
@@ -196,9 +207,11 @@ npm run lint         # Code analysis
 ## 🔌 **API Integration**
 
 ### **Backend Services**
+
 **Base URL**: `https://creditor-backend-ceds.onrender.com`
 
 ### **Key Endpoints**
+
 ```
 # Authentication
 POST /api/auth/login
@@ -223,12 +236,14 @@ POST /api/resource/upload-resource
 ## 🤖 **AI Integration**
 
 ### **Bytez.js Multi-Model System**
+
 - **Text Models**: google/flan-t5-base, gpt-4o
 - **Image Models**: dreamlike-art/dreamlike-photoreal-2.0
 - **Fallback System**: 4 API keys with graceful degradation
 - **Offline Mode**: Template-based generation
 
 ### **AI Features**
+
 1. **Course Generation**: Automated outlines & content
 2. **Image Creation**: Custom visuals & thumbnails
 3. **Content Enhancement**: Summarization & Q&A
@@ -237,12 +252,14 @@ POST /api/resource/upload-resource
 ## 🎨 **Design System**
 
 ### **Component Architecture**
+
 - **Base Components**: Shadcn/UI + Radix primitives
 - **Feature Components**: Domain-specific interfaces
 - **Responsive Design**: Mobile-first approach
 - **Accessibility**: WCAG 2.1 AA compliance
 
 ### **Styling**
+
 - **Utility-First**: TailwindCSS approach
 - **Design Tokens**: Consistent color & spacing
 - **Dark Mode**: System preference support
@@ -251,12 +268,14 @@ POST /api/resource/upload-resource
 ## 🔒 **Security**
 
 ### **Authentication**
+
 - **JWT Tokens**: Secure token system
 - **Role-Based Access**: Student/Instructor/Admin
 - **Protected Routes**: Client-side protection
 - **Session Management**: Auto refresh
 
 ### **Security Measures**
+
 - **Input Validation**: Zod schema validation
 - **XSS Protection**: DOMPurify sanitization
 - **CSRF Protection**: Token validation
@@ -265,12 +284,14 @@ POST /api/resource/upload-resource
 ## 🚀 **Performance**
 
 ### **Optimization**
+
 - **Code Splitting**: Route-based lazy loading
 - **Tree Shaking**: Dead code elimination
 - **Asset Optimization**: Image compression
 - **Caching**: API response caching
 
 ### **Monitoring**
+
 - **Core Web Vitals**: Performance tracking
 - **Error Boundaries**: Graceful error handling
 - **Loading States**: Skeleton placeholders
@@ -279,6 +300,7 @@ POST /api/resource/upload-resource
 ## 📦 **Deployment**
 
 ### **Build Process**
+
 ```bash
 npm run build        # Production build
 npm run build:dev    # Development build
@@ -286,6 +308,7 @@ npm run preview      # Local preview
 ```
 
 ### **Targets**
+
 - **Netlify**: Primary deployment (netlify.toml)
 - **Vercel**: Alternative (vercel.json)
 - **Static Hosting**: Any CDN/server
@@ -293,12 +316,14 @@ npm run preview      # Local preview
 ## 📚 **Documentation**
 
 ### **Available Docs**
+
 - `AI_INTEGRATION_DOCS.md` - AI service guide
 - `SETUP.md` - Development setup
 - `RESOURCES_README.md` - Resource management
 - `DIAGNOSTIC_REPORT.md` - System diagnostics
 
 ### **Support**
+
 - **Issues**: GitHub issue tracking
 - **Documentation**: Comprehensive guides
 - **Development**: Team contact
@@ -307,4 +332,4 @@ npm run preview      # Local preview
 
 **Built with ❤️ by the Creditor Academy Team**
 
-*Empowering education through innovative technology and AI-powered learning experiences.*
+_Empowering education through innovative technology and AI-powered learning experiences._

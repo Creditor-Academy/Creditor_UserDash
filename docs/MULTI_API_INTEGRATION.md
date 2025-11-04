@@ -11,12 +11,14 @@ This document describes the comprehensive multi-API AI integration system that p
 The system uses an intelligent priority-based failover mechanism:
 
 #### Text Generation Priority:
+
 1. **OpenAI** (gpt-3.5-turbo) - Primary provider
 2. **HuggingFace** (meta-llama/Llama-3.1-8B-Instruct) - High-quality free model
 3. **HuggingFace** (tiiuae/falcon-7b-instruct) - Lightweight alternative
 4. **Bytez** (google/flan-t5-base) - Final fallback with multi-key rotation
 
 #### Image Generation Priority:
+
 1. **Deep AI** (text2img) - Primary provider
 2. **HuggingFace** (runwayml/stable-diffusion-v1-5) - Popular free model
 3. **HuggingFace** (stabilityai/stable-diffusion-2-1) - Higher quality alternative
@@ -41,8 +43,9 @@ VITE_BYTEZ_KEY_4=your_fourth_bytez_key_here
 ### API Key Sources
 
 The system checks for API keys in multiple locations:
-1. Environment variables (VITE_*)
-2. Legacy environment variables (REACT_APP_*)
+
+1. Environment variables (VITE\_\*)
+2. Legacy environment variables (REACT*APP*\*)
 3. Local storage (for runtime configuration)
 4. Manual entry prompts (as fallback)
 
@@ -87,6 +90,7 @@ const status = await enhancedAIService.getAPIStatus();
 Handles Bytez API with multi-key rotation for reliability.
 
 #### Features:
+
 - 4-key rotation system
 - Automatic failover between accounts
 - Comprehensive error logging
@@ -97,6 +101,7 @@ Handles Bytez API with multi-key rotation for reliability.
 Specialized service for image generation with upload capabilities.
 
 #### Features:
+
 - Multi-provider image generation
 - Automatic blob-to-file conversion for HuggingFace
 - S3 upload integration
@@ -111,13 +116,13 @@ import enhancedAIService from './services/enhancedAIService';
 
 const generateContent = async () => {
   const result = await enhancedAIService.generateText(
-    "Create a lesson outline for React hooks",
+    'Create a lesson outline for React hooks',
     {
       maxTokens: 500,
-      temperature: 0.7
+      temperature: 0.7,
     }
   );
-  
+
   if (result.success) {
     console.log(`Generated with ${result.data.provider}`);
     console.log(result.data.text);
@@ -132,14 +137,14 @@ import { generateAICourseOutline } from './services/aiCourseService';
 
 const createCourse = async () => {
   const courseData = {
-    title: "Introduction to React",
-    subject: "Web Development",
-    description: "Learn React fundamentals",
-    difficulty: "beginner"
+    title: 'Introduction to React',
+    subject: 'Web Development',
+    description: 'Learn React fundamentals',
+    difficulty: 'beginner',
   };
-  
+
   const result = await generateAICourseOutline(courseData);
-  
+
   if (result.success) {
     console.log(`Generated ${result.data.modules.length} modules`);
     console.log(`Provider: ${result.provider}`);
@@ -154,10 +159,10 @@ import { generateAndUploadCourseImage } from './services/aiCourseService';
 
 const generateThumbnail = async () => {
   const result = await generateAndUploadCourseImage(
-    "Modern course thumbnail for React programming",
+    'Modern course thumbnail for React programming',
     { style: 'realistic' }
   );
-  
+
   if (result.success) {
     console.log(`Image URL: ${result.data.url}`);
     console.log(`Provider: ${result.data.provider}`);
@@ -219,7 +224,7 @@ Use the `MultiAPITest` component to verify all integrations:
 import MultiAPITest from './components/test/MultiAPITest';
 
 // Render in your app for testing
-<MultiAPITest />
+<MultiAPITest />;
 ```
 
 ## Model Specifications
@@ -227,10 +232,12 @@ import MultiAPITest from './components/test/MultiAPITest';
 ### HuggingFace Models
 
 #### Text Generation:
+
 - **meta-llama/Llama-3.1-8B-Instruct**: Best mix of quality + free
 - **tiiuae/falcon-7b-instruct**: Smaller, faster alternative
 
 #### Image Generation:
+
 - **runwayml/stable-diffusion-v1-5**: Most popular, fast generation
 - **stabilityai/stable-diffusion-2-1**: Higher quality, more detailed results
 
@@ -297,6 +304,7 @@ import MultiAPITest from './components/test/MultiAPITest';
 ### Debug Mode
 
 Enable detailed logging by setting:
+
 ```javascript
 localStorage.setItem('ai-debug', 'true');
 ```
@@ -322,6 +330,7 @@ localStorage.setItem('ai-debug', 'true');
 ## Support
 
 For issues or questions:
+
 1. Check the troubleshooting section
 2. Review console logs for detailed error information
 3. Use the MultiAPITest component to diagnose issues

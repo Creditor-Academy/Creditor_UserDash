@@ -1,17 +1,17 @@
-import React, { useState } from "react";
-import { Plus } from "lucide-react";
-import { useCourseManagement } from "../hooks/useCourseManagement";
-import CourseCard from "../components/courses/CourseCard";
-import CreateCourseModal from "../components/courses/CreateCourseModal";
-import EditCourseModal from "../components/courses/EditCourseModal";
-import CourseUsersModal from "../components/courses/CourseUsersModal";
-import CourseModulesSection from "../components/courses/CourseModulesSection";
-import ConfirmationDialog from "../components/ui/ConfirmationDialog";
-import { CreateModuleDialog } from "@/components/courses/CreateModuleDialog";
-import CreateCourseOptions from "../components/courses/CreateCourseOptions";
-import AICourseSuccessModal from "../components/courses/AICourseSuccessModal";
-import AICourseOutlineModal from "../components/courses/AICourseOutlineModal";
-import AICourseCreationPanel from "../components/courses/AICourseCreationPanel";
+import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
+import { useCourseManagement } from '../hooks/useCourseManagement';
+import CourseCard from '../components/courses/CourseCard';
+import CreateCourseModal from '../components/courses/CreateCourseModal';
+import EditCourseModal from '../components/courses/EditCourseModal';
+import CourseUsersModal from '../components/courses/CourseUsersModal';
+import CourseModulesSection from '../components/courses/CourseModulesSection';
+import ConfirmationDialog from '../components/ui/ConfirmationDialog';
+import { CreateModuleDialog } from '@/components/courses/CreateModuleDialog';
+import CreateCourseOptions from '../components/courses/CreateCourseOptions';
+import AICourseSuccessModal from '../components/courses/AICourseSuccessModal';
+import AICourseOutlineModal from '../components/courses/AICourseOutlineModal';
+import AICourseCreationPanel from '../components/courses/AICourseCreationPanel';
 
 const CreateCourse = ({ onCourseCreated }) => {
   const {
@@ -48,7 +48,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   const [showDeleteCourseConfirm, setShowDeleteCourseConfirm] = useState(false);
   const [showCreateModuleDialog, setShowCreateModuleDialog] = useState(false);
   const [createdAICourse, setCreatedAICourse] = useState(null);
-  
+
   // Selected items
   const [selectedCourseForEdit, setSelectedCourseForEdit] = useState(null);
   const [selectedCourseForUsers, setSelectedCourseForUsers] = useState(null);
@@ -56,22 +56,22 @@ const CreateCourse = ({ onCourseCreated }) => {
   const [moduleToDelete, setModuleToDelete] = useState(null);
   const [courseToDelete, setCourseToDelete] = useState(null);
   const [editModuleData, setEditModuleData] = useState(null);
-  const [moduleDialogMode, setModuleDialogMode] = useState("create");
+  const [moduleDialogMode, setModuleDialogMode] = useState('create');
 
   // API response state
   const [apiResponse, setApiResponse] = useState(null);
 
   // Handle create course option selection
-  const handleCreateOptionSelect = (option) => {
+  const handleCreateOptionSelect = option => {
     console.log('Course option selected:', option);
-    
+
     // Immediately close the options modal and clear all states
     setShowCreateOptions(false);
     setShowAIOutlineModal(false);
     setShowCreateModal(false);
     setShowEditModal(false);
     setShowUsersModal(false);
-    
+
     // Use a more reliable approach with multiple RAF calls
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -87,7 +87,7 @@ const CreateCourse = ({ onCourseCreated }) => {
     });
   };
 
-  const handleAICourseCreated = (courseData) => {
+  const handleAICourseCreated = courseData => {
     // Refresh the courses list to show the new AI-generated course
     handleCourseCreated(courseData);
     setCreatedAICourse(courseData);
@@ -96,24 +96,24 @@ const CreateCourse = ({ onCourseCreated }) => {
   };
 
   // Handle AI outline generation
-  const handleGenerateOutline = async (outlineData) => {
+  const handleGenerateOutline = async outlineData => {
     console.log('Generating AI course outline with data:', outlineData);
-    
+
     // Close the outline modal
     setShowAIOutlineModal(false);
-    
+
     // Open the AI assisted course modal with the outline data
     setShowAIAssistedModal(true);
   };
 
   // Handle course edit
-  const handleEditClick = (course) => {
+  const handleEditClick = course => {
     setSelectedCourseForEdit(course);
     setShowEditModal(true);
   };
 
   // Handle course delete
-  const handleDeleteClick = (course) => {
+  const handleDeleteClick = course => {
     setCourseToDelete(course);
     setShowDeleteCourseConfirm(true);
   };
@@ -126,25 +126,31 @@ const CreateCourse = ({ onCourseCreated }) => {
       await handleDeleteCourse(courseToDelete.id);
       setShowDeleteCourseConfirm(false);
       setCourseToDelete(null);
-      setApiResponse({ type: "success", message: "Course deleted successfully" });
+      setApiResponse({
+        type: 'success',
+        message: 'Course deleted successfully',
+      });
       setTimeout(() => setApiResponse(null), 3000);
     } catch (err) {
       console.error('Error deleting course:', err);
-      setApiResponse({ type: "error", message: err.message || "Failed to delete course" });
+      setApiResponse({
+        type: 'error',
+        message: err.message || 'Failed to delete course',
+      });
     }
   };
 
   // Handle view users
-  const handleViewUsers = (courseId) => {
+  const handleViewUsers = courseId => {
     setSelectedCourseForUsers(courseId);
     setShowUsersModal(true);
   };
 
   // Handle module creation
-  const handleCreateModuleClick = (courseId) => {
+  const handleCreateModuleClick = courseId => {
     setSelectedCourseForModule(courseId);
     setEditModuleData(null);
-    setModuleDialogMode("create");
+    setModuleDialogMode('create');
     setShowCreateModuleDialog(true);
   };
 
@@ -152,7 +158,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   const handleEditModuleClick = (courseId, module) => {
     setSelectedCourseForModule(courseId);
     setEditModuleData(module);
-    setModuleDialogMode("edit");
+    setModuleDialogMode('edit');
     setShowCreateModuleDialog(true);
   };
 
@@ -165,7 +171,7 @@ const CreateCourse = ({ onCourseCreated }) => {
   // Handle module delete confirmation
   const confirmDeleteModule = async () => {
     if (!moduleToDelete) return;
-    
+
     try {
       const { courseId, module } = moduleToDelete;
       await handleDeleteModule(courseId, module);
@@ -178,10 +184,14 @@ const CreateCourse = ({ onCourseCreated }) => {
   };
 
   // Handle module saved
-  const handleModuleSaved = async (moduleData) => {
+  const handleModuleSaved = async moduleData => {
     try {
-      if (moduleDialogMode === "edit" && editModuleData) {
-        await handleUpdateModule(selectedCourseForModule, editModuleData.id, moduleData);
+      if (moduleDialogMode === 'edit' && editModuleData) {
+        await handleUpdateModule(
+          selectedCourseForModule,
+          editModuleData.id,
+          moduleData
+        );
       } else {
         await handleCreateModule(selectedCourseForModule, moduleData);
       }
@@ -207,12 +217,23 @@ const CreateCourse = ({ onCourseCreated }) => {
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex">
           <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            <svg
+              className="h-5 w-5 text-red-400"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Error loading courses</h3>
+            <h3 className="text-sm font-medium text-red-800">
+              Error loading courses
+            </h3>
             <p className="text-sm text-red-700 mt-1">{error}</p>
           </div>
         </div>
@@ -225,7 +246,9 @@ const CreateCourse = ({ onCourseCreated }) => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Course Management</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Course Management
+          </h2>
           <p className="text-gray-600 mt-1">Create and manage your courses</p>
         </div>
         <div className="flex gap-3">
@@ -245,23 +268,27 @@ const CreateCourse = ({ onCourseCreated }) => {
           type="text"
           placeholder="Search courses..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
       {/* Success/Error Messages */}
       {apiResponse && (
-        <div className={`border rounded-lg p-4 ${apiResponse.type === "success" ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-          <p className={`text-sm ${apiResponse.type === "success" ? "text-green-800" : "text-red-800"}`}>
-          {apiResponse.message}
+        <div
+          className={`border rounded-lg p-4 ${apiResponse.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}
+        >
+          <p
+            className={`text-sm ${apiResponse.type === 'success' ? 'text-green-800' : 'text-red-800'}`}
+          >
+            {apiResponse.message}
           </p>
         </div>
       )}
 
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {courses.map((course) => (
+        {courses.map(course => (
           <CourseCard
             key={course.id}
             course={course}
@@ -381,12 +408,11 @@ const CreateCourse = ({ onCourseCreated }) => {
         isOpen={showAISuccessModal}
         onClose={() => setShowAISuccessModal(false)}
         courseData={createdAICourse}
-        onViewCourse={(course) => {
+        onViewCourse={course => {
           // Navigate to course view or expand course modules
           handleViewModules(course.id);
         }}
       />
-
     </div>
   );
 };

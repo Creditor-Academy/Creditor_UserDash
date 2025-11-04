@@ -1,9 +1,9 @@
 import React from 'react';
-import { 
-  Settings, 
-  Save, 
-  Loader2, 
-  Check, 
+import {
+  Settings,
+  Save,
+  Loader2,
+  Check,
   AlertCircle,
   Database,
   RefreshCw,
@@ -13,22 +13,17 @@ import {
   Zap,
   Bell,
   Eye,
-  Lock
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const SettingsTab = ({ 
-  syncSettings, 
-  setSyncSettings, 
-  onSave, 
-  isSaving 
-}) => {
+const SettingsTab = ({ syncSettings, setSyncSettings, onSave, isSaving }) => {
   // Handle sync settings change
   const handleSyncSettingChange = (setting, value) => {
     setSyncSettings(prev => ({
       ...prev,
-      [setting]: value
+      [setting]: value,
     }));
   };
 
@@ -37,9 +32,12 @@ const SettingsTab = ({
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Lesson Creator Settings</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Lesson Creator Settings
+          </h3>
           <p className="text-gray-600">
-            Configure how the AI Lesson Creator behaves and manages your content.
+            Configure how the AI Lesson Creator behaves and manages your
+            content.
           </p>
         </div>
 
@@ -54,15 +52,24 @@ const SettingsTab = ({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Sync across modules</h4>
-                <p className="text-sm text-gray-500">Automatically apply content changes to all modules</p>
+                <h4 className="font-medium text-gray-900">
+                  Sync across modules
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Automatically apply content changes to all modules
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.syncAcrossModules}
-                  onChange={(e) => handleSyncSettingChange('syncAcrossModules', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange(
+                      'syncAcrossModules',
+                      e.target.checked
+                    )
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -71,14 +78,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Auto-save changes</h4>
-                <p className="text-sm text-gray-500">Automatically save content changes to backend</p>
+                <p className="text-sm text-gray-500">
+                  Automatically save content changes to backend
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.autoSave}
-                  onChange={(e) => handleSyncSettingChange('autoSave', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('autoSave', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -87,14 +98,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Real-time sync</h4>
-                <p className="text-sm text-gray-500">Sync changes in real-time as you type</p>
+                <p className="text-sm text-gray-500">
+                  Sync changes in real-time as you type
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.realTimeSync}
-                  onChange={(e) => handleSyncSettingChange('realTimeSync', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('realTimeSync', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -113,15 +128,21 @@ const SettingsTab = ({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Enhanced AI Content</h4>
-                <p className="text-sm text-gray-500">Use advanced AI models for better content quality</p>
+                <h4 className="font-medium text-gray-900">
+                  Enhanced AI Content
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Use advanced AI models for better content quality
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.enhancedAI || false}
-                  onChange={(e) => handleSyncSettingChange('enhancedAI', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('enhancedAI', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -129,15 +150,24 @@ const SettingsTab = ({
 
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Generate multimedia content</h4>
-                <p className="text-sm text-gray-500">Include images, videos, and audio in AI-generated lessons</p>
+                <h4 className="font-medium text-gray-900">
+                  Generate multimedia content
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Include images, videos, and audio in AI-generated lessons
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.generateMultimedia || false}
-                  onChange={(e) => handleSyncSettingChange('generateMultimedia', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange(
+                      'generateMultimedia',
+                      e.target.checked
+                    )
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -146,14 +176,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Auto-generate Q&A</h4>
-                <p className="text-sm text-gray-500">Automatically create questions and answers for lessons</p>
+                <p className="text-sm text-gray-500">
+                  Automatically create questions and answers for lessons
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.autoGenerateQA || false}
-                  onChange={(e) => handleSyncSettingChange('autoGenerateQA', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('autoGenerateQA', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -172,15 +206,24 @@ const SettingsTab = ({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Content moderation</h4>
-                <p className="text-sm text-gray-500">Enable AI-powered content safety checking</p>
+                <h4 className="font-medium text-gray-900">
+                  Content moderation
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Enable AI-powered content safety checking
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.contentModeration || false}
-                  onChange={(e) => handleSyncSettingChange('contentModeration', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange(
+                      'contentModeration',
+                      e.target.checked
+                    )
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -188,15 +231,21 @@ const SettingsTab = ({
 
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Backup content locally</h4>
-                <p className="text-sm text-gray-500">Keep local backups of all lesson content</p>
+                <h4 className="font-medium text-gray-900">
+                  Backup content locally
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Keep local backups of all lesson content
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.localBackup || false}
-                  onChange={(e) => handleSyncSettingChange('localBackup', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('localBackup', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -205,14 +254,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Version control</h4>
-                <p className="text-sm text-gray-500">Track changes and maintain version history</p>
+                <p className="text-sm text-gray-500">
+                  Track changes and maintain version history
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.versionControl || false}
-                  onChange={(e) => handleSyncSettingChange('versionControl', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('versionControl', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -232,14 +285,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Show tooltips</h4>
-                <p className="text-sm text-gray-500">Display helpful tooltips and guidance</p>
+                <p className="text-sm text-gray-500">
+                  Display helpful tooltips and guidance
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.showTooltips || true}
-                  onChange={(e) => handleSyncSettingChange('showTooltips', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('showTooltips', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -248,14 +305,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Compact mode</h4>
-                <p className="text-sm text-gray-500">Use a more compact interface layout</p>
+                <p className="text-sm text-gray-500">
+                  Use a more compact interface layout
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.compactMode || false}
-                  onChange={(e) => handleSyncSettingChange('compactMode', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('compactMode', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -264,14 +325,18 @@ const SettingsTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Dark mode</h4>
-                <p className="text-sm text-gray-500">Use dark theme for the lesson creator</p>
+                <p className="text-sm text-gray-500">
+                  Use dark theme for the lesson creator
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.darkMode || false}
-                  onChange={(e) => handleSyncSettingChange('darkMode', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('darkMode', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -290,15 +355,24 @@ const SettingsTab = ({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Save notifications</h4>
-                <p className="text-sm text-gray-500">Show notifications when content is saved</p>
+                <h4 className="font-medium text-gray-900">
+                  Save notifications
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Show notifications when content is saved
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.saveNotifications || true}
-                  onChange={(e) => handleSyncSettingChange('saveNotifications', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange(
+                      'saveNotifications',
+                      e.target.checked
+                    )
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -306,15 +380,24 @@ const SettingsTab = ({
 
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Error notifications</h4>
-                <p className="text-sm text-gray-500">Show notifications when errors occur</p>
+                <h4 className="font-medium text-gray-900">
+                  Error notifications
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Show notifications when errors occur
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.errorNotifications || true}
-                  onChange={(e) => handleSyncSettingChange('errorNotifications', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange(
+                      'errorNotifications',
+                      e.target.checked
+                    )
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -322,15 +405,21 @@ const SettingsTab = ({
 
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">AI generation updates</h4>
-                <p className="text-sm text-gray-500">Show progress notifications during AI content generation</p>
+                <h4 className="font-medium text-gray-900">
+                  AI generation updates
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Show progress notifications during AI content generation
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.aiNotifications || true}
-                  onChange={(e) => handleSyncSettingChange('aiNotifications', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('aiNotifications', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -353,7 +442,12 @@ const SettingsTab = ({
               </label>
               <select
                 value={syncSettings.autoSaveInterval || 30}
-                onChange={(e) => handleSyncSettingChange('autoSaveInterval', parseInt(e.target.value))}
+                onChange={e =>
+                  handleSyncSettingChange(
+                    'autoSaveInterval',
+                    parseInt(e.target.value)
+                  )
+                }
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 <option value={10}>10 seconds</option>
@@ -370,7 +464,12 @@ const SettingsTab = ({
               </label>
               <select
                 value={syncSettings.maxContentBlocks || 50}
-                onChange={(e) => handleSyncSettingChange('maxContentBlocks', parseInt(e.target.value))}
+                onChange={e =>
+                  handleSyncSettingChange(
+                    'maxContentBlocks',
+                    parseInt(e.target.value)
+                  )
+                }
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 <option value={25}>25 blocks</option>
@@ -387,7 +486,12 @@ const SettingsTab = ({
               </label>
               <select
                 value={syncSettings.cacheDuration || 24}
-                onChange={(e) => handleSyncSettingChange('cacheDuration', parseInt(e.target.value))}
+                onChange={e =>
+                  handleSyncSettingChange(
+                    'cacheDuration',
+                    parseInt(e.target.value)
+                  )
+                }
                 className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 <option value={1}>1 hour</option>

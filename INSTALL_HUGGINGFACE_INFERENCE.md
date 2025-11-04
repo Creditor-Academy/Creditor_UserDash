@@ -30,12 +30,14 @@ The system is already configured to work without this package. It will automatic
 ## What You'll See in Console
 
 ### With Package Installed:
+
 ```
 ✅ HuggingFace Inference Client initialized
 🚀 Using HuggingFace Inference Client for Qwen generation
 ```
 
 ### Without Package (Fallback):
+
 ```
 ⚠️ HuggingFace Inference Client not available, using direct API calls
 💡 To enable advanced features, install: npm install @huggingface/inference
@@ -45,12 +47,14 @@ The system is already configured to work without this package. It will automatic
 ## Benefits of Installing the Package
 
 ### With `@huggingface/inference`:
+
 - ✨ **Enhanced API**: More robust error handling
 - 🚀 **Better Performance**: Optimized request handling
 - 🔧 **Advanced Features**: Access to latest HuggingFace features
 - 📊 **Better Monitoring**: Enhanced request tracking
 
 ### Without Package (Fallback):
+
 - ✅ **Full Functionality**: All features still work
 - 🔄 **Direct API Calls**: Uses standard fetch requests
 - 🛡️ **Same Results**: Image generation works identically
@@ -80,12 +84,14 @@ But if you prefer to keep dependencies minimal, the current setup works perfectl
 If you see any other errors after installation:
 
 1. **Clear node_modules and reinstall:**
+
    ```bash
    rm -rf node_modules package-lock.json
    npm install
    ```
 
 2. **Restart development server:**
+
    ```bash
    npm run dev
    ```

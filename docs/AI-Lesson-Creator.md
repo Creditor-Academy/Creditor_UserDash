@@ -20,7 +20,7 @@ import AILessonCreator from '../components/courses/AILessonCreator';
 function MyComponent() {
   const [showLessonCreator, setShowLessonCreator] = useState(false);
 
-  const handleLessonsCreated = (lessonData) => {
+  const handleLessonsCreated = lessonData => {
     console.log('Lessons created:', lessonData);
     // Handle the created lessons (save to database, etc.)
   };
@@ -30,7 +30,7 @@ function MyComponent() {
       <button onClick={() => setShowLessonCreator(true)}>
         Create AI Lessons
       </button>
-      
+
       <AILessonCreator
         isOpen={showLessonCreator}
         onClose={() => setShowLessonCreator(false)}
@@ -44,12 +44,12 @@ function MyComponent() {
 
 ### Props
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `isOpen` | boolean | Yes | Controls the visibility of the lesson creator panel |
-| `onClose` | function | Yes | Callback function when the panel is closed |
-| `courseTitle` | string | Yes | The title of the course for which to generate lessons |
-| `onLessonsCreated` | function | Yes | Callback function when lessons are created and saved |
+| Prop               | Type     | Required | Description                                           |
+| ------------------ | -------- | -------- | ----------------------------------------------------- |
+| `isOpen`           | boolean  | Yes      | Controls the visibility of the lesson creator panel   |
+| `onClose`          | function | Yes      | Callback function when the panel is closed            |
+| `courseTitle`      | string   | Yes      | The title of the course for which to generate lessons |
+| `onLessonsCreated` | function | Yes      | Callback function when lessons are created and saved  |
 
 ## Workflow
 
@@ -79,6 +79,7 @@ The component uses Tailwind CSS classes for styling and Framer Motion for animat
 ## Error Handling
 
 The component includes comprehensive error handling for:
+
 - Network failures
 - Backend API errors
 - User input validation
@@ -86,6 +87,7 @@ The component includes comprehensive error handling for:
 ## Customization
 
 You can customize the component by modifying:
+
 - The AI prompts for lesson generation
 - The number and structure of generated lessons
 - The UI layout and styling

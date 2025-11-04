@@ -1,6 +1,7 @@
 # Creditor UserDash - Complete Tech Stack & Workflow Documentation
 
 ## 🏗️ Project Overview
+
 **Creditor UserDash** is a comprehensive educational platform with AI-powered course generation, multi-modal content creation, and advanced learning management capabilities.
 
 ---
@@ -8,6 +9,7 @@
 ## 🎯 Current Technology Stack
 
 ### **Frontend Architecture**
+
 ```
 Core Framework: React 18 + TypeScript + Vite
 UI Framework: Tailwind CSS + shadcn/ui
@@ -16,6 +18,7 @@ Routing: React Router DOM v6
 ```
 
 #### **Key Frontend Dependencies**
+
 - **UI Components**: Complete Radix UI ecosystem (40+ components)
 - **Rich Text Editor**: TipTap with extensions (color, image, link, text-align)
 - **Animations**: Framer Motion + AOS
@@ -26,6 +29,7 @@ Routing: React Router DOM v6
 - **Icons**: Lucide React + React Icons
 
 ### **Backend Architecture**
+
 ```
 Runtime: Node.js + Express
 Real-time: Socket.io
@@ -34,6 +38,7 @@ Development: Nodemon with hot reload
 ```
 
 ### **AI/ML Integration Stack**
+
 ```
 Multi-Provider AI System:
 ├── OpenAI GPT Models (Primary)
@@ -45,6 +50,7 @@ Multi-Provider AI System:
 ```
 
 #### **AI Service Capabilities**
+
 - **Text Generation**: GPT-3.5-turbo, Zephyr-7b-beta, GLM-4.6
 - **Image Generation**: Stable Diffusion variants, Qwen-image models
 - **Content Moderation**: Qwen3Guard with multi-key rotation
@@ -52,6 +58,7 @@ Multi-Provider AI System:
 - **Streaming**: Real-time text generation with HuggingFace Inference
 
 ### **Development Tools**
+
 ```
 Build Tool: Vite
 Language: TypeScript + JavaScript
@@ -65,6 +72,7 @@ Package Manager: npm
 ## 🔄 Current Workflow Architecture
 
 ### **1. Development Workflow**
+
 ```mermaid
 graph LR
     A[Local Development] --> B[Vite Dev Server]
@@ -75,6 +83,7 @@ graph LR
 ```
 
 ### **2. AI Content Generation Workflow**
+
 ```mermaid
 graph TD
     A[User Request] --> B[AI Service Router]
@@ -89,6 +98,7 @@ graph TD
 ```
 
 ### **3. Course Creation Workflow**
+
 ```mermaid
 graph TD
     A[Course Request] --> B[AI Course Service]
@@ -107,6 +117,7 @@ graph TD
 ## ☁️ Cloud & AWS Requirements
 
 ### **Immediate Cloud Needs**
+
 ```
 Hosting & Deployment:
 ├── Frontend: Vercel/Netlify (Static hosting)
@@ -117,6 +128,7 @@ Hosting & Deployment:
 ```
 
 ### **AI & ML Infrastructure**
+
 ```
 AI Services:
 ├── AWS Bedrock (Claude, Titan models)
@@ -127,6 +139,7 @@ AI Services:
 ```
 
 ### **Scalability & Performance**
+
 ```
 Infrastructure:
 ├── Load Balancer: AWS ALB
@@ -137,6 +150,7 @@ Infrastructure:
 ```
 
 ### **Security & Compliance**
+
 ```
 Security Stack:
 ├── Authentication: AWS Cognito
@@ -151,6 +165,7 @@ Security Stack:
 ## 🚀 Future Technology Roadmap
 
 ### **Phase 1: Cloud Migration (0-3 months)**
+
 - [ ] **AWS Account Setup** with proper IAM roles
 - [ ] **Database Migration** to AWS RDS
 - [ ] **File Storage** migration to S3
@@ -158,6 +173,7 @@ Security Stack:
 - [ ] **Frontend Deployment** on Vercel/CloudFront
 
 ### **Phase 2: AI Enhancement (3-6 months)**
+
 - [ ] **AWS Bedrock Integration** for advanced models
 - [ ] **Custom Model Training** on SageMaker
 - [ ] **Vector Database** (Pinecone/AWS OpenSearch)
@@ -165,6 +181,7 @@ Security Stack:
 - [ ] **Content Moderation** enhancement
 
 ### **Phase 3: Advanced Features (6-12 months)**
+
 - [ ] **Microservices Architecture** with AWS Lambda
 - [ ] **Event-Driven Architecture** with AWS EventBridge
 - [ ] **Advanced Analytics** with AWS QuickSight
@@ -172,6 +189,7 @@ Security Stack:
 - [ ] **Offline Capabilities** with PWA
 
 ### **Phase 4: Enterprise Scale (12+ months)**
+
 - [ ] **Multi-tenant Architecture**
 - [ ] **Advanced Security** (SSO, MFA)
 - [ ] **Compliance** (GDPR, FERPA, SCORM)
@@ -183,6 +201,7 @@ Security Stack:
 ## 📊 Resource Requirements
 
 ### **Development Team**
+
 ```
 Current Stack Expertise Needed:
 ├── Frontend: React/TypeScript developers (2-3)
@@ -193,6 +212,7 @@ Current Stack Expertise Needed:
 ```
 
 ### **Infrastructure Costs (Monthly Estimates)**
+
 ```
 AWS Services:
 ├── EC2 Instances: $200-500
@@ -205,6 +225,7 @@ Total: $1000-3250/month
 ```
 
 ### **Third-Party Services**
+
 ```
 AI/ML APIs:
 ├── OpenAI API: $100-500/month
@@ -218,6 +239,7 @@ AI/ML APIs:
 ## 🔧 Development Environment Setup
 
 ### **Prerequisites**
+
 ```bash
 Node.js: v18+ (LTS recommended)
 npm: v9+
@@ -226,6 +248,7 @@ VS Code: With extensions (ES7, Tailwind, TypeScript)
 ```
 
 ### **Local Development Commands**
+
 ```bash
 # Frontend Development
 npm install
@@ -241,6 +264,7 @@ npm start           # Production start
 ```
 
 ### **Environment Variables Required**
+
 ```env
 # API Configuration
 VITE_API_BASE_URL=your_backend_url
@@ -262,6 +286,7 @@ AWS_REGION=us-east-1
 ## 📈 Performance Metrics & Monitoring
 
 ### **Current Monitoring Needs**
+
 - [ ] **API Response Times** (AI services)
 - [ ] **Error Rates** (Failed AI requests)
 - [ ] **User Engagement** (Course completion)
@@ -269,6 +294,7 @@ AWS_REGION=us-east-1
 - [ ] **Cost Tracking** (AI API usage)
 
 ### **Future Monitoring Stack**
+
 ```
 Observability:
 ├── Logs: AWS CloudWatch Logs
@@ -283,12 +309,14 @@ Observability:
 ## 🔐 Security Considerations
 
 ### **Current Security Measures**
+
 - Environment variable management
 - API key rotation system
 - Content moderation (Qwen Guard)
 - Client-side validation (Zod)
 
 ### **Future Security Enhancements**
+
 - AWS IAM roles and policies
 - API rate limiting
 - Input sanitization
@@ -301,6 +329,7 @@ Observability:
 ## 📝 Documentation & Knowledge Base
 
 ### **Technical Documentation**
+
 - [ ] API documentation (OpenAPI/Swagger)
 - [ ] Component library documentation
 - [ ] Deployment guides
@@ -308,6 +337,7 @@ Observability:
 - [ ] Performance optimization guides
 
 ### **User Documentation**
+
 - [ ] User manuals
 - [ ] Video tutorials
 - [ ] FAQ sections
@@ -319,6 +349,7 @@ Observability:
 ## 🎯 Success Metrics
 
 ### **Technical KPIs**
+
 - **Uptime**: 99.9% availability
 - **Performance**: <2s page load times
 - **AI Response**: <5s generation time
@@ -326,6 +357,7 @@ Observability:
 - **Scalability**: Support 10k+ concurrent users
 
 ### **Business KPIs**
+
 - **User Engagement**: 80%+ course completion
 - **Content Quality**: 4.5+ star ratings
 - **Cost Efficiency**: <$0.50 per AI-generated lesson
@@ -334,4 +366,4 @@ Observability:
 
 ---
 
-*This document serves as a comprehensive guide for understanding the current technology stack and planning future development phases. Use this as a reference for team onboarding, technology decisions, and strategic planning.*
+_This document serves as a comprehensive guide for understanding the current technology stack and planning future development phases. Use this as a reference for team onboarding, technology decisions, and strategic planning._

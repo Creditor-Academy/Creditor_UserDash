@@ -7,6 +7,7 @@ The S3 Image Upload System provides comprehensive image storage functionality fo
 ## Features
 
 ### ✅ **Core Functionality**
+
 - **AI-Generated Image Upload**: Automatically uploads AI-generated thumbnails to S3
 - **Manual Image Upload**: Handles user-uploaded images with drag & drop support
 - **Multi-Provider Support**: Works with Deep AI, HuggingFace, OpenAI, and other image providers
@@ -14,6 +15,7 @@ The S3 Image Upload System provides comprehensive image storage functionality fo
 - **Comprehensive Testing**: Built-in test suite for validation
 
 ### 🔧 **Technical Features**
+
 - **Blob/URL Conversion**: Handles both blob-based and URL-based images
 - **File Type Validation**: Supports JPG, PNG, GIF, WebP formats
 - **Size Limits**: 5MB for images, 25MB for PDFs
@@ -23,6 +25,7 @@ The S3 Image Upload System provides comprehensive image storage functionality fo
 ## Architecture
 
 ### 📁 **File Structure**
+
 ```
 src/services/
 ├── imageUploadService.js       # Core S3 upload functionality
@@ -38,6 +41,7 @@ src/components/courses/
 ### 🔄 **Data Flow**
 
 1. **AI Image Generation**:
+
    ```
    User Input → AI Provider → Image Generation → Blob/URL → File Conversion → S3 Upload → Database Storage
    ```
@@ -50,20 +54,23 @@ src/components/courses/
 ## API Integration
 
 ### 🌐 **Backend Endpoint**
+
 - **URL**: `${API_BASE}/api/resource/upload-resource`
 - **Method**: POST
 - **Content-Type**: multipart/form-data
 
 ### 📝 **Request Format**
+
 ```javascript
 const formData = new FormData();
-formData.append('resource', file);           // File object
+formData.append('resource', file); // File object
 formData.append('folder', 'course-thumbnails'); // Optional folder
-formData.append('public', 'true');           // Public access
-formData.append('type', 'image');            // File type
+formData.append('public', 'true'); // Public access
+formData.append('type', 'image'); // File type
 ```
 
 ### 📋 **Response Format**
+
 ```javascript
 {
   success: true,
@@ -86,7 +93,7 @@ const result = await generateAndUploadCourseImage(
   'Professional course thumbnail for JavaScript programming',
   {
     style: 'professional',
-    size: '1024x1024'
+    size: '1024x1024',
   }
 );
 
@@ -102,14 +109,14 @@ if (result.success && result.data.uploadedToS3) {
 import { uploadImage } from '@/services/imageUploadService';
 
 // Upload user-selected file
-const handleFileUpload = async (file) => {
+const handleFileUpload = async file => {
   try {
     const result = await uploadImage(file, {
       folder: 'course-thumbnails',
       public: true,
-      type: 'image'
+      type: 'image',
     });
-    
+
     if (result.success) {
       console.log('Uploaded to:', result.imageUrl);
     }
@@ -148,10 +155,10 @@ VITE_HUGGINGFACE_API_KEY=your_hf_key
 ```javascript
 // Default upload options
 const uploadOptions = {
-  folder: 'course-thumbnails',  // S3 folder structure
-  public: true,                 // Public access
-  type: 'image',               // File type validation
-  maxSize: 5 * 1024 * 1024     // 5MB limit
+  folder: 'course-thumbnails', // S3 folder structure
+  public: true, // Public access
+  type: 'image', // File type validation
+  maxSize: 5 * 1024 * 1024, // 5MB limit
 };
 ```
 
@@ -160,18 +167,21 @@ const uploadOptions = {
 ### 🚨 **Common Error Scenarios**
 
 1. **File Too Large**
+
    ```javascript
    // Error: "Image size should be less than 5MB"
    // Solution: Compress image or use different file
    ```
 
 2. **Invalid File Type**
+
    ```javascript
    // Error: "Please upload only JPG, PNG, GIF, or WebP images"
    // Solution: Convert to supported format
    ```
 
 3. **Network Issues**
+
    ```javascript
    // Error: "Network error. Please check your connection"
    // Solution: Check internet connection and retry
@@ -256,6 +266,7 @@ console.log(imageUploadTestService.getTestSummary());
 ### 🛠️ **Debug Steps**
 
 1. **Check Console Logs**
+
    ```javascript
    // Look for upload-related messages
    console.log('🎨 AI image generated, now uploading to S3...');
@@ -263,6 +274,7 @@ console.log(imageUploadTestService.getTestSummary());
    ```
 
 2. **Test Upload Service**
+
    ```javascript
    // Use built-in test button in AI Course Creation Panel
    // Or run tests programmatically
@@ -271,7 +283,7 @@ console.log(imageUploadTestService.getTestSummary());
 3. **Verify API Endpoint**
    ```javascript
    // Check if backend API is accessible
-   fetch(`${API_BASE}/api/resource/upload-resource`)
+   fetch(`${API_BASE}/api/resource/upload-resource`);
    ```
 
 ## Best Practices
@@ -279,6 +291,7 @@ console.log(imageUploadTestService.getTestSummary());
 ### 📋 **Development Guidelines**
 
 1. **Always Handle Errors**
+
    ```javascript
    try {
      const result = await uploadImage(file, options);
@@ -290,21 +303,23 @@ console.log(imageUploadTestService.getTestSummary());
    ```
 
 2. **Provide User Feedback**
+
    ```javascript
    // Show loading states
    setUploading(true);
-   
+
    // Show success/error messages
    alert('Image uploaded successfully!');
    ```
 
 3. **Use Appropriate Folders**
+
    ```javascript
    // Organize uploads by purpose
    const options = {
-     folder: 'course-thumbnails',  // For course images
-     folder: 'lesson-images',      // For lesson content
-     folder: 'user-uploads'        // For user content
+     folder: 'course-thumbnails', // For course images
+     folder: 'lesson-images', // For lesson content
+     folder: 'user-uploads', // For user content
    };
    ```
 
@@ -326,16 +341,19 @@ console.log(imageUploadTestService.getTestSummary());
 ## Security Considerations
 
 ### 🔒 **File Validation**
+
 - File type validation on both client and server
 - File size limits to prevent abuse
 - Malware scanning (backend responsibility)
 
 ### 🛡️ **Access Control**
+
 - Public URLs for course thumbnails
 - Private URLs for sensitive content
 - Proper folder organization for access control
 
 ### 🔐 **API Security**
+
 - Authentication required for upload endpoints
 - Rate limiting to prevent abuse
 - CORS configuration for cross-origin requests
@@ -343,12 +361,14 @@ console.log(imageUploadTestService.getTestSummary());
 ## Monitoring and Analytics
 
 ### 📈 **Key Metrics**
+
 - Upload success rate
 - Average upload time
 - File size distribution
 - Error frequency by type
 
 ### 📊 **Logging**
+
 - All uploads logged with timestamps
 - Error details captured for debugging
 - User actions tracked for analytics
@@ -356,6 +376,7 @@ console.log(imageUploadTestService.getTestSummary());
 ## Future Enhancements
 
 ### 🚀 **Planned Features**
+
 - Image compression before upload
 - Multiple image formats support
 - Batch upload functionality
@@ -363,6 +384,7 @@ console.log(imageUploadTestService.getTestSummary());
 - Image editing capabilities
 
 ### 🔮 **Potential Improvements**
+
 - CDN integration for faster delivery
 - Image optimization pipeline
 - Automatic backup to multiple storage providers

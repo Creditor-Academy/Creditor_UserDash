@@ -1,7 +1,9 @@
 # AI Services Integration Plan
 
 ## Overview
+
 This document outlines the implementation plan for integrating multiple AI services into the course creation and content generation system. The services include:
+
 - OpenAI GPT-4o / GPT-4o mini for text generation and summarization
 - Stability AI / OpenAI DALL·E for image generation
 - ElevenLabs / Azure TTS for text-to-speech
@@ -10,13 +12,16 @@ This document outlines the implementation plan for integrating multiple AI servi
 ## Current System Analysis
 
 ### Existing AI Infrastructure
+
 The current system already has:
+
 1. **Bytez API Service** - Handles various AI model interactions
 2. **AI Course Service** - Manages course outline generation
 3. **LangChain Bytez Integration** - Provides enhanced AI capabilities
 4. **AI Proxy Service** - Acts as a frontend interface for AI operations
 
 ### Current Limitations
+
 1. All AI functionality is currently routed through Bytez SDK
 2. No direct integration with OpenAI, Stability AI, ElevenLabs, or AssemblyAI
 3. Image generation limited to specific models
@@ -27,21 +32,25 @@ The current system already has:
 ### 1. Multi-Provider AI Service Architecture
 
 #### Text Generation (GPT-4o / GPT-4o mini)
+
 ```
 [Frontend] → [AI Service Router] → [OpenAI API] → [Response Processing] → [Frontend]
 ```
 
 #### Image Generation (Stability AI / DALL·E)
+
 ```
 [Frontend] → [AI Service Router] → [Stability AI API / OpenAI API] → [Response Processing] → [Frontend]
 ```
 
 #### Text-to-Speech (ElevenLabs / Azure TTS)
+
 ```
 [Frontend] → [AI Service Router] → [ElevenLabs API / Azure TTS API] → [Audio Processing] → [Frontend]
 ```
 
 #### Speech-to-Text (Whisper / AssemblyAI)
+
 ```
 [Frontend] → [AI Service Router] → [Whisper API / AssemblyAI API] → [Text Processing] → [Frontend]
 ```
@@ -49,6 +58,7 @@ The current system already has:
 ### 2. Service Router Implementation
 
 Create a new `AIServiceRouter.js` that will:
+
 1. Determine which provider to use based on service type and availability
 2. Handle API key management for multiple providers
 3. Provide fallback mechanisms when primary providers fail
@@ -57,6 +67,7 @@ Create a new `AIServiceRouter.js` that will:
 ### 3. Enhanced AI Course Service
 
 Modify `aiCourseService.js` to:
+
 1. Integrate with the new service router
 2. Add support for multimedia content generation
 3. Implement batch processing for course content
@@ -67,6 +78,7 @@ Modify `aiCourseService.js` to:
 ### Phase 1: Service Router Development
 
 #### 1. Create AIServiceRouter Class
+
 ```javascript
 // src/services/AIServiceRouter.js
 class AIServiceRouter {
@@ -75,31 +87,31 @@ class AIServiceRouter {
       text: ['openai', 'bytez'],
       image: ['stability', 'openai', 'bytez'],
       tts: ['elevenlabs', 'azure'],
-      stt: ['whisper', 'assemblyai', 'bytez']
+      stt: ['whisper', 'assemblyai', 'bytez'],
     };
-    
+
     this.apiKeys = {
       openai: process.env.VITE_OPENAI_API_KEY,
       stability: process.env.VITE_STABILITY_API_KEY,
       elevenlabs: process.env.VITE_ELEVENLABS_API_KEY,
       azure: process.env.VITE_AZURE_TTS_KEY,
       assemblyai: process.env.VITE_ASSEMBLYAI_API_KEY,
-      bytez: process.env.VITE_BYTEZ_API_KEY
+      bytez: process.env.VITE_BYTEZ_API_KEY,
     };
   }
-  
+
   async generateText(prompt, options = {}) {
     // Implementation for text generation
   }
-  
+
   async generateImage(prompt, options = {}) {
     // Implementation for image generation
   }
-  
+
   async textToSpeech(text, options = {}) {
     // Implementation for text-to-speech
   }
-  
+
   async speechToText(audioBuffer, options = {}) {
     // Implementation for speech-to-text
   }
@@ -107,7 +119,9 @@ class AIServiceRouter {
 ```
 
 #### 2. Environment Variable Configuration
+
 Add the following to `.env` files:
+
 ```
 VITE_OPENAI_API_KEY=your_openai_api_key
 VITE_STABILITY_API_KEY=your_stability_api_key
@@ -119,6 +133,7 @@ VITE_ASSEMBLYAI_API_KEY=your_assemblyai_api_key
 ### Phase 2: Text Generation Integration (GPT-4o / GPT-4o mini)
 
 #### 1. OpenAI API Integration
+
 ```javascript
 // In AIServiceRouter.js
 async generateTextWithOpenAI(prompt, options = {}) {
@@ -135,14 +150,16 @@ async generateTextWithOpenAI(prompt, options = {}) {
       max_tokens: options.maxTokens || 1000
     })
   });
-  
+
   const data = await response.json();
   return data.choices[0].message.content;
 }
 ```
 
 #### 2. Course Content Generation Enhancement
+
 Modify `aiCourseService.js` to use the new router:
+
 ```javascript
 // Enhanced course outline generation
 export async function generateAICourseOutline(courseData) {
@@ -161,18 +178,18 @@ export async function generateAICourseOutline(courseData) {
     3. 3-5 lessons per module with titles and brief descriptions
     
     Format as JSON.`;
-    
+
     const aiServiceRouter = new AIServiceRouter();
     const response = await aiServiceRouter.generateText(prompt, {
       model: 'gpt-4o',
-      maxTokens: 2000
+      maxTokens: 2000,
     });
-    
+
     // Parse and structure the response
     const courseOutline = JSON.parse(response);
     return {
       success: true,
-      data: courseOutline
+      data: courseOutline,
     };
   } catch (error) {
     // Fallback to existing implementation
@@ -184,6 +201,7 @@ export async function generateAICourseOutline(courseData) {
 ### Phase 3: Image Generation Integration (Stability AI / DALL·E)
 
 #### 1. Stability AI Integration
+
 ```javascript
 // In AIServiceRouter.js
 async generateImageWithStability(prompt, options = {}) {
@@ -201,13 +219,14 @@ async generateImageWithStability(prompt, options = {}) {
       samples: options.samples || 1
     })
   });
-  
+
   const data = await response.json();
   return data.artifacts[0].base64;
 }
 ```
 
 #### 2. DALL·E Integration
+
 ```javascript
 // In AIServiceRouter.js
 async generateImageWithDalle(prompt, options = {}) {
@@ -224,7 +243,7 @@ async generateImageWithDalle(prompt, options = {}) {
       size: options.size || '1024x1024'
     })
   });
-  
+
   const data = await response.json();
   return data.data[0].url;
 }
@@ -233,6 +252,7 @@ async generateImageWithDalle(prompt, options = {}) {
 ### Phase 4: Text-to-Speech Integration (ElevenLabs / Azure TTS)
 
 #### 1. ElevenLabs Integration
+
 ```javascript
 // In AIServiceRouter.js
 async textToSpeechWithElevenLabs(text, options = {}) {
@@ -252,13 +272,14 @@ async textToSpeechWithElevenLabs(text, options = {}) {
       }
     })
   });
-  
+
   const audioBuffer = await response.arrayBuffer();
   return URL.createObjectURL(new Blob([audioBuffer], { type: 'audio/mpeg' }));
 }
 ```
 
 #### 2. Azure TTS Integration
+
 ```javascript
 // In AIServiceRouter.js
 async textToSpeechWithAzure(text, options = {}) {
@@ -271,7 +292,7 @@ async textToSpeechWithAzure(text, options = {}) {
     },
     body: this.createSSML(text, options)
   });
-  
+
   const audioBuffer = await response.arrayBuffer();
   return URL.createObjectURL(new Blob([audioBuffer], { type: 'audio/mpeg' }));
 }
@@ -280,13 +301,14 @@ async textToSpeechWithAzure(text, options = {}) {
 ### Phase 5: Speech-to-Text Integration (Whisper / AssemblyAI)
 
 #### 1. Whisper Integration
+
 ```javascript
 // In AIServiceRouter.js
 async speechToTextWithWhisper(audioBuffer, options = {}) {
   const formData = new FormData();
   formData.append('file', new Blob([audioBuffer]), 'audio.mp3');
   formData.append('model', options.model || 'whisper-1');
-  
+
   const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: {
@@ -294,13 +316,14 @@ async speechToTextWithWhisper(audioBuffer, options = {}) {
     },
     body: formData
   });
-  
+
   const data = await response.json();
   return data.text;
 }
 ```
 
 #### 2. AssemblyAI Integration
+
 ```javascript
 // In AIServiceRouter.js
 async speechToTextWithAssemblyAI(audioBuffer, options = {}) {
@@ -312,9 +335,9 @@ async speechToTextWithAssemblyAI(audioBuffer, options = {}) {
     },
     body: audioBuffer
   });
-  
+
   const uploadData = await uploadResponse.json();
-  
+
   // Transcribe audio
   const transcribeResponse = await fetch('https://api.assemblyai.com/v2/transcript', {
     method: 'POST',
@@ -327,10 +350,10 @@ async speechToTextWithAssemblyAI(audioBuffer, options = {}) {
       language_detection: options.detectLanguage || false
     })
   });
-  
+
   const transcribeData = await transcribeResponse.json();
   const transcriptId = transcribeData.id;
-  
+
   // Poll for completion
   let transcript;
   do {
@@ -342,11 +365,11 @@ async speechToTextWithAssemblyAI(audioBuffer, options = {}) {
     });
     transcript = await pollResponse.json();
   } while (transcript.status !== 'completed' && transcript.status !== 'error');
-  
+
   if (transcript.status === 'error') {
     throw new Error(transcript.error);
   }
-  
+
   return transcript.text;
 }
 ```
@@ -383,26 +406,31 @@ async speechToTextWithAssemblyAI(audioBuffer, options = {}) {
 ## Implementation Timeline
 
 ### Phase 1: Foundation (Week 1-2)
+
 - Implement AIServiceRouter
 - Integrate OpenAI GPT-4o for text generation
 - Update aiCourseService to use new router
 
 ### Phase 2: Visual Content (Week 3)
+
 - Integrate Stability AI and DALL·E for image generation
 - Add image generation to course creation flow
 - Implement image management in course builder
 
 ### Phase 3: Audio Content (Week 4)
+
 - Integrate ElevenLabs and Azure TTS for text-to-speech
 - Add audio narration to lessons
 - Implement audio player in lesson viewer
 
 ### Phase 4: Accessibility (Week 5)
+
 - Integrate Whisper and AssemblyAI for speech-to-text
 - Generate transcripts for audio content
 - Add accessibility features to course builder
 
 ### Phase 5: Testing and Optimization (Week 6)
+
 - Test all integrations thoroughly
 - Optimize performance and error handling
 - Implement fallback mechanisms

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target, Loader2, Clock, Crop } from 'lucide-react';
+import { Layers, X, Plus, Trash2, ChevronDown, ChevronRight, Upload, Image as ImageIcon, Volume2, MapPin, Edit3, Target, Loader2, Clock, Crop, ChevronLeft, ChevronRight as ChevronRightIcon, Check } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
@@ -58,6 +58,36 @@ const InteractiveComponent = forwardRef(({
       audio: null 
     }
   ]);
+  const [processData, setProcessData] = useState([
+    {
+      id: '1',
+      title: 'Understand your physical being',
+      description: 'Recognizing your physical being is key to maintaining overall well-being. By staying attuned to your body\'s signals, you can make informed choices that support both your health and daily activities.',
+      image: null,
+      audio: null
+    },
+    {
+      id: '2', 
+      title: 'Step 2',
+      description: 'Content for step 2 will go here. This is where you can describe the second phase of your process.',
+      image: null,
+      audio: null
+    },
+    {
+      id: '3',
+      title: 'Step 3', 
+      description: 'Content for step 3 will go here. This is where you can describe the third phase of your process.',
+      image: null,
+      audio: null
+    },
+    {
+      id: '4',
+      title: 'Step 4',
+      description: 'Content for step 4 will go here. This is where you can describe the final phase of your process.',
+      image: null,
+      audio: null
+    }
+  ]);
   const [editingHotspot, setEditingHotspot] = useState(null);
   const [showHotspotDialog, setShowHotspotDialog] = useState(false);
   const [labeledGraphicImageUploading, setLabeledGraphicImageUploading] = useState(false);
@@ -68,6 +98,79 @@ const InteractiveComponent = forwardRef(({
   const [imageEditContext, setImageEditContext] = useState(null); // { type: 'accordion'|'tab'|'labeledGraphic'|'timeline', index: number }
   const [isImageProcessing, setIsImageProcessing] = useState(false);
    
+  // Helper function to extract tabs data from HTML
+  const extractTabsFromHTML = (htmlContent) => {
+    const extractedData = [];
+    
+    try {
+      // Create a temporary DOM element to parse HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      // Find all tab buttons to get titles
+      const tabButtons = tempDiv.querySelectorAll('.tab-button');
+      // Find all tab panels to get content
+      const tabPanels = tempDiv.querySelectorAll('.tab-panel');
+      
+      tabPanels.forEach((panel, index) => {
+        // Extract title from tab button
+        const tabButton = tabButtons[index];
+        const title = tabButton ? tabButton.textContent.trim() : `Tab ${index + 1}`;
+        
+        // Extract content from tab panel - look for the content div
+        const contentDiv = panel.querySelector('.text-gray-700');
+        let content = '';
+        if (contentDiv) {
+          // Get text content while preserving line breaks
+          content = contentDiv.innerHTML
+            .replace(/<\/p>/g, '\n')
+            .replace(/<\/li>/g, '\n')
+            .replace(/<br\s*\/?>/g, '\n')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        }
+        
+        // Extract image if present
+        let image = null;
+        const imageElement = panel.querySelector('img');
+        if (imageElement) {
+          image = {
+            src: imageElement.src,
+            name: imageElement.alt || 'Tab image',
+            size: 0
+          };
+        }
+        
+        // Extract audio if present
+        let audio = null;
+        const audioElement = panel.querySelector('audio source');
+        if (audioElement) {
+          const audioSrc = audioElement.getAttribute('src');
+          const audioType = audioElement.getAttribute('type');
+          if (audioSrc) {
+            audio = {
+              src: audioSrc,
+              type: audioType || 'audio/mpeg',
+              name: 'Tab audio',
+              size: 0
+            };
+          }
+        }
+        
+        extractedData.push({
+          title,
+          content,
+          image,
+          audio
+        });
+      });
+    } catch (error) {
+      console.error('Error extracting tabs data from HTML:', error);
+    }
+    
+    return extractedData;
+  };
+
   // Helper function to extract accordion data from HTML
   const extractAccordionFromHTML = (htmlContent) => {
     const extractedData = [];
@@ -85,16 +188,45 @@ const InteractiveComponent = forwardRef(({
         const headerButton = item.querySelector('.accordion-header span');
         const title = headerButton ? headerButton.textContent.trim() : `Section ${index + 1}`;
         
-        // Extract content from accordion content div
+        // Extract content from accordion content div - preserve formatting
         const contentDiv = item.querySelector('.accordion-content .text-gray-700');
-        const content = contentDiv ? contentDiv.textContent.trim() : '';
+        let content = '';
+        if (contentDiv) {
+          // Get text content while preserving line breaks
+          content = contentDiv.innerHTML
+            .replace(/<\/p>/g, '\n')
+            .replace(/<\/li>/g, '\n')
+            .replace(/<br\s*\/?>/g, '\n')
+            .replace(/<[^>]+>/g, '')
+            .trim();
+        }
         
         // Extract image if present
+        let image = null;
         const imageElement = item.querySelector('.accordion-content img');
-        const image = imageElement ? imageElement.src : null;
+        if (imageElement) {
+          image = {
+            src: imageElement.src,
+            name: imageElement.alt || 'Accordion image',
+            size: 0
+          };
+        }
         
-        // Extract audio if present (placeholder for future implementation)
-        const audio = null;
+        // Extract audio if present
+        let audio = null;
+        const audioElement = item.querySelector('audio source');
+        if (audioElement) {
+          const audioSrc = audioElement.getAttribute('src');
+          const audioType = audioElement.getAttribute('type');
+          if (audioSrc) {
+            audio = {
+              src: audioSrc,
+              type: audioType || 'audio/mpeg',
+              name: 'Accordion audio',
+              size: 0
+            };
+          }
+        }
         
         extractedData.push({
           title,
@@ -307,11 +439,36 @@ const InteractiveComponent = forwardRef(({
     setTimelineData(updated);
   };
 
+  // Process helper functions
+  const addProcessItem = () => {
+    const newId = (processData.length + 1).toString();
+    setProcessData([...processData, { 
+      id: newId,
+      title: `Step ${processData.length + 1}`, 
+      description: `Description for step ${processData.length + 1}`, 
+      image: null, 
+      audio: null 
+    }]);
+  };
+
+  const removeProcessItem = (index) => {
+    if (processData.length > 1) {
+      setProcessData(processData.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateProcessItem = (index, field, value) => {
+    const updated = [...processData];
+    updated[index][field] = value;
+    setProcessData(updated);
+  };
+
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
     setTabsData,
     setAccordionData,
-    setTimelineData
+    setTimelineData,
+    setProcessData
   }));
 
   // Interactive templates
@@ -407,6 +564,33 @@ const InteractiveComponent = forwardRef(({
           </div>
         </div>
       )
+    },
+    {
+      id: 'process',
+      title: 'Process',
+      description: 'Step-by-step process with navigation',
+      icon: <Layers className="h-6 w-6" />,
+      preview: (
+        <div className="w-full h-40 bg-white rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="bg-white text-gray-800 px-2 py-1 rounded-full text-xs font-medium">Step 1</div>
+            <div className="flex items-center gap-1">
+              <ChevronLeft className="h-4 w-4 text-gray-400" />
+              <ChevronRightIcon className="h-4 w-4 text-gray-600" />
+            </div>
+          </div>
+          <div className="text-xs font-semibold text-gray-800 mb-1">Understand your physical being</div>
+          <div className="w-full h-16 bg-gray-100 rounded flex items-center justify-center mb-2">
+            <ImageIcon className="h-6 w-6 text-gray-400" />
+          </div>
+          <div className="flex items-center justify-center gap-1">
+            <div className="w-2 h-2 bg-white rounded-full"></div>
+            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+            <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+            <Check className="h-3 w-3 text-gray-400" />
+          </div>
+        </div>
+      )
     }
   ];
 
@@ -446,6 +630,9 @@ const InteractiveComponent = forwardRef(({
         } else if (htmlContent.includes('data-template="timeline"') || 
                    htmlContent.includes('timeline-container')) {
           template = 'timeline';
+        } else if (htmlContent.includes('data-template="process"') || 
+                   htmlContent.includes('interactive-process')) {
+          template = 'process';
         }
       }
       
@@ -470,13 +657,23 @@ const InteractiveComponent = forwardRef(({
             } else if (template === 'timeline' && content.timelineData) {
               console.log('Loading timeline data:', content.timelineData);
               setTimelineData(content.timelineData);
+            } else if (template === 'process' && content.processData) {
+              console.log('Loading process data:', content.processData);
+              setProcessData(content.processData);
             }
           } else {
             console.log('No JSON content found, trying to extract from HTML');
             // If no structured content, try to extract from HTML
-            if (template === 'accordion' && editingInteractiveBlock.html_css) {
+            if (template === 'tabs' && editingInteractiveBlock.html_css) {
+              const extractedData = extractTabsFromHTML(editingInteractiveBlock.html_css);
+              if (extractedData.length > 0) {
+                console.log('Extracted tabs data from HTML:', extractedData);
+                setTabsData(extractedData);
+              }
+            } else if (template === 'accordion' && editingInteractiveBlock.html_css) {
               const extractedData = extractAccordionFromHTML(editingInteractiveBlock.html_css);
               if (extractedData.length > 0) {
+                console.log('Extracted accordion data from HTML:', extractedData);
                 setAccordionData(extractedData);
               }
             } else if (template === 'labeled-graphic' && editingInteractiveBlock.html_css) {
@@ -496,7 +693,13 @@ const InteractiveComponent = forwardRef(({
         } catch (error) {
           console.error('Error parsing interactive block content:', error);
           // Set default data if parsing fails
-          if (template === 'accordion') {
+          if (template === 'tabs') {
+            setTabsData([
+              { title: 'Tab 1', content: 'Content for tab 1', image: null, audio: null },
+              { title: 'Tab 2', content: 'Content for tab 2', image: null, audio: null },
+              { title: 'Tab 3', content: 'Content for tab 3', image: null, audio: null }
+            ]);
+          } else if (template === 'accordion') {
             setAccordionData([
               { title: 'Section 1', content: 'Content for section 1', image: null, audio: null },
               { title: 'Section 2', content: 'Content for section 2', image: null, audio: null },
@@ -524,6 +727,23 @@ const InteractiveComponent = forwardRef(({
                 description: 'Description for event 2', 
                 image: null, 
                 audio: null 
+              }
+            ]);
+          } else if (template === 'process') {
+            setProcessData([
+              {
+                id: '1',
+                title: 'Understand your physical being',
+                description: 'Recognizing your physical being is key to maintaining overall well-being.',
+                image: null,
+                audio: null
+              },
+              {
+                id: '2', 
+                title: 'Step 2',
+                description: 'Content for step 2 will go here.',
+                image: null,
+                audio: null
               }
             ]);
           }
@@ -597,6 +817,36 @@ const InteractiveComponent = forwardRef(({
         audio: null 
       }
     ];
+    const defaultProcessData = [
+      {
+        id: '1',
+        title: 'Understand your physical being',
+        description: 'Recognizing your physical being is key to maintaining overall well-being. By staying attuned to your body\'s signals, you can make informed choices that support both your health and daily activities.',
+        image: null,
+        audio: null
+      },
+      {
+        id: '2', 
+        title: 'Step 2',
+        description: 'Content for step 2 will go here. This is where you can describe the second phase of your process.',
+        image: null,
+        audio: null
+      },
+      {
+        id: '3',
+        title: 'Step 3', 
+        description: 'Content for step 3 will go here. This is where you can describe the third phase of your process.',
+        image: null,
+        audio: null
+      },
+      {
+        id: '4',
+        title: 'Step 4',
+        description: 'Content for step 4 will go here. This is where you can describe the final phase of your process.',
+        image: null,
+        audio: null
+      }
+    ];
     
     let defaultData, dataKey;
     if (template.id === 'tabs') {
@@ -611,6 +861,9 @@ const InteractiveComponent = forwardRef(({
     } else if (template.id === 'timeline') {
       defaultData = defaultTimelineData;
       dataKey = 'timelineData';
+    } else if (template.id === 'process') {
+      defaultData = defaultProcessData;
+      dataKey = 'processData';
     }
     
     const interactiveContent = {
@@ -769,7 +1022,7 @@ const InteractiveComponent = forwardRef(({
         return;
       }
       
-      // Open image editor instead of uploading directly
+      // Open image editor for cropping before upload
       setImageToEdit(file);
       setImageEditContext({ type: 'tab', index });
       setShowImageEditor(true);
@@ -1074,6 +1327,83 @@ const InteractiveComponent = forwardRef(({
     }
   };
 
+  // Process image handling functions
+  const handleProcessImageUpload = (index, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 500 * 1024 * 1024) { // 500MB limit
+        toast.error('Image size should be less than 500MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload a valid image file (JPEG, PNG, JPG, GIF, or WebP)');
+        return;
+      }
+      
+      setImageToEdit(file);
+      setImageEditContext({ type: 'process', index });
+      setShowImageEditor(true);
+    }
+  };
+
+  // Process audio handling functions
+  const handleProcessAudioUpload = async (index, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit for audio
+        toast.error('Audio file size should be less than 100MB');
+        return;
+      }
+      
+      // Check file type
+      const validTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/m4a'];
+      if (!validTypes.includes(file.type)) {
+        toast.error('Please upload a valid audio file (MP3, WAV, OGG, or M4A)');
+        return;
+      }
+      
+      try {
+        // Upload audio file
+        const uploadResult = await uploadAudioResource(file, {
+          public: true,
+          type: 'audio'
+        });
+        
+        if (uploadResult.success && uploadResult.audioUrl) {
+          updateProcessItem(index, 'audio', {
+            src: uploadResult.audioUrl, // Use cloud URL
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uploadedData: uploadResult
+          });
+          toast.success('Audio uploaded successfully!');
+        } else {
+          throw new Error('Audio upload failed');
+        }
+      } catch (error) {
+        console.error('Error uploading audio:', error);
+        toast.error(error.message || 'Failed to upload audio. Please try again.');
+        
+        // Fallback to local URL for immediate preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          updateProcessItem(index, 'audio', {
+            src: e.target.result,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            isLocal: true
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
   // Handle image save from image editor
   const handleImageEditorSave = async (editedFile) => {
     if (!imageEditContext) return;
@@ -1116,6 +1446,8 @@ const InteractiveComponent = forwardRef(({
           }));
         } else if (type === 'timeline') {
           updateTimelineItem(index, 'image', imageData);
+        } else if (type === 'process') {
+          updateProcessItem(index, 'image', imageData);
         }
         
         toast.success('Image edited and uploaded successfully!');
@@ -1147,6 +1479,8 @@ const InteractiveComponent = forwardRef(({
           }));
         } else if (type === 'timeline') {
           updateTimelineItem(index, 'image', imageData);
+        } else if (type === 'process') {
+          updateProcessItem(index, 'image', imageData);
         }
       };
       reader.readAsDataURL(editedFile);
@@ -1170,6 +1504,54 @@ const InteractiveComponent = forwardRef(({
     }
   };
 
+  // Helper function to format content with bullet points and line breaks
+  const formatContent = (content) => {
+    if (!content) return '';
+    
+    // Split content by lines
+    const lines = content.split('\n');
+    let formattedHTML = '';
+    let inList = false;
+    
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Check if line is a bullet point (starts with -, *, •, or number.)
+      const isBullet = /^[-*•]\s+/.test(trimmedLine);
+      const isNumbered = /^\d+\.\s+/.test(trimmedLine);
+      
+      if (isBullet || isNumbered) {
+        // Start list if not already in one
+        if (!inList) {
+          formattedHTML += isNumbered ? '<ol class="list-decimal ml-6 space-y-2">' : '<ul class="list-disc ml-6 space-y-2">';
+          inList = isNumbered ? 'ol' : 'ul';
+        }
+        
+        // Remove bullet/number marker and add as list item
+        const cleanedLine = trimmedLine.replace(/^[-*•]\s+/, '').replace(/^\d+\.\s+/, '');
+        formattedHTML += `<li>${cleanedLine}</li>`;
+      } else {
+        // Close list if we were in one
+        if (inList) {
+          formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
+          inList = false;
+        }
+        
+        // Add regular line with line break
+        if (trimmedLine) {
+          formattedHTML += `<p class="mb-2">${trimmedLine}</p>`;
+        }
+      }
+    });
+    
+    // Close list if still open
+    if (inList) {
+      formattedHTML += inList === 'ol' ? '</ol>' : '</ul>';
+    }
+    
+    return formattedHTML || content;
+  };
+
   const generateInteractiveHTML = (template, data) => {
     if (template === 'tabs') {
       const tabsId = `tabs-${Date.now()}`;
@@ -1190,18 +1572,20 @@ const InteractiveComponent = forwardRef(({
             <div class="tab-content">
               ${data.map((tab, index) => `
                 <div class="tab-panel ${index === 0 ? 'block' : 'hidden'}" data-panel="${index}" role="tabpanel">
-                  <div class="text-gray-700 leading-relaxed ${tab.image || tab.audio ? 'mb-4' : ''}">${tab.content}</div>
+                  <div class="text-gray-700 leading-relaxed ${tab.image || tab.audio ? 'mb-4' : ''}">${formatContent(tab.content)}</div>
                   ${tab.image ? `
-                    <div class="relative ${tab.audio ? '' : 'mb-4'}">
-                      <img src="${tab.image.src}" alt="${tab.image.name || 'Tab image'}" class="w-full h-auto rounded-lg shadow-sm" style="height: 250px; object-fit: cover;" />
-                      ${tab.audio ? `
-                        <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 rounded-b-lg p-3">
-                          <audio controls class="w-full" preload="metadata" style="height: 32px;">
-                            <source src="${tab.audio.src}" type="${tab.audio.type}">
-                            Your browser does not support the audio element.
-                          </audio>
-                        </div>
-                      ` : ''}
+                    <div class="flex justify-center ${tab.audio ? '' : 'mb-4'}">
+                      <div class="relative max-w-full">
+                        <img src="${tab.image.src}" alt="${tab.image.name || 'Tab image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                        ${tab.audio ? `
+                          <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            <audio controls class="w-full" preload="metadata" style="height: 32px;">
+                              <source src="${tab.audio.src}" type="${tab.audio.type}">
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        ` : ''}
+                      </div>
                     </div>
                   ` : ''}
                   ${tab.audio && !tab.image ? `
@@ -1252,18 +1636,20 @@ const InteractiveComponent = forwardRef(({
                 <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'max-h-96 pb-4' : 'max-h-0'}" 
                      data-content="${index}">
                   <div class="pl-4">
-                    <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${item.content}</div>
+                    <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${formatContent(item.content)}</div>
                     ${item.image ? `
-                      <div class="relative ${item.audio ? '' : 'mb-4'}">
-                        <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="w-full h-auto rounded-lg shadow-sm" style="height: 250px; object-fit: cover;" />
-                        ${item.audio ? `
-                          <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 rounded-b-lg p-3">
-                            <audio controls class="w-full" preload="metadata" style="height: 32px;">
-                              <source src="${item.audio.src}" type="${item.audio.type}">
-                              Your browser does not support the audio element.
-                            </audio>
-                          </div>
-                        ` : ''}
+                      <div class="flex justify-center ${item.audio ? '' : 'mb-4'}">
+                        <div class="relative max-w-full">
+                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                          ${item.audio ? `
+                            <div class="mt-3 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <audio controls class="w-full" preload="metadata" style="height: 32px;">
+                                <source src="${item.audio.src}" type="${item.audio.type}">
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
+                          ` : ''}
+                        </div>
                       </div>
                     ` : ''}
                     ${item.audio && !item.image ? `
@@ -1472,9 +1858,237 @@ const InteractiveComponent = forwardRef(({
         </div>
       `;
       return timelineHTML;
+    } else if (template === 'process') {
+      const processId = `process-${Date.now()}`;
+      const processHTML = `
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="process-carousel" data-template="process" id="${processId}" data-current="0" tabindex="0">
+            <div class="relative">
+              <!-- Alternative Navigation Buttons -->
+              <div class="flex justify-between items-center mb-4">
+                <button onclick="window.processCarouselPrev && window.processCarouselPrev(this)" class="process-carousel-prev group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
+                  <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                  </svg>
+                </button>
+                
+                <div class="text-sm text-gray-500">
+                  Use arrow keys or click progress dots below to navigate
+                </div>
+                
+                <button onclick="window.processCarouselNext && window.processCarouselNext(this)" class="process-carousel-next group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
+                  <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Process content -->
+              <div class="process-content">
+                ${data.map((step, index) => `
+                  <div class="process-step ${index === 0 ? 'block' : 'hidden'}" data-step="${index}">
+                    <!-- Step indicator -->
+                    <div class="text-center mb-6">
+                      <div class="bg-white text-gray-800 px-4 py-2 rounded-full text-sm font-medium inline-block">
+                        Step ${index + 1}
+                      </div>
+                    </div>
+                    
+                    <!-- Step title -->
+                    <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">${step.title}</h2>
+                    
+                    <!-- Step image -->
+                    ${step.image ? `
+                      <div class="mb-6">
+                        <img src="${step.image.src}" alt="${step.image.name || 'Process step image'}" 
+                             class="w-full h-64 object-cover rounded-lg shadow-sm mx-auto" />
+                      </div>
+                    ` : `
+                      <div class="mb-6">
+                        <div class="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                        </div>
+                      </div>
+                    `}
+                    
+                    <!-- Step description -->
+                    <div class="text-gray-700 text-center leading-relaxed mb-6">
+                      ${step.description}
+                    </div>
+                    
+                    <!-- Audio if present -->
+                    ${step.audio ? `
+                      <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="flex items-center gap-3 mb-3">
+                          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.814L4.846 13.5H2a1 1 0 01-1-1v-3a1 1 0 011-1h2.846l3.537-3.314a1 1 0 011.617.814zM12 8a1 1 0 011.414 0L15 9.586l1.586-1.586A1 1 0 1118 9.414L16.414 11 18 12.586A1 1 0 0116.586 14L15 12.414 13.414 14A1 1 0 0112 12.586L13.586 11 12 9.414A1 1 0 0112 8z" clip-rule="evenodd"></path>
+                            </svg>
+                          </div>
+                          <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-800">${step.audio.name}</p>
+                            <p class="text-xs text-gray-500">${Math.round(step.audio.size / 1024)} KB</p>
+                          </div>
+                        </div>
+                        <audio controls class="w-full" preload="metadata">
+                          <source src="${step.audio.src}" type="${step.audio.type}">
+                          Your browser does not support the audio element.
+                        </audio>
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+              
+              <!-- Progress indicator -->
+              <div class="mt-8">
+                <div class="text-center text-sm text-gray-600 mb-3">
+                  Click on any step below to navigate directly
+                </div>
+                <div class="flex items-center justify-center gap-3">
+                  ${data.map((step, index) => `
+                    ${index < data.length - 1 ? `
+                      <button onclick="window.processCarouselGoTo && window.processCarouselGoTo(this, ${index})" class="process-carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md' : 'bg-slate-300 hover:bg-slate-400 hover:scale-105'}" data-index="${index}"></button>
+                    ` : `
+                      <button onclick="window.processCarouselGoTo && window.processCarouselGoTo(this, ${index})" class="process-carousel-dot w-3 h-3 rounded-full transition-all duration-300 transform ${index === 0 ? 'bg-gradient-to-r from-blue-500 to-purple-500 scale-110 shadow-md' : 'bg-slate-300 hover:bg-slate-400 hover:scale-105'}" data-index="${index}"></button>
+                      <div class="ml-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      </div>
+                    `}
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      return processHTML;
     }
     return '';
   };
+
+  // Add JavaScript functions for process carousel navigation
+  useEffect(() => {
+    // Process carousel navigation functions (based on quotes carousel logic)
+    window.processCarouselPrev = (button) => {
+      console.log('Process Carousel Prev clicked');
+      const carousel = button.closest('.process-carousel');
+      if (!carousel) {
+        console.log('No process carousel found for prev button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.process-step');
+      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      let currentIndex = parseInt(carousel.dataset.current || '0');
+      
+      console.log('Process carousel prev - current index:', currentIndex, 'total slides:', slides.length);
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
+      showProcessCarouselSlide(carousel, slides, dots, newIndex);
+    };
+
+    window.processCarouselNext = (button) => {
+      console.log('Process Carousel Next clicked');
+      const carousel = button.closest('.process-carousel');
+      if (!carousel) {
+        console.log('No process carousel found for next button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.process-step');
+      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      let currentIndex = parseInt(carousel.dataset.current || '0');
+      
+      console.log('Process carousel next - current index:', currentIndex, 'total slides:', slides.length);
+      const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
+      showProcessCarouselSlide(carousel, slides, dots, newIndex);
+    };
+
+    window.processCarouselGoTo = (button, index) => {
+      console.log('Process Carousel GoTo clicked');
+      const carousel = button.closest('.process-carousel');
+      if (!carousel) {
+        console.log('No process carousel found for goTo button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.process-step');
+      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      
+      console.log('Process carousel goTo - target index:', index, 'total slides:', slides.length);
+      showProcessCarouselSlide(carousel, slides, dots, index);
+    };
+
+    const showProcessCarouselSlide = (carousel, slides, dots, index) => {
+      slides.forEach((slide, i) => {
+        if (i === index) {
+          slide.classList.remove('hidden');
+          slide.classList.add('block');
+        } else {
+          slide.classList.remove('block');
+          slide.classList.add('hidden');
+        }
+      });
+      
+      dots.forEach((dot, i) => {
+        // Normalize: remove all known active/inactive styles first
+        dot.classList.remove(
+          // inactive variants
+          'bg-gray-300','hover:bg-gray-400','bg-slate-300','hover:bg-slate-400','hover:scale-105',
+          // active variants
+          'bg-white','scale-110','shadow-md',
+          'bg-gradient-to-r','from-blue-500','to-purple-500'
+        );
+
+        if (i === index) {
+          // Active state: use gradient styling like quotes carousel
+          dot.classList.add('bg-gradient-to-r','from-blue-500','to-purple-500','scale-110','shadow-md');
+        } else {
+          // Inactive state: use slate gray like quotes carousel
+          dot.classList.add('bg-slate-300','hover:bg-slate-400','hover:scale-105');
+        }
+      });
+      
+      carousel.dataset.current = index.toString();
+    };
+
+    // Add keyboard navigation support
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const focusedElement = document.activeElement;
+        const processContainer = focusedElement?.closest('.process-carousel');
+        
+        if (processContainer && processContainer.id) {
+          event.preventDefault();
+          if (event.key === 'ArrowLeft') {
+            window.processCarouselPrev && window.processCarouselPrev({ closest: () => processContainer });
+          } else {
+            window.processCarouselNext && window.processCarouselNext({ closest: () => processContainer });
+          }
+        }
+      }
+    });
+
+    // Add click navigation to process content area
+    window.addEventListener('click', (event) => {
+      const processContainer = event.target?.closest('.process-carousel');
+      if (processContainer && processContainer.id) {
+        // Focus the container for keyboard navigation
+        processContainer.focus();
+      }
+    });
+
+    // Cleanup function
+    return () => {
+      delete window.processCarouselPrev;
+      delete window.processCarouselNext;
+      delete window.processCarouselGoTo;
+    };
+  }, []);
 
   const handleSave = () => {
     if (!selectedTemplate) {
@@ -1513,6 +2127,15 @@ const InteractiveComponent = forwardRef(({
       data = timelineData;
       dataKey = 'timelineData';
       // Validate that all items have content (date is optional)
+      const hasEmptyItems = data.some(item => !item.title.trim() || !item.description.trim());
+      if (hasEmptyItems) {
+        toast.error('Please fill in all titles and descriptions');
+        return;
+      }
+    } else if (selectedTemplate === 'process') {
+      data = processData;
+      dataKey = 'processData';
+      // Validate that all items have content
       const hasEmptyItems = data.some(item => !item.title.trim() || !item.description.trim());
       if (hasEmptyItems) {
         toast.error('Please fill in all titles and descriptions');
@@ -2337,6 +2960,188 @@ const InteractiveComponent = forwardRef(({
                               />
                               <label
                                 htmlFor={`timeline-audio-upload-${index}`}
+                                className="cursor-pointer flex flex-col items-center space-y-2"
+                              >
+                                <Volume2 className="h-8 w-8 text-gray-400" />
+                                <span className="text-sm text-gray-600">
+                                  Click to upload audio
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  MP3, WAV, OGG up to 100MB
+                                </span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedTemplate === 'process' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Process Configuration</h3>
+                  <Button onClick={addProcessItem} size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Step
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  {processData.map((item, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium text-gray-700">Step {index + 1}</span>
+                        {processData.length > 1 && (
+                          <Button
+                            onClick={() => removeProcessItem(index)}
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Step Title
+                          </label>
+                          <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => updateProcessItem(index, 'title', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter step title"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Step Description
+                          </label>
+                          <textarea
+                            value={item.description}
+                            onChange={(e) => updateProcessItem(index, 'description', e.target.value)}
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter step description"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Step Image (Optional)
+                          </label>
+                          {item.image ? (
+                            <div className="space-y-3">
+                              <div className="relative inline-block">
+                                <img
+                                  src={item.image.src}
+                                  alt={item.image.name}
+                                  className="max-w-full h-32 object-cover rounded-lg border border-gray-300"
+                                />
+                                <div className="absolute -top-2 -right-2 flex gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      // Create a file object from the image src for editing
+                                      fetch(item.image.src)
+                                        .then(res => res.blob())
+                                        .then(blob => {
+                                          const file = new File([blob], item.image.name, { type: blob.type });
+                                          setImageToEdit(file);
+                                          setImageEditContext({ type: 'process', index });
+                                          setShowImageEditor(true);
+                                        })
+                                        .catch(error => {
+                                          console.error('Error creating file from image src:', error);
+                                          toast.error('Could not edit image');
+                                        });
+                                    }}
+                                    className="bg-blue-500 text-white rounded-full p-1 hover:bg-blue-600 transition-colors"
+                                    title="Edit image"
+                                  >
+                                    <Crop className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateProcessItem(index, 'image', null)}
+                                    className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleProcessImageUpload(index, e)}
+                                className="hidden"
+                                id={`process-image-upload-${index}`}
+                              />
+                              <label
+                                htmlFor={`process-image-upload-${index}`}
+                                className="cursor-pointer flex flex-col items-center space-y-2"
+                              >
+                                <ImageIcon className="h-8 w-8 text-gray-400" />
+                                <span className="text-sm text-gray-600">
+                                  Click to upload image
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  PNG, JPG, GIF up to 500MB
+                                </span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Step Audio (Optional)
+                          </label>
+                          {item.audio ? (
+                            <div className="space-y-3">
+                              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                      <Volume2 className="h-5 w-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-800">{item.audio.name}</p>
+                                      <p className="text-xs text-gray-500">{Math.round(item.audio.size / 1024)} KB</p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateProcessItem(index, 'audio', null)}
+                                    className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <audio controls className="w-full" preload="metadata">
+                                  <source src={item.audio.src} type={item.audio.type} />
+                                  Your browser does not support the audio element.
+                                </audio>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                              <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={(e) => handleProcessAudioUpload(index, e)}
+                                className="hidden"
+                                id={`process-audio-upload-${index}`}
+                              />
+                              <label
+                                htmlFor={`process-audio-upload-${index}`}
                                 className="cursor-pointer flex flex-col items-center space-y-2"
                               >
                                 <Volume2 className="h-8 w-8 text-gray-400" />

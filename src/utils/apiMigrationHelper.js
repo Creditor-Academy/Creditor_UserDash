@@ -15,14 +15,17 @@ export class ApiHelper {
       const response = await api.safeGet(url, options);
       return response.data;
     } catch (error) {
-      console.error(`[ApiHelper] GET ${url} failed:`, error.userMessage || error.message);
-      
+      console.error(
+        `[ApiHelper] GET ${url} failed:`,
+        error.userMessage || error.message
+      );
+
       // Return structured error for components to handle
       throw {
         message: error.userMessage || error.message,
         status: error.response?.status,
         originalError: error,
-        userFriendly: true
+        userFriendly: true,
       };
     }
   }
@@ -36,13 +39,16 @@ export class ApiHelper {
       const response = await api.safePost(url, data, options);
       return response.data;
     } catch (error) {
-      console.error(`[ApiHelper] POST ${url} failed:`, error.userMessage || error.message);
-      
+      console.error(
+        `[ApiHelper] POST ${url} failed:`,
+        error.userMessage || error.message
+      );
+
       throw {
         message: error.userMessage || error.message,
         status: error.response?.status,
         originalError: error,
-        userFriendly: true
+        userFriendly: true,
       };
     }
   }
@@ -56,13 +62,16 @@ export class ApiHelper {
       const response = await api.safePut(url, data, options);
       return response.data;
     } catch (error) {
-      console.error(`[ApiHelper] PUT ${url} failed:`, error.userMessage || error.message);
-      
+      console.error(
+        `[ApiHelper] PUT ${url} failed:`,
+        error.userMessage || error.message
+      );
+
       throw {
         message: error.userMessage || error.message,
         status: error.response?.status,
         originalError: error,
-        userFriendly: true
+        userFriendly: true,
       };
     }
   }
@@ -76,13 +85,16 @@ export class ApiHelper {
       const response = await api.safeDelete(url, options);
       return response.data;
     } catch (error) {
-      console.error(`[ApiHelper] DELETE ${url} failed:`, error.userMessage || error.message);
-      
+      console.error(
+        `[ApiHelper] DELETE ${url} failed:`,
+        error.userMessage || error.message
+      );
+
       throw {
         message: error.userMessage || error.message,
         status: error.response?.status,
         originalError: error,
-        userFriendly: true
+        userFriendly: true,
       };
     }
   }
@@ -120,7 +132,7 @@ export const migrationGuide = {
     const response = await api.get('/api/courses');
     return response.data;
   `,
-  
+
   // New pattern
   newPattern: `
     // NEW WAY (more reliable)
@@ -135,7 +147,7 @@ export const migrationGuide = {
       throw error;
     }
   `,
-  
+
   // Benefits
   benefits: [
     '✅ Automatic retry on network/server errors',
@@ -144,8 +156,8 @@ export const migrationGuide = {
     '✅ Request tracking and logging',
     '✅ Timeout handling (30s)',
     '✅ Exponential backoff retry strategy',
-    '✅ Better authentication handling'
-  ]
+    '✅ Better authentication handling',
+  ],
 };
 
 export default ApiHelper;

@@ -1,25 +1,57 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Clock, Play, FileText, Loader2, AlertCircle, Search, Plus, RefreshCw, X, Upload, Link } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import axios from "axios";
-import { getAuthHeader } from "@/services/authHeader";
-import { MoreVertical, Edit, Trash2, Settings, Sparkles } from "lucide-react";
-import UniversalAIContentButton from "@/components/courses/UniversalAIContentButton";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ChevronLeft,
+  Clock,
+  Play,
+  FileText,
+  Loader2,
+  AlertCircle,
+  Search,
+  Plus,
+  RefreshCw,
+  X,
+  Upload,
+  Link,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import axios from 'axios';
+import { getAuthHeader } from '@/services/authHeader';
+import { MoreVertical, Edit, Trash2, Settings, Sparkles } from 'lucide-react';
+import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,31 +61,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import ImageEditor from "@/components/ImageEditor";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { uploadImage } from "@/services/imageUploadService";
+} from '@/components/ui/alert-dialog';
+import ImageEditor from '@/components/ImageEditor';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { uploadImage } from '@/services/imageUploadService';
 
 const ModuleLessonsView = () => {
   const { courseId, moduleId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [moduleDetails, setModuleDetails] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Lesson creation state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newLesson, setNewLesson] = useState({
-    title: "",
-    description: "",
+    title: '',
+    description: '',
     order: 1,
-    status: "DRAFT",
-    thumbnail: "",
+    status: 'DRAFT',
+    thumbnail: '',
   });
 
   // Lesson deletion state
@@ -85,7 +117,7 @@ const ModuleLessonsView = () => {
     try {
       setLoading(true);
       setError(null); // Clear any previous errors
-      
+
       const [moduleResponse, lessonsResponse] = await Promise.all([
         axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/view`,
@@ -100,48 +132,51 @@ const ModuleLessonsView = () => {
             headers: getAuthHeader(),
             withCredentials: true,
           }
-        )
+        ),
       ]);
 
       // Handle module details response
       const moduleData = moduleResponse.data.data || moduleResponse.data;
       setModuleDetails(moduleData);
-      
+
       // Handle lessons response
       console.log('Lessons API Response:', lessonsResponse.data);
-      
+
       let lessonsData = [];
       if (Array.isArray(lessonsResponse.data)) {
         lessonsData = lessonsResponse.data;
-      } else if (lessonsResponse.data?.data && Array.isArray(lessonsResponse.data.data)) {
+      } else if (
+        lessonsResponse.data?.data &&
+        Array.isArray(lessonsResponse.data.data)
+      ) {
         lessonsData = lessonsResponse.data.data;
       } else if (lessonsResponse.data?.lessons) {
         lessonsData = Array.isArray(lessonsResponse.data.lessons)
           ? lessonsResponse.data.lessons
           : [lessonsResponse.data.lessons];
       }
-      
+
       console.log('Extracted lessons data:', lessonsData);
-      
+
       // Normalize lesson data to ensure consistent field names
       const normalizedLessons = lessonsData.map(lesson => ({
         ...lesson,
-        status: lesson.status || lesson.lesson_status || 'DRAFT'
+        status: lesson.status || lesson.lesson_status || 'DRAFT',
       }));
-      
+
       console.log('Normalized lessons:', normalizedLessons);
       setLessons(normalizedLessons);
-      
+
       // Set the next order number for new lessons
-      const maxOrder = lessonsData.length > 0 
-        ? Math.max(...lessonsData.map(l => l.order || 0)) 
-        : 0;
+      const maxOrder =
+        lessonsData.length > 0
+          ? Math.max(...lessonsData.map(l => l.order || 0))
+          : 0;
       setNewLesson(prev => ({ ...prev, order: maxOrder + 1 }));
-      
     } catch (err) {
-      console.error("Error fetching module lessons:", err);
-      console.error("Error details:", err.response?.data || err.message);
-      setError("Failed to load module lessons. Please try again later.");
+      console.error('Error fetching module lessons:', err);
+      console.error('Error details:', err.response?.data || err.message);
+      setError('Failed to load module lessons. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -150,7 +185,7 @@ const ModuleLessonsView = () => {
   const handleCreateLesson = async () => {
     try {
       setIsCreating(true);
-      
+
       // Prepare the lesson data in the expected format
       const lessonData = {
         title: newLesson.title,
@@ -159,7 +194,7 @@ const ModuleLessonsView = () => {
         lesson_status: newLesson.status,
         thumbnail: newLesson.thumbnail || null,
       };
-      
+
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/create-lesson`,
         lessonData,
@@ -177,40 +212,42 @@ const ModuleLessonsView = () => {
       // Normalize the status field to ensure consistent display
       const normalizedLesson = {
         ...createdLesson,
-        status: createdLesson.lesson_status || createdLesson.status || newLesson.status
+        status:
+          createdLesson.lesson_status ||
+          createdLesson.status ||
+          newLesson.status,
       };
       setLessons(prev => [...prev, normalizedLesson]);
-      
+
       // Reset form and close dialog
       setNewLesson({
-        title: "",
-        description: "",
+        title: '',
+        description: '',
         order: newLesson.order + 1, // Increment order for next lesson
-        status: "DRAFT",
-        thumbnail: "",
+        status: 'DRAFT',
+        thumbnail: '',
       });
-      
+
       setShowCreateDialog(false);
-      
+
       toast({
-        title: "Success",
-        description: "Lesson created successfully!",
+        title: 'Success',
+        description: 'Lesson created successfully!',
       });
-      
     } catch (error) {
-      console.error("Error creating lesson:", error);
-      let errorMessage = "Failed to create lesson. Please try again.";
-      
+      console.error('Error creating lesson:', error);
+      let errorMessage = 'Failed to create lesson. Please try again.';
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.error) {
         errorMessage = error.response.data.error;
       }
-      
+
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsCreating(false);
@@ -219,18 +256,22 @@ const ModuleLessonsView = () => {
 
   const handleUpdateLesson = async () => {
     if (!currentLesson) return;
-    
+
     try {
       setIsUpdating(true);
-      
+
       // Prepare the update data
       const updateData = {};
       if (currentLesson.title) updateData.title = currentLesson.title;
-      if (currentLesson.description) updateData.description = currentLesson.description;
-      if (currentLesson.order !== undefined) updateData.order = parseInt(currentLesson.order) || 1;
-      if (currentLesson.status !== undefined) updateData.lesson_status = currentLesson.status;
-      if (currentLesson.thumbnail !== undefined) updateData.thumbnail = currentLesson.thumbnail || null;
-      
+      if (currentLesson.description)
+        updateData.description = currentLesson.description;
+      if (currentLesson.order !== undefined)
+        updateData.order = parseInt(currentLesson.order) || 1;
+      if (currentLesson.status !== undefined)
+        updateData.lesson_status = currentLesson.status;
+      if (currentLesson.thumbnail !== undefined)
+        updateData.thumbnail = currentLesson.thumbnail || null;
+
       const response = await axios.patch(
         `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${currentLesson.id}/update`,
         updateData,
@@ -238,27 +279,30 @@ const ModuleLessonsView = () => {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
-            ...getAuthHeader()
-          }
+            ...getAuthHeader(),
+          },
         }
       );
-      
+
       // Update the lesson in the state with the current lesson data (user's changes)
-      setLessons(prev => prev.map(lesson => 
-        lesson.id === currentLesson.id ? { ...lesson, ...currentLesson } : lesson
-      ));
-      
+      setLessons(prev =>
+        prev.map(lesson =>
+          lesson.id === currentLesson.id
+            ? { ...lesson, ...currentLesson }
+            : lesson
+        )
+      );
+
       setShowUpdateDialog(false);
-      
+
       toast({
-        title: "Success",
-        description: "Lesson updated successfully!",
+        title: 'Success',
+        description: 'Lesson updated successfully!',
       });
-      
     } catch (error) {
-      console.error("Error updating lesson:", error);
-      let errorMessage = "Failed to update lesson. Please try again.";
-      
+      console.error('Error updating lesson:', error);
+      let errorMessage = 'Failed to update lesson. Please try again.';
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.error) {
@@ -266,39 +310,39 @@ const ModuleLessonsView = () => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleOpenUpdateDialog = (lesson) => {
+  const handleOpenUpdateDialog = lesson => {
     setCurrentLesson({
       ...lesson,
       order: lesson.order || 1,
       status: lesson.status || 'DRAFT',
-      thumbnail: lesson.thumbnail || ''
+      thumbnail: lesson.thumbnail || '',
     });
     setShowUpdateDialog(true);
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setNewLesson(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSelectChange = (name, value) => {
     setNewLesson(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -311,9 +355,9 @@ const ModuleLessonsView = () => {
     const maxSize = 500 * 1024 * 1024; // 500MB in bytes
     if (file.size > maxSize) {
       toast({
-        title: "File Too Large",
-        description: "Please select an image under 500MB.",
-        variant: "destructive",
+        title: 'File Too Large',
+        description: 'Please select an image under 500MB.',
+        variant: 'destructive',
       });
       return;
     }
@@ -321,9 +365,9 @@ const ModuleLessonsView = () => {
     // Check if it's an image
     if (!file.type.startsWith('image/')) {
       toast({
-        title: "Invalid File Type",
-        description: "Please select an image file.",
-        variant: "destructive",
+        title: 'Invalid File Type',
+        description: 'Please select an image file.',
+        variant: 'destructive',
       });
       return;
     }
@@ -334,7 +378,7 @@ const ModuleLessonsView = () => {
   };
 
   // Handle image save from editor
-  const handleImageEditorSave = async (editedFile) => {
+  const handleImageEditorSave = async editedFile => {
     setShowImageEditor(false);
     setIsUploadingImage(true);
 
@@ -342,7 +386,7 @@ const ModuleLessonsView = () => {
       // Use the same upload service as InteractiveComponent
       const uploadResult = await uploadImage(editedFile, {
         folder: 'lesson-thumbnails',
-        public: true
+        public: true,
       });
 
       if (uploadResult.success && uploadResult.imageUrl) {
@@ -350,29 +394,29 @@ const ModuleLessonsView = () => {
         if (editingContext === 'create') {
           setNewLesson(prev => ({
             ...prev,
-            thumbnail: uploadResult.imageUrl
+            thumbnail: uploadResult.imageUrl,
           }));
         } else if (editingContext === 'update') {
           setCurrentLesson(prev => ({
             ...prev,
-            thumbnail: uploadResult.imageUrl
+            thumbnail: uploadResult.imageUrl,
           }));
         }
 
         toast({
-          title: "Success",
-          description: "Image uploaded successfully!",
+          title: 'Success',
+          description: 'Image uploaded successfully!',
         });
       } else {
         throw new Error('Upload failed - no image URL returned');
       }
-
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error('Error uploading image:', error);
       toast({
-        title: "Upload Failed",
-        description: error.message || "Failed to upload image. Please try again.",
-        variant: "destructive",
+        title: 'Upload Failed',
+        description:
+          error.message || 'Failed to upload image. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsUploadingImage(false);
@@ -391,44 +435,47 @@ const ModuleLessonsView = () => {
   const filteredLessons = useMemo(() => {
     console.log('filteredLessons - lessons:', lessons);
     console.log('filteredLessons - searchQuery:', searchQuery);
-    
+
     if (!lessons || !Array.isArray(lessons) || lessons.length === 0) {
       console.log('No lessons found or lessons is not an array');
       return [];
     }
-    
+
     // First, sort lessons by order field (ascending)
     const sortedLessons = [...lessons].sort((a, b) => {
       const orderA = parseInt(a.order) || 0;
       const orderB = parseInt(b.order) || 0;
       return orderA - orderB;
     });
-    
+
     console.log('Sorted lessons:', sortedLessons);
-    
+
     // Then apply search filter if there's a query
     const query = searchQuery.toLowerCase().trim();
     if (!query) {
       console.log('No search query, returning sorted lessons');
       return sortedLessons;
     }
-    
+
     const filtered = sortedLessons.filter(lesson => {
       if (!lesson) return false;
       const title = (lesson.title || '').toLowerCase();
       const description = (lesson.description || '').toLowerCase();
       return title.includes(query) || description.includes(query);
     });
-    
+
     console.log('Filtered lessons:', filtered);
     return filtered;
   }, [lessons, searchQuery]);
 
-  const handleLessonClick = (lesson) => {
+  const handleLessonClick = lesson => {
     // Navigate to the builder - DashboardLayout will auto-collapse sidebar for lesson builder pages
-    navigate(`/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`, {
-      state: { lessonData: lesson }
-    });
+    navigate(
+      `/dashboard/courses/${courseId}/module/${moduleId}/lesson/${lesson.id}/builder`,
+      {
+        state: { lessonData: lesson },
+      }
+    );
   };
 
   const handleAddLesson = () => {
@@ -437,10 +484,10 @@ const ModuleLessonsView = () => {
 
   const handleDeleteLesson = async () => {
     if (!lessonToDelete) return;
-    
+
     try {
       setIsDeleting(true);
-      
+
       // Use the exact same endpoint format as in Postman
       await axios.delete(
         `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonToDelete.id}/delete`,
@@ -448,23 +495,24 @@ const ModuleLessonsView = () => {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
-            ...getAuthHeader()
-          }
+            ...getAuthHeader(),
+          },
         }
       );
-      
+
       // Remove the deleted lesson from the state
-      setLessons(prev => prev.filter(lesson => lesson.id !== lessonToDelete.id));
-      
+      setLessons(prev =>
+        prev.filter(lesson => lesson.id !== lessonToDelete.id)
+      );
+
       toast({
-        title: "Success",
-        description: "Lesson deleted successfully!",
+        title: 'Success',
+        description: 'Lesson deleted successfully!',
       });
-      
     } catch (error) {
-      console.error("Error deleting lesson:", error);
-      let errorMessage = "Failed to delete lesson. Please try again.";
-      
+      console.error('Error deleting lesson:', error);
+      let errorMessage = 'Failed to delete lesson. Please try again.';
+
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.response?.data?.error) {
@@ -472,11 +520,11 @@ const ModuleLessonsView = () => {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsDeleting(false);
@@ -487,9 +535,9 @@ const ModuleLessonsView = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6 flex items-center gap-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => navigate(-1)}
           className="flex items-center gap-2"
         >
@@ -513,13 +561,10 @@ const ModuleLessonsView = () => {
             placeholder="Search lessons..."
             className="pl-10 w-full"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button 
-          onClick={handleAddLesson}
-          className="w-full sm:w-auto"
-        >
+        <Button onClick={handleAddLesson} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add New Lesson
         </Button>
       </div>
@@ -532,7 +577,9 @@ const ModuleLessonsView = () => {
       ) : error ? (
         <div className="text-center p-6 bg-red-50 rounded-lg">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Lessons</h3>
+          <h3 className="text-lg font-medium text-red-900 mb-2">
+            Error Loading Lessons
+          </h3>
           <p className="text-red-700 mb-4">{error}</p>
           <Button variant="outline" onClick={fetchModuleLessons}>
             <RefreshCw className="mr-2 h-4 w-4" /> Try Again
@@ -541,20 +588,26 @@ const ModuleLessonsView = () => {
       ) : filteredLessons.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredLessons.map((lesson, index) => (
-            <Card key={lesson.id || `lesson-${index}`} className="hover:shadow-md transition-shadow">
+            <Card
+              key={lesson.id || `lesson-${index}`}
+              className="hover:shadow-md transition-shadow"
+            >
               {/* Thumbnail */}
               {lesson.thumbnail && (
                 <div className="relative w-full h-48 bg-gray-100 rounded-t-lg overflow-hidden">
-                  <img 
-                    src={lesson.thumbnail} 
+                  <img
+                    src={lesson.thumbnail}
                     alt={lesson.title || 'Lesson thumbnail'}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
+                    onError={e => {
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
-                  <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500 text-sm" style={{display: 'none'}}>
+                  <div
+                    className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
+                    style={{ display: 'none' }}
+                  >
                     Image failed to load
                   </div>
                 </div>
@@ -564,8 +617,10 @@ const ModuleLessonsView = () => {
                   <CardTitle className="text-lg line-clamp-2">
                     {lesson.title || 'Untitled Lesson'}
                   </CardTitle>
-                  <Badge 
-                    variant={lesson.status === 'PUBLISHED' ? 'default' : 'secondary'}
+                  <Badge
+                    variant={
+                      lesson.status === 'PUBLISHED' ? 'default' : 'secondary'
+                    }
                     className="whitespace-nowrap"
                   >
                     {lesson.status || 'DRAFT'}
@@ -579,27 +634,29 @@ const ModuleLessonsView = () => {
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>Order: {lesson.order || 'N/A'}</span>
                   {lesson.updatedAt && (
-                    <span>Updated: {new Date(lesson.updatedAt).toLocaleDateString()}</span>
+                    <span>
+                      Updated: {new Date(lesson.updatedAt).toLocaleDateString()}
+                    </span>
                   )}
                 </div>
               </CardContent>
               <CardFooter className="pt-0">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full flex items-center justify-center gap-2"
                   onClick={() => handleLessonClick(lesson)}
                 >
                   <Play className="h-4 w-4" /> View Lesson
                 </Button>
-                <div 
-                  className="flex items-center space-x-2 ml-4" 
-                  onClick={(e) => e.stopPropagation()}
+                <div
+                  className="flex items-center space-x-2 ml-4"
+                  onClick={e => e.stopPropagation()}
                 >
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    variant="outline"
+                    size="icon"
                     className="h-8 w-8 text-blue-600 hover:bg-blue-50 border-blue-200"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleOpenUpdateDialog(lesson);
                     }}
@@ -611,10 +668,14 @@ const ModuleLessonsView = () => {
                     lessonData={lesson}
                     moduleData={moduleDetails}
                     courseData={{ title: 'Course' }} // You can pass actual course data if available
-                    onContentGenerated={(blocks) => {
-                      console.log('AI content generated for lesson:', lesson.title, blocks);
+                    onContentGenerated={blocks => {
+                      console.log(
+                        'AI content generated for lesson:',
+                        lesson.title,
+                        blocks
+                      );
                       toast({
-                        title: "Success",
+                        title: 'Success',
                         description: `Generated ${blocks.length} content blocks for ${lesson.title}!`,
                       });
                       // Optionally refresh the lesson data
@@ -626,11 +687,11 @@ const ModuleLessonsView = () => {
                     buttonText=""
                     showIcon={true}
                   />
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
+                  <Button
+                    variant="outline"
+                    size="icon"
                     className="h-8 w-8 text-red-600 hover:bg-red-50 border-red-200"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       setLessonToDelete(lesson);
                     }}
@@ -647,15 +708,17 @@ const ModuleLessonsView = () => {
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {searchQuery ? 'No matching lessons found' : 'No lessons available yet'}
+            {searchQuery
+              ? 'No matching lessons found'
+              : 'No lessons available yet'}
           </h3>
           <p className="text-gray-600 mb-6">
-            {searchQuery 
-              ? 'Try a different search term.' 
+            {searchQuery
+              ? 'Try a different search term.'
               : 'Create your first lesson to get started.'}
           </p>
           <Button onClick={handleAddLesson}>
-            <Plus className="mr-2 h-4 w-4" /> 
+            <Plus className="mr-2 h-4 w-4" />
             {searchQuery ? 'Clear Search' : 'Create Your First Lesson'}
           </Button>
         </div>
@@ -670,7 +733,7 @@ const ModuleLessonsView = () => {
               Fill in the details below to create a new lesson for this module.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="title">Lesson Title *</Label>
@@ -683,7 +746,7 @@ const ModuleLessonsView = () => {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Description *</Label>
               <Textarea
@@ -696,7 +759,7 @@ const ModuleLessonsView = () => {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Thumbnail Image</Label>
               <Tabs defaultValue="url" className="w-full">
@@ -705,38 +768,42 @@ const ModuleLessonsView = () => {
                     <Link className="h-4 w-4" />
                     Image URL
                   </TabsTrigger>
-                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <TabsTrigger
+                    value="upload"
+                    className="flex items-center gap-2"
+                  >
                     <Upload className="h-4 w-4" />
                     Upload File
                   </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="url" className="space-y-2">
-              <Input
-                id="thumbnail"
-                name="thumbnail"
-                value={newLesson.thumbnail}
-                onChange={handleInputChange}
-                placeholder="Enter thumbnail image URL (optional)"
-                type="url"
-              />
-              <p className="text-xs text-gray-500">
+                  <Input
+                    id="thumbnail"
+                    name="thumbnail"
+                    value={newLesson.thumbnail}
+                    onChange={handleInputChange}
+                    placeholder="Enter thumbnail image URL (optional)"
+                    type="url"
+                  />
+                  <p className="text-xs text-gray-500">
                     Enter a URL to an image file.
                   </p>
                 </TabsContent>
-                
+
                 <TabsContent value="upload" className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileSelect(e, 'create')}
+                      onChange={e => handleFileSelect(e, 'create')}
                       className="cursor-pointer"
                       disabled={isUploadingImage}
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    Maximum file size: 500MB. Supported formats: JPG, PNG, GIF, WebP.
+                    Maximum file size: 500MB. Supported formats: JPG, PNG, GIF,
+                    WebP.
                   </p>
                   {isUploadingImage && (
                     <div className="flex items-center gap-2 text-sm text-blue-600">
@@ -746,7 +813,7 @@ const ModuleLessonsView = () => {
                   )}
                 </TabsContent>
               </Tabs>
-              
+
               {newLesson.thumbnail && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-2">
@@ -755,7 +822,9 @@ const ModuleLessonsView = () => {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setNewLesson(prev => ({ ...prev, thumbnail: '' }))}
+                      onClick={() =>
+                        setNewLesson(prev => ({ ...prev, thumbnail: '' }))
+                      }
                       className="h-6 text-xs"
                     >
                       <X className="h-3 w-3 mr-1" />
@@ -763,25 +832,27 @@ const ModuleLessonsView = () => {
                     </Button>
                   </div>
                   <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
-                    <img 
-                      src={newLesson.thumbnail} 
+                    <img
+                      src={newLesson.thumbnail}
                       alt="Thumbnail preview"
                       className="w-full h-full object-cover"
-                      onError={(e) => {
+                      onError={e => {
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
                       }}
                     />
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm" style={{display: 'none'}}>
+                    <div
+                      className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
+                      style={{ display: 'none' }}
+                    >
                       Invalid image URL
                     </div>
                   </div>
                 </div>
               )}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
-              
               <div className="space-y-2">
                 <Label htmlFor="order">Order *</Label>
                 <Input
@@ -796,12 +867,12 @@ const ModuleLessonsView = () => {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select 
-                value={newLesson.status} 
-                onValueChange={(value) => handleSelectChange('status', value)}
+              <Select
+                value={newLesson.status}
+                onValueChange={value => handleSelectChange('status', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -813,19 +884,21 @@ const ModuleLessonsView = () => {
               </Select>
             </div>
           </div>
-          
+
           <DialogFooter className="sticky bottom-0 bg-background pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowCreateDialog(false)}
               disabled={isCreating}
               type="button"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleCreateLesson}
-              disabled={!newLesson.title || !newLesson.description || isCreating}
+              disabled={
+                !newLesson.title || !newLesson.description || isCreating
+              }
               type="submit"
             >
               {isCreating ? (
@@ -833,7 +906,9 @@ const ModuleLessonsView = () => {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...
                 </>
-              ) : 'Create Lesson'}
+              ) : (
+                'Create Lesson'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -848,7 +923,7 @@ const ModuleLessonsView = () => {
               Fill in the details below to update the lesson.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="title">Lesson Title *</Label>
@@ -856,25 +931,32 @@ const ModuleLessonsView = () => {
                 id="title"
                 name="title"
                 value={currentLesson?.title}
-                onChange={(e) => setCurrentLesson(prev => ({ ...prev, title: e.target.value }))}
+                onChange={e =>
+                  setCurrentLesson(prev => ({ ...prev, title: e.target.value }))
+                }
                 placeholder="Enter lesson title"
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
                 name="description"
                 value={currentLesson?.description}
-                onChange={(e) => setCurrentLesson(prev => ({ ...prev, description: e.target.value }))}
+                onChange={e =>
+                  setCurrentLesson(prev => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Enter lesson description"
                 rows={3}
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label>Thumbnail Image</Label>
               <Tabs defaultValue="url" className="w-full">
@@ -883,38 +965,47 @@ const ModuleLessonsView = () => {
                     <Link className="h-4 w-4" />
                     Image URL
                   </TabsTrigger>
-                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <TabsTrigger
+                    value="upload"
+                    className="flex items-center gap-2"
+                  >
                     <Upload className="h-4 w-4" />
                     Upload File
                   </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="url" className="space-y-2">
-              <Input
-                id="thumbnail"
-                name="thumbnail"
-                value={currentLesson?.thumbnail || ''}
-                onChange={(e) => setCurrentLesson(prev => ({ ...prev, thumbnail: e.target.value }))}
-                placeholder="Enter thumbnail image URL (optional)"
-                type="url"
-              />
-              <p className="text-xs text-gray-500">
+                  <Input
+                    id="thumbnail"
+                    name="thumbnail"
+                    value={currentLesson?.thumbnail || ''}
+                    onChange={e =>
+                      setCurrentLesson(prev => ({
+                        ...prev,
+                        thumbnail: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter thumbnail image URL (optional)"
+                    type="url"
+                  />
+                  <p className="text-xs text-gray-500">
                     Enter a URL to an image file.
                   </p>
                 </TabsContent>
-                
+
                 <TabsContent value="upload" className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileSelect(e, 'update')}
+                      onChange={e => handleFileSelect(e, 'update')}
                       className="cursor-pointer"
                       disabled={isUploadingImage}
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    Maximum file size: 500MB. Supported formats: JPG, PNG, GIF, WebP.
+                    Maximum file size: 500MB. Supported formats: JPG, PNG, GIF,
+                    WebP.
                   </p>
                   {isUploadingImage && (
                     <div className="flex items-center gap-2 text-sm text-blue-600">
@@ -924,7 +1015,7 @@ const ModuleLessonsView = () => {
                   )}
                 </TabsContent>
               </Tabs>
-              
+
               {currentLesson?.thumbnail && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-2">
@@ -933,7 +1024,9 @@ const ModuleLessonsView = () => {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentLesson(prev => ({ ...prev, thumbnail: '' }))}
+                      onClick={() =>
+                        setCurrentLesson(prev => ({ ...prev, thumbnail: '' }))
+                      }
                       className="h-6 text-xs"
                     >
                       <X className="h-3 w-3 mr-1" />
@@ -941,23 +1034,26 @@ const ModuleLessonsView = () => {
                     </Button>
                   </div>
                   <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
-                    <img 
-                      src={currentLesson.thumbnail} 
+                    <img
+                      src={currentLesson.thumbnail}
                       alt="Thumbnail preview"
                       className="w-full h-full object-cover"
-                      onError={(e) => {
+                      onError={e => {
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'flex';
                       }}
                     />
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm" style={{display: 'none'}}>
+                    <div
+                      className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm"
+                      style={{ display: 'none' }}
+                    >
                       Invalid image URL
                     </div>
                   </div>
                 </div>
               )}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="order">Order *</Label>
@@ -967,17 +1063,24 @@ const ModuleLessonsView = () => {
                   type="number"
                   min="1"
                   value={currentLesson?.order}
-                  onChange={(e) => setCurrentLesson(prev => ({ ...prev, order: e.target.value }))}
+                  onChange={e =>
+                    setCurrentLesson(prev => ({
+                      ...prev,
+                      order: e.target.value,
+                    }))
+                  }
                   placeholder="Lesson order"
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select 
-                  value={currentLesson?.status} 
-                  onValueChange={(value) => setCurrentLesson(prev => ({ ...prev, status: value }))}
+                <Select
+                  value={currentLesson?.status}
+                  onValueChange={value =>
+                    setCurrentLesson(prev => ({ ...prev, status: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -990,19 +1093,23 @@ const ModuleLessonsView = () => {
               </div>
             </div>
           </div>
-          
+
           <DialogFooter className="sticky bottom-0 bg-background pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowUpdateDialog(false)}
               disabled={isUpdating}
               type="button"
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleUpdateLesson}
-              disabled={!currentLesson?.title || !currentLesson?.description || isUpdating}
+              disabled={
+                !currentLesson?.title ||
+                !currentLesson?.description ||
+                isUpdating
+              }
               type="submit"
             >
               {isUpdating ? (
@@ -1010,31 +1117,37 @@ const ModuleLessonsView = () => {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...
                 </>
-              ) : 'Update Lesson'}
+              ) : (
+                'Update Lesson'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={!!lessonToDelete} onOpenChange={(open) => !open && setLessonToDelete(null)}>
+      <Dialog
+        open={!!lessonToDelete}
+        onOpenChange={open => !open && setLessonToDelete(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Lesson</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the lesson "{lessonToDelete?.title}"? This action cannot be undone.
+              Are you sure you want to delete the lesson "
+              {lessonToDelete?.title}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setLessonToDelete(null)}
               disabled={isDeleting}
             >
               Cancel
             </Button>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDeleteLesson}
               disabled={isDeleting}
             >
@@ -1043,7 +1156,9 @@ const ModuleLessonsView = () => {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...
                 </>
-              ) : 'Delete'}
+              ) : (
+                'Delete'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

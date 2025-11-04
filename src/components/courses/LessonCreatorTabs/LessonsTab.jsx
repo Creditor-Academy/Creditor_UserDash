@@ -1,49 +1,51 @@
 import React, { useState } from 'react';
-import { 
-  FileText, 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  Copy, 
-  Save, 
-  X, 
-  Clock, 
+import {
+  FileText,
+  Plus,
+  Edit3,
+  Trash2,
+  Copy,
+  Save,
+  X,
+  Clock,
   Target,
   BookOpen,
   Sparkles,
   Loader2,
   Check,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import enhancedAIService from '../../../services/enhancedAIService';
 
-const LessonsTab = ({ 
-  lessons, 
-  setLessons, 
-  editingLessonId, 
+const LessonsTab = ({
+  lessons,
+  setLessons,
+  editingLessonId,
   setEditingLessonId,
   isGenerating,
-  courseTitle 
+  courseTitle,
 }) => {
   const [editContent, setEditContent] = useState('');
   const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
   const [generationStatus, setGenerationStatus] = useState('');
 
   // Start editing a lesson
-  const startEditing = (lesson) => {
+  const startEditing = lesson => {
     setEditingLessonId(lesson.id);
     setEditContent(lesson.content);
   };
 
   // Save edited lesson
   const saveEdit = () => {
-    setLessons(prev => prev.map(lesson => 
-      lesson.id === editingLessonId 
-        ? { ...lesson, content: editContent } 
-        : lesson
-    ));
+    setLessons(prev =>
+      prev.map(lesson =>
+        lesson.id === editingLessonId
+          ? { ...lesson, content: editContent }
+          : lesson
+      )
+    );
     setEditingLessonId(null);
     setEditContent('');
   };
@@ -64,16 +66,16 @@ const LessonsTab = ({
       content: 'Add your lesson content here...',
       duration: '15 min',
       keyPoints: ['Key point 1', 'Key point 2'],
-      order: lessons.length + 1
+      order: lessons.length + 1,
     };
-    
+
     setLessons(prev => [...prev, newLesson]);
     setEditingLessonId(newLesson.id);
     setEditContent(newLesson.content);
   };
 
   // Generate AI lesson content
-  const generateAILessonContent = async (lessonId) => {
+  const generateAILessonContent = async lessonId => {
     const lesson = lessons.find(l => l.id === lessonId);
     if (!lesson) return;
 
@@ -88,12 +90,12 @@ const LessonsTab = ({
         courseTitle: courseTitle,
         duration: lesson.duration,
         includeMultimedia: true,
-        generateQA: true
+        generateQA: true,
       });
 
       if (result.success && result.data) {
         setGenerationStatus('Updating lesson content...');
-        
+
         // Update lesson with enhanced content
         const enhancedLesson = {
           ...lesson,
@@ -102,12 +104,12 @@ const LessonsTab = ({
           multimedia: result.data.multimedia || {},
           qa: result.data.qa || [],
           aiGenerated: true,
-          lastUpdated: new Date().toISOString()
+          lastUpdated: new Date().toISOString(),
         };
 
-        setLessons(prev => prev.map(l => 
-          l.id === lessonId ? enhancedLesson : l
-        ));
+        setLessons(prev =>
+          prev.map(l => (l.id === lessonId ? enhancedLesson : l))
+        );
 
         setGenerationStatus('Lesson content generated successfully!');
         setTimeout(() => setGenerationStatus(''), 3000);
@@ -125,18 +127,22 @@ const LessonsTab = ({
 
   // Update lesson
   const updateLesson = (lessonId, updatedData) => {
-    setLessons(prev => prev.map(lesson => 
-      lesson.id === lessonId 
-        ? { ...lesson, ...updatedData }
-        : lesson
-    ));
+    setLessons(prev =>
+      prev.map(lesson =>
+        lesson.id === lessonId ? { ...lesson, ...updatedData } : lesson
+      )
+    );
   };
 
   // Delete lesson
-  const deleteLesson = (lessonId) => {
-    if (confirm('Are you sure you want to delete this lesson? This action cannot be undone.')) {
+  const deleteLesson = lessonId => {
+    if (
+      confirm(
+        'Are you sure you want to delete this lesson? This action cannot be undone.'
+      )
+    ) {
       setLessons(prev => prev.filter(lesson => lesson.id !== lessonId));
-      
+
       // Clear editing states if deleting currently edited lesson
       if (editingLessonId === lessonId) {
         setEditingLessonId(null);
@@ -146,16 +152,16 @@ const LessonsTab = ({
   };
 
   // Duplicate lesson
-  const duplicateLesson = (lessonId) => {
+  const duplicateLesson = lessonId => {
     const lessonToDuplicate = lessons.find(lesson => lesson.id === lessonId);
     if (lessonToDuplicate) {
       const duplicatedLesson = {
         ...lessonToDuplicate,
         id: `lesson-${Date.now()}`,
         title: `${lessonToDuplicate.title} (Copy)`,
-        order: lessons.length + 1
+        order: lessons.length + 1,
       };
-      
+
       setLessons(prev => [...prev, duplicatedLesson]);
     }
   };
@@ -167,9 +173,12 @@ const LessonsTab = ({
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">AI Lesson Management</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                AI Lesson Management
+              </h3>
               <p className="text-gray-600">
-                Create, edit, and enhance lessons with AI-powered content generation.
+                Create, edit, and enhance lessons with AI-powered content
+                generation.
               </p>
             </div>
             <Button
@@ -184,21 +193,35 @@ const LessonsTab = ({
 
         {/* Generation Status */}
         {generationStatus && (
-          <Card className={`mb-6 border-l-4 ${
-            generationStatus.includes('success') ? 'border-green-500 bg-green-50' :
-            generationStatus.includes('Failed') ? 'border-red-500 bg-red-50' :
-            'border-blue-500 bg-blue-50'
-          }`}>
+          <Card
+            className={`mb-6 border-l-4 ${
+              generationStatus.includes('success')
+                ? 'border-green-500 bg-green-50'
+                : generationStatus.includes('Failed')
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-blue-500 bg-blue-50'
+            }`}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                {isGeneratingLesson && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
-                {generationStatus.includes('success') && <Check className="w-4 h-4 text-green-600" />}
-                {generationStatus.includes('Failed') && <AlertCircle className="w-4 h-4 text-red-600" />}
-                <span className={`text-sm font-medium ${
-                  generationStatus.includes('success') ? 'text-green-800' :
-                  generationStatus.includes('Failed') ? 'text-red-800' :
-                  'text-blue-800'
-                }`}>
+                {isGeneratingLesson && (
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                )}
+                {generationStatus.includes('success') && (
+                  <Check className="w-4 h-4 text-green-600" />
+                )}
+                {generationStatus.includes('Failed') && (
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                )}
+                <span
+                  className={`text-sm font-medium ${
+                    generationStatus.includes('success')
+                      ? 'text-green-800'
+                      : generationStatus.includes('Failed')
+                        ? 'text-red-800'
+                        : 'text-blue-800'
+                  }`}
+                >
                   {generationStatus}
                 </span>
               </div>
@@ -210,9 +233,13 @@ const LessonsTab = ({
         {lessons.length === 0 ? (
           <div className="text-center py-12">
             <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Lessons Created</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No Lessons Created
+            </h3>
             <p className="text-gray-600 mb-4">
-              {isGenerating ? 'AI is generating lessons...' : 'Create your first lesson to get started.'}
+              {isGenerating
+                ? 'AI is generating lessons...'
+                : 'Create your first lesson to get started.'}
             </p>
             {isGenerating ? (
               <div className="flex items-center justify-center gap-2">
@@ -237,7 +264,9 @@ const LessonsTab = ({
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <span className="text-purple-600 font-medium">{index + 1}</span>
+                        <span className="text-purple-600 font-medium">
+                          {index + 1}
+                        </span>
                       </div>
                       <div>
                         <CardTitle className="text-lg text-gray-900">
@@ -245,7 +274,11 @@ const LessonsTab = ({
                             <input
                               type="text"
                               value={lesson.title}
-                              onChange={(e) => updateLesson(lesson.id, { title: e.target.value })}
+                              onChange={e =>
+                                updateLesson(lesson.id, {
+                                  title: e.target.value,
+                                })
+                              }
                               className="text-lg font-semibold bg-transparent border-b border-gray-300 focus:border-purple-500 outline-none"
                             />
                           ) : (
@@ -266,7 +299,7 @@ const LessonsTab = ({
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-1">
                       <Button
                         onClick={() => generateAILessonContent(lesson.id)}
@@ -302,14 +335,18 @@ const LessonsTab = ({
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent>
                   {/* Description */}
                   <div className="mb-4">
                     {editingLessonId === lesson.id ? (
                       <textarea
                         value={lesson.description}
-                        onChange={(e) => updateLesson(lesson.id, { description: e.target.value })}
+                        onChange={e =>
+                          updateLesson(lesson.id, {
+                            description: e.target.value,
+                          })
+                        }
                         className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
                         rows={2}
                         placeholder="Lesson description..."
@@ -326,7 +363,7 @@ const LessonsTab = ({
                       <div className="space-y-3">
                         <textarea
                           value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
+                          onChange={e => setEditContent(e.target.value)}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
                           rows={8}
                           placeholder="Enter lesson content..."
@@ -376,9 +413,14 @@ const LessonsTab = ({
                       </h4>
                       <div className="space-y-1">
                         {lesson.keyPoints.map((point, pointIndex) => (
-                          <div key={pointIndex} className="flex items-start gap-2">
+                          <div
+                            key={pointIndex}
+                            className="flex items-start gap-2"
+                          >
                             <div className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
-                            <span className="text-sm text-gray-700">{point}</span>
+                            <span className="text-sm text-gray-700">
+                              {point}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -386,37 +428,48 @@ const LessonsTab = ({
                   )}
 
                   {/* Multimedia Content */}
-                  {lesson.multimedia && Object.keys(lesson.multimedia).length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="font-medium text-gray-900 mb-2">Multimedia Content</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {lesson.multimedia.images && (
-                          <div className="text-center p-2 bg-blue-50 rounded">
-                            <FileText className="w-6 h-6 mx-auto text-blue-600 mb-1" />
-                            <span className="text-xs text-blue-700">Images</span>
-                          </div>
-                        )}
-                        {lesson.multimedia.videos && (
-                          <div className="text-center p-2 bg-green-50 rounded">
-                            <FileText className="w-6 h-6 mx-auto text-green-600 mb-1" />
-                            <span className="text-xs text-green-700">Videos</span>
-                          </div>
-                        )}
-                        {lesson.multimedia.audio && (
-                          <div className="text-center p-2 bg-orange-50 rounded">
-                            <FileText className="w-6 h-6 mx-auto text-orange-600 mb-1" />
-                            <span className="text-xs text-orange-700">Audio</span>
-                          </div>
-                        )}
-                        {lesson.qa && lesson.qa.length > 0 && (
-                          <div className="text-center p-2 bg-purple-50 rounded">
-                            <FileText className="w-6 h-6 mx-auto text-purple-600 mb-1" />
-                            <span className="text-xs text-purple-700">{lesson.qa.length} Q&A</span>
-                          </div>
-                        )}
+                  {lesson.multimedia &&
+                    Object.keys(lesson.multimedia).length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-gray-900 mb-2">
+                          Multimedia Content
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {lesson.multimedia.images && (
+                            <div className="text-center p-2 bg-blue-50 rounded">
+                              <FileText className="w-6 h-6 mx-auto text-blue-600 mb-1" />
+                              <span className="text-xs text-blue-700">
+                                Images
+                              </span>
+                            </div>
+                          )}
+                          {lesson.multimedia.videos && (
+                            <div className="text-center p-2 bg-green-50 rounded">
+                              <FileText className="w-6 h-6 mx-auto text-green-600 mb-1" />
+                              <span className="text-xs text-green-700">
+                                Videos
+                              </span>
+                            </div>
+                          )}
+                          {lesson.multimedia.audio && (
+                            <div className="text-center p-2 bg-orange-50 rounded">
+                              <FileText className="w-6 h-6 mx-auto text-orange-600 mb-1" />
+                              <span className="text-xs text-orange-700">
+                                Audio
+                              </span>
+                            </div>
+                          )}
+                          {lesson.qa && lesson.qa.length > 0 && (
+                            <div className="text-center p-2 bg-purple-50 rounded">
+                              <FileText className="w-6 h-6 mx-auto text-purple-600 mb-1" />
+                              <span className="text-xs text-purple-700">
+                                {lesson.qa.length} Q&A
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Lesson Metadata */}
                   <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-100">
@@ -425,7 +478,10 @@ const LessonsTab = ({
                       <span>Order: {lesson.order}</span>
                     </div>
                     {lesson.lastUpdated && (
-                      <span>Updated: {new Date(lesson.lastUpdated).toLocaleDateString()}</span>
+                      <span>
+                        Updated:{' '}
+                        {new Date(lesson.lastUpdated).toLocaleDateString()}
+                      </span>
                     )}
                   </div>
                 </CardContent>

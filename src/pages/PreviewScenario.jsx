@@ -131,6 +131,125 @@ const PreviewScenario = () => {
     loadScenarioData();
   }, [scenarioData, scenarioId]);
 
+  // Setup Process carousel functions for preview mode
+  useEffect(() => {
+    // Process carousel navigation functions (based on quotes carousel logic)
+    window.processCarouselPrev = (button) => {
+      console.log('Process Carousel Prev clicked');
+      const carousel = button.closest('.process-carousel');
+      if (!carousel) {
+        console.log('No process carousel found for prev button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.process-step');
+      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      let currentIndex = parseInt(carousel.dataset.current || '0');
+      
+      console.log('Process carousel prev - current index:', currentIndex, 'total slides:', slides.length);
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : slides.length - 1;
+      showProcessCarouselSlide(carousel, slides, dots, newIndex);
+    };
+
+    window.processCarouselNext = (button) => {
+      console.log('Process Carousel Next clicked');
+      const carousel = button.closest('.process-carousel');
+      if (!carousel) {
+        console.log('No process carousel found for next button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.process-step');
+      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      let currentIndex = parseInt(carousel.dataset.current || '0');
+      
+      console.log('Process carousel next - current index:', currentIndex, 'total slides:', slides.length);
+      const newIndex = currentIndex < slides.length - 1 ? currentIndex + 1 : 0;
+      showProcessCarouselSlide(carousel, slides, dots, newIndex);
+    };
+
+    window.processCarouselGoTo = (button, index) => {
+      console.log('Process Carousel GoTo clicked');
+      const carousel = button.closest('.process-carousel');
+      if (!carousel) {
+        console.log('No process carousel found for goTo button');
+        return;
+      }
+      
+      const slides = carousel.querySelectorAll('.process-step');
+      const dots = carousel.querySelectorAll('.process-carousel-dot');
+      
+      console.log('Process carousel goTo - target index:', index, 'total slides:', slides.length);
+      showProcessCarouselSlide(carousel, slides, dots, index);
+    };
+
+    const showProcessCarouselSlide = (carousel, slides, dots, index) => {
+      slides.forEach((slide, i) => {
+        if (i === index) {
+          slide.classList.remove('hidden');
+          slide.classList.add('block');
+        } else {
+          slide.classList.remove('block');
+          slide.classList.add('hidden');
+        }
+      });
+      
+      dots.forEach((dot, i) => {
+        // Normalize: remove all known active/inactive styles first
+        dot.classList.remove(
+          // inactive variants
+          'bg-gray-300','hover:bg-gray-400','bg-slate-300','hover:bg-slate-400','hover:scale-105',
+          // active variants
+          'bg-white','scale-110','shadow-md',
+          'bg-gradient-to-r','from-blue-500','to-purple-500'
+        );
+
+        if (i === index) {
+          // Active state: use gradient styling like quotes carousel
+          dot.classList.add('bg-gradient-to-r','from-blue-500','to-purple-500','scale-110','shadow-md');
+        } else {
+          // Inactive state: use slate gray like quotes carousel
+          dot.classList.add('bg-slate-300','hover:bg-slate-400','hover:scale-105');
+        }
+      });
+      
+      carousel.dataset.current = index.toString();
+    };
+
+    // Add keyboard navigation support
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        const focusedElement = document.activeElement;
+        const processContainer = focusedElement?.closest('.process-carousel');
+        
+        if (processContainer && processContainer.id) {
+          event.preventDefault();
+          if (event.key === 'ArrowLeft') {
+            window.processCarouselPrev && window.processCarouselPrev({ closest: () => processContainer });
+          } else {
+            window.processCarouselNext && window.processCarouselNext({ closest: () => processContainer });
+          }
+        }
+      }
+    });
+
+    // Add click navigation to process content area
+    window.addEventListener('click', (event) => {
+      const processContainer = event.target?.closest('.process-carousel');
+      if (processContainer && processContainer.id) {
+        // Focus the container for keyboard navigation
+        processContainer.focus();
+      }
+    });
+
+    // Cleanup function
+    return () => {
+      delete window.processCarouselPrev;
+      delete window.processCarouselNext;
+      delete window.processCarouselGoTo;
+    };
+  }, []);
+
   const handleBack = () => {
     if (scenarioData) {
       // Coming from create scenario flow
