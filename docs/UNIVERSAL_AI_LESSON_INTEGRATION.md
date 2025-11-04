@@ -16,11 +16,13 @@ The Universal AI Lesson Content Generation system provides AI-powered lesson con
 ## Components Created
 
 ### 1. Core Service
+
 - **`universalAILessonService.js`**: Main service handling AI content generation
 - **`UniversalAIContentButton.jsx`**: Reusable button component with modal
 - **`LessonBuilderAIIntegration.jsx`**: Integration helper for lesson builders
 
 ### 2. Integration Points
+
 - **ModuleLessonsView**: AI button on each lesson card
 - **CreateLessonDialog**: "Create + Generate AI Content" option
 - **LessonBuilder**: Can be integrated with header toolbar
@@ -28,6 +30,7 @@ The Universal AI Lesson Content Generation system provides AI-powered lesson con
 ## Usage Examples
 
 ### Basic Button Usage
+
 ```jsx
 import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
 
@@ -35,14 +38,15 @@ import UniversalAIContentButton from '@/components/courses/UniversalAIContentBut
   lessonData={lesson}
   moduleData={module}
   courseData={course}
-  onContentGenerated={(blocks) => {
+  onContentGenerated={blocks => {
     console.log('Generated blocks:', blocks);
     // Handle generated content
   }}
-/>
+/>;
 ```
 
 ### LessonBuilder Integration
+
 ```jsx
 import LessonBuilderAIIntegration from '@/components/courses/LessonBuilderAIIntegration';
 
@@ -54,10 +58,11 @@ import LessonBuilderAIIntegration from '@/components/courses/LessonBuilderAIInte
   setContentBlocks={setContentBlocks}
   handleUpdate={handleUpdate}
   toast={toast}
-/>
+/>;
 ```
 
 ### Service Direct Usage
+
 ```jsx
 import universalAILessonService from '@/services/universalAILessonService';
 
@@ -68,7 +73,7 @@ const blocks = await universalAILessonService.generateLessonContent(
   {
     contentType: 'comprehensive',
     includeAssessments: true,
-    includeExamples: true
+    includeExamples: true,
   }
 );
 ```
@@ -76,10 +81,12 @@ const blocks = await universalAILessonService.generateLessonContent(
 ## Content Generation Options
 
 ### Content Types
+
 - **Comprehensive**: Full lesson with all sections
 - **Outline**: Structured outline with main topics
 
 ### Components (can be toggled)
+
 - **Introduction**: Engaging lesson introduction
 - **Learning Objectives**: Clear, measurable objectives
 - **Examples**: Practical applications and examples
@@ -90,6 +97,7 @@ const blocks = await universalAILessonService.generateLessonContent(
 ## Generated Content Structure
 
 Each generated block includes:
+
 ```javascript
 {
   id: 'unique-id',
@@ -107,12 +115,14 @@ Each generated block includes:
 ## Integration Status
 
 ### ✅ Completed Integrations
+
 - **ModuleLessonsView**: Purple Sparkles button on lesson cards
 - **CreateLessonDialog**: "Create + Generate AI Content" button
 - **Universal Service**: Complete AI generation service
 - **Auto-Save**: Direct lesson content saving
 
 ### 🔄 Pending Integrations
+
 - **LessonBuilder Header**: Add to toolbar (manual integration required)
 - **Course Overview**: Bulk lesson content generation
 - **Lesson Import**: AI enhancement for imported lessons
@@ -120,12 +130,15 @@ Each generated block includes:
 ## Manual Integration Steps
 
 ### For LessonBuilder Header
+
 1. Import the component:
+
 ```jsx
 import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
 ```
 
 2. Add to header toolbar:
+
 ```jsx
 <UniversalAIContentButton
   lessonData={lessonData}
@@ -139,20 +152,21 @@ import UniversalAIContentButton from '@/components/courses/UniversalAIContentBut
 ```
 
 3. Add handler function:
+
 ```jsx
-const handleAIContentGenerated = (generatedBlocks) => {
+const handleAIContentGenerated = generatedBlocks => {
   const newBlocks = generatedBlocks.map((block, index) => ({
     ...block,
     order: contentBlocks.length + index,
-    id: block.id || `ai-block-${Date.now()}-${index}`
+    id: block.id || `ai-block-${Date.now()}-${index}`,
   }));
-  
+
   setContentBlocks(prev => [...prev, ...newBlocks]);
-  
+
   setTimeout(() => {
     handleUpdate();
   }, 500);
-  
+
   toast.success(`Added ${generatedBlocks.length} AI-generated content blocks!`);
 };
 ```
@@ -160,6 +174,7 @@ const handleAIContentGenerated = (generatedBlocks) => {
 ## AI Models Used
 
 The system uses your existing AI infrastructure:
+
 - **Primary**: Enhanced AI Service (OpenAI, HuggingFace, etc.)
 - **Fallback**: Template-based generation
 - **Content Moderation**: Qwen3Guard (if available)
@@ -175,6 +190,7 @@ The system uses your existing AI infrastructure:
 ## Testing
 
 ### Test AI Generation
+
 ```javascript
 // Test the service directly
 const testGeneration = async () => {
@@ -193,6 +209,7 @@ const testGeneration = async () => {
 ```
 
 ### Test Button Component
+
 1. Navigate to lesson list page
 2. Look for purple Sparkles button on lesson cards
 3. Click button to open AI generation modal
@@ -202,13 +219,16 @@ const testGeneration = async () => {
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Button not visible**: Check import and component placement
 2. **Generation fails**: Check AI service configuration and API keys
 3. **Content not saving**: Verify lesson ID and update permissions
 4. **Modal not opening**: Check state management and event handlers
 
 ### Debug Logging
+
 The system provides comprehensive console logging:
+
 - `🎯 Universal AI Lesson Content Generation Started`
 - `✅ Generated X content blocks`
 - `💾 Saving X AI-generated blocks to lesson Y`
@@ -226,6 +246,7 @@ The system provides comprehensive console logging:
 ## Support
 
 For issues or questions:
+
 1. Check console logs for detailed error messages
 2. Verify AI service configuration and API keys
 3. Test with fallback content generation

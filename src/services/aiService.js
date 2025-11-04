@@ -1,5 +1,5 @@
 // AI Service - Integrated OpenAI and Deep AI for Course Creation
-import OpenAI from "openai";
+import OpenAI from 'openai';
 
 /**
  * AI Service class that handles both text generation (OpenAI) and image generation (Deep AI)
@@ -8,12 +8,13 @@ class AIService {
   constructor() {
     // Initialize OpenAI client
     this.openai = new OpenAI({
-      apiKey: import.meta.env.VITE_OPENAI_API_KEY || "your_openai_api_key_here",
-      dangerouslyAllowBrowser: true // Enable browser usage
+      apiKey: import.meta.env.VITE_OPENAI_API_KEY || 'your_openai_api_key_here',
+      dangerouslyAllowBrowser: true, // Enable browser usage
     });
 
     // Deep AI configuration
-    this.deepAIKey = import.meta.env.VITE_DEEPAI_API_KEY || "your_deepai_api_key_here";
+    this.deepAIKey =
+      import.meta.env.VITE_DEEPAI_API_KEY || 'your_deepai_api_key_here';
   }
 
   /**
@@ -24,7 +25,7 @@ class AIService {
   async generateCourseOutline(courseData) {
     try {
       console.log('🤖 Generating course outline with OpenAI...');
-      
+
       const prompt = `Create a comprehensive course outline for "${courseData.title}".
       
 Course Details:
@@ -59,23 +60,24 @@ Format the response as JSON with this structure:
 }`;
 
       const response = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: 'gpt-3.5-turbo',
         messages: [
           {
-            role: "system",
-            content: "You are an expert course designer. Create well-structured, educational course outlines in JSON format."
+            role: 'system',
+            content:
+              'You are an expert course designer. Create well-structured, educational course outlines in JSON format.',
           },
           {
-            role: "user",
-            content: prompt
-          }
+            role: 'user',
+            content: prompt,
+          },
         ],
         max_tokens: 1500,
-        temperature: 0.7
+        temperature: 0.7,
       });
 
       const content = response.choices[0]?.message?.content;
-      
+
       if (!content) {
         throw new Error('No content received from OpenAI');
       }
@@ -84,8 +86,10 @@ Format the response as JSON with this structure:
       let courseOutline;
       try {
         // Extract JSON from response if it's wrapped in markdown
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-        const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+        const jsonMatch =
+          content.match(/```json\n([\s\S]*?)\n```/) ||
+          content.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
         courseOutline = JSON.parse(jsonString);
       } catch (parseError) {
         console.warn('Failed to parse JSON, using fallback structure');
@@ -94,17 +98,16 @@ Format the response as JSON with this structure:
 
       return {
         success: true,
-        data: courseOutline
+        data: courseOutline,
       };
-
     } catch (error) {
       console.error('OpenAI course outline generation failed:', error);
-      
+
       // Return fallback structure
       return {
         success: false,
         data: this.createFallbackOutline(courseData),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -119,7 +122,7 @@ Format the response as JSON with this structure:
   async generateLessonContent(lessonTitle, moduleTitle, options = {}) {
     try {
       console.log('📝 Generating lesson content with OpenAI...');
-      
+
       const prompt = `Create detailed lesson content for "${lessonTitle}" in the module "${moduleTitle}".
 
 Lesson Requirements:
@@ -156,23 +159,24 @@ Format as JSON:
 }`;
 
       const response = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: 'gpt-3.5-turbo',
         messages: [
           {
-            role: "system",
-            content: "You are an expert educator. Create comprehensive, well-structured lesson content in JSON format."
+            role: 'system',
+            content:
+              'You are an expert educator. Create comprehensive, well-structured lesson content in JSON format.',
           },
           {
-            role: "user",
-            content: prompt
-          }
+            role: 'user',
+            content: prompt,
+          },
         ],
         max_tokens: 1200,
-        temperature: 0.6
+        temperature: 0.6,
       });
 
       const content = response.choices[0]?.message?.content;
-      
+
       if (!content) {
         throw new Error('No content received from OpenAI');
       }
@@ -180,8 +184,10 @@ Format as JSON:
       // Parse JSON response
       let lessonContent;
       try {
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-        const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+        const jsonMatch =
+          content.match(/```json\n([\s\S]*?)\n```/) ||
+          content.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
         lessonContent = JSON.parse(jsonString);
       } catch (parseError) {
         console.warn('Failed to parse lesson JSON, using fallback');
@@ -190,33 +196,32 @@ Format as JSON:
           mainContent: [
             `Understanding the fundamentals of ${lessonTitle}`,
             `Practical applications and real-world examples`,
-            `Best practices and common pitfalls to avoid`
+            `Best practices and common pitfalls to avoid`,
           ],
           examples: [
             {
-              title: "Basic Example",
-              description: `A simple example demonstrating ${lessonTitle} concepts`
-            }
+              title: 'Basic Example',
+              description: `A simple example demonstrating ${lessonTitle} concepts`,
+            },
           ],
           keyTakeaways: [
             `Master the core concepts of ${lessonTitle}`,
-            "Apply knowledge to real-world scenarios",
-            "Understand best practices and avoid common mistakes"
+            'Apply knowledge to real-world scenarios',
+            'Understand best practices and avoid common mistakes',
           ],
-          summary: `In this lesson, you learned about ${lessonTitle} and how to apply these concepts effectively.`
+          summary: `In this lesson, you learned about ${lessonTitle} and how to apply these concepts effectively.`,
         };
       }
 
       return {
         success: true,
-        data: lessonContent
+        data: lessonContent,
       };
-
     } catch (error) {
       console.error('OpenAI lesson content generation failed:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -230,26 +235,26 @@ Format as JSON:
   async generateCourseImage(prompt, options = {}) {
     try {
       console.log('🎨 Generating course image with Deep AI...');
-      
+
       // Create form data for Deep AI
       const formData = new FormData();
       formData.append('text', prompt);
-      
+
       const response = await fetch('https://api.deepai.org/api/text2img', {
         method: 'POST',
         headers: {
-          'Api-Key': this.deepAIKey
+          'Api-Key': this.deepAIKey,
         },
-        body: formData
+        body: formData,
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Deep AI API error: ${response.status} - ${errorText}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data.output_url) {
         console.log('✅ Image generated successfully');
         return {
@@ -259,20 +264,19 @@ Format as JSON:
             prompt: prompt,
             style: options.style || 'realistic',
             size: options.size || '1024x1024',
-            createdAt: new Date().toISOString()
-          }
+            createdAt: new Date().toISOString(),
+          },
         };
       } else {
         throw new Error('No output_url in Deep AI response');
       }
-      
     } catch (error) {
       console.error('Deep AI image generation failed:', error);
-      
+
       // Return placeholder image as fallback
       const placeholderColor = '6366f1';
       const placeholderText = encodeURIComponent('Course Image');
-      
+
       return {
         success: false,
         data: {
@@ -280,9 +284,9 @@ Format as JSON:
           prompt: prompt,
           style: 'placeholder',
           size: '1024x1024',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         },
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -296,7 +300,7 @@ Format as JSON:
   async generateQAPairs(topic, count = 5) {
     try {
       console.log('❓ Generating Q&A pairs with OpenAI...');
-      
+
       const prompt = `Create ${count} educational quiz questions about "${topic}".
 
 For each question, provide:
@@ -315,23 +319,24 @@ Format as JSON:
 }`;
 
       const response = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: 'gpt-3.5-turbo',
         messages: [
           {
-            role: "system",
-            content: "You are an expert educator creating quiz questions. Make questions clear, educational, and appropriately challenging."
+            role: 'system',
+            content:
+              'You are an expert educator creating quiz questions. Make questions clear, educational, and appropriately challenging.',
           },
           {
-            role: "user",
-            content: prompt
-          }
+            role: 'user',
+            content: prompt,
+          },
         ],
         max_tokens: 800,
-        temperature: 0.6
+        temperature: 0.6,
       });
 
       const content = response.choices[0]?.message?.content;
-      
+
       if (!content) {
         throw new Error('No content received from OpenAI');
       }
@@ -339,29 +344,30 @@ Format as JSON:
       // Parse JSON response
       let qaData;
       try {
-        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/\{[\s\S]*\}/);
-        const jsonString = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : content;
+        const jsonMatch =
+          content.match(/```json\n([\s\S]*?)\n```/) ||
+          content.match(/\{[\s\S]*\}/);
+        const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
         qaData = JSON.parse(jsonString);
       } catch (parseError) {
         console.warn('Failed to parse Q&A JSON, using fallback');
         qaData = {
           qa: Array.from({ length: count }, (_, i) => ({
             question: `What is an important concept about ${topic}? (Question ${i + 1})`,
-            answer: `This is a fundamental concept related to ${topic} that students should understand.`
-          }))
+            answer: `This is a fundamental concept related to ${topic} that students should understand.`,
+          })),
         };
       }
 
       return {
         success: true,
-        data: qaData
+        data: qaData,
       };
-
     } catch (error) {
       console.error('OpenAI Q&A generation failed:', error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -373,7 +379,7 @@ Format as JSON:
    */
   createFallbackOutline(courseData) {
     const subject = courseData.subject || courseData.title;
-    
+
     return {
       course_title: courseData.title,
       modules: [
@@ -383,60 +389,60 @@ Format as JSON:
           lessons: [
             {
               lesson_title: `What is ${subject}?`,
-              description: "Understanding the basics and core concepts",
-              duration: "15 min"
+              description: 'Understanding the basics and core concepts',
+              duration: '15 min',
             },
             {
               lesson_title: `Why Learn ${subject}?`,
-              description: "Benefits and real-world applications",
-              duration: "10 min"
+              description: 'Benefits and real-world applications',
+              duration: '10 min',
             },
             {
-              lesson_title: "Getting Started",
-              description: "Setting up your learning environment",
-              duration: "20 min"
-            }
-          ]
+              lesson_title: 'Getting Started',
+              description: 'Setting up your learning environment',
+              duration: '20 min',
+            },
+          ],
         },
         {
           module_title: `${subject} Fundamentals`,
-          description: "Core principles and essential knowledge",
+          description: 'Core principles and essential knowledge',
           lessons: [
             {
-              lesson_title: "Key Concepts",
-              description: "Essential terminology and principles",
-              duration: "25 min"
+              lesson_title: 'Key Concepts',
+              description: 'Essential terminology and principles',
+              duration: '25 min',
             },
             {
-              lesson_title: "Basic Techniques",
-              description: "Fundamental methods and approaches",
-              duration: "30 min"
-            }
-          ]
+              lesson_title: 'Basic Techniques',
+              description: 'Fundamental methods and approaches',
+              duration: '30 min',
+            },
+          ],
         },
         {
           module_title: `Practical ${subject}`,
-          description: "Hands-on experience and real-world applications",
+          description: 'Hands-on experience and real-world applications',
           lessons: [
             {
-              lesson_title: "Hands-on Practice",
-              description: "Apply concepts through practical exercises",
-              duration: "45 min"
-            }
-          ]
+              lesson_title: 'Hands-on Practice',
+              description: 'Apply concepts through practical exercises',
+              duration: '45 min',
+            },
+          ],
         },
         {
           module_title: `Advanced ${subject}`,
-          description: "Expert-level concepts and advanced techniques",
+          description: 'Expert-level concepts and advanced techniques',
           lessons: [
             {
-              lesson_title: "Advanced Concepts",
-              description: "Complex topics and advanced applications",
-              duration: "40 min"
-            }
-          ]
-        }
-      ]
+              lesson_title: 'Advanced Concepts',
+              description: 'Complex topics and advanced applications',
+              duration: '40 min',
+            },
+          ],
+        },
+      ],
     };
   }
 
@@ -447,17 +453,17 @@ Format as JSON:
   async testAPIs() {
     const results = {
       openai: { available: false, error: null },
-      deepai: { available: false, error: null }
+      deepai: { available: false, error: null },
     };
 
     // Test OpenAI
     try {
       const response = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: "Hello" }],
-        max_tokens: 10
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: 'Hello' }],
+        max_tokens: 10,
       });
-      
+
       if (response.choices?.[0]?.message?.content) {
         results.openai.available = true;
       }
@@ -469,13 +475,13 @@ Format as JSON:
     try {
       const formData = new FormData();
       formData.append('text', 'test image');
-      
+
       const response = await fetch('https://api.deepai.org/api/text2img', {
         method: 'POST',
         headers: { 'Api-Key': this.deepAIKey },
-        body: formData
+        body: formData,
       });
-      
+
       if (response.ok) {
         results.deepai.available = true;
       } else {
@@ -499,5 +505,5 @@ export const {
   generateLessonContent,
   generateCourseImage,
   generateQAPairs,
-  testAPIs
+  testAPIs,
 } = aiService;

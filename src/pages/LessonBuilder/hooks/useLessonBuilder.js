@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { generateBlockId, convertToUnifiedFormat, detectTextType, extractTextContent } from '@/utils/LessonBuilder/blockHelpers';
+import {
+  generateBlockId,
+  convertToUnifiedFormat,
+  detectTextType,
+  extractTextContent,
+} from '@/utils/LessonBuilder/blockHelpers';
 import { textTypes } from '@/constants/LessonBuilder/textTypes';
 
 export const useLessonBuilder = () => {
@@ -12,7 +17,9 @@ export const useLessonBuilder = () => {
   // Core state
   const [contentBlocks, setContentBlocks] = useState([]);
   const [lessonTitle, setLessonTitle] = useState('Untitled Lesson');
-  const [lessonData, setLessonData] = useState(location.state?.lessonData || null);
+  const [lessonData, setLessonData] = useState(
+    location.state?.lessonData || null
+  );
   const [loading, setLoading] = useState(true);
   const [lessonContent, setLessonContent] = useState(null);
   const [fetchingContent, setFetchingContent] = useState(false);
@@ -38,10 +45,12 @@ export const useLessonBuilder = () => {
   const [showUnifiedPreview, setShowUnifiedPreview] = useState(false);
 
   // Sidebar states
-  const [showImageTemplateSidebar, setShowImageTemplateSidebar] = useState(false);
+  const [showImageTemplateSidebar, setShowImageTemplateSidebar] =
+    useState(false);
   const [showTextTypeSidebar, setShowTextTypeSidebar] = useState(false);
   const [showStatementSidebar, setShowStatementSidebar] = useState(false);
-  const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] = useState(false);
+  const [showQuoteTemplateSidebar, setShowQuoteTemplateSidebar] =
+    useState(false);
 
   // Edit states
   const [showImageEditDialog, setShowImageEditDialog] = useState(false);
@@ -125,38 +134,45 @@ export const useLessonBuilder = () => {
       title: blockType.title,
       textType: textType,
       content: '',
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
+      order:
+        (lessonContent?.data?.content
+          ? lessonContent.data.content.length
+          : contentBlocks.length) + 1,
     };
-   
+
     if (lessonContent?.data?.content) {
       setLessonContent(prevLessonContent => ({
         ...prevLessonContent,
         data: {
           ...prevLessonContent.data,
-          content: [...prevLessonContent.data.content, newBlock]
-        }
+          content: [...prevLessonContent.data.content, newBlock],
+        },
       }));
     } else {
       setContentBlocks([...contentBlocks, newBlock]);
     }
   };
 
-  const removeContentBlock = (blockId) => {
-    setContentBlocks(prevBlocks => prevBlocks.filter(block => block.id !== blockId));
-    
+  const removeContentBlock = blockId => {
+    setContentBlocks(prevBlocks =>
+      prevBlocks.filter(block => block.id !== blockId)
+    );
+
     if (lessonContent?.data?.content) {
       setLessonContent(prev => ({
         ...prev,
         data: {
           ...prev.data,
-          content: prev.data.content.filter(block => block.id !== blockId && block.block_id !== blockId)
-        }
+          content: prev.data.content.filter(
+            block => block.id !== blockId && block.block_id !== blockId
+          ),
+        },
       }));
     }
   };
 
   // Text handling functions
-  const handleTextTypeSelect = (textType) => {
+  const handleTextTypeSelect = textType => {
     if (contentBlocks.some(block => block.id === generateBlockId())) {
       return;
     }
@@ -165,7 +181,10 @@ export const useLessonBuilder = () => {
     let subheading = null;
     let contentHtml = textType.defaultContent || '';
 
-    if (textType.id === 'heading_paragraph' || textType.id === 'subheading_paragraph') {
+    if (
+      textType.id === 'heading_paragraph' ||
+      textType.id === 'subheading_paragraph'
+    ) {
       try {
         const temp = document.createElement('div');
         temp.innerHTML = contentHtml;
@@ -194,7 +213,10 @@ export const useLessonBuilder = () => {
       innerContent = textType.defaultContent || contentHtml;
     }
 
-    const htmlContent = textType.id === 'master_heading' ? innerContent : `
+    const htmlContent =
+      textType.id === 'master_heading'
+        ? innerContent
+        : `
       <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
         <div class="pl-4">
           ${innerContent}
@@ -212,7 +234,10 @@ export const useLessonBuilder = () => {
       html_css: htmlContent,
       ...(heading !== null && { heading }),
       ...(subheading !== null && { subheading }),
-      order: (lessonContent?.data?.content ? lessonContent.data.content.length : contentBlocks.length) + 1
+      order:
+        (lessonContent?.data?.content
+          ? lessonContent.data.content.length
+          : contentBlocks.length) + 1,
     };
 
     setContentBlocks(prevBlocks => [...prevBlocks, newBlock]);
@@ -221,34 +246,39 @@ export const useLessonBuilder = () => {
 
   // Conversion functions
   const convertToUnifiedFormatWrapper = () => {
-    return convertToUnifiedFormat(contentBlocks, lessonContent, lessonTitle, lessonData);
+    return convertToUnifiedFormat(
+      contentBlocks,
+      lessonContent,
+      lessonTitle,
+      lessonData
+    );
   };
 
   // Handle block updates from the unified preview
   const handleBlockUpdate = (blockId, updatedBlock) => {
     console.log('Updating block:', blockId, updatedBlock);
-    
+
     if (contentBlocks && contentBlocks.length > 0) {
-      setContentBlocks(prevBlocks => 
-        prevBlocks.map(block => 
-          (block.id || block.block_id) === blockId 
+      setContentBlocks(prevBlocks =>
+        prevBlocks.map(block =>
+          (block.id || block.block_id) === blockId
             ? { ...block, ...updatedBlock }
             : block
         )
       );
     }
-    
+
     if (lessonContent?.data?.content) {
       setLessonContent(prev => ({
         ...prev,
         data: {
           ...prev.data,
-          content: prev.data.content.map(block => 
-            (block.id || block.block_id) === blockId 
+          content: prev.data.content.map(block =>
+            (block.id || block.block_id) === blockId
               ? { ...block, ...updatedBlock }
               : block
-          )
-        }
+          ),
+        },
       }));
     }
   };
@@ -463,6 +493,6 @@ export const useLessonBuilder = () => {
     // Route params
     courseId,
     moduleId,
-    lessonId
+    lessonId,
   };
 };

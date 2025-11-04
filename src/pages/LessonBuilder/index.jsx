@@ -22,7 +22,7 @@ injectStyles();
 
 function LessonBuilder() {
   const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
-  
+
   // Use our custom hook for state management
   const {
     // Core state
@@ -30,7 +30,7 @@ function LessonBuilder() {
     lessonTitle,
     lessonData,
     isUploading,
-    
+
     // Modal states
     showTextTypeSidebar,
     setShowTextTypeSidebar,
@@ -40,7 +40,7 @@ function LessonBuilder() {
     setShowAIEnhancementPanel,
     showUnifiedPreview,
     setShowUnifiedPreview,
-    
+
     // Text editor states
     editorHtml,
     setEditorHtml,
@@ -52,20 +52,20 @@ function LessonBuilder() {
     setEditorContent,
     currentTextBlockId,
     currentTextType,
-    
+
     // Functions
     handleTextTypeSelect,
     convertToUnifiedFormatWrapper,
     handleBlockUpdate,
     handleView,
     handleBack,
-    
+
     // Refs
-    statementComponentRef
+    statementComponentRef,
   } = useLessonBuilder();
 
   // Block click handler
-  const handleBlockClick = (blockType) => {
+  const handleBlockClick = blockType => {
     if (blockType.id === 'text') {
       setShowTextTypeSidebar(true);
     } else if (blockType.id === 'statement') {
@@ -106,7 +106,7 @@ function LessonBuilder() {
     setShowAIEnhancementPanel(true);
   };
 
-  const handleAIContentGenerated = (content) => {
+  const handleAIContentGenerated = content => {
     console.log('AI generated content:', content);
     // TODO: Implement content insertion logic
     // For now, just close the panel
@@ -123,7 +123,7 @@ function LessonBuilder() {
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
         {/* Content Blocks Sidebar */}
-        <ContentLibrary 
+        <ContentLibrary
           onBlockClick={handleBlockClick}
           sidebarCollapsed={sidebarCollapsed}
         />
@@ -170,22 +170,26 @@ function LessonBuilder() {
                         No Content Available
                       </h3>
                       <p className="text-gray-500 mb-6">
-                        This lesson doesn't have any content yet. Start building your lesson by adding content blocks from the Content Library.
+                        This lesson doesn't have any content yet. Start building
+                        your lesson by adding content blocks from the Content
+                        Library.
                       </p>
                     </div>
-                   
+
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                       <h4 className="text-sm font-medium text-blue-800 mb-2">
                         💡 Getting Started
                       </h4>
                       <p className="text-sm text-blue-700 mb-4">
-                        Use the <strong>Content Library</strong> on the left to add text, images, videos, and other interactive elements to your lesson.
+                        Use the <strong>Content Library</strong> on the left to
+                        add text, images, videos, and other interactive elements
+                        to your lesson.
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6 max-w-3xl mx-auto">
-                    {contentBlocks.map((block) => (
+                    {contentBlocks.map(block => (
                       <div
                         key={block.id}
                         className="relative group bg-white rounded-lg"
@@ -196,12 +200,16 @@ function LessonBuilder() {
                               {block.html_css ? (
                                 <div
                                   className="max-w-none"
-                                  dangerouslySetInnerHTML={{ __html: block.html_css }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: block.html_css,
+                                  }}
                                 />
                               ) : (
                                 <div
                                   className="max-w-none text-gray-800 leading-relaxed"
-                                  dangerouslySetInnerHTML={{ __html: block.content }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: block.content,
+                                  }}
                                 />
                               )}
                             </div>
@@ -240,9 +248,13 @@ function LessonBuilder() {
       {showUnifiedPreview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md">
-            <h3 className="text-lg font-semibold mb-4">Lesson Preview Disabled</h3>
-            <p className="text-gray-600 mb-4">Modern lesson preview functionality has been removed.</p>
-            <button 
+            <h3 className="text-lg font-semibold mb-4">
+              Lesson Preview Disabled
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Modern lesson preview functionality has been removed.
+            </p>
+            <button
               onClick={() => setShowUnifiedPreview(false)}
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >

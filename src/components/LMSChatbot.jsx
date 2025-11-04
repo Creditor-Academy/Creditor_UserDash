@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MessageCircle, 
-  X, 
-  Send, 
-  Minimize2, 
+import {
+  MessageCircle,
+  X,
+  Send,
+  Minimize2,
   Bot,
   User,
   Loader2,
-  HelpCircle
+  HelpCircle,
 } from 'lucide-react';
 
 const LMSChatbot = () => {
@@ -18,9 +18,10 @@ const LMSChatbot = () => {
     {
       id: 1,
       role: 'assistant',
-      content: 'Hello! I\'m your LMS assistant. I can help you with course creation, navigation, AI features, and any questions about the Creditor Academy platform. How can I assist you today?',
-      timestamp: new Date()
-    }
+      content:
+        "Hello! I'm your LMS assistant. I can help you with course creation, navigation, AI features, and any questions about the Creditor Academy platform. How can I assist you today?",
+      timestamp: new Date(),
+    },
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -42,12 +43,12 @@ const LMSChatbot = () => {
   }, [isOpen, isMinimized]);
 
   const quickQuestions = [
-    "How do I create a course?",
-    "What AI features are available?",
-    "How do I manage students?",
-    "How to use the course builder?",
-    "What are the pricing plans?",
-    "How do I upload content?"
+    'How do I create a course?',
+    'What AI features are available?',
+    'How do I manage students?',
+    'How to use the course builder?',
+    'What are the pricing plans?',
+    'How do I upload content?',
   ];
 
   const getLMSContext = () => {
@@ -96,7 +97,7 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
       id: Date.now(),
       role: 'user',
       content: inputMessage.trim(),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -107,11 +108,12 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
       // Create chat session with LMS context
       const chatMessages = [
         { role: 'system', content: getLMSContext() },
-        ...messages.slice(-5).map(msg => ({ // Keep last 5 messages for context
+        ...messages.slice(-5).map(msg => ({
+          // Keep last 5 messages for context
           role: msg.role,
-          content: msg.content
+          content: msg.content,
         })),
-        { role: 'user', content: userMessage.content }
+        { role: 'user', content: userMessage.content },
       ];
 
       // AI chat functionality removed - dependency no longer used
@@ -119,8 +121,9 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
       const botMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'The AI chatbot feature is currently unavailable. For assistance, please contact our support team or check the Help section.',
-        timestamp: new Date()
+        content:
+          'The AI chatbot feature is currently unavailable. For assistance, please contact our support team or check the Help section.',
+        timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, botMessage]);
@@ -129,8 +132,9 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
       const errorMessage = {
         id: Date.now() + 1,
         role: 'assistant',
-        content: 'I\'m experiencing some technical difficulties. Please try again in a moment or contact our support team for assistance.',
-        timestamp: new Date()
+        content:
+          "I'm experiencing some technical difficulties. Please try again in a moment or contact our support team for assistance.",
+        timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -138,20 +142,23 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
     }
   };
 
-  const handleQuickQuestion = (question) => {
+  const handleQuickQuestion = question => {
     setInputMessage(question);
     inputRef.current?.focus();
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  const formatTime = (timestamp) => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatTime = timestamp => {
+    return timestamp.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -214,11 +221,13 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
               <>
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 h-80 bg-gray-50">
-                  {messages.map((message) => (
+                  {messages.map(message => (
                     <div
                       key={message.id}
                       className={`flex mb-4 ${
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                        message.role === 'user'
+                          ? 'justify-end'
+                          : 'justify-start'
                       }`}
                     >
                       <div
@@ -230,13 +239,22 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                       >
                         <div className="flex items-start space-x-2">
                           {message.role === 'assistant' && (
-                            <Bot size={16} className="text-blue-600 mt-1 flex-shrink-0" />
+                            <Bot
+                              size={16}
+                              className="text-blue-600 mt-1 flex-shrink-0"
+                            />
                           )}
                           <div className="flex-1">
-                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                            <p className={`text-xs mt-1 ${
-                              message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                            }`}>
+                            <p className="text-sm whitespace-pre-wrap">
+                              {message.content}
+                            </p>
+                            <p
+                              className={`text-xs mt-1 ${
+                                message.role === 'user'
+                                  ? 'text-blue-100'
+                                  : 'text-gray-500'
+                              }`}
+                            >
                               {formatTime(message.timestamp)}
                             </p>
                           </div>
@@ -253,8 +271,14 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                           <Bot size={16} className="text-blue-600" />
                           <div className="flex space-x-1">
                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                              style={{ animationDelay: '0.1s' }}
+                            ></div>
+                            <div
+                              className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                              style={{ animationDelay: '0.2s' }}
+                            ></div>
                           </div>
                         </div>
                       </div>
@@ -291,7 +315,7 @@ Always be helpful, concise, and specific to the LMS platform. If asked about tec
                       ref={inputRef}
                       type="text"
                       value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
+                      onChange={e => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask me anything about the LMS..."
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"

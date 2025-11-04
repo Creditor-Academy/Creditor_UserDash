@@ -75,14 +75,14 @@ The AI Workflow Manager provides a structured approach to lesson creation:
 
 ### Supported Block Types
 
-| Type | Description | AI Generation | Manual Editing |
-|------|-------------|---------------|----------------|
-| Text | Paragraphs and body content | ✅ | ✅ |
-| Heading | Section headers | ✅ | ✅ |
-| List | Bullet points and numbered lists | ✅ | ✅ |
-| Quote | Important notes and insights | ✅ | ✅ |
-| Image | Visual content | 🔄 | ✅ |
-| Video | Multimedia content | 🔄 | ✅ |
+| Type    | Description                      | AI Generation | Manual Editing |
+| ------- | -------------------------------- | ------------- | -------------- |
+| Text    | Paragraphs and body content      | ✅            | ✅             |
+| Heading | Section headers                  | ✅            | ✅             |
+| List    | Bullet points and numbered lists | ✅            | ✅             |
+| Quote   | Important notes and insights     | ✅            | ✅             |
+| Image   | Visual content                   | 🔄            | ✅             |
+| Video   | Multimedia content               | 🔄            | ✅             |
 
 ### Block Features
 
@@ -131,13 +131,13 @@ The system analyzes lesson content to provide intelligent suggestions:
 
 ```typescript
 interface UnifiedAIBlockEditorProps {
-  lessons: Lesson[];                    // Array of lesson objects
-  contentBlocks: ContentBlocks;         // Object mapping lesson IDs to blocks
-  setContentBlocks: Function;           // State setter for content blocks
-  editingLessonId: string | null;       // Currently selected lesson ID
-  setEditingLessonId: Function;         // State setter for editing lesson
-  courseTitle?: string;                 // Course title for AI context
-  onContentSync?: Function;             // Callback for content synchronization
+  lessons: Lesson[]; // Array of lesson objects
+  contentBlocks: ContentBlocks; // Object mapping lesson IDs to blocks
+  setContentBlocks: Function; // State setter for content blocks
+  editingLessonId: string | null; // Currently selected lesson ID
+  setEditingLessonId: Function; // State setter for editing lesson
+  courseTitle?: string; // Course title for AI context
+  onContentSync?: Function; // Callback for content synchronization
 }
 ```
 
@@ -145,13 +145,13 @@ interface UnifiedAIBlockEditorProps {
 
 ```typescript
 interface ContentBlock {
-  id: string;                          // Unique block identifier
-  type: string;                        // Block type (text, heading, list, etc.)
-  content: string | object;            // Block content (varies by type)
-  order: number;                       // Display order
-  settings?: object;                   // Block-specific settings
-  createdAt?: string;                  // Creation timestamp
-  updatedAt?: string;                  // Last update timestamp
+  id: string; // Unique block identifier
+  type: string; // Block type (text, heading, list, etc.)
+  content: string | object; // Block content (varies by type)
+  order: number; // Display order
+  settings?: object; // Block-specific settings
+  createdAt?: string; // Creation timestamp
+  updatedAt?: string; // Last update timestamp
 }
 ```
 
@@ -159,11 +159,11 @@ interface ContentBlock {
 
 ```typescript
 interface ContentSyncEvent {
-  type: string;                        // Event type (block_add, block_update, etc.)
-  lessonId: string;                    // Affected lesson ID
-  blockId?: string;                    // Affected block ID
-  blockType?: string;                  // Block type
-  workflowStep?: string;               // Workflow step (if applicable)
+  type: string; // Event type (block_add, block_update, etc.)
+  lessonId: string; // Affected lesson ID
+  blockId?: string; // Affected block ID
+  blockType?: string; // Block type
+  workflowStep?: string; // Workflow step (if applicable)
 }
 ```
 
@@ -217,18 +217,21 @@ The AI services are automatically configured through the `apiKeyManager` and `en
 ### Common Issues
 
 #### AI Generation Fails
+
 - **Check API Keys**: Ensure all environment variables are set correctly
 - **Verify Network**: Check internet connection and API service status
 - **Review Prompts**: Ensure prompts are clear and appropriate
 - **Use Fallbacks**: System automatically provides fallback content
 
 #### Content Not Saving
+
 - **Check Permissions**: Ensure proper write permissions
 - **Verify State**: Check that state management functions are working
 - **Review Callbacks**: Ensure `onContentSync` callback is implemented
 - **Check Console**: Look for JavaScript errors in browser console
 
 #### Performance Issues
+
 - **Reduce Concurrent Requests**: Limit simultaneous AI generation
 - **Optimize Content Size**: Keep content blocks reasonably sized
 - **Clear Cache**: Clear browser cache if experiencing issues
@@ -237,6 +240,7 @@ The AI services are automatically configured through the `apiKeyManager` and `en
 ### Debug Mode
 
 Enable debug logging by setting:
+
 ```javascript
 localStorage.setItem('ai_debug', 'true');
 ```
@@ -257,17 +261,17 @@ function CourseCreator() {
       id: 'lesson-1',
       title: 'Introduction to React',
       description: 'Learn React fundamentals',
-      moduleId: 'module-1'
-    }
+      moduleId: 'module-1',
+    },
   ]);
-  
+
   const [contentBlocks, setContentBlocks] = useState({
-    'lesson-1': []
+    'lesson-1': [],
   });
-  
+
   const [editingLessonId, setEditingLessonId] = useState('lesson-1');
 
-  const handleContentSync = (syncData) => {
+  const handleContentSync = syncData => {
     console.log('Content updated:', syncData);
     // Handle auto-save, notifications, etc.
   };
@@ -324,9 +328,9 @@ function AdvancedCourseCreator() {
     }
   }, [contentBlocks, editingLessonId, debouncedSave]);
 
-  const handleContentSync = (syncData) => {
+  const handleContentSync = syncData => {
     setSaveStatus('pending');
-    
+
     // Handle different sync events
     switch (syncData.type) {
       case 'ai_block_add':
@@ -345,19 +349,25 @@ function AdvancedCourseCreator() {
     <div className="h-screen flex flex-col">
       {/* Save Status Indicator */}
       <div className="bg-gray-100 px-4 py-2 text-sm">
-        Status: <span className={`font-medium ${
-          saveStatus === 'saved' ? 'text-green-600' :
-          saveStatus === 'saving' ? 'text-blue-600' :
-          saveStatus === 'pending' ? 'text-yellow-600' :
-          'text-red-600'
-        }`}>
+        Status:{' '}
+        <span
+          className={`font-medium ${
+            saveStatus === 'saved'
+              ? 'text-green-600'
+              : saveStatus === 'saving'
+                ? 'text-blue-600'
+                : saveStatus === 'pending'
+                  ? 'text-yellow-600'
+                  : 'text-red-600'
+          }`}
+        >
           {saveStatus === 'saved' && '✓ Saved'}
           {saveStatus === 'saving' && '⏳ Saving...'}
           {saveStatus === 'pending' && '⏳ Pending...'}
           {saveStatus === 'error' && '❌ Save Error'}
         </span>
       </div>
-      
+
       {/* Editor */}
       <div className="flex-1">
         <UnifiedAIBlockEditor
@@ -398,20 +408,23 @@ The system is designed for extensibility:
 ## Support
 
 ### Documentation
+
 - **API Reference**: Complete API documentation
 - **Component Library**: Storybook documentation
 - **Video Tutorials**: Step-by-step video guides
 
 ### Community
+
 - **GitHub Issues**: Report bugs and request features
 - **Discord Community**: Get help from other developers
 - **Office Hours**: Weekly developer Q&A sessions
 
 ### Professional Support
+
 - **Priority Support**: Dedicated support for enterprise users
 - **Custom Development**: Tailored solutions for specific needs
 - **Training Programs**: Comprehensive training for teams
 
 ---
 
-*The Unified AI Block Editor represents the future of educational content creation, combining the power of artificial intelligence with human creativity and expertise.*
+_The Unified AI Block Editor represents the future of educational content creation, combining the power of artificial intelligence with human creativity and expertise._

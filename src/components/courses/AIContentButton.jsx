@@ -3,12 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2 } from 'lucide-react';
 import AILessonContentGenerator from './AILessonContentGenerator';
 
-const AIContentButton = ({ 
-  lessonData, 
-  moduleData, 
-  courseData, 
+const AIContentButton = ({
+  lessonData,
+  moduleData,
+  courseData,
   onContentGenerated,
-  disabled = false 
+  disabled = false,
 }) => {
   const [showAIModal, setShowAIModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -17,7 +17,7 @@ const AIContentButton = ({
     setShowAIModal(true);
   };
 
-  const handleContentGenerated = (generatedBlocks) => {
+  const handleContentGenerated = generatedBlocks => {
     setIsGenerating(false);
     setShowAIModal(false);
     if (onContentGenerated) {

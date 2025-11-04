@@ -2783,42 +2783,18 @@ function LessonBuilder() {
             const audioContent = JSON.parse(block.content || '{}');
             html = `
               <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
-                <div class="flex items-start space-x-4">
-                  <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                      <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 12a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1v2a1 1 0 01-1 1H9z"></path>
-                      </svg>
-                    </div>
+                <div class="space-y-4">
+                  <div class="mb-3">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1">${audioContent.title || 'Audio'}</h3>
+                    ${audioContent.description ? `<p class="text-sm text-gray-600">${audioContent.description}</p>` : ''}
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="mb-3">
-                      <h3 class="text-lg font-semibold text-gray-900 mb-1">${audioContent.title || 'Audio'}</h3>
-                      ${audioContent.description ? `<p class="text-sm text-gray-600">${audioContent.description}</p>` : ''}
-                    </div>
-                    <div class="bg-gray-50 rounded-lg p-4">
-                      <audio controls class="w-full" preload="metadata">
-                        <source src="${audioContent.url}" type="audio/mpeg">
-                        <source src="${audioContent.url}" type="audio/wav">
-                        <source src="${audioContent.url}" type="audio/ogg">
-                        Your browser does not support the audio element.
-                      </audio>
-                      ${
-                        audioContent.uploadedData
-                          ? `
-                        <div class="mt-2 text-xs text-gray-500">
-                          <span class="inline-flex items-center">
-                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            ${audioContent.uploadedData.fileName}
-                          </span>
-                          <span class="ml-2">${(audioContent.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
-                        </div>
-                      `
-                          : ''
-                      }
-                    </div>
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <audio controls class="w-full" preload="metadata">
+                      <source src="${audioContent.url}" type="audio/mpeg">
+                      <source src="${audioContent.url}" type="audio/wav">
+                      <source src="${audioContent.url}" type="audio/ogg">
+                      Your browser does not support the audio element.
+                    </audio>
                   </div>
                 </div>
               </div>

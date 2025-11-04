@@ -7,17 +7,18 @@
  */
 class QwenImageService {
   constructor() {
-    this.huggingfaceKey = import.meta.env.VITE_HUGGINGFACE_INFERENCE_API_KEY || 
-                         import.meta.env.VITE_HF_API_KEY || 
-                         import.meta.env.VITE_HUGGINGFACE_API_KEY;
-    this.baseUrl = "https://api-inference.huggingface.co/models";
-    
+    this.huggingfaceKey =
+      import.meta.env.VITE_HUGGINGFACE_INFERENCE_API_KEY ||
+      import.meta.env.VITE_HF_API_KEY ||
+      import.meta.env.VITE_HUGGINGFACE_API_KEY;
+    this.baseUrl = 'https://api-inference.huggingface.co/models';
+
     // Model configurations for different use cases - Updated with valid models
     this.models = {
-      qwenDetailSlider: 'runwayml/stable-diffusion-v1-5',  // Safe, reliable model
+      qwenDetailSlider: 'runwayml/stable-diffusion-v1-5', // Safe, reliable model
       stableDiffusion: 'runwayml/stable-diffusion-v1-5',
       stableDiffusion2: 'stabilityai/stable-diffusion-2-1',
-      stableDiffusionXL: 'stabilityai/stable-diffusion-xl-base-1.0'
+      stableDiffusionXL: 'stabilityai/stable-diffusion-xl-base-1.0',
     };
 
     // Detail levels for the slider
@@ -26,7 +27,7 @@ class QwenImageService {
       low: -1,
       normal: 0,
       high: 1,
-      maximum: 2
+      maximum: 2,
     };
 
     // Initialize HuggingFace Inference Client if available
@@ -40,8 +41,10 @@ class QwenImageService {
     try {
       // Try to import HuggingFace Inference Client (optional)
       // Note: Install with: npm install @huggingface/inference
-      const inferenceModule = await import('@huggingface/inference').catch(() => null);
-      
+      const inferenceModule = await import('@huggingface/inference').catch(
+        () => null
+      );
+
       if (inferenceModule && inferenceModule.InferenceClient) {
         this.client = new inferenceModule.InferenceClient(this.huggingfaceKey);
         this.hasInferenceClient = true;
@@ -50,8 +53,13 @@ class QwenImageService {
         throw new Error('InferenceClient not found in module');
       }
     } catch (error) {
-      console.warn('⚠️ HuggingFace Inference Client not available, using direct API calls:', error.message);
-      console.info('💡 To enable advanced features, install: npm install @huggingface/inference');
+      console.warn(
+        '⚠️ HuggingFace Inference Client not available, using direct API calls:',
+        error.message
+      );
+      console.info(
+        '💡 To enable advanced features, install: npm install @huggingface/inference'
+      );
       this.hasInferenceClient = false;
       this.client = null;
     }
@@ -67,19 +75,32 @@ class QwenImageService {
     try {
       console.log('🎨 Generating image with Qwen Detail Slider:', prompt);
 
-      const detailLevel = this.detailLevels[options.detailLevel] || this.detailLevels.normal;
+      const detailLevel =
+        this.detailLevels[options.detailLevel] || this.detailLevels.normal;
       const steps = options.steps || 5; // Fast generation with 5 steps as in example
 
       let result;
 
       if (this.hasInferenceClient && this.client) {
         // Use HuggingFace Inference Client (preferred method)
-        console.log('🚀 Using HuggingFace Inference Client for Qwen generation');
-        result = await this.generateWithInferenceClient(prompt, detailLevel, steps, options);
+        console.log(
+          '🚀 Using HuggingFace Inference Client for Qwen generation'
+        );
+        result = await this.generateWithInferenceClient(
+          prompt,
+          detailLevel,
+          steps,
+          options
+        );
       } else {
         // Fallback to direct API calls
         console.log('🔄 Using direct API calls for Qwen generation');
-        result = await this.generateWithDirectAPI(prompt, detailLevel, steps, options);
+        result = await this.generateWithDirectAPI(
+          prompt,
+          detailLevel,
+          steps,
+          options
+        );
       }
 
       if (result.success) {
@@ -88,13 +109,12 @@ class QwenImageService {
       } else {
         throw new Error(result.error || 'Qwen generation failed');
       }
-
     } catch (error) {
       console.error('❌ Qwen Detail Slider generation failed:', error);
       return {
         success: false,
         error: error.message,
-        provider: 'qwen-detail-slider'
+        provider: 'qwen-detail-slider',
       };
     }
   }
@@ -104,7 +124,9 @@ class QwenImageService {
    */
   async generateWithInferenceClient(prompt, detailLevel, steps, options = {}) {
     try {
-      console.log(`🚀 Using HuggingFace Inference Client with detail level: ${detailLevel}`);
+      console.log(
+        `🚀 Using HuggingFace Inference Client with detail level: ${detailLevel}`
+      );
 
       // Validate client availability
       if (!this.client) {
@@ -112,22 +134,27 @@ class QwenImageService {
       }
 
       // Modify prompt to include detail level instruction
-      const enhancedPrompt = this.enhancePromptWithDetailLevel(prompt, detailLevel);
+      const enhancedPrompt = this.enhancePromptWithDetailLevel(
+        prompt,
+        detailLevel
+      );
 
       const image = await this.client.textToImage({
-        model: this.models.qwenDetailSlider,  // Removed provider since using standard HF model
+        model: this.models.qwenDetailSlider, // Removed provider since using standard HF model
         inputs: enhancedPrompt,
-        parameters: { 
+        parameters: {
           num_inference_steps: steps,
           guidance_scale: options.guidance || 7.5,
           width: options.width || 1024,
-          height: options.height || 1024
-        }
+          height: options.height || 1024,
+        },
       });
 
       // Validate image response
       if (!image || !(image instanceof Blob)) {
-        throw new Error('Invalid image response from HuggingFace Inference Client');
+        throw new Error(
+          'Invalid image response from HuggingFace Inference Client'
+        );
       }
 
       // Convert blob to URL
@@ -145,16 +172,18 @@ class QwenImageService {
           detailLevel: detailLevel,
           steps: steps,
           method: 'inference-client',
-          createdAt: new Date().toISOString()
-        }
+          createdAt: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
-      console.warn('🔄 Inference Client method failed, will try direct API:', error.message);
+      console.warn(
+        '🔄 Inference Client method failed, will try direct API:',
+        error.message
+      );
       return {
         success: false,
         error: error.message,
-        provider: 'qwen-detail-slider'
+        provider: 'qwen-detail-slider',
       };
     }
   }
@@ -166,28 +195,36 @@ class QwenImageService {
     try {
       console.log(`🔄 Using direct API with detail level: ${detailLevel}`);
 
-      const enhancedPrompt = this.enhancePromptWithDetailLevel(prompt, detailLevel);
+      const enhancedPrompt = this.enhancePromptWithDetailLevel(
+        prompt,
+        detailLevel
+      );
 
-      const response = await fetch(`${this.baseUrl}/${this.models.qwenDetailSlider}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.huggingfaceKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          inputs: enhancedPrompt,
-          parameters: {
-            num_inference_steps: steps,
-            guidance_scale: options.guidance || 7.5,
-            width: options.width || 1024,
-            height: options.height || 1024
-          }
-        })
-      });
+      const response = await fetch(
+        `${this.baseUrl}/${this.models.qwenDetailSlider}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.huggingfaceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            inputs: enhancedPrompt,
+            parameters: {
+              num_inference_steps: steps,
+              guidance_scale: options.guidance || 7.5,
+              width: options.width || 1024,
+              height: options.height || 1024,
+            },
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`HuggingFace API error: ${response.status} - ${errorText}`);
+        throw new Error(
+          `HuggingFace API error: ${response.status} - ${errorText}`
+        );
       }
 
       const imageBlob = await response.blob();
@@ -205,15 +242,14 @@ class QwenImageService {
           detailLevel: detailLevel,
           steps: steps,
           method: 'direct-api',
-          createdAt: new Date().toISOString()
-        }
+          createdAt: new Date().toISOString(),
+        },
       };
-
     } catch (error) {
       return {
         success: false,
         error: error.message,
-        provider: 'qwen-detail-slider'
+        provider: 'qwen-detail-slider',
       };
     }
   }
@@ -227,10 +263,11 @@ class QwenImageService {
       [-1]: 'low detail, simplified, streamlined',
       [0]: 'normal detail, balanced',
       [1]: 'high detail, intricate, detailed',
-      [2]: 'maximum detail, extremely detailed, ultra-detailed, hyperrealistic'
+      [2]: 'maximum detail, extremely detailed, ultra-detailed, hyperrealistic',
     };
 
-    const instruction = detailInstructions[detailLevel] || detailInstructions[0];
+    const instruction =
+      detailInstructions[detailLevel] || detailInstructions[0];
     return `${prompt}, ${instruction}`;
   }
 
@@ -240,30 +277,36 @@ class QwenImageService {
    * @param {Array} detailLevels - Array of detail levels to generate
    * @returns {Promise<Array>} Array of generated images
    */
-  async generateMultipleDetailLevels(prompt, detailLevels = ['minimal', 'normal', 'high']) {
+  async generateMultipleDetailLevels(
+    prompt,
+    detailLevels = ['minimal', 'normal', 'high']
+  ) {
     const results = [];
 
     for (const level of detailLevels) {
       try {
         console.log(`🎨 Generating ${level} detail version...`);
-        const result = await this.generateWithQwenDetailSlider(prompt, { 
+        const result = await this.generateWithQwenDetailSlider(prompt, {
           detailLevel: level,
-          steps: 5 
+          steps: 5,
         });
-        
+
         results.push({
           detailLevel: level,
-          ...result
+          ...result,
         });
 
         // Add small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
-        console.warn(`Failed to generate ${level} detail image:`, error.message);
+        console.warn(
+          `Failed to generate ${level} detail image:`,
+          error.message
+        );
         results.push({
           detailLevel: level,
           success: false,
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -280,14 +323,18 @@ class QwenImageService {
    */
   async generateCourseThumbnail(courseTitle, subject, options = {}) {
     try {
-      const prompt = this.createCourseThumbnailPrompt(courseTitle, subject, options);
-      
+      const prompt = this.createCourseThumbnailPrompt(
+        courseTitle,
+        subject,
+        options
+      );
+
       const result = await this.generateWithQwenDetailSlider(prompt, {
         detailLevel: options.detailLevel || 'normal',
         steps: options.steps || 8, // Slightly more steps for thumbnails
         guidance: options.guidance || 7.5,
         width: 1024,
-        height: 1024
+        height: 1024,
       });
 
       if (result.success) {
@@ -308,9 +355,9 @@ class QwenImageService {
           provider: 'placeholder',
           courseTitle: courseTitle,
           subject: subject,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         },
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -328,10 +375,10 @@ class QwenImageService {
    * @returns {Promise<Object>} Test results
    */
   async testQwenModel() {
-    const testPrompt = "test image generation";
+    const testPrompt = 'test image generation';
     const results = {
       timestamp: new Date().toISOString(),
-      tests: {}
+      tests: {},
     };
 
     // Test Inference Client method
@@ -340,16 +387,16 @@ class QwenImageService {
         const start = Date.now();
         const result = await this.generateWithInferenceClient(testPrompt, 0, 5);
         const duration = Date.now() - start;
-        
+
         results.tests.inferenceClient = {
           available: result.success,
           duration: duration,
-          error: result.success ? null : result.error
+          error: result.success ? null : result.error,
         };
       } catch (error) {
         results.tests.inferenceClient = {
           available: false,
-          error: error.message
+          error: error.message,
         };
       }
     }
@@ -359,16 +406,16 @@ class QwenImageService {
       const start = Date.now();
       const result = await this.generateWithDirectAPI(testPrompt, 0, 5);
       const duration = Date.now() - start;
-      
+
       results.tests.directAPI = {
         available: result.success,
         duration: duration,
-        error: result.success ? null : result.error
+        error: result.success ? null : result.error,
       };
     } catch (error) {
       results.tests.directAPI = {
         available: false,
-        error: error.message
+        error: error.message,
       };
     }
 
@@ -388,8 +435,8 @@ class QwenImageService {
         low: 'Simplified design with reduced complexity',
         normal: 'Balanced detail level for general use',
         high: 'Rich detail with intricate elements',
-        maximum: 'Ultra-detailed, hyperrealistic imagery'
-      }
+        maximum: 'Ultra-detailed, hyperrealistic imagery',
+      },
     };
   }
 }
@@ -404,5 +451,5 @@ export const {
   generateMultipleDetailLevels,
   generateCourseThumbnail,
   testQwenModel,
-  getDetailLevels
+  getDetailLevels,
 } = qwenImageService;

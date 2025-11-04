@@ -6,14 +6,14 @@ import UniversalAIContentButton from './UniversalAIContentButton';
  * Integration component for LessonBuilder to handle AI content generation
  * This component can be easily added to any lesson builder interface
  */
-const LessonBuilderAIIntegration = ({ 
-  lessonData, 
-  moduleData, 
-  courseData, 
-  contentBlocks, 
-  setContentBlocks, 
+const LessonBuilderAIIntegration = ({
+  lessonData,
+  moduleData,
+  courseData,
+  contentBlocks,
+  setContentBlocks,
   handleUpdate,
-  toast 
+  toast,
 }) => {
   const location = useLocation();
   const [showAIModal, setShowAIModal] = useState(false);
@@ -26,27 +26,29 @@ const LessonBuilderAIIntegration = ({
     }
   }, [location.state]);
 
-  const handleAIContentGenerated = (generatedBlocks) => {
+  const handleAIContentGenerated = generatedBlocks => {
     console.log('🎯 AI Content Generated for Lesson Builder:', generatedBlocks);
-    
+
     // Add generated blocks to existing content
     const newBlocks = generatedBlocks.map((block, index) => ({
       ...block,
       order: contentBlocks.length + index,
-      id: block.id || `ai-block-${Date.now()}-${index}`
+      id: block.id || `ai-block-${Date.now()}-${index}`,
     }));
-    
+
     setContentBlocks(prev => [...prev, ...newBlocks]);
-    
+
     // Auto-save the lesson after a short delay
     setTimeout(() => {
       if (handleUpdate) {
         handleUpdate();
       }
     }, 500);
-    
+
     if (toast) {
-      toast.success(`Added ${generatedBlocks.length} AI-generated content blocks!`);
+      toast.success(
+        `Added ${generatedBlocks.length} AI-generated content blocks!`
+      );
     }
   };
 
@@ -71,7 +73,7 @@ const LessonBuilderAIIntegration = ({
           lessonData={lessonData}
           moduleData={moduleData}
           courseData={courseData}
-          onContentGenerated={(blocks) => {
+          onContentGenerated={blocks => {
             handleAIContentGenerated(blocks);
             setShowAIModal(false);
           }}

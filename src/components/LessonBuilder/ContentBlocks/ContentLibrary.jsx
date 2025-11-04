@@ -1,25 +1,25 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
-import { 
-  Type, 
-  Heading1, 
-  FileText, 
-  Quote, 
-  Image as ImageIcon, 
-  Video, 
-  AudioLines, 
-  Youtube, 
-  Link as LinkIcon, 
-  Table, 
+import {
+  Type,
+  Heading1,
+  FileText,
+  Quote,
+  Image as ImageIcon,
+  Video,
+  AudioLines,
+  Youtube,
+  Link as LinkIcon,
+  Table,
   Box,
   AlertCircle,
   List,
-  CheckSquare
+  CheckSquare,
 } from 'lucide-react';
 
 // Icon mapping helper
-const getIconComponent = (iconName) => {
+const getIconComponent = iconName => {
   const iconMap = {
     Type: Type,
     Heading1: Heading1,
@@ -34,9 +34,9 @@ const getIconComponent = (iconName) => {
     Box: Box,
     AlertCircle: AlertCircle,
     List: List,
-    CheckSquare: CheckSquare
+    CheckSquare: CheckSquare,
   };
-  
+
   const IconComponent = iconMap[iconName];
   return IconComponent ? <IconComponent className="w-4 h-4" /> : null;
 };
@@ -46,7 +46,7 @@ const ContentLibrary = ({ onBlockClick, sidebarCollapsed }) => {
     <div
       className="fixed top-16 h-[calc(100vh-4rem)] z-20 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
       style={{
-        left: sidebarCollapsed ? "4.5rem" : "17rem"
+        left: sidebarCollapsed ? '4.5rem' : '17rem',
       }}
     >
       <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-full">
@@ -58,10 +58,10 @@ const ContentLibrary = ({ onBlockClick, sidebarCollapsed }) => {
             Drag and drop content blocks to build your lesson
           </p>
         </div>
-       
+
         <div className="p-4">
           <div className="grid grid-cols-2 gap-3">
-            {contentBlockTypes.map((blockType) => (
+            {contentBlockTypes.map(blockType => (
               <Card
                 key={blockType.id}
                 className="cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 h-28 flex flex-col group hover:border-indigo-200 hover:bg-indigo-50"

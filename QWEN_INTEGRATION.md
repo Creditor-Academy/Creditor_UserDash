@@ -19,12 +19,15 @@ We have successfully integrated two powerful Qwen models:
 ### Features
 
 #### Content Safety Checking
+
 - **Prompt Moderation**: Checks user input before AI generation
 - **Response Moderation**: Validates AI-generated content
 - **Comprehensive Analysis**: Evaluates overall course content safety
 
 #### Safety Categories
+
 The system detects and categorizes content across:
+
 - Violent content
 - Non-violent illegal acts
 - Sexual content or sexual acts
@@ -36,6 +39,7 @@ The system detects and categorizes content across:
 - Jailbreak attempts
 
 #### Safety Levels
+
 - **Safe**: Content is appropriate for educational use
 - **Unsafe**: Content should not be used
 - **Controversial**: Content may need review
@@ -43,6 +47,7 @@ The system detects and categorizes content across:
 ### Implementation
 
 #### Service Files
+
 - `src/services/qwenGuardService.js` - Main moderation service
 - `src/services/aiCourseService.js` - Enhanced with moderation functions
 
@@ -53,10 +58,16 @@ The system detects and categorizes content across:
 const promptResult = await qwenGuardService.moderatePrompt(userPrompt);
 
 // Moderate generated content
-const responseResult = await qwenGuardService.moderateResponse(prompt, generatedContent);
+const responseResult = await qwenGuardService.moderateResponse(
+  prompt,
+  generatedContent
+);
 
 // Comprehensive course content moderation
-const courseResult = await qwenGuardService.moderateCourseContent(title, content);
+const courseResult = await qwenGuardService.moderateCourseContent(
+  title,
+  content
+);
 
 // Batch moderation for multiple items
 const batchResult = await qwenGuardService.batchModerate(contentItems);
@@ -86,11 +97,13 @@ VITE_BYTEZ_KEY_4=your_fourth_bytez_key_here
 ### UI Integration
 
 #### Settings Panel
+
 - Toggle for enabling/disabling content moderation
 - Real-time moderation results display
 - Safety status indicators
 
 #### Course Generation
+
 - Automatic safety checks during outline generation
 - User warnings for unsafe content
 - Option to proceed with reviewed content
@@ -104,6 +117,7 @@ VITE_BYTEZ_KEY_4=your_fourth_bytez_key_here
 ### Features
 
 #### Detail Level Control
+
 - **Minimal** (-2): Simple, clean design with basic elements
 - **Low** (-1): Simplified design with reduced complexity
 - **Normal** (0): Balanced detail level for general use
@@ -111,6 +125,7 @@ VITE_BYTEZ_KEY_4=your_fourth_bytez_key_here
 - **Maximum** (2): Ultra-detailed, hyperrealistic imagery
 
 #### Style Options
+
 - **Professional**: Clean, corporate style
 - **Creative**: Artistic, colorful design
 - **Minimal**: Simple, elegant approach
@@ -118,6 +133,7 @@ VITE_BYTEZ_KEY_4=your_fourth_bytez_key_here
 - **Tech**: Modern, digital aesthetic
 
 #### Performance Options
+
 - **Generation Steps**: 5-20 steps (quality vs speed trade-off)
 - **Guidance Scale**: Configurable prompt adherence
 - **Resolution**: 1024x1024 optimized for course thumbnails
@@ -125,6 +141,7 @@ VITE_BYTEZ_KEY_4=your_fourth_bytez_key_here
 ### Implementation
 
 #### Service Files
+
 - `src/services/qwenImageService.js` - Dedicated Qwen image service
 - `src/services/enhancedAIService.js` - Updated with Qwen integration
 
@@ -135,28 +152,28 @@ The system supports both HuggingFace Inference Client and direct API calls:
 ```javascript
 // Using HuggingFace Inference Client (preferred)
 const image = await client.textToImage({
-  provider: "fal-ai",
-  model: "ostris/qwen_image_detail_slider",
+  provider: 'fal-ai',
+  model: 'ostris/qwen_image_detail_slider',
   inputs: enhancedPrompt,
-  parameters: { 
+  parameters: {
     num_inference_steps: 5,
     guidance_scale: 7.5,
     width: 1024,
-    height: 1024
-  }
+    height: 1024,
+  },
 });
 
 // Fallback to direct API calls
 const response = await fetch(`${baseUrl}/${model}`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${apiKey}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
   },
   body: JSON.stringify({
     inputs: prompt,
-    parameters: options
-  })
+    parameters: options,
+  }),
 });
 ```
 
@@ -167,21 +184,22 @@ const response = await fetch(`${baseUrl}/${model}`, {
 const result = await qwenImageService.generateWithQwenDetailSlider(prompt, {
   detailLevel: 'high',
   steps: 8,
-  guidance: 7.5
+  guidance: 7.5,
 });
 
 // Generate course thumbnail
 const thumbnail = await qwenImageService.generateCourseThumbnail(
-  courseTitle, 
-  subject, 
+  courseTitle,
+  subject,
   { detailLevel: 'normal', style: 'professional' }
 );
 
 // Generate multiple detail levels
-const variations = await qwenImageService.generateMultipleDetailLevels(
-  prompt, 
-  ['minimal', 'normal', 'high']
-);
+const variations = await qwenImageService.generateMultipleDetailLevels(prompt, [
+  'minimal',
+  'normal',
+  'high',
+]);
 ```
 
 ### API Configuration
@@ -195,6 +213,7 @@ VITE_HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 ### UI Integration
 
 #### Media Tab
+
 - Detail level selector (minimal to maximum)
 - Style selection dropdown
 - Generation steps slider
@@ -202,6 +221,7 @@ VITE_HUGGINGFACE_API_KEY=your_huggingface_api_key_here
 - Quality vs speed trade-off controls
 
 #### Enhanced Course Creation
+
 - Automatic thumbnail generation with optimal settings
 - Fallback to traditional methods if needed
 - Blob-to-file conversion for upload
@@ -273,7 +293,7 @@ if (result.data?.moderation?.overall?.safe) {
 const options = {
   detailLevel: 'high',
   style: 'professional',
-  steps: 8
+  steps: 8,
 };
 
 // 2. Generate course thumbnail
@@ -285,9 +305,9 @@ const thumbnail = await qwenImageService.generateCourseThumbnail(
 
 // 3. Handle result
 if (thumbnail.success) {
-  setCourseData(prev => ({ 
-    ...prev, 
-    thumbnail: thumbnail.data.url 
+  setCourseData(prev => ({
+    ...prev,
+    thumbnail: thumbnail.data.url,
   }));
 }
 ```
@@ -298,7 +318,9 @@ if (thumbnail.success) {
 
 ```javascript
 // Test moderation service
-const testResult = await qwenGuardService.moderatePrompt("Create a course about web development");
+const testResult = await qwenGuardService.moderatePrompt(
+  'Create a course about web development'
+);
 console.log('Safety:', testResult.data.safety); // Should be "Safe"
 ```
 
@@ -313,11 +335,13 @@ console.log('Available methods:', testResult.tests);
 ## 📊 Performance & Monitoring
 
 ### Content Moderation
+
 - **Response Time**: ~2-5 seconds per moderation check
 - **Accuracy**: High precision for educational content
 - **Fallback**: Graceful degradation if moderation fails
 
 ### Image Generation
+
 - **Generation Time**: 5-30 seconds depending on steps
 - **Quality**: Superior detail control compared to traditional methods
 - **Fallback**: Automatic fallback to Deep AI/HuggingFace models
@@ -348,6 +372,7 @@ console.log('Available methods:', testResult.tests);
 ## 🔮 Future Enhancements
 
 ### Planned Features
+
 - **Custom Detail Presets**: Save favorite detail/style combinations
 - **Batch Image Generation**: Generate multiple variations simultaneously
 - **Advanced Moderation Rules**: Custom safety criteria for different course types
@@ -355,6 +380,7 @@ console.log('Available methods:', testResult.tests);
 - **Moderation Analytics**: Track safety trends and improvements
 
 ### Integration Opportunities
+
 - **Video Generation**: Extend to video content moderation
 - **Audio Analysis**: Voice content safety checking
 - **Multi-language Support**: Moderation in multiple languages

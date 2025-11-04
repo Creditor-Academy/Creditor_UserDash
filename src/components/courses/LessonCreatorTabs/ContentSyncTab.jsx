@@ -1,27 +1,27 @@
 import React, { useState } from 'react';
-import { 
-  Globe, 
-  Database, 
-  Copy, 
-  Check, 
+import {
+  Globe,
+  Database,
+  Copy,
+  Check,
   AlertCircle,
   RefreshCw,
   Target,
   Layers,
   ArrowRight,
-  Settings
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-const ContentSyncTab = ({ 
-  globalContent, 
-  setGlobalContent, 
-  syncSettings, 
+const ContentSyncTab = ({
+  globalContent,
+  setGlobalContent,
+  syncSettings,
   setSyncSettings,
   onSyncContent,
   modules,
-  lessons 
+  lessons,
 }) => {
   const [syncStatus, setSyncStatus] = useState('idle'); // idle, syncing, success, error
   const [selectedModules, setSelectedModules] = useState([]);
@@ -32,7 +32,7 @@ const ContentSyncTab = ({
   const handleSyncSettingChange = (setting, value) => {
     setSyncSettings(prev => ({
       ...prev,
-      [setting]: value
+      [setting]: value,
     }));
   };
 
@@ -45,12 +45,13 @@ const ContentSyncTab = ({
       type: globalBlockType,
       content: globalBlockContent,
       createdAt: new Date().toISOString(),
-      appliedToModules: selectedModules.length > 0 ? selectedModules : modules.map(m => m.id)
+      appliedToModules:
+        selectedModules.length > 0 ? selectedModules : modules.map(m => m.id),
     };
 
     setGlobalContent(prev => ({
       ...prev,
-      blocks: [...(prev.blocks || []), globalBlock]
+      blocks: [...(prev.blocks || []), globalBlock],
     }));
 
     // Sync to selected modules
@@ -60,7 +61,7 @@ const ContentSyncTab = ({
         type: 'global',
         blockType: globalBlockType,
         content: globalBlockContent,
-        targetModules: selectedModules.length > 0 ? selectedModules : 'all'
+        targetModules: selectedModules.length > 0 ? selectedModules : 'all',
       });
       setSyncStatus('success');
       setGlobalBlockContent('');
@@ -78,7 +79,7 @@ const ContentSyncTab = ({
       await onSyncContent({
         type: 'module',
         sourceModuleId,
-        targetModuleIds
+        targetModuleIds,
       });
       setSyncStatus('success');
       setTimeout(() => setSyncStatus('idle'), 2000);
@@ -89,7 +90,7 @@ const ContentSyncTab = ({
   };
 
   // Get lessons count by module
-  const getLessonsCount = (moduleId) => {
+  const getLessonsCount = moduleId => {
     return lessons.filter(l => l.moduleId === moduleId).length;
   };
 
@@ -98,9 +99,12 @@ const ContentSyncTab = ({
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Content Synchronization</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Content Synchronization
+          </h3>
           <p className="text-gray-600">
-            Manage content that should be shared across multiple modules and lessons.
+            Manage content that should be shared across multiple modules and
+            lessons.
           </p>
         </div>
 
@@ -115,15 +119,24 @@ const ContentSyncTab = ({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-gray-900">Auto-sync across modules</h4>
-                <p className="text-sm text-gray-500">Automatically apply content changes to all modules</p>
+                <h4 className="font-medium text-gray-900">
+                  Auto-sync across modules
+                </h4>
+                <p className="text-sm text-gray-500">
+                  Automatically apply content changes to all modules
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.syncAcrossModules}
-                  onChange={(e) => handleSyncSettingChange('syncAcrossModules', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange(
+                      'syncAcrossModules',
+                      e.target.checked
+                    )
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -132,14 +145,18 @@ const ContentSyncTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Auto-save changes</h4>
-                <p className="text-sm text-gray-500">Automatically save content changes to backend</p>
+                <p className="text-sm text-gray-500">
+                  Automatically save content changes to backend
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.autoSave}
-                  onChange={(e) => handleSyncSettingChange('autoSave', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('autoSave', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -148,14 +165,18 @@ const ContentSyncTab = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-gray-900">Real-time sync</h4>
-                <p className="text-sm text-gray-500">Sync changes in real-time as you type</p>
+                <p className="text-sm text-gray-500">
+                  Sync changes in real-time as you type
+                </p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="sr-only peer" 
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
                   checked={syncSettings.realTimeSync}
-                  onChange={(e) => handleSyncSettingChange('realTimeSync', e.target.checked)}
+                  onChange={e =>
+                    handleSyncSettingChange('realTimeSync', e.target.checked)
+                  }
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
               </label>
@@ -178,10 +199,12 @@ const ContentSyncTab = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Content Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Content Type
+                </label>
                 <select
                   value={globalBlockType}
-                  onChange={(e) => setGlobalBlockType(e.target.value)}
+                  onChange={e => setGlobalBlockType(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="text">Text Block</option>
@@ -194,11 +217,20 @@ const ContentSyncTab = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Apply to Modules</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Apply to Modules
+                </label>
                 <select
                   multiple
                   value={selectedModules}
-                  onChange={(e) => setSelectedModules(Array.from(e.target.selectedOptions, option => option.value))}
+                  onChange={e =>
+                    setSelectedModules(
+                      Array.from(
+                        e.target.selectedOptions,
+                        option => option.value
+                      )
+                    )
+                  }
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   size={Math.min(modules.length, 4)}
                 >
@@ -209,16 +241,19 @@ const ContentSyncTab = ({
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Hold Ctrl/Cmd to select multiple. Leave empty to apply to all modules.
+                  Hold Ctrl/Cmd to select multiple. Leave empty to apply to all
+                  modules.
                 </p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Content
+              </label>
               <textarea
                 value={globalBlockContent}
-                onChange={(e) => setGlobalBlockContent(e.target.value)}
+                onChange={e => setGlobalBlockContent(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
                 rows={4}
                 placeholder="Enter the content that should be added to all selected modules..."
@@ -248,7 +283,10 @@ const ContentSyncTab = ({
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Add to {selectedModules.length > 0 ? `${selectedModules.length} Modules` : 'All Modules'}
+                  Add to{' '}
+                  {selectedModules.length > 0
+                    ? `${selectedModules.length} Modules`
+                    : 'All Modules'}
                 </>
               )}
             </Button>
@@ -270,7 +308,9 @@ const ContentSyncTab = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Source Module</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Source Module
+                </label>
                 <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                   <option value="">Select source module</option>
                   {modules.map(module => (
@@ -286,9 +326,11 @@ const ContentSyncTab = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Target Module(s)</label>
-                <select 
-                  multiple 
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Target Module(s)
+                </label>
+                <select
+                  multiple
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                   size={Math.min(modules.length, 3)}
                 >
@@ -323,19 +365,27 @@ const ContentSyncTab = ({
             <CardContent>
               <div className="space-y-3">
                 {globalContent.blocks.map((block, index) => (
-                  <div key={block.id} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                  <div
+                    key={block.id}
+                    className="flex items-start justify-between p-3 bg-gray-50 rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-gray-500 uppercase">{block.type}</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase">
+                          {block.type}
+                        </span>
                         <span className="text-xs text-gray-400">
                           {new Date(block.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       <p className="text-sm text-gray-700 line-clamp-2">
-                        {typeof block.content === 'string' ? block.content : JSON.stringify(block.content)}
+                        {typeof block.content === 'string'
+                          ? block.content
+                          : JSON.stringify(block.content)}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Applied to: {block.appliedToModules?.length || 0} modules
+                        Applied to: {block.appliedToModules?.length || 0}{' '}
+                        modules
                       </p>
                     </div>
                     <Button
@@ -354,24 +404,41 @@ const ContentSyncTab = ({
 
         {/* Sync Status */}
         {syncStatus !== 'idle' && (
-          <Card className={`border-l-4 ${
-            syncStatus === 'success' ? 'border-green-500 bg-green-50' :
-            syncStatus === 'error' ? 'border-red-500 bg-red-50' :
-            'border-blue-500 bg-blue-50'
-          }`}>
+          <Card
+            className={`border-l-4 ${
+              syncStatus === 'success'
+                ? 'border-green-500 bg-green-50'
+                : syncStatus === 'error'
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-blue-500 bg-blue-50'
+            }`}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                {syncStatus === 'syncing' && <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />}
-                {syncStatus === 'success' && <Check className="w-4 h-4 text-green-600" />}
-                {syncStatus === 'error' && <AlertCircle className="w-4 h-4 text-red-600" />}
-                <span className={`text-sm font-medium ${
-                  syncStatus === 'success' ? 'text-green-800' :
-                  syncStatus === 'error' ? 'text-red-800' :
-                  'text-blue-800'
-                }`}>
-                  {syncStatus === 'syncing' && 'Synchronizing content across modules...'}
-                  {syncStatus === 'success' && 'Content synchronized successfully!'}
-                  {syncStatus === 'error' && 'Failed to synchronize content. Please try again.'}
+                {syncStatus === 'syncing' && (
+                  <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                )}
+                {syncStatus === 'success' && (
+                  <Check className="w-4 h-4 text-green-600" />
+                )}
+                {syncStatus === 'error' && (
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                )}
+                <span
+                  className={`text-sm font-medium ${
+                    syncStatus === 'success'
+                      ? 'text-green-800'
+                      : syncStatus === 'error'
+                        ? 'text-red-800'
+                        : 'text-blue-800'
+                  }`}
+                >
+                  {syncStatus === 'syncing' &&
+                    'Synchronizing content across modules...'}
+                  {syncStatus === 'success' &&
+                    'Content synchronized successfully!'}
+                  {syncStatus === 'error' &&
+                    'Failed to synchronize content. Please try again.'}
                 </span>
               </div>
             </CardContent>

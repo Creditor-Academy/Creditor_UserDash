@@ -7,6 +7,7 @@ The HuggingFace Router integration provides enhanced AI text generation capabili
 ## Features
 
 ### ✅ **Core Capabilities**
+
 - **OpenAI-Compatible API**: Uses familiar OpenAI SDK with HuggingFace models
 - **Load Balancing**: Automatic distribution across HuggingFace infrastructure
 - **Multi-Key Rotation**: Supports multiple API keys for enhanced reliability
@@ -14,6 +15,7 @@ The HuggingFace Router integration provides enhanced AI text generation capabili
 - **Enhanced Error Handling**: Intelligent failover and error recovery
 
 ### 🤖 **Supported Models**
+
 - **HuggingFaceH4/zephyr-7b-beta:featherless-ai** (Priority 2) - Instruction-tuned chat model
 - **HuggingFaceH4/zephyr-7b-beta** (Priority 4) - Direct HuggingFace API
 - **facebook/bart-large-cnn** (Priority 5) - Summarization and text generation
@@ -42,12 +44,24 @@ The system now uses both HuggingFace APIs for optimal performance:
 ```javascript
 textGeneration: [
   { provider: 'openai', model: 'gpt-3.5-turbo', priority: 1 },
-  { provider: 'huggingface-router', model: 'HuggingFaceH4/zephyr-7b-beta:featherless-ai', priority: 2 },
-  { provider: 'huggingface', model: 'OpenAssistant/oasst-sft-7-llama-2-13b', priority: 3 },
-  { provider: 'huggingface', model: 'HuggingFaceH4/zephyr-7b-beta', priority: 4 },
+  {
+    provider: 'huggingface-router',
+    model: 'HuggingFaceH4/zephyr-7b-beta:featherless-ai',
+    priority: 2,
+  },
+  {
+    provider: 'huggingface',
+    model: 'OpenAssistant/oasst-sft-7-llama-2-13b',
+    priority: 3,
+  },
+  {
+    provider: 'huggingface',
+    model: 'HuggingFaceH4/zephyr-7b-beta',
+    priority: 4,
+  },
   { provider: 'huggingface', model: 'facebook/bart-large-cnn', priority: 5 },
   // ... additional fallback models
-]
+];
 ```
 
 ## Implementation Details
@@ -59,9 +73,9 @@ textGeneration: [
 const hfRouterKey = this.apiKeyManager.getApiKey('huggingface');
 if (hfRouterKey) {
   this.hfRouterClient = new OpenAI({
-    baseURL: "https://router.huggingface.co/v1",
+    baseURL: 'https://router.huggingface.co/v1',
     apiKey: hfRouterKey,
-    dangerouslyAllowBrowser: true
+    dangerouslyAllowBrowser: true,
   });
 }
 ```
@@ -71,11 +85,11 @@ if (hfRouterKey) {
 ```javascript
 // Router API call (OpenAI-compatible)
 const chatCompletion = await routerClient.chat.completions.create({
-  model: "HuggingFaceH4/zephyr-7b-beta:featherless-ai",
+  model: 'HuggingFaceH4/zephyr-7b-beta:featherless-ai',
   messages: [
     {
-      role: "user",
-      content: "Create a course outline for JavaScript programming",
+      role: 'user',
+      content: 'Create a course outline for JavaScript programming',
     },
   ],
   max_tokens: 500,
@@ -133,6 +147,7 @@ const directModels = [
 ## Model Specifications
 
 ### 🤖 **Zephyr-7B-Beta**
+
 - **Type**: Instruction-tuned chat model
 - **Parameters**: 7 billion
 - **Strengths**: Conversational AI, instruction following
@@ -140,6 +155,7 @@ const directModels = [
 - **API**: Both Router and Direct
 
 ### 📰 **BART-Large-CNN**
+
 - **Type**: Encoder-decoder transformer
 - **Parameters**: 400 million
 - **Strengths**: Summarization, text generation
@@ -147,6 +163,7 @@ const directModels = [
 - **API**: Direct HuggingFace
 
 ### 🎓 **OpenAssistant OASST-SFT-7-Llama-2-13B**
+
 - **Type**: Instruction-tuned assistant
 - **Parameters**: 13 billion
 - **Strengths**: Educational content, detailed explanations
@@ -160,11 +177,15 @@ const directModels = [
 ```javascript
 // Router-specific error handling
 if (error.message.includes('429')) {
-  console.warn(`⏰ HuggingFace Router key ${i + 1} rate limited - trying next key`);
+  console.warn(
+    `⏰ HuggingFace Router key ${i + 1} rate limited - trying next key`
+  );
 } else if (error.message.includes('401')) {
   console.warn(`🔑 HuggingFace Router key ${i + 1} unauthorized - invalid key`);
 } else if (error.message.includes('503')) {
-  console.warn(`🔧 HuggingFace Router model ${model} unavailable - trying next key`);
+  console.warn(
+    `🔧 HuggingFace Router model ${model} unavailable - trying next key`
+  );
 }
 ```
 
@@ -178,17 +199,20 @@ if (error.message.includes('429')) {
 ## Performance Benefits
 
 ### ⚡ **Speed Improvements**
+
 - **Router Load Balancing**: Distributes requests across multiple servers
 - **Optimized Endpoints**: Pre-warmed models for faster response
 - **Reduced Cold Starts**: Router maintains model availability
 
 ### 🛡️ **Reliability Enhancements**
+
 - **Multiple API Endpoints**: Router + Direct API redundancy
 - **Multi-Key Support**: Up to 6 different API key configurations
 - **Intelligent Failover**: Automatic switching on failures
 - **Error Recovery**: Detailed error handling and retry logic
 
 ### 📈 **Scalability Features**
+
 - **Load Distribution**: Requests spread across both APIs
 - **Rate Limit Mitigation**: Multiple keys reduce rate limiting
 - **Model Diversity**: Access to different model variants
@@ -208,10 +232,10 @@ if (error.message.includes('429')) {
 // ... and so on
 
 const courseOutline = await enhancedAIService.generateText(
-  "Create a comprehensive course outline for Advanced JavaScript Programming covering ES6+, async programming, and modern frameworks",
+  'Create a comprehensive course outline for Advanced JavaScript Programming covering ES6+, async programming, and modern frameworks',
   {
     maxTokens: 1000,
-    temperature: 0.7
+    temperature: 0.7,
   }
 );
 ```
@@ -221,10 +245,10 @@ const courseOutline = await enhancedAIService.generateText(
 ```javascript
 // Optimized for educational content generation
 const lessonContent = await enhancedAIService.generateText(
-  "Write a detailed lesson about JavaScript Promises, including examples, common pitfalls, and best practices",
+  'Write a detailed lesson about JavaScript Promises, including examples, common pitfalls, and best practices',
   {
     maxTokens: 800,
-    temperature: 0.6
+    temperature: 0.6,
   }
 );
 ```
@@ -252,6 +276,7 @@ The system provides detailed logging for debugging:
 ### 📈 **Performance Metrics**
 
 Track key metrics:
+
 - **Success Rate**: Percentage of successful generations
 - **Key Usage**: Which keys are being used most
 - **Model Performance**: Which models provide best results
@@ -260,6 +285,7 @@ Track key metrics:
 ## Best Practices
 
 ### 🎯 **Model Selection**
+
 - Use **Router API** for high-priority, user-facing content
 - Use **Direct API** for background processing and batch operations
 - Choose **Zephyr-7B-Beta** for conversational and instructional content
@@ -267,12 +293,14 @@ Track key metrics:
 - Choose **OpenAssistant** for detailed educational explanations
 
 ### 🔧 **Configuration Tips**
+
 - Configure multiple API keys for better reliability
 - Set appropriate token limits based on use case
 - Use lower temperature (0.6-0.7) for educational content
 - Monitor usage to avoid rate limits
 
 ### 🚀 **Performance Optimization**
+
 - Cache successful model responses when appropriate
 - Use batch processing for multiple generations
 - Implement request queuing for high-volume scenarios
@@ -308,12 +336,14 @@ Track key metrics:
 ## Future Enhancements
 
 ### 🚀 **Planned Features**
+
 - **Streaming Responses**: Real-time text generation
 - **Model Fine-tuning**: Custom models for specific use cases
 - **Advanced Routing**: Intelligent model selection based on content type
 - **Usage Analytics**: Detailed performance and cost tracking
 
 ### 🔮 **Potential Improvements**
+
 - **Automatic Key Rotation**: Dynamic key management
 - **Model Health Monitoring**: Real-time model availability checking
 - **Custom Model Integration**: Support for private HuggingFace models

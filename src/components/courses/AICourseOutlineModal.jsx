@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Sparkles, 
-  Target, 
-  Users, 
-  FileText, 
+import {
+  X,
+  Sparkles,
+  Target,
+  Users,
+  FileText,
   Upload,
   Plus,
   Brain,
@@ -14,7 +14,7 @@ import {
   GraduationCap,
   Lightbulb,
   Clock,
-  Trophy
+  Trophy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,27 +26,27 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
     difficulty: 'intermediate',
     duration: '4 weeks',
     learningObjectives: '',
-    sourceContent: ''
+    sourceContent: '',
   });
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [activeTab, setActiveTab] = useState('file'); // 'file' or 'url'
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = e => {
     const files = Array.from(e.target.files);
     setUploadedFiles(prev => [...prev, ...files]);
   };
 
-  const removeFile = (index) => {
+  const removeFile = index => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -57,7 +57,7 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
     }
 
     setIsGenerating(true);
-    
+
     try {
       // Call the onGenerateOutline callback with form data
       await onGenerateOutline({
@@ -68,9 +68,9 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
         duration: formData.duration,
         learningObjectives: formData.learningObjectives,
         sourceContent: formData.sourceContent,
-        uploadedFiles: uploadedFiles
+        uploadedFiles: uploadedFiles,
       });
-      
+
       // Reset form after successful generation
       setFormData({
         courseTitle: '',
@@ -79,11 +79,10 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
         difficulty: 'intermediate',
         duration: '4 weeks',
         learningObjectives: '',
-        sourceContent: ''
+        sourceContent: '',
       });
       setUploadedFiles([]);
       setActiveTab('file');
-      
     } catch (error) {
       console.error('Error generating course outline:', error);
       alert('Failed to generate course outline. Please try again.');
@@ -96,16 +95,16 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
 
   return (
     <AnimatePresence>
-      <div 
+      <div
         className="fixed inset-0 z-[9999] flex"
-        style={{ 
+        style={{
           isolation: 'isolate',
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: 9999
+          zIndex: 9999,
         }}
       >
         {/* Backdrop */}
@@ -114,16 +113,16 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
           onClick={onClose}
           style={{ cursor: 'pointer' }}
         />
-        
+
         {/* Modal */}
         <div
           className="ml-auto w-full max-w-md bg-white shadow-2xl h-full flex flex-col relative"
-          style={{ 
+          style={{
             zIndex: 10000,
             pointerEvents: 'auto',
-            transform: 'translateX(0)'
+            transform: 'translateX(0)',
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 flex-shrink-0">
@@ -134,7 +133,9 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">AI Course Builder</h2>
-                  <p className="text-indigo-100 text-sm">Create your course outline with AI</p>
+                  <p className="text-indigo-100 text-sm">
+                    Create your course outline with AI
+                  </p>
                 </div>
               </div>
               <Button
@@ -156,7 +157,9 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                 <Sparkles className="w-4 h-4 text-indigo-600" />
                 What's your course about?
               </label>
-              <p className="text-xs text-gray-500">Enter a clear, descriptive title for your course</p>
+              <p className="text-xs text-gray-500">
+                Enter a clear, descriptive title for your course
+              </p>
               <input
                 type="text"
                 name="courseTitle"
@@ -174,7 +177,9 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                 <BookOpen className="w-4 h-4 text-indigo-600" />
                 What subject does this course cover?
               </label>
-              <p className="text-xs text-gray-500">Specify the main topic or field of study</p>
+              <p className="text-xs text-gray-500">
+                Specify the main topic or field of study
+              </p>
               <input
                 type="text"
                 name="subject"
@@ -191,7 +196,9 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                 <Users className="w-4 h-4 text-indigo-600" />
                 Who is your target audience?
               </label>
-              <p className="text-xs text-gray-500">Describe who this course is designed for</p>
+              <p className="text-xs text-gray-500">
+                Describe who this course is designed for
+              </p>
               <input
                 type="text"
                 name="targetAudience"
@@ -220,7 +227,7 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                   <option value="advanced">Advanced</option>
                 </select>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
                   <Clock className="w-4 h-4 text-indigo-600" />
@@ -247,7 +254,9 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                 <Target className="w-4 h-4 text-indigo-600" />
                 What should students learn?
               </label>
-              <p className="text-xs text-gray-500">List specific skills or knowledge students will gain</p>
+              <p className="text-xs text-gray-500">
+                List specific skills or knowledge students will gain
+              </p>
               <textarea
                 name="learningObjectives"
                 value={formData.learningObjectives}
@@ -261,9 +270,10 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
             {/* Source Content */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-800">
-                What source content should I reference? (Adding content will improve our results.)
+                What source content should I reference? (Adding content will
+                improve our results.)
               </label>
-              
+
               {/* Tab Navigation */}
               <div className="flex border-b border-gray-200">
                 <button
@@ -289,7 +299,7 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                   Paste URLs
                 </button>
               </div>
-              
+
               {/* Tab Content */}
               <div className="pt-3">
                 {activeTab === 'file' ? (
@@ -303,33 +313,47 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                       id="file-upload"
                       accept=".doc,.docx,.m4a,.mp3,.mp4,.ogg,.pdf,.ppt,.pptx,.sbv,.srt,.story,.sub,.text,.txt,.vtt,.wav,.webm"
                     />
-                    <label 
+                    <label
                       htmlFor="file-upload"
                       className="block border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-400 transition-colors bg-gray-50 cursor-pointer"
                     >
                       <div className="flex flex-col items-center">
                         <Upload className="w-8 h-8 text-gray-400 mb-3" />
                         <p className="text-sm text-gray-600 mb-1">
-                          Drag & drop any source materials or <span className="text-indigo-600 font-medium">choose file</span>
+                          Drag & drop any source materials or{' '}
+                          <span className="text-indigo-600 font-medium">
+                            choose file
+                          </span>
                         </p>
                         <p className="text-xs text-gray-500 mt-2">
                           Supported file types and sizes
                         </p>
                       </div>
                     </label>
-                    
+
                     {/* File Types and Sizes Info */}
                     <div className="text-xs text-gray-500 space-y-1">
-                      <p>Supported file types: .doc, .docx, .m4a, .mp3, .mp4, .ogg, .pdf, .ppt, .pptx, .sbv, .srt, .story, .sub, .text, .txt, .vtt, .wav, or .webm</p>
-                      <p>Maximum size: 1 GB, 200K characters or less per file.</p>
+                      <p>
+                        Supported file types: .doc, .docx, .m4a, .mp3, .mp4,
+                        .ogg, .pdf, .ppt, .pptx, .sbv, .srt, .story, .sub,
+                        .text, .txt, .vtt, .wav, or .webm
+                      </p>
+                      <p>
+                        Maximum size: 1 GB, 200K characters or less per file.
+                      </p>
                     </div>
 
                     {/* Uploaded Files */}
                     {uploadedFiles.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-700">Uploaded Files:</p>
+                        <p className="text-sm font-medium text-gray-700">
+                          Uploaded Files:
+                        </p>
                         {uploadedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between bg-indigo-50 p-3 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between bg-indigo-50 p-3 rounded-lg"
+                          >
                             <span className="text-gray-700 truncate flex items-center gap-2">
                               <FileText className="w-4 h-4 text-indigo-500 flex-shrink-0" />
                               <span className="text-sm">{file.name}</span>
@@ -357,7 +381,10 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
                       rows="4"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none text-sm"
                     />
-                    <p className="text-xs text-gray-500">You can paste URLs, text content, or any reference material here</p>
+                    <p className="text-xs text-gray-500">
+                      You can paste URLs, text content, or any reference
+                      material here
+                    </p>
                   </div>
                 )}
               </div>
@@ -368,9 +395,13 @@ const AICourseOutlineModal = ({ isOpen, onClose, onGenerateOutline }) => {
               <div className="flex items-start gap-3">
                 <Lightbulb className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-indigo-800">AI Tip</p>
+                  <p className="text-sm font-semibold text-indigo-800">
+                    AI Tip
+                  </p>
                   <p className="text-sm text-indigo-700 mt-1">
-                    Providing detailed learning objectives and source materials will help generate a more accurate and comprehensive course outline.
+                    Providing detailed learning objectives and source materials
+                    will help generate a more accurate and comprehensive course
+                    outline.
                   </p>
                 </div>
               </div>

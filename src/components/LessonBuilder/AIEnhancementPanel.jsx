@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
-import { Wand2, Sparkles, BookOpen, Image, FileText, Search, Loader2, Check, X } from 'lucide-react';
+import {
+  Wand2,
+  Sparkles,
+  BookOpen,
+  Image,
+  FileText,
+  Search,
+  Loader2,
+  Check,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import Bytez from 'bytez.js'; // Removed - dependency not available
 
-const AIEnhancementPanel = ({ 
-  lessonData, 
+const AIEnhancementPanel = ({
+  lessonData,
   onContentGenerated,
   isOpen,
-  onClose
+  onClose,
 }) => {
   const [activeTab, setActiveTab] = useState('outline');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -19,20 +29,20 @@ const AIEnhancementPanel = ({
   // Generate lesson content using AI
   const generateLessonContent = async () => {
     if (!prompt.trim()) return;
-    
+
     setIsGenerating(true);
     try {
       // Get API key from environment variables
       // AI enhancement functionality removed - dependency not available
       throw new Error('AI enhancement service is currently unavailable.');
-      
+
       // Initialize Bytez SDK
       // const sdk = new Bytez(apiKey);
       // const model = sdk.model("google/flan-t5-base");
-      
+
       // Create model instance
       // await model.create();
-      
+
       // Generate content
       // const result = await model.run(prompt, {
       //   max_new_tokens: 500,
@@ -40,9 +50,9 @@ const AIEnhancementPanel = ({
       // });
       const result = await model.run(prompt, {
         max_new_tokens: 500,
-        temperature: 0.7
+        temperature: 0.7,
       });
-      
+
       if (result.output) {
         setGeneratedContent(result.output);
         // Pass the generated content back to the parent component
@@ -66,7 +76,7 @@ const AIEnhancementPanel = ({
     4. Summary
     
     Format as a clear, educational outline.`;
-    
+
     setPrompt(outlinePrompt);
     // Trigger generation after setting prompt
     setTimeout(() => {
@@ -84,7 +94,7 @@ const AIEnhancementPanel = ({
     3. What students will be able to do after completing it
     
     Keep it concise and educational.`;
-    
+
     setPrompt(introPrompt);
     // Trigger generation after setting prompt
     setTimeout(() => {
@@ -102,7 +112,7 @@ const AIEnhancementPanel = ({
     3. Suggest next steps for further learning
     
     Keep it educational and motivating.`;
-    
+
     setPrompt(summaryPrompt);
     // Trigger generation after setting prompt
     setTimeout(() => {
@@ -119,7 +129,9 @@ const AIEnhancementPanel = ({
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
             <Sparkles className="w-6 h-6 text-purple-600" />
-            <h2 className="text-xl font-bold text-gray-900">AI Lesson Enhancement</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              AI Lesson Enhancement
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -191,7 +203,8 @@ const AIEnhancementPanel = ({
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-600 mb-4">
-                      Create a structured outline for your lesson with key learning points and examples.
+                      Create a structured outline for your lesson with key
+                      learning points and examples.
                     </p>
                     <Button
                       onClick={generateLessonOutline}
@@ -226,7 +239,8 @@ const AIEnhancementPanel = ({
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-600 mb-4">
-                      Create an engaging introduction that explains what the lesson covers and why it's important.
+                      Create an engaging introduction that explains what the
+                      lesson covers and why it's important.
                     </p>
                     <Button
                       onClick={generateLessonIntro}
@@ -261,7 +275,8 @@ const AIEnhancementPanel = ({
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-600 mb-4">
-                      Create a comprehensive summary that recaps key points and suggests next steps.
+                      Create a comprehensive summary that recaps key points and
+                      suggests next steps.
                     </p>
                     <Button
                       onClick={generateLessonSummary}
@@ -300,7 +315,7 @@ const AIEnhancementPanel = ({
                     </p>
                     <Textarea
                       value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
+                      onChange={e => setPrompt(e.target.value)}
                       placeholder="Enter your prompt here... e.g., 'Write a detailed explanation of photosynthesis for a high school biology class'"
                       className="min-h-[120px] mb-4"
                     />

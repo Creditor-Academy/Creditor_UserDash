@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Eye, 
-  Play, 
-  Pause, 
-  Volume2, 
-  VolumeX, 
-  Maximize, 
+import {
+  Eye,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize,
   Minimize,
   ChevronLeft,
   ChevronRight,
@@ -16,7 +16,7 @@ import {
   Clock,
   Target,
   CheckCircle,
-  Circle
+  Circle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
   const lessonModule = modules.find(m => m.id === selectedLesson?.moduleId);
 
   // Mark section as completed
-  const toggleSectionCompletion = (sectionId) => {
+  const toggleSectionCompletion = sectionId => {
     setCompletedSections(prev => {
       const newSet = new Set(prev);
       if (newSet.has(sectionId)) {
@@ -45,7 +45,7 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
   };
 
   // Navigate between blocks
-  const navigateBlock = (direction) => {
+  const navigateBlock = direction => {
     if (direction === 'next' && currentBlockIndex < lessonBlocks.length - 1) {
       setCurrentBlockIndex(prev => prev + 1);
     } else if (direction === 'prev' && currentBlockIndex > 0) {
@@ -54,12 +54,12 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
   };
 
   // Render content block for preview
-  const renderPreviewBlock = (block) => {
+  const renderPreviewBlock = block => {
     switch (block.type) {
       case 'text':
       case 'heading':
         return (
-          <div 
+          <div
             className="prose max-w-none"
             dangerouslySetInnerHTML={{ __html: block.content }}
           />
@@ -81,13 +81,15 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
           <div className="text-center">
             {block.content?.url ? (
               <div>
-                <img 
-                  src={block.content.url} 
-                  alt={block.content.alt} 
+                <img
+                  src={block.content.url}
+                  alt={block.content.alt}
                   className="max-w-full h-auto rounded-lg shadow-md mx-auto"
                 />
                 {block.content.caption && (
-                  <p className="text-sm text-gray-600 mt-2 italic">{block.content.caption}</p>
+                  <p className="text-sm text-gray-600 mt-2 italic">
+                    {block.content.caption}
+                  </p>
                 )}
               </div>
             ) : (
@@ -117,13 +119,15 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
               </div>
             )}
             {block.content?.title && (
-              <p className="text-center font-medium mt-2">{block.content.title}</p>
+              <p className="text-center font-medium mt-2">
+                {block.content.title}
+              </p>
             )}
           </div>
         );
       case 'table':
         return (
-          <div 
+          <div
             className="overflow-x-auto"
             dangerouslySetInnerHTML={{ __html: block.content }}
           />
@@ -138,12 +142,16 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
   };
 
   return (
-    <div className={`flex h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}>
+    <div
+      className={`flex h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-white' : ''}`}
+    >
       {/* Lesson Selector Sidebar */}
       {!isFullscreen && (
         <div className="w-80 border-r border-gray-200 bg-white p-4 overflow-y-auto">
           <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Lesson Preview</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Lesson Preview
+            </h3>
             <p className="text-sm text-gray-600">
               Select a lesson to preview its content as students would see it.
             </p>
@@ -153,7 +161,7 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
             {lessons.map((lesson, index) => {
               const lessonBlockCount = contentBlocks[lesson.id]?.length || 0;
               const isCompleted = completedSections.has(lesson.id);
-              
+
               return (
                 <div
                   key={lesson.id}
@@ -171,7 +179,7 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             toggleSectionCompletion(lesson.id);
                           }}
@@ -183,15 +191,19 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                             <Circle className="w-4 h-4" />
                           )}
                         </button>
-                        <h4 className="font-medium text-gray-900 text-sm">{lesson.title}</h4>
+                        <h4 className="font-medium text-gray-900 text-sm">
+                          {lesson.title}
+                        </h4>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1 ml-6">{lesson.duration}</p>
+                      <p className="text-xs text-gray-500 mt-1 ml-6">
+                        {lesson.duration}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <span>{index + 1}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-3 mt-2 ml-6 text-xs text-gray-500">
                     <div className="flex items-center gap-1">
                       <FileText className="w-3 h-3" />
@@ -217,7 +229,9 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Eye className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Lesson Selected</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Lesson Selected
+              </h3>
               <p className="text-gray-600">
                 Select a lesson from the sidebar to preview its content.
               </p>
@@ -231,26 +245,30 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                 <div>
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-5 h-5 text-purple-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedLesson.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {selectedLesson.title}
+                    </h3>
                   </div>
                   <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
                       <span>{selectedLesson.duration}</span>
                     </div>
-                    {lessonModule && (
-                      <span>Module: {lessonModule.title}</span>
-                    )}
+                    {lessonModule && <span>Module: {lessonModule.title}</span>}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={() => setIsFullscreen(!isFullscreen)}
                     variant="outline"
                     size="sm"
                   >
-                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                    {isFullscreen ? (
+                      <Minimize className="w-4 h-4" />
+                    ) : (
+                      <Maximize className="w-4 h-4" />
+                    )}
                     {isFullscreen ? 'Exit' : 'Fullscreen'}
                   </Button>
                 </div>
@@ -270,7 +288,7 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Previous
                   </Button>
-                  
+
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">
                       Block {currentBlockIndex + 1} of {lessonBlocks.length}
@@ -281,13 +299,15 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                           key={index}
                           onClick={() => setCurrentBlockIndex(index)}
                           className={`w-2 h-2 rounded-full ${
-                            index === currentBlockIndex ? 'bg-purple-600' : 'bg-gray-300'
+                            index === currentBlockIndex
+                              ? 'bg-purple-600'
+                              : 'bg-gray-300'
                           }`}
                         />
                       ))}
                     </div>
                   </div>
-                  
+
                   <Button
                     onClick={() => navigateBlock('next')}
                     disabled={currentBlockIndex === lessonBlocks.length - 1}
@@ -306,7 +326,9 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
               {lessonBlocks.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Content Blocks</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No Content Blocks
+                  </h3>
                   <p className="text-gray-600">
                     This lesson doesn't have any content blocks to preview.
                   </p>
@@ -316,7 +338,9 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                   {/* Lesson Description */}
                   {selectedLesson.description && (
                     <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-lg">
-                      <p className="text-blue-800">{selectedLesson.description}</p>
+                      <p className="text-blue-800">
+                        {selectedLesson.description}
+                      </p>
                     </div>
                   )}
 
@@ -328,27 +352,30 @@ const PreviewTab = ({ lessons, contentBlocks, modules }) => {
                   </Card>
 
                   {/* Key Points */}
-                  {selectedLesson.keyPoints && selectedLesson.keyPoints.length > 0 && (
-                    <Card className="mb-6">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Target className="w-5 h-5" />
-                          Key Learning Points
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          {selectedLesson.keyPoints.map((point, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
-                              <span className="text-gray-700">{point}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
+                  {selectedLesson.keyPoints &&
+                    selectedLesson.keyPoints.length > 0 && (
+                      <Card className="mb-6">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Target className="w-5 h-5" />
+                            Key Learning Points
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {selectedLesson.keyPoints.map((point, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start gap-2"
+                              >
+                                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <span className="text-gray-700">{point}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                 </div>
               )}
             </div>

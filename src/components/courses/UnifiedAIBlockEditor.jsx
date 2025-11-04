@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Plus, 
-  Type, 
-  Image as ImageIcon, 
-  Video, 
-  List, 
-  Quote, 
+import {
+  Sparkles,
+  Plus,
+  Type,
+  Image as ImageIcon,
+  Video,
+  List,
+  Quote,
   Table,
   Wand2,
   Brain,
@@ -25,7 +25,7 @@ import {
   Lightbulb,
   Zap,
   Target,
-  BookOpen
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,14 +39,14 @@ import enhancedAIService from '@/services/enhancedAIService';
 import unifiedAIContentService from '@/services/unifiedAIContentService';
 import AIWorkflowManager from './AIWorkflowManager';
 
-const UnifiedAIBlockEditor = ({ 
-  lessons, 
-  contentBlocks, 
-  setContentBlocks, 
-  editingLessonId, 
+const UnifiedAIBlockEditor = ({
+  lessons,
+  contentBlocks,
+  setContentBlocks,
+  editingLessonId,
   setEditingLessonId,
   courseTitle = '',
-  onContentSync = () => {}
+  onContentSync = () => {},
 }) => {
   const [aiMode, setAiMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,10 +66,10 @@ const UnifiedAIBlockEditor = ({
   const generateSmartSuggestions = async (lessonTitle, existingContent) => {
     try {
       const prompt = `Based on the lesson "${lessonTitle}" and existing content, suggest 3 relevant content blocks that would enhance learning. Format as JSON array with: type, title, description, content`;
-      
+
       const result = await enhancedAIService.generateText(prompt, {
         maxTokens: 500,
-        temperature: 0.7
+        temperature: 0.7,
       });
 
       if (result.success) {
@@ -79,9 +79,24 @@ const UnifiedAIBlockEditor = ({
         } catch {
           // Fallback suggestions
           setSmartSuggestions([
-            { type: 'text', title: 'Key Concepts', description: 'Explain main concepts', content: 'Define and explain the key concepts...' },
-            { type: 'list', title: 'Learning Points', description: 'Bullet point summary', content: '• Point 1\n• Point 2\n• Point 3' },
-            { type: 'quote', title: 'Important Note', description: 'Highlight key information', content: 'Remember: This is crucial for understanding...' }
+            {
+              type: 'text',
+              title: 'Key Concepts',
+              description: 'Explain main concepts',
+              content: 'Define and explain the key concepts...',
+            },
+            {
+              type: 'list',
+              title: 'Learning Points',
+              description: 'Bullet point summary',
+              content: '• Point 1\n• Point 2\n• Point 3',
+            },
+            {
+              type: 'quote',
+              title: 'Important Note',
+              description: 'Highlight key information',
+              content: 'Remember: This is crucial for understanding...',
+            },
           ]);
         }
       }
@@ -94,12 +109,16 @@ const UnifiedAIBlockEditor = ({
   const generateAIContent = async (blockType, customPrompt = '') => {
     setIsGenerating(true);
     try {
-      const lessonContext = currentLesson ? `for lesson "${currentLesson.title}"` : '';
-      const basePrompt = customPrompt || `Create ${blockType} content ${lessonContext} about ${courseTitle}`;
-      
+      const lessonContext = currentLesson
+        ? `for lesson "${currentLesson.title}"`
+        : '';
+      const basePrompt =
+        customPrompt ||
+        `Create ${blockType} content ${lessonContext} about ${courseTitle}`;
+
       const result = await enhancedAIService.generateText(basePrompt, {
         maxTokens: 300,
-        temperature: 0.8
+        temperature: 0.8,
       });
 
       if (result.success) {
@@ -109,19 +128,19 @@ const UnifiedAIBlockEditor = ({
           content: formatContentByType(blockType, result.content),
           order: currentBlocks.length + 1,
           settings: { aiGenerated: true },
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         };
 
         setContentBlocks(prev => ({
           ...prev,
-          [editingLessonId]: [...currentBlocks, newBlock]
+          [editingLessonId]: [...currentBlocks, newBlock],
         }));
 
         onContentSync({
           type: 'ai_block_add',
           lessonId: editingLessonId,
           blockType,
-          blockId: newBlock.id
+          blockId: newBlock.id,
         });
       }
     } catch (error) {
@@ -153,7 +172,7 @@ const UnifiedAIBlockEditor = ({
   // Enhanced block rendering with AI assistance
   const renderEnhancedBlock = (block, index) => {
     const isAIGenerated = block.settings?.aiGenerated;
-    
+
     return (
       <motion.div
         key={block.id}
@@ -161,8 +180,8 @@ const UnifiedAIBlockEditor = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: index * 0.1 }}
         className={`relative group border rounded-lg p-4 mb-4 transition-all duration-200 ${
-          isAIGenerated 
-            ? 'border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50' 
+          isAIGenerated
+            ? 'border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50'
             : 'border-gray-200 bg-white hover:border-gray-300'
         }`}
       >
@@ -203,16 +222,17 @@ const UnifiedAIBlockEditor = ({
         </div>
 
         {/* Block Content */}
-        <div className="pr-20">
-          {renderBlockContent(block)}
-        </div>
+        <div className="pr-20">{renderBlockContent(block)}</div>
 
         {/* AI Enhancement Suggestions */}
         {aiMode && (
           <div className="mt-3 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <Brain className="w-3 h-3" />
-              <span>AI suggests: Add examples, include visuals, or expand with details</span>
+              <span>
+                AI suggests: Add examples, include visuals, or expand with
+                details
+              </span>
             </div>
           </div>
         )}
@@ -221,13 +241,17 @@ const UnifiedAIBlockEditor = ({
   };
 
   // Render block content based on type
-  const renderBlockContent = (block) => {
+  const renderBlockContent = block => {
     switch (block.type) {
       case 'text':
         return (
           <Textarea
-            value={typeof block.content === 'string' ? block.content.replace(/<[^>]*>/g, '') : ''}
-            onChange={(e) => updateBlock(block.id, e.target.value)}
+            value={
+              typeof block.content === 'string'
+                ? block.content.replace(/<[^>]*>/g, '')
+                : ''
+            }
+            onChange={e => updateBlock(block.id, e.target.value)}
             className="w-full min-h-[100px] resize-none border-0 p-0 focus:ring-0"
             placeholder="Enter your text content..."
           />
@@ -235,8 +259,12 @@ const UnifiedAIBlockEditor = ({
       case 'heading':
         return (
           <Input
-            value={typeof block.content === 'string' ? block.content.replace(/<[^>]*>/g, '') : ''}
-            onChange={(e) => updateBlock(block.id, e.target.value)}
+            value={
+              typeof block.content === 'string'
+                ? block.content.replace(/<[^>]*>/g, '')
+                : ''
+            }
+            onChange={e => updateBlock(block.id, e.target.value)}
             className="text-xl font-semibold border-0 p-0 focus:ring-0"
             placeholder="Enter heading..."
           />
@@ -245,7 +273,7 @@ const UnifiedAIBlockEditor = ({
         return (
           <Textarea
             value={typeof block.content === 'string' ? block.content : ''}
-            onChange={(e) => updateBlock(block.id, e.target.value)}
+            onChange={e => updateBlock(block.id, e.target.value)}
             className="w-full min-h-[80px] resize-none border-0 p-0 focus:ring-0"
             placeholder="• List item 1&#10;• List item 2"
           />
@@ -263,22 +291,26 @@ const UnifiedAIBlockEditor = ({
   const updateBlock = (blockId, content) => {
     setContentBlocks(prev => ({
       ...prev,
-      [editingLessonId]: prev[editingLessonId].map(block => 
-        block.id === blockId ? { ...block, content, updatedAt: new Date().toISOString() } : block
-      )
+      [editingLessonId]: prev[editingLessonId].map(block =>
+        block.id === blockId
+          ? { ...block, content, updatedAt: new Date().toISOString() }
+          : block
+      ),
     }));
   };
 
   // Enhance existing block with AI
-  const enhanceBlockWithAI = async (blockId) => {
+  const enhanceBlockWithAI = async blockId => {
     const block = currentBlocks.find(b => b.id === blockId);
     if (!block) return;
 
     setIsGenerating(true);
     try {
       const prompt = `Enhance this ${block.type} content: "${block.content}". Make it more engaging and educational.`;
-      const result = await enhancedAIService.generateText(prompt, { maxTokens: 200 });
-      
+      const result = await enhancedAIService.generateText(prompt, {
+        maxTokens: 200,
+      });
+
       if (result.success) {
         updateBlock(blockId, formatContentByType(block.type, result.content));
       }
@@ -290,28 +322,30 @@ const UnifiedAIBlockEditor = ({
   };
 
   // Duplicate block
-  const duplicateBlock = (blockId) => {
+  const duplicateBlock = blockId => {
     const block = currentBlocks.find(b => b.id === blockId);
     if (block) {
       const newBlock = {
         ...block,
         id: `block-${Date.now()}-${Math.random()}`,
         order: currentBlocks.length + 1,
-        settings: { ...block.settings, duplicated: true }
+        settings: { ...block.settings, duplicated: true },
       };
-      
+
       setContentBlocks(prev => ({
         ...prev,
-        [editingLessonId]: [...prev[editingLessonId], newBlock]
+        [editingLessonId]: [...prev[editingLessonId], newBlock],
       }));
     }
   };
 
   // Delete block
-  const deleteBlock = (blockId) => {
+  const deleteBlock = blockId => {
     setContentBlocks(prev => ({
       ...prev,
-      [editingLessonId]: prev[editingLessonId].filter(block => block.id !== blockId)
+      [editingLessonId]: prev[editingLessonId].filter(
+        block => block.id !== blockId
+      ),
     }));
   };
 
@@ -346,7 +380,7 @@ const UnifiedAIBlockEditor = ({
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
-                variant={showWorkflow ? "default" : "outline"}
+                variant={showWorkflow ? 'default' : 'outline'}
                 onClick={() => setShowWorkflow(!showWorkflow)}
                 className="text-xs"
               >
@@ -367,27 +401,27 @@ const UnifiedAIBlockEditor = ({
               <AIWorkflowManager
                 lessonTitle={currentLesson.title}
                 contentBlocks={currentBlocks}
-                onBlockGenerated={(block) => {
+                onBlockGenerated={block => {
                   const newBlock = {
                     ...block,
                     order: currentBlocks.length + 1,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date().toISOString(),
                   };
-                  
+
                   setContentBlocks(prev => ({
                     ...prev,
-                    [editingLessonId]: [...currentBlocks, newBlock]
+                    [editingLessonId]: [...currentBlocks, newBlock],
                   }));
-                  
+
                   onContentSync({
                     type: 'workflow_block_add',
                     lessonId: editingLessonId,
                     blockType: block.type,
                     blockId: block.id,
-                    workflowStep: block.metadata?.workflowStep
+                    workflowStep: block.metadata?.workflowStep,
                   });
                 }}
-                onWorkflowComplete={(generatedContent) => {
+                onWorkflowComplete={generatedContent => {
                   console.log('🎯 AI Workflow completed:', generatedContent);
                   setWorkflowMode(false);
                 }}
@@ -399,11 +433,13 @@ const UnifiedAIBlockEditor = ({
           {/* AI Content Generation */}
           <div className="space-y-4">
             <div>
-              <Label className="text-sm font-medium text-gray-700">Generate Content</Label>
+              <Label className="text-sm font-medium text-gray-700">
+                Generate Content
+              </Label>
               <div className="mt-2 space-y-2">
                 <Input
                   value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onChange={e => setAiPrompt(e.target.value)}
                   placeholder="Describe what you want to create..."
                   className="text-sm"
                 />
@@ -417,7 +453,11 @@ const UnifiedAIBlockEditor = ({
                       disabled={isGenerating}
                       className="text-xs"
                     >
-                      {isGenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : getBlockIcon(type)}
+                      {isGenerating ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        getBlockIcon(type)
+                      )}
                       {type}
                     </Button>
                   ))}
@@ -434,17 +474,29 @@ const UnifiedAIBlockEditor = ({
                 </Label>
                 <div className="mt-2 space-y-2">
                   {smartSuggestions.map((suggestion, index) => (
-                    <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <Card
+                      key={index}
+                      className="cursor-pointer hover:shadow-md transition-shadow"
+                    >
                       <CardContent className="p-3">
                         <div className="flex items-start gap-2">
                           {getBlockIcon(suggestion.type)}
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium">{suggestion.title}</h4>
-                            <p className="text-xs text-gray-500">{suggestion.description}</p>
+                            <h4 className="text-sm font-medium">
+                              {suggestion.title}
+                            </h4>
+                            <p className="text-xs text-gray-500">
+                              {suggestion.description}
+                            </p>
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => generateAIContent(suggestion.type, suggestion.content)}
+                              onClick={() =>
+                                generateAIContent(
+                                  suggestion.type,
+                                  suggestion.content
+                                )
+                              }
                               className="mt-1 h-6 text-xs"
                             >
                               <Plus className="w-3 h-3 mr-1" />
@@ -461,12 +513,16 @@ const UnifiedAIBlockEditor = ({
 
             {/* Quick Actions */}
             <div>
-              <Label className="text-sm font-medium text-gray-700">Quick Actions</Label>
+              <Label className="text-sm font-medium text-gray-700">
+                Quick Actions
+              </Label>
               <div className="mt-2 space-y-1">
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => generateAIContent('text', 'Create an engaging introduction')}
+                  onClick={() =>
+                    generateAIContent('text', 'Create an engaging introduction')
+                  }
                   className="w-full justify-start text-xs"
                 >
                   <Zap className="w-3 h-3 mr-2" />
@@ -475,7 +531,9 @@ const UnifiedAIBlockEditor = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => generateAIContent('list', 'Create key learning objectives')}
+                  onClick={() =>
+                    generateAIContent('list', 'Create key learning objectives')
+                  }
                   className="w-full justify-start text-xs"
                 >
                   <Target className="w-3 h-3 mr-2" />
@@ -484,7 +542,9 @@ const UnifiedAIBlockEditor = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => generateAIContent('quote', 'Add an important note or tip')}
+                  onClick={() =>
+                    generateAIContent('quote', 'Add an important note or tip')
+                  }
                   className="w-full justify-start text-xs"
                 >
                   <Quote className="w-3 h-3 mr-2" />
@@ -529,12 +589,16 @@ const UnifiedAIBlockEditor = ({
               <div className="text-gray-400 mb-4">
                 <Plus className="w-12 h-12 mx-auto mb-2" />
                 <p>No content blocks yet</p>
-                <p className="text-sm">Use AI Assistant to generate content or add blocks manually</p>
+                <p className="text-sm">
+                  Use AI Assistant to generate content or add blocks manually
+                </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              {currentBlocks.map((block, index) => renderEnhancedBlock(block, index))}
+              {currentBlocks.map((block, index) =>
+                renderEnhancedBlock(block, index)
+              )}
             </div>
           )}
         </div>
@@ -544,7 +608,7 @@ const UnifiedAIBlockEditor = ({
 };
 
 // Helper function to get block icons
-const getBlockIcon = (type) => {
+const getBlockIcon = type => {
   const iconMap = {
     text: <Type className="w-3 h-3" />,
     heading: <Type className="w-3 h-3" />,
@@ -552,7 +616,7 @@ const getBlockIcon = (type) => {
     quote: <Quote className="w-3 h-3" />,
     image: <ImageIcon className="w-3 h-3" />,
     video: <Video className="w-3 h-3" />,
-    table: <Table className="w-3 h-3" />
+    table: <Table className="w-3 h-3" />,
   };
   return iconMap[type] || <Type className="w-3 h-3" />;
 };

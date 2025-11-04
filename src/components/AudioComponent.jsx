@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { uploadAudio } from '@/services/audioUploadService';
 import { toast } from 'react-hot-toast';
@@ -9,7 +15,7 @@ const AudioComponent = ({
   showAudioDialog,
   setShowAudioDialog,
   onAudioUpdate,
-  editingAudioBlock = null
+  editingAudioBlock = null,
 }) => {
   const [audioTitle, setAudioTitle] = useState('');
   const [audioDescription, setAudioDescription] = useState('');
@@ -21,24 +27,7 @@ const AudioComponent = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioRef, setAudioRef] = useState(null);
 
-  // Reset form when dialog opens/closes
-  useEffect(() => {
-    if (showAudioDialog) {
-      if (editingAudioBlock) {
-        // Load existing audio data for editing
-        const content = editingAudioBlock.content ? JSON.parse(editingAudioBlock.content) : {};
-        setAudioTitle(content.title || '');
-        setAudioDescription(content.description || '');
-        setAudioUploadMethod(content.uploadMethod || 'file');
-        setAudioUrl(content.url || '');
-        setAudioPreview(content.url || '');
-      } else {
-        // Reset for new audio
-        resetForm();
-      }
-    }
-  }, [showAudioDialog, editingAudioBlock]);
-
+  // Helper function to reset form
   const resetForm = () => {
     setAudioTitle('');
     setAudioDescription('');
@@ -54,16 +43,120 @@ const AudioComponent = ({
     }
   };
 
+  // Helper function to extract audio data from HTML
+  const extractAudioFromHTML = htmlContent => {
+    try {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+
+      const titleElement = tempDiv.querySelector('h3');
+      const title = titleElement ? titleElement.textContent.trim() : '';
+
+      const descElement = tempDiv.querySelector('p.text-gray-600');
+      const description = descElement ? descElement.textContent.trim() : '';
+
+      const audioElement = tempDiv.querySelector('audio source');
+      const url = audioElement ? audioElement.getAttribute('src') : '';
+
+      console.log('Extracted from HTML:', { title, description, url });
+
+      return {
+        title,
+        description,
+        url,
+        uploadMethod: url ? 'file' : 'file', // Default to file method
+      };
+    } catch (error) {
+      console.error('Error extracting audio from HTML:', error);
+      return {};
+    }
+  };
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (showAudioDialog && editingAudioBlock) {
+      console.log('=== Audio Edit Dialog Opened ===');
+      console.log('Editing block:', editingAudioBlock);
+
+      // Load existing audio data for editing
+      try {
+        let content = {};
+
+        // Try to parse JSON content first
+        if (editingAudioBlock.content) {
+          try {
+            content = JSON.parse(editingAudioBlock.content);
+            console.log('✅ Parsed audio content from JSON:', content);
+          } catch (e) {
+            console.log(
+              '❌ Could not parse audio content as JSON, trying HTML extraction'
+            );
+          }
+        }
+
+        // If no JSON content or incomplete data, try to extract from HTML
+        if ((!content.title || !content.url) && editingAudioBlock.html_css) {
+          console.log('Extracting audio data from HTML...');
+          const htmlExtracted = extractAudioFromHTML(
+            editingAudioBlock.html_css
+          );
+          console.log('HTML extracted data:', htmlExtracted);
+
+          // Merge with any existing content
+          content = {
+            ...htmlExtracted,
+            ...content, // JSON content takes priority
+          };
+        }
+
+        // Also check block properties directly as fallback
+        if (!content.title && editingAudioBlock.title) {
+          content.title = editingAudioBlock.title;
+        }
+        if (!content.description && editingAudioBlock.description) {
+          content.description = editingAudioBlock.description;
+        }
+
+        console.log('✅ Final audio data for editing:', content);
+        setAudioTitle(content.title || '');
+        setAudioDescription(content.description || '');
+        setAudioUploadMethod(content.uploadMethod || 'file');
+        setAudioUrl(content.url || '');
+        setAudioPreview(content.url || '');
+      } catch (error) {
+        console.error('❌ Error loading audio data:', error);
+        // Don't reset on error, just use empty values
+        setAudioTitle('');
+        setAudioDescription('');
+        setAudioUrl('');
+        setAudioPreview('');
+      }
+    } else if (showAudioDialog && !editingAudioBlock) {
+      // Reset for new audio
+      console.log('Opening new audio dialog');
+      resetForm();
+    } else if (!showAudioDialog) {
+      // Dialog closed, reset form
+      resetForm();
+    }
+  }, [showAudioDialog, editingAudioBlock]);
+
   const handleAudioDialogClose = () => {
     setShowAudioDialog(false);
     resetForm();
   };
 
-  const handleAudioInputChange = (e) => {
+  const handleAudioInputChange = e => {
     const file = e.target.files[0];
     if (file) {
       // Validate audio file
-      const validAudioTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/m4a'];
+      const validAudioTypes = [
+        'audio/mpeg',
+        'audio/wav',
+        'audio/ogg',
+        'audio/mp3',
+        'audio/m4a',
+      ];
       if (!validAudioTypes.includes(file.type)) {
         toast.error('Please upload a valid audio file (MP3, WAV, OGG, M4A)');
         return;
@@ -76,14 +169,14 @@ const AudioComponent = ({
       }
 
       setAudioFile(file);
-      
+
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setAudioPreview(previewUrl);
     }
   };
 
-  const handleUrlChange = (e) => {
+  const handleUrlChange = e => {
     const url = e.target.value;
     setAudioUrl(url);
     setAudioPreview(url);
@@ -101,7 +194,7 @@ const AudioComponent = ({
     }
   };
 
-  const handleAudioLoadedData = (audio) => {
+  const handleAudioLoadedData = audio => {
     setAudioRef(audio);
   };
 
@@ -132,7 +225,7 @@ const AudioComponent = ({
     if (!validateForm()) return;
 
     setIsUploading(true);
-    
+
     try {
       let finalAudioUrl = audioPreview;
       let uploadedData = null;
@@ -143,23 +236,28 @@ const AudioComponent = ({
           const uploadResult = await uploadAudio(audioFile, {
             folder: 'lesson-audio',
             public: true,
-            type: 'audio'
+            type: 'audio',
           });
-          
+
           if (uploadResult.success) {
             finalAudioUrl = uploadResult.audioUrl;
             uploadedData = {
               fileName: uploadResult.fileName,
               fileSize: uploadResult.fileSize,
-              uploadedAt: new Date().toISOString()
+              uploadedAt: new Date().toISOString(),
             };
             toast.success('Audio uploaded successfully!');
           } else {
             throw new Error('Upload failed');
           }
         } catch (uploadError) {
-          console.warn('Cloud upload failed, using local preview:', uploadError);
-          toast.warning('Using local preview - audio may not persist after page refresh');
+          console.warn(
+            'Cloud upload failed, using local preview:',
+            uploadError
+          );
+          toast.warning(
+            'Using local preview - audio may not persist after page refresh'
+          );
           // Continue with local preview URL
         }
       }
@@ -171,7 +269,7 @@ const AudioComponent = ({
         uploadMethod: audioUploadMethod,
         url: finalAudioUrl,
         uploadedData: uploadedData,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       // Generate HTML for the audio block
@@ -185,7 +283,7 @@ const AudioComponent = ({
         title: audioTitle.trim(),
         content: JSON.stringify(audioContent),
         html_css: audioHtml,
-        order: editingAudioBlock?.order || Date.now()
+        order: editingAudioBlock?.order || Date.now(),
       };
 
       // Call the callback to update the lesson
@@ -193,8 +291,11 @@ const AudioComponent = ({
 
       // Close dialog and reset form
       handleAudioDialogClose();
-      toast.success(editingAudioBlock ? 'Audio updated successfully!' : 'Audio added successfully!');
-      
+      toast.success(
+        editingAudioBlock
+          ? 'Audio updated successfully!'
+          : 'Audio added successfully!'
+      );
     } catch (error) {
       console.error('Error saving audio:', error);
       toast.error('Failed to save audio. Please try again.');
@@ -203,41 +304,21 @@ const AudioComponent = ({
     }
   };
 
-  const generateAudioHTML = (content) => {
+  const generateAudioHTML = content => {
     return `
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
-        <div class="flex items-start space-x-4">
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M9 12a1 1 0 01-1-1V9a1 1 0 011-1h1a1 1 0 011 1v2a1 1 0 01-1 1H9z"></path>
-              </svg>
-            </div>
+        <div class="space-y-4">
+          <div class="mb-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">${content.title}</h3>
+            ${content.description ? `<p class="text-sm text-gray-600">${content.description}</p>` : ''}
           </div>
-          <div class="flex-1 min-w-0">
-            <div class="mb-3">
-              <h3 class="text-lg font-semibold text-gray-900 mb-1">${content.title}</h3>
-              ${content.description ? `<p class="text-sm text-gray-600">${content.description}</p>` : ''}
-            </div>
-            <div class="bg-gray-50 rounded-lg p-4">
-              <audio controls class="w-full" preload="metadata">
-                <source src="${content.url}" type="audio/mpeg">
-                <source src="${content.url}" type="audio/wav">
-                <source src="${content.url}" type="audio/ogg">
-                Your browser does not support the audio element.
-              </audio>
-              ${content.uploadedData ? `
-                <div class="mt-2 text-xs text-gray-500">
-                  <span class="inline-flex items-center">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    ${content.uploadedData.fileName}
-                  </span>
-                  <span class="ml-2">${(content.uploadedData.fileSize / (1024 * 1024)).toFixed(2)} MB</span>
-                </div>
-              ` : ''}
-            </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <audio controls class="w-full" preload="metadata">
+              <source src="${content.url}" type="audio/mpeg">
+              <source src="${content.url}" type="audio/wav">
+              <source src="${content.url}" type="audio/ogg">
+              Your browser does not support the audio element.
+            </audio>
           </div>
         </div>
       </div>
@@ -252,9 +333,11 @@ const AudioComponent = ({
             <Volume2 className="h-5 w-5 text-purple-600" />
             <span>{editingAudioBlock ? 'Edit Audio' : 'Add Audio'}</span>
           </DialogTitle>
-          <p className="text-sm text-gray-500">Upload an audio file or provide an audio URL</p>
+          <p className="text-sm text-gray-500">
+            Upload an audio file or provide an audio URL
+          </p>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {/* Audio Title */}
           <div>
@@ -264,7 +347,7 @@ const AudioComponent = ({
             <input
               type="text"
               value={audioTitle}
-              onChange={(e) => setAudioTitle(e.target.value)}
+              onChange={e => setAudioTitle(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Enter audio title"
               required
@@ -278,7 +361,7 @@ const AudioComponent = ({
             </label>
             <textarea
               value={audioDescription}
-              onChange={(e) => setAudioDescription(e.target.value)}
+              onChange={e => setAudioDescription(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Enter audio description"
@@ -297,7 +380,7 @@ const AudioComponent = ({
                   name="uploadMethod"
                   value="file"
                   checked={audioUploadMethod === 'file'}
-                  onChange={(e) => setAudioUploadMethod(e.target.value)}
+                  onChange={e => setAudioUploadMethod(e.target.value)}
                   className="mr-2 text-purple-600 focus:ring-purple-500"
                 />
                 <Upload className="h-4 w-4 mr-1" />
@@ -309,7 +392,7 @@ const AudioComponent = ({
                   name="uploadMethod"
                   value="url"
                   checked={audioUploadMethod === 'url'}
-                  onChange={(e) => setAudioUploadMethod(e.target.value)}
+                  onChange={e => setAudioUploadMethod(e.target.value)}
                   className="mr-2 text-purple-600 focus:ring-purple-500"
                 />
                 <Link2 className="h-4 w-4 mr-1" />
@@ -349,15 +432,18 @@ const AudioComponent = ({
                   </p>
                 </div>
               </div>
-              
+
               {/* Audio Preview */}
               {audioPreview && audioUploadMethod === 'file' && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-gray-700">Preview:</p>
+                    <p className="text-sm font-medium text-gray-700">
+                      Preview:
+                    </p>
                     {audioFile && (
                       <span className="text-xs text-gray-500">
-                        {audioFile.name} ({(audioFile.size / (1024 * 1024)).toFixed(2)} MB)
+                        {audioFile.name} (
+                        {(audioFile.size / (1024 * 1024)).toFixed(2)} MB)
                       </span>
                     )}
                   </div>
@@ -365,7 +451,7 @@ const AudioComponent = ({
                     src={audioPreview}
                     controls
                     className="w-full"
-                    onLoadedData={(e) => handleAudioLoadedData(e.target)}
+                    onLoadedData={e => handleAudioLoadedData(e.target)}
                     onEnded={handleAudioEnded}
                   />
                 </div>
@@ -387,16 +473,18 @@ const AudioComponent = ({
                 placeholder="https://example.com/audio.mp3"
                 required
               />
-              
+
               {/* URL Audio Preview */}
               {audioPreview && audioUploadMethod === 'url' && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Preview:
+                  </p>
                   <audio
                     src={audioPreview}
                     controls
                     className="w-full"
-                    onLoadedData={(e) => handleAudioLoadedData(e.target)}
+                    onLoadedData={e => handleAudioLoadedData(e.target)}
                     onEnded={handleAudioEnded}
                   />
                 </div>
