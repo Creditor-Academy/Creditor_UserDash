@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { uploadVideo as uploadVideoResource } from '@/services/videoUploadService';
 import { toast } from 'react-hot-toast';
@@ -9,7 +16,7 @@ const VideoComponent = ({
   showVideoDialog,
   setShowVideoDialog,
   onVideoUpdate,
-  editingVideoBlock = null
+  editingVideoBlock = null,
 }) => {
   const [videoTitle, setVideoTitle] = useState('');
   const [videoDescription, setVideoDescription] = useState('');
@@ -26,10 +33,16 @@ const VideoComponent = ({
     if (showVideoDialog) {
       if (editingVideoBlock) {
         // Load existing video data for editing
-        const content = editingVideoBlock.content ? JSON.parse(editingVideoBlock.content) : {};
+        const content = editingVideoBlock.content
+          ? JSON.parse(editingVideoBlock.content)
+          : {};
         setVideoTitle(content.title || editingVideoBlock.videoTitle || '');
-        setVideoDescription(content.description || editingVideoBlock.videoDescription || '');
-        setVideoUploadMethod(content.uploadMethod || editingVideoBlock.uploadMethod || 'file');
+        setVideoDescription(
+          content.description || editingVideoBlock.videoDescription || ''
+        );
+        setVideoUploadMethod(
+          content.uploadMethod || editingVideoBlock.uploadMethod || 'file'
+        );
         setVideoUrl(content.url || editingVideoBlock.videoUrl || '');
         setVideoPreview(content.url || editingVideoBlock.videoUrl || '');
       } else {
@@ -59,13 +72,21 @@ const VideoComponent = ({
     resetForm();
   };
 
-  const handleVideoInputChange = (e) => {
+  const handleVideoInputChange = e => {
     const file = e.target.files[0];
     if (file) {
       // Validate video file
-      const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov'];
+      const validVideoTypes = [
+        'video/mp4',
+        'video/webm',
+        'video/ogg',
+        'video/avi',
+        'video/mov',
+      ];
       if (!validVideoTypes.includes(file.type)) {
-        toast.error('Please upload a valid video file (MP4, WebM, OGG, AVI, MOV)');
+        toast.error(
+          'Please upload a valid video file (MP4, WebM, OGG, AVI, MOV)'
+        );
         return;
       }
 
@@ -76,17 +97,17 @@ const VideoComponent = ({
       }
 
       setVideoFile(file);
-      
+
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setVideoPreview(previewUrl);
     }
   };
 
-  const handleUrlChange = (e) => {
+  const handleUrlChange = e => {
     const url = e.target.value;
     setVideoUrl(url);
-    
+
     // Check if it's a YouTube URL
     if (isYouTubeUrl(url)) {
       // For YouTube URLs, we'll use the embed URL for preview
@@ -95,7 +116,7 @@ const VideoComponent = ({
     } else {
       setVideoPreview(url);
     }
-    
+
     // Validate URL format in real-time
     if (url.trim()) {
       try {
@@ -108,18 +129,18 @@ const VideoComponent = ({
   };
 
   // Helper function to check if URL is a YouTube URL
-  const isYouTubeUrl = (url) => {
+  const isYouTubeUrl = url => {
     if (!url) return false;
     const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
     return youtubeRegex.test(url);
   };
 
   // Helper function to convert YouTube URL to embed URL
-  const getYouTubeEmbedUrl = (url) => {
+  const getYouTubeEmbedUrl = url => {
     if (!url) return '';
-    
+
     let videoId = '';
-    
+
     // Extract video ID from different YouTube URL formats
     if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1]?.split('?')[0];
@@ -128,11 +149,11 @@ const VideoComponent = ({
     } else if (url.includes('youtube.com/embed/')) {
       videoId = url.split('embed/')[1]?.split('?')[0];
     }
-    
+
     if (videoId) {
       return `https://www.youtube.com/embed/${videoId}`;
     }
-    
+
     return url; // Return original URL if we can't extract video ID
   };
 
@@ -148,7 +169,7 @@ const VideoComponent = ({
     }
   };
 
-  const handleVideoLoadedData = (video) => {
+  const handleVideoLoadedData = video => {
     setVideoRef(video);
   };
 
@@ -172,26 +193,39 @@ const VideoComponent = ({
         toast.error('Please enter a video URL');
         return false;
       }
-      
+
       // Validate URL format
       try {
         new URL(videoUrl.trim());
-        
+
         // Additional validation for YouTube URLs
         if (isYouTubeUrl(videoUrl.trim())) {
           // YouTube URLs are valid
         } else {
           // For non-YouTube URLs, check if it looks like a video file
           const url = videoUrl.trim().toLowerCase();
-          const videoExtensions = ['.mp4', '.webm', '.ogg', '.avi', '.mov', '.mkv'];
-          const hasVideoExtension = videoExtensions.some(ext => url.includes(ext));
-          
+          const videoExtensions = [
+            '.mp4',
+            '.webm',
+            '.ogg',
+            '.avi',
+            '.mov',
+            '.mkv',
+          ];
+          const hasVideoExtension = videoExtensions.some(ext =>
+            url.includes(ext)
+          );
+
           if (!hasVideoExtension && !url.includes('video/')) {
-            toast.warning('URL doesn\'t appear to be a direct video file. YouTube URLs are supported.');
+            toast.warning(
+              "URL doesn't appear to be a direct video file. YouTube URLs are supported."
+            );
           }
         }
       } catch (e) {
-        toast.error('Please enter a valid URL (e.g., https://example.com/video.mp4 or YouTube URL)');
+        toast.error(
+          'Please enter a valid URL (e.g., https://example.com/video.mp4 or YouTube URL)'
+        );
         return false;
       }
     }
@@ -200,15 +234,20 @@ const VideoComponent = ({
   };
 
   // Function to remove emojis from text
-  const removeEmojis = (text) => {
-    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+  const removeEmojis = text => {
+    return text
+      .replace(
+        /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
+        ''
+      )
+      .trim();
   };
 
   const handleSaveVideo = async () => {
     if (!validateForm()) return;
 
     setIsUploading(true);
-    
+
     try {
       let finalVideoUrl;
       let uploadedData = null;
@@ -218,10 +257,18 @@ const VideoComponent = ({
         if (isYouTubeUrl(videoUrl.trim())) {
           // For YouTube URLs, store both the original URL and embed URL
           finalVideoUrl = getYouTubeEmbedUrl(videoUrl.trim());
-          console.log('YouTube URL method - original:', videoUrl.trim(), 'embed:', finalVideoUrl);
+          console.log(
+            'YouTube URL method - original:',
+            videoUrl.trim(),
+            'embed:',
+            finalVideoUrl
+          );
         } else {
           finalVideoUrl = videoUrl.trim();
-          console.log('Direct video URL method - finalVideoUrl:', finalVideoUrl);
+          console.log(
+            'Direct video URL method - finalVideoUrl:',
+            finalVideoUrl
+          );
         }
       } else {
         // Upload file if method is file and we have a new file
@@ -235,23 +282,28 @@ const VideoComponent = ({
           const uploadResult = await uploadVideoResource(videoFile, {
             folder: 'lesson-videos',
             public: true,
-            type: 'video'
+            type: 'video',
           });
-          
+
           if (uploadResult.success) {
             finalVideoUrl = uploadResult.videoUrl;
             uploadedData = {
               fileName: uploadResult.fileName,
               fileSize: uploadResult.fileSize,
-              uploadedAt: new Date().toISOString()
+              uploadedAt: new Date().toISOString(),
             };
             toast.success('Video uploaded successfully!');
           } else {
             throw new Error('Upload failed');
           }
         } catch (uploadError) {
-          console.warn('Cloud upload failed, using local preview:', uploadError);
-          toast.warning('Using local preview - video may not persist after page refresh');
+          console.warn(
+            'Cloud upload failed, using local preview:',
+            uploadError
+          );
+          toast.warning(
+            'Using local preview - video may not persist after page refresh'
+          );
           // Continue with local preview URL
         }
       }
@@ -264,9 +316,10 @@ const VideoComponent = ({
         uploadMethod: videoUploadMethod,
         url: finalVideoUrl,
         originalUrl: videoUploadMethod === 'url' ? videoUrl.trim() : null,
-        isYouTube: videoUploadMethod === 'url' ? isYouTubeUrl(videoUrl.trim()) : false,
+        isYouTube:
+          videoUploadMethod === 'url' ? isYouTubeUrl(videoUrl.trim()) : false,
         uploadedData: uploadedData,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       // Generate HTML for the video block
@@ -285,9 +338,9 @@ const VideoComponent = ({
         originalUrl: videoUploadMethod === 'url' ? videoUrl : null,
         content: JSON.stringify(videoContent),
         html_css: videoHtml,
-        order: editingVideoBlock?.order || Date.now()
+        order: editingVideoBlock?.order || Date.now(),
       };
-      
+
       console.log('Created video block:', videoBlock);
 
       // Call the callback to update the lesson
@@ -295,8 +348,11 @@ const VideoComponent = ({
 
       // Close dialog and reset form
       handleVideoDialogClose();
-      toast.success(editingVideoBlock ? 'Video updated successfully!' : 'Video added successfully!');
-      
+      toast.success(
+        editingVideoBlock
+          ? 'Video updated successfully!'
+          : 'Video added successfully!'
+      );
     } catch (error) {
       console.error('Error saving video:', error);
       toast.error('Failed to save video. Please try again.');
@@ -305,7 +361,7 @@ const VideoComponent = ({
     }
   };
 
-  const generateVideoHTML = (content) => {
+  const generateVideoHTML = content => {
     return `
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
         <div class="space-y-4">
@@ -316,7 +372,9 @@ const VideoComponent = ({
             </div>
           </div>
           <div class="bg-gray-50 rounded-lg p-4">
-            ${content.isYouTube ? `
+            ${
+              content.isYouTube
+                ? `
               <iframe 
                 src="${content.url}" 
                 title="${content.title}"
@@ -326,14 +384,16 @@ const VideoComponent = ({
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                 allowfullscreen>
               </iframe>
-            ` : `
+            `
+                : `
               <video controls class="w-full max-w-full" style="max-height: 400px; border-radius: 8px;" preload="metadata">
                 <source src="${content.url}" type="video/mp4">
                 <source src="${content.url}" type="video/webm">
                 <source src="${content.url}" type="video/ogg">
                 Your browser does not support the video element.
               </video>
-            `}
+            `
+            }
           </div>
         </div>
       </div>
@@ -348,9 +408,13 @@ const VideoComponent = ({
             <Video className="h-5 w-5 text-blue-600" />
             <span>{editingVideoBlock ? 'Edit Video' : 'Add Video'}</span>
           </DialogTitle>
-          <p className="text-sm text-gray-500">Upload a video file or provide a video URL</p>
+          <DialogDescription>
+            {editingVideoBlock
+              ? 'Update the video details and settings.'
+              : 'Upload a video file or provide a video URL to add it to your lesson.'}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 py-4">
           {/* Video Title */}
           <div>
@@ -360,7 +424,7 @@ const VideoComponent = ({
             <input
               type="text"
               value={videoTitle}
-              onChange={(e) => setVideoTitle(e.target.value)}
+              onChange={e => setVideoTitle(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter video title"
               required
@@ -374,7 +438,7 @@ const VideoComponent = ({
             </label>
             <textarea
               value={videoDescription}
-              onChange={(e) => setVideoDescription(e.target.value)}
+              onChange={e => setVideoDescription(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter video description"
@@ -393,7 +457,7 @@ const VideoComponent = ({
                   name="uploadMethod"
                   value="file"
                   checked={videoUploadMethod === 'file'}
-                  onChange={(e) => setVideoUploadMethod(e.target.value)}
+                  onChange={e => setVideoUploadMethod(e.target.value)}
                   className="mr-2 text-blue-600 focus:ring-blue-500"
                 />
                 Upload File
@@ -404,7 +468,7 @@ const VideoComponent = ({
                   name="uploadMethod"
                   value="url"
                   checked={videoUploadMethod === 'url'}
-                  onChange={(e) => setVideoUploadMethod(e.target.value)}
+                  onChange={e => setVideoUploadMethod(e.target.value)}
                   className="mr-2 text-blue-600 focus:ring-blue-500"
                 />
                 Video URL
@@ -445,7 +509,9 @@ const VideoComponent = ({
               </div>
               {videoPreview && videoUploadMethod === 'file' && (
                 <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Preview:
+                  </p>
                   <div className="relative">
                     <video
                       ref={handleVideoLoadedData}
@@ -463,7 +529,11 @@ const VideoComponent = ({
                         onClick={togglePlayPause}
                         className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white"
                       >
-                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        {isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -494,7 +564,9 @@ const VideoComponent = ({
               </p>
               {videoUrl && videoUploadMethod === 'url' && (
                 <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-2">
+                    Preview:
+                  </p>
                   {isYouTubeUrl(videoUrl) ? (
                     <iframe
                       src={videoPreview}
@@ -511,7 +583,11 @@ const VideoComponent = ({
                       controls
                       className="w-full rounded-lg border border-gray-200"
                       style={{ maxHeight: '300px' }}
-                      onError={() => console.log('Video URL may be invalid or not accessible')}
+                      onError={() =>
+                        console.log(
+                          'Video URL may be invalid or not accessible'
+                        )
+                      }
                       preload="metadata"
                     />
                   )}
@@ -520,14 +596,21 @@ const VideoComponent = ({
             </div>
           )}
         </div>
-        
+
         <DialogFooter>
           <Button variant="outline" onClick={handleVideoDialogClose}>
             Cancel
           </Button>
           <Button
             onClick={handleSaveVideo}
-            disabled={!videoTitle || (videoUploadMethod === 'file' && !videoFile && !editingVideoBlock) || (videoUploadMethod === 'url' && !videoUrl) || isUploading}
+            disabled={
+              !videoTitle ||
+              (videoUploadMethod === 'file' &&
+                !videoFile &&
+                !editingVideoBlock) ||
+              (videoUploadMethod === 'url' && !videoUrl) ||
+              isUploading
+            }
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isUploading ? (
@@ -535,8 +618,10 @@ const VideoComponent = ({
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 {videoUploadMethod === 'file' ? 'Uploading...' : 'Saving...'}
               </>
+            ) : editingVideoBlock ? (
+              'Update Video'
             ) : (
-              editingVideoBlock ? 'Update Video' : 'Add Video'
+              'Add Video'
             )}
           </Button>
         </DialogFooter>

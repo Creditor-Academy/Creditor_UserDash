@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -172,6 +173,11 @@ const PDFComponent = ({
             <DialogTitle>
               {editingPdfBlock ? 'Edit PDF' : 'Add PDF'}
             </DialogTitle>
+            <DialogDescription>
+              {editingPdfBlock
+                ? 'Update the PDF document details and settings.'
+                : 'Upload a PDF document or provide a URL to add it to your lesson.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>

@@ -36,7 +36,7 @@ import {
   CheckCircle,
   X,
 } from 'lucide-react';
-import AIEnhancementPanel from '@/components/LessonBuilder/AIEnhancementPanel';
+import AIEnhancementPanel from '@/components/courses/AILessonContentGenerator';
 import { toast } from 'react-hot-toast';
 import QuoteComponent from '@/components/QuoteComponent';
 import TableComponent from '@/components/TableComponent';
@@ -127,6 +127,11 @@ function LessonBuilder() {
   // Inline block insertion state
   const [insertionPosition, setInsertionPosition] = useState(null);
   const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false); // Show insert block dialog
+
+  // Editor state for edit modal
+  const [editorContent, setEditorContent] = useState('');
+  const [editorHeading, setEditorHeading] = useState('');
+  const [editorSubheading, setEditorSubheading] = useState('');
 
   const contentBlockTypes = [
     {
@@ -2250,6 +2255,73 @@ function LessonBuilder() {
         setEditorContent(block.content || '');
       }
     }
+  };
+
+  const handleEditorSave = () => {
+    if (!currentBlock) return;
+
+    // Create updated content based on block type
+    let updatedContent = '';
+    let updatedHtmlContent = '';
+
+    if (currentBlock.type === 'text') {
+      if (currentBlock.textType === 'heading-paragraph') {
+        updatedContent = `${editorHeading}|||${editorContent}`;
+        updatedHtmlContent = `<h2>${editorHeading}</h2><div>${editorContent}</div>`;
+      } else if (currentBlock.textType === 'subheading-paragraph') {
+        updatedContent = `${editorSubheading}|||${editorContent}`;
+        updatedHtmlContent = `<h3>${editorSubheading}</h3><div>${editorContent}</div>`;
+      } else {
+        updatedContent = editorContent;
+        updatedHtmlContent = editorContent;
+      }
+    } else {
+      // For other block types (statement, quote, list)
+      updatedContent = editorContent;
+      updatedHtmlContent = editorContent;
+    }
+
+    // Update the content blocks
+    setContentBlocks(prev =>
+      prev.map(block =>
+        block.id === currentBlock.id
+          ? {
+              ...block,
+              content: updatedContent,
+              html_css: updatedHtmlContent,
+            }
+          : block
+      )
+    );
+
+    // Also update lessonContent if it exists
+    if (lessonContent?.data?.content) {
+      setLessonContent(prev => ({
+        ...prev,
+        data: {
+          ...prev.data,
+          content: prev.data.content.map(b =>
+            b.block_id === currentBlock.id
+              ? {
+                  ...b,
+                  content: updatedContent,
+                  html_css: updatedHtmlContent,
+                }
+              : b
+          ),
+        },
+      }));
+    }
+
+    // Close the modal and reset state
+    setEditModalOpen(false);
+    setCurrentBlock(null);
+    setEditorContent('');
+    setEditorHeading('');
+    setEditorSubheading('');
+
+    // Show success message
+    toast.success('Block updated successfully!');
   };
 
   const handleDragStart = (e, blockId) => {

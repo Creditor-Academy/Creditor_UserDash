@@ -6,7 +6,7 @@ import LessonHeader from '@/components/LessonBuilder/LessonHeader';
 import ContentLibrary from '@/components/LessonBuilder/ContentBlocks/ContentLibrary';
 import TextTypeSidebar from '@/components/LessonBuilder/Sidebars/TextTypeSidebar';
 import TextEditor from '@/components/LessonBuilder/ContentBlocks/TextBlocks/TextEditor';
-import AIEnhancementPanel from '@/components/LessonBuilder/AIEnhancementPanel';
+import AIEnhancementPanel from '@/components/courses/AILessonContentGenerator';
 
 // Import hooks and utilities
 import { useLessonBuilder } from './hooks/useLessonBuilder';
@@ -285,6 +285,8 @@ function LessonBuilder() {
       {/* AI Enhancement Panel */}
       <AIEnhancementPanel
         lessonData={lessonData}
+        moduleData={null} // TODO: Add module data from context/props
+        courseData={null} // TODO: Add course data from context/props
         onContentGenerated={handleAIContentGenerated}
         isOpen={showAIEnhancementPanel}
         onClose={() => setShowAIEnhancementPanel(false)}

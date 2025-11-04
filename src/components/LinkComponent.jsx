@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -131,6 +132,11 @@ const LinkComponent = ({
             <DialogTitle>
               {editingLinkBlock ? 'Edit Link' : 'Add Link'}
             </DialogTitle>
+            <DialogDescription>
+              {editingLinkBlock
+                ? 'Update the link details and settings.'
+                : 'Add a link to an external resource or website.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>

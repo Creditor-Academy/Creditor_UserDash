@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { Youtube, Loader2 } from 'lucide-react';
@@ -8,7 +15,7 @@ const YouTubeComponent = ({
   showYouTubeDialog,
   setShowYouTubeDialog,
   onYouTubeUpdate,
-  editingYouTubeBlock = null
+  editingYouTubeBlock = null,
 }) => {
   const [youTubeUrl, setYouTubeUrl] = useState('');
   const [youTubeTitle, setYouTubeTitle] = useState('');
@@ -20,7 +27,9 @@ const YouTubeComponent = ({
     if (showYouTubeDialog) {
       if (editingYouTubeBlock) {
         // Load existing YouTube data for editing
-        const content = editingYouTubeBlock.content ? JSON.parse(editingYouTubeBlock.content) : {};
+        const content = editingYouTubeBlock.content
+          ? JSON.parse(editingYouTubeBlock.content)
+          : {};
         setYouTubeTitle(content.title || '');
         setYouTubeDescription(content.description || '');
         setYouTubeUrl(content.url || '');
@@ -50,10 +59,11 @@ const YouTubeComponent = ({
     }
 
     // Validate YouTube URL
-    const getVideoId = (url) => {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const getVideoId = url => {
+      const regExp =
+        /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
       const match = url.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : null;
+      return match && match[2].length === 11 ? match[2] : null;
     };
 
     const videoId = getVideoId(youTubeUrl);
@@ -69,13 +79,14 @@ const YouTubeComponent = ({
     if (!validateForm()) return;
 
     setIsProcessing(true);
-    
+
     try {
       // Extract video ID from URL
-      const getVideoId = (url) => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const getVideoId = url => {
+        const regExp =
+          /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
         const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
+        return match && match[2].length === 11 ? match[2] : null;
       };
 
       const videoId = getVideoId(youTubeUrl);
@@ -91,7 +102,7 @@ const YouTubeComponent = ({
         url: youTubeUrl.trim(),
         videoId: videoId,
         embedUrl: `https://www.youtube.com/embed/${videoId}`,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       // Generate HTML for the YouTube block
@@ -105,7 +116,7 @@ const YouTubeComponent = ({
         title: youTubeContent.title,
         content: JSON.stringify(youTubeContent),
         html_css: youTubeHtml, // Provide HTML for preview section
-        order: editingYouTubeBlock?.order || Date.now()
+        order: editingYouTubeBlock?.order || Date.now(),
       };
 
       // Call the callback to update the lesson
@@ -113,8 +124,11 @@ const YouTubeComponent = ({
 
       // Close dialog and reset form
       handleYouTubeDialogClose();
-      toast.success(editingYouTubeBlock ? 'YouTube video updated successfully!' : 'YouTube video added successfully!');
-      
+      toast.success(
+        editingYouTubeBlock
+          ? 'YouTube video updated successfully!'
+          : 'YouTube video added successfully!'
+      );
     } catch (error) {
       console.error('Error saving YouTube video:', error);
       toast.error('Failed to save YouTube video. Please try again.');
@@ -123,7 +137,7 @@ const YouTubeComponent = ({
     }
   };
 
-  const generateYouTubeHTML = (content) => {
+  const generateYouTubeHTML = content => {
     return `
       <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
         <div class="space-y-4">
@@ -154,8 +168,13 @@ const YouTubeComponent = ({
             <Youtube className="h-5 w-5 text-red-600" />
             {editingYouTubeBlock ? 'Edit YouTube Video' : 'Add YouTube Video'}
           </DialogTitle>
+          <DialogDescription>
+            {editingYouTubeBlock
+              ? 'Update the YouTube video URL and settings.'
+              : 'Enter a YouTube URL to embed a video in your lesson.'}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -164,7 +183,7 @@ const YouTubeComponent = ({
             <input
               type="url"
               value={youTubeUrl}
-              onChange={(e) => setYouTubeUrl(e.target.value)}
+              onChange={e => setYouTubeUrl(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
               placeholder="https://www.youtube.com/watch?v=..."
               required
@@ -181,7 +200,7 @@ const YouTubeComponent = ({
             <input
               type="text"
               value={youTubeTitle}
-              onChange={(e) => setYouTubeTitle(e.target.value)}
+              onChange={e => setYouTubeTitle(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"
               placeholder="Video title"
             />
@@ -193,7 +212,7 @@ const YouTubeComponent = ({
             </label>
             <textarea
               value={youTubeDescription}
-              onChange={(e) => setYouTubeDescription(e.target.value)}
+              onChange={e => setYouTubeDescription(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm resize-none"
               rows={3}
               placeholder="Video description"
@@ -209,7 +228,9 @@ const YouTubeComponent = ({
                 <div className="relative pt-[56.25%] bg-black rounded-lg overflow-hidden">
                   <iframe
                     className="absolute top-0 left-0 w-full h-full"
-                    src={youTubeUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    src={youTubeUrl
+                      .replace('watch?v=', 'embed/')
+                      .replace('youtu.be/', 'youtube.com/embed/')}
                     title="YouTube video preview"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -225,7 +246,7 @@ const YouTubeComponent = ({
           <Button variant="outline" onClick={handleYouTubeDialogClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleSaveYouTube}
             disabled={isProcessing}
             className="bg-red-600 hover:bg-red-700 text-white"

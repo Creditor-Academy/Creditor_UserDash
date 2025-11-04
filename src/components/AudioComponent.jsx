@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -333,9 +334,11 @@ const AudioComponent = ({
             <Volume2 className="h-5 w-5 text-purple-600" />
             <span>{editingAudioBlock ? 'Edit Audio' : 'Add Audio'}</span>
           </DialogTitle>
-          <p className="text-sm text-gray-500">
-            Upload an audio file or provide an audio URL
-          </p>
+          <DialogDescription>
+            {editingAudioBlock
+              ? 'Update the audio details and settings.'
+              : 'Upload an audio file or provide an audio URL to add it to your lesson.'}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
