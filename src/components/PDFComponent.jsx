@@ -241,7 +241,7 @@ const PDFComponent = ({
                       </label>
                       <p className="pl-1">or drag and drop</p>
                     </div>
-                    <p className="text-xs text-gray-500">PDF up to 20MB</p>
+                    <p className="text-xs text-gray-500">PDF up to 200MB</p>
                   </div>
                 </div>
                 {pdfPreview && pdfUploadMethod === 'file' && (
