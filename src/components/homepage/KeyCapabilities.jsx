@@ -364,7 +364,7 @@ const KeyCapabilities = () => {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button 
-                onClick={() => navigate('/plans')}
+                onClick={() => navigate('/contact')}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 style={{ fontFamily: 'Arial, sans-serif' }}
               >
@@ -374,7 +374,7 @@ const KeyCapabilities = () => {
                 </svg>
               </button>
               
-              <button 
+              {/* <button 
                 onClick={() => navigate('/trial')}
                 className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-900 font-semibold py-3 px-8 rounded-lg transition-all duration-300 flex items-center gap-2"
                 style={{ fontFamily: 'Arial, sans-serif' }}
@@ -383,7 +383,7 @@ const KeyCapabilities = () => {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </button>
+              </button> */}
             </div>
             
             {/* <p className="text-gray-500 mt-6 text-sm" style={{ fontFamily: 'Arial, sans-serif' }}>

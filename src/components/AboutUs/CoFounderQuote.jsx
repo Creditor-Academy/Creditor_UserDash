@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PaulImage from '../../assets/Paul.jpeg';
-import Logo from '../../assets/logo.webp';
+import JavedImage from '../../assets/Javed.webp';
+import logo from '../../assets/logo.webp';
 
 const CoFounderQuote = () => {
   // Slides: Paul and placeholder for Mr. Javed Irshad
@@ -18,7 +19,7 @@ const CoFounderQuote = () => {
       name: 'Mr. Javed Irshad',
       role: 'Co-Founder',
       // Placeholder visual for now (replace with headshot when ready)
-      image: Logo,
+      image: JavedImage,
     },
   ];
 
@@ -69,7 +70,7 @@ const CoFounderQuote = () => {
         style={{ width: '700px', height: '700px' }}
       >
         <img 
-          src={Logo} 
+          src={logo} 
           alt="" 
           className="w-full h-full object-contain"
         />
@@ -119,7 +120,7 @@ const CoFounderQuote = () => {
                         <img
                           src={s.image}
                           alt={`${s.name} - ${s.role}`}
-                          className={`w-full h-full ${s.image === Logo ? 'object-contain p-6 bg-white/5 rounded-full' : 'object-cover'} rounded-full`}
+                          className={`w-full h-full ${s.image === logo ? 'object-contain p-6 bg-white/5 rounded-full' : 'object-cover'} rounded-full`}
                         />
                       </div>
                       <div className="absolute -top-4 -right-4 w-8 h-8 bg-blue-500 rounded-full opacity-20"></div>

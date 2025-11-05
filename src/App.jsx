@@ -122,6 +122,11 @@ import Emailautomation from './pages/Platform/Emailautomation';
 import Analyticspage from './pages/Platform/Analyticspage';
 import Brandpage from './pages/Platform/Brandpage';
 import Sellingpage from './pages/Platform/Sellingpage';
+import PrivacyAthena from './pages/PrivacyAthena';
+import TermAthena from './pages/TermAthena';
+import Cookies from './pages/Cookies';
+import Sitemap from './pages/Sitemap';
+
 function App() {
   return (
     <ThemeProvider>
@@ -169,6 +174,10 @@ function App() {
           <Route path="/platform/analytics" element={<Analyticspage/>}/>
           <Route path="/platform/brand" element={<Brandpage/>}/>
           <Route path="/platform/selling" element={<Sellingpage/>}/>
+          <Route path="/privacy-athena" element={<PrivacyAthena/>}/>
+          <Route path="/term-athena" element={<TermAthena/>}/>
+          <Route path="/cookies" element={<Cookies/>}/>
+          <Route path="/sitemap" element={<Sitemap/>}/>
           <Route
             path="/instructor"
             element={
