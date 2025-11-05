@@ -1596,7 +1596,65 @@ function LessonBuilder() {
 
     if (!block) return;
 
+    // IMPORTANT: Check for interactive blocks FIRST (before quote detection)
+    // This prevents process-carousel from being detected as quote-carousel
+    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
+    const isInteractiveBlock =
+      block.type === 'interactive' ||
+      // Check subtype for all interactive types
+      (block.subtype &&
+        (block.subtype === 'accordion' ||
+          block.subtype === 'tabs' ||
+          block.subtype === 'labeled-graphic' ||
+          block.subtype === 'timeline' ||
+          block.subtype === 'process')) ||
+      // Check if content has interactive structure (JSON with template)
+      (() => {
+        try {
+          const content = JSON.parse(block.content || '{}');
+          return (
+            content.template &&
+            (content.tabsData ||
+              content.accordionData ||
+              content.labeledGraphicData ||
+              content.timelineData ||
+              content.processData)
+          );
+        } catch {
+          return false;
+        }
+      })() ||
+      // Check HTML patterns for interactive blocks
+      (block.html_css &&
+        (block.html_css.includes('interactive-tabs') ||
+          block.html_css.includes('interactive-accordion') ||
+          block.html_css.includes('accordion-content') ||
+          block.html_css.includes('tab-button') ||
+          block.html_css.includes('accordion-header') ||
+          block.html_css.includes('data-template="tabs"') ||
+          block.html_css.includes('data-template="accordion"') ||
+          block.html_css.includes('data-template="labeled-graphic"') ||
+          block.html_css.includes('data-template="timeline"') ||
+          block.html_css.includes('data-template="process"') ||
+          block.html_css.includes('labeled-graphic-container') ||
+          block.html_css.includes('timeline-container') ||
+          block.html_css.includes('process-carousel')));
+
+    if (isInteractiveBlock) {
+      // Handle interactive block editing
+      console.log('Interactive block detected for editing:', block);
+
+      // Override block type to ensure it's treated as interactive
+      block = { ...block, type: 'interactive' };
+
+      // Set the editing interactive block and show the interactive edit dialog
+      setEditingInteractiveBlock(block);
+      setShowInteractiveEditDialog(true);
+      return;
+    }
+
     // Enhanced quote block detection - check content structure and HTML patterns
+    // NOTE: This must come AFTER interactive block detection to avoid conflicts with process-carousel
     const isQuoteBlock =
       block.type === 'quote' ||
       (block.textType && block.textType.startsWith('quote_')) ||
@@ -1610,10 +1668,12 @@ function LessonBuilder() {
           return false;
         }
       })() ||
-      // Check HTML patterns for quote blocks
+      // Check HTML patterns for quote blocks (but NOT process-carousel!)
       (block.html_css &&
+        !block.html_css.includes('process-carousel') && // Exclude process blocks
         (block.html_css.includes('quote-carousel') ||
-          block.html_css.includes('carousel-dot') ||
+          (block.html_css.includes('carousel-dot') &&
+            block.html_css.includes('blockquote')) || // Must have both
           block.html_css.includes('blockquote') ||
           block.html_css.includes('<cite') ||
           (block.html_css.includes('background-image:') &&
@@ -2040,53 +2100,6 @@ function LessonBuilder() {
       }
 
       setShowListEditDialog(true);
-      return;
-    }
-
-    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
-    const isInteractiveBlock =
-      block.type === 'interactive' ||
-      // Check subtype for accordion or tabs
-      (block.subtype &&
-        (block.subtype === 'accordion' ||
-          block.subtype === 'tabs' ||
-          block.subtype === 'labeled-graphic')) ||
-      // Check if content has interactive structure (JSON with template)
-      (() => {
-        try {
-          const content = JSON.parse(block.content || '{}');
-          return (
-            content.template &&
-            (content.tabsData ||
-              content.accordionData ||
-              content.labeledGraphicData)
-          );
-        } catch {
-          return false;
-        }
-      })() ||
-      // Check HTML patterns for interactive blocks
-      (block.html_css &&
-        (block.html_css.includes('interactive-tabs') ||
-          block.html_css.includes('interactive-accordion') ||
-          block.html_css.includes('accordion-content') ||
-          block.html_css.includes('tab-button') ||
-          block.html_css.includes('accordion-header') ||
-          block.html_css.includes('data-template="tabs"') ||
-          block.html_css.includes('data-template="accordion"') ||
-          block.html_css.includes('data-template="labeled-graphic"') ||
-          block.html_css.includes('labeled-graphic-container')));
-
-    if (isInteractiveBlock) {
-      // Handle interactive block editing
-      console.log('Interactive block detected for editing:', block);
-
-      // Override block type to ensure it's treated as interactive
-      block = { ...block, type: 'interactive' };
-
-      // Set the editing interactive block and show the interactive edit dialog
-      setEditingInteractiveBlock(block);
-      setShowInteractiveEditDialog(true);
       return;
     }
 
