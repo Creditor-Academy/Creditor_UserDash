@@ -50,12 +50,16 @@ export const initializeGlobalFunctions = () => {
     if (!content || !icon) return;
 
     if (content.classList.contains('max-h-0')) {
+      // Expanding - use very large max-height to accommodate images
       content.classList.remove('max-h-0');
-      content.classList.add('max-h-96', 'pb-4');
+      content.style.maxHeight = '2000px';
+      content.classList.add('pb-4');
       icon.classList.add('rotate-180');
     } else {
+      // Collapsing
       content.classList.add('max-h-0');
-      content.classList.remove('max-h-96', 'pb-4');
+      content.style.maxHeight = '0';
+      content.classList.remove('pb-4');
       icon.classList.remove('rotate-180');
     }
   };

@@ -536,6 +536,72 @@ const InteractiveComponent = forwardRef(
       return extractedData;
     };
 
+    // Helper function to extract process data from HTML
+    const extractProcessFromHTML = htmlContent => {
+      const extractedData = [];
+
+      try {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+
+        // Find all process steps
+        const processSteps = tempDiv.querySelectorAll('.process-step');
+
+        processSteps.forEach((step, index) => {
+          // Extract title from h2
+          const titleElement = step.querySelector('h2');
+          const title = titleElement
+            ? titleElement.textContent.trim()
+            : `Step ${index + 1}`;
+
+          // Extract description - get all text content before image/audio
+          const descElement = step.querySelector('.text-gray-700');
+          const description = descElement ? descElement.textContent.trim() : '';
+
+          // Extract image if present
+          let image = null;
+          const imageElement = step.querySelector('img');
+          if (imageElement) {
+            image = {
+              src: imageElement.src,
+              name: imageElement.alt || 'Process step image',
+              size: 0,
+            };
+          }
+
+          // Extract audio if present
+          let audio = null;
+          const audioElement = step.querySelector('audio source');
+          if (audioElement) {
+            const audioSrc = audioElement.getAttribute('src');
+            const audioType = audioElement.getAttribute('type');
+            if (audioSrc) {
+              audio = {
+                src: audioSrc,
+                type: audioType || 'audio/mpeg',
+                name: 'Process audio',
+                size: 0,
+              };
+            }
+          }
+
+          extractedData.push({
+            id: (index + 1).toString(),
+            title,
+            description,
+            image,
+            audio,
+          });
+        });
+
+        console.log('Extracted process data from HTML:', extractedData);
+      } catch (error) {
+        console.error('Error extracting process data from HTML:', error);
+      }
+
+      return extractedData;
+    };
+
     // Timeline helper functions
     const addTimelineItem = () => {
       const newId = (timelineData.length + 1).toString();
@@ -890,6 +956,20 @@ const InteractiveComponent = forwardRef(
                     extractedData
                   );
                   setTimelineData(extractedData);
+                }
+              } else if (
+                template === 'process' &&
+                editingInteractiveBlock.html_css
+              ) {
+                const extractedData = extractProcessFromHTML(
+                  editingInteractiveBlock.html_css
+                );
+                if (extractedData.length > 0) {
+                  console.log(
+                    'Extracted process data from HTML:',
+                    extractedData
+                  );
+                  setProcessData(extractedData);
                 }
               }
             }
@@ -2029,8 +2109,9 @@ const InteractiveComponent = forwardRef(
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
-                <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'max-h-96 pb-4' : 'max-h-0'}" 
-                     data-content="${index}">
+                <div class="accordion-content overflow-hidden transition-all duration-300 ${index === 0 ? 'pb-4' : ''}" 
+                     data-content="${index}"
+                     style="max-height: ${index === 0 ? '2000px' : '0'}; overflow-y: auto;">
                   <div class="pl-4">
                     <div class="text-gray-700 leading-relaxed ${item.image || item.audio ? 'mb-4' : ''}">${formatContent(item.content)}</div>
                     ${
@@ -2038,7 +2119,7 @@ const InteractiveComponent = forwardRef(
                         ? `
                       <div class="flex justify-center ${item.audio ? '' : 'mb-4'}">
                         <div class="relative max-w-full">
-                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; max-height: 500px; height: auto; width: auto; object-fit: contain;" />
+                          <img src="${item.image.src}" alt="${item.image.name || 'Accordion image'}" class="rounded-lg shadow-sm" style="max-width: 100%; height: auto; width: auto; object-fit: contain;" />
                           ${
                             item.audio
                               ? `
@@ -2306,17 +2387,13 @@ const InteractiveComponent = forwardRef(
         <div class="bg-white rounded-lg shadow-md p-6">
           <div class="process-carousel" data-template="process" id="${processId}" data-current="0" tabindex="0">
             <div class="relative">
-              <!-- Alternative Navigation Buttons -->
-              <div class="flex justify-between items-center mb-4">
+              <!-- Navigation Buttons -->
+              <div class="flex justify-between items-center mb-0">
                 <button onclick="window.processCarouselPrev && window.processCarouselPrev(this)" class="process-carousel-prev group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
                   <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                   </svg>
                 </button>
-                
-                <div class="text-sm text-gray-500">
-                  Use arrow keys or click progress dots below to navigate
-                </div>
                 
                 <button onclick="window.processCarouselNext && window.processCarouselNext(this)" class="process-carousel-next group bg-white/80 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-full p-3 transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105">
                   <svg class="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2331,13 +2408,6 @@ const InteractiveComponent = forwardRef(
                   .map(
                     (step, index) => `
                   <div class="process-step ${index === 0 ? 'block' : 'hidden'}" data-step="${index}">
-                    <!-- Step indicator -->
-                    <div class="text-center mb-6">
-                      <div class="bg-white text-gray-800 px-4 py-2 rounded-full text-sm font-medium inline-block">
-                        Step ${index + 1}
-                      </div>
-                    </div>
-                    
                     <!-- Step title -->
                     <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">${step.title}</h2>
                     
@@ -2837,8 +2907,18 @@ const InteractiveComponent = forwardRef(
             )}
             <DialogHeader>
               <DialogTitle>
-                {editingInteractiveBlock ? 'Edit' : 'Create'} Interactive
-                Content
+                {editingInteractiveBlock ? 'Edit' : 'Create'}{' '}
+                {selectedTemplate === 'tabs'
+                  ? 'Tabs'
+                  : selectedTemplate === 'accordion'
+                    ? 'Accordion'
+                    : selectedTemplate === 'labeled-graphic'
+                      ? 'Labeled Graphic'
+                      : selectedTemplate === 'timeline'
+                        ? 'Timeline'
+                        : selectedTemplate === 'process'
+                          ? 'Process'
+                          : 'Interactive Content'}
               </DialogTitle>
             </DialogHeader>
 
