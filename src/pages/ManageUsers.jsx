@@ -55,6 +55,8 @@ const ManageUsers = () => {
   const [currentNoteUser, setCurrentNoteUser] = useState(null);
   const [currentNote, setCurrentNote] = useState("");
   const [userNotes, setUserNotes] = useState({});
+  const [loadingNote, setLoadingNote] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
   
   // User details modal state
   const [showUserDetailsModal, setShowUserDetailsModal] = useState(false);
@@ -82,16 +84,12 @@ const ManageUsers = () => {
   // Extract user notes from fetched users data
   const fetchUserNotes = () => {
     try {
-      console.log('📋 Extracting notes from users array...');
-      // Extract private_note from users array
       const notesObject = {};
       users.forEach(user => {
         if (user.private_note) {
-          console.log(`📝 Found note for user ${user.first_name} ${user.last_name}:`, user.private_note);
           notesObject[user.id] = user.private_note;
         }
       });
-      console.log('📊 Total notes found:', Object.keys(notesObject).length);
       setUserNotes(notesObject);
     } catch (error) {
       console.error('Error extracting user notes:', error);
@@ -101,10 +99,6 @@ const ManageUsers = () => {
   // Save or update user note to backend using instructor API
   const saveUserNote = async (userId, noteText) => {
     try {
-      console.log('💾 Saving note for user:', userId);
-      console.log('📝 Note text:', noteText);
-      console.log('🔗 API URL:', `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`);
-      
       const response = await axios.post(
         `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`,
         { 
@@ -119,9 +113,8 @@ const ManageUsers = () => {
         }
       );
       
-      console.log('✅ Save note response:', response.data);
-      
-      if (response.data) {
+      // Check for successful response
+      if (response.status === 200 || response.status === 201) {
         // Update local state
         const updatedNotes = { ...userNotes };
         if (noteText.trim()) {
@@ -141,12 +134,28 @@ const ManageUsers = () => {
         );
         
         return true;
+      } else {
+        setError(`Failed to save note: Unexpected response status ${response.status}`);
+        return false;
       }
-      return false;
     } catch (error) {
-      console.error('❌ Error saving user note:', error);
-      console.error('Error details:', error.response?.data);
-      setError(`Failed to save note: ${error.response?.data?.message || error.message}`);
+      console.error('Error saving user note:', error);
+      
+      // More detailed error message
+      let errorMessage = 'Failed to save note: ';
+      if (error.response?.status === 404) {
+        errorMessage += 'Backend endpoint not found (404). The API endpoint may not be implemented yet.';
+      } else if (error.response?.status === 401 || error.response?.status === 403) {
+        errorMessage += 'Authentication failed. Please log in again.';
+      } else if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += 'Unknown error occurred';
+      }
+      
+      setError(errorMessage);
       return false;
     }
   };
@@ -290,18 +299,6 @@ const ManageUsers = () => {
 
       if (response.data && response.data.code === 200) {
         const fetchedUsers = response.data.data || [];
-        
-        // Debug: Check if private_note field exists
-        console.log('👥 Fetched users count:', fetchedUsers.length);
-        const usersWithNotes = fetchedUsers.filter(u => u.private_note);
-        console.log('📝 Users with private_note:', usersWithNotes.length);
-        if (usersWithNotes.length > 0) {
-          console.log('📋 Sample user with note:', {
-            name: `${usersWithNotes[0].first_name} ${usersWithNotes[0].last_name}`,
-            note: usersWithNotes[0].private_note
-          });
-        }
-        
         setUsers(fetchedUsers);
       } else {
         throw new Error('Failed to fetch users');
@@ -1309,28 +1306,96 @@ const ManageUsers = () => {
     setShowUserDetailsModal(true);
   };
 
+  // Fetch individual user note from backend
+  const fetchUserNote = async (userId) => {
+    setLoadingNote(true);
+    try {
+      const response = await axios.get(
+        `${API_BASE}/api/instructor/user-management/user/${userId}/private-note`,
+        {
+          headers: {
+            ...(getAuthHeader() || {}),
+          },
+          withCredentials: true,
+        }
+      );
+      
+      // Try multiple response format patterns
+      let note = "";
+      
+      // Pattern 1: { private_note: "text" }
+      if (response.data && response.data.private_note !== undefined) {
+        note = response.data.private_note || "";
+      }
+      // Pattern 2: { data: { private_note: "text" } }
+      else if (response.data && response.data.data && response.data.data.private_note !== undefined) {
+        note = response.data.data.private_note || "";
+      }
+      // Pattern 3: { user: { private_note: "text" } }
+      else if (response.data && response.data.user && response.data.user.private_note !== undefined) {
+        note = response.data.user.private_note || "";
+      }
+      // Pattern 4: Direct string response
+      else if (typeof response.data === 'string') {
+        note = response.data;
+      }
+      // Pattern 5: { note: "text" } or { privateNote: "text" }
+      else if (response.data && (response.data.note !== undefined || response.data.privateNote !== undefined)) {
+        note = response.data.note || response.data.privateNote || "";
+      }
+      
+      // Update local state with fetched note
+      setUserNotes(prev => ({
+        ...prev,
+        [userId]: note
+      }));
+      
+      return note;
+    } catch (error) {
+      console.error('Error fetching user note:', error);
+      // Return cached note if available
+      return userNotes[userId] || "";
+    } finally {
+      setLoadingNote(false);
+    }
+  };
+
   // Handle opening notes modal
-  const handleNotesClick = (user) => {
+  const handleNotesClick = async (user) => {
     setCurrentNoteUser(user);
-    setCurrentNote(userNotes[user.id] || "");
     setShowNotesModal(true);
+    
+    // Clear current note first
+    setCurrentNote("");
+    
+    // Fetch the latest note from backend
+    const latestNote = await fetchUserNote(user.id);
+    setCurrentNote(latestNote);
   };
 
   // Handle saving note
   const handleSaveNote = async () => {
     if (!currentNoteUser) return;
     
-    const success = await saveUserNote(currentNoteUser.id, currentNote);
+    setSavingNote(true);
     
-    if (success) {
-      setShowNotesModal(false);
-      setCurrentNoteUser(null);
-      setCurrentNote("");
-      // Show success message
-      setSuccessMessage('Note saved successfully!');
-      setTimeout(() => {
-        setSuccessMessage("");
-      }, 2000);
+    try {
+      const success = await saveUserNote(currentNoteUser.id, currentNote);
+      
+      if (success) {
+        setShowNotesModal(false);
+        setCurrentNoteUser(null);
+        setCurrentNote("");
+        // Show success message
+        setSuccessMessage('✅ Note saved successfully and will persist after refresh!');
+        setTimeout(() => {
+          setSuccessMessage("");
+        }, 3000);
+      }
+      // If not successful, keep modal open so user can retry
+      // Error message is already set by saveUserNote function
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -2251,27 +2316,55 @@ const ManageUsers = () => {
                     {getLastVisited(user) || 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => handleNotesClick(user)}
-                      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                        userNotes[user.id] 
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100' 
-                          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                      }`}
-                      title={userNotes[user.id] ? "View/Edit Note" : "Add Note"}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                      {userNotes[user.id] ? (
-                        <>
-                          <span>View Note</span>
-                          <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                        </>
-                      ) : (
-                        <span>Add Note</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleNotesClick(user)}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                          userNotes[user.id] 
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 shadow-sm' 
+                            : user.private_note
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 shadow-sm'
+                            : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                        }`}
+                        title={userNotes[user.id] || user.private_note ? "Click to view or edit note" : "Click to add a note"}
+                      >
+                        {userNotes[user.id] || user.private_note ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span className="font-semibold">Edit Note</span>
+                            <span className="flex items-center justify-center w-5 h-5 bg-blue-600 text-white rounded-full text-[10px] font-bold">
+                              ✓
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Add Note</span>
+                          </>
+                        )}
+                      </button>
+                      
+                      {/* Quick delete button when note exists */}
+                      {(userNotes[user.id] || user.private_note) && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Are you sure you want to delete the note for ${user.first_name} ${user.last_name}?`)) {
+                              saveUserNote(user.id, "");
+                            }
+                          }}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 border border-red-200 hover:border-red-300"
+                          title="Delete note"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       )}
-                    </button>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {hasRole('admin') && (
@@ -2413,15 +2506,53 @@ const ManageUsers = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Internal Notes
               </label>
-              <textarea
-                value={currentNote}
-                onChange={(e) => setCurrentNote(e.target.value)}
-                placeholder="Write your internal notes about this user here... (visible to all instructors and admins)"
-                className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              />
+              {loadingNote ? (
+                <div className="w-full h-48 flex items-center justify-center border border-gray-300 rounded-lg bg-gray-50">
+                  <div className="text-center">
+                    <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p className="text-sm text-gray-600">Loading note...</p>
+                  </div>
+                </div>
+              ) : (
+                <textarea
+                  value={currentNote}
+                  onChange={(e) => setCurrentNote(e.target.value)}
+                  placeholder="Write your internal notes about this user here... (visible to all instructors and admins)"
+                  className="w-full h-48 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  disabled={savingNote}
+                />
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 💡 These notes are visible to all instructors and admins
               </p>
+              
+              {/* Show error message in modal if present */}
+              {error && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-800 flex items-start gap-2">
+                    <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                    <span>{error}</span>
+                  </p>
+                </div>
+              )}
+              
+              {/* Show saving indicator */}
+              {savingNote && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Saving note to backend...</span>
+                  </p>
+                </div>
+              )}
             </div>
             
             <div className="flex justify-between items-center gap-3">
@@ -2429,7 +2560,8 @@ const ManageUsers = () => {
                 {userNotes[currentNoteUser?.id] && (
                   <button
                     onClick={handleClearNote}
-                    className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 border border-red-200"
+                    disabled={loadingNote || savingNote}
+                    className="px-4 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 border border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -2441,18 +2573,32 @@ const ManageUsers = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleCloseNotesModal}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  disabled={loadingNote || savingNote}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveNote}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                  disabled={loadingNote || savingNote}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Save Note
+                  {savingNote ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save Note
+                    </>
+                  )}
                 </button>
               </div>
             </div>
