@@ -1,6 +1,8 @@
 import enhancedAIService from './enhancedAIService';
 import { generateLessonFromPrompt } from './aiCourseService';
 import { updateLessonContent } from './courseService';
+import openAIService from './openAIService';
+import { uploadAIGeneratedImage } from './aiUploadService';
 
 /**
  * Universal AI Lesson Content Generation Service
@@ -174,6 +176,30 @@ class UniversalAILessonService {
         this.createMasterHeading(lessonTitle, blockOrder++, 'gradient1')
       );
 
+      // 0.5. Generate Hero Image for the lesson (NEW)
+      if (
+        options.includeImages !== false &&
+        options.contentType !== 'outline'
+      ) {
+        try {
+          console.log('🎨 Generating hero image for lesson:', lessonTitle);
+          const heroImageBlock = await this.generateLessonHeroImage(
+            lessonTitle,
+            moduleTitle,
+            courseTitle,
+            blockOrder++
+          );
+          if (heroImageBlock) {
+            blocks.push(heroImageBlock);
+          }
+        } catch (imageError) {
+          console.warn(
+            '⚠️ Failed to generate hero image, continuing without it:',
+            imageError.message
+          );
+        }
+      }
+
       // 1. Generate Introduction
       if (options.includeIntroduction !== false) {
         const introBlock = await this.generateIntroductionBlock(
@@ -204,6 +230,26 @@ class UniversalAILessonService {
         );
         blocks.push(...conceptsBlocks);
         blockOrder += conceptsBlocks.length;
+
+        // Add concept illustration image (NEW)
+        if (options.includeImages !== false) {
+          try {
+            console.log('🎨 Generating concept image for:', lessonTitle);
+            const conceptImageBlock = await this.generateConceptImage(
+              lessonTitle,
+              'key concepts',
+              blockOrder++
+            );
+            if (conceptImageBlock) {
+              blocks.push(conceptImageBlock);
+            }
+          } catch (imageError) {
+            console.warn(
+              '⚠️ Failed to generate concept image, continuing without it:',
+              imageError.message
+            );
+          }
+        }
 
         // Add continue divider after key concepts
         blocks.push(
@@ -670,6 +716,143 @@ class UniversalAILessonService {
   }
 
   /**
+   * Generate hero image for lesson
+   * Creates an engaging visual representation for the lesson
+   */
+  async generateLessonHeroImage(lessonTitle, moduleTitle, courseTitle, order) {
+    try {
+      console.log(`🎨 Generating hero image for: ${lessonTitle}`);
+
+      // Create a detailed, educational prompt for the image
+      const imagePrompt = `Professional educational illustration for a lesson about "${lessonTitle}" in ${moduleTitle} course. 
+Modern, clean, colorful design with educational theme. 
+High-quality, engaging visual that represents the key concepts of ${lessonTitle}. 
+Style: modern educational illustration, vibrant colors, professional quality.`;
+
+      // Generate image using OpenAI DALL-E
+      const imageResult = await openAIService.generateImage(imagePrompt, {
+        model: 'dall-e-3',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      });
+
+      if (!imageResult.success || !imageResult.url) {
+        throw new Error('Image generation failed');
+      }
+
+      console.log('✅ Hero image generated:', imageResult.url);
+
+      // Upload to S3 for permanent storage
+      let permanentUrl = imageResult.url;
+      try {
+        console.log('📤 Uploading hero image to S3...');
+        const uploadResult = await uploadAIGeneratedImage(imageResult.url, {
+          public: true,
+        });
+
+        if (uploadResult.success && uploadResult.imageUrl) {
+          permanentUrl = uploadResult.imageUrl;
+          console.log('✅ Hero image uploaded to S3:', permanentUrl);
+        }
+      } catch (uploadError) {
+        console.warn(
+          '⚠️ S3 upload failed, using temporary URL:',
+          uploadError.message
+        );
+      }
+
+      // Create image block with proper structure
+      return this.createImageBlock({
+        url: permanentUrl,
+        alt: `Hero image for ${lessonTitle}`,
+        caption: `Visual representation of ${lessonTitle}`,
+        order,
+        metadata: {
+          blockType: 'hero_image',
+          lessonTitle,
+          generatedPrompt: imagePrompt,
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('❌ Failed to generate hero image:', error);
+      // Return null instead of throwing to allow lesson generation to continue
+      return null;
+    }
+  }
+
+  /**
+   * Generate concept illustration image
+   * Creates a visual representation of a specific concept
+   */
+  async generateConceptImage(lessonTitle, conceptName, order) {
+    try {
+      console.log(
+        `🎨 Generating concept image for: ${conceptName} in ${lessonTitle}`
+      );
+
+      // Create focused prompt for concept illustration
+      const imagePrompt = `Educational diagram illustrating ${conceptName} of "${lessonTitle}". 
+Clear, informative visual that explains the concept. 
+Professional educational style, clean design, easy to understand.
+Style: modern infographic, educational diagram, clear and concise.`;
+
+      // Generate image using OpenAI DALL-E
+      const imageResult = await openAIService.generateImage(imagePrompt, {
+        model: 'dall-e-3',
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      });
+
+      if (!imageResult.success || !imageResult.url) {
+        throw new Error('Image generation failed');
+      }
+
+      console.log('✅ Concept image generated:', imageResult.url);
+
+      // Upload to S3 for permanent storage
+      let permanentUrl = imageResult.url;
+      try {
+        console.log('📤 Uploading concept image to S3...');
+        const uploadResult = await uploadAIGeneratedImage(imageResult.url, {
+          public: true,
+        });
+
+        if (uploadResult.success && uploadResult.imageUrl) {
+          permanentUrl = uploadResult.imageUrl;
+          console.log('✅ Concept image uploaded to S3:', permanentUrl);
+        }
+      } catch (uploadError) {
+        console.warn(
+          '⚠️ S3 upload failed, using temporary URL:',
+          uploadError.message
+        );
+      }
+
+      // Create image block
+      return this.createImageBlock({
+        url: permanentUrl,
+        alt: `Illustration of ${conceptName}`,
+        caption: `Visual guide to ${conceptName}`,
+        order,
+        metadata: {
+          blockType: 'concept_image',
+          conceptName,
+          lessonTitle,
+          generatedPrompt: imagePrompt,
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('❌ Failed to generate concept image:', error);
+      // Return null to allow lesson generation to continue
+      return null;
+    }
+  }
+
+  /**
    * Generate outline-style content
    */
   async generateOutlineContent(lessonTitle, moduleTitle, startOrder) {
@@ -774,6 +957,24 @@ class UniversalAILessonService {
     }
 
     switch (block.type) {
+      case 'image':
+        // Handle AI-generated image blocks
+        const imageUrl = block.content?.url || block.content;
+        const imageAlt = block.content?.alt || 'Lesson image';
+        const imageCaption = block.content?.caption || '';
+
+        return `
+          <div style="margin: 24px 0; text-align: center;">
+            <img 
+              src="${imageUrl}" 
+              alt="${imageAlt}" 
+              style="width: 100%; max-width: 800px; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"
+              loading="lazy"
+            />
+            ${imageCaption ? `<p style="margin-top: 12px; font-size: 14px; color: #6b7280; font-style: italic;">${imageCaption}</p>` : ''}
+          </div>
+        `;
+
       case 'heading':
         const level = block.level || 2;
         return `<h${level} class="text-${level === 1 ? '3xl' : level === 2 ? '2xl' : 'xl'} font-bold mb-4">${block.content}</h${level}>`;
@@ -1057,6 +1258,46 @@ class UniversalAILessonService {
       (usePound ? '#' : '') +
       ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')
     );
+  }
+
+  /**
+   * Helper function to create image blocks for lesson content
+   * @param {Object} imageData - Image data including url, alt, caption
+   * @returns {Object} Image block structure
+   */
+  createImageBlock(imageData) {
+    const { url, alt, caption, order, metadata = {} } = imageData;
+
+    // Create responsive image HTML with proper styling
+    const imageHtml = `
+      <div style="margin: 24px 0; text-align: center;">
+        <img 
+          src="${url}" 
+          alt="${alt || 'Lesson image'}" 
+          style="width: 100%; max-width: 800px; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"
+          loading="lazy"
+        />
+        ${caption ? `<p style="margin-top: 12px; font-size: 14px; color: #6b7280; font-style: italic;">${caption}</p>` : ''}
+      </div>
+    `;
+
+    return {
+      id: `ai-image-${Date.now()}-${Math.random()}`,
+      type: 'image',
+      content: {
+        url,
+        alt: alt || 'Lesson image',
+        caption: caption || '',
+      },
+      html_css: imageHtml,
+      order,
+      isAIGenerated: true,
+      metadata: {
+        blockType: 'image',
+        imageSource: 'ai-generated',
+        ...metadata,
+      },
+    };
   }
 
   /**
