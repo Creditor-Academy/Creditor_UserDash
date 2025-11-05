@@ -124,7 +124,10 @@ import CommunitiesPage from './pages/Platform/CommunitiesPage';
 import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
 import MembershipsPage from './pages/Platform/MembershipsPage';
 import CoachingPage from './pages/Platform/CoachingPage';
-
+import Emailautomation from './pages/Platform/Emailautomation';
+import Analyticspage from './pages/Platform/Analyticspage';
+import Brandpage from './pages/Platform/Brandpage';
+import Sellingpage from './pages/Platform/Sellingpage';
 function App() {
   return (
     <ThemeProvider>

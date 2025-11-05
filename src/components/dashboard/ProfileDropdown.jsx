@@ -8,10 +8,23 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { User, LogOut, Book, Library, GraduationCap } from 'lucide-react';
+import {
+  User,
+  LogOut,
+  Book,
+  Library,
+  GraduationCap,
+  CreditCard,
+  Calendar,
+  XCircle,
+} from 'lucide-react';
+import { MembershipActionModal } from '@/components/membership/MembershipActionModal';
 import {
   getUserAvatarUrl,
   getUserAvatarUrlSync,
@@ -31,6 +44,8 @@ import { toast } from 'sonner';
 
 export function ProfileDropdown() {
   const [userAvatar, setUserAvatar] = useState(getUserAvatarUrlSync());
+  const [membershipModalOpen, setMembershipModalOpen] = useState(false);
+  const [membershipActionType, setMembershipActionType] = useState(null);
   const { userProfile, setUserProfile } = useUser();
   const { logout: logoutAuth } = useAuth();
   const navigate = useNavigate();
@@ -110,6 +125,11 @@ export function ProfileDropdown() {
     }
   };
 
+  const handleMembershipAction = actionType => {
+    setMembershipActionType(actionType);
+    setMembershipModalOpen(true);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -176,6 +196,36 @@ export function ProfileDropdown() {
               <span className="transition-all duration-200">Profile</span>
             </Link>
           </DropdownMenuItem>
+
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md">
+              <CreditCard className="mr-2 h-4 w-4 transition-all duration-300 group-hover/menu:text-primary group-hover/menu:scale-110" />
+              <span className="transition-all duration-200">
+                Manage Membership
+              </span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="backdrop-blur-sm bg-background/95">
+                {/* Switch to Annual Membership - Commented out for future use */}
+                {/* <DropdownMenuItem 
+                  className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/submenu rounded-md"
+                  onClick={() => handleMembershipAction('annual')}
+                >
+                  <Calendar className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-primary group-hover/submenu:scale-110" />
+                  <span>Switch to Annual Membership</span>
+                </DropdownMenuItem> */}
+
+                <DropdownMenuItem
+                  className="cursor-pointer transition-colors duration-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 group/submenu rounded-md"
+                  onClick={() => handleMembershipAction('cancel')}
+                >
+                  <XCircle className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-red-600 group-hover/submenu:scale-110" />
+                  <span>Cancel Membership</span>
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
+
           {/* <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="w-full cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md"> */}
           {/* <label htmlFor="profile-picture-upload" className="w-full cursor-pointer flex items-center"> */}
           {/* <User className="mr-2 h-4 w-4 transition-all duration-300 group-hover/menu:text-primary group-hover/menu:scale-110" /> */}
@@ -193,6 +243,12 @@ export function ProfileDropdown() {
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      <MembershipActionModal
+        isOpen={membershipModalOpen}
+        onClose={() => setMembershipModalOpen(false)}
+        actionType={membershipActionType}
+      />
     </DropdownMenu>
   );
 }

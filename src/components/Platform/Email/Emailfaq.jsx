@@ -5,18 +5,23 @@ import { Plus, X } from 'lucide-react';
 const faqs = [
   {
     id: 1,
-    q: 'What is a membership on Athena LMS?',
-    a: `A membership lets you offer ongoing access to multiple learning products like courses, communities, digital downloads, and live sessions — all in one bundled subscription.`,
+    q: 'What is email automation?',
+    a: `Email automation is a feature that helps you market and sell to your leads. With this feature, you can grow and manage your email list as well as launch automated sales flows and abandoned cart reminder emails designed to help drive and recapture sales.`,
   },
   {
     id: 2,
-    q: 'What is a membership site?',
-    a: `A membership site is a subscription-based website where members pay to access gated learning content. These sites often include a mix of courses, a community, and exclusive resources, with new content added regularly to keep members engaged .`,
+    q: 'What is the difference between a sales sequence and abandoned cart emails?',
+    a: `An abandoned cart email automatically sends a follow-up email to learners who have abandoned their cart, helping you convert missed opportunities into sales. Meanwhile, a sales sequence is a series of emails designed to guide email recipients to purchase your product or service.`,
   },
   {
     id: 3,
-    q: 'How are membership sites different from Product Bundles?',
-    a: `A Product Bundle is a one-time purchase of multiple learning products, while a membership offers ongoing access to a variety of learning experiences, such as live sessions, communities, and exclusive content delivered on a subscription basis.`,
+    q: 'How does the abandoned cart email work?',
+    a: `The abandoned cart email automatically sends a follow-up email to learners who abandon their cart, reminding them to complete their purchase and helping you convert missed opportunities into sales.`,
+  },
+  {
+    id: 4,
+    q: 'How does the email sales sequence work?',
+    a: `The sales sequence is a series of emails designed to guide email recipients to purchase your product or service. It is a great way to nurture leads and convert them into customers.`,
   },
 ];
 

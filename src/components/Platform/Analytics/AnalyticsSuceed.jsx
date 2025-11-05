@@ -1,129 +1,97 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  BookOpen,
-  CreditCard,
-  BarChart3,
-  Globe,
-  Zap,
-  Shield,
-  Users,
-  FileText,
-  Target,
-  TrendingUp,
-  Clock,
-  Settings,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
-import Scorm from '../../assets/analytics.webp';
-import Course from '../../assets/Course.png';
-import Dashboard from '../../assets/Dashboard.png';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
-const Buildfeature = () => {
+import {
+  FileText,
+  BarChart3,
+  Users,
+  ShoppingCart,
+  Settings,
+  TrendingUp,
+  Target,
+  Mail,
+  Check,
+} from 'lucide-react';
+import Scorm from '../../../assets/analytics.webp';
+import Course from '../../../assets/Course.png';
+import Dashboard from '../../../assets/Dashboard.png';
+
+const AnalyticsSuceed = () => {
   const [activeSection, setActiveSection] = useState(0);
   const [expandedMobile, setExpandedMobile] = useState(0);
-  const sectionRefs = [useRef(null), useRef(null), useRef(null)];
+  const sectionRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
   const features = [
     {
       id: 0,
-      title: 'Build Exceptional Learning Experiences',
+      title: 'Custom reports',
       description:
-        "Create immersive, branded, and high-performing learning environments with Athena LMS. Whether you're teaching a single class or scaling an entire academy, you'll have every tool to craft transformative experiences—without writing a single line of code.",
+        'Create custom reports tailored to your unique needs. Filter and segment your data to focus on the metrics that matter most to you and your business.',
       items: [
         {
-          text: 'Drag-and-Drop Course Builder – Design stunning courses, quizzes, and multimedia lessons in minutes.',
-          icon: BookOpen,
+          text: 'Design personalized dashboards to display the key metrics you need at a glance',
+          icon: Check,
         },
         {
-          text: 'Adaptive Learning Paths – Automatically guide learners based on progress, goals, and performance.',
-          icon: Target,
+          text: 'Develop tailored reports for each of your partners and effortlessly distribute them via email when you want',
+          icon: Check,
         },
         {
-          text: 'Interactive Communities – Build forums and discussion spaces that keep students connected and engaged.',
-          icon: Users,
-        },
-        {
-          text: 'Gamification & Rewards – Motivate learners with badges, points, and progress milestones.',
-          icon: TrendingUp,
-        },
-        {
-          text: 'Integrated Video & Live Streaming – Host lectures, webinars, and interactive sessions directly inside the LMS.',
-          icon: Globe,
-        },
-        {
-          text: 'AI-Assisted Course Design – Generate outlines, quizzes, and learning materials tailored to your content style.',
-          icon: Zap,
+          text: 'Build a more complete picture of your learners with advanced survey and engagement data',
+          icon: Check,
         },
       ],
-      image: Course, // Feature 1 image
+      image: Course,
     },
     {
       id: 1,
-      title: 'Sell Smarter. Scale Faster.',
+      title: 'Marketing dashboards',
       description:
-        'Athena LMS turns your course catalog into a high-performing sales engine — blending education with automation. From effortless payments to AI-driven analytics, every feature is built to help you convert, retain, and grow.',
+        'Know where to switch up your marketing efforts with insights on visitor activity and conversion. Learn which marketing channels drive the most traffic and conversions so you can better prioritize where to invest your time.',
       items: [
+        { text: 'See how your marketing content is performing', icon: Check },
         {
-          text: 'Instant Course Storefronts – Launch a professional sales page for each course in minutes, no coding required.',
-          icon: Globe,
+          text: 'Monitor website and landing page visitor trends',
+          icon: Check,
         },
+        { text: 'Upsell tools like coupons and order bumps', icon: Check },
         {
-          text: 'Dynamic Pricing Engine – Create limited-time offers, seasonal discounts, and tiered pricing to boost urgency.',
-          icon: CreditCard,
+          text: 'Measure the effectiveness of lead-generating content',
+          icon: Check,
         },
-        {
-          text: 'Affiliate & Partner Tracking – Reward your ambassadors with automated commission tracking and payouts.',
-          icon: Users,
-        },
-        {
-          text: 'AI-Driven Sales Insights – Predict buyer behavior, identify best-selling content, and refine your pricing strategy.',
-          icon: BarChart3,
-        },
-        {
-          text: 'Global Checkout Experience – Accept worldwide payments with built-in tax, currency, and compliance support.',
-          icon: Shield,
-        },
-        {
-          text: 'Recurring Revenue Tools – Build memberships, subscriptions, and bundles for predictable monthly income.',
-          icon: TrendingUp,
-        },
+        { text: 'Dive deeper into checkout performance', icon: Check },
       ],
-      image: Dashboard, // Feature 2 image (add another image for this section)
+      image: Dashboard,
     },
     {
       id: 2,
-      title: 'Analytics: Insights That Drive Impact',
+      title: 'Course enrollments dashboard',
       description:
-        'Athena LMS puts data to work for you. Go beyond surface metrics with deep analytics that connect learning outcomes, engagement trends, and business growth—all in one visual command center. Turn every course, campaign, and student interaction into a measurable advantage.',
+        "Monitor your enrollment trends to understand the growth of your student base. See who's enrolling in your courses and identify patterns over time.",
       items: [
+        { text: 'See how your enrollments change over time', icon: Check },
+        { text: 'Assess the health of your membership base', icon: Check },
         {
-          text: 'Real-Time Performance Tracking – Monitor enrollment, completion, and engagement rates across all courses instantly.',
-          icon: BarChart3,
-        },
-        {
-          text: 'Revenue & ROI Analytics – See exactly which programs and campaigns generate the most profit.',
-          icon: TrendingUp,
-        },
-        {
-          text: 'AI-Powered Learner Insights – Identify high-performing students, at-risk learners, and growth opportunities automatically.',
-          icon: Zap,
-        },
-        {
-          text: 'Marketing Funnel Tracking – Measure ad-to-enrollment conversion and optimize every lead source.',
-          icon: Target,
-        },
-        {
-          text: 'Custom KPI Dashboards – Build visual dashboards for teams, departments, or enterprise clients with full control.',
-          icon: Settings,
-        },
-        {
-          text: 'Automated Report Delivery – Send scheduled summaries to stakeholders with key insights that matter most.',
-          icon: FileText,
+          text: 'Identify which courses attract the most enrollments',
+          icon: Check,
         },
       ],
-      image: Scorm, // Feature 3 image
+      image: Scorm,
+    },
+    {
+      id: 3,
+      title: 'Orders dashboard',
+      description:
+        'Track every order, spot sales trends, and understand your peak selling periods — all from one powerful dashboard. Make smarter marketing decisions by understanding exactly when and how your digital products sell best.',
+      items: [
+        { text: 'View the total number of orders and sales', icon: Check },
+        {
+          text: 'Access detailed information about purchasers (such as referral sources)',
+          icon: Check,
+        },
+      ],
+      image: Scorm,
     },
   ];
 
@@ -185,7 +153,7 @@ const Buildfeature = () => {
               className="text-4xl md:text-5xl lg:text-6xl font-normal text-gray-900 mb-6 leading-tight"
               style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
             >
-              Athena's stand-out suite of features
+              Powerful analytics dashboards and reports
             </h1>
           </div>
 
@@ -227,9 +195,10 @@ const Buildfeature = () => {
                         const IconComponent = item.icon;
                         // Different background shades for each feature section to match image containers
                         const backgroundShades = [
-                          'bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200', // Build section - cyan theme
-                          'bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200', // Selling section - blue theme
-                          'bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200', // Analytics section - violet theme
+                          'bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200', // Custom reports - blue theme
+                          'bg-gradient-to-br from-purple-100 via-purple-100 to-purple-200', // Marketing dashboards - purple theme
+                          'bg-gradient-to-br from-green-100 via-green-100 to-green-200', // Course enrollments - green theme
+                          'bg-gradient-to-br from-orange-100 via-orange-100 to-orange-200', // Orders dashboard - orange theme
                         ];
 
                         return (
@@ -261,9 +230,10 @@ const Buildfeature = () => {
                 {features.map((feature, index) => {
                   // Different background shades for each image
                   const backgroundShades = [
-                    'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
-                    'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
-                    'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                    'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Custom reports - blue theme
+                    'bg-gradient-to-br from-purple-50 via-purple-50 to-purple-100', // Marketing dashboards - purple theme
+                    'bg-gradient-to-br from-green-50 via-green-50 to-green-100', // Course enrollments - green theme
+                    'bg-gradient-to-br from-orange-50 via-orange-50 to-orange-100', // Orders dashboard - orange theme
                   ];
 
                   return (
@@ -312,7 +282,7 @@ const Buildfeature = () => {
           </div>
 
           {/* Mobile Dropdown Layout */}
-          <div className="lg:hidden">
+          <div className="lg:hidden max-w-7xl mx-auto relative z-10">
             <div className="space-y-4">
               {features.map((feature, index) => (
                 <div
@@ -364,9 +334,10 @@ const Buildfeature = () => {
                               const IconComponent = item.icon;
                               // Different background shades for each feature section
                               const backgroundShades = [
-                                'bg-gradient-to-br from-cyan-100 via-cyan-100 to-cyan-200', // Build section - cyan theme
-                                'bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200', // Selling section - blue theme
-                                'bg-gradient-to-br from-violet-100 via-violet-100 to-violet-200', // Analytics section - violet theme
+                                'bg-gradient-to-br from-blue-100 via-blue-100 to-blue-200', // Custom reports - blue theme
+                                'bg-gradient-to-br from-purple-100 via-purple-100 to-purple-200', // Marketing dashboards - purple theme
+                                'bg-gradient-to-br from-green-100 via-green-100 to-green-200', // Course enrollments - green theme
+                                'bg-gradient-to-br from-orange-100 via-orange-100 to-orange-200', // Orders dashboard - orange theme
                               ];
 
                               return (
@@ -394,9 +365,10 @@ const Buildfeature = () => {
                                 <div
                                   className={`w-full h-full flex items-center justify-center p-4 ${
                                     [
-                                      'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
-                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
-                                      'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Custom reports - blue theme
+                                      'bg-gradient-to-br from-purple-50 via-purple-50 to-purple-100', // Marketing dashboards - purple theme
+                                      'bg-gradient-to-br from-green-50 via-green-50 to-green-100', // Course enrollments - green theme
+                                      'bg-gradient-to-br from-orange-50 via-orange-50 to-orange-100', // Orders dashboard - orange theme
                                     ][feature.id]
                                   }`}
                                 >
@@ -410,9 +382,10 @@ const Buildfeature = () => {
                                 <div
                                   className={`w-full h-full flex items-center justify-center ${
                                     [
-                                      'bg-gradient-to-br from-cyan-50 via-cyan-50 to-cyan-100', // Build section - cyan theme
-                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Selling section - blue theme
-                                      'bg-gradient-to-br from-violet-50 via-violet-50 to-violet-100', // Analytics section - violet theme
+                                      'bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100', // Custom reports - blue theme
+                                      'bg-gradient-to-br from-purple-50 via-purple-50 to-purple-100', // Marketing dashboards - purple theme
+                                      'bg-gradient-to-br from-green-50 via-green-50 to-green-100', // Course enrollments - green theme
+                                      'bg-gradient-to-br from-orange-50 via-orange-50 to-orange-100', // Orders dashboard - orange theme
                                     ][feature.id]
                                   }`}
                                 >
@@ -440,83 +413,8 @@ const Buildfeature = () => {
       </section>
 
       {/* Stats Section */}
-      <section
-        className="relative py-16"
-        style={{
-          background:
-            'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
-        }}
-      >
-        <div className="container mx-auto px-6 max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {/* Stat 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                1500+
-              </div>
-              <div className="text-slate-400 text-sm uppercase tracking-wide">
-                Courses Ready
-              </div>
-            </motion.div>
-
-            {/* Stat 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                400K+
-              </div>
-              <div className="text-slate-400 text-sm uppercase tracking-wide">
-                Enterprise User Scale
-              </div>
-            </motion.div>
-
-            {/* Stat 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                24/7
-              </div>
-              <div className="text-slate-400 text-sm uppercase tracking-wide">
-                Support Available
-              </div>
-            </motion.div>
-
-            {/* Stat 4 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="text-center"
-            >
-              <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                $500M
-              </div>
-              <div className="text-slate-400 text-sm uppercase tracking-wide">
-                Scalable Finance
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
     </>
   );
 };
 
-export default Buildfeature;
+export default AnalyticsSuceed;

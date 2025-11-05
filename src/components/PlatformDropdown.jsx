@@ -130,7 +130,7 @@ const PlatformDropdown = () => {
                   </p>
                 </a>
                 <a
-                  href="/contact"
+                  href="/platform/email-automation"
                   className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
                 >
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
@@ -141,7 +141,7 @@ const PlatformDropdown = () => {
                   </p>
                 </a>
                 <a
-                  href="/dashboard/progress"
+                  href="/platform/analytics"
                   className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
                 >
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
@@ -152,7 +152,7 @@ const PlatformDropdown = () => {
                   </p>
                 </a>
                 <a
-                  href="/dashboard"
+                  href="/platform/brand"
                   className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
                 >
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
@@ -184,7 +184,7 @@ const PlatformDropdown = () => {
                   </p>
                 </a>
                 <a
-                  href="/merchant-processing"
+                  href="/platform/selling"
                   className="block group cursor-pointer p-3 rounded-lg transition-all duration-200 hover:bg-blue-50"
                 >
                   <h4 className="text-base font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
