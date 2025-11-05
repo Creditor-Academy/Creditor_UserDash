@@ -23,8 +23,13 @@ import {
   createLesson,
   updateLessonContent,
 } from '../../services/courseService';
-import enhancedAIService from '../../services/enhancedAIService';
+import openAIService from '../../services/openAIService';
 import { uploadImage } from '@/services/imageUploadService';
+import {
+  uploadAICourseThumbnail,
+  uploadAICourseReferences,
+  uploadAIGeneratedImage,
+} from '@/services/aiUploadService';
 import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
 import '../../styles/AITextEditor.css';
@@ -110,13 +115,16 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const handleFileSelect = async file => {
     try {
       if (file && file.type.startsWith('image/')) {
-        const res = await uploadImage(file, {
-          folder: 'course-thumbnails',
+        console.log('🤖 Uploading AI course thumbnail via /api/ai endpoint...');
+        const res = await uploadAICourseThumbnail(file, {
           public: true,
         });
         if (res?.success && res.imageUrl) {
           setCourseData(prev => ({ ...prev, thumbnail: res.imageUrl }));
-          console.log('✅ Thumbnail uploaded successfully');
+          console.log(
+            '✅ AI course thumbnail uploaded successfully via /api/ai:',
+            res.imageUrl
+          );
         }
       } else {
         console.log('⚠️ Please select an image file');
@@ -132,23 +140,28 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
     try {
-      const results = await Promise.all(
-        files.map(async file => {
-          const isPdf = file.type === 'application/pdf';
-          const options = isPdf
-            ? { type: 'pdf', folder: 'course-references', public: true }
-            : { folder: 'course-references', public: true };
-          const res = await uploadImage(file, options);
-          return {
-            name: file.name,
-            url: res?.imageUrl || null,
-            type: isPdf ? 'pdf' : 'image',
-            size: file.size,
-          };
-        })
+      console.log(
+        '🤖 Uploading AI course reference files via /api/ai endpoint...'
       );
-      setUploadedFiles(prev => [...prev, ...results.filter(r => r.url)]);
-      console.log('✅ Reference files uploaded successfully');
+      const results = await uploadAICourseReferences(files, {
+        public: true,
+      });
+
+      const successfulUploads = results.filter(r => r.success && r.url);
+      setUploadedFiles(prev => [...prev, ...successfulUploads]);
+
+      const successCount = successfulUploads.length;
+      const totalCount = results.length;
+
+      if (successCount === totalCount) {
+        console.log(
+          `✅ All ${successCount} reference files uploaded successfully via /api/ai`
+        );
+      } else {
+        console.warn(
+          `⚠️ Uploaded ${successCount}/${totalCount} reference files via /api/ai`
+        );
+      }
     } catch (err) {
       console.error('Reference upload failed:', err);
       console.error('❌ Failed to upload reference files:', err.message);
@@ -319,33 +332,23 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         aiImagePrompt.trim() ||
         `Professional course thumbnail for "${courseData.title}" - educational, modern, clean design, high quality`;
 
-      console.log('🎨 Generating AI thumbnail with Deep AI:', prompt);
+      console.log('🎨 Generating AI thumbnail with OpenAI DALL-E:', prompt);
 
-      // Use enhanced AI service for image generation with multi-provider support
-      const response = await enhancedAIService.generateCourseImage(prompt, {
-        style: 'realistic',
+      // Use OpenAI service for image generation
+      const response = await openAIService.generateCourseImage(prompt, {
+        style: 'vivid',
         size: '1024x1024',
       });
 
       if (response.success && response.data?.url) {
-        console.log('🎨 AI image generated, now uploading to S3...');
+        console.log(
+          '🎨 AI image generated, now uploading to S3 via /api/ai...'
+        );
 
         try {
-          // Convert the generated image URL to a blob and then to a file
-          const imageResponse = await fetch(response.data.url);
-          const imageBlob = await imageResponse.blob();
-
-          // Create a file from the blob
-          const fileName = `ai-course-thumbnail-${Date.now()}.png`;
-          const imageFile = new File([imageBlob], fileName, {
-            type: 'image/png',
-          });
-
-          // Upload the generated image to S3
-          const uploadResult = await uploadImage(imageFile, {
-            folder: 'course-thumbnails',
+          // Upload the AI-generated image URL directly to S3 using AI endpoint
+          const uploadResult = await uploadAIGeneratedImage(response.data.url, {
             public: true,
-            type: 'image',
           });
 
           if (uploadResult?.success && uploadResult.imageUrl) {
@@ -362,15 +365,18 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
               `🎨 Generated with: ${response.data.provider || 'Enhanced AI Service'}\n` +
               `🤖 Model: ${response.data.model || 'Multi-Provider'}\n` +
               `📏 Size: ${response.data.size || '1024x1024'}\n` +
-              `☁️ Uploaded to S3: ${uploadResult.imageUrl.substring(0, 50)}...\n` +
-              `📁 File: ${uploadResult.fileName}`;
+              `☁️ Uploaded via: /api/ai endpoint\n` +
+              `📁 S3 URL: ${uploadResult.imageUrl.substring(0, 50)}...`;
 
-            console.log('✅ AI thumbnail generated and uploaded successfully');
+            console.log(
+              '✅ AI thumbnail generated and uploaded via /api/ai successfully'
+            );
 
-            console.log('✅ AI thumbnail generated and uploaded to S3:', {
+            console.log('✅ AI thumbnail uploaded to S3 via /api/ai:', {
               originalUrl: response.data.url,
               s3Url: uploadResult.imageUrl,
-              fileName: uploadResult.fileName,
+              uploadedToS3: uploadResult.uploadedToS3,
+              source: uploadResult.source,
             });
           } else {
             // Upload failed, use the generated URL as fallback
@@ -378,7 +384,9 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
             setAiImageError(
               `⚠️ Image generated but S3 upload failed. Using temporary URL: ${uploadResult?.message || 'Upload error'}`
             );
-            console.warn('S3 upload failed, using generated URL as fallback');
+            console.warn(
+              'S3 upload via /api/ai failed, using generated URL as fallback'
+            );
           }
         } catch (uploadError) {
           // Upload failed, use the generated URL as fallback
@@ -386,7 +394,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
           setAiImageError(
             `⚠️ Image generated but S3 upload failed: ${uploadError.message}. Using temporary URL.`
           );
-          console.error('S3 upload error:', uploadError);
+          console.error('S3 upload error via /api/ai:', uploadError);
         }
       } else {
         // Even if generation "failed", we might have a fallback image
