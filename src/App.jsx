@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -130,6 +130,7 @@ import Sitemap from './pages/Sitemap';
 function App() {
   return (
     <ThemeProvider>
+      <ScrollToTop />
       <AuthProvider>
         <UserProvider>
           <CreditsProvider>
@@ -410,6 +411,18 @@ function CourseTimerProviderWrapper() {
       </SubRoutes>
     </CourseTimerProvider>
   );
+}
+
+// Always scroll to top on route change (prevents landing mid-page after navigation)
+function ScrollToTop() {
+  const location = useLocation();
+  React.useEffect(() => {
+    // If navigating to a hash, let the browser handle it; otherwise scroll to top
+    if (!location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [location.pathname, location.search]);
+  return null;
 }
 
 export default App;
