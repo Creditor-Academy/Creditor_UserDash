@@ -186,6 +186,13 @@ function App() {
                 element={<MembershipsPage />}
               />
               <Route path="/platform/coaching" element={<CoachingPage />} />
+              <Route
+                path="/platform/email-automation"
+                element={<Emailautomation />}
+              />
+              <Route path="/platform/analytics" element={<Analyticspage />} />
+              <Route path="/platform/brand" element={<Brandpage />} />
+              <Route path="/platform/selling" element={<Sellingpage />} />
 
               <Route
                 path="/instructor"
