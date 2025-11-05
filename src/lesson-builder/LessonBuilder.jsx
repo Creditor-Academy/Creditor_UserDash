@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { SidebarContext } from '@/layouts/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import VideoComponent from '@/components/VideoComponent';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -12,56 +10,42 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  ArrowLeft,
-  Plus,
-  Eye,
-  Pencil,
-  Trash2,
-  GripVertical,
-  Image,
-  Video,
-  FileText as FileTextIcon,
-  Link as LinkIcon,
-  List,
-  Table,
-  Loader2,
-  MessageSquare,
-  Quote,
-  Layers,
-  Sparkles,
-  Minus,
-  Volume2,
-  Youtube,
-  CheckCircle,
-  X,
-} from 'lucide-react';
-import AIEnhancementPanel from '@/components/courses/AILessonContentGenerator';
+import { Plus, Pencil, Trash2, GripVertical, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import QuoteComponent from '@/components/QuoteComponent';
-import TableComponent from '@/components/TableComponent';
-import ListComponent from '@/components/ListComponent';
-import InteractiveComponent from '@/components/InteractiveComponent';
 import axios from 'axios';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import StatementComponent from '@/components/statement';
-import DividerComponent from '@/components/DividerComponent';
-import AudioComponent from '@/components/AudioComponent';
-import YouTubeComponent from '@/components/YouTubeComponent';
-import PDFComponent from '@/components/PDFComponent';
-import LinkComponent from '@/components/LinkComponent';
-import ImageBlockComponent from '@/components/ImageBlockComponent';
-import TextBlockComponent from '@/components/TextBlockComponent';
-import InteractiveListRenderer from '@/components/InteractiveListRenderer';
-import {
-  injectStyles,
-  initializeGlobalFunctions,
-} from '@/utils/LessonBuilder/styleSheets';
-import '@/utils/LessonBuilder/quillConfig';
-import { getToolbarModules } from '@/utils/LessonBuilder/quillConfig';
-import { textTypes } from '@/constants/LessonBuilder/textTypesConfig';
-import { getPlainText } from '@/utils/LessonBuilder/blockHelpers';
+
+// Block Components
+import VideoComponent from './blocks/VideoBlock';
+import QuoteComponent from './blocks/QuoteBlock';
+import TableComponent from './blocks/TableBlock';
+import ListComponent from './blocks/ListBlock';
+import InteractiveComponent from './blocks/InteractiveBlock';
+import StatementComponent from './blocks/StatementBlock';
+import DividerComponent from './blocks/DividerBlock';
+import AudioComponent from './blocks/AudioBlock';
+import YouTubeComponent from './blocks/YouTubeBlock';
+import PDFComponent from './blocks/PDFBlock';
+import LinkComponent from './blocks/LinkBlock';
+import ImageBlockComponent from './blocks/ImageBlock';
+import TextBlockComponent from './blocks/TextBlock';
+import InteractiveListRenderer from './blocks/InteractiveListRenderer';
+
+// Layout Components
+import { LessonHeader, ContentLibrary, EmptyState } from './layout';
+
+// Hooks
+import { useLessonData } from './hooks/useLessonData';
+import { useAutoSave } from './hooks/useAutoSave';
+import { useDragAndDrop } from './hooks/useDragAndDrop';
+
+// Utils
+import { injectStyles, initializeGlobalFunctions } from './utils/styleSheets';
+import './utils/quillConfig';
+import { getToolbarModules } from './utils/quillConfig';
+import { textTypes } from './constants/textTypesConfig';
+import { getPlainText } from './utils/blockHelpers';
 
 // Initialize styles and global functions
 injectStyles();
@@ -70,18 +54,23 @@ initializeGlobalFunctions();
 function LessonBuilder() {
   const { sidebarCollapsed, setSidebarCollapsed } = useContext(SidebarContext);
   const { courseId, moduleId, lessonId } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const [contentBlocks, setContentBlocks] = useState([]);
-  const [lessonTitle, setLessonTitle] = useState('Untitled Lesson');
-  const [lessonData, setLessonData] = useState(
-    location.state?.lessonData || null
-  );
-  const [loading, setLoading] = useState(true);
+
+  // Use custom hooks
+  const {
+    lessonTitle,
+    setLessonTitle,
+    lessonData,
+    setLessonData,
+    lessonContent,
+    setLessonContent,
+    contentBlocks,
+    setContentBlocks,
+    loading,
+    fetchingContent,
+  } = useLessonData();
+
   const [imageUploading, setImageUploading] = useState({});
-  const [draggedBlockId, setDraggedBlockId] = useState(null);
-  const [lessonContent, setLessonContent] = useState(null);
-  const [fetchingContent, setFetchingContent] = useState(false);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [editingVideoBlock, setEditingVideoBlock] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -118,112 +107,44 @@ function LessonBuilder() {
   const [showYouTubeDialog, setShowYouTubeDialog] = useState(false);
   const [editingYouTubeBlock, setEditingYouTubeBlock] = useState(null);
 
-  // Auto-save state
-  const [autoSaveStatus, setAutoSaveStatus] = useState('saved'); // 'saving', 'saved', 'error'
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
   // Inline block insertion state
   const [insertionPosition, setInsertionPosition] = useState(null);
-  const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false); // Show insert block dialog
+  const [showInsertBlockDialog, setShowInsertBlockDialog] = useState(false);
 
-  // Editor state for edit modal
-  const [editorContent, setEditorContent] = useState('');
-  const [editorHeading, setEditorHeading] = useState('');
-  const [editorSubheading, setEditorSubheading] = useState('');
+  // Component refs
+  const statementComponentRef = useRef();
+  const listComponentRef = useRef();
+  const quoteComponentRef = useRef();
+  const dividerComponentRef = useRef();
+  const imageBlockComponentRef = useRef();
 
-  // Content block types with icons for the sidebar
-  const contentBlockTypes = [
-    {
-      id: 'text',
-      title: 'Text',
-      icon: <FileTextIcon className="h-5 w-5" />,
-    },
-    {
-      id: 'statement',
-      title: 'Statement',
-      icon: <MessageSquare className="h-5 w-5" />,
-    },
-    {
-      id: 'quote',
-      title: 'Quote',
-      icon: <Quote className="h-5 w-5" />,
-    },
-    {
-      id: 'image',
-      title: 'Image',
-      icon: <Image className="h-5 w-5" />,
-    },
-    {
-      id: 'youtube',
-      title: 'YouTube',
-      icon: <Youtube className="h-5 w-5" />,
-    },
-    {
-      id: 'video',
-      title: 'Video',
-      icon: <Video className="h-5 w-5" />,
-    },
-    {
-      id: 'audio',
-      title: 'Audio',
-      icon: <Volume2 className="h-5 w-5" />,
-    },
-    {
-      id: 'link',
-      title: 'Link',
-      icon: <LinkIcon className="h-5 w-5" />,
-    },
-    {
-      id: 'pdf',
-      title: 'PDF',
-      icon: <FileTextIcon className="h-5 w-5" />,
-    },
-    {
-      id: 'list',
-      title: 'List',
-      icon: <List className="h-5 w-5" />,
-    },
-    {
-      id: 'tables',
-      title: 'Tables',
-      icon: <Table className="h-5 w-5" />,
-    },
-    {
-      id: 'interactive',
-      title: 'Interactive',
-      icon: <Layers className="h-5 w-5" />,
-    },
-    {
-      id: 'divider',
-      title: 'Divider',
-      icon: <Minus className="h-5 w-5" />,
-    },
-  ];
+  // Use custom hooks for auto-save and drag-drop
+  const {
+    autoSaveStatus,
+    setAutoSaveStatus,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+  } = useAutoSave(
+    lessonId,
+    contentBlocks,
+    lessonContent,
+    loading,
+    fetchingContent,
+    handleUpdate // We'll define this function below
+  );
 
-  const statementComponentRef = React.useRef();
-  const listComponentRef = React.useRef();
-  const quoteComponentRef = React.useRef();
-  const dividerComponentRef = React.useRef();
-  const imageBlockComponentRef = React.useRef();
-
-  // Warn user before leaving page with unsaved changes
-  React.useEffect(() => {
-    const handleBeforeUnload = e => {
-      if (hasUnsavedChanges || autoSaveStatus === 'saving') {
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges, autoSaveStatus]);
-
-  // Track previous contentBlocks to detect actual changes
-  const prevContentBlocksRef = React.useRef([]);
-  const prevLessonContentRef = React.useRef(null);
-  const isInitialLoadRef = React.useRef(true);
+  const {
+    draggedBlockId,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDrop,
+  } = useDragAndDrop(
+    contentBlocks,
+    setContentBlocks,
+    lessonContent,
+    setLessonContent
+  );
 
   const handleBlockClick = (blockType, position = null) => {
     // Store the insertion position for use in subsequent handlers
@@ -2240,129 +2161,7 @@ function LessonBuilder() {
     }
   };
 
-  const handleDragStart = (e, blockId) => {
-    setDraggedBlockId(blockId);
-    e.dataTransfer.effectAllowed = 'move';
-
-    // Add a class to the dragged element for visual feedback
-    const element = e.target;
-    element.classList.add('dragging');
-
-    // Set custom ghost image
-    const ghost = element.cloneNode(true);
-    ghost.style.opacity = '0.5';
-    ghost.style.position = 'absolute';
-    ghost.style.left = '-9999px';
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, 0, 0);
-
-    // Clean up ghost element after drag starts
-    setTimeout(() => {
-      document.body.removeChild(ghost);
-    }, 0);
-  };
-
-  // Add dragend handler to clean up styles
-  const handleDragEnd = () => {
-    // Reset all block transforms
-    document.querySelectorAll('[data-block-id]').forEach(block => {
-      block.style.transform = '';
-      block.classList.remove('dragging');
-    });
-    setDraggedBlockId(null);
-  };
-
-  const handleDragOver = e => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-
-    // Find the dragged element and potential drop target
-    const draggedElement = document.querySelector(
-      `[data-block-id="${draggedBlockId}"]`
-    );
-    if (!draggedElement) return;
-
-    const dropTarget = document
-      .elementFromPoint(e.clientX, e.clientY)
-      ?.closest('[data-block-id]');
-    if (!dropTarget || dropTarget === draggedElement) return;
-
-    // Get all blocks
-    const blocks = Array.from(document.querySelectorAll('[data-block-id]'));
-    const draggedIndex = blocks.indexOf(draggedElement);
-    const dropIndex = blocks.indexOf(dropTarget);
-
-    // Reset all transformations first
-    blocks.forEach(block => {
-      if (block !== draggedElement) {
-        block.style.transform = '';
-      }
-    });
-
-    // Apply transform to drop target
-    const moveUp = draggedIndex > dropIndex;
-    dropTarget.style.transform = `translateY(${moveUp ? '40px' : '-40px'})`;
-    dropTarget.style.transition = 'transform 0.2s ease';
-  };
-
-  const handleDrop = (e, targetBlockId) => {
-    e.preventDefault();
-    if (draggedBlockId === null || draggedBlockId === targetBlockId) return;
-
-    // Update lesson content order - handle both lessonContent and contentBlocks
-    if (lessonContent?.data?.content && lessonContent.data.content.length > 0) {
-      const content = lessonContent.data.content;
-      const sourceIndex = content.findIndex(
-        b => (b.block_id || b.id) === draggedBlockId
-      );
-      const targetIndex = content.findIndex(
-        b => (b.block_id || b.id) === targetBlockId
-      );
-
-      if (sourceIndex === -1 || targetIndex === -1) return;
-
-      const updatedContent = [...content];
-      const [moved] = updatedContent.splice(sourceIndex, 1);
-      updatedContent.splice(targetIndex, 0, moved);
-
-      // Update the state with new order
-      setLessonContent({
-        ...lessonContent,
-        data: {
-          ...lessonContent.data,
-          content: updatedContent.map((block, index) => ({
-            ...block,
-            order: index + 1,
-          })),
-        },
-      });
-    } else {
-      // Handle contentBlocks drag and drop
-      const sourceIndex = contentBlocks.findIndex(
-        b => (b.id || b.block_id) === draggedBlockId
-      );
-      const targetIndex = contentBlocks.findIndex(
-        b => (b.id || b.block_id) === targetBlockId
-      );
-
-      if (sourceIndex === -1 || targetIndex === -1) return;
-
-      const updatedBlocks = [...contentBlocks];
-      const [moved] = updatedBlocks.splice(sourceIndex, 1);
-      updatedBlocks.splice(targetIndex, 0, moved);
-
-      setContentBlocks(updatedBlocks);
-    }
-
-    // Reset drag state
-    setDraggedBlockId(null);
-
-    // Reset any visual transformations
-    document.querySelectorAll('[data-block-id]').forEach(block => {
-      block.style.transform = '';
-      block.style.transition = '';
-    });
-  };
+  // Drag & drop functions now come from useDragAndDrop hook
 
   const handlePreview = () => {
     // Navigate to the new lesson preview page
@@ -3635,110 +3434,7 @@ function LessonBuilder() {
     }
   };
 
-  // Debounced auto-save function with useRef to maintain timeout across renders
-  const autoSaveTimeoutRef = React.useRef(null);
-  const handleUpdateRef = React.useRef(handleUpdate);
-
-  // Keep handleUpdate reference up to date
-  React.useEffect(() => {
-    handleUpdateRef.current = handleUpdate;
-  }, [handleUpdate]);
-
-  const debouncedAutoSave = React.useCallback(
-    content => {
-      // Clear existing timeout
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-
-      // Set new timeout
-      autoSaveTimeoutRef.current = setTimeout(async () => {
-        if (!lessonId || !content || content.length === 0) {
-          return;
-        }
-
-        try {
-          console.log('💾 Auto-save executing for', content.length, 'blocks');
-          setAutoSaveStatus('saving');
-          await handleUpdateRef.current();
-          // handleUpdate() will set the status to 'saved' on success
-        } catch (error) {
-          console.error('❌ Auto-save failed:', error);
-          // handleUpdate() will set the status to 'error' and show the specific error message
-        }
-      }, 2000); // 2 second debounce for better stability
-    },
-    [lessonId]
-  );
-
-  // Auto-save when content blocks change
-  React.useEffect(() => {
-    // Don't auto-save on initial load or when loading lesson content
-    if (loading || fetchingContent) return;
-
-    // Skip auto-save on initial load
-    if (isInitialLoadRef.current) {
-      isInitialLoadRef.current = false;
-      prevContentBlocksRef.current = [...contentBlocks];
-      prevLessonContentRef.current = lessonContent
-        ? JSON.parse(JSON.stringify(lessonContent))
-        : null;
-      return;
-    }
-
-    // Check if contentBlocks actually changed
-    const contentBlocksChanged =
-      JSON.stringify(prevContentBlocksRef.current) !==
-      JSON.stringify(contentBlocks);
-
-    // Check if lessonContent changed
-    const lessonContentChanged =
-      JSON.stringify(prevLessonContentRef.current) !==
-      JSON.stringify(lessonContent);
-
-    // Trigger auto-save if either changed
-    const hasChanged = contentBlocksChanged || lessonContentChanged;
-
-    if (hasChanged && contentBlocks.length > 0) {
-      // Detailed logging for debugging
-      const changedBlocks = contentBlocks.filter((block, index) => {
-        const prevBlock = prevContentBlocksRef.current[index];
-        if (!prevBlock) return true; // New block
-        return JSON.stringify(prevBlock) !== JSON.stringify(block);
-      });
-
-      console.log('🔄 Auto-save triggered:', {
-        contentBlocksChanged,
-        lessonContentChanged,
-        totalBlocks: contentBlocks.length,
-        previousBlocks: prevContentBlocksRef.current.length,
-        changedBlocks: changedBlocks.map(b => ({
-          id: b.id || b.block_id,
-          type: b.type,
-          textType: b.textType,
-          hasContent: !!b.content,
-          hasHtmlCss: !!b.html_css,
-        })),
-        blockTypes: contentBlocks.map(b => b.type),
-        source: lessonContent?.data?.content
-          ? 'lessonContent'
-          : 'contentBlocks',
-      });
-
-      setHasUnsavedChanges(true);
-      debouncedAutoSave(contentBlocks);
-      prevContentBlocksRef.current = [...contentBlocks];
-      prevLessonContentRef.current = lessonContent
-        ? JSON.parse(JSON.stringify(lessonContent))
-        : null;
-    }
-  }, [
-    contentBlocks,
-    lessonContent,
-    loading,
-    fetchingContent,
-    debouncedAutoSave,
-  ]);
+  // Auto-save logic now handled by useAutoSave hook
 
   const handleImageTemplateSelect = newBlock => {
     // Check if we're inserting at a specific position
@@ -4646,47 +4342,10 @@ function LessonBuilder() {
     <>
       <div className="flex min-h-screen w-full bg-white overflow-hidden">
         {/* Content Blocks Sidebar */}
-        <div
-          className="fixed top-16 h-[calc(100vh-4rem)] z-40 bg-white shadow-sm border-r border-gray-200 overflow-y-auto w-72 flex-shrink-0"
-          style={{
-            left: sidebarCollapsed ? '4.5rem' : '17rem',
-          }}
-        >
-          <div className="w-72 bg-white border-r border-gray-200 flex flex-col h-full">
-            <div className="sticky top-0 z-10 p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <h2 className="text-lg font-bold text-gray-800 flex items-center">
-                Content Library
-              </h2>
-              <p className="text-xs text-gray-500 mt-1">
-                Drag and drop content blocks to build your lesson
-              </p>
-            </div>
-
-            <div className="overflow-y-auto flex-1 p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {contentBlockTypes.map(blockType => (
-                  <Card
-                    key={blockType.id}
-                    className="cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 h-28 flex flex-col group hover:border-indigo-200 hover:bg-indigo-50"
-                    onClick={() => handleBlockClick(blockType)}
-                  >
-                    <CardContent className="flex flex-col items-center justify-center p-3 h-full">
-                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 mb-2 group-hover:bg-indigo-200 transition-colors">
-                        {blockType.icon}
-                      </div>
-                      <h3 className="text-xs font-medium text-gray-800 text-center">
-                        {blockType.title}
-                      </h3>
-                      <p className="text-[10px] text-gray-500 text-center mt-1 line-clamp-1">
-                        {blockType.description}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ContentLibrary
+          onBlockClick={handleBlockClick}
+          sidebarCollapsed={sidebarCollapsed}
+        />
 
         {/* Main Content */}
         <div

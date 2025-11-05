@@ -16,7 +16,7 @@ import {
   saveAILessons,
   updateEnhancedLessonContent,
 } from '../../services/aiCourseService';
-import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+import { contentBlockTypes } from '@/lesson-builder/constants/blockTypes';
 import OutlineTab from './LessonCreatorTabs/OutlineTab';
 
 const EnhancedAILessonCreator = ({

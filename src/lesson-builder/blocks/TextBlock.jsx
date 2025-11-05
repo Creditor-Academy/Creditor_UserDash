@@ -10,11 +10,8 @@ import { Button } from '@/components/ui/button';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { FileText as FileTextIcon } from 'lucide-react';
-import { getToolbarModules } from '@/utils/LessonBuilder/quillConfig';
-import {
-  textTypes,
-  gradientOptions,
-} from '@/constants/LessonBuilder/textTypesConfig';
+import { getToolbarModules } from '../utils/quillConfig';
+import { textTypes, gradientOptions } from '../constants/textTypesConfig';
 import { toast } from 'react-hot-toast';
 
 const TextBlockComponent = ({

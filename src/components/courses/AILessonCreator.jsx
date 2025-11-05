@@ -38,7 +38,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { saveAILessons } from '../../services/aiCourseService';
-import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+import { contentBlockTypes } from '@/lesson-builder/constants/blockTypes';
 
 const AILessonCreator = ({
   isOpen,

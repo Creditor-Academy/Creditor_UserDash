@@ -6,8 +6,8 @@ import {
   convertToUnifiedFormat,
   detectTextType,
   extractTextContent,
-} from '@/utils/LessonBuilder/blockHelpers';
-import { textTypes } from '@/constants/LessonBuilder/textTypes';
+} from '@/lesson-builder/utils/blockHelpers';
+import { textTypes } from '@/lesson-builder/constants/textTypesConfig';
 
 export const useLessonBuilder = () => {
   const { courseId, moduleId, lessonId } = useParams();

@@ -6,16 +6,16 @@ import LessonHeader from '@/components/LessonBuilder/LessonHeader';
 import ContentLibrary from '@/components/LessonBuilder/ContentBlocks/ContentLibrary';
 import TextTypeSidebar from '@/components/LessonBuilder/Sidebars/TextTypeSidebar';
 import TextEditor from '@/components/LessonBuilder/ContentBlocks/TextBlocks/TextEditor';
-import AIEnhancementPanel from '@/components/courses/AILessonContentGenerator';
+import AIEnhancementPanel from '@/lesson-builder/ai/AIEnhancementPanel';
 
 // Import hooks and utilities
 import { useLessonBuilder } from './hooks/useLessonBuilder';
-import { injectStyles } from '@/utils/LessonBuilder/styleSheets';
+import { injectStyles } from '@/lesson-builder/utils/styleSheets';
 
 // Import existing components that need to be extracted later
-import QuoteComponent from '@/components/QuoteComponent';
-import TableComponent from '@/components/TableComponent';
-import StatementComponent from '@/components/statement';
+import QuoteComponent from '@/lesson-builder/blocks/QuoteBlock';
+import TableComponent from '@/lesson-builder/blocks/TableBlock';
+import StatementComponent from '@/lesson-builder/blocks/StatementBlock';
 
 // Inject custom styles
 injectStyles();
