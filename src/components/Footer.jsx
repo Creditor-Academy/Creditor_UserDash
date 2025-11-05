@@ -119,14 +119,22 @@ const Footer = () => (
       }
 
       @media (max-width: 680px) {
-        .athena-footer .columns { flex-direction: column; padding: 20px 0; }
-        .athena-footer .bottom { padding: 12px 20px; flex-direction: column-reverse; align-items: stretch; gap: 12px; }
-        .athena-footer .bottom .right { display: flex; justify-content: space-between; align-items: center; }
+        .athena-footer .columns { flex-direction: column; padding: 18px 0; gap: 14px; }
+        .athena-footer .columns > div { flex: 1 1 100% !important; min-width: 0 !important; }
+        .athena-footer .brand-col { text-align: left; }
+        .athena-footer .bottom { padding: 12px 16px; flex-direction: column-reverse; align-items: stretch; gap: 12px; }
+        .athena-footer .bottom .right { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .athena-footer .bottom .left { width: 100%; }
+        .athena-footer .social-anchor { font-size: 1.25rem !important; }
+        .athena-footer .footer-link { font-size: 0.98rem; }
       }
 
       @media (max-width: 480px) {
         .athena-footer .brand { font-size: 1.6rem; }
         .athena-footer .condensed-links { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .athena-footer .columns { gap: 12px; }
+        .athena-footer .sectionTitle { font-size: 1.05rem; }
+        .athena-footer a { word-break: break-word; }
       }
     `}</style>
 
