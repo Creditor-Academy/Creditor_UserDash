@@ -43,6 +43,7 @@ const TextBlockComponent = ({
   const [masterHeadingGradient, setMasterHeadingGradient] =
     useState('gradient1');
   const [headingBgColor, setHeadingBgColor] = useState('#ffffff'); // Background color for heading block
+  const [subheadingBgColor, setSubheadingBgColor] = useState('#ffffff');
 
   // Handle text type selection
   const handleTextTypeSelect = textType => {
@@ -312,13 +313,11 @@ const TextBlockComponent = ({
               setEditorHtml(htmlContent);
             }
 
-            // Extract background color for heading blocks
+            // Extract background color for heading and subheading blocks
             if (detectedTextType === 'heading') {
-              // First check if stored in block data
               if (block.headingBgColor) {
                 setHeadingBgColor(block.headingBgColor);
               } else {
-                // Extract from HTML style attribute
                 const containerDiv = tempDiv.querySelector(
                   'div[style*="background-color"]'
                 );
@@ -330,10 +329,31 @@ const TextBlockComponent = ({
                   if (bgColorMatch) {
                     setHeadingBgColor(bgColorMatch[1].trim());
                   } else {
-                    setHeadingBgColor('#ffffff'); // Default white
+                    setHeadingBgColor('#ffffff');
                   }
                 } else {
-                  setHeadingBgColor('#ffffff'); // Default white
+                  setHeadingBgColor('#ffffff');
+                }
+              }
+            } else if (detectedTextType === 'subheading') {
+              if (block.subheadingBgColor) {
+                setSubheadingBgColor(block.subheadingBgColor);
+              } else {
+                const containerDiv = tempDiv.querySelector(
+                  'div[style*="background-color"]'
+                );
+                if (containerDiv) {
+                  const style = containerDiv.getAttribute('style') || '';
+                  const bgColorMatch = style.match(
+                    /background(?:-color)?:\s*([^;]+)/i
+                  );
+                  if (bgColorMatch) {
+                    setSubheadingBgColor(bgColorMatch[1].trim());
+                  } else {
+                    setSubheadingBgColor('#ffffff');
+                  }
+                } else {
+                  setSubheadingBgColor('#ffffff');
                 }
               }
             }
@@ -341,6 +361,8 @@ const TextBlockComponent = ({
             setEditorHtml(htmlContent);
             if (detectedTextType === 'heading') {
               setHeadingBgColor(block.headingBgColor || '#ffffff');
+            } else if (detectedTextType === 'subheading') {
+              setSubheadingBgColor(block.subheadingBgColor || '#ffffff');
             }
           }
         }
@@ -353,6 +375,8 @@ const TextBlockComponent = ({
       setEditorContent('');
       setCurrentTextBlockId(null);
       setCurrentTextType(null);
+      setHeadingBgColor('#ffffff');
+      setSubheadingBgColor('#ffffff');
     }
   };
 
@@ -646,7 +670,7 @@ const TextBlockComponent = ({
           }
 
           updatedContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="relative rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1" style="background-color: ${subheadingBgColor || '#ffffff'};">
               <article class="max-w-none">
                   ${styledContent}
               </article>
@@ -811,6 +835,10 @@ const TextBlockComponent = ({
                       effectiveTextType === 'heading'
                         ? headingBgColor
                         : block.headingBgColor, // Store background color
+                    subheadingBgColor:
+                      effectiveTextType === 'subheading'
+                        ? subheadingBgColor || '#ffffff'
+                        : block.subheadingBgColor,
                     updatedAt: new Date().toISOString(),
                     textType: effectiveTextType || block.textType,
                   }
@@ -847,6 +875,10 @@ const TextBlockComponent = ({
                         effectiveTextType === 'heading'
                           ? headingBgColor
                           : block.headingBgColor, // Store background color
+                      subheadingBgColor:
+                        effectiveTextType === 'subheading'
+                          ? subheadingBgColor || '#ffffff'
+                          : block.subheadingBgColor,
                       updatedAt: new Date().toISOString(),
                       textType: effectiveTextType || block.textType,
                     }
@@ -935,11 +967,9 @@ const TextBlockComponent = ({
           }
 
           newBlockContent = `
-            <div class="relative bg-white rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1">
+            <div class="relative rounded-2xl shadow-md p-6 hover:shadow-xl transition transform hover:-translate-y-1" style="background-color: ${subheadingBgColor || '#ffffff'};">
               <article class="max-w-none">
-                <div class="prose prose-lg max-w-none">
-                  ${styledContent}
-                </div>
+                ${styledContent}
               </article>
             </div>`;
         }
@@ -962,6 +992,10 @@ const TextBlockComponent = ({
               : undefined,
           headingBgColor:
             effectiveTextTypeForNew === 'heading' ? headingBgColor : undefined, // Store background color for heading blocks
+          subheadingBgColor:
+            effectiveTextTypeForNew === 'subheading'
+              ? subheadingBgColor || '#ffffff'
+              : undefined,
           style:
             textTypes.find(t => t.id === effectiveTextTypeForNew)?.style || {},
           createdAt: new Date().toISOString(),
@@ -1009,6 +1043,7 @@ const TextBlockComponent = ({
     setEditorContent('');
     setMasterHeadingGradient('gradient1');
     setHeadingBgColor('#ffffff'); // Reset background color
+    setSubheadingBgColor('#ffffff');
   };
 
   // Allow opening the text editor from parent
@@ -1179,23 +1214,54 @@ const TextBlockComponent = ({
                 // Subheading only
                 if (textType === 'subheading') {
                   return (
-                    <div className="flex-1 flex flex-col h-full">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Subheading
-                      </label>
-                      <div
-                        className="flex-1 flex flex-col border rounded-md overflow-visible bg-white"
-                        style={{ height: '350px' }}
-                      >
-                        <ReactQuill
-                          theme="snow"
-                          value={editorHtml}
-                          onChange={setEditorHtml}
-                          modules={getToolbarModules('heading')}
-                          placeholder="Enter your subheading text..."
-                          style={{ height: '300px' }}
-                          className="quill-editor-overflow-visible"
-                        />
+                    <div className="space-y-4">
+                      <div className="flex-1 flex flex-col h-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Subheading
+                        </label>
+                        <div
+                          className="flex-1 flex flex-col border rounded-md overflow-visible bg-white"
+                          style={{ height: '350px' }}
+                        >
+                          <ReactQuill
+                            theme="snow"
+                            value={editorHtml}
+                            onChange={setEditorHtml}
+                            modules={getToolbarModules('heading')}
+                            placeholder="Enter your subheading text..."
+                            style={{ height: '300px' }}
+                            className="quill-editor-overflow-visible"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Background Color
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={subheadingBgColor}
+                            onChange={e => setSubheadingBgColor(e.target.value)}
+                            className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={subheadingBgColor}
+                            onChange={e => setSubheadingBgColor(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="#ffffff"
+                          />
+                        </div>
+                        <div
+                          className="mt-3 p-4 rounded-lg border border-gray-200"
+                          style={{ backgroundColor: subheadingBgColor }}
+                        >
+                          <p className="text-sm text-gray-600 text-center">
+                            Background Preview
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
