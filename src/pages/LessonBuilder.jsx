@@ -5932,7 +5932,16 @@ function LessonBuilder() {
                                                 value
                                               )
                                             }
-                                            modules={getToolbarModules('full')}
+                                            modules={getToolbarModules('image')}
+                                            formats={[
+                                              'font',
+                                              'size',
+                                              'bold',
+                                              'italic',
+                                              'underline',
+                                              'color',
+                                              'list',
+                                            ]}
                                             style={{ minHeight: '100px' }}
                                           />
                                         </div>
