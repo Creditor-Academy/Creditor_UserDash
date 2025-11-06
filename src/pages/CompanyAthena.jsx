@@ -20,9 +20,8 @@ export const CompanyAthena = () => {
       {/* <CompanyCase /> */}
       <CompanyScale />
       <Footer />
-    </div>  
-    );
+    </div>
+  );
 };
 
 export default CompanyAthena;
-

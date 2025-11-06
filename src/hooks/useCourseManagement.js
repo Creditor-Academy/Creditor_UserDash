@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
-import { 
-  fetchAllCourses, 
-  fetchCourseModules, 
-  createModule, 
-  updateModule, 
-  deleteModule, 
-  deleteCourse 
+import {
+  fetchAllCourses,
+  fetchCourseModules,
+  createModule,
+  updateModule,
+  deleteModule,
+  deleteCourse,
 } from '../services/courseService';
 import { createModulePublishedNotification } from '@/services/notificationService';
 
 export const useCourseManagement = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [expandedCourseId, setExpandedCourseId] = useState(null);
   const [courseModules, setCourseModules] = useState({});
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
 
   const PAGE_SIZE = 4;
@@ -26,36 +26,36 @@ export const useCourseManagement = () => {
     try {
       const data = await fetchAllCourses();
       setCourses(data);
-      setError("");
+      setError('');
     } catch (err) {
-      setError("Failed to fetch courses");
+      setError('Failed to fetch courses');
     } finally {
       setLoading(false);
     }
   };
 
   // Handle view modules
-  const handleViewModules = async (courseId) => {
+  const handleViewModules = async courseId => {
     if (expandedCourseId === courseId) {
       setExpandedCourseId(null);
       return;
     }
 
     setExpandedCourseId(courseId);
-    
+
     // Fetch modules if not already loaded
     if (!courseModules[courseId]) {
       try {
         const modules = await fetchCourseModules(courseId);
         setCourseModules(prev => ({
           ...prev,
-          [courseId]: modules
+          [courseId]: modules,
         }));
       } catch (err) {
         console.error('Error fetching modules:', err);
         setCourseModules(prev => ({
           ...prev,
-          [courseId]: []
+          [courseId]: [],
         }));
       }
     }
@@ -66,12 +66,12 @@ export const useCourseManagement = () => {
     try {
       const response = await createModule(courseId, moduleData);
       const createdModule = response.data || response;
-      
+
       // Refresh modules for the course
       const updatedModules = await fetchCourseModules(courseId);
       setCourseModules(prev => ({
         ...prev,
-        [courseId]: updatedModules
+        [courseId]: updatedModules,
       }));
 
       // If module is published, send notification to enrolled users
@@ -80,7 +80,10 @@ export const useCourseManagement = () => {
           await createModulePublishedNotification(courseId, createdModule.id);
           console.log('Module published notification sent successfully');
         } catch (err) {
-          console.warn('Module publish notification failed (route might be disabled); continuing.', err);
+          console.warn(
+            'Module publish notification failed (route might be disabled); continuing.',
+            err
+          );
           // Add local fallback notification
           const now = new Date();
           const localNotification = {
@@ -91,7 +94,11 @@ export const useCourseManagement = () => {
             created_at: now.toISOString(),
             read: false,
           };
-          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+          window.dispatchEvent(
+            new CustomEvent('add-local-notification', {
+              detail: localNotification,
+            })
+          );
         }
         // Trigger UI to refresh notifications
         window.dispatchEvent(new Event('refresh-notifications'));
@@ -110,7 +117,7 @@ export const useCourseManagement = () => {
       const updatedModules = await fetchCourseModules(courseId);
       setCourseModules(prev => ({
         ...prev,
-        [courseId]: updatedModules
+        [courseId]: updatedModules,
       }));
 
       // If module is published on update, send notification to enrolled users
@@ -119,7 +126,10 @@ export const useCourseManagement = () => {
           await createModulePublishedNotification(courseId, moduleId);
           console.log('Module published notification sent successfully');
         } catch (err) {
-          console.warn('Module publish notification failed (route might be disabled); continuing.', err);
+          console.warn(
+            'Module publish notification failed (route might be disabled); continuing.',
+            err
+          );
           // Add local fallback notification
           const now = new Date();
           const localNotification = {
@@ -130,7 +140,11 @@ export const useCourseManagement = () => {
             created_at: now.toISOString(),
             read: false,
           };
-          window.dispatchEvent(new CustomEvent('add-local-notification', { detail: localNotification }));
+          window.dispatchEvent(
+            new CustomEvent('add-local-notification', {
+              detail: localNotification,
+            })
+          );
         }
         window.dispatchEvent(new Event('refresh-notifications'));
       }
@@ -145,20 +159,20 @@ export const useCourseManagement = () => {
     try {
       const moduleData = {
         title: module.title,
-        description: module.description || "test description",
+        description: module.description || 'test description',
         order: module.order || 1,
         estimated_duration: module.estimated_duration || 60,
-        module_status: module.module_status || "DRAFT",
-        thumbnail: module.thumbnail || "test thumbnail"
+        module_status: module.module_status || 'DRAFT',
+        thumbnail: module.thumbnail || 'test thumbnail',
       };
-      
+
       await deleteModule(courseId, module.id, moduleData);
-      
+
       // Refresh modules for the course
       const updatedModules = await fetchCourseModules(courseId);
       setCourseModules(prev => ({
         ...prev,
-        [courseId]: updatedModules
+        [courseId]: updatedModules,
       }));
     } catch (err) {
       console.error('Error deleting module:', err);
@@ -167,7 +181,7 @@ export const useCourseManagement = () => {
   };
 
   // Handle course deletion
-  const handleDeleteCourse = async (courseId) => {
+  const handleDeleteCourse = async courseId => {
     try {
       await deleteCourse(courseId);
       setCourses(prev => prev.filter(c => c.id !== courseId));
@@ -178,23 +192,35 @@ export const useCourseManagement = () => {
   };
 
   // Handle course update
-  const handleCourseUpdated = (updatedCourse) => {
-    setCourses(prev => prev.map(c => c.id === updatedCourse.id ? { ...c, ...updatedCourse } : c));
+  const handleCourseUpdated = updatedCourse => {
+    setCourses(prev =>
+      prev.map(c =>
+        c.id === updatedCourse.id ? { ...c, ...updatedCourse } : c
+      )
+    );
   };
 
   // Handle course creation
-  const handleCourseCreated = (newCourse) => {
+  const handleCourseCreated = newCourse => {
     setCourses(prev => [newCourse, ...prev]);
     setPage(0);
   };
 
   // Filter and paginate courses
-  const filteredCourses = courses.filter(course =>
-    course.title.toLowerCase().includes(search.toLowerCase()) ||
-    (course.description || "").toLowerCase().includes(search.toLowerCase())
+  const filteredCourses = courses.filter(course => {
+    const title = (course?.title || '').toString();
+    const description = (course?.description || '').toString();
+    const q = (search || '').toString();
+    return (
+      title.toLowerCase().includes(q.toLowerCase()) ||
+      description.toLowerCase().includes(q.toLowerCase())
+    );
+  });
+
+  const paginatedCourses = filteredCourses.slice(
+    page * PAGE_SIZE,
+    (page + 1) * PAGE_SIZE
   );
-  
-  const paginatedCourses = filteredCourses.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const hasPrev = page > 0;
   const hasNext = (page + 1) * PAGE_SIZE < filteredCourses.length;
 
@@ -216,7 +242,7 @@ export const useCourseManagement = () => {
     hasPrev,
     hasNext,
     totalPages: Math.ceil(filteredCourses.length / PAGE_SIZE),
-    
+
     // Actions
     setSearch,
     setPage,
@@ -227,6 +253,6 @@ export const useCourseManagement = () => {
     handleDeleteCourse,
     handleCourseUpdated,
     handleCourseCreated,
-    fetchCourses
+    fetchCourses,
   };
-}; 
+};

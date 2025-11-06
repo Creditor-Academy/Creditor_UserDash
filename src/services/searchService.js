@@ -3,14 +3,17 @@ import { getAuthHeader } from './authHeader';
 
 export async function search(query) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search?q=${encodeURIComponent(query)}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -27,14 +30,17 @@ export async function search(query) {
 // Enhanced search function that includes course and module data
 export async function searchWithCoursesAndModules(query) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&include=courses,modules`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search?q=${encodeURIComponent(query)}&include=courses,modules`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -51,14 +57,17 @@ export async function searchWithCoursesAndModules(query) {
 // Search specifically for users with their enrolled courses and modules
 export async function searchUsersWithEnrollments(query) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search/users?q=${encodeURIComponent(query)}&include=enrollments,modules`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search/users?q=${encodeURIComponent(query)}&include=enrollments,modules`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -75,14 +84,17 @@ export async function searchUsersWithEnrollments(query) {
 // Search for courses with their modules
 export async function searchCoursesWithModules(query) {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/search/courses?q=${encodeURIComponent(query)}&include=modules`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeader(),
-      },
-      credentials: 'include',
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/api/search/courses?q=${encodeURIComponent(query)}&include=modules`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        credentials: 'include',
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

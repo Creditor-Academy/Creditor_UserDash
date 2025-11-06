@@ -1,33 +1,43 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { Play, Users, Menu, Plus, MessageCircle, Mail, Download, List, Mic } from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import {
+  Play,
+  Users,
+  Menu,
+  Plus,
+  MessageCircle,
+  Mail,
+  Download,
+  List,
+  Mic,
+} from 'lucide-react';
 
 const questions = [
   {
     id: 1,
-    question: "How can I boost learner engagement?",
+    question: 'How can I boost learner engagement?',
     answer:
-      "Seamlessly integrate our lead generation tools into frictionless funnels and customized learning environments to effortlessly engage leads and nurture them into loyal advocates.",
-    imagePosition: "right",
-    imageBg: "bg-gradient-to-br from-purple-200 to-purple-300",
+      'Seamlessly integrate our lead generation tools into frictionless funnels and customized learning environments to effortlessly engage leads and nurture them into loyal advocates.',
+    imagePosition: 'right',
+    imageBg: 'bg-gradient-to-br from-purple-200 to-purple-300',
     showVideoPlayer: true,
   },
   {
     id: 2,
-    question: "How can I simplify my tech stack?",
+    question: 'How can I simplify my tech stack?',
     answer:
-      "Athena LMS consolidates all your essential features—course building, community management, payment processing, and more—in one place, allowing you to focus on growing your business rather than juggling multiple platforms.",
-    imagePosition: "left",
-    imageBg: "bg-gradient-to-br from-gray-300 to-gray-400",
+      'Athena LMS consolidates all your essential features—course building, community management, payment processing, and more—in one place, allowing you to focus on growing your business rather than juggling multiple platforms.',
+    imagePosition: 'left',
+    imageBg: 'bg-gradient-to-br from-gray-300 to-gray-400',
     showTechStack: true,
   },
   {
     id: 3,
-    question: "How can I go beyond trading my time for money?",
+    question: 'How can I go beyond trading my time for money?',
     answer:
       "Turn your expertise into scalable, revenue-generating digital learning products. With Athena LMS, you can create on-demand courses, paid communities, and digital downloads that sell while you sleep—so you can earn more without always being 'on'.",
-    imagePosition: "right",
-    imageBg: "bg-gradient-to-br from-blue-200 to-blue-300",
+    imagePosition: 'right',
+    imageBg: 'bg-gradient-to-br from-blue-200 to-blue-300',
     showProductChooser: true,
   },
 ];
@@ -51,11 +61,13 @@ export default function ExpertAnswer() {
           className="text-center mb-16 lg:mb-24"
         >
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal text-gray-900 mb-6 leading-tight">
-            Solve your biggest business needs with{" "}
+            Solve your biggest business needs with{' '}
             <span className="text-blue-600">learning experiences</span>
           </h2>
           <p className="text-base sm:text-lg text-gray-700 max-w-4xl mx-auto leading-relaxed">
-            As a subject matter expert, your unique business comes with unique opportunities. Here are some ways Athena can help you turn that expertise into learning experiences that sell.
+            As a subject matter expert, your unique business comes with unique
+            opportunities. Here are some ways Athena can help you turn that
+            expertise into learning experiences that sell.
           </p>
         </motion.div>
 
@@ -69,13 +81,13 @@ export default function ExpertAnswer() {
               viewport={{ once: true, amount: 0.2 }}
               transition={{ duration: 0.7, delay: index * 0.1 }}
               className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center ${
-                item.imagePosition === "left" ? "lg:flex-row-reverse" : ""
+                item.imagePosition === 'left' ? 'lg:flex-row-reverse' : ''
               }`}
             >
               {/* Content Side */}
               <div
                 className={`${
-                  item.imagePosition === "left" ? "lg:order-2" : "lg:order-1"
+                  item.imagePosition === 'left' ? 'lg:order-2' : 'lg:order-1'
                 } flex flex-col justify-center`}
               >
                 <h3 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-normal text-gray-900 mb-6 leading-tight">
@@ -91,7 +103,7 @@ export default function ExpertAnswer() {
               {/* Image Side */}
               <div
                 className={`${
-                  item.imagePosition === "left" ? "lg:order-1" : "lg:order-2"
+                  item.imagePosition === 'left' ? 'lg:order-1' : 'lg:order-2'
                 }`}
               >
                 <motion.div
@@ -101,7 +113,7 @@ export default function ExpertAnswer() {
                 >
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/10" />
-                  
+
                   {/* Video Player Mockup */}
                   {item.showVideoPlayer && (
                     <div className="relative z-10 bg-black rounded-2xl shadow-2xl p-4 m-8 w-4/5 h-3/4 flex flex-col">
@@ -109,7 +121,9 @@ export default function ExpertAnswer() {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                          <span className="text-white text-xs font-semibold">LIVE</span>
+                          <span className="text-white text-xs font-semibold">
+                            LIVE
+                          </span>
                         </div>
                         <div className="flex gap-2">
                           <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
@@ -120,7 +134,7 @@ export default function ExpertAnswer() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Video Content */}
                       <div className="flex-1 bg-gray-800 rounded-lg flex items-center justify-center relative">
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
@@ -174,31 +188,45 @@ export default function ExpertAnswer() {
                   {/* Product Chooser */}
                   {item.showProductChooser && (
                     <div className="relative z-10 bg-blue-200 rounded-2xl shadow-2xl p-6 m-8 w-4/5 h-3/4 flex flex-col">
-                      <h3 className="text-gray-800 text-lg font-semibold mb-6 text-center">Choose a product</h3>
+                      <h3 className="text-gray-800 text-lg font-semibold mb-6 text-center">
+                        Choose a product
+                      </h3>
                       <div className="grid grid-cols-3 gap-4 flex-1">
                         <div className="bg-white/60 rounded-lg p-3 flex flex-col items-center gap-2">
                           <Download className="w-6 h-6 text-gray-700" />
-                          <span className="text-gray-700 text-xs text-center">Digital download</span>
+                          <span className="text-gray-700 text-xs text-center">
+                            Digital download
+                          </span>
                         </div>
                         <div className="bg-white/60 rounded-lg p-3 flex flex-col items-center gap-2">
                           <List className="w-6 h-6 text-gray-700" />
-                          <span className="text-gray-700 text-xs text-center">Course outline</span>
+                          <span className="text-gray-700 text-xs text-center">
+                            Course outline
+                          </span>
                         </div>
                         <div className="bg-white/60 rounded-lg p-3 flex flex-col items-center gap-2">
                           <Play className="w-6 h-6 text-gray-700" />
-                          <span className="text-gray-700 text-xs text-center">Course</span>
+                          <span className="text-gray-700 text-xs text-center">
+                            Course
+                          </span>
                         </div>
                         <div className="bg-white/60 rounded-lg p-3 flex flex-col items-center gap-2">
                           <Users className="w-6 h-6 text-gray-700" />
-                          <span className="text-gray-700 text-xs text-center">Community</span>
+                          <span className="text-gray-700 text-xs text-center">
+                            Community
+                          </span>
                         </div>
                         <div className="bg-white/60 rounded-lg p-3 flex flex-col items-center gap-2">
                           <div className="w-6 h-6 bg-gray-500 rounded-full"></div>
-                          <span className="text-gray-700 text-xs text-center">Membership</span>
+                          <span className="text-gray-700 text-xs text-center">
+                            Membership
+                          </span>
                         </div>
                         <div className="bg-white/60 rounded-lg p-3 flex flex-col items-center gap-2">
                           <Mic className="w-6 h-6 text-gray-700" />
-                          <span className="text-gray-700 text-xs text-center">Live event</span>
+                          <span className="text-gray-700 text-xs text-center">
+                            Live event
+                          </span>
                         </div>
                       </div>
                     </div>

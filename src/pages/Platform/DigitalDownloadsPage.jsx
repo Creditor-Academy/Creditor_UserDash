@@ -16,10 +16,9 @@ const DigitalDownloadsPage = () => {
       <Digitalrevenue />
       <Digitalfaq />
       <Digitalcta />
-      <Footer />    
+      <Footer />
     </div>
   );
 };
 
 export default DigitalDownloadsPage;
-

@@ -1,55 +1,71 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Play, Lock, CheckCircle, Clock, BookOpen, FileText, Video } from "lucide-react";
-import { fetchCourseModules } from "@/services/courseService";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  ChevronDown,
+  ChevronRight,
+  Play,
+  Lock,
+  CheckCircle,
+  Clock,
+  BookOpen,
+  FileText,
+  Video,
+} from 'lucide-react';
+import { fetchCourseModules } from '@/services/courseService';
 
 export function CourseDetail() {
   const { courseId } = useParams();
-  const [activeTab, setActiveTab] = useState("content");
+  const [activeTab, setActiveTab] = useState('content');
   const [expandedModule, setExpandedModule] = useState(null);
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchModules = async () => {
       setLoading(true);
-      setError("");
+      setError('');
       try {
         const data = await fetchCourseModules(courseId);
-        
+
         // Sort modules to move "Why You Must Exit the LLC/Corporation Structure" to the top
         const sortedModules = data.sort((a, b) => {
-          const aTitle = (a.title || a.name || "").toLowerCase();
-          const bTitle = (b.title || b.name || "").toLowerCase();
-          
+          const aTitle = (a.title || a.name || '').toLowerCase();
+          const bTitle = (b.title || b.name || '').toLowerCase();
+
           // Check if module is the intro module
-          const aIsIntro = aTitle.includes("why you must exit") && 
-                          (aTitle.includes("llc") || aTitle.includes("corporation")) &&
-                          aTitle.includes("structure");
-          const bIsIntro = bTitle.includes("why you must exit") && 
-                          (bTitle.includes("llc") || bTitle.includes("corporation")) &&
-                          bTitle.includes("structure");
-          
+          const aIsIntro =
+            aTitle.includes('why you must exit') &&
+            (aTitle.includes('llc') || aTitle.includes('corporation')) &&
+            aTitle.includes('structure');
+          const bIsIntro =
+            bTitle.includes('why you must exit') &&
+            (bTitle.includes('llc') || bTitle.includes('corporation')) &&
+            bTitle.includes('structure');
+
           // Move intro module to top
           if (aIsIntro && !bIsIntro) return -1;
           if (!aIsIntro && bIsIntro) return 1;
-          
+
           // For other modules, maintain original order by order property
           const aOrder = Number(a.order) || 0;
           const bOrder = Number(b.order) || 0;
           return aOrder - bOrder;
         });
-        
+
         setModules(sortedModules);
       } catch (err) {
         console.error('Error fetching modules:', err);
-        setError("Failed to load course modules");
+        setError('Failed to load course modules');
       } finally {
         setLoading(false);
       }
@@ -60,7 +76,7 @@ export function CourseDetail() {
     }
   }, [courseId]);
 
-  const toggleModule = (moduleId) => {
+  const toggleModule = moduleId => {
     setExpandedModule(expandedModule === moduleId ? null : moduleId);
   };
 
@@ -70,8 +86,8 @@ export function CourseDetail() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading course details...</p>
-            </div>
-          </div>
+        </div>
+      </div>
     );
   }
 
@@ -84,31 +100,35 @@ export function CourseDetail() {
           </div>
           <h3 className="text-lg font-medium mb-2">Failed to load course</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Try Again
-          </Button>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
     );
   }
-      
+
   return (
-      <div className="container py-6 max-w-7xl mx-auto flex-1">
-        <Tabs defaultValue="content" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="content" onClick={() => setActiveTab("content")}>
-              Course Content
-            </TabsTrigger>
-            <TabsTrigger value="overview" onClick={() => setActiveTab("overview")}>
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="resources" onClick={() => setActiveTab("resources")}>
-              Resources
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="content" className="mt-0">
-            <div className="space-y-4">
+    <div className="container py-6 max-w-7xl mx-auto flex-1">
+      <Tabs defaultValue="content" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="content" onClick={() => setActiveTab('content')}>
+            Course Content
+          </TabsTrigger>
+          <TabsTrigger
+            value="overview"
+            onClick={() => setActiveTab('overview')}
+          >
+            Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="resources"
+            onClick={() => setActiveTab('resources')}
+          >
+            Resources
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="content" className="mt-0">
+          <div className="space-y-4">
             {modules.length === 0 ? (
               <div className="text-center py-12">
                 <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -118,18 +138,23 @@ export function CourseDetail() {
                 </p>
               </div>
             ) : (
-              modules.map((module) => (
-                <div key={module.id} className="border rounded-lg overflow-hidden">
+              modules.map(module => (
+                <div
+                  key={module.id}
+                  className="border rounded-lg overflow-hidden"
+                >
                   <div className="bg-muted/40 p-4 border-b">
                     <div className="flex justify-between items-center">
                       <div>
                         <h3 className="font-medium">{module.title}</h3>
-                        <p className="text-sm text-muted-foreground">{module.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {module.description}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">
                           {module.lessonCount || 0} Lessons
-                      </Badge>
+                        </Badge>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -144,7 +169,7 @@ export function CourseDetail() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <Collapsible open={expandedModule === module.id}>
                     <CollapsibleContent className="p-4">
                       <div className="space-y-3">
@@ -152,7 +177,7 @@ export function CourseDetail() {
                           <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
-                              {module.duration || "Duration not specified"}
+                              {module.duration || 'Duration not specified'}
                             </span>
                             <span className="flex items-center gap-1">
                               <BookOpen className="h-4 w-4" />
@@ -166,7 +191,7 @@ export function CourseDetail() {
                             </Button>
                           </div>
                         </div>
-                        
+
                         {/* Module content would go here */}
                         <div className="bg-gray-50 rounded-md p-3">
                           <p className="text-sm text-gray-600">
@@ -179,26 +204,32 @@ export function CourseDetail() {
                 </div>
               ))
             )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="overview" className="mt-0">
+          </div>
+        </TabsContent>
+
+        <TabsContent value="overview" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Course Overview</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                This course contains {modules.length} modules covering various topics.
+                This course contains {modules.length} modules covering various
+                topics.
               </p>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{modules.length}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {modules.length}
+                  </div>
                   <div className="text-sm text-blue-600">Total Modules</div>
-            </div>
+                </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
-                    {modules.reduce((total, module) => total + (module.lessonCount || 0), 0)}
+                    {modules.reduce(
+                      (total, module) => total + (module.lessonCount || 0),
+                      0
+                    )}
                   </div>
                   <div className="text-sm text-green-600">Total Lessons</div>
                 </div>
@@ -206,7 +237,7 @@ export function CourseDetail() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="resources" className="mt-0">
           <Card>
             <CardHeader>
@@ -220,7 +251,7 @@ export function CourseDetail() {
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md">
                   <FileText className="h-4 w-4 text-blue-600" />
                   <span className="text-sm">Course Syllabus</span>
-                  </div>
+                </div>
                 <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md">
                   <Video className="h-4 w-4 text-green-600" />
                   <span className="text-sm">Video Tutorials</span>
@@ -232,8 +263,8 @@ export function CourseDetail() {
               </div>
             </CardContent>
           </Card>
-          </TabsContent>
-        </Tabs>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import { io } from 'socket.io-client';
+import { getAccessToken } from './tokenService';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://sharebackend-sdkp.onrender.com';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://creditor-backend-ceds.onrender.com';
 
 // Convert REST base to socket origin if necessary
 function deriveSocketOrigin(base) {
@@ -14,7 +17,7 @@ function deriveSocketOrigin(base) {
 
 // Function to get token from localStorage
 function getTokenFromStorage() {
-  return localStorage.getItem('token');
+  return getAccessToken(); // Use tokenService for consistency
 }
 
 const socketOrigin = deriveSocketOrigin(API_BASE);
@@ -34,32 +37,22 @@ export function getSocket() {
       transports: ['websocket', 'polling'],
       auth: { token: token || null },
       timeout: 20000,
-      forceNew: true
+      forceNew: true,
     });
 
     // Helpful diagnostics in dev
     socket.on('connect', () => {
       console.log('[socket] connected', socket.id);
     });
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', reason => {
       console.log('[socket] disconnected', reason);
     });
-    socket.on('connect_error', (err) => {
+    socket.on('connect_error', err => {
       console.warn('[socket] connect_error', err?.message || err);
       // Don't show toast here as it's handled in ChatPage
     });
   }
   return socket;
-}
-
-export function refreshSocketAuth(newToken) {
-  localStorage.setItem('token', newToken || '');
-  if (socket) {
-    try {
-      socket.auth = { token: newToken || undefined };
-      socket.connect();
-    } catch {}
-  }
 }
 
 export function disconnectSocket() {

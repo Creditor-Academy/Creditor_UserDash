@@ -4,18 +4,22 @@ import RevenueHeroImage from '../../../assets/revenuehero.webp';
 
 const RevenueHero = () => {
   const products = [
-    "The Modern Learning Engine",
-    "Leaders Learning Circle",
-    "Enterprise L&D Toolkit",
-    "Future of Learning Workshop"
+    'The Modern Learning Engine',
+    'Leaders Learning Circle',
+    'Enterprise L&D Toolkit',
+    'Future of Learning Workshop',
   ];
 
   return (
-    <section className="relative overflow-visible" style={{ 
-      paddingTop: '100px', 
-      paddingBottom: '140px',
-      background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)'
-    }}>
+    <section
+      className="relative overflow-visible"
+      style={{
+        paddingTop: '100px',
+        paddingBottom: '140px',
+        background:
+          'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%)',
+      }}
+    >
       {/* Decorative Background Pattern */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Circles Pattern */}
@@ -23,19 +27,29 @@ const RevenueHero = () => {
         <div className="absolute top-32 right-32 w-40 h-40 rounded-full border-3 border-white/35 opacity-50"></div>
         <div className="absolute bottom-20 left-10 w-80 h-80 rounded-full border-4 border-white/45 opacity-65"></div>
         <div className="absolute bottom-40 left-40 w-32 h-32 rounded-full border-3 border-white/30 opacity-50"></div>
-        
+
         {/* Additional smaller circles for more depth */}
         <div className="absolute top-1/2 right-1/3 w-24 h-24 rounded-full border-2 border-white/40 opacity-40"></div>
         <div className="absolute top-1/3 left-1/2 w-48 h-48 rounded-full border-3 border-white/35 opacity-45"></div>
-        
+
         {/* Dots Grid Pattern */}
-        <svg className="absolute inset-0 w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg">
-          <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+        <svg
+          className="absolute inset-0 w-full h-full opacity-40"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <pattern
+            id="dots"
+            x="0"
+            y="0"
+            width="40"
+            height="40"
+            patternUnits="userSpaceOnUse"
+          >
             <circle cx="2" cy="2" r="2" fill="rgba(255,255,255,0.5)" />
           </pattern>
           <rect width="100%" height="100%" fill="url(#dots)" />
         </svg>
-        
+
         {/* Gradient Orbs */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-white/10 blur-3xl opacity-70"></div>
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-blue-300/20 blur-3xl opacity-60"></div>
@@ -89,12 +103,17 @@ const RevenueHero = () => {
 
             {/* Product Card Overlay - Positioned at bottom-left, extending outside image */}
             <div className="absolute -bottom-12 lg:-bottom-16 left-0 lg:-left-16 lg:w-[360px] w-[90%] bg-white rounded-xl shadow-2xl p-6 z-10">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">Your Products</h3>
-              
+              <h3 className="text-base font-semibold text-gray-900 mb-4">
+                Your Products
+              </h3>
+
               {/* Product List */}
               <div className="space-y-3 mb-5">
                 {products.map((product, index) => (
-                  <div key={index} className="flex items-center justify-between group py-1">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between group py-1"
+                  >
                     <div className="flex items-center gap-3 flex-1">
                       {/* Drag handle icon */}
                       <div className="flex flex-col gap-0.5">
@@ -116,8 +135,18 @@ const RevenueHero = () => {
                       </span>
                     </div>
                     <button className="text-gray-300 hover:text-gray-500 transition-colors ml-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -138,4 +167,3 @@ const RevenueHero = () => {
 };
 
 export default RevenueHero;
-

@@ -1,55 +1,58 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, BookOpen } from "lucide-react";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ArrowRight, BookOpen } from 'lucide-react';
 
 const caseStudies = [
   {
     id: 1,
     icon: BookOpen,
-    title: "MarketPro generated 500+ qualified leads in 90 days",
+    title: 'MarketPro generated 500+ qualified leads in 90 days',
     quote:
       "Our lead generation increased by 300% after implementing Athena's content marketing platform.",
-    author: "Jennifer Lee, Marketing Director at MarketPro",
-    bgColor: "bg-blue-400",
-    hoverColor: "hover:bg-blue-500",
+    author: 'Jennifer Lee, Marketing Director at MarketPro',
+    bgColor: 'bg-blue-400',
+    hoverColor: 'hover:bg-blue-500',
     hasImage: true,
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop&crop=edges",
+    image:
+      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop&crop=edges',
   },
   {
     id: 2,
     icon: BookOpen,
-    title: "GrowthLabs doubled conversion rates with educational content",
+    title: 'GrowthLabs doubled conversion rates with educational content',
     quote:
-      "The quality of leads improved dramatically, and our sales team is closing deals faster than ever.",
-    author: "Tom Martinez, CEO, GrowthLabs",
-    bgColor: "bg-pink-600",
-    hoverColor: "hover:bg-pink-700",
+      'The quality of leads improved dramatically, and our sales team is closing deals faster than ever.',
+    author: 'Tom Martinez, CEO, GrowthLabs',
+    bgColor: 'bg-pink-600',
+    hoverColor: 'hover:bg-pink-700',
     hasImage: true,
-    image: "https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400&h=300&fit=crop&crop=faces",
+    image:
+      'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400&h=300&fit=crop&crop=faces',
   },
   {
     id: 3,
     icon: BookOpen,
-    title: "DigitalEdge achieved 40% lower cost per lead",
+    title: 'DigitalEdge achieved 40% lower cost per lead',
     quote:
       "We're generating more leads while spending less on paid advertising. The ROI speaks for itself.",
-    author: "Rachel Green, VP Marketing, DigitalEdge",
-    bgColor: "bg-blue-600",
-    hoverColor: "hover:bg-blue-700",
+    author: 'Rachel Green, VP Marketing, DigitalEdge',
+    bgColor: 'bg-blue-600',
+    hoverColor: 'hover:bg-blue-700',
     hasImage: true,
-    image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop&crop=faces",
+    image:
+      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=300&fit=crop&crop=faces',
   },
 ];
 
 const bottomCaseStudy = {
   id: 4,
   icon: BookOpen,
-  title: "How InnovateCo built a $2M pipeline with content marketing",
+  title: 'How InnovateCo built a $2M pipeline with content marketing',
   quote:
-    "Athena transformed our marketing from a cost center to a revenue driver. Our pipeline has never been healthier.",
-  author: "Alex Thompson, CMO, InnovateCo",
-  bgColor: "bg-gray-100",
-  textColor: "text-gray-900",
+    'Athena transformed our marketing from a cost center to a revenue driver. Our pipeline has never been healthier.',
+  author: 'Alex Thompson, CMO, InnovateCo',
+  bgColor: 'bg-gray-100',
+  textColor: 'text-gray-900',
 };
 
 const containerVariants = {
@@ -87,10 +90,13 @@ export default function LeadSucceed() {
           className="mb-16 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start"
         >
           <div>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 mb-8 leading-tight" style={{ fontFamily: 'Georgia, Times New Roman, serif' }}>
+            <h2
+              className="text-4xl sm:text-5xl lg:text-6xl font-normal text-gray-900 mb-8 leading-tight"
+              style={{ fontFamily: 'Georgia, Times New Roman, serif' }}
+            >
               Lead generation case studies
             </h2>
-            
+
             <button className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold rounded-full transition-all duration-300 transform hover:-translate-y-0.5">
               See all case studies
               <ArrowRight className="w-4 h-4" />
@@ -98,8 +104,12 @@ export default function LeadSucceed() {
           </div>
 
           <div className="lg:pt-2">
-            <p className="text-base text-gray-700 leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Discover how leading companies use Athena's lead generation platform to fill their sales funnel with qualified prospects.
+            <p
+              className="text-base text-gray-700 leading-relaxed font-normal"
+              style={{ fontFamily: 'Arial, sans-serif' }}
+            >
+              Discover how leading companies use Athena's lead generation
+              platform to fill their sales funnel with qualified prospects.
             </p>
           </div>
         </motion.div>
@@ -112,7 +122,7 @@ export default function LeadSucceed() {
           viewport={{ once: true, amount: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6"
         >
-          {caseStudies.map((study) => {
+          {caseStudies.map(study => {
             const Icon = study.icon;
             return (
               <motion.div
@@ -126,7 +136,10 @@ export default function LeadSucceed() {
                   <div className="p-8 flex flex-col flex-grow">
                     {/* Icon */}
                     <div className="mb-6">
-                      <Icon className="w-10 h-10 text-white" strokeWidth={1.5} />
+                      <Icon
+                        className="w-10 h-10 text-white"
+                        strokeWidth={1.5}
+                      />
                     </div>
 
                     {/* Title */}
@@ -156,7 +169,7 @@ export default function LeadSucceed() {
                   {/* Image at bottom (only for third card) */}
                   {study.hasImage && study.image && (
                     <div className="w-full h-64 overflow-hidden">
-                      <img 
+                      <img
                         src={study.image}
                         alt={study.title}
                         className="w-full h-full object-cover"
@@ -222,4 +235,3 @@ export default function LeadSucceed() {
     </section>
   );
 }
-
