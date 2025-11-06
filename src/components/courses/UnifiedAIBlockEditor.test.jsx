@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import UnifiedAIBlockEditor from './UnifiedAIBlockEditor';
@@ -107,11 +113,14 @@ describe('UnifiedAIBlockEditor', () => {
     expect(screen.getByText('Generate Content')).toBeInTheDocument();
   });
 
-  it('can toggle AI mode', () => {
+  it('can toggle AI mode', async () => {
     render(<UnifiedAIBlockEditor {...defaultProps} />);
 
     const aiToggle = screen.getByRole('switch');
-    fireEvent.click(aiToggle);
+
+    await act(async () => {
+      fireEvent.click(aiToggle);
+    });
 
     expect(aiToggle).toBeChecked();
   });
@@ -139,11 +148,14 @@ describe('UnifiedAIBlockEditor', () => {
     expect(mockSetContentBlocks).toBeDefined();
   });
 
-  it('updates block content when edited', () => {
+  it('updates block content when edited', async () => {
     render(<UnifiedAIBlockEditor {...defaultProps} />);
 
     const textArea = screen.getByDisplayValue('Initial test content');
-    fireEvent.change(textArea, { target: { value: 'Updated content' } });
+
+    await act(async () => {
+      fireEvent.change(textArea, { target: { value: 'Updated content' } });
+    });
 
     expect(mockSetContentBlocks).toHaveBeenCalledWith(expect.any(Function));
   });
@@ -256,11 +268,14 @@ describe('UnifiedAIBlockEditor', () => {
     }
   });
 
-  it('calls onContentSync when content is modified', () => {
+  it('calls onContentSync when content is modified', async () => {
     render(<UnifiedAIBlockEditor {...defaultProps} />);
 
     const textArea = screen.getByDisplayValue('Initial test content');
-    fireEvent.change(textArea, { target: { value: 'Modified content' } });
+
+    await act(async () => {
+      fireEvent.change(textArea, { target: { value: 'Modified content' } });
+    });
 
     // onContentSync should be called indirectly through content updates
     expect(mockSetContentBlocks).toHaveBeenCalled();
