@@ -337,7 +337,8 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         order: i + 1,
         estimated_duration: 60,
         module_status: 'PUBLISHED',
-        thumbnail: 'AI generated module thumbnail',
+        thumbnail:
+          moduleData.thumbnail || moduleData.module_thumbnail_url || '',
         price: '0',
       };
 
@@ -532,6 +533,8 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             description: cleanDescription,
             order: lessonData.order || j + 1,
             status: 'PUBLISHED',
+            thumbnail:
+              lessonData.thumbnail || lessonData.lesson_thumbnail_url || '',
           };
 
           console.log('Lesson payload being sent:', lessonPayload);

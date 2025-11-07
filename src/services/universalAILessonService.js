@@ -3,6 +3,7 @@ import { generateLessonFromPrompt } from './aiCourseService';
 import { updateLessonContent } from './courseService';
 import openAIService from './openAIService';
 import { uploadAIGeneratedImage } from './aiUploadService';
+import contentLibraryAIService from './contentLibraryAIService';
 
 /**
  * Universal AI Lesson Content Generation Service
@@ -46,7 +47,19 @@ class UniversalAILessonService {
         );
       }
 
-      // Generate content blocks based on options
+      // NEW: Use comprehensive content library generation
+      if (options.useContentLibrary !== false) {
+        console.log('🎯 Using comprehensive content library generation');
+        const blocks =
+          await contentLibraryAIService.generateComprehensiveLessonContent(
+            lessonTitle,
+            moduleTitle,
+            courseTitle
+          );
+        return blocks;
+      }
+
+      // Fallback: Generate content blocks based on options
       const blocks = await this.generateContentBlocks({
         lessonTitle,
         moduleTitle,
@@ -948,7 +961,7 @@ Style: modern infographic, educational diagram, clear and concise.`;
   }
 
   /**
-   * Convert block to HTML format
+   * Convert block to HTML format - Enhanced for ALL content library variants
    */
   convertBlockToHTML(block) {
     // If block already has html_css, return it
@@ -957,82 +970,338 @@ Style: modern infographic, educational diagram, clear and concise.`;
     }
 
     switch (block.type) {
-      case 'image':
-        // Handle AI-generated image blocks
-        const imageUrl = block.content?.url || block.content;
-        const imageAlt = block.content?.alt || 'Lesson image';
-        const imageCaption = block.content?.caption || '';
-
-        return `
-          <div style="margin: 24px 0; text-align: center;">
-            <img 
-              src="${imageUrl}" 
-              alt="${imageAlt}" 
-              style="width: 100%; max-width: 800px; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"
-              loading="lazy"
-            />
-            ${imageCaption ? `<p style="margin-top: 12px; font-size: 14px; color: #6b7280; font-style: italic;">${imageCaption}</p>` : ''}
-          </div>
-        `;
-
-      case 'heading':
-        const level = block.level || 2;
-        return `<h${level} class="text-${level === 1 ? '3xl' : level === 2 ? '2xl' : 'xl'} font-bold mb-4">${block.content}</h${level}>`;
-
       case 'text':
-        // Handle different text types
-        if (block.textType === 'master_heading') {
-          // Return master heading with gradient
-          return `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 0; color: white; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px;">${block.content}</h1>`;
-        } else if (block.textType === 'subheading') {
-          return `<h2 class="text-2xl font-semibold text-gray-800 mb-3">${block.content}</h2>`;
-        } else {
-          // Regular paragraph
-          return `<div class="prose max-w-none mb-4"><p>${block.content}</p></div>`;
-        }
+        return this.convertTextBlockToHTML(block);
+
+      case 'image':
+        return this.convertImageBlockToHTML(block);
+
+      case 'statement':
+        return this.convertStatementBlockToHTML(block);
 
       case 'list':
-        const listTag = block.listType === 'ordered' ? 'ol' : 'ul';
-        const items = (block.content || '')
-          .split('\n')
-          .filter(item => item.trim());
-        const listItems = items.map(item => `<li>${item}</li>`).join('');
-        return `<${listTag} class="list-${block.listType === 'ordered' ? 'decimal' : 'disc'} ml-6 mb-4">${listItems}</${listTag}>`;
+        return this.convertListBlockToHTML(block);
 
       case 'quote':
-        return `<blockquote class="border-l-4 border-blue-500 pl-4 italic text-gray-700 mb-4">"${block.content}"${block.author ? ` <cite>- ${block.author}</cite>` : ''}</blockquote>`;
+        return this.convertQuoteBlockToHTML(block);
 
-      case 'divider':
-        // Handle different divider types
-        if (block.subtype === 'continue') {
-          const text = block.content || 'CONTINUE';
-          const color = block.metadata?.color || '#2563eb';
-          return `<div style="width: 100%; padding: 24px 0;">
-            <div style="background-color: ${color}; color: white; text-align: center; padding: 16px 32px; font-weight: 600; font-size: 18px; letter-spacing: 0.1em; cursor: pointer; transition: background-color 0.2s; border: none;">
-              ${text}
-            </div>
-          </div>`;
-        } else if (block.subtype === 'numbered_divider') {
-          const number = block.content || '1';
-          const bgColor = block.metadata?.bgColor || '#f97316';
-          return `<div style="width: 100%; padding: 16px 0; position: relative;">
-            <hr style="border: none; border-top: 2px solid #d1d5db; margin: 0;" />
-            <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: white; padding: 0 12px;">
-              <div style="width: 32px; height: 32px; background-color: ${bgColor}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">
-                ${number}
-              </div>
-            </div>
-          </div>`;
-        } else {
-          // Simple divider
-          return `<div style="width: 100%; padding: 16px 0;">
-            <hr style="border: none; border-top: 2px solid #d1d5db; margin: 0;" />
-          </div>`;
-        }
+      case 'table':
+        return this.convertTableBlockToHTML(block);
+
+      case 'checklist':
+        return this.convertChecklistBlockToHTML(block);
+
+      case 'link':
+        return this.convertLinkBlockToHTML(block);
 
       default:
         return `<div class="mb-4">${block.content || ''}</div>`;
     }
+  }
+
+  convertTextBlockToHTML(block) {
+    const { textType, content, gradient } = block;
+
+    switch (textType) {
+      case 'master_heading':
+        const gradientMap = {
+          gradient1: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          gradient2:
+            'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
+          gradient3: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+          gradient4: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
+          gradient5: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)',
+          gradient6: 'linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%)',
+        };
+        const bgGradient = gradientMap[gradient] || gradientMap['gradient1'];
+        return `<h1 style="font-size: 40px; font-weight: 600; line-height: 1.2; margin: 24px 0; color: white; background: ${bgGradient}; padding: 20px; border-radius: 8px; text-align: center;">${content}</h1>`;
+
+      case 'heading':
+        return `<h2 style="font-size: 32px; font-weight: 700; color: #1f2937; margin: 20px 0 16px 0;">${content}</h2>`;
+
+      case 'subheading':
+        return `<h3 style="font-size: 24px; font-weight: 600; color: #374151; margin: 16px 0 12px 0;">${content}</h3>`;
+
+      case 'paragraph':
+        return `<div style="margin: 16px 0; line-height: 1.6; color: #4b5563; font-size: 16px;"><p>${content}</p></div>`;
+
+      case 'heading_paragraph':
+      case 'subheading_paragraph':
+        return `<div style="margin: 20px 0;">${content}</div>`;
+
+      default:
+        return `<div style="margin: 16px 0;"><p>${content}</p></div>`;
+    }
+  }
+
+  convertImageBlockToHTML(block) {
+    const { template, layout, content } = block;
+    const imageUrl = content?.imageUrl || content?.url || content;
+    const text = content?.text || '';
+    const caption = content?.caption || '';
+
+    switch (template) {
+      case 'image-text':
+        return `
+          <div style="display: flex; gap: 20px; margin: 24px 0; align-items: center;">
+            <div style="flex: 1;">
+              <img src="${imageUrl}" alt="Lesson image" style="width: 100%; height: auto; border-radius: 8px;" />
+            </div>
+            <div style="flex: 1; padding: 0 16px;">
+              <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">${text}</p>
+            </div>
+          </div>`;
+
+      case 'text-on-image':
+        return `
+          <div style="position: relative; margin: 24px 0; border-radius: 12px; overflow: hidden;">
+            <img src="${imageUrl}" alt="Background" style="width: 100%; height: 400px; object-fit: cover;" />
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; padding: 20px;">
+              <p style="color: white; font-size: 20px; font-weight: 600; text-align: center; line-height: 1.4;">${text}</p>
+            </div>
+          </div>`;
+
+      case 'image-centered':
+        return `
+          <div style="text-align: center; margin: 24px 0;">
+            <img src="${imageUrl}" alt="Centered image" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);" />
+            ${caption ? `<p style="margin-top: 12px; font-size: 14px; color: #6b7280; font-style: italic;">${caption}</p>` : ''}
+          </div>`;
+
+      case 'image-full-width':
+        return `
+          <div style="margin: 24px 0;">
+            <img src="${imageUrl}" alt="Full width image" style="width: 100%; height: auto; border-radius: 8px;" />
+            <div style="padding: 16px 0;">
+              <p style="font-size: 16px; line-height: 1.6; color: #4b5563;">${text}</p>
+            </div>
+          </div>`;
+
+      default:
+        return `
+          <div style="margin: 24px 0; text-align: center;">
+            <img src="${imageUrl}" alt="Lesson image" style="max-width: 100%; height: auto; border-radius: 12px;" />
+            ${caption ? `<p style="margin-top: 12px; font-size: 14px; color: #6b7280;">${caption}</p>` : ''}
+          </div>`;
+    }
+  }
+
+  convertStatementBlockToHTML(block) {
+    const { statementType, content } = block;
+
+    switch (statementType) {
+      case 'statement-a':
+        return `
+          <div style="border-top: 2px solid #1f2937; border-bottom: 2px solid #1f2937; padding: 32px 24px; margin: 24px 0;">
+            <p style="color: #1f2937; font-size: 24px; line-height: 1.4; text-align: center; font-weight: 700; margin: 0;">${content}</p>
+          </div>`;
+
+      case 'statement-b':
+        return `
+          <div style="position: relative; padding: 32px 24px; margin: 24px 0; background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%); box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 4px; background: linear-gradient(90deg, #fb923c 0%, #ea580c 100%); border-radius: 2px;"></div>
+            <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 80px; height: 4px; background: linear-gradient(90deg, #fb923c 0%, #ea580c 100%); border-radius: 2px;"></div>
+            <p style="color: #1f2937; font-size: 28px; line-height: 1.4; text-align: center; font-weight: 300; margin: 0;">${content}</p>
+          </div>`;
+
+      case 'statement-c':
+        return `
+          <div style="background: linear-gradient(90deg, #f9fafb 0%, #f3f4f6 100%); padding: 32px 24px; margin: 24px 0; border-left: 4px solid #ea580c;">
+            <p style="color: #374151; font-size: 20px; line-height: 1.5; margin: 0;">${content}</p>
+          </div>`;
+
+      case 'statement-d':
+        return `
+          <div style="position: relative; background: white; padding: 24px; margin: 24px 0;">
+            <div style="position: absolute; top: 0; left: 0; width: 64px; height: 4px; background: #ea580c;"></div>
+            <p style="color: #1f2937; font-size: 18px; line-height: 1.5; font-weight: 700; margin: 0;">${content}</p>
+          </div>`;
+
+      case 'note':
+        return `
+          <div style="border: 1px solid #fed7aa; background: #fef3e2; padding: 16px; border-radius: 8px; margin: 24px 0;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+              <div style="flex-shrink: 0; margin-top: 4px;">
+                <div style="width: 20px; height: 20px; background: #ea580c; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                  <span style="color: white; font-size: 12px; font-weight: bold;">i</span>
+                </div>
+              </div>
+              <p style="color: #1f2937; font-size: 14px; line-height: 1.5; margin: 0; flex: 1;">${content}</p>
+            </div>
+          </div>`;
+
+      default:
+        return `<div style="margin: 16px 0; padding: 16px; background: #f3f4f6; border-radius: 8px;"><p>${content}</p></div>`;
+    }
+  }
+
+  convertListBlockToHTML(block) {
+    const { listType, items, numberingStyle, bulletStyle } = block;
+
+    if (listType === 'numbered') {
+      const listItems = items
+        .map((item, index) => {
+          let number = index + 1;
+          switch (numberingStyle) {
+            case 'upper-roman':
+              number = this.toRoman(number).toUpperCase();
+              break;
+            case 'lower-roman':
+              number = this.toRoman(number).toLowerCase();
+              break;
+            case 'upper-alpha':
+              number = String.fromCharCode(64 + number);
+              break;
+            case 'lower-alpha':
+              number = String.fromCharCode(96 + number);
+              break;
+            default:
+              number = number.toString();
+          }
+          return `<li style="margin: 8px 0;"><span style="font-weight: 600; color: #3b82f6; margin-right: 8px;">${number}.</span>${item}</li>`;
+        })
+        .join('');
+
+      return `<ol style="list-style: none; padding: 0; margin: 20px 0;">${listItems}</ol>`;
+    } else {
+      const bulletMap = {
+        circle: '●',
+        square: '■',
+        disc: '⬤',
+        arrow: '▶',
+        star: '★',
+        diamond: '◆',
+      };
+      const bullet = bulletMap[bulletStyle] || '●';
+
+      const listItems = items
+        .map(
+          item =>
+            `<li style="margin: 8px 0;"><span style="color: #3b82f6; margin-right: 8px; font-weight: bold;">${bullet}</span>${item}</li>`
+        )
+        .join('');
+
+      return `<ul style="list-style: none; padding: 0; margin: 20px 0;">${listItems}</ul>`;
+    }
+  }
+
+  convertQuoteBlockToHTML(block) {
+    const { content, author, backgroundImage, subtype, quotes } = block;
+
+    if (subtype === 'carousel') {
+      const carouselItems = quotes
+        .map(
+          (quote, index) =>
+            `<div style="margin: 16px 0; padding: 20px; background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0;">
+          <p style="font-style: italic; font-size: 16px; line-height: 1.5; margin: 0 0 8px 0; color: #374151;">"${quote.quote}"</p>
+          <cite style="font-size: 14px; color: #6b7280;">— ${quote.author}</cite>
+        </div>`
+        )
+        .join('');
+      return `<div style="margin: 24px 0;">${carouselItems}</div>`;
+    }
+
+    if (backgroundImage) {
+      return `
+        <div style="position: relative; margin: 24px 0; border-radius: 12px; overflow: hidden; min-height: 200px;">
+          <img src="${backgroundImage}" alt="Quote background" style="width: 100%; height: 100%; object-fit: cover; position: absolute;" />
+          <div style="position: relative; background: rgba(0,0,0,0.6); padding: 40px 24px; color: white; text-align: center;">
+            <p style="font-size: 20px; font-style: italic; line-height: 1.4; margin: 0 0 16px 0;">"${content}"</p>
+            ${author ? `<cite style="font-size: 16px; opacity: 0.9;">— ${author}</cite>` : ''}
+          </div>
+        </div>`;
+    }
+
+    return `
+      <blockquote style="border-left: 4px solid #3b82f6; padding: 20px 24px; margin: 24px 0; background: #f8fafc; border-radius: 0 8px 8px 0;">
+        <p style="font-style: italic; font-size: 18px; line-height: 1.5; margin: 0 0 12px 0; color: #374151;">"${content}"</p>
+        ${author ? `<cite style="font-size: 16px; color: #6b7280;">— ${author}</cite>` : ''}
+      </blockquote>`;
+  }
+
+  convertTableBlockToHTML(block) {
+    const { content } = block;
+    const { headers, rows } = content;
+
+    const headerRow = headers
+      .map(
+        header =>
+          `<th style="padding: 12px; background: #f3f4f6; font-weight: 600; text-align: left; border-bottom: 2px solid #e5e7eb;">${header}</th>`
+      )
+      .join('');
+    const dataRows = rows
+      .map(
+        row =>
+          `<tr>${row.map(cell => `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${cell}</td>`).join('')}</tr>`
+      )
+      .join('');
+
+    return `
+      <div style="margin: 24px 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+          <thead><tr>${headerRow}</tr></thead>
+          <tbody>${dataRows}</tbody>
+        </table>
+      </div>`;
+  }
+
+  convertChecklistBlockToHTML(block) {
+    const { items } = block;
+    const checklistItems = items
+      .map(
+        (item, index) =>
+          `<div style="display: flex; align-items: center; margin: 8px 0; padding: 8px; border-radius: 4px; background: #f9fafb;">
+        <input type="checkbox" id="check-${index}" style="margin-right: 12px; transform: scale(1.2);" />
+        <label for="check-${index}" style="flex: 1; font-size: 16px; color: #374151; cursor: pointer;">${item}</label>
+      </div>`
+      )
+      .join('');
+
+    return `<div style="margin: 24px 0; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: white;">${checklistItems}</div>`;
+  }
+
+  convertLinkBlockToHTML(block) {
+    const { content } = block;
+    const { url, title, description } = content;
+
+    return `
+      <div style="margin: 24px 0; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f8fafc;">
+        <h4 style="margin: 0 0 8px 0; color: #1f2937; font-size: 18px; font-weight: 600;">
+          <a href="${url}" target="_blank" style="color: #3b82f6; text-decoration: none;">${title}</a>
+        </h4>
+        <p style="margin: 0; color: #6b7280; font-size: 14px; line-height: 1.4;">${description}</p>
+        <div style="margin-top: 12px;">
+          <a href="${url}" target="_blank" style="color: #3b82f6; font-size: 14px; text-decoration: none; font-weight: 500;">Visit Resource →</a>
+        </div>
+      </div>`;
+  }
+
+  toRoman(num) {
+    const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+    const symbols = [
+      'M',
+      'CM',
+      'D',
+      'CD',
+      'C',
+      'XC',
+      'L',
+      'XL',
+      'X',
+      'IX',
+      'V',
+      'IV',
+      'I',
+    ];
+    let result = '';
+
+    for (let i = 0; i < values.length; i++) {
+      while (num >= values[i]) {
+        result += symbols[i];
+        num -= values[i];
+      }
+    }
+    return result;
   }
 
   // Fallback methods

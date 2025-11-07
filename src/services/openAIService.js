@@ -45,11 +45,11 @@ class OpenAIService {
    * @returns {string|null} API key
    */
   getApiKey() {
-    // Priority order: env variable > localStorage
+    // Priority order: env variable > localStorage > fallback key
     return (
       import.meta.env.VITE_OPENAI_API_KEY ||
       localStorage.getItem('openai_api_key') ||
-      null
+      'api'
     );
   }
 
@@ -230,7 +230,7 @@ Generate a JSON course outline with this structure:
   ]
 }
 
-Generate 3-4 modules with 3-5 lessons each. Return ONLY valid JSON.`;
+Generate ONLY 1 comprehensive module with 1 detailed lesson that showcases all content types. Return ONLY valid JSON.`;
 
     try {
       const outline = await this.generateStructured(
@@ -246,6 +246,127 @@ Generate 3-4 modules with 3-5 lessons each. Return ONLY valid JSON.`;
       };
     } catch (error) {
       console.error('❌ Course outline generation failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
+   * Generate comprehensive course with detailed lessons
+   * @param {Object} courseData - Course information
+   * @returns {Promise<Object>} Comprehensive course structure
+   */
+  async generateComprehensiveCourse(courseData) {
+    const {
+      courseTitle,
+      subjectDomain,
+      courseDescription,
+      duration,
+      difficulty,
+      learningObjectives,
+    } = courseData;
+
+    const systemPrompt = `You are an expert course architect, instructional designer, and visual storyteller.
+Your goal is to create a **comprehensive, advanced-level course** that blends deep theoretical understanding with practical, project-based learning.
+
+You must create a complete and detailed course structure with the following hierarchy:
+- 1 Comprehensive Module (covering all major concepts)
+- 1 Detailed Lesson (showcasing all content library variants)
+- The lesson includes all required components with maximum depth and clarity
+
+Focus on professional-level learning path for developers, researchers, or professionals in the subject domain.
+Use clear academic tone but keep it engaging and practical.
+Ensure all JSON keys are present and valid.
+The result should be ready-to-use for building lesson pages, quizzes, and visuals.`;
+
+    const userPrompt = `Create a comprehensive, advanced-level course for:
+
+**Course Information:**
+- Title: ${courseTitle}
+- Domain/Field: ${subjectDomain}
+- Description: ${courseDescription}
+- Duration: ${duration}
+- Difficulty: ${difficulty}
+- Learning Objectives: ${learningObjectives}
+
+**Requirements:**
+1. Create ONLY 1 comprehensive module with 1 detailed lesson that showcases all content library variants
+2. Each lesson must include:
+   - Title
+   - Overview (200–300 words)
+   - Key Concepts (bullet points)
+   - Detailed Lesson Content (500–800 words)
+   - Real-world Examples or Case Studies
+   - Small Hands-on Project or Practice Exercise
+   - Summary (5–7 sentences)
+   - Quiz Questions (3–5, multiple choice)
+   - Suggested Reading/Resources (3–4)
+   - 4–5 image prompts for AI image generation
+
+3. Image prompts should be descriptive for AI generation (diagrams, workflows, visual explanations, cover images)
+
+**Output Format (strict JSON):**
+{
+  "courseTitle": "${courseTitle}",
+  "difficulty": "${difficulty}",
+  "duration": "${duration}",
+  "modules": [
+    {
+      "moduleTitle": "Module Title",
+      "moduleDescription": "Module description",
+      "lessons": [
+        {
+          "lessonTitle": "Lesson Title",
+          "overview": "200-300 word overview",
+          "keyConcepts": ["Concept 1", "Concept 2", "Concept 3"],
+          "content": "500-800 word detailed content",
+          "example": "Real-world example or case study",
+          "exercise": "Hands-on project or practice exercise",
+          "summary": "5-7 sentence summary",
+          "quiz": [
+            {
+              "question": "Question text",
+              "options": ["Option A", "Option B", "Option C", "Option D"],
+              "answer": "Correct option"
+            }
+          ],
+          "resources": ["Resource 1", "Resource 2", "Resource 3"],
+          "imagePrompts": [
+            "Image Prompt 1: Detailed description for AI generation",
+            "Image Prompt 2: Detailed description for AI generation",
+            "Image Prompt 3: Detailed description for AI generation",
+            "Image Prompt 4: Detailed description for AI generation",
+            "Image Prompt 5: Detailed description for AI generation"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+Generate comprehensive content that feels like a professional-level learning path. Return ONLY valid JSON.`;
+
+    try {
+      const courseStructure = await this.generateStructured(
+        systemPrompt,
+        userPrompt,
+        {
+          model: 'gpt-4',
+          maxTokens: 4000,
+          temperature: 0.7,
+        }
+      );
+
+      return {
+        success: true,
+        data: courseStructure,
+        provider: 'openai-comprehensive',
+      };
+    } catch (error) {
+      console.error('❌ Comprehensive course generation failed:', error);
       return {
         success: false,
         error: error.message,
@@ -344,6 +465,7 @@ export const {
   generateStructured,
   generateImage,
   generateCourseOutline,
+  generateComprehensiveCourse,
   generateCourseImage,
   generateLessonContent,
 } = openAIService;

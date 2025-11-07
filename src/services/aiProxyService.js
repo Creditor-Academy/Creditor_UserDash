@@ -59,81 +59,20 @@ class AIProxyService {
       // Return fallback structure for any course topic
       return {
         success: true,
-        generated_text: `Course: ${courseData.title}\n\nModule 1: Introduction to ${courseData.subject}\n- Overview and fundamentals\n- Key concepts\n- Getting started\n\nModule 2: ${courseData.subject} Fundamentals\n- Core principles\n- Essential techniques\n- Best practices\n\nModule 3: Practical ${courseData.subject}\n- Hands-on examples\n- Real-world applications\n- Project work\n\nModule 4: Advanced ${courseData.subject}\n- Expert techniques\n- Optimization\n- Industry standards`,
+        generated_text: `Course: ${courseData.title}\n\nModule 1: Complete ${courseData.subject} Masterclass\n- Comprehensive overview covering all aspects\n- Fundamentals to advanced concepts\n- Practical applications and real-world examples\n- Hands-on projects and exercises\n- All content library variants showcased`,
         modules: this.generateFallbackModules(courseData),
       };
     }
   }
 
-  // Generate fallback modules for any course topic
+  // Generate fallback single comprehensive module
   generateFallbackModules(courseData) {
     const subject = courseData.subject || courseData.title;
     return [
       {
         id: 1,
-        title: `Introduction to ${subject}`,
-        lessons: [
-          `What is ${subject}?`,
-          'Course Overview',
-          'Learning Objectives',
-          'Prerequisites',
-          'Getting Started',
-        ],
-      },
-      {
-        id: 2,
-        title: `${subject} Fundamentals`,
-        lessons: [
-          'Core Concepts',
-          'Key Principles',
-          'Essential Terminology',
-          'Foundation Knowledge',
-          'Basic Techniques',
-        ],
-      },
-      {
-        id: 3,
-        title: `Practical ${subject}`,
-        lessons: [
-          'Hands-on Examples',
-          'Real-world Applications',
-          'Best Practices',
-          'Common Patterns',
-          'Project Work',
-        ],
-      },
-      {
-        id: 4,
-        title: `Advanced ${subject}`,
-        lessons: [
-          'Advanced Techniques',
-          'Optimization Strategies',
-          'Industry Standards',
-          'Expert Tips',
-          'Complex Scenarios',
-        ],
-      },
-      {
-        id: 5,
-        title: `${subject} in Practice`,
-        lessons: [
-          'Case Studies',
-          'Problem Solving',
-          'Troubleshooting',
-          'Performance',
-          'Maintenance',
-        ],
-      },
-      {
-        id: 6,
-        title: 'Assessment and Next Steps',
-        lessons: [
-          'Knowledge Check',
-          'Practical Projects',
-          'Final Assessment',
-          'Career Paths',
-          'Continued Learning',
-        ],
+        title: `Complete ${subject} Masterclass`,
+        lessons: [`Comprehensive ${subject} Guide`],
       },
     ];
   }
