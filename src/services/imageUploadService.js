@@ -1,18 +1,19 @@
-// Image Upload Service for handling image uploads to the resource API
-import api from './apiClient';
+// Image Upload Service - Real S3 implementation
+// Uploads images to S3 via backend API
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
-const RESOURCE_UPLOAD_API = `${API_BASE}/api/resource/upload-resource`;
+import { api } from './apiClient';
 
 /**
- * Upload an image file to the resource API
+ * Upload an image file to S3 via backend API
  * @param {File} file - The image file to upload
  * @param {Object} options - Additional options for upload
- * @returns {Promise<Object>} Upload response with image URL
+ * @returns {Promise<Object>} Upload response with S3 image URL
  */
 export async function uploadImage(file, options = {}) {
   try {
-    // Validate file type/size
+    console.log('🚀 S3 upload requested for file:', file.name);
+
+    // Validate file type/size (keep validation for UX)
     const isPdf = options.type === 'pdf' || file.type === 'application/pdf';
     if (isPdf) {
       const validPdfTypes = ['application/pdf'];
@@ -40,69 +41,102 @@ export async function uploadImage(file, options = {}) {
       }
     }
 
-    // Always use the field name 'resource' (as per Postman)
-    const fieldName = options.fieldName || 'resource';
-
+    // Create FormData for multipart upload
     const formData = new FormData();
-    formData.append(fieldName, file);
-    if (options.folder) formData.append('folder', options.folder);
-    if (typeof options.public !== 'undefined')
-      formData.append('public', String(options.public));
-    if (options.type) formData.append('type', options.type);
+    formData.append('resource', file);
 
-    // Let the browser set the correct Content-Type with boundary
-    const response = await api.post(RESOURCE_UPLOAD_API, formData, {
-      timeout: 300000, // 300 seconds (5 minutes) for larger files up to 200MB
-      withCredentials: true,
+    // Add optional parameters
+    if (options.folder) {
+      formData.append('folder', options.folder);
+    }
+    if (options.public !== undefined) {
+      formData.append('public', options.public.toString());
+    }
+    if (options.type) {
+      formData.append('type', options.type);
+    }
+
+    console.log('📤 Uploading to S3 via backend API...');
+    console.log('Upload options:', {
+      fileName: file.name,
+      fileSize: file.size,
+      folder: options.folder || 'default',
+      public: options.public !== undefined ? options.public : true,
+      type: options.type || 'image',
     });
 
-    if (response?.data) {
-      const { data, url, success, message } = response.data;
-      const finalUrl = data?.url || url;
-      const isSuccess =
-        typeof success === 'boolean' ? success : Boolean(finalUrl);
-      if (!isSuccess) throw new Error(message || 'Upload failed');
-      return {
-        success: true,
-        imageUrl: finalUrl,
-        fileName: data?.fileName || file.name,
-        fileSize: data?.fileSize || file.size,
-        fieldUsed: fieldName,
-        message: message || 'Image uploaded successfully',
-      };
-    }
-    throw new Error('Upload failed');
-  } catch (error) {
-    console.error('Error uploading image:', error);
+    // Upload to S3 via backend API
+    const response = await api.post('/api/resource/upload-resource', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000, // 60 second timeout for large files
+    });
 
-    // Handle different types of errors
+    console.log('✅ S3 upload successful:', response.data);
+
+    // Extract S3 URL from response
+    const s3Url =
+      response.data?.data?.url || response.data?.url || response.data?.imageUrl;
+
+    if (!s3Url) {
+      throw new Error('No S3 URL returned from backend');
+    }
+
+    // Return standardized response
+    return {
+      success: true,
+      imageUrl: s3Url,
+      fileName:
+        response.data?.data?.fileName || response.data?.fileName || file.name,
+      fileSize:
+        response.data?.data?.fileSize || response.data?.fileSize || file.size,
+      fieldUsed: options.fieldName || 'resource',
+      message: 'Image uploaded successfully to S3',
+      s3Url: s3Url,
+      uploadedToS3: true,
+      createdAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('❌ S3 upload failed:', error);
+
+    // Enhanced error handling
     if (error.response) {
-      // Server responded with error status
-      const errorMessage =
+      const status = error.response.status;
+      const message =
         error.response.data?.message ||
-        error.response.data?.error ||
-        `Upload failed with status ${error.response.status}`;
-      throw new Error(errorMessage);
-    } else if (error.request) {
-      // Network error
-      throw new Error(
-        'Network error. Please check your connection and try again.'
-      );
+        error.response.data?.errorMessage ||
+        error.message;
+
+      if (status === 413) {
+        throw new Error('File too large for upload');
+      } else if (status === 415) {
+        throw new Error('Unsupported file type');
+      } else if (status === 401) {
+        throw new Error('Authentication required for upload');
+      } else if (status === 403) {
+        throw new Error('Permission denied for upload');
+      } else {
+        throw new Error(`Upload failed: ${message}`);
+      }
+    } else if (error.code === 'ECONNABORTED') {
+      throw new Error('Upload timeout - file may be too large');
     } else {
-      // Other error (validation, etc.)
-      throw new Error(error.message || 'An unexpected error occurred');
+      throw new Error(`Upload failed: ${error.message}`);
     }
   }
 }
 
 /**
- * Upload multiple images
+ * Upload multiple images to S3 via backend API
  * @param {File[]} files - Array of image files to upload
  * @param {Object} options - Additional options for upload
  * @returns {Promise<Object[]>} Array of upload responses
  */
 export async function uploadMultipleImages(files, options = {}) {
   try {
+    console.log('🚀 Multiple S3 upload requested for', files.length, 'files');
+
     const uploadPromises = files.map(file => uploadImage(file, options));
     const results = await Promise.allSettled(uploadPromises);
 
@@ -113,7 +147,7 @@ export async function uploadMultipleImages(files, options = {}) {
       error: result.status === 'rejected' ? result.reason.message : null,
     }));
   } catch (error) {
-    console.error('Error uploading multiple images:', error);
+    console.error('❌ Error uploading multiple images to S3:', error);
     throw error;
   }
 }

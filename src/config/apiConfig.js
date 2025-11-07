@@ -9,7 +9,7 @@ const API_CONFIG = {
   // OpenAI Configuration
   openai: {
     baseURL: 'https://api.openai.com/v1',
-    apiKey: import.meta.env.VITE_OPENAI_API_KEY || 'api',
+    apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
     models: {
       text: 'gpt-3.5-turbo',
       textAdvanced: 'gpt-4',
