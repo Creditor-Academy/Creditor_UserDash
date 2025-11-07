@@ -102,94 +102,25 @@ export async function generateAICourseOutline(courseData) {
  */
 function generateFallbackModules(courseData) {
   const subject = courseData.subject || courseData.title;
-  console.log('📚 Generating fallback modules for subject:', subject);
+  console.log(
+    '📚 Generating fallback single comprehensive module for subject:',
+    subject
+  );
 
   const modules = [
     {
       id: 1,
-      title: `Introduction to ${subject}`,
-      module_title: `Introduction to ${subject}`,
-      description: `Foundational concepts and overview of ${subject}`,
+      title: `Complete ${subject} Masterclass`,
+      module_title: `Complete ${subject} Masterclass`,
+      description: `A comprehensive module covering all aspects of ${subject} from fundamentals to advanced applications`,
       lessons: [
         {
           id: 1,
-          title: `What is ${subject}?`,
-          lesson_title: `What is ${subject}?`,
-          description: `Understanding the basics and core concepts`,
+          title: `Comprehensive ${subject} Guide`,
+          lesson_title: `Comprehensive ${subject} Guide`,
+          description: `A complete guide covering all aspects of ${subject} including fundamentals, practical applications, and advanced techniques`,
           content: '',
-          duration: '15 min',
-        },
-        {
-          id: 2,
-          title: `Why Learn ${subject}?`,
-          lesson_title: `Why Learn ${subject}?`,
-          description: `Benefits and real-world applications`,
-          content: '',
-          duration: '10 min',
-        },
-        {
-          id: 3,
-          title: 'Getting Started',
-          lesson_title: 'Getting Started',
-          description: 'Setting up your learning environment',
-          content: '',
-          duration: '20 min',
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: `${subject} Fundamentals`,
-      module_title: `${subject} Fundamentals`,
-      description: `Core principles and essential knowledge`,
-      lessons: [
-        {
-          id: 4,
-          title: 'Key Concepts',
-          lesson_title: 'Key Concepts',
-          description: 'Essential terminology and principles',
-          content: '',
-          duration: '25 min',
-        },
-        {
-          id: 5,
-          title: 'Basic Techniques',
-          lesson_title: 'Basic Techniques',
-          description: 'Fundamental methods and approaches',
-          content: '',
-          duration: '30 min',
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: `Practical ${subject}`,
-      module_title: `Practical ${subject}`,
-      description: `Hands-on experience and real-world applications`,
-      lessons: [
-        {
-          id: 6,
-          title: 'Real-world Examples',
-          lesson_title: 'Real-world Examples',
-          description: 'Practical applications and case studies',
-          content: '',
-          duration: '35 min',
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: `Advanced ${subject}`,
-      module_title: `Advanced ${subject}`,
-      description: `Expert-level concepts and advanced techniques`,
-      lessons: [
-        {
-          id: 7,
-          title: 'Expert Techniques',
-          lesson_title: 'Expert Techniques',
-          description: 'Advanced methods and best practices',
-          content: '',
-          duration: '40 min',
+          duration: '60 min',
         },
       ],
     },
@@ -307,31 +238,52 @@ export async function createCompleteAICourse(courseData) {
   try {
     console.log('🚀 Creating complete AI course:', courseData.title);
 
-    // Step 1: Generate AI course outline with fallback
+    // Step 1: Use provided course structure or generate AI course outline
     let courseStructure;
-    try {
-      console.log('📋 Step 1: Generating AI course outline...');
-      const outlineResponse = await generateAICourseOutline(courseData);
-      if (!outlineResponse.success) {
-        console.warn('AI outline generation failed, using fallback structure');
+
+    // Check if comprehensive course structure is already provided
+    if (courseData.comprehensiveCourseStructure) {
+      console.log(
+        '📋 Step 1: Using provided comprehensive course structure with thumbnails...'
+      );
+      courseStructure = courseData.comprehensiveCourseStructure;
+      console.log('🎨 Using course structure with thumbnails:', {
+        moduleCount: courseStructure.modules?.length || 0,
+        hasModuleThumbnails: courseStructure.modules?.[0]?.thumbnail
+          ? 'Yes'
+          : 'No',
+        hasLessonThumbnails: courseStructure.modules?.[0]?.lessons?.[0]
+          ?.thumbnail
+          ? 'Yes'
+          : 'No',
+      });
+    } else {
+      try {
+        console.log('📋 Step 1: Generating AI course outline...');
+        const outlineResponse = await generateAICourseOutline(courseData);
+        if (!outlineResponse.success) {
+          console.warn(
+            'AI outline generation failed, using fallback structure'
+          );
+          courseStructure = {
+            title: courseData.title,
+            subject: courseData.subject || courseData.title,
+            modules: generateFallbackModules(courseData),
+          };
+        } else {
+          courseStructure = outlineResponse.data;
+        }
+      } catch (outlineError) {
+        console.warn(
+          'AI outline generation error, using fallback:',
+          outlineError.message
+        );
         courseStructure = {
           title: courseData.title,
           subject: courseData.subject || courseData.title,
           modules: generateFallbackModules(courseData),
         };
-      } else {
-        courseStructure = outlineResponse.data;
       }
-    } catch (outlineError) {
-      console.warn(
-        'AI outline generation error, using fallback:',
-        outlineError.message
-      );
-      courseStructure = {
-        title: courseData.title,
-        subject: courseData.subject || courseData.title,
-        modules: generateFallbackModules(courseData),
-      };
     }
 
     // Step 2: Create the course using deployed backend API with retry logic
@@ -342,15 +294,25 @@ export async function createCompleteAICourse(courseData) {
       console.log('🏗️ Step 2: Creating course via backend API...');
 
       const coursePayload = {
-        title: courseStructure.title,
+        title:
+          courseStructure.title ||
+          courseStructure.course_title ||
+          courseData.title,
         description: courseData.description,
-        subject: courseStructure.subject,
+        subject: courseStructure.subject || courseData.subject,
         objectives: courseData.learningObjectives,
         duration: courseData.duration,
         max_students: courseData.max_students,
         price: courseData.price || '0',
         thumbnail: courseData.thumbnail,
       };
+
+      console.log('📦 Course payload prepared:', {
+        title: coursePayload.title,
+        hasDescription: !!coursePayload.description,
+        subject: coursePayload.subject,
+        moduleCount: courseStructure.modules?.length || 0,
+      });
 
       // Retry logic for course creation
       let retryCount = 0;
@@ -409,6 +371,16 @@ export async function createCompleteAICourse(courseData) {
           `Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
         );
 
+        // Validate and prepare thumbnail URL
+        const moduleThumbnail =
+          moduleData.thumbnail || moduleData.module_thumbnail_url;
+        const validatedThumbnail =
+          moduleThumbnail &&
+          (moduleThumbnail.startsWith('http') ||
+            moduleThumbnail.startsWith('data:'))
+            ? moduleThumbnail
+            : '';
+
         const modulePayload = {
           title: moduleData.title || moduleData.module_title,
           description:
@@ -417,7 +389,7 @@ export async function createCompleteAICourse(courseData) {
           order: i + 1,
           estimated_duration: 60,
           module_status: 'PUBLISHED',
-          thumbnail: moduleData.thumbnail || 'AI generated module thumbnail',
+          thumbnail: validatedThumbnail,
           price: 0, // Backend expects number, matching manual creation
         };
 
@@ -425,6 +397,11 @@ export async function createCompleteAICourse(courseData) {
           '📋 Module payload being sent:',
           JSON.stringify(modulePayload, null, 2)
         );
+        console.log('🎨 Module thumbnail data:', {
+          thumbnail: moduleData.thumbnail,
+          module_thumbnail_url: moduleData.module_thumbnail_url,
+          validated_thumbnail: validatedThumbnail,
+        });
 
         // Retry logic for module creation
         let moduleRetryCount = 0;
@@ -504,6 +481,22 @@ export async function createCompleteAICourse(courseData) {
               `📝 Creating lesson ${j + 1}/${module.originalLessons.length} in module "${moduleTitle}": ${lessonData.title}`
             );
 
+            // Validate and prepare lesson thumbnail URL
+            const lessonThumbnail =
+              lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+            const validatedLessonThumbnail =
+              lessonThumbnail &&
+              (lessonThumbnail.startsWith('http') ||
+                lessonThumbnail.startsWith('data:'))
+                ? lessonThumbnail
+                : '';
+
+            console.log('🎨 Lesson thumbnail data:', {
+              thumbnail: lessonData.thumbnail,
+              lesson_thumbnail_url: lessonData.lesson_thumbnail_url,
+              validated_thumbnail: validatedLessonThumbnail,
+            });
+
             const lessonPayload = {
               title: lessonData.title || `Lesson ${j + 1}`,
               description:
@@ -513,6 +506,7 @@ export async function createCompleteAICourse(courseData) {
               status: 'PUBLISHED',
               content: lessonData.content || '',
               duration: lessonData.duration || '15 min',
+              thumbnail: validatedLessonThumbnail,
             };
 
             // Use enhanced API client instead of fetch for better error handling

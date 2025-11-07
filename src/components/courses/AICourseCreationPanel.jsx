@@ -18,6 +18,7 @@ import {
   generateSafeCourseOutline,
   createCompleteAICourse,
 } from '../../services/aiCourseService';
+import { generateComprehensiveCourse as generateShowcaseCourse } from '../../services/comprehensiveCourseGenerator';
 import {
   createModule,
   createLesson,
@@ -25,6 +26,7 @@ import {
 } from '../../services/courseService';
 import openAIService from '../../services/openAIService';
 import { uploadImage } from '@/services/imageUploadService';
+import { toast } from 'react-hot-toast';
 import {
   uploadAICourseThumbnail,
   uploadAICourseReferences,
@@ -46,6 +48,8 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     difficulty: 'beginner',
     objectives: '',
     thumbnail: null,
+    subjectDomain: '',
+    learningObjectives: '',
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiOutline, setAiOutline] = useState(null);
@@ -179,137 +183,92 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
     }
   };
 
-  // Generate AI course outline with optional content moderation
+  // Generate comprehensive course with single module and showcase lesson
   const generateCourseOutline = async () => {
     if (!courseData.title.trim()) return;
 
     setIsGenerating(true);
     setModerationResults(null);
 
-    // Include uploaded files and source content in the request
-    const courseDataWithContent = {
-      ...courseData,
-      uploadedFiles: uploadedFiles,
-      referenceUrls: uploadedFiles.map(f => f.url),
-      sourceContent: sourceContent,
-    };
+    console.log(
+      '🎯 Generating comprehensive showcase course with single module...'
+    );
 
     try {
-      let result;
+      // Prepare course data for comprehensive generation
+      const comprehensiveCourseData = {
+        courseTitle: courseData.title,
+        difficultyLevel: courseData.difficulty || 'intermediate',
+        duration: courseData.duration || '4 weeks',
+        targetAudience: courseData.targetAudience || 'professionals',
+        moduleCount: 1, // ONE MODULE ONLY
+        lessonsPerModule: 1, // ONE LESSON ONLY
+      };
 
-      if (enableContentModeration) {
+      console.log('📋 Comprehensive course data:', comprehensiveCourseData);
+
+      // Generate comprehensive course with showcase lesson
+      const result = await generateShowcaseCourse(comprehensiveCourseData);
+
+      if (result && result.modules && result.modules.length > 0) {
+        console.log('✅ Comprehensive showcase course generated successfully');
+        console.log('📋 Generated course structure:', result);
+        console.log('📋 Number of modules:', result.modules.length);
+        console.log('📋 Module details:', result.modules[0]);
         console.log(
-          '🛡️ Generating course outline with Qwen3Guard content moderation...'
+          '📋 Lesson blocks count:',
+          result.modules[0].lessons[0].lesson_blocks?.length || 0
         );
-        result = await generateSafeCourseOutline(courseDataWithContent);
 
-        // Store moderation results
-        if (result.data?.moderation) {
-          setModerationResults(result.data.moderation);
-        }
+        // Set the generated outline
+        setAiOutline(result);
 
-        // Log content moderation results silently for professional experience
-        if (!result.success && result.error?.includes('unsafe content')) {
-          console.log(
-            '⚠️ Content flagged by moderation system, proceeding with generation...'
-          );
-          // Continue with generation instead of blocking
-        }
-
-        // Log moderation summary silently
-        if (result.success && result.data?.moderation?.overall) {
-          const moderation = result.data.moderation.overall;
-          console.log(
-            `🛡️ Content moderation complete. Safe: ${moderation.safe}`
-          );
-          // Continue with generation regardless of moderation results
-        }
-      } else {
-        console.log(
-          '🤖 Generating course outline without content moderation...'
-        );
-        result = await generateAICourseOutline(courseDataWithContent);
-      }
-
-      if (result.success) {
-        console.log('📋 Generated course outline data:', result.data);
-        console.log(
-          '📋 Number of modules generated:',
-          result.data?.modules?.length || 0
-        );
-        console.log('📋 Module details:', result.data?.modules);
-
-        // Ensure we have modules in the outline
-        const outlineData = result.data;
-        if (!outlineData.modules || outlineData.modules.length === 0) {
-          console.warn(
-            '⚠️ No modules in generated outline, adding fallback modules'
-          );
-          outlineData.modules = [
-            {
-              id: 1,
-              title: `Introduction to ${courseData.title}`,
-              module_title: `Introduction to ${courseData.title}`,
-              description: 'Getting started with the fundamentals',
-              lessons: [
-                {
-                  id: 1,
-                  title: 'Overview',
-                  lesson_title: 'Overview',
-                  duration: '10 min',
-                },
-              ],
-            },
-            {
-              id: 2,
-              title: `${courseData.title} Basics`,
-              module_title: `${courseData.title} Basics`,
-              description: 'Core concepts and principles',
-              lessons: [
-                {
-                  id: 2,
-                  title: 'Key Concepts',
-                  lesson_title: 'Key Concepts',
-                  duration: '15 min',
-                },
-              ],
-            },
-          ];
-        }
-
-        setAiOutline(outlineData);
+        // Set the comprehensive flag since our approach is always comprehensive
         setGeneratedContent(prev => ({
           ...prev,
-          outline: outlineData,
+          outline: result,
+          comprehensive: true,
         }));
 
-        // Show success message with moderation info
-        const moduleCount = outlineData?.modules?.length || 0;
-        const moderationInfo =
-          enableContentModeration && result.moderationEnabled
-            ? `\n🛡️ Content moderation: ${result.data?.moderation?.overall?.safe ? 'Passed' : 'Needs Review'}`
-            : '';
         console.log(
-          `✅ Course outline generated successfully with ${moduleCount} modules${moderationInfo}`
+          `✅ Course outline generated successfully with ${result.modules.length} comprehensive module`
         );
-
-        // Show user-friendly success message
-        if (moduleCount > 0) {
-          console.log(
-            `✅ Course outline generated successfully! Generated ${moduleCount} modules with lessons`
-          );
-        }
+        console.log(
+          `🎨 Module thumbnail: ${result.modules[0].thumbnail || 'Not generated'}`
+        );
+        console.log(
+          `🎨 Lesson thumbnail: ${result.modules[0].lessons[0].thumbnail || 'Not generated'}`
+        );
+      } else {
+        console.error(
+          '❌ Comprehensive course generation failed: No modules generated'
+        );
+        throw new Error('Failed to generate comprehensive course structure');
       }
     } catch (error) {
-      console.error('Failed to generate course outline:', error);
-      console.error('❌ Failed to generate course outline:', error.message);
-      // Log detailed error for debugging
-      console.error('AI course outline generation error details:', {
+      console.error('❌ Comprehensive course generation error:', error);
+      console.error('Error details:', {
         message: error.message,
         stack: error.stack,
-        courseData: courseDataWithContent,
-        moderationEnabled: enableContentModeration,
+        courseData: courseData,
       });
+
+      // Fallback to basic generation if comprehensive fails
+      console.log('🔄 Falling back to basic course generation...');
+      try {
+        const fallbackResult = await generateAICourseOutline({
+          title: courseData.title,
+          subject: courseData.subject || courseData.title,
+          difficulty: courseData.difficulty || 'intermediate',
+        });
+
+        if (fallbackResult.success) {
+          setAiOutline(fallbackResult.data);
+          console.log('✅ Fallback course generation successful');
+        }
+      } catch (fallbackError) {
+        console.error('❌ Fallback generation also failed:', fallbackError);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -456,9 +415,29 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
         price: '0',
         thumbnail: courseData.thumbnail || null,
         generationMode: generationMode, // Pass generation mode for content generation
+        // Include comprehensive course structure with thumbnails if available
+        comprehensiveCourseStructure: aiOutline || null,
       };
 
       console.log('Creating AI course with payload:', completeAICourseData);
+
+      if (aiOutline) {
+        console.log(
+          '🎨 Using comprehensive course structure with thumbnails:',
+          {
+            moduleCount: aiOutline.modules?.length || 0,
+            moduleThumbnail:
+              aiOutline.modules?.[0]?.thumbnail || 'Not available',
+            lessonThumbnail:
+              aiOutline.modules?.[0]?.lessons?.[0]?.thumbnail ||
+              'Not available',
+          }
+        );
+      } else {
+        console.log(
+          '⚠️ No comprehensive course structure available - will generate basic outline'
+        );
+      }
 
       setCreationProgress('Creating course structure...');
 
@@ -480,6 +459,26 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       console.log('Complete AI course created successfully:', result.data);
+
+      // Log thumbnail information for debugging
+      if (result.data && result.data.modules) {
+        console.log('🎨 Final course creation result - Thumbnail check:', {
+          courseId: result.data.courseId,
+          moduleCount: result.data.modules?.length || 0,
+          moduleThumbnails:
+            result.data.modules?.map(m => ({
+              moduleId: m.id,
+              title: m.title,
+              thumbnail: m.thumbnail || 'No thumbnail',
+            })) || [],
+          lessonThumbnails:
+            result.data.lessons?.map(l => ({
+              lessonId: l.id,
+              title: l.title,
+              thumbnail: l.thumbnail || 'No thumbnail',
+            })) || [],
+        });
+      }
 
       setCreationProgress('Course created successfully!');
 
@@ -564,6 +563,10 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
             description: `Generated module containing ${moduleLessons.length} lessons`,
             order: createdModules.length + 1,
             price: 0, // Required field
+            thumbnail:
+              moduleLessons[0]?.moduleThumbnail ||
+              moduleLessons[0]?.module_thumbnail_url ||
+              '',
           };
 
           console.log('🔄 Creating module:', moduleData.title);
@@ -580,6 +583,8 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                 content: lesson.content || '',
                 duration: lesson.duration || '15 min',
                 order: createdLessons.length + 1,
+                thumbnail:
+                  lesson.thumbnail || lesson.lesson_thumbnail_url || '',
               };
 
               console.log('🔄 Creating lesson:', lessonPayload.title);
@@ -837,31 +842,137 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                     {/* AI-generated outline preview */}
                     {aiOutline && (
                       <div>
-                        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
-                          Generated Outline
+                        <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                          {generatedContent?.comprehensive ? (
+                            <>
+                              🎯 Comprehensive Course Generated
+                              <span className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                                ARCHITECT
+                              </span>
+                            </>
+                          ) : (
+                            'Generated Outline'
+                          )}
                         </h3>
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                           <div className="p-4">
                             <h4 className="font-semibold text-gray-900 mb-3">
-                              {aiOutline.course_title}
+                              {aiOutline.courseTitle || aiOutline.course_title}
                             </h4>
-                            <div className="space-y-3">
+
+                            {/* Course stats for comprehensive courses */}
+                            {generatedContent?.comprehensive && (
+                              <div className="mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                                <div className="grid grid-cols-3 gap-4 text-center">
+                                  <div>
+                                    <div className="text-lg font-bold text-indigo-600">
+                                      {aiOutline.modules?.length || 0}
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      Modules
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-lg font-bold text-purple-600">
+                                      {aiOutline.modules?.reduce(
+                                        (total, module) =>
+                                          total + (module.lessons?.length || 0),
+                                        0
+                                      ) || 0}
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      Lessons
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-lg font-bold text-pink-600">
+                                      {aiOutline.modules?.reduce(
+                                        (total, module) =>
+                                          total +
+                                          (module.lessons?.reduce(
+                                            (lessonTotal, lesson) =>
+                                              lessonTotal +
+                                              (lesson.imagePrompts?.length ||
+                                                0),
+                                            0
+                                          ) || 0),
+                                        0
+                                      ) || 0}
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      Images
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
                               {aiOutline.modules?.map((module, index) => (
                                 <div
-                                  key={`${module?.module_title || module?.title || 'module'}-${index}`}
-                                  className="border-l-2 border-purple-500 pl-3"
+                                  key={`${module?.moduleTitle || module?.module_title || module?.title || 'module'}-${index}`}
+                                  className={`border-l-2 pl-3 ${
+                                    generatedContent?.comprehensive
+                                      ? 'border-gradient-to-b from-indigo-500 to-purple-500'
+                                      : 'border-purple-500'
+                                  }`}
                                 >
                                   <p className="font-medium text-gray-900 text-sm">
-                                    {module?.module_title ||
+                                    {module?.moduleTitle ||
+                                      module?.module_title ||
                                       module?.title ||
                                       'Untitled Module'}
                                   </p>
-                                  <p className="text-xs text-gray-600">
-                                    {module?.lessons?.length > 0
-                                      ? `${module.lessons.length} lesson${module.lessons.length > 1 ? 's' : ''}: ${module.lessons[0]?.lesson_title || module.lessons[0]?.title || 'Lesson 1'}`
-                                      : module?.lesson?.lesson_title ||
-                                        'No lessons yet'}
+                                  <p className="text-xs text-gray-600 mb-1">
+                                    {module?.moduleDescription ||
+                                      module?.description ||
+                                      'Module description'}
                                   </p>
+
+                                  {/* Enhanced lesson display for comprehensive courses */}
+                                  {generatedContent?.comprehensive &&
+                                  module?.lessons?.length > 0 ? (
+                                    <div className="mt-2 space-y-1">
+                                      {module.lessons
+                                        .slice(0, 3)
+                                        .map((lesson, lessonIndex) => (
+                                          <div
+                                            key={lessonIndex}
+                                            className="text-xs text-gray-500 pl-2 border-l border-gray-200"
+                                          >
+                                            •{' '}
+                                            {lesson.lessonTitle ||
+                                              lesson.lesson_title ||
+                                              lesson.title}
+                                            {lesson.quiz && (
+                                              <span className="ml-1 text-blue-500">
+                                                📝
+                                              </span>
+                                            )}
+                                            {lesson.imagePrompts &&
+                                              lesson.imagePrompts.length >
+                                                0 && (
+                                                <span className="ml-1 text-green-500">
+                                                  🎨
+                                                </span>
+                                              )}
+                                          </div>
+                                        ))}
+                                      {module.lessons.length > 3 && (
+                                        <div className="text-xs text-gray-400 pl-2">
+                                          +{module.lessons.length - 3} more
+                                          lessons
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-xs text-gray-600">
+                                      {module?.lessons?.length > 0
+                                        ? `${module.lessons.length} lesson${module.lessons.length > 1 ? 's' : ''}: ${module.lessons[0]?.lessonTitle || module.lessons[0]?.lesson_title || module.lessons[0]?.title || 'Lesson 1'}`
+                                        : module?.lesson?.lesson_title ||
+                                          'No lessons yet'}
+                                    </p>
+                                  )}
                                 </div>
                               )) || []}
                             </div>
@@ -1005,6 +1116,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                                   setCourseData(prev => ({
                                     ...prev,
                                     objectives: e.target.value,
+                                    learningObjectives: e.target.value, // Sync with learningObjectives
                                   }))
                                 }
                                 rows="2"
@@ -1338,24 +1450,24 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                             </div>
                           </div>
 
-                          {/* Only show Generate AI Outline button if no outline exists */}
+                          {/* Generate Comprehensive Showcase Course */}
                           {!aiOutline && (
                             <Button
                               onClick={generateCourseOutline}
                               disabled={
                                 isGenerating || !courseData.title.trim()
                               }
-                              className="w-full bg-purple-600 hover:bg-purple-700"
+                              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                             >
                               {isGenerating ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                  Generating Outline...
+                                  Generating Comprehensive Showcase Course...
                                 </>
                               ) : (
                                 <>
                                   <Sparkles className="w-4 h-4 mr-2" />
-                                  Generate AI Outline
+                                  🎯 Generate Comprehensive Showcase Course
                                 </>
                               )}
                             </Button>
