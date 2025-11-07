@@ -453,102 +453,6 @@ Format the content in clear, structured paragraphs.`;
       throw error;
     }
   }
-
-  /**
-   * Enhance existing lesson content
-   * @param {string} content - Existing content to enhance
-   * @param {Object} options - Enhancement options
-   * @returns {Promise<string>} Enhanced content
-   */
-  async enhanceLessonContent(content, options = {}) {
-    const { enhancementType = 'clarity', targetAudience = 'general learners' } =
-      options;
-
-    const prompt = `Enhance the following educational content for ${enhancementType}:
-
-Original Content:
-${content}
-
-Target Audience: ${targetAudience}
-
-Please improve the content by:
-1. Making it clearer and more engaging
-2. Adding relevant examples if needed
-3. Improving structure and flow
-4. Ensuring it's appropriate for the target audience
-
-Return the enhanced version maintaining the same general structure.`;
-
-    try {
-      const enhancedContent = await this.generateText(prompt, {
-        model: 'gpt-3.5-turbo',
-        maxTokens: 2000,
-        temperature: 0.7,
-        systemPrompt:
-          'You are an expert educational content editor. Enhance content while maintaining its core message and structure.',
-      });
-
-      return enhancedContent;
-    } catch (error) {
-      console.error('❌ Content enhancement failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Generate quiz questions for a topic
-   * @param {string} topic - Topic for quiz questions
-   * @param {Object} options - Generation options
-   * @returns {Promise<Array>} Array of quiz questions
-   */
-  async generateQuizQuestions(topic, options = {}) {
-    const {
-      numberOfQuestions = 5,
-      difficulty = 'medium',
-      questionType = 'multiple-choice',
-    } = options;
-
-    const prompt = `Generate ${numberOfQuestions} ${difficulty} ${questionType} quiz questions about: ${topic}
-
-Each question should have:
-1. A clear, concise question
-2. Four answer options (A, B, C, D)
-3. The correct answer indicated
-4. A brief explanation of why the answer is correct
-
-Format as JSON array:
-[
-  {
-    "question": "Question text?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": "Option A",
-    "explanation": "Brief explanation"
-  }
-]
-
-Return ONLY valid JSON.`;
-
-    try {
-      const response = await this.generateStructured(
-        'You are an expert educational assessment creator. Generate high-quality quiz questions that test understanding.',
-        prompt,
-        {
-          model: 'gpt-3.5-turbo',
-          maxTokens: 1500,
-          temperature: 0.7,
-        }
-      );
-
-      // Ensure response is an array
-      const questions = Array.isArray(response) ? response : [response];
-
-      console.log(`✅ Generated ${questions.length} quiz questions`);
-      return questions;
-    } catch (error) {
-      console.error('❌ Quiz generation failed:', error);
-      throw error;
-    }
-  }
 }
 
 // Create and export singleton instance
@@ -564,6 +468,4 @@ export const {
   generateComprehensiveCourse,
   generateCourseImage,
   generateLessonContent,
-  enhanceLessonContent,
-  generateQuizQuestions,
 } = openAIService;
