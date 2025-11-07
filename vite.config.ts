@@ -80,7 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://creditor.onrender.com'
+      'https://testbackend-hcoy.onrender.com'
     ),
     // AI Service API Keys - Injected at build time
     'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
