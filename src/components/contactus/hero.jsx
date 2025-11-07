@@ -1,14 +1,27 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 export default function Hero() {
+  useEffect(() => {
+    // Dynamically load WonderEngine script
+    const script = document.createElement("script");
+    script.src = "https://api.wonderengine.ai/js/form_embed.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   return (
     <section className="thinkific-hero">
-      {/* Decorative blurred circles for background */}
+      {/* Decorative blurred circles */}
       <div className="hero-bg-glows">
         <div className="glow glow-1" />
         <div className="glow glow-2" />
         <div className="glow glow-3" />
       </div>
+
       <style>{`
         .thinkific-hero {
           width: 100%;
@@ -53,7 +66,6 @@ export default function Hero() {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.09); }
         }
-        
         .thinkific-wrap {
           width: 100%;
           max-width: 1200px;
@@ -62,6 +74,7 @@ export default function Hero() {
           gap: 36px;
           position: relative;
           z-index: 1;
+          align-items: center;
         }
         .left-copy {
           color: #23272f;
@@ -123,74 +136,37 @@ export default function Hero() {
           font-weight: 500;
           letter-spacing: 0.01em;
         }
-        .form-card {
-          background: linear-gradient(135deg, #f5f7fe 60%, #e6ecf9 100%);
-          border-radius: 0;
-          padding: 22px 18px 18px 18px;
-          border: 1.5px solid #d0daef;
-          box-shadow: 0 2px 20px 0 rgba(130,170,215,.06);
-          margin-top: -21px;
-        }
-        .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .f-col { display: grid; gap: 5px; }
-        .label { color: #3f4661; font-size: 13.5px; font-weight: 600; font-family: 'Inter', system-ui, sans-serif; }
-        .input, .select {
+
+        /* WonderEngine iframe */
+        .form-embed {
           width: 100%;
-          height: 44px;
-          border-radius: 9999px;
-          border: 1.2px solid #e6ebf9;
-          outline: none;
-          background: #fafbff;
-          padding: 0 16px;
-          font-size: 14.2px;
-          color: #28294d;
-        }
-        .input:focus, .select:focus {
-          border: 1.2px solid #a87afa;
-          background: #fff;
-        }
-        .helper { color: #7b80a2; font-size: 11.3px; margin-top: -2px; }
-        .phone-wrap {
-          display: grid; grid-template-columns: 84px 1fr; gap: 6px;
-        }
-        .cc {
-          height: 44px; border-radius: 9999px; background: #fafbff; border: 1.2px solid #e6ebf9; padding: 0 10px;
-          color: #54406b;
-          font-size: 14.2px;
-        }
-        .select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, #c6b1f7 50%), linear-gradient(135deg, #c6b1f7 50%, transparent 50%); background-position: calc(100% - 22px) calc(1em + 2px), calc(100% - 16px) calc(1em + 2px); background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
-        .cta {
-          width: 100%;
-          height: 44px;
-          border-radius: 9999px;
-          background: linear-gradient(90deg, #ffe980 0%, #ffd21f 100%);
-          color: #23272f;
-          font-weight: 700;
+          height: 480px;
           border: none;
-          cursor: pointer;
-          margin-top: 14px;
-          font-size: 15px;
-          font-family: 'Inter', system-ui, sans-serif;
-          box-shadow: 0 1px 10px 0 rgba(25,30,60,0.07);
+          border-radius: 0;
         }
+
         @media (max-width: 980px){
           .thinkific-wrap { grid-template-columns: 1fr; }
+          .form-embed { height: 520px; }
         }
       `}</style>
 
       <div className="thinkific-wrap">
         <div className="left-copy">
-          <h1 className="headline">Scale your education 
-            <span className="block">programs with 
-              <span className="block">Athena LMS </span></span>
-            </h1>
-          <p className="copy">Get answers to all of your questions on a brief discovery call with one of our 
-            <span className="block">solutions experts and cover topics including:</span></p>
+          <h1 className="headline">
+            Scale your education
+            <span className="block">programs with <span className="block">Athena LMS</span></span>
+          </h1>
+          <p className="copy">
+            Get answers to all of your questions on a brief discovery call with one of our
+            <span className="block">solutions experts and cover topics including:</span>
+          </p>
           <ul className="bullets">
             <li><span className="dot" />Find out if Athena LMS meets your needs. If not, we’ll point you in the right direction.</li>
             <li><span className="dot" />Share your short and long–term goals and discuss what’s getting in the way.</li>
             <li><span className="dot" />Learn how companies like yours are using Athena LMS to launch, scale, and streamline education programs that drive revenue and engagement.</li>
           </ul>
+
           <div className="highlights-row">
             <div className="highlight-box"><div className="highlight-big">1500+</div><div className="highlight-label">Courses</div></div>
             <div className="highlight-box"><div className="highlight-big">450+</div><div className="highlight-label">Learners</div></div>
@@ -199,64 +175,24 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="form-card">
-          <div className="f-row">
-            <div className="f-col">
-              <label className="label">First name *</label>
-              <input className="input" placeholder="First name" />
-            </div>
-            <div className="f-col">
-              <label className="label">Last name *</label>
-              <input className="input" placeholder="Last name" />
-            </div>
-          </div>
-
-          <div className="f-col" style={{ marginTop: 12
-            
-           }}>
-            <label className="label">Work email *</label>
-            <div className="helper">Personal addresses (e.g., Gmail) will show an error.</div>
-            <input className="input" placeholder="name@company.com" />
-          </div>
-
-          <div className="f-col" style={{ marginTop: 12 }}>
-            <label className="label">Phone number *</label>
-            <div className="phone-wrap">
-              <select className="cc" defaultValue="US">
-                <option value="US">+1 US</option>
-                <option value="CA">+1 CA</option>
-                <option value="GB">+44 UK</option>
-                <option value="AU">+61 AU</option>
-              </select>
-              <input className="input" placeholder="Phone Number" />
-            </div>
-          </div>
-
-          <div className="f-col" style={{ marginTop: 12 }}>
-            <label className="label">Company size *</label>
-            <select className="select">
-              <option>Number of employees</option>
-              <option>1-10</option>
-              <option>11-50</option>
-              <option>51-200</option>
-              <option>201-1,000</option>
-              <option>1,001+</option>
-            </select>
-          </div>
-
-          <div className="f-col" style={{ marginTop: 12 }}>
-            <label className="label">Your goal with Athena LMS *</label>
-            <select className="select">
-              <option>Primary use case</option>
-              <option>Customer education</option>
-              <option>Employee training</option>
-              <option>Monetize courses</option>
-              <option>Other</option>
-            </select>
-          </div>
-
-          <button className="cta">Talk to us  </button>
-        </div>
+        {/* WonderEngine Embed Directly */}
+        <iframe
+          className="form-embed"
+          src="https://api.wonderengine.ai/widget/form/tHMfncbmbEpAOXwKxNxj"
+          id="inline-tHMfncbmbEpAOXwKxNxj"
+          title="Athena Contact Form"
+          data-layout="{'id':'INLINE'}"
+          data-trigger-type="alwaysShow"
+          data-trigger-value=""
+          data-activation-type="alwaysActivated"
+          data-activation-value=""
+          data-deactivation-type="neverDeactivate"
+          data-deactivation-value=""
+          data-form-name="Athena Contact Form"
+          data-height="477"
+          data-layout-iframe-id="inline-tHMfncbmbEpAOXwKxNxj"
+          data-form-id="tHMfncbmbEpAOXwKxNxj"
+        ></iframe>
       </div>
     </section>
   );
