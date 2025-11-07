@@ -1586,7 +1586,65 @@ function LessonBuilder() {
 
     if (!block) return;
 
+    // IMPORTANT: Check for interactive blocks FIRST (before quote detection)
+    // This prevents process-carousel from being detected as quote-carousel
+    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
+    const isInteractiveBlock =
+      block.type === 'interactive' ||
+      // Check subtype for all interactive types
+      (block.subtype &&
+        (block.subtype === 'accordion' ||
+          block.subtype === 'tabs' ||
+          block.subtype === 'labeled-graphic' ||
+          block.subtype === 'timeline' ||
+          block.subtype === 'process')) ||
+      // Check if content has interactive structure (JSON with template)
+      (() => {
+        try {
+          const content = JSON.parse(block.content || '{}');
+          return (
+            content.template &&
+            (content.tabsData ||
+              content.accordionData ||
+              content.labeledGraphicData ||
+              content.timelineData ||
+              content.processData)
+          );
+        } catch {
+          return false;
+        }
+      })() ||
+      // Check HTML patterns for interactive blocks
+      (block.html_css &&
+        (block.html_css.includes('interactive-tabs') ||
+          block.html_css.includes('interactive-accordion') ||
+          block.html_css.includes('accordion-content') ||
+          block.html_css.includes('tab-button') ||
+          block.html_css.includes('accordion-header') ||
+          block.html_css.includes('data-template="tabs"') ||
+          block.html_css.includes('data-template="accordion"') ||
+          block.html_css.includes('data-template="labeled-graphic"') ||
+          block.html_css.includes('data-template="timeline"') ||
+          block.html_css.includes('data-template="process"') ||
+          block.html_css.includes('labeled-graphic-container') ||
+          block.html_css.includes('timeline-container') ||
+          block.html_css.includes('process-carousel')));
+
+    if (isInteractiveBlock) {
+      // Handle interactive block editing
+      console.log('Interactive block detected for editing:', block);
+
+      // Override block type to ensure it's treated as interactive
+      block = { ...block, type: 'interactive' };
+
+      // Set the editing interactive block and show the interactive edit dialog
+      setEditingInteractiveBlock(block);
+      setShowInteractiveEditDialog(true);
+      return;
+    }
+
     // Enhanced quote block detection - check content structure and HTML patterns
+    // NOTE: This must come AFTER interactive block detection to avoid conflicts with process-carousel
     const isQuoteBlock =
       block.type === 'quote' ||
       (block.textType && block.textType.startsWith('quote_')) ||
@@ -1600,10 +1658,12 @@ function LessonBuilder() {
           return false;
         }
       })() ||
-      // Check HTML patterns for quote blocks
+      // Check HTML patterns for quote blocks (but NOT process-carousel!)
       (block.html_css &&
+        !block.html_css.includes('process-carousel') && // Exclude process blocks
         (block.html_css.includes('quote-carousel') ||
-          block.html_css.includes('carousel-dot') ||
+          (block.html_css.includes('carousel-dot') &&
+            block.html_css.includes('blockquote')) || // Must have both
           block.html_css.includes('blockquote') ||
           block.html_css.includes('<cite') ||
           (block.html_css.includes('background-image:') &&
@@ -2033,53 +2093,6 @@ function LessonBuilder() {
       return;
     }
 
-    // Enhanced interactive block detection - check subtype, content structure and HTML patterns
-    const isInteractiveBlock =
-      block.type === 'interactive' ||
-      // Check subtype for accordion or tabs
-      (block.subtype &&
-        (block.subtype === 'accordion' ||
-          block.subtype === 'tabs' ||
-          block.subtype === 'labeled-graphic')) ||
-      // Check if content has interactive structure (JSON with template)
-      (() => {
-        try {
-          const content = JSON.parse(block.content || '{}');
-          return (
-            content.template &&
-            (content.tabsData ||
-              content.accordionData ||
-              content.labeledGraphicData)
-          );
-        } catch {
-          return false;
-        }
-      })() ||
-      // Check HTML patterns for interactive blocks
-      (block.html_css &&
-        (block.html_css.includes('interactive-tabs') ||
-          block.html_css.includes('interactive-accordion') ||
-          block.html_css.includes('accordion-content') ||
-          block.html_css.includes('tab-button') ||
-          block.html_css.includes('accordion-header') ||
-          block.html_css.includes('data-template="tabs"') ||
-          block.html_css.includes('data-template="accordion"') ||
-          block.html_css.includes('data-template="labeled-graphic"') ||
-          block.html_css.includes('labeled-graphic-container')));
-
-    if (isInteractiveBlock) {
-      // Handle interactive block editing
-      console.log('Interactive block detected for editing:', block);
-
-      // Override block type to ensure it's treated as interactive
-      block = { ...block, type: 'interactive' };
-
-      // Set the editing interactive block and show the interactive edit dialog
-      setEditingInteractiveBlock(block);
-      setShowInteractiveEditDialog(true);
-      return;
-    }
-
     if (block.type === 'text') {
       // Handle text block editing - delegate to TextBlockComponent
       setCurrentTextBlockId(blockId);
@@ -2380,12 +2393,17 @@ function LessonBuilder() {
           // Fallback: reconstruct based on layout from block or details
           const imageUrl = block.imageUrl || block.details?.image_url || '';
           const layout = block.layout || block.details?.layout || 'centered';
-          const caption = (
+          const captionHtml = (
             block.text ||
+            block.details?.caption_html ||
+            ''
+          ).toString();
+          const captionPlain = (
             block.imageDescription ||
             block.details?.caption ||
             ''
           ).toString();
+          const caption = captionHtml.trim() ? captionHtml : captionPlain;
           const title = block.imageTitle || block.details?.alt_text || 'Image';
           if (layout === 'side-by-side') {
             const alignment = block.alignment || 'left';
@@ -2399,8 +2417,8 @@ function LessonBuilder() {
                   <div class="${imageOrder}">
                     <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                   </div>
-                  <div class="${textOrder}">
-                    ${caption ? `<span class="text-gray-700 text-lg leading-relaxed">${caption}</span>` : ''}
+                  <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3">
+                    ${caption ? `<div>${caption}</div>` : ''}
                   </div>
                 </div>
               </div>`;
@@ -2409,7 +2427,7 @@ function LessonBuilder() {
               <div class="lesson-image overlay">
                 <div class="relative rounded-xl overflow-hidden">
                   <img src="${imageUrl}" alt="${title}" class="w-full h-96 object-cover" />
-                  ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${caption}</span></div></div>` : ''}
+                  ${caption ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3"><div>${caption}</div></div></div>` : ''}
                 </div>
               </div>`;
           } else if (layout === 'full-width') {
@@ -2417,7 +2435,7 @@ function LessonBuilder() {
               <div class="lesson-image full-width">
                 <div class="space-y-3">
                   <img src="${imageUrl}" alt="${title}" class="w-full max-h-[28rem] object-contain rounded" />
-                  ${caption ? `<p class="text-sm text-gray-600">${caption}</p>` : ''}
+                  ${caption ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2">${caption}</div>` : ''}
                 </div>
               </div>`;
           } else {
@@ -2425,7 +2443,7 @@ function LessonBuilder() {
               <div class="lesson-image centered">
                 <div class="text-center">
                   <img src="${imageUrl}" alt="${title}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
-                  ${caption ? `<span class="text-gray-600 mt-4 italic text-lg">${caption}</span>` : ''}
+                  ${caption ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2">${caption}</div>` : ''}
                 </div>
               </div>`;
           }
@@ -3066,14 +3084,21 @@ function LessonBuilder() {
             // Preserve layout-specific HTML so sizes/styles remain consistent after reload
             {
               const layout = block.layout || 'centered';
-              const textContent = (
+              const textHtml = (
                 block.text ||
-                block.imageDescription ||
+                block.details?.caption_html ||
                 ''
               ).toString();
+              const textPlain = (
+                block.imageDescription ||
+                block.details?.caption ||
+                ''
+              ).toString();
+              const textContent = textHtml.trim() ? textHtml : textPlain;
               details = {
                 image_url: block.imageUrl,
-                caption: textContent,
+                caption: textPlain,
+                caption_html: textHtml,
                 alt_text: block.imageTitle || '',
                 layout: layout,
                 template: block.templateType || block.template || undefined,
@@ -3091,8 +3116,8 @@ function LessonBuilder() {
                     <div class="${imageOrder}">
                       <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
                     </div>
-                    <div class="${textOrder}">
-                      ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+                    <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3">
+                      ${textContent ? `<div>${textContent}</div>` : ''}
                     </div>
                   </div>
                 `;
@@ -3100,14 +3125,14 @@ function LessonBuilder() {
                 htmlContent = `
                   <div class="relative rounded-xl overflow-hidden">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-                    ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+                    ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3"><div>${textContent}</div></div></div>` : ''}
                   </div>
                 `;
               } else if (layout === 'full-width') {
                 htmlContent = `
                   <div class="space-y-3">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
-                    ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+                    ${textContent ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2">${textContent}</div>` : ''}
                   </div>
                 `;
               } else {
@@ -3124,7 +3149,7 @@ function LessonBuilder() {
                 htmlContent = `
                   <div class="${alignmentClass}">
                     <img src="${block.imageUrl}" alt="${block.imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
-                    ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+                    ${textContent ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2">${textContent}</div>` : ''}
                   </div>
                 `;
               }
@@ -3789,8 +3814,9 @@ function LessonBuilder() {
           block.id === currentBlock.id
             ? {
                 ...newBlock,
-                text: getPlainText(newBlock.text || ''),
-                imageDescription: getPlainText(newBlock.imageDescription || ''),
+                imageDescription: getPlainText(
+                  newBlock.text || newBlock.imageDescription || ''
+                ),
               }
             : block
         )
@@ -3811,9 +3837,9 @@ function LessonBuilder() {
                     imageUrl: newBlock.imageUrl,
                     imageTitle: newBlock.imageTitle,
                     imageDescription: getPlainText(
-                      newBlock.imageDescription || ''
+                      newBlock.text || newBlock.imageDescription || ''
                     ),
-                    text: getPlainText(newBlock.text || ''),
+                    text: newBlock.text,
                     layout: newBlock.layout,
                     templateType: newBlock.templateType,
                   }
@@ -4109,6 +4135,8 @@ function LessonBuilder() {
                     timestamp: new Date().toISOString(),
                   };
                   if (b.type === 'image') {
+                    const captionHtml = b.details?.caption_html || '';
+                    const captionPlain = b.details?.caption || '';
                     const mappedBlock = {
                       ...base,
                       title: b.details?.alt_text || b.title || 'Image',
@@ -6032,7 +6060,16 @@ function LessonBuilder() {
                                                 value
                                               )
                                             }
-                                            modules={getToolbarModules('full')}
+                                            modules={getToolbarModules('image')}
+                                            formats={[
+                                              'font',
+                                              'size',
+                                              'bold',
+                                              'italic',
+                                              'underline',
+                                              'color',
+                                              'list',
+                                            ]}
                                             style={{ minHeight: '100px' }}
                                           />
                                         </div>
@@ -6122,101 +6159,131 @@ function LessonBuilder() {
                                         </div>
                                       </div>
                                     ) : (
-                                      /* Display Mode - smaller preview for edit mode */
-                                      <div>
-                                        {block.layout === 'side-by-side' && (
-                                          <div className="flex gap-3 items-start">
-                                            {block.alignment === 'right' ? (
-                                              // Image Right, Text Left
-                                              <>
-                                                <div className="w-1/2">
-                                                  <p className="text-sm text-gray-600 line-clamp-4">
-                                                    {getPlainText(
-                                                      block.text || ''
-                                                    ).substring(0, 60)}
-                                                    ...
-                                                  </p>
-                                                </div>
-                                                <div className="w-1/2">
-                                                  <img
-                                                    src={block.imageUrl}
-                                                    alt="Image"
-                                                    className="w-full h-20 object-cover rounded"
-                                                  />
-                                                </div>
-                                              </>
-                                            ) : (
-                                              // Image Left, Text Right (default)
-                                              <>
-                                                <div className="w-1/2">
-                                                  <img
-                                                    src={block.imageUrl}
-                                                    alt="Image"
-                                                    className="w-full h-20 object-cover rounded"
-                                                  />
-                                                </div>
-                                                <div className="w-1/2">
-                                                  <p className="text-sm text-gray-600 line-clamp-4">
-                                                    {getPlainText(
-                                                      block.text || ''
-                                                    ).substring(0, 60)}
-                                                    ...
-                                                  </p>
-                                                </div>
-                                              </>
-                                            )}
-                                          </div>
-                                        )}
-                                        {block.layout === 'overlay' && (
-                                          <div className="relative">
-                                            <img
-                                              src={block.imageUrl}
-                                              alt="Image"
-                                              className="w-full h-24 object-cover rounded"
-                                            />
-                                            <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2">
-                                              <p className="text-white text-sm text-center line-clamp-3">
-                                                {getPlainText(
-                                                  block.text || ''
-                                                ).substring(0, 50)}
-                                                ...
-                                              </p>
-                                            </div>
-                                          </div>
-                                        )}
-                                        {block.layout === 'centered' && (
+                                      /* Display Mode */
+                                      (() => {
+                                        const rawCaptionHtml =
+                                          (block.text &&
+                                            block.text.toString()) ||
+                                          (block.details?.caption_html &&
+                                            block.details.caption_html.toString()) ||
+                                          '';
+                                        const fallbackCaption =
+                                          (block.imageDescription &&
+                                            block.imageDescription.toString()) ||
+                                          (block.details?.caption &&
+                                            block.details.caption.toString()) ||
+                                          '';
+                                        const captionMarkup =
+                                          rawCaptionHtml &&
+                                          rawCaptionHtml.trim()
+                                            ? rawCaptionHtml
+                                            : fallbackCaption;
+
+                                        const captionElement = (
                                           <div
-                                            className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}
-                                          >
-                                            <img
-                                              src={block.imageUrl}
-                                              alt="Image"
-                                              className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
-                                            />
-                                            <p className="text-sm text-gray-600 italic line-clamp-2">
-                                              {getPlainText(
-                                                block.text || ''
-                                              ).substring(0, 40)}
-                                              ...
-                                            </p>
-                                          </div>
-                                        )}
-                                        {block.layout === 'full-width' && (
+                                            className="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                            dangerouslySetInnerHTML={{
+                                              __html: captionMarkup,
+                                            }}
+                                          />
+                                        );
+
+                                        if (block.layout === 'side-by-side') {
+                                          return (
+                                            <div className="flex gap-3 items-start">
+                                              {block.alignment === 'right' ? (
+                                                <>
+                                                  <div className="w-1/2">
+                                                    {captionElement}
+                                                  </div>
+                                                  <div className="w-1/2">
+                                                    <img
+                                                      src={block.imageUrl}
+                                                      alt="Image"
+                                                      className="w-full h-20 object-cover rounded"
+                                                    />
+                                                  </div>
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <div className="w-1/2">
+                                                    <img
+                                                      src={block.imageUrl}
+                                                      alt="Image"
+                                                      className="w-full h-20 object-cover rounded"
+                                                    />
+                                                  </div>
+                                                  <div className="w-1/2">
+                                                    {captionElement}
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
+                                        if (block.layout === 'overlay') {
+                                          return (
+                                            <div className="relative">
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className="w-full h-24 object-cover rounded"
+                                              />
+                                              {captionMarkup && (
+                                                <div className="absolute inset-0 bg-black bg-opacity-40 rounded flex items-center justify-center p-2 text-white text-sm text-center">
+                                                  <div
+                                                    className="space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                                    dangerouslySetInnerHTML={{
+                                                      __html: captionMarkup,
+                                                    }}
+                                                  />
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
+                                        if (block.layout === 'centered') {
+                                          return (
+                                            <div
+                                              className={`space-y-3 ${block.alignment === 'left' ? 'text-left' : block.alignment === 'right' ? 'text-right' : 'text-center'}`}
+                                            >
+                                              <img
+                                                src={block.imageUrl}
+                                                alt="Image"
+                                                className={`h-20 object-cover rounded ${block.alignment === 'center' ? 'mx-auto' : ''}`}
+                                              />
+                                              {captionMarkup && (
+                                                <div
+                                                  className="text-sm text-gray-600 italic leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                                  dangerouslySetInnerHTML={{
+                                                    __html: captionMarkup,
+                                                  }}
+                                                />
+                                              )}
+                                            </div>
+                                          );
+                                        }
+
+                                        return (
                                           <div className="space-y-3">
                                             <img
                                               src={block.imageUrl}
                                               alt="Image"
                                               className="w-full h-24 object-cover rounded"
                                             />
-                                            <p className="text-sm text-gray-600 line-clamp-3">
-                                              {getPlainText(
-                                                block.text || ''
-                                              ).substring(0, 60)}
-                                              ...
-                                            </p>
+                                            {captionMarkup && (
+                                              <div
+                                                className="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"
+                                                dangerouslySetInnerHTML={{
+                                                  __html: captionMarkup,
+                                                }}
+                                              />
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
+                                        );
+                                      })()
                                     )}
                                   </>
                                 )}

@@ -194,6 +194,7 @@ const ImageBlockComponent = forwardRef(
       const imageUrl = template.defaultContent?.imageUrl || '';
       const imageTitle = template.title;
       const imageText = template.defaultContent?.text || '';
+      const textHtml = imageText ? `<p>${imageText}</p>` : '';
 
       const newBlock = {
         id: `image-${Date.now()}`,
@@ -206,13 +207,14 @@ const ImageBlockComponent = forwardRef(
         imageUrl: imageUrl,
         imageTitle: imageTitle,
         imageDescription: '',
-        text: imageText,
+        text: textHtml,
         isEditing: false,
         timestamp: new Date().toISOString(),
         order: 0, // Will be set by parent
         details: {
           image_url: imageUrl,
           caption: imageText,
+          caption_html: textHtml,
           alt_text: imageTitle,
           layout: template.layout,
           template: template.id,
@@ -235,8 +237,29 @@ const ImageBlockComponent = forwardRef(
 
           const updatedBlock = { ...block, [field]: value };
 
+          if (field === 'text') {
+            const plainText = getPlainText(value || '');
+            updatedBlock.imageDescription = plainText;
+            updatedBlock.details = {
+              ...(updatedBlock.details || {}),
+              caption: plainText,
+              caption_html: value,
+            };
+          }
+
+          if (field === 'imageDescription') {
+            updatedBlock.details = {
+              ...(updatedBlock.details || {}),
+              caption: value,
+            };
+          }
+
           // If alignment is being changed, regenerate the HTML
-          if (field === 'alignment') {
+          if (
+            field === 'alignment' ||
+            field === 'text' ||
+            field === 'imageDescription'
+          ) {
             updatedBlock.html_css = generateImageBlockHtml(updatedBlock);
           }
 
@@ -330,13 +353,28 @@ const ImageBlockComponent = forwardRef(
       }
     };
 
+    const getPlainText = html => {
+      if (typeof html !== 'string') return '';
+      if (typeof document === 'undefined') return html;
+      const temp = document.createElement('div');
+      temp.innerHTML = html || '';
+      return temp.textContent || temp.innerText || '';
+    };
+
     const generateImageBlockHtml = block => {
       const layout = block.layout || 'centered';
-      const textContent = (
-        block.text ||
-        block.imageDescription ||
+      const textContentHtml = (
+        (block.text ?? block.details?.caption_html ?? '') ||
         ''
       ).toString();
+      const fallbackText = (
+        block.imageDescription ||
+        block.details?.caption ||
+        ''
+      ).toString();
+      const textContent = textContentHtml.trim()
+        ? textContentHtml
+        : fallbackText;
       const imageUrl = block.imageUrl || '';
       const imageTitle = block.imageTitle || '';
       const alignment = block.alignment || block.details?.alignment || 'left';
@@ -353,8 +391,8 @@ const ImageBlockComponent = forwardRef(
           <div class="${imageOrder}">
             <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
           </div>
-          <div class="${textOrder}">
-            ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
+          <div class="${textOrder} text-gray-700 text-lg leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+            ${textContent ? `<div>${textContent}</div>` : ''}
           </div>
         </div>
       `;
@@ -362,14 +400,14 @@ const ImageBlockComponent = forwardRef(
         return `
         <div class="relative rounded-xl overflow-hidden">
           <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
+          ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full text-xl font-medium leading-relaxed space-y-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5"><div>${textContent}</div></div></div>` : ''}
         </div>
       `;
       } else if (layout === 'full-width') {
         return `
         <div class="space-y-3">
           <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
-          ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
+          ${textContent ? `<div class="text-sm text-gray-600 leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ''}
         </div>
       `;
       } else {
@@ -384,7 +422,7 @@ const ImageBlockComponent = forwardRef(
         return `
         <div class="${alignmentClass}">
           <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg ${alignment === 'center' ? 'mx-auto' : ''}" />
-          ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
+          ${textContent ? `<div class="text-gray-600 mt-4 italic text-lg leading-relaxed space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">${textContent}</div>` : ''}
         </div>
       `;
       }
@@ -417,6 +455,7 @@ const ImageBlockComponent = forwardRef(
               ...(block.details || {}),
               image_url: finalImageUrl,
               caption: captionPlainText || block.details?.caption || '',
+              caption_html: block.text || block.details?.caption_html || '',
               alt_text: block.imageTitle || block.details?.alt_text || '',
               layout: block.layout || block.details?.layout,
               template: block.templateType || block.details?.template,
@@ -477,14 +516,6 @@ const ImageBlockComponent = forwardRef(
       );
     };
 
-    const getPlainText = html => {
-      const temp =
-        typeof document !== 'undefined' ? document.createElement('div') : null;
-      if (!temp) return html || '';
-      temp.innerHTML = html || '';
-      return temp.textContent || temp.innerText || '';
-    };
-
     const handleAddImage = async () => {
       if (!imageTitle || (!imageFile && !imagePreview)) {
         alert('Please fill in all required fields');
@@ -533,68 +564,12 @@ const ImageBlockComponent = forwardRef(
 
         const layout = currentBlock?.layout || null;
         const templateType = currentBlock?.templateType || null;
-        const textContent = getPlainText(imageTemplateText || '').trim();
+        const textHtml = (imageTemplateText || '').trim();
+        const textPlain = getPlainText(textHtml).trim();
 
         // Determine which alignment to use based on layout
         const finalAlignment =
           layout === 'side-by-side' ? imageAlignment : standaloneImageAlignment;
-
-        // Build HTML based on layout
-        let htmlContent = '';
-        if (layout === 'side-by-side') {
-          const imageFirst = finalAlignment === 'left';
-          const imageOrder = imageFirst ? 'order-1' : 'order-2';
-          const textOrder = imageFirst ? 'order-2' : 'order-1';
-
-          htmlContent = `
-          <div class="grid md:grid-cols-2 gap-8 items-center bg-gray-50 rounded-xl p-6">
-            <div class="${imageOrder}">
-              <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded-lg shadow-lg" />
-            </div>
-            <div class="${textOrder}">
-              ${textContent ? `<span class="text-gray-700 text-lg leading-relaxed">${textContent}</span>` : ''}
-            </div>
-          </div>
-        `;
-        } else if (layout === 'overlay') {
-          htmlContent = `
-          <div class="relative rounded-xl overflow-hidden">
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full h-96 object-cover" />
-            ${textContent ? `<div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-end"><div class="text-white p-8 w-full"><span class="text-xl font-medium leading-relaxed">${textContent}</span></div></div>` : ''}
-          </div>
-        `;
-        } else if (layout === 'centered') {
-          htmlContent = `
-          <div class="text-center">
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="max-w-full max-h-[28rem] object-contain rounded-xl shadow-lg mx-auto" />
-            ${textContent ? `<span class="text-gray-600 mt-4 italic text-lg">${textContent}</span>` : ''}
-          </div>
-        `;
-        } else if (layout === 'full-width') {
-          htmlContent = `
-          <div class="space-y-3">
-            <img src="${imageUrl}" alt="${imageTitle || 'Image'}" class="w-full max-h-[28rem] object-contain rounded" />
-            ${textContent ? `<p class="text-sm text-gray-600">${textContent}</p>` : ''}
-          </div>
-        `;
-        } else {
-          htmlContent = `
-          <div class="image-block">
-            <img
-              src="${imageUrl}"
-              alt="${imageTitle || 'Image'}"
-              style="max-width: 100%; height: auto; border-radius: 0.5rem;"
-            />
-            ${
-              textContent
-                ? `
-              <span class="mt-2 text-sm text-gray-600">${textContent}</span>
-            `
-                : ''
-            }
-          </div>
-        `;
-        }
 
         const newBlock = {
           id: currentBlock?.id || `image-${Date.now()}`,
@@ -606,22 +581,24 @@ const ImageBlockComponent = forwardRef(
           alignment: finalAlignment,
           details: {
             image_url: imageUrl,
-            caption: textContent || '',
+            caption: textPlain || '',
+            caption_html: textHtml,
             alt_text: imageTitle,
             layout: layout || undefined,
             template: templateType || undefined,
             alignment: finalAlignment,
           },
-          html_css: htmlContent,
           imageTitle: imageTitle,
-          imageDescription: textContent,
-          text: textContent,
+          imageDescription: textPlain,
+          text: textHtml,
           imageFile: imageFile,
           imageUrl: imageUrl,
           uploadedImageData: uploadedImageData,
           timestamp: new Date().toISOString(),
           order: 0, // Will be set by parent
         };
+
+        newBlock.html_css = generateImageBlockHtml(newBlock);
 
         // Call parent callback to update
         onImageUpdate(newBlock, currentBlock);
