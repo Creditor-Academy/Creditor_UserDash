@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import ImageEditor from './ImageEditor';
 
 const ImageBlockComponent = forwardRef(

@@ -7,7 +7,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import ReactQuill, { Quill } from 'react-quill';
+import ReactQuill from 'react-quill';
+import Quill from 'quill';
 import {
   Type,
   Heading1,
@@ -28,7 +29,7 @@ import {
   AlignRight,
   Palette,
 } from 'lucide-react';
-import 'react-quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 
 // Register font families with proper display names
 const Font = Quill.import('formats/font');

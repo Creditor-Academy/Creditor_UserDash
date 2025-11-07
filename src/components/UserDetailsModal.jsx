@@ -272,11 +272,16 @@ const UserDetailsModal = ({
       }
 
       // Also fetch total modules count for courses that have purchased modules
-      const purchasedCourseIds = Array.from(new Set(
-        modulesArray.map((m) => m.course_id || m.module?.course_id || m.courseId).filter(Boolean)
-      ));
-      
-      https://github.com/TanuShri0112/Pramerica_Dashboard.git      // Total module counts are handled inline in fetchPurchasedModulesForUser
+      const purchasedCourseIds = Array.from(
+        new Set(
+          modulesArray
+            .map(m => m.course_id || m.module?.course_id || m.courseId)
+            .filter(Boolean)
+        )
+      );
+
+      // Total module counts are handled inline in fetchPurchasedModulesForUser
+      // (previously there was an accidental pasted URL here which caused a syntax error)
       // No need for separate function call
       const withCourseInfo = modulesArray.map(m => {
         const normalized = {

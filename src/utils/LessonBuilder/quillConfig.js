@@ -1,4 +1,4 @@
-import { Quill } from 'react-quill';
+import Quill from 'quill';
 
 // Register font families with proper display names
 const Font = Quill.import('formats/font');

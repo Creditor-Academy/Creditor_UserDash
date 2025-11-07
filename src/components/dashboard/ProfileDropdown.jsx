@@ -8,16 +8,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Book, Library, GraduationCap } from "lucide-react";
-import { getUserAvatarUrl, getUserAvatarUrlSync, refreshAvatarFromBackend, validateAvatarImage } from "@/lib/avatar-utils";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { fetchUserProfile, clearUserData, updateProfilePicture } from "@/services/userService";
-import { useUser } from "@/contexts/UserContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  User,
+  LogOut,
+  Book,
+  Library,
+  GraduationCap,
+  CreditCard,
+  XCircle,
+  Calendar,
+} from 'lucide-react';
+import {
+  getUserAvatarUrl,
+  getUserAvatarUrlSync,
+  refreshAvatarFromBackend,
+  validateAvatarImage,
+} from '@/lib/avatar-utils';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import {
+  fetchUserProfile,
+  clearUserData,
+  updateProfilePicture,
+} from '@/services/userService';
+import { useUser } from '@/contexts/UserContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import MembershipActionModal from '@/components/membership/MembershipActionModal';
 
 export function ProfileDropdown() {
   const [userAvatar, setUserAvatar] = useState(getUserAvatarUrlSync());
@@ -37,6 +60,11 @@ export function ProfileDropdown() {
         console.warn('Failed to load avatar from backend:', error);
         // Keep using localStorage fallback
       }
+    };
+
+    const handleMembershipAction = type => {
+      setMembershipActionType(type);
+      setMembershipModalOpen(true);
     };
 
     loadAvatarFromBackend();
@@ -101,7 +129,7 @@ export function ProfileDropdown() {
       toast.error('Error uploading profile picture.');
     }
   };
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -168,11 +196,13 @@ export function ProfileDropdown() {
               <span className="transition-all duration-200">Profile</span>
             </Link>
           </DropdownMenuItem>
-          
+
           <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer transition-colors duration-300 hover:text-primary hover:bg-primary/5 group/menu rounded-md">
               <CreditCard className="mr-2 h-4 w-4 transition-all duration-300 group-hover/menu:text-primary group-hover/menu:scale-110" />
-              <span className="transition-all duration-200">Manage Membership</span>
+              <span className="transition-all duration-200">
+                Manage Membership
+              </span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
               <DropdownMenuSubContent className="backdrop-blur-sm bg-background/95">
@@ -184,8 +214,8 @@ export function ProfileDropdown() {
                   <Calendar className="mr-2 h-4 w-4 transition-all duration-300 group-hover/submenu:text-primary group-hover/submenu:scale-110" />
                   <span>Switch to Annual Membership</span>
                 </DropdownMenuItem> */}
-                
-                <DropdownMenuItem 
+
+                <DropdownMenuItem
                   className="cursor-pointer transition-colors duration-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 group/submenu rounded-md"
                   onClick={() => handleMembershipAction('cancel')}
                 >

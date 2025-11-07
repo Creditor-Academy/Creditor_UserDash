@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import { FileText as FileTextIcon } from 'lucide-react';
 import { getToolbarModules } from '@/utils/LessonBuilder/quillConfig';
 import {

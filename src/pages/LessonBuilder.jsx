@@ -44,7 +44,7 @@ import ListComponent from '@/components/ListComponent';
 import InteractiveComponent from '@/components/InteractiveComponent';
 import axios from 'axios';
 import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import 'quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';

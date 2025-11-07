@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -573,7 +573,7 @@ function ScrollToTop() {
   React.useEffect(() => {
     // If navigating to a hash, let the browser handle it; otherwise scroll to top
     if (!location.hash) {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
   }, [location.pathname, location.search]);
   return null;
