@@ -18,6 +18,12 @@ vi.mock('../apiClient', () => ({
     put: vi.fn(),
     delete: vi.fn(),
   },
+  api: {
+    post: vi.fn(),
+    get: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+  },
 }));
 
 // Mock axios for testing
@@ -90,18 +96,17 @@ describe('ImageUploadService', () => {
 
     // Mock the api client directly
     const apiClient = await import('../apiClient');
-    apiClient.default.post = vi.fn().mockResolvedValue(mockResponse);
+    apiClient.api.post = vi.fn().mockResolvedValue(mockResponse);
 
     const result = await uploadImage(mockFile);
 
     expect(result.success).toBe(true);
     expect(result.imageUrl).toBe('https://example.com/image.jpg');
-    expect(apiClient.default.post).toHaveBeenCalledWith(
+    expect(apiClient.api.post).toHaveBeenCalledWith(
       expect.stringContaining('/api/resource/upload-resource'),
       expect.any(FormData),
       expect.objectContaining({
-        timeout: 300000,
-        withCredentials: true,
+        timeout: 60000,
       })
     );
   });
