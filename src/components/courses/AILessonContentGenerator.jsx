@@ -21,7 +21,7 @@ import { toast } from 'react-hot-toast';
 import {
   generateLessonContent,
   enhanceLessonContent,
-} from '@/services/openaiService';
+} from '@/services/openAIService';
 
 const AILessonContentGenerator = ({
   isOpen,
