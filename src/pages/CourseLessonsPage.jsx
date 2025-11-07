@@ -19,8 +19,10 @@ import {
   Plus,
   List,
   BookOpen,
+  Download,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { api } from '@/services/apiClient';
 
 const COURSES_PER_PAGE = 6;
 
@@ -38,6 +40,7 @@ const CourseLessonsPage = () => {
   const [selectedCourseForLesson, setSelectedCourseForLesson] = useState(null);
   const [selectedModuleForLesson, setSelectedModuleForLesson] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const navigate = useNavigate();
 
   const isAllowed = true;
@@ -253,6 +256,44 @@ const CourseLessonsPage = () => {
     return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}:00`;
   };
 
+  const handleExportScorm = async () => {
+    try {
+      setIsExporting(true);
+      const response = await api.get('/api/export/modules-scorm', {
+        responseType: 'blob',
+      });
+
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = 'scorm-data.xlsx';
+
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+        if (match && match[1]) {
+          fileName = match[1];
+        }
+      }
+
+      const blob = new Blob([response.data], {
+        type:
+          response.headers['content-type'] ||
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting modules as SCORM:', error);
+      alert('Failed to export SCORM package. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!isAllowed) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -328,13 +369,23 @@ const CourseLessonsPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Course Lessons Management
-        </h1>
-        <p className="text-gray-600">
-          Manage lesson content for your course modules
-        </p>
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Course Lessons Management
+          </h1>
+          <p className="text-gray-600">
+            Manage lesson content for your course modules
+          </p>
+        </div>
+        <Button
+          onClick={handleExportScorm}
+          disabled={isExporting}
+          className="self-start md:self-auto bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {isExporting ? 'Exporting...' : 'Export SCORM'}
+        </Button>
       </div>
 
       <div className="mb-6 flex items-center gap-2">
