@@ -51,7 +51,7 @@ import {
   generateImage,
   enhanceLessonContent,
   generateQuizQuestions,
-} from '@/services/openaiService';
+} from '@/services/openAIService';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
