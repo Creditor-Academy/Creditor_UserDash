@@ -212,6 +212,86 @@ function App() {
                 }
               />
               <Route
+                path="/instructor/course-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/user-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/course-catalog"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/create-quiz"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/course-lessons"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/group-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/event-management"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/support-tickets"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/assets"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/instructor/payments"
+                element={
+                  <ProtectedRoute>
+                    <Instructorpage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/instructor/courses/:courseId/modules"
                 element={
                   <ProtectedRoute>
