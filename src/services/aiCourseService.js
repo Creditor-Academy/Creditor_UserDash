@@ -8,7 +8,10 @@ import {
 } from './courseService';
 import { uploadImage } from './imageUploadService';
 import { uploadAIGeneratedImage, uploadAICourseMedia } from './aiUploadService';
-import openAIService from './openAIService';
+import universalAILessonService from './universalAILessonService.js';
+import structuredLessonGenerator from './structuredLessonGenerator.js';
+import openAIService from './openAIService.js';
+import fastCourseGenerator from './fastCourseGenerator.js';
 
 // API configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -222,9 +225,10 @@ function validateCourseData(courseData) {
 /**
  * Create a complete AI course using deployed backend APIs with comprehensive error handling
  * @param {Object} courseData - Course creation data
+ * @param {Object} options - Generation options { fastMode: boolean }
  * @returns {Promise<Object>} Created course with modules and lessons
  */
-export async function createCompleteAICourse(courseData) {
+export async function createCompleteAICourse(courseData, options = {}) {
   // Validate input data
   const validation = validateCourseData(courseData);
   if (!validation.isValid) {
@@ -233,6 +237,20 @@ export async function createCompleteAICourse(courseData) {
       error: `Validation failed: ${validation.errors.join(', ')}`,
       data: null,
     };
+  }
+
+  // Use fast mode if requested (3-5x faster)
+  if (options.fastMode) {
+    console.log('⚡ Using FAST MODE for course generation');
+    try {
+      return await fastCourseGenerator.generateFastCourse(courseData);
+    } catch (error) {
+      console.warn(
+        'Fast mode failed, falling back to standard mode:',
+        error.message
+      );
+      // Continue with standard mode below
+    }
   }
 
   try {
@@ -632,36 +650,71 @@ export async function createCompleteAICourse(courseData) {
         const moduleTitle =
           parentModule?.data?.title || parentModule?.title || 'Module';
 
-        // Generate content blocks using universalAILessonService
-        const blocks = await universalAILessonService.generateLessonContent(
-          {
-            title: lessonTitle,
-            description:
-              createdLesson.data?.description || createdLesson.description,
-          },
-          { title: moduleTitle },
-          { title: courseData.title },
-          {
-            contentType: config.contentType,
-            maxTokens: config.maxTokens,
-            includeIntroduction: true,
-            includeLearningObjectives: true,
-            includeExamples: config.includeExamples,
-            includeAssessments: config.includeAssessments,
-            includeSummary: config.includeSummary,
-            includeInteractive: config.includeInteractive,
+        // Use structured lesson generator (NEW: Fixed 8-block structure)
+        const useStructuredGeneration =
+          config.useStructuredGeneration !== false; // Default: true
+
+        if (useStructuredGeneration) {
+          console.log('🎯 Using structured lesson generator (8-block format)');
+
+          // Generate lesson with structured format
+          const result = await structuredLessonGenerator.generateLesson(
+            lessonId,
+            {
+              title: courseData.title,
+              description: courseData.description,
+              difficulty: courseData.difficulty || 'intermediate',
+              targetAudience: courseData.targetAudience || 'learners',
+            },
+            progress => {
+              console.log(
+                `📊 Progress: ${progress.message} (${progress.current}/${progress.total})`
+              );
+            }
+          );
+
+          if (result.success) {
+            contentGenerationResults.successCount++;
+            contentGenerationResults.totalBlocks += result.blocks.length;
+            console.log(
+              `✅ Structured content generated and saved for: ${lessonTitle} (${result.blocks.length} blocks)`
+            );
+          } else {
+            throw new Error(result.error || 'Structured generation failed');
           }
-        );
+        } else {
+          // Fallback to original universal AI lesson service
+          console.log('📝 Using universal AI lesson service (legacy mode)');
 
-        // Save generated content to lesson
-        await universalAILessonService.saveContentToLesson(lessonId, blocks);
+          const blocks = await universalAILessonService.generateLessonContent(
+            {
+              title: lessonTitle,
+              description:
+                createdLesson.data?.description || createdLesson.description,
+            },
+            { title: moduleTitle },
+            { title: courseData.title },
+            {
+              contentType: config.contentType,
+              maxTokens: config.maxTokens,
+              includeIntroduction: true,
+              includeLearningObjectives: true,
+              includeExamples: config.includeExamples,
+              includeAssessments: config.includeAssessments,
+              includeSummary: config.includeSummary,
+              includeInteractive: config.includeInteractive,
+            }
+          );
 
-        contentGenerationResults.successCount++;
-        contentGenerationResults.totalBlocks += blocks.length;
+          // Save generated content to lesson
+          await universalAILessonService.saveContentToLesson(lessonId, blocks);
 
-        console.log(
-          `✅ Content generated and saved for: ${lessonTitle} (${blocks.length} blocks)`
-        );
+          contentGenerationResults.successCount++;
+          contentGenerationResults.totalBlocks += blocks.length;
+          console.log(
+            `✅ Content generated and saved for: ${lessonTitle} (${blocks.length} blocks)`
+          );
+        }
 
         // Add delay between lessons to avoid rate limits
         if (processedCount < createdLessons.length) {

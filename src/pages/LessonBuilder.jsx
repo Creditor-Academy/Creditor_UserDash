@@ -4124,9 +4124,9 @@ function LessonBuilder() {
                     timestamp: new Date().toISOString(),
                   };
                   if (b.type === 'image') {
-                    return {
+                    const mappedBlock = {
                       ...base,
-                      title: 'Image',
+                      title: b.details?.alt_text || b.title || 'Image',
                       layout: b.details?.layout || 'centered',
                       templateType: b.details?.template || undefined,
                       alignment: b.details?.alignment || 'left', // Extract alignment from details
@@ -4135,6 +4135,16 @@ function LessonBuilder() {
                       imageDescription: b.details?.caption || '',
                       text: b.details?.caption || '',
                     };
+                    console.log('📦 Mapped image block from backend:', {
+                      blockId: mappedBlock.id,
+                      title: mappedBlock.title,
+                      imageUrl: mappedBlock.imageUrl,
+                      alignment: mappedBlock.alignment,
+                      layout: mappedBlock.layout,
+                      hasImageUrl: !!mappedBlock.imageUrl,
+                      originalDetails: b.details,
+                    });
+                    return mappedBlock;
                   }
 
                   if (b.type === 'pdf') {
@@ -5785,8 +5795,23 @@ function LessonBuilder() {
                               )}
 
                               {block.type === 'image' &&
-                                (block.imageUrl ||
-                                  block.defaultContent?.imageUrl) && (
+                                (() => {
+                                  // Debug logging for image blocks
+                                  console.log('🖼️ Image block detected:', {
+                                    id: block.id || block.block_id,
+                                    hasImageUrl: !!block.imageUrl,
+                                    imageUrl: block.imageUrl,
+                                    hasDefaultContent:
+                                      !!block.defaultContent?.imageUrl,
+                                    title: block.title,
+                                    alignment: block.alignment,
+                                    layout: block.layout,
+                                  });
+                                  return (
+                                    block.imageUrl ||
+                                    block.defaultContent?.imageUrl
+                                  );
+                                })() && (
                                   <>
                                     <div className="flex items-center gap-2 mb-3">
                                       <h3 className="text-lg font-semibold text-gray-900">
