@@ -107,9 +107,71 @@ const AssetsManagementGuide = () => {
     ],
     steps: [
       {
-        title: 'Managing Course Materials',
+        title: 'Step 1: Navigate to Assets Management',
         renderDescription: () => (
-          <div className="space-y-8 ml-4">
+          <div className="space-y-6 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <StepCard
+                icon={FileQuestion}
+                title="Access the Assets Area"
+                color="indigo"
+                index={0}
+                items={[
+                  'From the main sidebar, click "Instructor Portal" to open instructor-focused tools.',
+                  'Inside the Instructor Tools sidebar, select "Assets" to launch the asset workspace.',
+                  'Use this section to upload and organize files such as images, PDFs, videos, audio, spreadsheets, and more.',
+                  'Remember: the Assets feature centralizes every course resource in one place for quick sharing.'
+                ]}
+              />
+            </motion.div>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 shadow-sm">
+              <p className="text-indigo-900 font-medium">
+                Need to add multiple resource types? Assets supports mixed uploads up to a combined size of 1 GB per batch.
+              </p>
+            </div>
+          </div>
+        )
+      },
+      {
+        title: 'Step 2: Manage Organizations & Categories',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <StepCard
+                icon={FolderOpen}
+                title="Manage Organizations & Categories"
+                color="blue"
+                index={1}
+                items={[
+                  'Click "+ Add Organization" to create top-level groups such as Maths or Science.',
+                  'Each organization can contain multiple categories to further organize assets.',
+                  'Use categories like "Exams", "Classwork", or "Practicals" to keep resources tidy.',
+                  'Select the relevant organization and category whenever you upload a new asset.'
+                ]}
+              />
+            </motion.div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 shadow-sm">
+              <p className="text-blue-900 font-medium">
+                Building organizations first helps you keep every resource in the right learning stream.
+              </p>
+            </div>
+          </div>
+        )
+      },
+      {
+        title: 'Step 3: Upload Assets',
+        renderDescription: () => (
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -117,43 +179,32 @@ const AssetsManagementGuide = () => {
             >
               <StepCard
                 icon={Upload}
-                title="Asset Upload"
-                color="blue"
+                title="Complete the Upload Form"
+                color="emerald"
+                index={2}
                 items={[
-                  'Upload course materials and resources',
-                  'Support for multiple file formats',
-                  'Batch upload capabilities',
-                  'Version control for materials'
+                  'Enter a clear Title for each asset.',
+                  'Choose the Organization (and auto-linked category) where the asset belongs.',
+                  'Add a Description so instructors and learners know how to use the file.',
+                  'Pick the correct File Type: Image, Video, Audio, Text File, or PDF.'
                 ]}
-                index={0}
               />
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StepCard
-                icon={FolderOpen}
-                title="Organization"
-                color="emerald"
-                items={[
-                  'Create structured folders and categories',
-                  'Tag and label resources',
-                  'Set up course-specific libraries',
-                  'Manage file permissions'
-                ]}
-                index={1}
-              />
-            </motion.div>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 shadow-sm space-y-3">
+              <p className="text-emerald-900 font-semibold">Uploading tips:</p>
+              <p className="text-emerald-800">
+                Select files (images, PDFs, videos, audio, spreadsheets, and more) and upload several at once.
+                The combined file size can be up to 1 GB.
+              </p>
+            </div>
           </div>
         )
       },
       {
-        title: 'Asset Management & Access',
+        title: 'Step 4: Review Uploaded Assets',
         renderDescription: () => (
-          <div className="space-y-8 ml-4">
+          <div className="space-y-6 ml-4">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -161,47 +212,20 @@ const AssetsManagementGuide = () => {
             >
               <StepCard
                 icon={Search}
-                title="Resource Discovery"
+                title="Track and Maintain Resources"
                 color="purple"
-                items={[
-                  'Search and filter assets',
-                  'Preview files before sharing',
-                  'Track resource usage',
-                  'Generate resource reports'
-                ]}
-                index={2}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StepCard
-                icon={Settings}
-                title="Access Control"
-                color="indigo"
-                items={[
-                  'Set viewing permissions',
-                  'Control download access',
-                  'Schedule resource availability',
-                  'Monitor resource access'
-                ]}
                 index={3}
+                items={[
+                  'Filter uploaded assets by organization and category to see everything in one place.',
+                  'Open assets to confirm the right files are attached before sharing with learners.',
+                  'Keep libraries tidy by removing outdated files or reorganizing categories when needed.'
+                ]}
               />
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-            >
-              <ProTip emoji="📚">
-                <span className="font-bold">Resource Organization:</span> Create a consistent naming convention 
-                and folder structure to make it easier for students to find and access course materials.
-              </ProTip>
-            </motion.div>
+            <ProTip emoji="⚠️">
+              Deleting an organization removes every asset inside it. For single assets or categories, manage deletions directly within the "Manage Organizations & Categories" panel to avoid accidental data loss.
+            </ProTip>
           </div>
         )
       }
