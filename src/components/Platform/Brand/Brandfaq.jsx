@@ -5,18 +5,23 @@ import { Plus, X } from 'lucide-react';
 const faqs = [
   {
     id: 1,
-    q: 'What is a membership on Athena LMS?',
-    a: `A membership lets you offer ongoing access to multiple learning products like courses, communities, digital downloads, and live sessions — all in one bundled subscription.`,
+    q: 'Can learners do everything on the app without going on the web version?',
+    a: `The app is considered an additive complement to the web experience. Learners can use the app to learn on the go and access creators’ content in the most convenient way for them. This includes accessing lessons, interacting in communities, staying up-to-date with push notifications, and enrolling in or purchasing new products.`,
   },
   {
     id: 2,
-    q: 'What is a membership site?',
-    a: `A membership site is a subscription-based website where members pay to access gated learning content. These sites often include a mix of courses, a community, and exclusive resources, with new content added regularly to keep members engaged .`,
+    q: 'Will my learners be able to access both my courses and communities on the app?',
+    a: `Yes, your learners will be able to access both communities and courses on your mobile app.`,
   },
   {
     id: 3,
-    q: 'How are membership sites different from Product Bundles?',
-    a: `A Product Bundle is a one-time purchase of multiple learning products, while a membership offers ongoing access to a variety of learning experiences, such as live sessions, communities, and exclusive content delivered on a subscription basis.`,
+    q: 'Can my learners download files from lessons?',
+    a: `Yes! Both downloads and PDF lesson types are available on Branded Mobile. You can also allow your students to download certain lesson content (videos, PDFs and audio) and they can view it directly on their device.`,
+  },
+  {
+    id: 4,
+    q: 'What can I customize with my own branded mobile app?',
+    a: `With Branded Mobile, you can customize your app to reflect your company’s brand identity, including the imagery and descriptions on the Google Play and Apple App Store listings. Additionally, you can customize your app name, app icon, and load screen. From within the app, you can choose your app’s primary colours, button styles and text colours.`,
   },
 ];
 

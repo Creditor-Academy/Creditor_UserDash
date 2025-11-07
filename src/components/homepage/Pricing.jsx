@@ -18,7 +18,7 @@ const Pricing = () => {
       period: ' per user/month',
       billingNote: 'monthly billing',
       features: [
-        { text: '30GB of storage', info: false },
+        { text: '10GB of storage', info: false },
         { text: '100 AI credits per month', info: false },
         { text: 'Unlimited SCORM packages', info: false },
         { text: 'Immersive reader modules', info: false },
@@ -45,7 +45,7 @@ const Pricing = () => {
       period: ' per user/month',
       billingNote: 'monthly billing',
       features: [
-        { text: '100GB of storage', info: false },
+        { text: '50GB of storage', info: false },
         { text: '300 AI credits per month', info: false },
         { text: 'Build dozens of SCORM modules with AI', info: false },
         { text: 'Hundreds of immersive reader texts', info: false },

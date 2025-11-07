@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -124,10 +124,19 @@ import CommunitiesPage from './pages/Platform/CommunitiesPage';
 import DigitalDownloadsPage from './pages/Platform/DigitalDownloadsPage';
 import MembershipsPage from './pages/Platform/MembershipsPage';
 import CoachingPage from './pages/Platform/CoachingPage';
+import Emailautomation from './pages/Platform/Emailautomation';
+import Analyticspage from './pages/Platform/Analyticspage';
+import Brandpage from './pages/Platform/Brandpage';
+import Sellingpage from './pages/Platform/Sellingpage';
+import PrivacyAthena from './pages/PrivacyAthena';
+import TermAthena from './pages/TermAthena';
+import Cookies from './pages/Cookies';
+import Sitemap from './pages/Sitemap';
 
 function App() {
   return (
     <ThemeProvider>
+      <ScrollToTop />
       <AuthProvider>
         <UserProvider>
           <CreditsProvider>
@@ -183,7 +192,17 @@ function App() {
                 element={<MembershipsPage />}
               />
               <Route path="/platform/coaching" element={<CoachingPage />} />
-
+              <Route
+                path="/platform/email-automation"
+                element={<Emailautomation />}
+              />
+              <Route path="/platform/analytics" element={<Analyticspage />} />
+              <Route path="/platform/brand" element={<Brandpage />} />
+              <Route path="/platform/selling" element={<Sellingpage />} />
+              <Route path="/privacy-athena" element={<PrivacyAthena />} />
+              <Route path="/term-athena" element={<TermAthena />} />
+              <Route path="/cookies" element={<Cookies />} />
+              <Route path="/sitemap" element={<Sitemap />} />
               <Route
                 path="/instructor"
                 element={
@@ -191,19 +210,7 @@ function App() {
                     <Instructorpage />
                   </ProtectedRoute>
                 }
-              >
-                <Route index element={<Instructorpage />} />
-                <Route path="course-management" element={<Instructorpage />} />
-                <Route path="user-management" element={<Instructorpage />} />
-                <Route path="course-catalog" element={<Instructorpage />} />
-                <Route path="create-quiz" element={<Instructorpage />} />
-                <Route path="course-lessons" element={<Instructorpage />} />
-                <Route path="group-management" element={<Instructorpage />} />
-                <Route path="event-management" element={<Instructorpage />} />
-                <Route path="support-tickets" element={<Instructorpage />} />
-                <Route path="assets" element={<Instructorpage />} />
-                <Route path="payments" element={<Instructorpage />} />
-              </Route>
+              />
               <Route
                 path="/instructor/courses/:courseId/modules"
                 element={
@@ -211,22 +218,6 @@ function App() {
                     <InstructorCourseModulesPage />
                   </ProtectedRoute>
                 }
-              />
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/builder"
-                element={
-                  <DashboardLayout>
-                    <LessonBuilder />
-                  </DashboardLayout>
-                }
-              />
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview"
-                element={<LessonPreview />}
-              />
-              <Route
-                path="/courses/:courseId/modules/:moduleId/lessons"
-                element={<LessonView />}
               />
               <Route
                 path="/instructor/add-users"
@@ -293,11 +284,6 @@ function App() {
                       }
                     />
                     <Route path="modules" element={<ModulesList />} />
-                    {/* <Route path="modules/:moduleId/view" element={<ModuleView />} /> */}
-                    <Route
-                      path="modules/:moduleId/lessons"
-                      element={<LessonView />}
-                    />
                     <Route
                       path="modules/:moduleId/assessments"
                       element={<ModuleAssessmentsView />}
@@ -311,9 +297,7 @@ function App() {
                       />
                       <Route path="lesson/:lessonId">
                         <Route index element={<LessonView />} />
-                        <Route path="view" element={<LessonBuilder />} />
                         <Route path="detail" element={<LessonDetail />} />
-                        <Route path="builder" element={<LessonBuilder />} />
                       </Route>
                     </Route>
                   </Route>
@@ -556,6 +540,18 @@ function CourseTimerProviderWrapper() {
       </SubRoutes>
     </CourseTimerProvider>
   );
+}
+
+// Always scroll to top on route change (prevents landing mid-page after navigation)
+function ScrollToTop() {
+  const location = useLocation();
+  React.useEffect(() => {
+    // If navigating to a hash, let the browser handle it; otherwise scroll to top
+    if (!location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
+  }, [location.pathname, location.search]);
+  return null;
 }
 
 export default App;

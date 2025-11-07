@@ -1,322 +1,228 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { ArrowDown } from "lucide-react";
-import contacthero from "../../assets/contacthhero.jpg";
+import React, { useEffect } from 'react';
 
 export default function Hero() {
-  const [showImage, setShowImage] = useState(false);
-
   useEffect(() => {
-    const timeout = setTimeout(() => setShowImage(true), 300);
-    return () => clearTimeout(timeout);
+    // Dynamically load WonderEngine script
+    const script = document.createElement('script');
+    script.src = 'https://api.wonderengine.ai/js/form_embed.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
   return (
-    <section className="hero-section">
+    <section className="thinkific-hero">
+      {/* Decorative blurred circles */}
+      <div className="hero-bg-glows">
+        <div className="glow glow-1" />
+        <div className="glow glow-2" />
+        <div className="glow glow-3" />
+      </div>
+
       <style>{`
-        .hero-section {
+        .thinkific-hero {
           width: 100%;
-          min-height: 90vh;
-          padding: 12vh 4vw 8vh 4vw;
-          background: linear-gradient(to bottom, #e6f2ff 0%, #f0f7ff 50%, #ffffff 100%);
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
+          background: linear-gradient(135deg, #e8f0fd 0%, #edeafe 50%, #efeafd 100%);
+          min-height: 600px;
+          padding: 96px 24px 56px 24px;
           position: relative;
+          display: flex;
+          justify-content: center;
           overflow: hidden;
         }
-
-        /* Decorative background elements */
-        .hero-section::before {
-          content: '';
+        .hero-bg-glows {
+          pointer-events: none;
           position: absolute;
-          top: -50%;
-          right: -20%;
-          width: 600px;
-          height: 600px;
-          background: radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, transparent 70%);
+          inset: 0;
+          z-index: 0;
+        }
+        .glow {
+          position: absolute;
           border-radius: 50%;
-          animation: float 20s ease-in-out infinite;
+          filter: blur(64px);
+          opacity: 0.26;
         }
-
-        .hero-section::after {
-          content: '';
-          position: absolute;
-          bottom: -30%;
-          left: -15%;
-          width: 500px;
-          height: 500px;
-          background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
-          border-radius: 50%;
-          animation: float 25s ease-in-out infinite reverse;
+        .glow-1 {
+          top: 55px; right: 60px;
+          width: 340px; height: 340px;
+          background: radial-gradient(circle, #7fb2ffcc 0%, #7e60facc 100%);
+          animation: pulse 18s infinite ease-in-out;
         }
-
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(30px, 30px) scale(1.1); }
+        .glow-2 {
+          left: -110px; bottom: 60px;
+          width: 190px; height: 190px;
+          background: radial-gradient(circle, #d6c4ffcc 0%, #74ffdacc 90%);
+          animation: pulse 17s infinite reverse;
         }
-
-        .hero-row {
+        .glow-3 {
+          left: 50%; top: 50%;
+          width: 180px; height: 180px;
+          background: radial-gradient(circle, #96acef55 0%, #d0e1fc11 100%);
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.09); }
+        }
+        .thinkific-wrap {
           width: 100%;
-          max-width: 1300px;
-          margin: 0 auto;
-          position: relative;
-          z-index: 10;
-        }
-
-        .hero-main-row {
-          display: flex;
-          align-items: baseline;
-          gap: 20px;
-          position: relative;
-          margin-bottom: 8px;
-        }
-
-        .hero-img-container {
-          width: 180px;
-          height: 140px;
-          position: relative;
-          flex-shrink: 0;
-          transition: transform 0.4s ease;
-        }
-
-        .hero-img-container:hover {
-          transform: translateY(-5px) rotate(2deg);
-        }
-
-        .hero-img {
-          border-radius: 12px;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          display: block;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-
-        /* Glow effect on image */
-        .hero-img-container::after {
-          content: '';
-          position: absolute;
-          inset: -10px;
-          background: linear-gradient(45deg, #38bdf8, #3b82f6, #8b5cf6, #ec4899);
-          border-radius: 12px;
-          z-index: -1;
-          opacity: 0;
-          filter: blur(20px);
-          transition: opacity 0.4s ease;
-        }
-
-        .hero-img-container:hover::after {
-          opacity: 0.5;
-        }
-
-        .hero-heading {
-          font-family: 'Founders Grotesk', Arial, sans-serif;
-          font-size: clamp(60px, 7.5vw, 140px);
-          font-weight: 600;
-          color: #0c4a6e;
-          text-transform: uppercase;
-          letter-spacing: -2px;
-          line-height: 1;
-          margin: 0;
-          white-space: nowrap;
-          background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 50%, #0284c7 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: fadeInUp 0.8s ease-out 0.1s both;
-        }
-
-        .hero-subheading {
-          font-family: 'Founders Grotesk', Arial, sans-serif;
-          font-size: clamp(60px, 7.5vw, 140px);
-          font-weight: 600;
-          color: #1e293b;
-          text-transform: uppercase;
-          letter-spacing: -2px;
-          line-height: 1.08;
-          margin: 0;
           max-width: 1200px;
-          white-space: nowrap;
-          animation: fadeInUp 0.8s ease-out 0.3s both;
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .hero-decorative-line {
-          width: 120px;
-          height: 5px;
-          background: linear-gradient(90deg, #38bdf8, #3b82f6);
-          border-radius: 10px;
-          margin: 2rem 0 2.5rem 0;
-          animation: expandWidth 1s ease-out 0.6s both;
-          box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
-        }
-
-        @keyframes expandWidth {
-          from {
-            width: 0;
-          }
-          to {
-            width: 120px;
-          }
-        }
-
-        .hero-form-label {
-          font-family: 'Neue Montreal', Arial, sans-serif;
-          font-size: 1.1rem;
-          color: #475569;
-          font-weight: 500;
-          display: flex;
+          display: grid;
+          grid-template-columns: 1.1fr 1fr;
+          gap: 36px;
+          position: relative;
+          z-index: 1;
           align-items: center;
-          gap: 10px;
-          opacity: 0.9;
-          animation: fadeIn 1s ease-out 0.7s both;
+        }
+        .left-copy {
+          color: #23272f;
+        }
+        .headline {
+          font-family: 'Georgia', 'Times New Roman', serif;
+          font-weight: 500;
+          line-height: 1.12;
+          font-size: clamp(28px, 5vw, 46px);
+          letter-spacing: -0.4px;
+          color: #23272f;
+          margin-bottom: 12px;
+        }
+        .copy {
+          margin-top: 16px;
+          color: #485067;
+          font-size: 15.5px;
+          font-family: 'Inter', system-ui, sans-serif;
+        }
+        .bullets { margin-top: 16px; }
+        .bullets li {
+          color: #424c5b;
+          margin: 7px 0;
+          display: flex;
+          gap: 8px;
+          font-size: 14.7px;
+        }
+        .dot {
+          width: 6px; height: 6px; margin-top: 10px; border-radius: 9999px; background: #787add;
+          flex-shrink: 0;
+        }
+        .highlights-row {
+          display: flex;
+          gap: 18px;
+          margin-top: 30px;
+          flex-wrap: wrap;
+        }
+        .highlight-box {
+          background: #fff;
+          border: 1.5px solid #d4d6ed;
+          border-radius: 11px;
+          box-shadow: 0 2px 18px 0 rgba(140, 180, 240, 0.08);
+          padding: 14px 18px 10px 18px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 96px;
+        }
+        .highlight-big {
+          color: #563dcd;
+          font-size: 1.32rem;
+          font-weight: 700;
+          letter-spacing: -1px;
+        }
+        .highlight-label {
+          font-size: 12px;
+          color: #2b325b;
+          margin-top: 3px;
+          font-weight: 500;
+          letter-spacing: 0.01em;
         }
 
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 0.9;
-          }
+        /* WonderEngine iframe */
+        .form-embed {
+          width: 100%;
+          height: 480px;
+          border: none;
+          border-radius: 0;
         }
 
-        .hero-arrow-icon {
-          display: inline-block;
-          animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
-        }
-
-        @media (max-width: 1200px) {
-          .hero-section {
-            padding: 11vh 3vw 7vh 3vw;
-          }
-          .hero-img-container {
-            width: 160px;
-            height: 120px;
-          }
-          .hero-decorative-line {
-            width: 100px;
-          }
-        }
-
-        @media (max-width: 900px) {
-          .hero-section {
-            padding: 10vh 3vw 6vh 3vw;
-          }
-          .hero-img-container {
-            width: 140px;
-            height: 105px;
-          }
-          .hero-main-row {
-            gap: 15px;
-          }
-          .hero-decorative-line {
-            width: 80px;
-            height: 4px;
-            margin: 1.5rem 0 2rem 0;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .hero-section {
-            min-height: 85vh;
-            padding: 10vh 5vw 5vh 5vw;
-          }
-          .hero-main-row {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 12px;
-          }
-          .hero-heading, .hero-subheading {
-            white-space: normal;
-            line-height: 1.05;
-          }
-          .hero-img-container {
-            width: 120px;
-            height: 95px;
-            margin-bottom: 8px;
-          }
-          .hero-form-label {
-            font-size: 1rem;
-          }
-          .hero-decorative-line {
-            width: 60px;
-            height: 3px;
-            margin: 1.25rem 0 1.75rem 0;
-          }
-          .hero-badge {
-            font-size: 0.8rem;
-            padding: 6px 16px;
-            margin-bottom: 1.5rem;
-          }
+        @media (max-width: 980px){
+          .thinkific-wrap { grid-template-columns: 1fr; }
+          .form-embed { height: 520px; }
         }
       `}</style>
 
-      <div className="hero-row">
-        {/* Main Row */}
-        <div className="hero-main-row">
-          <motion.span
-            initial={{ width: 0 }}
-            animate={{ width: 'auto' }}
-            transition={{ ease: [0.86, 0, 0.07, 0.995], duration: 1, delay: 0.5 }}
-            style={{ display: 'inline-block', overflow: 'hidden' }}
-          >
-            <motion.div
-              className="hero-img-container"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ 
-                opacity: showImage ? 1 : 0, 
-                scale: showImage ? 1 : 0.9
-              }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.6 }}
-            >
-              <img src={contacthero} alt="Contact Athena" className="hero-img" />
-            </motion.div>
-          </motion.span>
+      <div className="thinkific-wrap">
+        <div className="left-copy">
+          <h1 className="headline">
+            Scale your education
+            <span className="block">
+              programs with <span className="block">Athena LMS</span>
+            </span>
+          </h1>
+          <p className="copy">
+            Get answers to all of your questions on a brief discovery call with
+            one of our
+            <span className="block">
+              solutions experts and cover topics including:
+            </span>
+          </p>
+          <ul className="bullets">
+            <li>
+              <span className="dot" />
+              Find out if Athena LMS meets your needs. If not, we’ll point you
+              in the right direction.
+            </li>
+            <li>
+              <span className="dot" />
+              Share your short and long–term goals and discuss what’s getting in
+              the way.
+            </li>
+            <li>
+              <span className="dot" />
+              Learn how companies like yours are using Athena LMS to launch,
+              scale, and streamline education programs that drive revenue and
+              engagement.
+            </li>
+          </ul>
 
-          <h1 className="hero-heading">LET'S BUILD</h1>
+          <div className="highlights-row">
+            <div className="highlight-box">
+              <div className="highlight-big">1500+</div>
+              <div className="highlight-label">Courses</div>
+            </div>
+            <div className="highlight-box">
+              <div className="highlight-big">450+</div>
+              <div className="highlight-label">Learners</div>
+            </div>
+            <div className="highlight-box">
+              <div className="highlight-big">98%</div>
+              <div className="highlight-label">Success Rate</div>
+            </div>
+            <div className="highlight-box">
+              <div className="highlight-big">24/7</div>
+              <div className="highlight-label">Support</div>
+            </div>
+          </div>
         </div>
 
-        {/* Subheading */}
-        <h1 className="hero-subheading">
-          SMARTER LEARNING
-          <br />
-          EXPERIENCES TOGETHER
-        </h1>
-
-        {/* Decorative Line */}
-        <div className="hero-decorative-line"></div>
-
-        {/* Form Label */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-        >
-          <div className="hero-form-label">
-            <span className="hero-arrow-icon">
-              <ArrowDown className="w-5 h-5 text-sky-600" />
-            </span>
-            Fill the form below or choose your preferred contact method
-          </div>
-        </motion.div>
+        {/* WonderEngine Embed Directly */}
+        <iframe
+          className="form-embed"
+          src="https://api.wonderengine.ai/widget/form/tHMfncbmbEpAOXwKxNxj"
+          id="inline-tHMfncbmbEpAOXwKxNxj"
+          title="Athena Contact Form"
+          data-layout="{'id':'INLINE'}"
+          data-trigger-type="alwaysShow"
+          data-trigger-value=""
+          data-activation-type="alwaysActivated"
+          data-activation-value=""
+          data-deactivation-type="neverDeactivate"
+          data-deactivation-value=""
+          data-form-name="Athena Contact Form"
+          data-height="477"
+          data-layout-iframe-id="inline-tHMfncbmbEpAOXwKxNxj"
+          data-form-id="tHMfncbmbEpAOXwKxNxj"
+        ></iframe>
       </div>
     </section>
   );
