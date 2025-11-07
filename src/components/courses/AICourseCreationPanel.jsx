@@ -73,7 +73,6 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [textEditorType, setTextEditorType] = useState('paragraph');
   const [generatedTextBlocks, setGeneratedTextBlocks] = useState([]);
   const [generationMode, setGenerationMode] = useState('STANDARD');
-  const [fastMode, setFastMode] = useState(true); // Enable fast mode by default
   const fileInputRef = useRef(null);
 
   // Handle text editor save
@@ -455,10 +454,7 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
       setCreationProgress('Generating AI content...');
 
       // Use the new backend-integrated service to create complete course
-      // Pass fastMode option for 3-5x faster generation
-      const result = await createCompleteAICourse(completeAICourseData, {
-        fastMode: fastMode,
-      });
+      const result = await createCompleteAICourse(completeAICourseData);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to create complete AI course');
@@ -1210,49 +1206,6 @@ const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
                                   </div>
                                 </button>
                               </div>
-                            </div>
-
-                            {/* Fast Mode Toggle */}
-                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-lg">⚡</span>
-                                    <label className="text-sm font-semibold text-gray-900">
-                                      Fast Mode (Recommended)
-                                    </label>
-                                  </div>
-                                  <p className="text-xs text-gray-600">
-                                    Generate courses 3-5x faster using parallel
-                                    processing. All thumbnails and content are
-                                    created simultaneously.
-                                  </p>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => setFastMode(!fastMode)}
-                                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                                    fastMode ? 'bg-green-600' : 'bg-gray-200'
-                                  }`}
-                                >
-                                  <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                      fastMode
-                                        ? 'translate-x-5'
-                                        : 'translate-x-0'
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                              {fastMode && (
-                                <div className="mt-2 flex items-center gap-2 text-xs text-green-700">
-                                  <Check className="w-3 h-3" />
-                                  <span>
-                                    Fast mode enabled - Generation will be much
-                                    quicker!
-                                  </span>
-                                </div>
-                              )}
                             </div>
 
                             {/* Source Content Section */}

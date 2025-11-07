@@ -11,7 +11,6 @@ import { uploadAIGeneratedImage, uploadAICourseMedia } from './aiUploadService';
 import universalAILessonService from './universalAILessonService.js';
 import structuredLessonGenerator from './structuredLessonGenerator.js';
 import openAIService from './openAIService.js';
-import fastCourseGenerator from './fastCourseGenerator.js';
 
 // API configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -225,10 +224,9 @@ function validateCourseData(courseData) {
 /**
  * Create a complete AI course using deployed backend APIs with comprehensive error handling
  * @param {Object} courseData - Course creation data
- * @param {Object} options - Generation options { fastMode: boolean }
  * @returns {Promise<Object>} Created course with modules and lessons
  */
-export async function createCompleteAICourse(courseData, options = {}) {
+export async function createCompleteAICourse(courseData) {
   // Validate input data
   const validation = validateCourseData(courseData);
   if (!validation.isValid) {
@@ -237,20 +235,6 @@ export async function createCompleteAICourse(courseData, options = {}) {
       error: `Validation failed: ${validation.errors.join(', ')}`,
       data: null,
     };
-  }
-
-  // Use fast mode if requested (3-5x faster)
-  if (options.fastMode) {
-    console.log('⚡ Using FAST MODE for course generation');
-    try {
-      return await fastCourseGenerator.generateFastCourse(courseData);
-    } catch (error) {
-      console.warn(
-        'Fast mode failed, falling back to standard mode:',
-        error.message
-      );
-      // Continue with standard mode below
-    }
   }
 
   try {
