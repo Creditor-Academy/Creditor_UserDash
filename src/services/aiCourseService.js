@@ -7,10 +7,10 @@ import {
   updateLessonContent,
 } from './courseService';
 import { uploadImage } from './imageUploadService';
-import aiService from './aiService';
-import enhancedAIService from './enhancedAIService';
-import { generateAndUploadCourseImage as enhancedGenerateImage } from './enhancedImageService';
-import qwenGuardService from './qwenGuardService';
+import { uploadAIGeneratedImage, uploadAICourseMedia } from './aiUploadService';
+import universalAILessonService from './universalAILessonService.js';
+import structuredLessonGenerator from './structuredLessonGenerator.js';
+import openAIService from './openAIService.js';
 
 // API configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
@@ -25,130 +25,18 @@ function getAuthHeaders() {
 }
 
 /**
- * Generate AI course outline with content moderation using Qwen3Guard
+ * Generate AI course outline (Qwen moderation removed - OpenAI only)
  * @param {Object} courseData - Course creation data
- * @param {Object} options - Generation options including moderation settings
- * @returns {Promise<Object>} Generated course structure with safety information
+ * @param {Object} options - Generation options
+ * @returns {Promise<Object>} Generated course structure
  */
 export async function generateSafeCourseOutline(courseData, options = {}) {
-  try {
-    console.log(
-      '🛡️ Generating safe AI course outline with Qwen3Guard moderation:',
-      courseData.title
-    );
-
-    // Step 1: Moderate the course topic/prompt first
-    const promptModeration = await qwenGuardService.moderatePrompt(
-      `Create an educational course about: ${courseData.title}. Subject: ${courseData.subject || 'General'}. Description: ${courseData.description || 'Educational content'}`
-    );
-
-    console.log('🛡️ Prompt moderation result:', promptModeration.data);
-
-    // Check if the prompt is safe to proceed
-    if (promptModeration.success && promptModeration.data.safety === 'Unsafe') {
-      console.warn(
-        '⚠️ Course topic flagged as unsafe by Qwen3Guard - proceeding with generation but flagging content'
-      );
-      // Don't stop generation, just flag it for review
-    }
-
-    // Step 2: Generate course outline using existing system
-    const outlineResult = await generateAICourseOutline(courseData);
-
-    if (!outlineResult.success) {
-      console.warn(
-        '🔄 AI generation failed, using fallback with moderation results'
-      );
-      // Generate fallback course structure
-      const fallbackStructure = {
-        course_title: courseData.title,
-        title: courseData.title,
-        subject: courseData.subject || courseData.title,
-        modules: generateFallbackModules(courseData),
-        generatedBy: 'fallback-with-moderation',
-      };
-
-      return {
-        success: true,
-        data: {
-          ...fallbackStructure,
-          moderation: {
-            overall: {
-              safe: promptModeration.data.safety !== 'Unsafe',
-              timestamp: new Date().toISOString(),
-            },
-            prompt: promptModeration.data,
-            response: { safety: 'Safe', categories: [], refusal: null },
-            modules: [],
-          },
-        },
-        provider: 'fallback-with-moderation',
-        moderationEnabled: true,
-      };
-    }
-
-    // Step 3: Moderate the generated course content
-    const courseContent = JSON.stringify(outlineResult.data);
-    const responseModeration = await qwenGuardService.moderateResponse(
-      `Create an educational course about: ${courseData.title}`,
-      courseContent
-    );
-
-    console.log('🛡️ Response moderation result:', responseModeration.data);
-
-    // Step 4: Comprehensive content moderation for each module
-    const modulesModerationResults = [];
-    if (outlineResult.data.modules) {
-      for (const module of outlineResult.data.modules) {
-        const moduleContent = `${module.title || module.module_title}: ${module.description || ''}`;
-        const moduleModerationResult =
-          await qwenGuardService.moderateCourseContent(
-            module.title || module.module_title,
-            moduleContent
-          );
-
-        if (moduleModerationResult.success) {
-          modulesModerationResults.push(moduleModerationResult.data);
-        }
-      }
-    }
-
-    // Step 5: Determine overall safety
-    const overallSafe =
-      promptModeration.data.safety === 'Safe' &&
-      responseModeration.data.safety === 'Safe' &&
-      modulesModerationResults.every(result => result.overall.safe);
-
-    return {
-      success: true,
-      data: {
-        ...outlineResult.data,
-        moderation: {
-          overall: {
-            safe: overallSafe,
-            timestamp: new Date().toISOString(),
-          },
-          prompt: promptModeration.data,
-          response: responseModeration.data,
-          modules: modulesModerationResults,
-        },
-      },
-      provider: outlineResult.provider,
-      moderationEnabled: true,
-    };
-  } catch (error) {
-    console.error('❌ Safe course outline generation failed:', error);
-    return {
-      success: false,
-      error: error.message,
-      data: null,
-      moderationEnabled: true,
-    };
-  }
+  // Simply call the regular outline generation (moderation removed)
+  return await generateAICourseOutline(courseData);
 }
 
 /**
- * Generate AI course outline with modules and lessons using multi-API system
+ * Generate AI course outline with modules and lessons using OpenAI
  * @param {Object} courseData - Course creation data
  * @returns {Promise<Object>} Generated course structure
  */
@@ -156,79 +44,30 @@ export async function generateAICourseOutline(courseData) {
   try {
     console.log('🤖 Generating AI course outline for:', courseData.title);
 
-    // Try enhanced AI service first (includes HuggingFace, OpenAI, etc.)
-    try {
-      console.log(
-        '🚀 Using Enhanced AI Service with multi-provider support...'
-      );
+    // Use OpenAI service directly
+    const aiResult = await openAIService.generateCourseOutline(courseData);
 
-      const aiResult =
-        await enhancedAIService.generateCourseOutline(courseData);
+    if (aiResult.success && aiResult.data) {
+      console.log('✅ Course outline generation successful with OpenAI');
 
-      if (aiResult.success && aiResult.data) {
-        console.log(
-          `✅ Course outline generation successful with ${aiResult.provider}`
-        );
+      // Transform the data to match expected format
+      const courseStructure = {
+        course_title: aiResult.data.course_title || courseData.title,
+        title: aiResult.data.course_title || courseData.title,
+        subject: courseData.subject || courseData.title,
+        modules: aiResult.data.modules || [],
+        generatedBy: 'openai',
+      };
 
-        // Transform the data to match expected format
-        const courseStructure = {
-          course_title: aiResult.data.course_title || courseData.title,
-          title: aiResult.data.course_title || courseData.title,
-          subject: courseData.subject || courseData.title,
-          modules: aiResult.data.modules || [],
-          generatedBy: aiResult.provider,
-        };
+      return {
+        success: true,
+        data: courseStructure,
+        provider: 'openai',
+      };
+    } else {
+      console.warn('OpenAI generation failed, using fallback:', aiResult.error);
 
-        return {
-          success: true,
-          data: courseStructure,
-          provider: aiResult.provider,
-        };
-      } else {
-        console.warn(
-          'Enhanced AI generation failed, trying legacy methods:',
-          aiResult.error
-        );
-        throw new Error(aiResult.error || 'Enhanced AI generation failed');
-      }
-    } catch (enhancedError) {
-      console.warn(
-        '🔄 Enhanced AI failed, trying legacy OpenAI service:',
-        enhancedError.message
-      );
-
-      // Fallback to legacy AI service (OpenAI only)
-      try {
-        const aiResult = await aiService.generateCourseOutline(courseData);
-
-        if (aiResult.success && aiResult.data) {
-          console.log('✅ Legacy OpenAI course outline generation successful');
-
-          const courseStructure = {
-            course_title: aiResult.data.course_title || courseData.title,
-            title: aiResult.data.course_title || courseData.title,
-            subject: courseData.subject || courseData.title,
-            modules: aiResult.data.modules || [],
-            generatedBy: 'openai-legacy',
-          };
-
-          return {
-            success: true,
-            data: courseStructure,
-            provider: 'openai-legacy',
-          };
-        } else {
-          throw new Error(aiResult.error || 'Legacy OpenAI generation failed');
-        }
-      } catch (legacyError) {
-        console.warn(
-          '🔄 Legacy OpenAI failed, using structured fallback:',
-          legacyError.message
-        );
-      }
-
-      // Final fallback to structured generation
-      console.log('📋 Using structured fallback generation...');
+      // Fallback to structured generation
       const courseStructure = {
         course_title: courseData.title,
         title: courseData.title,
@@ -236,12 +75,6 @@ export async function generateAICourseOutline(courseData) {
         modules: generateFallbackModules(courseData),
         generatedBy: 'fallback',
       };
-
-      // Enhance first 1-2 modules with detailed lessons
-      courseStructure.modules = await enhanceModulesWithLessons(
-        courseStructure.modules,
-        courseData
-      );
 
       return {
         success: true,
@@ -271,94 +104,25 @@ export async function generateAICourseOutline(courseData) {
  */
 function generateFallbackModules(courseData) {
   const subject = courseData.subject || courseData.title;
-  console.log('📚 Generating fallback modules for subject:', subject);
+  console.log(
+    '📚 Generating fallback single comprehensive module for subject:',
+    subject
+  );
 
   const modules = [
     {
       id: 1,
-      title: `Introduction to ${subject}`,
-      module_title: `Introduction to ${subject}`,
-      description: `Foundational concepts and overview of ${subject}`,
+      title: `Complete ${subject} Masterclass`,
+      module_title: `Complete ${subject} Masterclass`,
+      description: `A comprehensive module covering all aspects of ${subject} from fundamentals to advanced applications`,
       lessons: [
         {
           id: 1,
-          title: `What is ${subject}?`,
-          lesson_title: `What is ${subject}?`,
-          description: `Understanding the basics and core concepts`,
+          title: `Comprehensive ${subject} Guide`,
+          lesson_title: `Comprehensive ${subject} Guide`,
+          description: `A complete guide covering all aspects of ${subject} including fundamentals, practical applications, and advanced techniques`,
           content: '',
-          duration: '15 min',
-        },
-        {
-          id: 2,
-          title: `Why Learn ${subject}?`,
-          lesson_title: `Why Learn ${subject}?`,
-          description: `Benefits and real-world applications`,
-          content: '',
-          duration: '10 min',
-        },
-        {
-          id: 3,
-          title: 'Getting Started',
-          lesson_title: 'Getting Started',
-          description: 'Setting up your learning environment',
-          content: '',
-          duration: '20 min',
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: `${subject} Fundamentals`,
-      module_title: `${subject} Fundamentals`,
-      description: `Core principles and essential knowledge`,
-      lessons: [
-        {
-          id: 4,
-          title: 'Key Concepts',
-          lesson_title: 'Key Concepts',
-          description: 'Essential terminology and principles',
-          content: '',
-          duration: '25 min',
-        },
-        {
-          id: 5,
-          title: 'Basic Techniques',
-          lesson_title: 'Basic Techniques',
-          description: 'Fundamental methods and approaches',
-          content: '',
-          duration: '30 min',
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: `Practical ${subject}`,
-      module_title: `Practical ${subject}`,
-      description: `Hands-on experience and real-world applications`,
-      lessons: [
-        {
-          id: 6,
-          title: 'Real-world Examples',
-          lesson_title: 'Real-world Examples',
-          description: 'Practical applications and case studies',
-          content: '',
-          duration: '35 min',
-        },
-      ],
-    },
-    {
-      id: 4,
-      title: `Advanced ${subject}`,
-      module_title: `Advanced ${subject}`,
-      description: `Expert-level concepts and advanced techniques`,
-      lessons: [
-        {
-          id: 7,
-          title: 'Expert Techniques',
-          lesson_title: 'Expert Techniques',
-          description: 'Advanced methods and best practices',
-          content: '',
-          duration: '40 min',
+          duration: '60 min',
         },
       ],
     },
@@ -476,31 +240,52 @@ export async function createCompleteAICourse(courseData) {
   try {
     console.log('🚀 Creating complete AI course:', courseData.title);
 
-    // Step 1: Generate AI course outline with fallback
+    // Step 1: Use provided course structure or generate AI course outline
     let courseStructure;
-    try {
-      console.log('📋 Step 1: Generating AI course outline...');
-      const outlineResponse = await generateAICourseOutline(courseData);
-      if (!outlineResponse.success) {
-        console.warn('AI outline generation failed, using fallback structure');
+
+    // Check if comprehensive course structure is already provided
+    if (courseData.comprehensiveCourseStructure) {
+      console.log(
+        '📋 Step 1: Using provided comprehensive course structure with thumbnails...'
+      );
+      courseStructure = courseData.comprehensiveCourseStructure;
+      console.log('🎨 Using course structure with thumbnails:', {
+        moduleCount: courseStructure.modules?.length || 0,
+        hasModuleThumbnails: courseStructure.modules?.[0]?.thumbnail
+          ? 'Yes'
+          : 'No',
+        hasLessonThumbnails: courseStructure.modules?.[0]?.lessons?.[0]
+          ?.thumbnail
+          ? 'Yes'
+          : 'No',
+      });
+    } else {
+      try {
+        console.log('📋 Step 1: Generating AI course outline...');
+        const outlineResponse = await generateAICourseOutline(courseData);
+        if (!outlineResponse.success) {
+          console.warn(
+            'AI outline generation failed, using fallback structure'
+          );
+          courseStructure = {
+            title: courseData.title,
+            subject: courseData.subject || courseData.title,
+            modules: generateFallbackModules(courseData),
+          };
+        } else {
+          courseStructure = outlineResponse.data;
+        }
+      } catch (outlineError) {
+        console.warn(
+          'AI outline generation error, using fallback:',
+          outlineError.message
+        );
         courseStructure = {
           title: courseData.title,
           subject: courseData.subject || courseData.title,
           modules: generateFallbackModules(courseData),
         };
-      } else {
-        courseStructure = outlineResponse.data;
       }
-    } catch (outlineError) {
-      console.warn(
-        'AI outline generation error, using fallback:',
-        outlineError.message
-      );
-      courseStructure = {
-        title: courseData.title,
-        subject: courseData.subject || courseData.title,
-        modules: generateFallbackModules(courseData),
-      };
     }
 
     // Step 2: Create the course using deployed backend API with retry logic
@@ -511,15 +296,25 @@ export async function createCompleteAICourse(courseData) {
       console.log('🏗️ Step 2: Creating course via backend API...');
 
       const coursePayload = {
-        title: courseStructure.title,
+        title:
+          courseStructure.title ||
+          courseStructure.course_title ||
+          courseData.title,
         description: courseData.description,
-        subject: courseStructure.subject,
+        subject: courseStructure.subject || courseData.subject,
         objectives: courseData.learningObjectives,
         duration: courseData.duration,
         max_students: courseData.max_students,
         price: courseData.price || '0',
         thumbnail: courseData.thumbnail,
       };
+
+      console.log('📦 Course payload prepared:', {
+        title: coursePayload.title,
+        hasDescription: !!coursePayload.description,
+        subject: coursePayload.subject,
+        moduleCount: courseStructure.modules?.length || 0,
+      });
 
       // Retry logic for course creation
       let retryCount = 0;
@@ -578,6 +373,16 @@ export async function createCompleteAICourse(courseData) {
           `Creating module ${i + 1} of ${courseStructure.modules.length}: ${moduleData.title || moduleData.module_title}`
         );
 
+        // Validate and prepare thumbnail URL
+        const moduleThumbnail =
+          moduleData.thumbnail || moduleData.module_thumbnail_url;
+        const validatedThumbnail =
+          moduleThumbnail &&
+          (moduleThumbnail.startsWith('http') ||
+            moduleThumbnail.startsWith('data:'))
+            ? moduleThumbnail
+            : '';
+
         const modulePayload = {
           title: moduleData.title || moduleData.module_title,
           description:
@@ -586,7 +391,7 @@ export async function createCompleteAICourse(courseData) {
           order: i + 1,
           estimated_duration: 60,
           module_status: 'PUBLISHED',
-          thumbnail: moduleData.thumbnail || 'AI generated module thumbnail',
+          thumbnail: validatedThumbnail,
           price: 0, // Backend expects number, matching manual creation
         };
 
@@ -594,6 +399,11 @@ export async function createCompleteAICourse(courseData) {
           '📋 Module payload being sent:',
           JSON.stringify(modulePayload, null, 2)
         );
+        console.log('🎨 Module thumbnail data:', {
+          thumbnail: moduleData.thumbnail,
+          module_thumbnail_url: moduleData.module_thumbnail_url,
+          validated_thumbnail: validatedThumbnail,
+        });
 
         // Retry logic for module creation
         let moduleRetryCount = 0;
@@ -673,6 +483,22 @@ export async function createCompleteAICourse(courseData) {
               `📝 Creating lesson ${j + 1}/${module.originalLessons.length} in module "${moduleTitle}": ${lessonData.title}`
             );
 
+            // Validate and prepare lesson thumbnail URL
+            const lessonThumbnail =
+              lessonData.thumbnail || lessonData.lesson_thumbnail_url;
+            const validatedLessonThumbnail =
+              lessonThumbnail &&
+              (lessonThumbnail.startsWith('http') ||
+                lessonThumbnail.startsWith('data:'))
+                ? lessonThumbnail
+                : '';
+
+            console.log('🎨 Lesson thumbnail data:', {
+              thumbnail: lessonData.thumbnail,
+              lesson_thumbnail_url: lessonData.lesson_thumbnail_url,
+              validated_thumbnail: validatedLessonThumbnail,
+            });
+
             const lessonPayload = {
               title: lessonData.title || `Lesson ${j + 1}`,
               description:
@@ -682,6 +508,7 @@ export async function createCompleteAICourse(courseData) {
               status: 'PUBLISHED',
               content: lessonData.content || '',
               duration: lessonData.duration || '15 min',
+              thumbnail: validatedLessonThumbnail,
             };
 
             // Use enhanced API client instead of fetch for better error handling
@@ -807,36 +634,71 @@ export async function createCompleteAICourse(courseData) {
         const moduleTitle =
           parentModule?.data?.title || parentModule?.title || 'Module';
 
-        // Generate content blocks using universalAILessonService
-        const blocks = await universalAILessonService.generateLessonContent(
-          {
-            title: lessonTitle,
-            description:
-              createdLesson.data?.description || createdLesson.description,
-          },
-          { title: moduleTitle },
-          { title: courseData.title },
-          {
-            contentType: config.contentType,
-            maxTokens: config.maxTokens,
-            includeIntroduction: true,
-            includeLearningObjectives: true,
-            includeExamples: config.includeExamples,
-            includeAssessments: config.includeAssessments,
-            includeSummary: config.includeSummary,
-            includeInteractive: config.includeInteractive,
+        // Use structured lesson generator (NEW: Fixed 8-block structure)
+        const useStructuredGeneration =
+          config.useStructuredGeneration !== false; // Default: true
+
+        if (useStructuredGeneration) {
+          console.log('🎯 Using structured lesson generator (8-block format)');
+
+          // Generate lesson with structured format
+          const result = await structuredLessonGenerator.generateLesson(
+            lessonId,
+            {
+              title: courseData.title,
+              description: courseData.description,
+              difficulty: courseData.difficulty || 'intermediate',
+              targetAudience: courseData.targetAudience || 'learners',
+            },
+            progress => {
+              console.log(
+                `📊 Progress: ${progress.message} (${progress.current}/${progress.total})`
+              );
+            }
+          );
+
+          if (result.success) {
+            contentGenerationResults.successCount++;
+            contentGenerationResults.totalBlocks += result.blocks.length;
+            console.log(
+              `✅ Structured content generated and saved for: ${lessonTitle} (${result.blocks.length} blocks)`
+            );
+          } else {
+            throw new Error(result.error || 'Structured generation failed');
           }
-        );
+        } else {
+          // Fallback to original universal AI lesson service
+          console.log('📝 Using universal AI lesson service (legacy mode)');
 
-        // Save generated content to lesson
-        await universalAILessonService.saveContentToLesson(lessonId, blocks);
+          const blocks = await universalAILessonService.generateLessonContent(
+            {
+              title: lessonTitle,
+              description:
+                createdLesson.data?.description || createdLesson.description,
+            },
+            { title: moduleTitle },
+            { title: courseData.title },
+            {
+              contentType: config.contentType,
+              maxTokens: config.maxTokens,
+              includeIntroduction: true,
+              includeLearningObjectives: true,
+              includeExamples: config.includeExamples,
+              includeAssessments: config.includeAssessments,
+              includeSummary: config.includeSummary,
+              includeInteractive: config.includeInteractive,
+            }
+          );
 
-        contentGenerationResults.successCount++;
-        contentGenerationResults.totalBlocks += blocks.length;
+          // Save generated content to lesson
+          await universalAILessonService.saveContentToLesson(lessonId, blocks);
 
-        console.log(
-          `✅ Content generated and saved for: ${lessonTitle} (${blocks.length} blocks)`
-        );
+          contentGenerationResults.successCount++;
+          contentGenerationResults.totalBlocks += blocks.length;
+          console.log(
+            `✅ Content generated and saved for: ${lessonTitle} (${blocks.length} blocks)`
+          );
+        }
 
         // Add delay between lessons to avoid rate limits
         if (processedCount < createdLessons.length) {
@@ -944,52 +806,27 @@ export async function createCompleteAICourse(courseData) {
 }
 
 /**
- * Generate and upload AI course image to S3 (with fallback to direct image generation)
+ * Generate and upload AI course image to S3 using OpenAI DALL-E
  * @param {string} prompt - Image generation prompt
  * @param {Object} options - Generation options
- * @returns {Promise<Object>} Uploaded image data with S3 URL or direct image URL
+ * @returns {Promise<Object>} Uploaded image data with S3 URL
  */
 export async function generateAndUploadCourseImage(prompt, options = {}) {
   try {
-    console.log(
-      '🎨 Generating course image with enhanced multi-API system:',
-      prompt
-    );
+    console.log('🎨 Generating course image with OpenAI DALL-E:', prompt);
 
-    // Use the enhanced image generation service
-    const result = await enhancedGenerateImage(prompt, options);
+    // Use OpenAI service directly
+    const result = await openAIService.generateCourseImage(prompt, options);
 
     if (result.success) {
-      console.log(
-        `✅ Enhanced image generation successful with ${result.data.provider}`
-      );
+      console.log('✅ Image generation successful with OpenAI DALL-E');
       return result;
     } else {
-      console.warn(
-        '🔄 Enhanced image generation failed, using legacy method:',
-        result.error
-      );
+      console.warn('🔄 OpenAI image generation failed:', result.error);
 
-      // Fallback to legacy method
+      // Fallback to placeholder
       let imageUrl = null;
       let generationMethod = 'fallback';
-
-      try {
-        const imageResponse = await aiService.generateCourseImage(
-          prompt,
-          options
-        );
-        if (imageResponse.success) {
-          imageUrl = imageResponse.data.url;
-          generationMethod = 'ai-legacy';
-          console.log('✅ Legacy AI image generation successful');
-        }
-      } catch (imageError) {
-        console.warn(
-          '🎨 Legacy AI image generation failed, using placeholder:',
-          imageError.message
-        );
-      }
 
       // Step 2: If AI generation failed, create a placeholder image URL
       if (!imageUrl) {
@@ -1037,37 +874,59 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
       }
 
       // Continue with legacy upload logic
-      // Step 3: Try to upload to S3 if upload service is available
+      // Step 3: Try to upload to S3 using AI endpoint
       let s3Url = imageUrl; // Default to original URL
       let uploadSuccess = false;
 
       try {
-        // Test if we can create a file from the image URL
-        const response = await fetch(imageUrl);
-        if (response.ok) {
-          const blob = await response.blob();
-          const file = new File([blob], `ai-course-image-${Date.now()}.png`, {
-            type: 'image/png',
-          });
+        console.log('🤖 Uploading AI-generated image via /api/ai endpoint...');
 
-          // Try to upload to S3
-          const uploadResponse = await uploadImage(file, {
-            folder: 'course-thumbnails',
-            public: true,
-            type: 'image',
-          });
+        // Use AI upload service for AI-generated images
+        const uploadResponse = await uploadAIGeneratedImage(imageUrl, {
+          public: true,
+        });
 
-          if (uploadResponse && uploadResponse.imageUrl) {
-            s3Url = uploadResponse.imageUrl;
-            uploadSuccess = true;
-            console.log('✅ S3 upload successful');
-          }
+        if (uploadResponse && uploadResponse.imageUrl) {
+          s3Url = uploadResponse.imageUrl;
+          uploadSuccess = true;
+          console.log(
+            '✅ AI image uploaded to S3 via /api/ai endpoint:',
+            s3Url
+          );
         }
       } catch (uploadError) {
         console.warn(
-          '📤 S3 upload failed, using direct image URL:',
+          '📤 AI endpoint upload failed, trying fallback...',
           uploadError.message
         );
+
+        // Fallback to regular upload if AI endpoint fails
+        try {
+          const response = await fetch(imageUrl);
+          if (response.ok) {
+            const blob = await response.blob();
+            const file = new File([blob], `ai-course-image-${Date.now()}.png`, {
+              type: 'image/png',
+            });
+
+            const uploadResponse = await uploadImage(file, {
+              folder: 'course-thumbnails',
+              public: true,
+              type: 'image',
+            });
+
+            if (uploadResponse && uploadResponse.imageUrl) {
+              s3Url = uploadResponse.imageUrl;
+              uploadSuccess = true;
+              console.log('✅ S3 upload successful via fallback');
+            }
+          }
+        } catch (fallbackError) {
+          console.warn(
+            '📤 Fallback upload also failed, using direct image URL:',
+            fallbackError.message
+          );
+        }
       }
 
       return {
@@ -1130,23 +989,23 @@ export async function generateAndUploadCourseImage(prompt, options = {}) {
 }
 
 /**
- * Generate AI images for course content
+ * Generate AI images for course content using OpenAI DALL-E
  * @param {string} prompt - Image generation prompt
  * @param {Object} options - Generation options
  * @returns {Promise<Object>} Generated image data
  */
 export async function generateCourseImage(prompt, options = {}) {
   try {
-    console.log('🎨 Generating course image with Deep AI:', prompt);
+    console.log('🎨 Generating course image with OpenAI DALL-E:', prompt);
 
-    // Use our new integrated AI service (Deep AI)
-    const aiResult = await aiService.generateCourseImage(prompt, options);
+    // Use OpenAI service
+    const aiResult = await openAIService.generateCourseImage(prompt, options);
 
     if (aiResult.success && aiResult.data) {
-      console.log('✅ Deep AI image generation successful');
+      console.log('✅ OpenAI DALL-E image generation successful');
       return aiResult;
     } else {
-      console.warn('Deep AI generation failed:', aiResult.error);
+      console.warn('OpenAI generation failed:', aiResult.error);
       return aiResult; // Still return the result with fallback image
     }
   } catch (error) {
@@ -1188,7 +1047,7 @@ export async function generateCourseImage(prompt, options = {}) {
 }
 
 /**
- * Summarize content for course lessons
+ * Summarize content for course lessons using OpenAI
  * @param {string} content - Content to summarize
  * @param {Object} options - Summarization options
  * @returns {Promise<Object>} Summary data
@@ -1197,36 +1056,28 @@ export async function summarizeContent(content, options = {}) {
   try {
     console.log('📝 Summarizing content for course...');
 
-    // Use AIServiceRouter for better text summarization
-    const aiServiceRouter = new AIServiceRouter();
+    const prompt = `Summarize the following content in ${options.length || 'medium'} length and format as ${options.type || 'bullet'}:
+      
+${content}`;
 
-    // Try to summarize with OpenAI GPT-4o first
     let summary;
     try {
-      const prompt = `Summarize the following content in ${options.length || 'medium'} length and format as ${options.type || 'bullet'}:
-      
-      ${content}`;
-
-      const response = await aiServiceRouter.generateText(prompt, {
-        model: 'gpt-4o',
+      summary = await openAIService.generateText(prompt, {
+        model: 'gpt-3.5-turbo',
         maxTokens: 300,
         temperature: 0.3,
       });
-
-      summary = response;
     } catch (summarizeError) {
       console.warn(
         'OpenAI summarization failed, using fallback:',
         summarizeError.message
       );
 
-      // Simple fallback summarization (dependency removed)
+      // Simple fallback summarization
       const sentences = content
         .split(/[.!?]+/)
         .filter(s => s.trim().length > 0);
-      const summary = sentences.slice(0, 3).join('. ') + '.';
-
-      // Removed the incorrect line: summary = response.summary;
+      summary = sentences.slice(0, 3).join('. ') + '.';
     }
 
     return {
@@ -1249,7 +1100,7 @@ export async function summarizeContent(content, options = {}) {
 }
 
 /**
- * Search and answer questions for course content
+ * Search and answer questions for course content using OpenAI
  * @param {string} question - Question to answer
  * @param {string} context - Optional context
  * @returns {Promise<Object>} Answer data
@@ -1258,31 +1109,25 @@ export async function searchCourseContent(question, context = '') {
   try {
     console.log('🔍 Searching course content:', question);
 
-    // Use AIServiceRouter for better question answering
-    const aiServiceRouter = new AIServiceRouter();
+    const prompt = `Answer the following question based on the provided context:
+      
+Question: ${question}
 
-    // Try to answer with OpenAI GPT-4o first
+Context: ${context || 'No specific context provided'}
+
+Provide a clear, educational answer that would be helpful for a student learning this topic.`;
+
     let answer;
     try {
-      const prompt = `Answer the following question based on the provided context:
-      
-      Question: ${question}
-      
-      Context: ${context || 'No specific context provided'}
-      
-      Provide a clear, educational answer that would be helpful for a student learning this topic.`;
-
-      const response = await aiServiceRouter.generateText(prompt, {
-        model: 'gpt-4o',
+      answer = await openAIService.generateText(prompt, {
+        model: 'gpt-3.5-turbo',
         maxTokens: 500,
         temperature: 0.5,
       });
-
-      answer = response;
     } catch (qaError) {
       console.warn('OpenAI QA failed, using fallback:', qaError.message);
 
-      // Simple fallback answer (dependency removed)
+      // Simple fallback answer
       answer = `This is an educational topic related to ${question}. Please refer to course materials for detailed information.`;
     }
 
@@ -1307,7 +1152,7 @@ export async function searchCourseContent(question, context = '') {
 }
 
 /**
- * Generate a small set of Q&A pairs for a lesson/topic
+ * Generate a small set of Q&A pairs for a lesson/topic using OpenAI
  * @param {string} topic - Topic or lesson title
  * @param {number} count - Number of Q&A pairs
  * @param {string} context - Optional extra context
@@ -1315,7 +1160,6 @@ export async function searchCourseContent(question, context = '') {
  */
 export async function generateQAPairs(topic, count = 3, context = '') {
   try {
-    const aiServiceRouter = new AIServiceRouter();
     const prompt = `Create ${count} high-quality quiz Q&A pairs for the topic "${topic}".
 ${context ? `Context: ${context}` : ''}
 
@@ -1328,8 +1172,8 @@ Return valid JSON only in this format:
 
     let qa = [];
     try {
-      const response = await aiServiceRouter.generateText(prompt, {
-        model: 'gpt-4o',
+      const response = await openAIService.generateText(prompt, {
+        model: 'gpt-3.5-turbo',
         maxTokens: 600,
         temperature: 0.5,
       });
@@ -1363,125 +1207,38 @@ Return valid JSON only in this format:
 }
 
 /**
- * Generate safe lesson content with Qwen3Guard moderation
+ * Generate safe lesson content using OpenAI (Qwen moderation removed)
  * @param {string} prompt - Lesson topic or prompt
- * @param {Object} options - { context?: string, level?: string, enableModeration?: boolean }
+ * @param {Object} options - { context?: string, level?: string }
  * @returns {Promise<{success:boolean, data:Object}>}
  */
 export async function generateSafeLessonContent(prompt, options = {}) {
-  try {
-    console.log(
-      '🛡️ Generating safe lesson content with Qwen3Guard moderation:',
-      prompt
-    );
-
-    // Step 1: Moderate the lesson prompt
-    const promptModeration = await qwenGuardService.moderatePrompt(prompt);
-
-    console.log('🛡️ Lesson prompt moderation result:', promptModeration.data);
-
-    // Check if the prompt is safe to proceed
-    if (promptModeration.success && promptModeration.data.safety === 'Unsafe') {
-      console.warn('⚠️ Lesson topic flagged as unsafe by Qwen3Guard');
-      return {
-        success: false,
-        error: 'Lesson topic contains potentially unsafe content',
-        moderationResult: promptModeration.data,
-        data: null,
-      };
-    }
-
-    // Step 2: Generate lesson content using existing system
-    const lessonResult = await generateLessonFromPrompt(prompt, options);
-
-    if (!lessonResult.success) {
-      return {
-        ...lessonResult,
-        moderationResult: promptModeration.data,
-      };
-    }
-
-    // Step 3: Moderate the generated lesson content
-    const lessonContentText = [
-      lessonResult.data.introduction,
-      ...(lessonResult.data.mainContent || []),
-      lessonResult.data.summary,
-    ].join(' ');
-
-    const responseModeration = await qwenGuardService.moderateResponse(
-      prompt,
-      lessonContentText
-    );
-
-    console.log(
-      '🛡️ Lesson content moderation result:',
-      responseModeration.data
-    );
-
-    // Step 4: Comprehensive content moderation
-    const comprehensiveModeration =
-      await qwenGuardService.moderateCourseContent(prompt, lessonContentText);
-
-    // Step 5: Determine overall safety
-    const overallSafe =
-      promptModeration.data.safety === 'Safe' &&
-      responseModeration.data.safety === 'Safe' &&
-      (comprehensiveModeration.success
-        ? comprehensiveModeration.data.overall.safe
-        : true);
-
-    return {
-      success: true,
-      data: {
-        ...lessonResult.data,
-        moderation: {
-          overall: {
-            safe: overallSafe,
-            timestamp: new Date().toISOString(),
-          },
-          prompt: promptModeration.data,
-          response: responseModeration.data,
-          comprehensive: comprehensiveModeration.success
-            ? comprehensiveModeration.data
-            : null,
-        },
-      },
-      moderationEnabled: true,
-    };
-  } catch (error) {
-    console.error('❌ Safe lesson content generation failed:', error);
-    return {
-      success: false,
-      error: error.message,
-      data: null,
-      moderationEnabled: true,
-    };
-  }
+  // Simply call the regular lesson generation (moderation removed)
+  return await generateLessonFromPrompt(prompt, options);
 }
 
 /**
- * Generate a structured lesson from a topic/prompt
+ * Generate a structured lesson from a topic/prompt using OpenAI
  * @param {string} prompt - Lesson topic or prompt
  * @param {Object} options - { context?: string, level?: string }
  * @returns {Promise<{success:boolean, data:Object}>}
  */
 export async function generateLessonFromPrompt(prompt, options = {}) {
   try {
-    const aiServiceRouter = new AIServiceRouter();
     const sysPrompt = `Create a structured lesson as JSON with keys: introduction (string), mainContent (array of strings), examples (array of {title, description}), keyTakeaways (array of strings), summary (string). Keep concise and instructional.`;
     const userPrompt = `Topic: ${prompt}${options.context ? `\nContext: ${options.context}` : ''}\nLevel: ${options.level || 'beginner'}`;
 
     let lesson;
     try {
-      const response = await aiServiceRouter.generateStructured(
+      const response = await openAIService.generateStructured(
         sysPrompt,
         userPrompt
       );
       lesson = response;
     } catch {
-      const text = await aiServiceRouter.generateText(
+      const text = await openAIService.generateText(
         `${sysPrompt}\n\n${userPrompt}`,
-        { model: 'gpt-4o', maxTokens: 800, temperature: 0.6 }
+        { model: 'gpt-3.5-turbo', maxTokens: 800, temperature: 0.6 }
       );
       const jsonMatch =
         typeof text === 'string' ? text.match(/\{[\s\S]*\}/) : null;
@@ -1521,7 +1278,7 @@ export async function generateLessonFromPrompt(prompt, options = {}) {
 }
 
 /**
- * Generate MCQ assessments for a topic
+ * Generate MCQ assessments for a topic using OpenAI
  * Returns normalized questions for bulk upload API
  */
 export async function generateAssessmentQuestions(
@@ -1530,12 +1287,11 @@ export async function generateAssessmentQuestions(
   context = ''
 ) {
   try {
-    const aiServiceRouter = new AIServiceRouter();
     const prompt = `Create ${count} multiple-choice questions (MCQs) for the topic "${topic}"${context ? ` with context: ${context}` : ''}. Return JSON {"questions": [{"question": "...", "options": ["A","B","C","D"], "answerIndex": 0}]}`;
     let questions = [];
     try {
-      const text = await aiServiceRouter.generateText(prompt, {
-        model: 'gpt-4o',
+      const text = await openAIService.generateText(prompt, {
+        model: 'gpt-3.5-turbo',
         maxTokens: 1000,
         temperature: 0.6,
       });
@@ -2024,6 +1780,1089 @@ class AICourseService {
         summaryLength: 100,
         type: options.type || 'bullet',
       },
+    };
+  }
+}
+
+/**
+ * Create a simple AI course with 1 module and 1 lesson using AI generation
+ * @param {Object} courseData - Basic course information
+ * @returns {Promise<Object>} Created course structure with AI-generated content
+ */
+export async function createSimpleAICourse(courseData) {
+  try {
+    console.log('🚀 Creating simple AI course:', courseData.title);
+
+    // Step 1: Generate AI course outline for single lesson
+    console.log('📋 Step 1: Generating AI lesson outline...');
+    const aiPrompt = `Create a single comprehensive lesson for the course "${courseData.title}".
+
+Course Details:
+- Subject: ${courseData.subject || 'General'}
+- Description: ${courseData.description || 'Educational content'}
+- Target Audience: ${courseData.targetAudience || 'Beginners'}
+- Difficulty: ${courseData.difficulty || 'beginner'}
+
+Create a structured lesson with:
+- Clear lesson title and description
+- Learning objectives (3-4 points)
+- Main content sections (3-4 sections)
+- Practical examples
+- Summary/key takeaways
+
+Format as JSON:
+{
+  "lesson_title": "Lesson Name",
+  "lesson_description": "Brief description",
+  "learning_objectives": ["Objective 1", "Objective 2", "Objective 3"],
+  "content_sections": [
+    {
+      "title": "Section Title",
+      "content": "Section content"
+    }
+  ],
+  "examples": ["Example 1", "Example 2"],
+  "key_takeaways": ["Takeaway 1", "Takeaway 2"]
+}`;
+
+    let lessonStructure;
+    try {
+      const aiResult = await enhancedAIService.generateText(aiPrompt, {
+        systemPrompt:
+          'You are an expert educational content creator. Generate well-structured lesson content in JSON format.',
+        maxTokens: 1000,
+        temperature: 0.7,
+      });
+
+      if (aiResult.success) {
+        try {
+          const content = aiResult.data.text;
+          const jsonMatch =
+            content.match(/```json\n([\s\S]*?)\n```/) ||
+            content.match(/\{[\s\S]*\}/);
+          const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
+          lessonStructure = JSON.parse(jsonString);
+          console.log('✅ AI lesson structure generated');
+        } catch (parseError) {
+          console.warn('Failed to parse AI response, using fallback');
+          throw new Error('JSON parse failed');
+        }
+      } else {
+        throw new Error(aiResult.error || 'AI generation failed');
+      }
+    } catch (aiError) {
+      console.warn(
+        'AI generation failed, using fallback structure:',
+        aiError.message
+      );
+      lessonStructure = {
+        lesson_title: `Introduction to ${courseData.title}`,
+        lesson_description: `Learn the fundamentals of ${courseData.title}`,
+        learning_objectives: [
+          `Understand the basic concepts of ${courseData.title}`,
+          `Apply key principles in practical scenarios`,
+          `Identify best practices and common patterns`,
+          `Build confidence in using ${courseData.title}`,
+        ],
+        content_sections: [
+          {
+            title: 'What is ' + courseData.title + '?',
+            content: `${courseData.title} is a fundamental concept that helps you build better applications and solve complex problems.`,
+          },
+          {
+            title: 'Key Concepts',
+            content: `Understanding the core principles of ${courseData.title} is essential for effective implementation.`,
+          },
+          {
+            title: 'Best Practices',
+            content: `Follow these proven approaches to get the most out of ${courseData.title}.`,
+          },
+        ],
+        examples: [
+          `Basic ${courseData.title} implementation`,
+          `Real-world use case example`,
+          `Common patterns and solutions`,
+        ],
+        key_takeaways: [
+          `${courseData.title} provides powerful capabilities`,
+          `Practice is key to mastering the concepts`,
+          `Start with simple examples and build complexity`,
+        ],
+      };
+    }
+
+    // Step 2: Create Course
+    console.log('📚 Step 2: Creating course...');
+    const coursePayload = {
+      title: courseData.title,
+      description:
+        courseData.description || `Learn ${courseData.title} fundamentals`,
+      subject: courseData.subject || courseData.title,
+      objectives: lessonStructure.learning_objectives.join('\n'),
+      duration: courseData.duration || '1 week',
+      max_students: courseData.max_students || 100,
+      price: courseData.price || '0',
+      thumbnail: courseData.thumbnail || null,
+    };
+
+    const course = await createAICourse(coursePayload);
+    const courseId = course.data?.id || course.id;
+    console.log('✅ Course created:', courseId);
+
+    // Step 3: Create Module
+    console.log('📖 Step 3: Creating module...');
+    const moduleData = {
+      title: 'Module 1: ' + lessonStructure.lesson_title,
+      description: lessonStructure.lesson_description,
+      order: 1,
+      estimated_duration: 60,
+      module_status: 'PUBLISHED',
+      thumbnail: 'AI generated module thumbnail',
+      price: 0,
+    };
+
+    const module = await createModule(courseId, moduleData);
+    const moduleId = module.data?.id || module.id;
+    console.log('✅ Module created:', moduleId);
+
+    // Step 4: Create Lesson
+    console.log('📝 Step 4: Creating lesson...');
+    const lessonPayload = {
+      title: lessonStructure.lesson_title,
+      description: lessonStructure.lesson_description,
+      order: 1,
+      status: 'PUBLISHED',
+      duration: courseData.lessonDuration || '30 min',
+    };
+
+    const lesson = await createLesson(courseId, moduleId, lessonPayload);
+    const lessonId = lesson.data?.id || lesson.id;
+    console.log('✅ Lesson created:', lessonId);
+
+    // Step 5: Generate Comprehensive AI Content using ALL Content Library Types
+    console.log(
+      '📦 Step 5: Generating comprehensive AI lesson content using all content library types...'
+    );
+
+    // Enhanced gradient color schemes with better color combinations
+    const gradientSchemes = [
+      {
+        from: 'indigo-600',
+        via: 'purple-600',
+        to: 'pink-600',
+        accent: 'indigo-700',
+        name: 'Royal Purple',
+      },
+      {
+        from: 'emerald-600',
+        via: 'teal-600',
+        to: 'cyan-600',
+        accent: 'emerald-700',
+        name: 'Ocean Breeze',
+      },
+      {
+        from: 'orange-600',
+        via: 'red-600',
+        to: 'pink-600',
+        accent: 'orange-700',
+        name: 'Sunset Fire',
+      },
+      {
+        from: 'blue-600',
+        via: 'indigo-600',
+        to: 'purple-600',
+        accent: 'blue-700',
+        name: 'Deep Ocean',
+      },
+      {
+        from: 'green-600',
+        via: 'emerald-600',
+        to: 'teal-600',
+        accent: 'green-700',
+        name: 'Forest Green',
+      },
+      {
+        from: 'violet-600',
+        via: 'fuchsia-600',
+        to: 'pink-600',
+        accent: 'violet-700',
+        name: 'Mystic Purple',
+      },
+      {
+        from: 'rose-600',
+        via: 'pink-600',
+        to: 'fuchsia-600',
+        accent: 'rose-700',
+        name: 'Rose Garden',
+      },
+      {
+        from: 'amber-600',
+        via: 'yellow-600',
+        to: 'orange-600',
+        accent: 'amber-700',
+        name: 'Golden Sun',
+      },
+    ];
+
+    const contentBlocks = [];
+    let blockOrder = 1;
+
+    // Content Library Types to Use:
+    // 1. text (6 subtypes: heading, master_heading, subheading, paragraph, heading_paragraph, subheading_paragraph)
+    // 2. statement (5 subtypes: statement-a, statement-b, statement-c, statement-d, note)
+    // 3. quote (6 subtypes: quote_a, quote_b, quote_c, quote_d, quote_on_image, quote_carousel)
+    // 4. image (3 layouts: centered, side-by-side, overlay)
+    // 5. list (3 types: bulleted, numbered, checkbox)
+    // 6. tables
+    // 7. interactive
+    // 8. divider (2 subtypes: regular, continue)
+    // 9. youtube
+    // 10. video
+    // 11. audio
+    // 12. link
+    // 13. pdf
+
+    // PAGE 1: Master Heading Block (First Page)
+    contentBlocks.push({
+      type: 'text',
+      block_id: `ai_master_title_${lessonId}`,
+      textType: 'master_heading',
+      html_css: `
+        <div class="relative overflow-hidden rounded-3xl p-12 bg-gradient-to-br from-${gradientSchemes[0].from} via-${gradientSchemes[0].via} to-${gradientSchemes[0].to} text-white mb-8 shadow-2xl">
+          <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -translate-y-24 translate-x-24 animate-pulse"></div>
+          <div class="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full translate-y-18 -translate-x-18"></div>
+          <div class="absolute top-1/2 left-1/2 w-24 h-24 bg-white/5 rounded-full -translate-x-12 -translate-y-12"></div>
+          <div class="relative z-10">
+            <div class="flex items-center mb-6">
+              <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mr-6 backdrop-blur-sm">
+                <span class="text-3xl">🎓</span>
+              </div>
+              <div class="flex-1">
+                <div class="h-px bg-white/30 mb-2"></div>
+                <p class="text-white/70 text-sm font-medium tracking-wider uppercase">Lesson Introduction</p>
+                <div class="h-px bg-white/30 mt-2"></div>
+              </div>
+            </div>
+            <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight">${lessonStructure.lesson_title}</h1>
+            <p class="text-2xl text-white/90 font-medium leading-relaxed">${lessonStructure.lesson_description}</p>
+            <div class="mt-8 flex items-center">
+              <div class="w-3 h-3 bg-white/40 rounded-full mr-2"></div>
+              <div class="w-6 h-6 bg-white/60 rounded-full mr-2"></div>
+              <div class="w-3 h-3 bg-white/40 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        textType: 'master_heading',
+        title: lessonStructure.lesson_title,
+        content: lessonStructure.lesson_description,
+      },
+    });
+
+    // PAGE BREAK: Continue Divider (Moves to Page 2)
+    contentBlocks.push({
+      type: 'divider',
+      block_id: `ai_page_break_${lessonId}`,
+      subtype: 'continue',
+      html_css: `
+        <div class="flex items-center justify-center py-12 mb-8">
+          <div class="flex flex-col items-center space-y-6">
+            <div class="flex items-center space-x-4">
+              <div class="w-20 h-px bg-gradient-to-r from-transparent via-${gradientSchemes[1].from} to-transparent"></div>
+              <div class="w-4 h-4 bg-gradient-to-r from-${gradientSchemes[1].from} to-${gradientSchemes[1].to} rounded-full animate-pulse"></div>
+              <div class="w-32 h-px bg-gradient-to-r from-${gradientSchemes[1].from} to-${gradientSchemes[1].to}"></div>
+              <div class="w-4 h-4 bg-gradient-to-r from-${gradientSchemes[1].to} to-${gradientSchemes[1].from} rounded-full animate-pulse"></div>
+              <div class="w-20 h-px bg-gradient-to-r from-${gradientSchemes[1].to} via-transparent to-transparent"></div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-lg px-8 py-4 border border-${gradientSchemes[1].from}/20">
+              <p class="text-${gradientSchemes[1].accent} font-semibold text-lg">Continue to Next Section →</p>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        type: 'continue_divider',
+        subtype: 'continue',
+      },
+    });
+
+    // PAGE 2 CONTENT: Using ALL Content Library Types
+
+    // 1. HEADING TEXT BLOCK - Course Introduction
+    contentBlocks.push({
+      type: 'text',
+      block_id: `ai_intro_heading_${lessonId}`,
+      textType: 'heading',
+      html_css: `
+        <div class="mb-8">
+          <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome to ${lessonStructure.lesson_title}</h1>
+          <div class="w-24 h-1 bg-gradient-to-r from-${gradientSchemes[1].from} to-${gradientSchemes[1].to} rounded-full"></div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        textType: 'heading',
+        title: `Welcome to ${lessonStructure.lesson_title}`,
+        content: `Welcome to ${lessonStructure.lesson_title}`,
+      },
+    });
+
+    // 2. STATEMENT BLOCK - Important Note (statement-c type)
+    contentBlocks.push({
+      type: 'statement',
+      block_id: `ai_intro_statement_${lessonId}`,
+      statementType: 'statement-c',
+      html_css: `
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 border-l-4 border-${gradientSchemes[1].from} p-6 rounded-r-xl shadow-sm mb-8">
+          <div class="flex items-start">
+            <div class="w-8 h-8 bg-${gradientSchemes[1].from} rounded-full flex items-center justify-center mr-4 mt-1">
+              <span class="text-white text-sm font-bold">!</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">Important</h3>
+              <p class="text-gray-700 leading-relaxed">This lesson will provide you with comprehensive knowledge about ${courseData.title}. Take your time to understand each concept thoroughly.</p>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        statementType: 'statement-c',
+        content: `This lesson will provide you with comprehensive knowledge about ${courseData.title}. Take your time to understand each concept thoroughly.`,
+      },
+    });
+
+    // 3. QUOTE BLOCK - Inspirational Quote (quote_b type)
+    contentBlocks.push({
+      type: 'quote',
+      block_id: `ai_inspiration_quote_${lessonId}`,
+      textType: 'quote_b',
+      quoteType: 'quote_b',
+      html_css: `
+        <div class="text-center bg-gray-50 rounded-2xl p-12 mb-8 shadow-lg">
+          <blockquote class="text-3xl font-thin text-gray-800 mb-6 leading-relaxed italic">
+            "Learning is not attained by chance, it must be sought for with ardor and attended to with diligence."
+          </blockquote>
+          <div class="flex items-center justify-center">
+            <div class="w-12 h-px bg-${gradientSchemes[2].from} mr-4"></div>
+            <cite class="text-${gradientSchemes[2].accent} font-semibold text-lg not-italic">Abigail Adams</cite>
+            <div class="w-12 h-px bg-${gradientSchemes[2].to} ml-4"></div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        textType: 'quote_b',
+        quoteType: 'quote_b',
+        content: JSON.stringify({
+          quote:
+            'Learning is not attained by chance, it must be sought for with ardor and attended to with diligence.',
+          author: 'Abigail Adams',
+        }),
+      },
+    });
+
+    // 4. IMAGE BLOCK - AI Generated Learning Objectives Illustration
+    console.log('🖼️ Generating AI image for learning objectives...');
+    let objectivesImageUrl = null;
+    try {
+      const imageResult = await generateImage({
+        prompt: `Professional educational illustration showing learning objectives and goals for ${lessonStructure.lesson_title}. Modern, clean design with icons representing education, targets, and achievement. Bright colors, minimalist style.`,
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      });
+
+      if (imageResult.success) {
+        objectivesImageUrl = imageResult.data.url;
+        console.log('✅ Learning objectives image generated successfully');
+      }
+    } catch (imageError) {
+      console.warn(
+        '⚠️ Failed to generate objectives image:',
+        imageError.message
+      );
+    }
+
+    if (objectivesImageUrl) {
+      contentBlocks.push({
+        type: 'image',
+        block_id: `ai_objectives_image_${lessonId}`,
+        html_css: `
+          <div class="lesson-image centered mb-8">
+            <div class="text-center">
+              <img src="${objectivesImageUrl}" alt="Learning Objectives Illustration" class="w-full max-w-3xl mx-auto h-80 object-cover rounded-2xl shadow-2xl" />
+              <div class="mt-6 p-6 bg-gradient-to-r from-${gradientSchemes[3].from}/10 to-${gradientSchemes[3].to}/10 rounded-xl">
+                <h3 class="text-2xl font-bold text-${gradientSchemes[3].accent} mb-2">Learning Objectives</h3>
+                <p class="text-gray-600">Visual representation of what you'll achieve in this lesson</p>
+              </div>
+            </div>
+          </div>
+        `,
+        order: blockOrder++,
+        details: {
+          image_url: objectivesImageUrl,
+          alt_text: 'Learning Objectives Illustration',
+          caption:
+            "Visual representation of what you'll achieve in this lesson",
+          layout: 'centered',
+          aiGenerated: true,
+        },
+      });
+    }
+
+    // 5. LIST BLOCK - Learning Objectives (numbered list)
+    contentBlocks.push({
+      type: 'list',
+      block_id: `ai_objectives_list_${lessonId}`,
+      listType: 'numbered',
+      html_css: `
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[3].from} to-${gradientSchemes[3].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">🎯</span>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-800">What You'll Learn</h2>
+          </div>
+          <ol class="space-y-4">
+            ${lessonStructure.learning_objectives
+              .map(
+                (obj, index) => `
+              <li class="flex items-start">
+                <div class="w-8 h-8 bg-gradient-to-r from-${gradientSchemes[3].from} to-${gradientSchemes[3].to} rounded-full flex items-center justify-center text-white font-bold mr-4 mt-1 shadow-md">
+                  ${index + 1}
+                </div>
+                <div class="flex-1 p-4 bg-gradient-to-r from-${gradientSchemes[3].from}/5 to-${gradientSchemes[3].to}/5 rounded-xl border border-${gradientSchemes[3].from}/20">
+                  <p class="text-gray-700 leading-relaxed font-medium">${obj}</p>
+                </div>
+              </li>
+            `
+              )
+              .join('')}
+          </ol>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        listType: 'numbered',
+        content: JSON.stringify({
+          items: lessonStructure.learning_objectives,
+          listType: 'numbered',
+        }),
+      },
+    });
+
+    // 6. YOUTUBE BLOCK - Educational Video (placeholder)
+    contentBlocks.push({
+      type: 'youtube',
+      block_id: `ai_intro_video_${lessonId}`,
+      html_css: `
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">📺</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Introduction Video</h2>
+          </div>
+          <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-8 text-center border border-red-200">
+            <div class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="text-white text-3xl">▶️</span>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">Watch: ${lessonStructure.lesson_title} Overview</h3>
+            <p class="text-gray-600 mb-4">Get a quick introduction to the key concepts we'll cover</p>
+            <div class="text-sm text-gray-500">
+              <p>🎥 Duration: 5-10 minutes</p>
+              <p>📚 Level: ${courseData.level || 'Beginner'}</p>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        youtube_url: `https://www.youtube.com/watch?v=dQw4w9WgXcQ`, // Placeholder
+        youtube_title: `${lessonStructure.lesson_title} Overview`,
+        caption: `Introduction video for ${lessonStructure.lesson_title}`,
+      },
+    });
+
+    // 7. LINK BLOCK - Additional Resources
+    contentBlocks.push({
+      type: 'link',
+      block_id: `ai_resources_link_${lessonId}`,
+      html_css: `
+        <div class="bg-gradient-to-r from-${gradientSchemes[4].from}/10 to-${gradientSchemes[4].to}/10 rounded-2xl p-6 mb-8 border border-${gradientSchemes[4].from}/20">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[4].from} to-${gradientSchemes[4].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">🔗</span>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-xl font-semibold text-gray-800 mb-2">Additional Resources</h3>
+              <p class="text-gray-600 mb-3">Explore more about ${courseData.title} with these curated resources</p>
+              <a href="https://example.com" class="inline-flex items-center text-${gradientSchemes[4].accent} font-semibold hover:underline">
+                📖 Read More About ${courseData.title}
+                <span class="ml-2">→</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        link_url: 'https://example.com',
+        link_text: `Read More About ${courseData.title}`,
+        description: `Explore more about ${courseData.title} with these curated resources`,
+      },
+    });
+
+    // 8. CONTENT SECTIONS with Multiple Content Types
+    for (
+      let index = 0;
+      index < lessonStructure.content_sections.length;
+      index++
+    ) {
+      const section = lessonStructure.content_sections[index];
+      const scheme = gradientSchemes[(index + 5) % gradientSchemes.length];
+
+      // 8a. SUBHEADING TEXT BLOCK for section
+      contentBlocks.push({
+        type: 'text',
+        block_id: `ai_section_subheading_${lessonId}_${index}`,
+        textType: 'subheading',
+        html_css: `
+          <div class="mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-3">${section.title}</h2>
+            <div class="w-16 h-1 bg-gradient-to-r from-${scheme.from} to-${scheme.to} rounded-full"></div>
+          </div>
+        `,
+        order: blockOrder++,
+        details: {
+          textType: 'subheading',
+          title: section.title,
+          content: section.title,
+        },
+      });
+
+      // 8b. Generate AI Image for section
+      console.log(`🖼️ Generating AI image for section: ${section.title}...`);
+      let sectionImageUrl = null;
+      try {
+        const imageResult = await generateImage({
+          prompt: `Professional illustration for educational content about "${section.title}" in the context of ${lessonStructure.lesson_title}. Modern, clean design with relevant icons and visual elements. Educational style, bright colors.`,
+          size: '1024x1024',
+          quality: 'standard',
+          style: 'vivid',
+        });
+
+        if (imageResult.success) {
+          sectionImageUrl = imageResult.data.url;
+          console.log(`✅ Section ${index + 1} image generated successfully`);
+        }
+      } catch (imageError) {
+        console.warn(
+          `⚠️ Failed to generate section ${index + 1} image:`,
+          imageError.message
+        );
+      }
+
+      // 8c. IMAGE BLOCK with side-by-side layout
+      if (sectionImageUrl) {
+        const alignment = index % 2 === 0 ? 'left' : 'right';
+        const imageOrder = alignment === 'left' ? 'order-1' : 'order-2';
+        const textOrder = alignment === 'left' ? 'order-2' : 'order-1';
+
+        contentBlocks.push({
+          type: 'image',
+          block_id: `ai_section_image_${lessonId}_${index}`,
+          html_css: `
+            <div class="lesson-image side-by-side mb-8">
+              <div class="grid md:grid-cols-2 gap-8 items-center bg-gradient-to-r from-${scheme.from}/5 to-${scheme.to}/5 rounded-2xl p-8 border border-${scheme.from}/20">
+                <div class="${imageOrder}">
+                  <img src="${sectionImageUrl}" alt="${section.title} Illustration" class="w-full max-h-80 object-cover rounded-xl shadow-lg" />
+                </div>
+                <div class="${textOrder}">
+                  <h3 class="text-2xl font-bold text-${scheme.accent} mb-4">${section.title}</h3>
+                  <p class="text-gray-700 text-lg leading-relaxed">${section.content}</p>
+                  <div class="mt-4 inline-flex items-center text-${scheme.accent} font-semibold">
+                    <span class="w-2 h-2 bg-${scheme.from} rounded-full mr-2"></span>
+                    Key Concept
+                  </div>
+                </div>
+              </div>
+            </div>
+          `,
+          order: blockOrder++,
+          details: {
+            image_url: sectionImageUrl,
+            alt_text: `${section.title} Illustration`,
+            caption: section.content,
+            layout: 'side-by-side',
+            alignment: alignment,
+            aiGenerated: true,
+          },
+        });
+      } else {
+        // 8d. PARAGRAPH TEXT BLOCK if no image
+        contentBlocks.push({
+          type: 'text',
+          block_id: `ai_section_paragraph_${lessonId}_${index}`,
+          textType: 'paragraph',
+          html_css: `
+            <div class="bg-gradient-to-r from-${scheme.from}/5 to-${scheme.to}/5 rounded-2xl p-8 mb-8 border border-${scheme.from}/20">
+              <p class="text-gray-700 leading-relaxed text-lg font-medium">${section.content}</p>
+            </div>
+          `,
+          order: blockOrder++,
+          details: {
+            textType: 'paragraph',
+            content: section.content,
+          },
+        });
+      }
+    }
+
+    // 9. TABLE BLOCK - Comparison or Summary Table
+    contentBlocks.push({
+      type: 'tables',
+      block_id: `ai_summary_table_${lessonId}`,
+      html_css: `
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[5].from} to-${gradientSchemes[5].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">📊</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Key Concepts Summary</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="bg-gradient-to-r from-${gradientSchemes[5].from}/10 to-${gradientSchemes[5].to}/10">
+                  <th class="border border-${gradientSchemes[5].from}/20 p-4 text-left font-semibold text-gray-800">Concept</th>
+                  <th class="border border-${gradientSchemes[5].from}/20 p-4 text-left font-semibold text-gray-800">Description</th>
+                  <th class="border border-${gradientSchemes[5].from}/20 p-4 text-left font-semibold text-gray-800">Importance</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${lessonStructure.content_sections
+                  .map(
+                    (section, index) => `
+                  <tr class="${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}">
+                    <td class="border border-gray-200 p-4 font-medium text-${gradientSchemes[5].accent}">${section.title}</td>
+                    <td class="border border-gray-200 p-4 text-gray-700">${section.content.substring(0, 100)}...</td>
+                    <td class="border border-gray-200 p-4">
+                      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-${gradientSchemes[5].from}/10 text-${gradientSchemes[5].accent}">
+                        Essential
+                      </span>
+                    </td>
+                  </tr>
+                `
+                  )
+                  .join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        table_data: {
+          headers: ['Concept', 'Description', 'Importance'],
+          rows: lessonStructure.content_sections.map(section => [
+            section.title,
+            section.content.substring(0, 100) + '...',
+            'Essential',
+          ]),
+        },
+      },
+    });
+
+    // 10. AUDIO BLOCK - Podcast or Audio Summary
+    contentBlocks.push({
+      type: 'audio',
+      block_id: `ai_audio_summary_${lessonId}`,
+      html_css: `
+        <div class="bg-gradient-to-r from-${gradientSchemes[6].from}/10 to-${gradientSchemes[6].to}/10 rounded-2xl p-8 mb-8 border border-${gradientSchemes[6].from}/20">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[6].from} to-${gradientSchemes[6].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">🎧</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Audio Summary</h2>
+          </div>
+          <div class="bg-white rounded-xl p-6 border border-${gradientSchemes[6].from}/20">
+            <div class="flex items-center space-x-4 mb-4">
+              <div class="w-16 h-16 bg-gradient-to-r from-${gradientSchemes[6].from} to-${gradientSchemes[6].to} rounded-full flex items-center justify-center">
+                <span class="text-white text-2xl">🎵</span>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-800">${lessonStructure.lesson_title} - Audio Summary</h3>
+                <p class="text-gray-600">Listen to a comprehensive overview of this lesson</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-4 text-sm text-gray-500">
+              <span>🎙️ Duration: 10-15 minutes</span>
+              <span>📱 Available offline</span>
+              <span>🔊 High quality audio</span>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        audio_url: 'https://example.com/audio.mp3', // Placeholder
+        audio_title: `${lessonStructure.lesson_title} - Audio Summary`,
+        description: 'Listen to a comprehensive overview of this lesson',
+      },
+    });
+
+    // 11. REGULAR DIVIDER - Visual Separation
+    contentBlocks.push({
+      type: 'divider',
+      block_id: `ai_divider_${lessonId}`,
+      html_css: `
+        <div class="flex items-center justify-center py-8 mb-8">
+          <div class="flex items-center space-x-4">
+            <div class="w-16 h-px bg-gradient-to-r from-transparent via-${gradientSchemes[7].from} to-transparent"></div>
+            <div class="w-3 h-3 bg-gradient-to-r from-${gradientSchemes[7].from} to-${gradientSchemes[7].to} rounded-full"></div>
+            <div class="w-24 h-px bg-gradient-to-r from-${gradientSchemes[7].from} to-${gradientSchemes[7].to}"></div>
+            <div class="w-3 h-3 bg-gradient-to-r from-${gradientSchemes[7].to} to-${gradientSchemes[7].from} rounded-full"></div>
+            <div class="w-16 h-px bg-gradient-to-r from-${gradientSchemes[7].to} via-transparent to-transparent"></div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: { type: 'divider' },
+    });
+
+    // 12. CHECKBOX LIST BLOCK - Interactive Checklist
+    contentBlocks.push({
+      type: 'list',
+      block_id: `ai_checklist_${lessonId}`,
+      listType: 'checkbox',
+      html_css: `
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[0].from} to-${gradientSchemes[0].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">✅</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Learning Checklist</h2>
+          </div>
+          <div class="space-y-4">
+            ${lessonStructure.key_takeaways
+              .map(
+                (takeaway, index) => `
+              <div class="flex items-start space-x-4 p-4 bg-gradient-to-r from-${gradientSchemes[0].from}/5 to-${gradientSchemes[0].to}/5 rounded-xl border border-${gradientSchemes[0].from}/20 hover:shadow-md transition-all duration-300">
+                <input type="checkbox" class="w-5 h-5 text-${gradientSchemes[0].from} rounded border-gray-300 focus:ring-${gradientSchemes[0].from} mt-1" />
+                <div class="flex-1">
+                  <label class="text-gray-700 leading-relaxed font-medium cursor-pointer">${takeaway}</label>
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        listType: 'checkbox',
+        content: JSON.stringify({
+          items: lessonStructure.key_takeaways,
+          listType: 'checkbox',
+          checkedItems: {},
+        }),
+      },
+    });
+
+    // 13. PDF BLOCK - Downloadable Resource
+    contentBlocks.push({
+      type: 'pdf',
+      block_id: `ai_pdf_resource_${lessonId}`,
+      html_css: `
+        <div class="bg-gradient-to-r from-${gradientSchemes[1].from}/10 to-${gradientSchemes[1].to}/10 rounded-2xl p-8 mb-8 border border-${gradientSchemes[1].from}/20">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[1].from} to-${gradientSchemes[1].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">📄</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Study Guide</h2>
+          </div>
+          <div class="bg-white rounded-xl p-6 border border-${gradientSchemes[1].from}/20">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <div class="w-16 h-20 bg-gradient-to-b from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md">
+                  <span class="text-white font-bold text-sm">PDF</span>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-800">${lessonStructure.lesson_title} - Study Guide</h3>
+                  <p class="text-gray-600">Comprehensive notes and key points</p>
+                  <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                    <span>📄 5 pages</span>
+                    <span>📥 Downloadable</span>
+                    <span>🖨️ Print-friendly</span>
+                  </div>
+                </div>
+              </div>
+              <button class="bg-gradient-to-r from-${gradientSchemes[1].from} to-${gradientSchemes[1].to} text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
+                Download PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        pdf_url: 'https://example.com/study-guide.pdf', // Placeholder
+        pdf_title: `${lessonStructure.lesson_title} - Study Guide`,
+        description: 'Comprehensive notes and key points',
+      },
+    });
+
+    // 14. VIDEO BLOCK - Educational Video
+    contentBlocks.push({
+      type: 'video',
+      block_id: `ai_video_demo_${lessonId}`,
+      html_css: `
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 bg-gradient-to-r from-${gradientSchemes[2].from} to-${gradientSchemes[2].to} rounded-xl flex items-center justify-center mr-4 shadow-lg">
+              <span class="text-white text-xl">🎬</span>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Practical Demonstration</h2>
+          </div>
+          <div class="bg-gradient-to-r from-${gradientSchemes[2].from}/5 to-${gradientSchemes[2].to}/5 rounded-xl p-8 text-center border border-${gradientSchemes[2].from}/20">
+            <div class="w-24 h-24 bg-gradient-to-r from-${gradientSchemes[2].from} to-${gradientSchemes[2].to} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+              <span class="text-white text-4xl">▶️</span>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">Watch: ${lessonStructure.lesson_title} in Action</h3>
+            <p class="text-gray-600 mb-4">See practical applications and real-world examples</p>
+            <div class="flex items-center justify-center space-x-6 text-sm text-gray-500">
+              <span>🎥 HD Quality</span>
+              <span>⏱️ 15-20 minutes</span>
+              <span>📱 Mobile friendly</span>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        video_url: 'https://example.com/demo-video.mp4', // Placeholder
+        video_title: `${lessonStructure.lesson_title} in Action`,
+        description: 'See practical applications and real-world examples',
+      },
+    });
+
+    // 15. QUOTE BLOCK - Expert Quote (quote_a type)
+    contentBlocks.push({
+      type: 'quote',
+      block_id: `ai_expert_quote_${lessonId}`,
+      textType: 'quote_a',
+      quoteType: 'quote_a',
+      html_css: `
+        <div class="relative bg-gradient-to-br from-gray-50 to-white p-8 max-w-4xl mx-auto rounded-2xl shadow-lg border border-gray-100 mb-8">
+          <div class="flex items-start space-x-4">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" alt="Expert" class="w-12 h-12 rounded-full object-cover shadow-md" />
+            <div class="flex-1">
+              <blockquote class="text-lg text-gray-700 mb-3 leading-relaxed italic">
+                "Mastering ${courseData.title} is essential for anyone looking to excel in today's technology-driven world. The concepts covered in this lesson form the foundation for advanced learning."
+              </blockquote>
+              <div class="flex items-center">
+                <div class="w-8 h-px bg-${gradientSchemes[3].from} mr-3"></div>
+                <cite class="text-${gradientSchemes[3].accent} font-semibold not-italic">Dr. Sarah Johnson, Technology Expert</cite>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        textType: 'quote_a',
+        quoteType: 'quote_a',
+        content: JSON.stringify({
+          quote: `Mastering ${courseData.title} is essential for anyone looking to excel in today's technology-driven world. The concepts covered in this lesson form the foundation for advanced learning.`,
+          author: 'Dr. Sarah Johnson, Technology Expert',
+          authorImage:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+        }),
+      },
+    });
+
+    // 5. Examples Block - Interactive Style
+    if (lessonStructure.examples && lessonStructure.examples.length > 0) {
+      contentBlocks.push({
+        type: 'interactive',
+        block_id: `ai_examples_${lessonId}`,
+        html_css: `
+          <div class="relative bg-gradient-to-br from-${gradientSchemes[3].from}/5 via-white to-${gradientSchemes[3].to}/5 rounded-2xl shadow-xl p-8 mb-8 border border-${gradientSchemes[3].from}/20">
+            <div class="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-${gradientSchemes[3].from}/10 to-${gradientSchemes[3].to}/10 rounded-full"></div>
+            <div class="relative z-10">
+              <div class="flex items-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-r from-${gradientSchemes[3].from} to-${gradientSchemes[3].to} rounded-2xl flex items-center justify-center mr-6 shadow-xl">
+                  <span class="text-white text-2xl">💡</span>
+                </div>
+                <div>
+                  <h2 class="text-3xl font-bold text-gray-800 mb-2">Practical Examples</h2>
+                  <p class="text-gray-600">Real-world applications and use cases</p>
+                </div>
+              </div>
+              <div class="grid gap-6">
+                ${lessonStructure.examples
+                  .map(
+                    (example, index) => `
+                  <div class="group relative bg-white rounded-xl p-6 border border-gray-200 hover:border-${gradientSchemes[3].from}/30 hover:shadow-lg transition-all duration-300">
+                    <div class="flex items-start">
+                      <div class="w-10 h-10 bg-gradient-to-r from-${gradientSchemes[3].from} to-${gradientSchemes[3].to} rounded-xl flex items-center justify-center text-white font-bold mr-4 shadow-md group-hover:scale-110 transition-transform duration-300">
+                        ${index + 1}
+                      </div>
+                      <div class="flex-1">
+                        <p class="text-gray-700 leading-relaxed font-medium">${example}</p>
+                      </div>
+                    </div>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+            </div>
+          </div>
+        `,
+        order: blockOrder++,
+        details: {
+          type: 'examples',
+          content: lessonStructure.examples.join('\n'),
+        },
+      });
+    }
+
+    // 6. Key Takeaways - Statement Block Style
+    contentBlocks.push({
+      type: 'statement',
+      block_id: `ai_takeaways_${lessonId}`,
+      statementType: 'statement-success',
+      html_css: `
+        <div class="relative bg-gradient-to-br from-${gradientSchemes[4].from} via-${gradientSchemes[4].via} to-${gradientSchemes[4].to} rounded-3xl shadow-2xl p-10 mb-8 text-white overflow-hidden">
+          <div class="absolute top-0 left-0 w-full h-full bg-black/10 rounded-3xl"></div>
+          <div class="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full animate-pulse"></div>
+          <div class="absolute -bottom-12 -left-12 w-36 h-36 bg-white/5 rounded-full"></div>
+          <div class="absolute top-1/3 right-1/4 w-20 h-20 bg-white/5 rounded-full"></div>
+          <div class="relative z-10">
+            <div class="flex items-center mb-8">
+              <div class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mr-8 backdrop-blur-sm shadow-xl">
+                <span class="text-4xl">✨</span>
+              </div>
+              <div>
+                <h2 class="text-4xl font-bold mb-3">Key Takeaways</h2>
+                <p class="text-white/80 text-lg">Essential points to remember from this lesson</p>
+              </div>
+            </div>
+            <div class="grid gap-6">
+              ${lessonStructure.key_takeaways
+                .map(
+                  (takeaway, index) => `
+                <div class="flex items-start p-6 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 hover:bg-white/15 hover:scale-105 transition-all duration-300 shadow-lg">
+                  <div class="w-10 h-10 bg-white/30 rounded-full flex items-center justify-center text-white font-bold mr-6 mt-1 shadow-md">
+                    ✓
+                  </div>
+                  <p class="text-white font-medium leading-relaxed text-lg">${takeaway}</p>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+            <div class="mt-8 text-center">
+              <div class="inline-flex items-center space-x-2 bg-white/10 rounded-full px-6 py-3 backdrop-blur-sm">
+                <span class="text-white/80 text-sm font-medium">Lesson Complete</span>
+                <div class="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        statementType: 'statement-success',
+        type: 'takeaways',
+        content: lessonStructure.key_takeaways.join('\n'),
+      },
+    });
+
+    // FINAL DIVIDER: End of Lesson Divider
+    contentBlocks.push({
+      type: 'divider',
+      block_id: `ai_final_divider_${lessonId}`,
+      html_css: `
+        <div class="flex flex-col items-center justify-center py-16 mb-8">
+          <div class="flex items-center space-x-6 mb-8">
+            <div class="w-24 h-px bg-gradient-to-r from-transparent via-${gradientSchemes[5].from} to-${gradientSchemes[5].to}"></div>
+            <div class="w-6 h-6 bg-gradient-to-r from-${gradientSchemes[5].from} to-${gradientSchemes[5].to} rounded-full shadow-lg animate-pulse"></div>
+            <div class="w-40 h-px bg-gradient-to-r from-${gradientSchemes[5].from} via-${gradientSchemes[5].via} to-${gradientSchemes[5].to}"></div>
+            <div class="w-6 h-6 bg-gradient-to-r from-${gradientSchemes[5].to} to-${gradientSchemes[5].from} rounded-full shadow-lg animate-pulse"></div>
+            <div class="w-24 h-px bg-gradient-to-r from-${gradientSchemes[5].to} via-${gradientSchemes[5].from} to-transparent"></div>
+          </div>
+          <div class="bg-gradient-to-r from-${gradientSchemes[5].from} to-${gradientSchemes[5].to} rounded-2xl shadow-xl px-12 py-6 text-white">
+            <div class="flex items-center space-x-4">
+              <span class="text-2xl">🎉</span>
+              <div>
+                <h3 class="text-2xl font-bold">Congratulations!</h3>
+                <p class="text-white/90">You've completed this lesson</p>
+              </div>
+              <span class="text-2xl">🎓</span>
+            </div>
+          </div>
+          <div class="mt-8 flex items-center space-x-3">
+            <div class="w-3 h-3 bg-${gradientSchemes[5].from} rounded-full"></div>
+            <div class="w-2 h-2 bg-${gradientSchemes[5].via} rounded-full"></div>
+            <div class="w-4 h-4 bg-${gradientSchemes[5].to} rounded-full"></div>
+            <div class="w-2 h-2 bg-${gradientSchemes[5].via} rounded-full"></div>
+            <div class="w-3 h-3 bg-${gradientSchemes[5].from} rounded-full"></div>
+          </div>
+        </div>
+      `,
+      order: blockOrder++,
+      details: {
+        type: 'final_divider',
+        purpose: 'lesson_completion',
+      },
+    });
+
+    // Step 6: Save Content Blocks to Lesson
+    console.log('💾 Step 6: Saving content blocks to lesson...');
+    const contentData = {
+      content: contentBlocks,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        totalBlocks: contentBlocks.length,
+        aiGenerated: true,
+        lessonStructure: lessonStructure,
+      },
+    };
+
+    await updateLessonContent(lessonId, contentData);
+    console.log('✅ Lesson content blocks saved');
+
+    const result = {
+      success: true,
+      data: {
+        courseId,
+        moduleId,
+        lessonId,
+        course: course,
+        module: module,
+        lesson: lesson,
+        contentBlocks: contentBlocks.length,
+        lessonStructure: lessonStructure,
+        editUrl: `/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/builder`,
+      },
+    };
+
+    console.log('🎉 Simple AI course created successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error creating simple AI course:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null,
     };
   }
 }

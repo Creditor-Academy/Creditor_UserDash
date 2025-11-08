@@ -10,7 +10,7 @@ const faqs = [
   },
   {
     id: 2,
-    q: 'How can Coaching and Webinars be priced??',
+    q: 'How can Coaching and Webinars be priced?',
     a: `A coaching session or webinar can be offered for free or for purchase at checkout.`,
   },
   {

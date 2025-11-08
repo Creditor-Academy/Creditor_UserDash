@@ -249,8 +249,18 @@ const CourseLessonsPage = () => {
   };
 
   // Helper function to format duration
-  const formatDuration = minutes => {
-    if (!minutes) return '00:00:00';
+  const formatDuration = duration => {
+    if (!duration) return '00:00:00';
+
+    // If duration is a string (e.g., "4 weeks", "3 months"), return it as-is
+    if (typeof duration === 'string') {
+      return duration;
+    }
+
+    // If duration is a number, treat it as minutes and format as HH:MM:SS
+    const minutes = Number(duration);
+    if (isNaN(minutes)) return '00:00:00';
+
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}:00`;
@@ -328,37 +338,33 @@ const CourseLessonsPage = () => {
           <div className="h-10 bg-gray-200 rounded-md w-full max-w-md animate-pulse"></div>
         </div>
 
-        <div className="space-y-8">
-          {[1, 2, 3].map(index => (
-            <Card key={index} className="overflow-hidden">
-              <div className="flex">
-                {/* Shimmer Image */}
-                <div className="w-48 flex-shrink-0 bg-gray-200 animate-pulse"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3, 4, 5, 6].map(index => (
+            <Card key={index} className="overflow-hidden flex flex-col h-full">
+              {/* Shimmer Image */}
+              <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
 
-                {/* Shimmer Content */}
-                <div className="flex-1 p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 space-y-4">
-                      {/* Title shimmer */}
-                      <div className="h-6 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+              {/* Shimmer Content */}
+              <div className="flex-1 p-6 flex flex-col">
+                <div className="flex-1 space-y-4">
+                  {/* Title shimmer */}
+                  <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
 
-                      {/* Description shimmer */}
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
-                      </div>
+                  {/* Description shimmer */}
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                  </div>
 
-                      {/* Stats shimmer */}
-                      <div className="flex items-center gap-6">
-                        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
-                        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                      </div>
-                    </div>
-
-                    {/* Button shimmer */}
-                    <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+                  {/* Stats shimmer */}
+                  <div className="flex items-center gap-4">
+                    <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
                   </div>
                 </div>
+
+                {/* Button shimmer */}
+                <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse mt-4"></div>
               </div>
             </Card>
           ))}
@@ -409,80 +415,76 @@ const CourseLessonsPage = () => {
           <p className="text-gray-500">Try a different search term.</p>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedCourses.map(course => (
             <div key={course.id} className="space-y-4">
               {/* Course Card */}
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                <div className="flex">
-                  {/* Course Image */}
-                  <div className="w-48 flex-shrink-0">
-                    <img
-                      src={
-                        course.thumbnail ||
-                        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80'
-                      }
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+              <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 flex flex-col h-full">
+                {/* Course Image */}
+                <div className="w-full h-48 flex-shrink-0">
+                  <img
+                    src={
+                      course.thumbnail ||
+                      'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80'
+                    }
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
 
-                  {/* Course Content */}
-                  <div className="flex-1 p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">
-                          {course.title}
-                        </h3>
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                          {course.description}
-                        </p>
+                {/* Course Content */}
+                <div className="flex-1 p-6 flex flex-col">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {course.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {course.description}
+                    </p>
 
-                        {/* Course Stats */}
-                        <div className="flex items-center gap-6 mb-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {formatDuration(course.estimated_duration || 60)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{course.moduleCount || 0} modules</span>
-                          </div>
-                        </div>
+                    {/* Course Stats */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {formatDuration(course.estimated_duration || 60)}
+                        </span>
                       </div>
-
-                      {/* View Modules Button */}
-                      <Button
-                        onClick={() =>
-                          navigate(`/instructor/courses/${course.id}/modules`, {
-                            state: {
-                              courseData: {
-                                id: course.id,
-                                title: course.title,
-                                description: course.description,
-                                estimated_duration: course.estimated_duration,
-                                course_level: course.course_level,
-                                course_status: course.course_status,
-                                thumbnail: course.thumbnail,
-                                moduleCount: course.moduleCount,
-                              },
-                            },
-                          })
-                        }
-                        className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
-                      >
-                        View Modules
-                      </Button>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <BookOpen className="h-4 w-4" />
+                        <span>{course.moduleCount || 0} modules</span>
+                      </div>
                     </div>
                   </div>
+
+                  {/* View Modules Button */}
+                  <Button
+                    onClick={() =>
+                      navigate(`/instructor/courses/${course.id}/modules`, {
+                        state: {
+                          courseData: {
+                            id: course.id,
+                            title: course.title,
+                            description: course.description,
+                            estimated_duration: course.estimated_duration,
+                            course_level: course.course_level,
+                            course_status: course.course_status,
+                            thumbnail: course.thumbnail,
+                            moduleCount: course.moduleCount,
+                          },
+                        },
+                      })
+                    }
+                    className="w-full px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                  >
+                    View Modules
+                  </Button>
                 </div>
               </Card>
 
               {/* Modules Section */}
               {expandedCourseId === course.id && (
-                <div className="ml-8 space-y-4">
+                <div className="col-span-full space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-lg font-semibold text-gray-800">
                       Course Modules

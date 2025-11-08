@@ -1,221 +1,344 @@
-import React from "react";
-import { FaLinkedin, FaInstagram, FaFacebook, FaGithub, FaTiktok } from "react-icons/fa";
+import React from 'react';
+import { FaLinkedin, FaInstagram, FaFacebook, FaGithub } from 'react-icons/fa';
+
+/**
+ * Redesigned responsive footer:
+ * Desktop columns (left → right): [Athena heading] [About] [Address & Phone] [Useful Links]
+ * Bottom bar: [Condensed links] [© + Social icons]
+ * Palette preserved. Accessibility & small typos fixed.
+ */
 
 const styles = {
   footer: {
-    background: "linear-gradient(180deg, #e3f0fc 60%, #e0f2fc 100%)",
-    color: "#225e95",
-    fontFamily: "inherit",
-    fontSize: "1.07rem",
-    borderRadius: "16px 16px 0 0",
-    overflow: "hidden",
+    background: 'linear-gradient(180deg, #e3f0fc 60%, #e0f2fc 100%)',
+    color: '#225e95',
+    fontFamily: 'inherit',
+    fontSize: '1.03rem',
+    borderRadius: '16px 16px 0 0',
+    overflow: 'hidden',
   },
-  topSection: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    padding: "48px 60px 24px 60px",
-    flexWrap: "wrap",
-    gap: "32px",
+  container: {
+    display: 'flex',
+    gap: 32,
+    padding: '40px 64px',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
-  column: {
-    flex: "1",
-    minWidth: 220,
-    marginBottom: 24,
+  col: {
+    flex: 1,
+    minWidth: 200,
   },
-  company: {
-    flex: "2",
-    minWidth: 260,
-    marginBottom: 24,
+  brand: {
+    fontSize: '1.9rem',
+    fontWeight: 700,
+    color: '#225e95',
+    marginBottom: 8,
+  },
+  tagline: {
+    color: '#225e95',
+    lineHeight: 1.45,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontWeight: 'bold',
-    fontSize: "1.3rem",
-    marginBottom: 12,
-    borderBottom: "3px solid #57a7e8",
-    width: "fit-content"
+    fontWeight: 700,
+    fontSize: '1.15rem',
+    marginBottom: 10,
+    color: '#225e95',
   },
-  subscribeBox: {
-    background: "#e9f7ff",
-    padding: "32px 0",
-    borderTop: "1.5px solid #bee7fc",
-    borderBottom: "1.5px solid #bee7fc",
-    textAlign: "center"
+  link: {
+    color: '#1890d7',
+    textDecoration: 'none',
+    display: 'inline-block',
+    marginBottom: 8,
+    fontWeight: 500,
   },
-  subscribeForm: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    maxWidth: 540,
-    margin: "0 auto"
+  address: {
+    color: '#225e95',
+    lineHeight: 1.5,
   },
-  input: {
-    flex: 1,
-    fontSize: "1rem",
-    padding: "13px 16px",
-    border: "1.5px solid #b2cef1",
-    borderRadius: "8px 0 0 8px",
-    outline: "none"
+  bottomBar: {
+    borderTop: '1px solid rgba(21,94,149,0.08)',
+    padding: '14px 64px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
   },
-  button: {
-    background: "#1890d7",
-    color: "#fff",
-    fontWeight: "bold",
-    border: "none",
-    padding: "13px 40px",
-    fontSize: "1rem",
-    borderRadius: "0 8px 8px 0",
-    cursor: "pointer"
+  bottomLeft: {
+    display: 'flex',
+    gap: 24,
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
-  bottomSection: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "20px 0 16px 0",
-    color: "#225e95"
+  copyright: {
+    color: '#225e95',
+    fontSize: '0.96rem',
   },
-  social: {
-    marginBottom: 12,
-    display: "flex",
-    gap: "18px"
+  socialRow: {
+    display: 'flex',
+    gap: 14,
+    alignItems: 'center',
   },
   socialIcon: {
-    color: "#1890d7",
-    fontSize: "2rem",
-    verticalAlign: "middle"
+    color: '#1890d7',
+    fontSize: '1.4rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  footerLinks: {
-    display: "flex",
-    gap: "18px",
-    marginTop: "8px"
+  condensedLinks: {
+    display: 'flex',
+    gap: 12,
+    alignItems: 'center',
   },
-  footerLink: {
-    color: "#1890d7",
-    fontSize: "1.05rem",
-    textDecoration: "none",
-    fontWeight: 500
-  },
-  // Responsive styles
-  '@media (max-width: 900px)': {
-    topSection: {
-      flexDirection: "column",
-      padding: "32px 16px 16px 16px",
-      gap: "0",
-    },
-    company: {
-      marginBottom: 32,
-    },
-    column: {
-      marginBottom: 32,
-    }
-  }
 };
 
 const Footer = () => (
-  <footer style={styles.footer}>
-    {/* Top Footer Section */}
-    <div style={styles.topSection}>
-      {/* Company */}
-      <div style={styles.company}>
-        <div style={{ fontWeight: "bold", fontSize: "2rem", color: "#225e95", marginBottom: 12 }}>
-          Athena LMS
+  <footer
+    style={styles.footer}
+    aria-label="Athena LMS site footer"
+    className="athena-footer"
+    role="contentinfo"
+  >
+    <style>{`
+      /* Focus & hover styles for accessibility */
+      .athena-footer a:focus, .athena-footer a:hover { text-decoration: underline; outline: none; }
+      .athena-footer .social-anchor { transition: transform .16s ease, opacity .16s ease; opacity: 0.95; }
+      .athena-footer .social-anchor:hover, .athena-footer .social-anchor:focus { transform: translateY(-3px) scale(1.06); opacity: 1; }
+
+      /* Container width adjustments */
+      .athena-footer-container { max-width: 1280px; margin: 0 auto; }
+
+      /* Responsive layout: stack columns on small screens */
+      @media (max-width: 880px) {
+        .athena-footer-container { padding-left: 20px; padding-right: 20px; }
+        .athena-footer .columns { padding: 28px 0; gap: 18px; }
+        .athena-footer .brand-col { order: -1; }
+      }
+
+      @media (max-width: 680px) {
+        .athena-footer .columns { flex-direction: column; padding: 18px 0; gap: 14px; }
+        .athena-footer .columns > div { flex: 1 1 100% !important; min-width: 0 !important; }
+        .athena-footer .brand-col { text-align: left; }
+        .athena-footer .bottom { padding: 12px 16px; flex-direction: column-reverse; align-items: stretch; gap: 12px; }
+        .athena-footer .bottom .right { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .athena-footer .bottom .left { width: 100%; }
+        .athena-footer .social-anchor { font-size: 1.25rem !important; }
+        .athena-footer .footer-link { font-size: 0.98rem; }
+      }
+
+      @media (max-width: 480px) {
+        .athena-footer .brand { font-size: 1.6rem; }
+        .athena-footer .condensed-links { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .athena-footer .columns { gap: 12px; }
+        .athena-footer .sectionTitle { font-size: 1.05rem; }
+        .athena-footer a { word-break: break-word; }
+      }
+    `}</style>
+
+    <div
+      className="athena-footer-container"
+      style={{ maxWidth: 1280, margin: '0 auto' }}
+    >
+      <div className="athena-footer columns" style={styles.container}>
+        {/* Column 1 - Brand / Athena heading */}
+        <div className="brand-col" style={{ ...styles.col, flex: '0 0 260px' }}>
+          <div className="brand" style={styles.brand}>
+            Athena LMS
+          </div>
+          <div className="tagline" style={styles.tagline}>
+            Transforming education through innovative technology and
+            personalized learning experiences.
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <a href="/about" style={styles.link} className="footer-link">
+              About Athena
+            </a>
+          </div>
         </div>
-        <div style={{ color: "#225e95", marginBottom: 20, lineHeight: 1.5 }}>
-          Transforming education through innovative technology and personalized learning experiences.
+
+        {/* Column 2 - Office */}
+        <div style={styles.col} aria-labelledby="footer-office">
+          <div id="footer-office" style={styles.sectionTitle}>
+            Office
+          </div>
+          <address style={styles.address}>
+            LMS Athena
+            <br />
+            Kirkland, Washington, USA
+            <br />
+            <br />
+            GF-41, Omaxe Square, Jasola District Centre,Opposite Apollo Hospital
+            <br />
+            New Delhi - 110025
+          </address>
+
+          <div style={{ marginTop: 10, fontWeight: 600 }}>
+            <a href="mailto:counselor@lmsathena.com" style={styles.link}>
+              counselor@lmsathena.com
+            </a>
+          </div>
+
+          <div style={{ marginTop: 6 }}>
+            <a
+              href="tel:+919818238969"
+              style={{ ...styles.link, color: '#225e95' }}
+            >
+              +91 98182 38969
+            </a>
+          </div>
         </div>
-        <div style={{ fontWeight: 'bold', marginBottom: 2 }}>LMSAthena</div>
-        Kirkland Washington, USA<br /><br />
-        GF-41, Omaxe Square, Jasola District Centre<br />
-        New Delhi-25<br /><br />
-        <a href="mailto:counselor@lmsathena.com" style={{ color: "#1b70fc", fontWeight: 600, textDecoration: "none" }}>
-          counselor@lmsathena.com
-        </a>
-        <br />+91 9818238969
-        <div style={{ marginTop: 14, display: "flex", alignItems: "center" }}>
-          <span style={{
-            height: ".9em", width: ".9em", borderRadius: "50%", background: "#1bdb58",
-            display: "inline-block", marginRight: 6
-          }}></span>
-          Monday - Friday: 9:00 AM to 5:00 PM EST
+
+        {/* Column 3 - Links */}
+        <div style={styles.col} aria-labelledby="footer-links-main">
+          <div id="footer-links-main" style={styles.sectionTitle}>
+            Links
+          </div>
+          <nav aria-label="Main links">
+            <div>
+              <a
+                href="/instructionaldesign"
+                style={styles.link}
+                className="footer-link"
+              >
+                Solutions
+              </a>
+            </div>
+            <div>
+              <a href="/contact" style={styles.link} className="footer-link">
+                Contact
+              </a>
+            </div>
+            <div>
+              <a href="/website" style={styles.link} className="footer-link">
+                Website
+              </a>
+            </div>
+            <div>
+              <a href="/pricing" style={styles.link} className="footer-link">
+                Pricing
+              </a>
+            </div>
+          </nav>
+        </div>
+
+        {/* Column 4 - Useful Links */}
+        <div
+          style={{ ...styles.col, flex: '0 0 220px' }}
+          aria-labelledby="footer-links"
+        >
+          <div id="footer-links" style={styles.sectionTitle}>
+            Useful Links
+          </div>
+          <nav aria-label="Useful links">
+            <div>
+              <a
+                href="/term-athena"
+                style={styles.link}
+                className="footer-link"
+              >
+                Terms
+              </a>
+            </div>
+            <div>
+              <a
+                href="/privacy-athena"
+                style={styles.link}
+                className="footer-link"
+              >
+                Privacy
+              </a>
+            </div>
+            <div>
+              <a href="/cookies" style={styles.link} className="footer-link">
+                Cookies
+              </a>
+            </div>
+            <div>
+              <a href="/sitemap" style={styles.link} className="footer-link">
+                Sitemap
+              </a>
+            </div>
+          </nav>
         </div>
       </div>
-      {/* Solutions */}
-      <div style={styles.column}>
-        <div style={styles.sectionTitle}>Solutions</div>
-        <div style={{ marginBottom: 8 }}>Virtual Classroom</div>
-        <div style={{ marginBottom: 8 }}>Collaboration</div>
-        <div style={{ marginBottom: 8 }}>
-          <span style={{ color: "#435cd2", fontWeight: "bold" }}>&#8594; Analytics</span>
+
+      {/* Bottom bar */}
+      <div className="athena-footer bottom" style={styles.bottomBar}>
+        <div style={styles.bottomLeft} className="left">
+          <nav
+            className="condensed-links"
+            aria-label="footer quick links"
+            style={styles.condensedLinks}
+          >
+            <a href="/privacy-athena" style={styles.link}>
+              Privacy
+            </a>
+            <a href="/term-athena" style={styles.link}>
+              Terms
+            </a>
+            <a href="/cookies" style={styles.link}>
+              Cookies
+            </a>
+          </nav>
         </div>
-        <div style={{ marginBottom: 8 }}>Content Management</div>
-      </div>
-      {/* About */}
-      <div style={styles.column}>
-        <div style={styles.sectionTitle}>About</div>
-        <div style={{ marginBottom: 8 }}>Contact</div>
-        <div style={{ marginBottom: 8 }}>Careers</div>
-        <div style={{ marginBottom: 8 }}>Our Team</div>
-        <div style={{ marginBottom: 8 }}>Press</div>
-      </div>
-      {/* Locations and Language */}
-      <div style={styles.column}>
-        <div style={styles.sectionTitle}>Locations</div>
-        <div style={{ marginBottom: 8 }}>All Locations</div>
-        <div style={{ marginBottom: 8 }}>Remote</div>
-        <div style={{ fontWeight: 'bold', marginTop: 22, marginBottom: 6 }}>
-          Language
+
+        <div
+          className="right"
+          style={{ display: 'flex', alignItems: 'center', gap: 18 }}
+        >
+          <div style={styles.copyright}>
+            © 2025 Athena LMS. All rights reserved.
+          </div>
+
+          <div style={styles.socialRow} aria-label="social links">
+            <a
+              className="social-anchor"
+              href="https://www.linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn"
+              style={styles.socialIcon}
+            >
+              <FaLinkedin />
+            </a>
+            <a
+              className="social-anchor"
+              href="https://www.instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              style={styles.socialIcon}
+            >
+              <FaInstagram />
+            </a>
+            <a
+              className="social-anchor"
+              href="https://www.facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              style={styles.socialIcon}
+            >
+              <FaFacebook />
+            </a>
+            {/* <a
+              className="social-anchor"
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub"
+              style={styles.socialIcon}
+            >
+              <FaGithub />
+            </a> */}
+          </div>
         </div>
-        <div style={{
-          border: "1.5px solid #88b7e8", borderRadius: "10px", display: "flex",
-          alignItems: "center", padding: "6px 12px", maxWidth: 140, cursor: "pointer", color: "#225e95"
-        }}>
-          <span role="img" aria-label="globe" style={{ marginRight: 7 }}>🌐</span>
-          English
-          <span style={{ marginLeft: "auto", marginRight: 0, fontSize: "1.2em" }}>▼</span>
-        </div>
-      </div>
-    </div>
-    {/* Middle Subscribe Box */}
-    <div style={styles.subscribeBox}>
-      <div style={{ fontWeight: "bold", fontSize: "1.25rem", color: "#225e95", marginBottom: 6 }}>
-        Stay updated with Athena LMS
-      </div>
-      <div style={{ marginBottom: 18 }}>
-        Subscribe to our newsletter for the latest updates and features
-      </div>
-      <form style={styles.subscribeForm} onSubmit={e => e.preventDefault()}>
-        <input
-          type="email"
-          placeholder="Your email address"
-          style={styles.input}
-        />
-        <button style={styles.button}>
-          Subscribe
-        </button>
-      </form>
-    </div>
-    {/* Bottom Links & Copyright */}
-    <div style={styles.bottomSection}>
-      <div style={{ marginBottom: 10 }}>
-        © 2025 Athena LMS. All rights reserved.
-      </div>
-      <div style={styles.social}>
-        <a href="/" style={styles.socialIcon} aria-label="LinkedIn"><FaLinkedin /></a>
-        <a href="/" style={styles.socialIcon} aria-label="Instagram"><FaInstagram /></a>
-        <a href="/" style={styles.socialIcon} aria-label="Facebook"><FaFacebook /></a>
-        <a href="/" style={styles.socialIcon} aria-label="GitHub"><FaGithub /></a>
-        <a href="/" style={styles.socialIcon} aria-label="TikTok"><FaTiktok /></a>
-      </div>
-      <div style={styles.footerLinks}>
-        <a href="/" style={styles.footerLink}>Privacy</a>
-        <a href="/" style={styles.footerLink}>Terms</a>
-        <a href="/" style={styles.footerLink}>Cookies</a>
-        <a href="/" style={styles.footerLink}>Sitemap</a>
       </div>
     </div>
   </footer>
 );
 
 export default Footer;
-// ...existing code...

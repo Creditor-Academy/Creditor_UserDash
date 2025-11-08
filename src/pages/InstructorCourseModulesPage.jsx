@@ -223,47 +223,53 @@ const InstructorCourseModulesPage = () => {
               </div>
             </div>
 
-            {/* Modules List */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-200">
-              {loading ? (
-                <>
-                  {[1, 2, 3].map(index => (
-                    <div key={index} className="p-6">
-                      <div className="flex items-stretch gap-4">
-                        {/* Shimmer Thumbnail */}
-                        <div className="w-44 h-28 flex-shrink-0 rounded-lg bg-gray-200 animate-pulse"></div>
+            {/* Modules Grid */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(index => (
+                  <div
+                    key={index}
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full"
+                  >
+                    {/* Shimmer Thumbnail */}
+                    <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
 
-                        {/* Shimmer Content */}
-                        <div className="flex-1 space-y-3">
-                          {/* Title and badge shimmer */}
-                          <div className="flex items-center gap-3">
-                            <div className="h-6 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                            <div className="h-5 w-20 bg-gray-200 rounded-full animate-pulse"></div>
-                          </div>
-
-                          {/* Description shimmer */}
-                          <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-
-                          {/* Stats shimmer */}
-                          <div className="flex items-center gap-4">
-                            <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
-                            <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
-                          </div>
+                    {/* Shimmer Content */}
+                    <div className="flex-1 p-6 flex flex-col">
+                      <div className="flex-1 space-y-3">
+                        {/* Title and badge shimmer */}
+                        <div className="flex items-center gap-3">
+                          <div className="h-6 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+                          <div className="h-5 w-16 bg-gray-200 rounded-full animate-pulse"></div>
                         </div>
 
-                        {/* Shimmer Buttons */}
-                        <div className="flex flex-col gap-2">
-                          <div className="h-10 w-40 bg-gray-200 rounded-md animate-pulse"></div>
-                          <div className="flex gap-2">
-                            <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse"></div>
-                            <div className="h-8 w-20 bg-gray-200 rounded-md animate-pulse"></div>
-                          </div>
+                        {/* Description shimmer */}
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                          <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                        </div>
+
+                        {/* Stats shimmer */}
+                        <div className="flex items-center gap-4">
+                          <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+                          <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
+                        </div>
+                      </div>
+
+                      {/* Shimmer Buttons */}
+                      <div className="space-y-2 mt-4">
+                        <div className="h-10 w-full bg-gray-200 rounded-md animate-pulse"></div>
+                        <div className="flex gap-2">
+                          <div className="h-8 flex-1 bg-gray-200 rounded-md animate-pulse"></div>
+                          <div className="h-8 flex-1 bg-gray-200 rounded-md animate-pulse"></div>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </>
-              ) : filteredModules.length === 0 ? (
+                  </div>
+                ))}
+              </div>
+            ) : filteredModules.length === 0 ? (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-8 text-center">
                   <BookOpen className="mx-auto h-16 w-16 text-gray-400 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -279,31 +285,35 @@ const InstructorCourseModulesPage = () => {
                     <Plus className="mr-2 h-4 w-4" /> Create First Module
                   </Button>
                 </div>
-              ) : (
-                filteredModules.map(mod => (
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredModules.map(mod => (
                   <div
                     key={mod.id}
-                    className="p-6 hover:bg-gray-50 transition-colors duration-150"
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-200 flex flex-col h-full"
                   >
-                    <div className="flex items-stretch gap-4">
-                      {/* Module Thumbnail */}
-                      {mod.thumbnail && (
-                        <div className="w-44 flex-shrink-0 rounded-lg overflow-hidden">
-                          <img
-                            src={mod.thumbnail}
-                            alt={mod.title}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+                    {/* Module Thumbnail */}
+                    <div className="w-full h-48 flex-shrink-0">
+                      <img
+                        src={
+                          mod.thumbnail ||
+                          'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80'
+                        }
+                        alt={mod.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
+                    {/* Module Content */}
+                    <div className="flex-1 p-6 flex flex-col">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
+                        <div className="flex items-start gap-2 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 flex-1">
                             {mod.title}
                           </h3>
                           <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                               mod.module_status === 'PUBLISHED'
                                 ? 'bg-green-100 text-green-800'
                                 : mod.module_status === 'DRAFT'
@@ -314,10 +324,10 @@ const InstructorCourseModulesPage = () => {
                             {mod.module_status}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mb-3">
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                           {mod.description}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
                           <span className="inline-flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {formatDuration(mod.estimated_duration)}
@@ -326,14 +336,15 @@ const InstructorCourseModulesPage = () => {
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-2">
+                      {/* Module Actions */}
+                      <div className="space-y-2">
                         <Button
                           onClick={() =>
                             navigate(
                               `/dashboard/courses/${courseId}/module/${mod.id}/lessons`
                             )
                           }
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 text-sm"
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 text-sm"
                         >
                           <BookOpen className="mr-2 h-4 w-4" />
                           Manage Lessons
@@ -361,9 +372,9 @@ const InstructorCourseModulesPage = () => {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

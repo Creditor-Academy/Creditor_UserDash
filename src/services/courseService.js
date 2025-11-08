@@ -134,6 +134,20 @@ export async function createAICourse(courseData) {
       : 'Course description to be updated.';
   }
 
+  // Handle thumbnail URL length validation (backend expects ≤ 600 characters)
+  let thumbnailUrl = courseData.thumbnail || null;
+  if (thumbnailUrl && thumbnailUrl.length > 600) {
+    console.warn(
+      `⚠️ Thumbnail URL too long (${thumbnailUrl.length} chars, limit: 600)`
+    );
+    console.log('Original URL:', thumbnailUrl);
+    thumbnailUrl = null; // Use fallback for extremely long URLs
+  } else if (thumbnailUrl) {
+    console.log(
+      `✅ Thumbnail URL length OK (${thumbnailUrl.length} chars, limit: 600)`
+    );
+  }
+
   const aiCourseData = {
     title: cleanTitle,
     description: cleanDescription,
@@ -152,7 +166,7 @@ export async function createAICourse(courseData) {
     lockModules: 'UNLOCKED',
     price: courseData.price || '0',
     requireFinalQuiz: true,
-    thumbnail: courseData.thumbnail || null,
+    thumbnail: thumbnailUrl,
   };
 
   console.log('Sending AI course data:', aiCourseData);
@@ -337,7 +351,8 @@ export async function createAIModulesAndLessons(courseId, outlines) {
         order: i + 1,
         estimated_duration: 60,
         module_status: 'PUBLISHED',
-        thumbnail: 'AI generated module thumbnail',
+        thumbnail:
+          moduleData.thumbnail || moduleData.module_thumbnail_url || '',
         price: '0',
       };
 
@@ -532,6 +547,8 @@ export async function createAIModulesAndLessons(courseId, outlines) {
             description: cleanDescription,
             order: lessonData.order || j + 1,
             status: 'PUBLISHED',
+            thumbnail:
+              lessonData.thumbnail || lessonData.lesson_thumbnail_url || '',
           };
 
           console.log('Lesson payload being sent:', lessonPayload);

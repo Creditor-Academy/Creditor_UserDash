@@ -312,7 +312,7 @@ const Buildfeature = () => {
           </div>
 
           {/* Mobile Dropdown Layout */}
-          <div className="lg:hidden max-w-7xl mx-auto relative z-10">
+          <div className="lg:hidden">
             <div className="space-y-4">
               {features.map((feature, index) => (
                 <div

@@ -231,7 +231,7 @@ export default function Hero() {
               Start Creating
               <ArrowUpRight size={16} strokeWidth={2} />
             </a>
-            <a href="/trial" className="btn-secondary">
+            <a href="/login  " className="btn-secondary">
               Book a Demo
             </a>
           </div>

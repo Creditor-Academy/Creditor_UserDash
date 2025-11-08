@@ -1,124 +1,52 @@
-// API Key Management Service
-// Handles API key detection, validation, and fallback mechanisms
+// API Key Management Service - OpenAI Only
+// Simplified to handle only OpenAI API keys
 
 /**
- * Enhanced API Key Manager
- * Provides robust API key management with multiple fallback sources
+ * OpenAI API Key Manager
+ * Provides OpenAI API key management with multiple fallback sources
  */
 class ApiKeyManager {
   constructor() {
     this.keyCache = new Map();
-    this.keyValidation = new Map();
-    this.fallbackKeys = {
-      // Demo/test keys for development (limited functionality)
-      openai: null, // Will use rate-limited free tier if available
-      huggingface: null,
-      deepai: null,
-    };
+    this.fallbackKey = null; // Can be set if needed
   }
 
   /**
-   * Get API key with multiple fallback sources
-   * @param {string} service - Service name (openai, huggingface, deepai)
-   * @param {number} keyIndex - Key index for multi-key services (0-3)
+   * Get OpenAI API key with multiple fallback sources
    * @returns {string|null} API key or null
    */
-  getApiKey(service, keyIndex = 0) {
-    const cacheKey = `${service}_${keyIndex}`;
-
+  getApiKey() {
     // Check cache first
-    if (this.keyCache.has(cacheKey)) {
-      return this.keyCache.get(cacheKey);
+    if (this.keyCache.has('openai')) {
+      return this.keyCache.get('openai');
     }
 
     let apiKey = null;
 
-    // Define key sources in priority order
-    const keySources = this.getKeySources(service, keyIndex);
+    // Try multiple sources in priority order
+    const sources = [
+      () => import.meta.env.VITE_OPENAI_API_KEY,
+      () => localStorage.getItem('openai_api_key'),
+      () => this.fallbackKey,
+    ];
 
     // Try each source
-    for (const source of keySources) {
-      const key = this.getKeyFromSource(source);
-      if (this.isValidKey(key)) {
-        apiKey = key;
-        break;
+    for (const source of sources) {
+      try {
+        const key = source();
+        if (this.isValidKey(key)) {
+          apiKey = key;
+          break;
+        }
+      } catch (error) {
+        // Continue to next source
       }
     }
 
     // Cache the result (even if null)
-    this.keyCache.set(cacheKey, apiKey);
+    this.keyCache.set('openai', apiKey);
 
     return apiKey;
-  }
-
-  /**
-   * Get key sources for a service
-   * @param {string} service - Service name
-   * @param {number} keyIndex - Key index
-   * @returns {Array} Array of key sources
-   */
-  getKeySources(service, keyIndex) {
-    const sources = [];
-
-    switch (service) {
-      case 'openai':
-        sources.push(
-          () => import.meta.env.VITE_OPENAI_API_KEY,
-          () => import.meta.env.OPENAI_API_KEY,
-          () => localStorage.getItem('openai_api_key'),
-          () => this.fallbackKeys.openai
-        );
-        break;
-
-      // bytez case removed - dependency not available
-
-      case 'huggingface':
-        const hfKeys = [
-          'VITE_HUGGINGFACE_API_KEY',
-          'VITE_HUGGINGFACE_API_KEY_2',
-          'VITE_HF_API_KEY',
-          'VITE_HF_API_KEY_2',
-          'HF_API_KEY',
-          'HUGGINGFACE_API_KEY',
-        ];
-
-        if (keyIndex < hfKeys.length) {
-          const envKey = hfKeys[keyIndex];
-          sources.push(
-            () => import.meta.env[envKey],
-            () => localStorage.getItem(`huggingface_api_key_${keyIndex + 1}`),
-            () => localStorage.getItem('huggingface_api_key')
-          );
-        }
-
-        sources.push(() => this.fallbackKeys.huggingface);
-        break;
-
-      case 'deepai':
-        sources.push(
-          () => import.meta.env.VITE_DEEPAI_API_KEY,
-          () => import.meta.env.DEEPAI_API_KEY,
-          () => localStorage.getItem('deepai_api_key'),
-          () => this.fallbackKeys.deepai
-        );
-        break;
-    }
-
-    return sources;
-  }
-
-  /**
-   * Get key from a source function
-   * @param {Function} sourceFunc - Source function
-   * @returns {string|null} API key or null
-   */
-  getKeyFromSource(sourceFunc) {
-    try {
-      const key = sourceFunc();
-      return key && typeof key === 'string' ? key.trim() : null;
-    } catch (error) {
-      return null;
-    }
   }
 
   /**
@@ -136,9 +64,8 @@ class ApiKeyManager {
     // Check for placeholder values
     const placeholders = [
       'your_api_key_here',
-      'your_ope********here',
+      'your_openai_api_key_here',
       'sk-placeholder',
-      'hf_placeholder',
       'test_key',
       'demo_key',
       '',
@@ -148,8 +75,8 @@ class ApiKeyManager {
       return false;
     }
 
-    // Basic format validation
-    if (trimmed.length < 10) {
+    // Basic format validation - OpenAI keys typically start with 'sk-'
+    if (trimmed.length < 20) {
       return false;
     }
 
@@ -157,128 +84,58 @@ class ApiKeyManager {
   }
 
   /**
-   * Get all available API keys for a service
-   * @param {string} service - Service name
-   * @returns {Array} Array of valid API keys
-   */
-  getAllKeys(service) {
-    const keys = [];
-
-    if (service === 'huggingface') {
-      // For HuggingFace, try to get up to 6 keys (multiple accounts)
-      for (let i = 0; i < 6; i++) {
-        const key = this.getApiKey(service, i);
-        if (key) {
-          keys.push(key);
-        }
-      }
-    } else {
-      const key = this.getApiKey(service);
-      if (key) {
-        keys.push(key);
-      }
-    }
-
-    return keys;
-  }
-
-  /**
-   * Check service availability
-   * @param {string} service - Service name
+   * Check OpenAI service availability
    * @returns {Object} Service status
    */
-  getServiceStatus(service) {
-    const keys = this.getAllKeys(service);
+  getServiceStatus() {
+    const key = this.getApiKey();
 
     return {
-      service: service,
-      available: keys.length > 0,
-      keyCount: keys.length,
-      hasValidKeys: keys.length > 0,
-      status: keys.length > 0 ? 'ready' : 'no_keys',
+      service: 'openai',
+      available: key !== null,
+      hasValidKey: key !== null,
+      status: key !== null ? 'ready' : 'no_key',
     };
   }
 
   /**
-   * Get overall API status
-   * @returns {Object} Overall status
-   */
-  getOverallStatus() {
-    const services = ['openai', 'huggingface', 'deepai'];
-    const status = {};
-    let availableServices = 0;
-
-    for (const service of services) {
-      status[service] = this.getServiceStatus(service);
-      if (status[service].available) {
-        availableServices++;
-      }
-    }
-
-    return {
-      services: status,
-      availableServices: availableServices,
-      totalServices: services.length,
-      hasAnyKeys: availableServices > 0,
-      readyForGeneration: availableServices > 0,
-    };
-  }
-
-  /**
-   * Set API key in localStorage
-   * @param {string} service - Service name
+   * Set OpenAI API key in localStorage
    * @param {string} key - API key
-   * @param {number} keyIndex - Key index for multi-key services
    */
-  setApiKey(service, key, keyIndex = 0) {
+  setApiKey(key) {
     if (!this.isValidKey(key)) {
-      throw new Error('Invalid API key format');
+      throw new Error('Invalid OpenAI API key format');
     }
 
-    let storageKey;
-    storageKey = `${service}_api_key`;
-
-    localStorage.setItem(storageKey, key);
+    localStorage.setItem('openai_api_key', key);
 
     // Clear cache to force refresh
-    this.clearCache(service);
+    this.clearCache();
 
-    console.log(`✅ ${service} API key ${keyIndex + 1} saved to localStorage`);
+    console.log('✅ OpenAI API key saved to localStorage');
   }
 
   /**
-   * Clear cached keys for a service
-   * @param {string} service - Service name
+   * Clear cached key
    */
-  clearCache(service) {
-    const keysToRemove = [];
-
-    for (const [key] of this.keyCache) {
-      if (key.startsWith(`${service}_`)) {
-        keysToRemove.push(key);
-      }
-    }
-
-    keysToRemove.forEach(key => this.keyCache.delete(key));
+  clearCache() {
+    this.keyCache.clear();
   }
 
   /**
    * Prompt user for API key (for development/testing)
-   * @param {string} service - Service name
    * @returns {Promise<string|null>} API key or null
    */
-  async promptForApiKey(service) {
+  async promptForApiKey() {
     return new Promise(resolve => {
-      const key = prompt(
-        `Please enter your ${service.toUpperCase()} API key (optional for testing):`
-      );
+      const key = prompt('Please enter your OpenAI API key:');
 
       if (key && this.isValidKey(key)) {
         try {
-          this.setApiKey(service, key);
+          this.setApiKey(key);
           resolve(key);
         } catch (error) {
-          console.warn(`Failed to save ${service} API key:`, error.message);
+          console.warn('Failed to save OpenAI API key:', error.message);
           resolve(null);
         }
       } else {
@@ -288,37 +145,32 @@ class ApiKeyManager {
   }
 
   /**
-   * Initialize API keys with user prompts if needed
+   * Initialize API key with user prompt if needed
    * @returns {Promise<Object>} Initialization result
    */
   async initializeKeys() {
-    const status = this.getOverallStatus();
+    const status = this.getServiceStatus();
 
-    if (status.hasAnyKeys) {
-      console.log('✅ API keys are configured and ready');
+    if (status.available) {
+      console.log('✅ OpenAI API key is configured and ready');
       return { success: true, status };
     }
 
-    console.log(
-      '⚠️ No API keys configured. Course generation will use fallback methods.'
-    );
+    console.log('⚠️ OpenAI API key not configured.');
 
-    // In development, optionally prompt for keys
+    // In development, optionally prompt for key
     if (import.meta.env.DEV) {
       const shouldPrompt = confirm(
-        'No API keys found. Would you like to configure them now? (Cancel to use offline mode)'
+        'OpenAI API key not found. Would you like to configure it now?'
       );
 
       if (shouldPrompt) {
-        // Prompt for the most important keys
-        await this.promptForApiKey('openai');
-        // bytez prompting removed
-
-        return { success: true, status: this.getOverallStatus() };
+        await this.promptForApiKey();
+        return { success: true, status: this.getServiceStatus() };
       }
     }
 
-    return { success: true, status, offline: true };
+    return { success: false, status, offline: true };
   }
 }
 
@@ -327,11 +179,5 @@ const apiKeyManager = new ApiKeyManager();
 export default apiKeyManager;
 
 // Export individual methods for convenience
-export const {
-  getApiKey,
-  getAllKeys,
-  getServiceStatus,
-  getOverallStatus,
-  setApiKey,
-  initializeKeys,
-} = apiKeyManager;
+export const { getApiKey, getServiceStatus, setApiKey, initializeKeys } =
+  apiKeyManager;

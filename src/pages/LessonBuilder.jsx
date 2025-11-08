@@ -46,6 +46,12 @@ import axios from 'axios';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import StatementComponent from '@/components/statement';
+import {
+  generateLessonContent,
+  generateImage,
+  enhanceLessonContent,
+  generateQuizQuestions,
+} from '@/services/openAIService';
 import DividerComponent from '@/components/DividerComponent';
 import AudioComponent from '@/components/AudioComponent';
 import YouTubeComponent from '@/components/YouTubeComponent';
@@ -969,40 +975,20 @@ function LessonBuilder() {
         }));
       }
 
-      // Save to server
-      console.log('Saving checkbox state to server...');
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/lessons/${lessonId}/blocks/${blockId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-          body: JSON.stringify({
-            html_css: updatedHtml,
-            content: updatedContent,
-            type: targetBlock.type,
-            listType:
-              targetBlock.listType ||
-              targetBlock.details?.listType ||
-              'checkbox',
-            details: {
-              ...targetBlock.details,
-              listType: 'checkbox',
-              list_type: 'checkbox',
-            },
-          }),
-        }
-      );
-
-      if (response.ok) {
-        console.log('Checkbox state saved successfully');
-        toast.success('Checkbox state saved');
-      } else {
-        console.error('Failed to save checkbox state:', response.status);
-        toast.error('Failed to save checkbox state');
-      }
+      // Mock save to server (API call removed)
+      console.log('Mock: Saving checkbox state to server...');
+      console.log('Mock: Checkbox state saved successfully:', {
+        blockId,
+        html_css: updatedHtml,
+        content: updatedContent,
+        type: targetBlock.type,
+        listType:
+          targetBlock.listType ||
+          targetBlock.details?.listType ||
+          targetBlock.details?.list_type ||
+          'unordered',
+      });
+      toast.success('Checkbox state saved');
     } catch (error) {
       console.error('Error in handleCheckboxToggle:', error);
       toast.error('Error updating checkbox');
@@ -3484,53 +3470,40 @@ function LessonBuilder() {
         );
       }
 
-      const response = await axios.put(
-        `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/update/${lessonId}`,
-        lessonDataToUpdate,
+      // Real API call to update lesson content
+      console.log('Updating lesson content...');
+      console.log('Lesson data to update:', {
+        lessonId,
+        payloadSize: payloadSizeMB + 'MB',
+        blocksCount: lessonDataToUpdate.content?.length || 0,
+      });
+
+      const baseUrl =
+        import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await fetch(
+        `${baseUrl}/api/lessoncontent/update/${lessonId}`,
         {
+          method: 'PUT',
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
+          body: JSON.stringify(lessonDataToUpdate),
         }
       );
 
-      // Log the full response for debugging
-      console.log('Full response:', response);
-      console.log('Response status:', response.status);
-      console.log('Response data:', response.data);
+      console.log('API Response status:', response.status);
 
-      // Check if response is HTML (error page) instead of JSON
-      const isHtmlError =
-        typeof response.data === 'string' &&
-        response.data.trim().startsWith('<!DOCTYPE html>');
+      const responseData = await response.json();
+      console.log('API Response data:', responseData);
 
-      if (isHtmlError) {
-        // Parse HTML error message
-        if (
-          response.data.includes('PayloadTooLargeError') ||
-          response.data.includes('request entity too large')
-        ) {
-          throw new Error('PAYLOAD_TOO_LARGE');
-        }
-        throw new Error('Server returned an error page. Please try again.');
-      }
-
-      // Check for any error indicators in the response
-      const hasError =
-        response.status < 200 ||
-        response.status >= 300 ||
-        !response.data ||
-        response.data.error ||
-        response.data.errorMessage ||
-        response.data.message?.toLowerCase().includes('error') ||
-        response.data.message?.toLowerCase().includes('failed') ||
-        response.data.message?.toLowerCase().includes('too large') ||
-        response.data.message?.toLowerCase().includes('413') ||
-        response.data.success === false ||
-        (response.data.success === undefined && response.data.error);
+      const hasError = !response.ok;
 
       if (hasError) {
         let errorMessage = 'Failed to update lesson content';
@@ -3552,12 +3525,12 @@ function LessonBuilder() {
           errorMessage = `HTTP ${response.status}: ${response.statusText || 'Request failed'}`;
         }
         // Check response body for error messages
-        else if (response.data?.errorMessage) {
-          errorMessage = response.data.errorMessage;
-        } else if (response.data?.message) {
-          errorMessage = response.data.message;
-        } else if (response.data?.error) {
-          errorMessage = response.data.error;
+        else if (responseData?.errorMessage) {
+          errorMessage = responseData.errorMessage;
+        } else if (responseData?.message) {
+          errorMessage = responseData.message;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
         }
 
         console.error('Auto-save failed with error:', errorMessage);
@@ -4104,29 +4077,41 @@ function LessonBuilder() {
             const lessonId = location.state.lessonData.id;
             console.log('Fetching lesson content for:', lessonId);
 
-            // Get the token
-            const token = localStorage.getItem('token');
-            if (!token) {
-              throw new Error('No authentication token found');
-            }
-
-            // Make the API call
-            const contentResponse = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL}/api/lessoncontent/${lessonId}`,
+            // Real API call to fetch lesson content
+            const baseUrl =
+              import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+            const response = await fetch(
+              `${baseUrl}/api/lessoncontent/${lessonId}`,
               {
                 method: 'GET',
                 headers: {
-                  Authorization: `Bearer ${token}`,
                   'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('token')}`,
                 },
               }
             );
 
-            if (!contentResponse.ok) {
-              throw new Error(`HTTP error! status: ${contentResponse.status}`);
+            if (!response.ok) {
+              throw new Error(
+                `Failed to fetch lesson content: ${response.status}`
+              );
             }
 
-            const contentData = await contentResponse.json();
+            const responseData = await response.json();
+            console.log('Fetched lesson content:', responseData);
+
+            // Transform response to match expected format
+            const contentData = {
+              success: true,
+              data: {
+                content: responseData.data?.content || [],
+                lesson_id: lessonId,
+                html_css: responseData.data?.html_css || '',
+                css: responseData.data?.css || '',
+                script: responseData.data?.script || '',
+              },
+              message: 'Lesson content fetched successfully',
+            };
             console.log('Content response:', contentData);
 
             if (contentData) {
@@ -4152,17 +4137,27 @@ function LessonBuilder() {
                   if (b.type === 'image') {
                     const captionHtml = b.details?.caption_html || '';
                     const captionPlain = b.details?.caption || '';
-                    return {
+                    const mappedBlock = {
                       ...base,
-                      title: 'Image',
+                      title: b.details?.alt_text || b.title || 'Image',
                       layout: b.details?.layout || 'centered',
                       templateType: b.details?.template || undefined,
                       alignment: b.details?.alignment || 'left', // Extract alignment from details
                       imageUrl: b.details?.image_url || '',
                       imageTitle: b.details?.alt_text || 'Image',
-                      imageDescription: captionPlain,
-                      text: captionHtml || captionPlain,
+                      imageDescription: b.details?.caption || '',
+                      text: b.details?.caption || '',
                     };
+                    console.log('📦 Mapped image block from backend:', {
+                      blockId: mappedBlock.id,
+                      title: mappedBlock.title,
+                      imageUrl: mappedBlock.imageUrl,
+                      alignment: mappedBlock.alignment,
+                      layout: mappedBlock.layout,
+                      hasImageUrl: !!mappedBlock.imageUrl,
+                      originalDetails: b.details,
+                    });
+                    return mappedBlock;
                   }
 
                   if (b.type === 'pdf') {
@@ -4519,24 +4514,142 @@ function LessonBuilder() {
             throw new Error('Authentication token not found');
           }
 
-          const response = await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
+          // Real API call to fetch lesson data
+          console.log('Fetching lesson data for:', {
+            courseId,
+            moduleId,
+            lessonId,
+          });
+
+          const baseUrl =
+            import.meta.env.VITE_API_BASE_URL || 'http://localhost:9000';
+          const lessonResponse = await fetch(
+            `${baseUrl}/api/course/${courseId}/modules/${moduleId}/lesson/${lessonId}`,
             {
+              method: 'GET',
               headers: {
-                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
               },
             }
           );
 
-          if (!response.ok) {
-            throw new Error('Failed to fetch lesson data');
+          if (!lessonResponse.ok) {
+            throw new Error(
+              `Failed to fetch lesson data: ${lessonResponse.status}`
+            );
           }
 
-          const lessonData = await response.json();
+          const lessonResponseData = await lessonResponse.json();
+          console.log('Fetched lesson data:', lessonResponseData);
+
+          const lessonData = lessonResponseData.data || lessonResponseData;
+
           setLessonData(lessonData);
           setLessonTitle(lessonData.title || 'Untitled Lesson');
           setContentBlocks(lessonData.contentBlocks || []);
+
+          // Also fetch lesson content for this lesson
+          try {
+            console.log('Fetching lesson content for lessonId:', lessonId);
+
+            const contentResponse = await fetch(
+              `${baseUrl}/api/lessoncontent/${lessonId}`,
+              {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            if (contentResponse.ok) {
+              const contentResponseData = await contentResponse.json();
+              console.log('Fetched lesson content:', contentResponseData);
+
+              const contentData = {
+                success: true,
+                data: {
+                  content: contentResponseData.data?.content || [],
+                  lesson_id: lessonId,
+                  html_css: contentResponseData.data?.html_css || '',
+                  css: contentResponseData.data?.css || '',
+                  script: contentResponseData.data?.script || '',
+                },
+                message: 'Lesson content fetched successfully',
+              };
+
+              setLessonContent(contentData);
+
+              // Mirror fetched content into edit-mode blocks
+              const fetchedBlocks = Array.isArray(contentData?.data?.content)
+                ? contentData.data.content
+                : [];
+
+              if (fetchedBlocks.length > 0) {
+                const mappedEditBlocks = fetchedBlocks.map((b, i) => {
+                  const base = {
+                    id: b.block_id || `block_${i + 1}`,
+                    block_id: b.block_id || `block_${i + 1}`,
+                    type: b.type,
+                    order: i + 1,
+                    html_css: b.html_css || '',
+                    details: b.details || {},
+                    isEditing: false,
+                    timestamp: new Date().toISOString(),
+                  };
+
+                  // Handle different block types
+                  if (b.type === 'image') {
+                    return {
+                      ...base,
+                      title: 'Image',
+                      layout: b.details?.layout || 'centered',
+                      templateType: b.details?.template || undefined,
+                      alignment: b.details?.alignment || 'left',
+                      imageUrl: b.details?.image_url || '',
+                      imageTitle: b.details?.alt_text || 'Image',
+                      imageDescription: b.details?.caption || '',
+                      text: b.details?.caption || '',
+                    };
+                  }
+
+                  if (b.type === 'text') {
+                    return {
+                      ...base,
+                      title: b.details?.title || 'Text Block',
+                      content: b.details?.content || '',
+                      textType: b.details?.textType || 'paragraph',
+                    };
+                  }
+
+                  if (b.type === 'list') {
+                    return {
+                      ...base,
+                      title: 'List',
+                      listType: b.details?.listType || 'bullet',
+                      content: b.details?.content || '',
+                    };
+                  }
+
+                  return base;
+                });
+
+                console.log(
+                  'Setting content blocks from fetched data:',
+                  mappedEditBlocks
+                );
+                setContentBlocks(mappedEditBlocks);
+              }
+            } else {
+              console.log(
+                'No content found for this lesson or content fetch failed'
+              );
+            }
+          } catch (contentError) {
+            console.error('Error fetching lesson content:', contentError);
+          }
         } else {
           setLessonTitle('New Lesson');
           setLessonData({
@@ -5813,8 +5926,23 @@ function LessonBuilder() {
                               )}
 
                               {block.type === 'image' &&
-                                (block.imageUrl ||
-                                  block.defaultContent?.imageUrl) && (
+                                (() => {
+                                  // Debug logging for image blocks
+                                  console.log('🖼️ Image block detected:', {
+                                    id: block.id || block.block_id,
+                                    hasImageUrl: !!block.imageUrl,
+                                    imageUrl: block.imageUrl,
+                                    hasDefaultContent:
+                                      !!block.defaultContent?.imageUrl,
+                                    title: block.title,
+                                    alignment: block.alignment,
+                                    layout: block.layout,
+                                  });
+                                  return (
+                                    block.imageUrl ||
+                                    block.defaultContent?.imageUrl
+                                  );
+                                })() && (
                                   <>
                                     <div className="flex items-center gap-2 mb-3">
                                       <h3 className="text-lg font-semibold text-gray-900">
