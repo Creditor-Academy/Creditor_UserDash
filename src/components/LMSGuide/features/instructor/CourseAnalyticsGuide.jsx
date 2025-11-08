@@ -84,10 +84,17 @@ const IntroSection = () => (
         </div>
       </div>
       
-      <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Gain valuable <span className="text-yellow-300 font-semibold">insights into course performance</span> and student engagement. 
-        Track progress, analyze trends, and make data-driven decisions to improve learning outcomes.
-      </p>
+      <div className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl space-y-4">
+        <p>
+          Gain valuable <span className="text-yellow-300 font-semibold">insights into course performance</span> and student engagement.
+          Track progress, analyze trends, and make data-driven decisions to improve learning outcomes.
+        </p>
+        <p>
+          Use the <span className="text-yellow-300 font-semibold">Overview</span> dashboard for high-level metrics like the total number of courses created
+          and total user enrollments, along with visual activity breakdowns. Switch to <span className="text-yellow-300 font-semibold">All Courses</span> for
+          course-by-course statistics that highlight performance at a granular level.
+        </p>
+      </div>
     </motion.div>
   </div>
 );
@@ -107,7 +114,31 @@ const CourseAnalyticsGuide = () => {
     ],
     steps: [
       {
-        title: 'Performance Tracking',
+        title: 'Accessing Course Analytics',
+        renderDescription: () => (
+          <div className="space-y-8 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <StepCard
+                icon={Settings}
+                title="Navigation Path"
+                color="indigo"
+                items={[
+                  'From the main sidebar, select the Instructor Portal',
+                  'Within Instructor Tools, choose Course Analytics',
+                  'Confirm you are on the Course Analytics tab to begin exploring data'
+                ]}
+                index={0}
+              />
+            </motion.div>
+          </div>
+        )
+      },
+      {
+        title: 'Overview Dashboard',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -117,13 +148,13 @@ const CourseAnalyticsGuide = () => {
             >
               <StepCard
                 icon={BarChart}
-                title="Course Metrics"
+                title="Graphical Insights"
                 color="blue"
                 items={[
-                  'Track completion rates and progress',
-                  'Monitor assessment performance',
-                  'Analyze engagement levels',
-                  'View time spent on course materials'
+                  'Review total courses created in the LMS',
+                  'Track total users enrolled across all courses',
+                  'Visualize trends through interactive charts',
+                  'Spot key metrics at a glance'
                 ]}
                 index={0}
               />
@@ -136,13 +167,13 @@ const CourseAnalyticsGuide = () => {
             >
               <StepCard
                 icon={LineChart}
-                title="Progress Analysis"
+                title="Activity & Engagement"
                 color="emerald"
                 items={[
-                  'View individual student progress',
-                  'Compare group performance',
-                  'Track learning objectives',
-                  'Identify areas for improvement'
+                  'Monitor activity distribution across courses',
+                  'Identify most active and least active courses',
+                  'Stay alerted to engagement spikes or dips',
+                  'Use insights to plan interventions'
                 ]}
                 index={1}
               />
@@ -151,7 +182,7 @@ const CourseAnalyticsGuide = () => {
         )
       },
       {
-        title: 'Analytics & Reporting',
+        title: 'All Courses View',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -161,13 +192,13 @@ const CourseAnalyticsGuide = () => {
             >
               <StepCard
                 icon={PieChart}
-                title="Detailed Reports"
+                title="Course-Level Stats"
                 color="purple"
                 items={[
-                  'Generate comprehensive reports',
-                  'Export data for analysis',
-                  'Schedule automated reports',
-                  'Customize report parameters'
+                  'View detailed statistics per course',
+                  'Compare enrollment and activity side-by-side',
+                  'Filter or search to focus on specific courses',
+                  'Track changes in performance over time'
                 ]}
                 index={2}
               />
@@ -180,13 +211,13 @@ const CourseAnalyticsGuide = () => {
             >
               <StepCard
                 icon={TrendingUp}
-                title="Insights & Actions"
+                title="Actionable Follow-Up"
                 color="indigo"
                 items={[
-                  'Identify learning patterns',
-                  'Get recommendations for improvement',
-                  'Track intervention effectiveness',
-                  'Measure learning outcomes'
+                  'Identify courses needing support or updates',
+                  'Highlight successes to replicate across the LMS',
+                  'Create targeted plans for instructors or cohorts',
+                  'Share findings with stakeholders'
                 ]}
                 index={3}
               />
@@ -198,8 +229,7 @@ const CourseAnalyticsGuide = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <ProTip emoji="📊">
-                <span className="font-bold">Data-Driven Decisions:</span> Regularly review analytics to identify 
-                trends and make informed decisions about course content and teaching strategies.
+                <span className="font-bold">Stay Consistent:</span> Schedule regular reviews of both Overview and All Courses data to keep pace with growth and respond quickly to engagement shifts.
               </ProTip>
             </motion.div>
           </div>

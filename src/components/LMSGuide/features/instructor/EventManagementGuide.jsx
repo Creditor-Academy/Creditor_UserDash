@@ -84,10 +84,16 @@ const IntroSection = () => (
         </div>
       </div>
       
-      <p className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl">
-        Schedule and manage <span className="text-yellow-300 font-semibold">learning events</span> effectively. 
-        Create engaging webinars, live sessions, and interactive workshops to enhance the learning experience.
-      </p>
+      <div className="relative z-10 text-blue-50 text-lg leading-relaxed max-w-3xl space-y-4">
+        <p>
+          Schedule and manage <span className="text-yellow-300 font-semibold">learning events</span> effectively. 
+          Create engaging webinars, live sessions, and interactive workshops to enhance the learning experience.
+        </p>
+        <p>
+          Quickly scan the <span className="text-yellow-300 font-semibold">monthly calendar</span> to see everything planned and add new sessions in just a few
+          clicks. Each event captures the details your learners need—from meeting links to time zones and recurrence.
+        </p>
+      </div>
     </motion.div>
   </div>
 );
@@ -107,7 +113,31 @@ const EventManagementGuide = () => {
     ],
     steps: [
       {
-        title: 'Creating & Scheduling Events',
+        title: 'Accessing Event Management',
+        renderDescription: () => (
+          <div className="space-y-8 ml-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <StepCard
+                icon={Settings}
+                title="Navigation Path"
+                color="indigo"
+                items={[
+                  'From the main sidebar, open the Instructor Portal',
+                  'Within Instructor Tools, choose Event Management',
+                  'Confirm the calendar view loads for the selected month'
+                ]}
+                index={0}
+              />
+            </motion.div>
+          </div>
+        )
+      },
+      {
+        title: 'Monthly Calendar Overview',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -117,32 +147,13 @@ const EventManagementGuide = () => {
             >
               <StepCard
                 icon={Calendar}
-                title="Event Creation"
+                title="Track Scheduled Events"
                 color="blue"
                 items={[
-                  'Schedule webinars and live sessions',
-                  'Set event duration and capacity',
-                  'Define event objectives and prerequisites',
-                  'Create recurring events and series'
-                ]}
-                index={0}
-              />
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <StepCard
-                icon={Video}
-                title="Event Setup"
-                color="emerald"
-                items={[
-                  'Configure virtual meeting platforms',
-                  'Set up event materials and resources',
-                  'Manage participant registration',
-                  'Create event announcements'
+                  'Review all events scheduled for the month at a glance',
+                  'Spot open dates ready for new classes or sessions',
+                  'Select a date to view existing events or begin scheduling',
+                  'Use calendar navigation to move between months as needed'
                 ]}
                 index={1}
               />
@@ -151,7 +162,7 @@ const EventManagementGuide = () => {
         )
       },
       {
-        title: 'Event Management & Monitoring',
+        title: 'Scheduling a New Event',
         renderDescription: () => (
           <div className="space-y-8 ml-4">
             <motion.div
@@ -161,13 +172,13 @@ const EventManagementGuide = () => {
             >
               <StepCard
                 icon={Clock}
-                title="Live Event Management"
-                color="purple"
+                title="Event Details"
+                color="emerald"
                 items={[
-                  'Monitor attendance and participation',
-                  'Manage Q&A and discussions',
-                  'Record sessions for future reference',
-                  'Handle technical issues and support'
+                  'Click the desired date to open the scheduling pop-up',
+                  'Enter the event title, time zone, and location',
+                  'Add the meeting link (Google Meet) and select the related course',
+                  'Set precise start and end times for the session'
                 ]}
                 index={2}
               />
@@ -179,14 +190,14 @@ const EventManagementGuide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <StepCard
-                icon={Settings}
-                title="Event Analytics"
-                color="indigo"
+                icon={Video}
+                title="Recurrence & Confirmation"
+                color="purple"
                 items={[
-                  'Track attendance and engagement',
-                  'Generate participation reports',
-                  'Collect and analyze feedback',
-                  'Measure event effectiveness'
+                  'Choose a recurrence pattern: Does not repeat, Daily, Weekly, Monthly, or Yearly',
+                  'Verify all event information before saving',
+                  'Click Schedule Event to finalize',
+                  'Wait for the success confirmation before closing the dialog'
                 ]}
                 index={3}
               />
@@ -197,9 +208,8 @@ const EventManagementGuide = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <ProTip emoji="📅">
-                <span className="font-bold">Event Planning:</span> Schedule events well in advance and 
-                send multiple reminders to ensure maximum participation and engagement.
+              <ProTip emoji="🗓️">
+                <span className="font-bold">Consistency Counts:</span> Reuse recurrence settings for recurring classes and double-check time zones to prevent scheduling conflicts.
               </ProTip>
             </motion.div>
           </div>
