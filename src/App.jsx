@@ -167,6 +167,14 @@ function App() {
               <Route path="/company_athena" element={<CompanyAthena />} />
               <Route path="/expert_athena" element={<ExpertAthena />} />
               <Route
+                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId/preview"
+                element={
+                  <ProtectedRoute>
+                    <LessonPreview />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/revenue_generation"
                 element={<RevenueGeneration />}
               />
@@ -368,6 +376,10 @@ function App() {
                       path="modules/:moduleId/assessments"
                       element={<ModuleAssessmentsView />}
                     />
+                    <Route
+                      path="modules/:moduleId/lessons"
+                      element={<LessonView />}
+                    />
                     <Route path="module/:moduleId">
                       <Route index element={<ModuleDetail />} />
                       <Route path="lessons" element={<ModuleLessonsView />} />
@@ -379,6 +391,7 @@ function App() {
                         <Route index element={<LessonView />} />
                         <Route path="detail" element={<LessonDetail />} />
                         <Route path="builder" element={<LessonBuilder />} />
+                        <Route path="preview" element={<LessonPreview />} />
                       </Route>
                     </Route>
                   </Route>
