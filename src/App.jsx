@@ -344,7 +344,7 @@ function CourseTimerProviderWrapper() {
   return (
     <CourseTimerProvider courseId={courseId}>
       <SubRoutes>
-        <SubRoute index element={<CourseView />} />
+        {/* <SubRoute index element={<CourseView />} /> */}
         <SubRoute path="modules/:moduleId/lessons" element={<LessonView />} />
         <SubRoute path="module/:moduleId/lessons" element={<ModuleLessonsView />} />
         <SubRoute path="module/:moduleId/assessments" element={<ModuleAssessmentsView />} />
