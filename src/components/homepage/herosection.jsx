@@ -323,15 +323,16 @@ export default function Hero() {
             <video
               src="https://websiteathena.s3.eu-north-1.amazonaws.com/Athena+LMS++website+video+2nd.mp4"
               controls
+              autoPlay
               muted
+              loop
               playsInline
-              poster="https://websiteathena.s3.eu-north-1.amazonaws.com/athena-video-thumbnail.jpg" 
               style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "12px",
-                objectFit: "cover",
-                boxShadow: "0 10px 25px rgba(0, 0, 0, 0.2)",
+                width: '100%',
+                height: '100%',
+                borderRadius: '12px',
+                objectFit: 'cover',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
               }}
             >
               Your browser does not support the video tag.
