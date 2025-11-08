@@ -22,6 +22,7 @@ import {
   X,
   Upload,
   Link,
+  Sparkles,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,7 +45,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { getAuthHeader } from '@/services/authHeader';
-import { MoreVertical, Edit, Trash2, Settings, Sparkles } from 'lucide-react';
+import { generateAndUploadCourseImage } from '@/services/aiCourseService';
+import { MoreVertical, Edit, Trash2, Settings } from 'lucide-react';
 import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
 import {
   DropdownMenu,
@@ -86,6 +88,7 @@ const ModuleLessonsView = () => {
     order: 1,
     status: 'DRAFT',
     thumbnail: '',
+    aiPrompt: '',
   });
 
   // Lesson deletion state
@@ -105,6 +108,7 @@ const ModuleLessonsView = () => {
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [thumbnailMode, setThumbnailMode] = useState('url'); // 'url' or 'upload'
   const [editingContext, setEditingContext] = useState(null); // 'create' or 'update'
 
@@ -226,6 +230,7 @@ const ModuleLessonsView = () => {
         order: newLesson.order + 1, // Increment order for next lesson
         status: 'DRAFT',
         thumbnail: '',
+        aiPrompt: '',
       });
 
       setShowCreateDialog(false);
@@ -430,6 +435,68 @@ const ModuleLessonsView = () => {
     setShowImageEditor(false);
     setSelectedImageFile(null);
     setEditingContext(null);
+  };
+
+  // Handle AI image generation
+  const handleGenerateAIImage = async context => {
+    const prompt =
+      context === 'create' ? newLesson.aiPrompt : currentLesson?.aiPrompt;
+
+    if (!prompt?.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a prompt for AI image generation.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsGeneratingImage(true);
+
+      console.log('🎨 Generating AI image with prompt:', prompt);
+
+      // Generate and upload image using the AI service
+      const result = await generateAndUploadCourseImage(prompt, {
+        size: '1024x1024',
+        quality: 'standard',
+        style: 'vivid',
+      });
+
+      if (result.success && result.data) {
+        const imageUrl =
+          result.data.s3Url || result.data.originalUrl || result.data.url;
+
+        if (imageUrl) {
+          // Set the generated image URL in the appropriate form
+          if (context === 'create') {
+            setNewLesson(prev => ({ ...prev, thumbnail: imageUrl }));
+          } else if (context === 'update') {
+            setCurrentLesson(prev => ({ ...prev, thumbnail: imageUrl }));
+          }
+
+          toast({
+            title: 'Success',
+            description: 'AI image generated successfully!',
+          });
+        } else {
+          throw new Error('No image URL returned from AI generation');
+        }
+      } else {
+        throw new Error(result.error || 'AI image generation failed');
+      }
+    } catch (error) {
+      console.error('❌ AI image generation failed:', error);
+
+      toast({
+        title: 'Generation Failed',
+        description:
+          error.message || 'Failed to generate AI image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const filteredLessons = useMemo(() => {
@@ -803,17 +870,21 @@ const ModuleLessonsView = () => {
             <div className="space-y-2">
               <Label>Thumbnail Image</Label>
               <Tabs defaultValue="url" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="url" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="url" className="flex items-center gap-3">
                     <Link className="h-4 w-4" />
                     Image URL
                   </TabsTrigger>
                   <TabsTrigger
                     value="upload"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-3"
                   >
                     <Upload className="h-4 w-4" />
                     Upload File
+                  </TabsTrigger>
+                  <TabsTrigger value="ai" className="flex items-center gap-3">
+                    <Search className="h-4 w-4" />
+                    AI Generate
                   </TabsTrigger>
                 </TabsList>
 
@@ -852,6 +923,43 @@ const ModuleLessonsView = () => {
                     </div>
                   )}
                 </TabsContent>
+                <TabsContent value="ai" className="space-y-2">
+                  <Input
+                    id="aiPrompt"
+                    name="aiPrompt"
+                    value={newLesson.aiPrompt || ''}
+                    onChange={e =>
+                      setNewLesson(prev => ({
+                        ...prev,
+                        aiPrompt: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter AI image prompt (e.g., 'Educational illustration about machine learning')"
+                    type="text"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleGenerateAIImage('create')}
+                    disabled={isGeneratingImage || !newLesson.aiPrompt?.trim()}
+                    className="w-full"
+                  >
+                    {isGeneratingImage ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating Image...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generate Image with AI
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-gray-500">
+                    Describe the image you want to generate. Be specific for
+                    better results.
+                  </p>
+                </TabsContent>
               </Tabs>
 
               {newLesson.thumbnail && (
@@ -871,7 +979,7 @@ const ModuleLessonsView = () => {
                       Remove
                     </Button>
                   </div>
-                  <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
+                  <div className="w-full h-96 bg-gray-100 rounded-lg border-2 overflow-hidden shadow-md">
                     <img
                       src={newLesson.thumbnail}
                       alt="Thumbnail preview"
@@ -1000,17 +1108,21 @@ const ModuleLessonsView = () => {
             <div className="space-y-2">
               <Label>Thumbnail Image</Label>
               <Tabs defaultValue="url" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="url" className="flex items-center gap-2">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="url" className="flex items-center gap-3">
                     <Link className="h-4 w-4" />
                     Image URL
                   </TabsTrigger>
                   <TabsTrigger
                     value="upload"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-3"
                   >
                     <Upload className="h-4 w-4" />
                     Upload File
+                  </TabsTrigger>
+                  <TabsTrigger value="ai" className="flex items-center gap-3">
+                    <Sparkles className="h-4 w-4" />
+                    AI Generate
                   </TabsTrigger>
                 </TabsList>
 
@@ -1054,6 +1166,45 @@ const ModuleLessonsView = () => {
                     </div>
                   )}
                 </TabsContent>
+                <TabsContent value="ai" className="space-y-2">
+                  <Input
+                    id="aiPromptUpdate"
+                    name="aiPrompt"
+                    value={currentLesson?.aiPrompt || ''}
+                    onChange={e =>
+                      setCurrentLesson(prev => ({
+                        ...prev,
+                        aiPrompt: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter AI image prompt (e.g., 'Educational illustration about machine learning')"
+                    type="text"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleGenerateAIImage('update')}
+                    disabled={
+                      isGeneratingImage || !currentLesson?.aiPrompt?.trim()
+                    }
+                    className="w-full"
+                  >
+                    {isGeneratingImage ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generating Image...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Generate Image with AI
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-gray-500">
+                    Describe the image you want to generate. Be specific for
+                    better results.
+                  </p>
+                </TabsContent>
               </Tabs>
 
               {currentLesson?.thumbnail && (
@@ -1073,7 +1224,7 @@ const ModuleLessonsView = () => {
                       Remove
                     </Button>
                   </div>
-                  <div className="w-full h-32 bg-gray-100 rounded border overflow-hidden">
+                  <div className="w-full h-96 bg-gray-100 rounded-lg border-2 overflow-hidden shadow-md">
                     <img
                       src={currentLesson.thumbnail}
                       alt="Thumbnail preview"
