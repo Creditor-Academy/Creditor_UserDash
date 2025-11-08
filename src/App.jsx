@@ -378,6 +378,7 @@ function App() {
                       <Route path="lesson/:lessonId">
                         <Route index element={<LessonView />} />
                         <Route path="detail" element={<LessonDetail />} />
+                        <Route path="builder" element={<LessonBuilder />} />
                       </Route>
                     </Route>
                   </Route>
