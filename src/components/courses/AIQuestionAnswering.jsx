@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MessageCircle, 
-  Send, 
-  Copy, 
-  Download, 
+import {
+  MessageCircle,
+  Send,
+  Copy,
+  Download,
   Trash2,
   Loader2,
   AlertCircle,
@@ -13,10 +13,9 @@ import {
   Brain,
   FileText,
   HelpCircle,
-  CheckCircle
+  CheckCircle,
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import bytezAPI from '../../services/bytezAPI';
 import { useAIFeatureAccess, withAIFeatureAccess } from './AIFeatureAccess';
 
 const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
@@ -39,11 +38,11 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
   }
 
   const sampleQuestions = [
-    "What is machine learning?",
-    "How does photosynthesis work?",
-    "Explain the concept of blockchain",
-    "What are the benefits of renewable energy?",
-    "How do neural networks function?"
+    'What is machine learning?',
+    'How does photosynthesis work?',
+    'Explain the concept of blockchain',
+    'What are the benefits of renewable energy?',
+    'How do neural networks function?',
   ];
 
   const askQuestion = async () => {
@@ -51,40 +50,32 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
 
     try {
       setIsGenerating(true);
-      
+
       // Track feature usage
       if (trackUsage) {
         trackUsage('QUESTION_ANSWERING');
       }
-      
-      const response = await bytezAPI.answerQuestionWithFlanT5(
-        question,
-        context,
-        {
-          max_new_tokens: 200,
-          min_new_tokens: 50,
-          temperature: 0.5
-        }
-      );
 
+      // AI Q&A functionality removed - Bytez API no longer used
       const newQA = {
         id: Date.now(),
         question: question,
-        answer: response.answer,
+        answer:
+          'AI Question Answering feature is currently unavailable. This feature has been deprecated.',
         context: context || null,
-        model: response.model,
-        success: response.success,
-        confidence: response.confidence,
+        model: 'unavailable',
+        success: false,
+        confidence: 'none',
         createdAt: new Date().toISOString(),
-        isError: !response.success
+        isError: true,
       };
 
       setQaHistory([newQA, ...qaHistory]);
-      
+
       // Clear inputs
       setQuestion('');
       setContext('');
-      
+
       if (onFeatureUse) {
         onFeatureUse('QUESTION_ANSWERING', newQA);
       }
@@ -99,7 +90,7 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
         success: false,
         confidence: 'none',
         createdAt: new Date().toISOString(),
-        isError: true
+        isError: true,
       };
       setQaHistory([errorQA, ...qaHistory]);
     } finally {
@@ -107,11 +98,11 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
     }
   };
 
-  const deleteQA = (id) => {
+  const deleteQA = id => {
     setQaHistory(qaHistory.filter(qa => qa.id !== id));
   };
 
-  const copyAnswer = (answer) => {
+  const copyAnswer = answer => {
     navigator.clipboard.writeText(answer);
   };
 
@@ -126,16 +117,16 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
     URL.revokeObjectURL(url);
   };
 
-  const insertIntoCourse = (qa) => {
+  const insertIntoCourse = qa => {
     console.log('Inserting Q&A into course:', qa);
   };
 
-  const useSampleQuestion = (sampleQuestion) => {
+  const useSampleQuestion = sampleQuestion => {
     setQuestion(sampleQuestion);
     questionInputRef.current?.focus();
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       askQuestion();
     }
@@ -149,10 +140,12 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
           <Brain className="w-5 h-5 text-orange-600" />
           AI Question Answering
         </h3>
-        
+
         {/* Sample Questions */}
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-3">Try these sample questions:</p>
+          <p className="text-sm text-gray-600 mb-3">
+            Try these sample questions:
+          </p>
           <div className="flex flex-wrap gap-2">
             {sampleQuestions.map((sample, index) => (
               <button
@@ -175,7 +168,7 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
             <textarea
               ref={questionInputRef}
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
+              onChange={e => setQuestion(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your question here... (Ctrl+Enter to submit)"
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
@@ -208,7 +201,7 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
                 </label>
                 <textarea
                   value={context}
-                  onChange={(e) => setContext(e.target.value)}
+                  onChange={e => setContext(e.target.value)}
                   placeholder="Provide any relevant context or background information that might help answer your question..."
                   className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   rows="4"
@@ -223,7 +216,7 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
             className="w-full bg-orange-600 text-white py-3 px-4 rounded-md hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
           >
             {isGenerating ? (
-              <LoadingBuffer 
+              <LoadingBuffer
                 type="ai"
                 message="Analyzing your question..."
                 className="text-white"
@@ -245,8 +238,8 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
             <MessageCircle className="w-5 h-5 text-orange-600" />
             Question & Answer History
           </h4>
-          
-          {qaHistory.map((qa) => (
+
+          {qaHistory.map(qa => (
             <motion.div
               key={qa.id}
               initial={{ opacity: 0, y: 20 }}
@@ -262,10 +255,12 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
                     <p className="text-gray-700">{qa.question}</p>
                   </div>
                 </div>
-                
+
                 {qa.context && (
                   <div className="ml-8 mt-2 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Context provided:</p>
+                    <p className="text-xs font-medium text-gray-500 mb-1">
+                      Context provided:
+                    </p>
                     <p className="text-sm text-gray-600">{qa.context}</p>
                   </div>
                 )}
@@ -274,7 +269,9 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
               {/* Answer */}
               <div className="mb-4">
                 <div className="flex items-start gap-3">
-                  <div className={`w-5 h-5 mt-0.5 flex-shrink-0 ${qa.isError ? 'text-red-500' : 'text-green-600'}`}>
+                  <div
+                    className={`w-5 h-5 mt-0.5 flex-shrink-0 ${qa.isError ? 'text-red-500' : 'text-green-600'}`}
+                  >
                     {qa.isError ? <AlertCircle /> : <CheckCircle />}
                   </div>
                   <div className="flex-1">
@@ -289,7 +286,9 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
                         {qa.model}
                       </span>
                     </div>
-                    <div className={`p-4 rounded-lg ${qa.isError ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
+                    <div
+                      className={`p-4 rounded-lg ${qa.isError ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}
+                    >
                       <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
                         {qa.answer}
                       </pre>
@@ -344,7 +343,9 @@ const AIQuestionAnswering = ({ onFeatureUse, usageInfo }) => {
         <div className="text-center py-12 text-gray-500">
           <Brain className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p className="text-lg mb-2">No questions asked yet</p>
-          <p className="text-sm">Ask your first question above to get started with AI-powered answers</p>
+          <p className="text-sm">
+            Ask your first question above to get started with AI-powered answers
+          </p>
         </div>
       )}
     </div>

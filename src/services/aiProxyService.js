@@ -4,10 +4,13 @@ class AIProxyService {
     // Use environment variable or fallback to localhost:5000 for backend
     // Check if we're in a browser environment
     const isClient = typeof window !== 'undefined';
-    const apiUrl = isClient && window.location.origin.includes('localhost:3000') ? 
-      'http://localhost:5000' : 
-      (isClient ? window.location.origin : 'http://localhost:5000');
-    
+    const apiUrl =
+      isClient && window.location.origin.includes('localhost:3000')
+        ? 'http://localhost:5000'
+        : isClient
+          ? window.location.origin
+          : 'http://localhost:5000';
+
     this.baseURL = `${apiUrl}/api/ai-proxy`;
   }
 
@@ -19,7 +22,7 @@ class AIProxyService {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
@@ -39,9 +42,9 @@ class AIProxyService {
       const response = await fetch(`${this.baseURL}/generate-outline`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(courseData)
+        body: JSON.stringify(courseData),
       });
 
       if (!response.ok) {
@@ -52,12 +55,12 @@ class AIProxyService {
       return result;
     } catch (error) {
       console.error('Course outline generation failed:', error);
-      
+
       // Return fallback structure for any course topic
       return {
         success: true,
         generated_text: `Course: ${courseData.title}\n\nModule 1: Introduction to ${courseData.subject}\n- Overview and fundamentals\n- Key concepts\n- Getting started\n\nModule 2: ${courseData.subject} Fundamentals\n- Core principles\n- Essential techniques\n- Best practices\n\nModule 3: Practical ${courseData.subject}\n- Hands-on examples\n- Real-world applications\n- Project work\n\nModule 4: Advanced ${courseData.subject}\n- Expert techniques\n- Optimization\n- Industry standards`,
-        modules: this.generateFallbackModules(courseData)
+        modules: this.generateFallbackModules(courseData),
       };
     }
   }
@@ -72,10 +75,10 @@ class AIProxyService {
         lessons: [
           `What is ${subject}?`,
           'Course Overview',
-          'Learning Objectives', 
+          'Learning Objectives',
           'Prerequisites',
-          'Getting Started'
-        ]
+          'Getting Started',
+        ],
       },
       {
         id: 2,
@@ -85,8 +88,8 @@ class AIProxyService {
           'Key Principles',
           'Essential Terminology',
           'Foundation Knowledge',
-          'Basic Techniques'
-        ]
+          'Basic Techniques',
+        ],
       },
       {
         id: 3,
@@ -96,8 +99,8 @@ class AIProxyService {
           'Real-world Applications',
           'Best Practices',
           'Common Patterns',
-          'Project Work'
-        ]
+          'Project Work',
+        ],
       },
       {
         id: 4,
@@ -107,8 +110,8 @@ class AIProxyService {
           'Optimization Strategies',
           'Industry Standards',
           'Expert Tips',
-          'Complex Scenarios'
-        ]
+          'Complex Scenarios',
+        ],
       },
       {
         id: 5,
@@ -118,8 +121,8 @@ class AIProxyService {
           'Problem Solving',
           'Troubleshooting',
           'Performance',
-          'Maintenance'
-        ]
+          'Maintenance',
+        ],
       },
       {
         id: 6,
@@ -129,54 +132,18 @@ class AIProxyService {
           'Practical Projects',
           'Final Assessment',
           'Career Paths',
-          'Continued Learning'
-        ]
-      }
+          'Continued Learning',
+        ],
+      },
     ];
   }
 
-  // Text Summarization using Bytez with BART model
+  // Text Summarization - Bytez dependency removed
   async summarizeContent(content, options = {}) {
     try {
-      // Try Bytez API with BART model first
-      const apiKey = import.meta.env.VITE_BYTEZ_API_KEY;
-      if (apiKey) {
-        try {
-          const { Bytez } = await import('bytez.js');
-          const sdk = new Bytez(apiKey);
-          const model = sdk.model('ainize/bart-base-cnn');
-          
-          await model.create();
-          
-          // Prepare content for BART (limit length for better performance)
-          const maxLength = 1024;
-          const truncatedContent = content.length > maxLength ? 
-            content.substring(0, maxLength) + '...' : content;
-          
-          const result = await model.run(truncatedContent, {
-            max_length: options.length === 'short' ? 50 : options.length === 'long' ? 200 : 100,
-            min_length: options.length === 'short' ? 20 : options.length === 'long' ? 80 : 40,
-            do_sample: false
-          });
-          
-          if (result.output) {
-            return {
-              success: true,
-              summary: result.output,
-              generated_text: result.output,
-              originalLength: content.length,
-              summaryLength: result.output.length,
-              model: 'ainize/bart-base-cnn'
-            };
-          }
-        } catch (bytezError) {
-          console.warn('Bytez BART model failed:', bytezError);
-        }
-      }
-      
-      // Fallback to proxy service
+      // Fallback to proxy service (Bytez removed)
       const result = await this.makeRequest('/summarize', { content, options });
-      
+
       if (result.success) {
         return {
           success: true,
@@ -184,23 +151,27 @@ class AIProxyService {
           generated_text: result.summary,
           originalLength: result.originalLength,
           summaryLength: result.summaryLength,
-          model: 'AI Assistant'
+          model: 'AI Assistant',
         };
       } else {
         throw new Error('Summarization failed');
       }
     } catch (error) {
       // Fallback summary using extractive approach
-      const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
-      const summaryLength = options.length === 'short' ? 1 : options.length === 'long' ? 3 : 2;
-      const fallbackSummary = sentences.slice(0, summaryLength).join('. ') + '.';
-      
+      const sentences = content
+        .split(/[.!?]+/)
+        .filter(s => s.trim().length > 10);
+      const summaryLength =
+        options.length === 'short' ? 1 : options.length === 'long' ? 3 : 2;
+      const fallbackSummary =
+        sentences.slice(0, summaryLength).join('. ') + '.';
+
       return {
         success: false,
         summary: fallbackSummary,
         generated_text: fallbackSummary,
         model: 'extractive fallback',
-        error: 'AI service unavailable'
+        error: 'AI service unavailable',
       };
     }
   }
@@ -209,14 +180,14 @@ class AIProxyService {
   async answerQuestion(question, context = '', options = {}) {
     try {
       const result = await this.makeRequest('/question', { question, context });
-      
+
       if (result.success) {
         return {
           success: true,
           answer: result.answer,
           model: 'AI Assistant',
           question: question,
-          context: context
+          context: context,
         };
       } else {
         throw new Error('Question answering failed');
@@ -224,14 +195,14 @@ class AIProxyService {
     } catch (error) {
       // Fallback answer
       const fallbackAnswer = this.generateFallbackAnswer(question, context);
-      
+
       return {
         success: false,
         answer: fallbackAnswer,
         model: 'fallback',
         question: question,
         context: context,
-        error: 'AI service unavailable'
+        error: 'AI service unavailable',
       };
     }
   }
@@ -240,13 +211,13 @@ class AIProxyService {
   async generateImage(prompt, options = {}) {
     try {
       const result = await this.makeRequest('/image', { prompt, options });
-      
+
       if (result.success) {
         return {
           success: true,
           imageUrl: result.imageUrl,
           prompt: prompt,
-          model: 'AI Assistant'
+          model: 'AI Assistant',
         };
       } else {
         throw new Error('Image generation failed');
@@ -254,10 +225,11 @@ class AIProxyService {
     } catch (error) {
       return {
         success: false,
-        imageUrl: 'https://via.placeholder.com/512x512?text=Image+Generation+Unavailable',
+        imageUrl:
+          'https://via.placeholder.com/512x512?text=Image+Generation+Unavailable',
         prompt: prompt,
         model: 'fallback',
-        error: 'AI service unavailable'
+        error: 'AI service unavailable',
       };
     }
   }
@@ -275,7 +247,7 @@ class AIProxyService {
   // Fallback answer generator
   generateFallbackAnswer(question, context = '') {
     const questionLower = question.toLowerCase();
-    
+
     if (questionLower.includes('what') || questionLower.includes('define')) {
       return `This question asks for a definition or explanation of "${question}". ${context ? 'Based on the provided context, ' : ''}please refer to educational resources for detailed information.`;
     } else if (questionLower.includes('how')) {

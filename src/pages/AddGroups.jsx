@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users, Plus, Edit, Trash2, BookOpen, MessageSquare, X, Eye, UserPlus, Upload, File, Image, Video, FileText } from "lucide-react";
 import GroupInfo from "./GroupInfo";
 import CreateAnnouncementModal from "@/components/modals/CreateAnnouncementModal";
-import { createGroup, getGroups, createGroupPost, addGroupMember, getGroupMembers, createCourseGroup } from "@/services/groupService";
+import { createGroup, getGroups, createGroupPost, addGroupMember, getGroupMembers, createCourseGroup, updateGroup } from "@/services/groupService";
 import { fetchAllCourses } from "@/services/courseService";
 import { useUser } from "@/contexts/UserContext";
 import { toast } from "sonner";
@@ -63,7 +63,8 @@ const AddGroups = () => {
     description: "",
     type: "common",
     courseId: "",
-    isPrivate: false
+    isPrivate: false,
+    thumbnail: ""
   });
 
   // Courses state for course-related groups
@@ -122,7 +123,8 @@ const AddGroups = () => {
             createdAt: new Date(group.createdAt).toISOString().split('T')[0],
             memberCount: group.members ? group.members.length : 0,
             createdBy: group.created_by,
-            members: group.members || []
+            members: group.members || [],
+            thumbnail: group.thumbnail || ""
           }));
           
           // Sort groups by creation date (latest first)
@@ -295,12 +297,16 @@ const AddGroups = () => {
     
     try {
       if (editingGroup) {
-        // Update existing group (for now, just update locally)
-        setGroups(prev => prev.map(group => 
-          group.id === editingGroup.id 
-            ? { ...group, ...formData }
-            : group
-        ));
+        // Persist update via API
+        const updatePayload = {
+          name: formData.name,
+          description: formData.description,
+          ...(formData.type === 'course' ? { course_id: formData.courseId } : {}),
+          ...(isAdminOrInstructor && formData.thumbnail ? { thumbnail: formData.thumbnail } : {}),
+        };
+        await updateGroup(editingGroup.id, updatePayload);
+        // Refresh groups list
+        await fetchGroups();
         setEditingGroup(null);
         toast.success("Group updated successfully!");
       } else {
@@ -314,13 +320,28 @@ const AddGroups = () => {
             name: formData.name,
             description: formData.description,
             course_id: formData.courseId,
+            // send under multiple keys to maximize backend compatibility
+            ...(isAdminOrInstructor && formData.thumbnail ? {
+              thumbnail: formData.thumbnail,
+              banner: formData.thumbnail,
+              image_url: formData.thumbnail,
+              imageUrl: formData.thumbnail,
+              image: formData.thumbnail,
+            } : {})
           };
           response = await createCourseGroup(payload);
         } else {
           const groupData = {
             name: formData.name,
             description: formData.description,
-            created_by: userProfile.id
+            created_by: userProfile.id,
+            ...(isAdminOrInstructor && formData.thumbnail ? {
+              thumbnail: formData.thumbnail,
+              banner: formData.thumbnail,
+              image_url: formData.thumbnail,
+              imageUrl: formData.thumbnail,
+              image: formData.thumbnail,
+            } : {})
           };
           response = await createGroup(groupData);
         }
@@ -338,7 +359,18 @@ const AddGroups = () => {
             memberCount: 0
           };
           
-          // Refresh the groups list to show the newly created group
+          // If backend ignored the image on create, immediately patch it via update (admin-only)
+          try {
+            if (isAdminOrInstructor && formData.thumbnail && response.data.id) {
+              await updateGroup(response.data.id, {
+                thumbnail: formData.thumbnail,
+              });
+            }
+          } catch (e) {
+            console.warn('Post-create image update failed (non-blocking):', e?.message || e);
+          }
+
+          // Refresh the groups list to show the newly created/updated group
           await fetchGroups();
           toast.success("Group created successfully!");
         } else {
@@ -352,7 +384,8 @@ const AddGroups = () => {
         description: "",
         type: "common",
         courseId: "",
-        isPrivate: false
+        isPrivate: false,
+        thumbnail: ""
       });
       setShowModal(false);
     } catch (error) {
@@ -370,7 +403,8 @@ const AddGroups = () => {
       description: group.description,
       type: group.type,
       courseId: group.courseId || "",
-      isPrivate: group.isPrivate
+      isPrivate: group.isPrivate,
+      thumbnail: group.thumbnail || ""
     });
     setShowModal(true);
   };
@@ -386,8 +420,9 @@ const AddGroups = () => {
       name: "",
       description: "",
       type: "common",
-      courseName: "",
-      isPrivate: false
+      courseId: "",
+      isPrivate: false,
+      thumbnail: ""
     });
     setEditingGroup(null);
     setShowModal(false);
@@ -663,6 +698,73 @@ const AddGroups = () => {
                   </div>
                 )}
 
+                {/* Group Image (Admin-only editable) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Group Image {isAdminOrInstructor ? '(optional, admin-only)' : '(view only)'}
+                  </label>
+                  {isAdminOrInstructor ? (
+                    <>
+                      <Input
+                        name="thumbnail"
+                        value={formData.thumbnail}
+                        onChange={handleInputChange}
+                        placeholder="https://example.com/group-image.jpg"
+                        className="border-gray-300 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This image will be used as both the banner and thumbnail on group cards.
+                      </p>
+                    </>
+                  ) : (
+                    <input
+                      value={formData.thumbnail || 'No image set'}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-sm text-gray-600"
+                    />
+                  )}
+
+                  {/* Live Preview */}
+                  <div className="mt-3">
+                    <div className="border border-dashed border-gray-300 rounded-lg p-3 bg-gray-50">
+                      {formData.thumbnail ? (
+                        <div className="space-y-2">
+                          <div className="text-xs text-gray-500">Preview</div>
+                          <div className="aspect-[3/1] w-full overflow-hidden rounded-md bg-white flex items-center justify-center">
+                            <img
+                              src={formData.thumbnail}
+                              alt="Group banner preview"
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling && (e.currentTarget.nextElementSibling.style.display='flex'); }}
+                            />
+                            <div className="hidden items-center justify-center w-full h-full text-gray-400">
+                              <Users className="h-6 w-6 mr-2" /> Invalid image URL
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-md overflow-hidden bg-white flex items-center justify-center">
+                              <img
+                                src={formData.thumbnail}
+                                alt="Group thumbnail preview"
+                                className="w-full h-full object-cover"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling && (e.currentTarget.nextElementSibling.style.display='flex'); }}
+                              />
+                              <div className="hidden items-center justify-center w-full h-full text-gray-400">
+                                <Users className="h-4 w-4" />
+                              </div>
+                            </div>
+                            <span className="text-xs text-gray-500">Thumbnail</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center text-gray-400 text-sm py-4">
+                          <Users className="h-6 w-6 mx-auto mb-1" /> No image selected
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Privacy Option */}
                 <div className="flex items-center space-x-2 pt-2">
                   <input
@@ -769,9 +871,26 @@ const AddGroups = () => {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="p-2 rounded-lg mt-1 flex-shrink-0 bg-blue-100 text-blue-600">
-                          <Users className="h-4 w-4" />
-                        </div>
+                        {group.thumbnail ? (
+                          <div className="w-12 h-12 rounded-lg mt-1 flex-shrink-0 overflow-hidden">
+                            <img
+                              src={group.thumbnail}
+                              alt={group.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div className="w-full h-full bg-blue-100 text-blue-600 flex items-center justify-center" style={{display: 'none'}}>
+                              <Users className="h-4 w-4" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-2 rounded-lg mt-1 flex-shrink-0 bg-blue-100 text-blue-600">
+                            <Users className="h-4 w-4" />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-gray-800 truncate">{group.name}</h4>
                           <p className="text-sm text-gray-600 mt-1 line-clamp-2">

@@ -126,8 +126,8 @@ export function GroupLayout() {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="border-b">
-        <div className="container py-4">
-          <div className="flex items-center gap-4">
+        <div className="container py-3 md:py-4 mx-auto px-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
@@ -140,14 +140,14 @@ export function GroupLayout() {
               </Link>
             </Button>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold">
+              <h1 className="text-xl md:text-2xl font-bold">
                 {loading ? "Loading..." : groupName}
               </h1>
             </div>
             <Button
               variant="outline"
               size="sm"
-              className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800"
+              className="border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 text-xs sm:text-sm"
               onClick={async () => {
                 if (!groupId) return;
                 try {
@@ -165,16 +165,16 @@ export function GroupLayout() {
         </div>
       </div>
       
-      <div className="container py-4">
+      <div className="container py-4 mx-auto px-4">
         {/* Sub navigation tabs */}
         <Tabs value={activeTab} className="mb-6">
-          <TabsList className="w-full inline-flex gap-2">
+          <TabsList className="w-full grid grid-cols-2 gap-2 md:flex md:flex-row md:gap-2 h-auto">
             {tabs.map((tab) => (
               <TabsTrigger
                 key={tab.path}
                 value={tab.path.split('/').pop() || ''}
                 className={cn(
-                  "flex items-center gap-2 flex-1 justify-center",
+                  "flex items-center gap-2 flex-1 justify-center text-sm py-2",
                   currentPath === tab.path ? "bg-primary text-primary-foreground" : ""
                 )}
                 asChild
@@ -189,18 +189,18 @@ export function GroupLayout() {
         </Tabs>
         
         {/* Content area */}
-        <div className="bg-card rounded-lg p-4 shadow-sm min-h-[80vh]">
+        <div className="bg-card rounded-lg p-3 md:p-4 pb-24 shadow-sm min-h-[80vh]">
           <Outlet />
         </div>
       </div>
 
       {/* Floating controls (visible only to instructors/admins) */}
       {isInstructorOrAdmin() && (
-        <div className="fixed bottom-6 right-6 z-50 pointer-events-none">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 pointer-events-none">
           <div className="pointer-events-auto flex items-center rounded-full bg-white border border-gray-200 shadow-2xl px-2 py-2 gap-2">
             <button
               type="button"
-              className="h-12 w-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow flex items-center justify-center"
+              className="h-12 w-12 md:h-12 md:w-12 rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow flex items-center justify-center"
               aria-label="Create"
               ref={plusBtnRef}
               onClick={() => { 
@@ -251,7 +251,7 @@ export function GroupLayout() {
               </div>
               <button
                 type="button"
-                className="h-12 w-12 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 shadow-inner flex items-center justify-center"
+                className="h-12 w-12 md:h-12 md:w-12 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 shadow-inner flex items-center justify-center"
                 aria-label="Profile"
               >
                 <UserIcon className="h-5 w-5" />

@@ -6,10 +6,12 @@ import { Separator } from "@/components/ui/separator";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { getAllEvents, getAllUpcomingEvents, expandRecurringEvents } from "@/services/calendarService";
+import { getAllEvents, getAllUpcomingEvents, expandRecurringEvents, getPastCourseEvents } from "@/services/calendarService";
+import { fetchUserCourses } from "@/services/courseService";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // Utility functions for date handling
 const getUserTimezone = () => {
@@ -55,8 +57,10 @@ const formatDateForDisplay = (date) => {
 export function CalendarPage() {
   const [selectedDate, setSelectedDate] = React.useState(new Date());
   const [allEvents, setAllEvents] = React.useState([]); // unified event list (expanded)
+  const [pastCourseEvents, setPastCourseEvents] = React.useState([]); // past events from courses
   const [loading, setLoading] = React.useState({
-    all: true
+    all: true,
+    pastCourseEvents: true
   });
   const [error, setError] = React.useState(null);
   const [timeFilter, setTimeFilter] = React.useState('week'); // 'today', 'week', 'month', 'all'
@@ -117,6 +121,53 @@ export function CalendarPage() {
     return () => {
       window.removeEventListener('storage', handleTimezoneChange);
     };
+  }, []);
+
+  // Fetch past course events
+  React.useEffect(() => {
+    async function fetchPastEvents() {
+      setLoading(prev => ({ ...prev, pastCourseEvents: true }));
+      try {
+        // Get user's enrolled courses
+        const courses = await fetchUserCourses();
+        
+        if (!courses || courses.length === 0) {
+          setPastCourseEvents([]);
+          setLoading(prev => ({ ...prev, pastCourseEvents: false }));
+          return;
+        }
+
+        // Fetch past events for each course
+        const allPastEvents = [];
+        for (const course of courses) {
+          try {
+            const courseId = course.id || course.course_id;
+            if (courseId) {
+              const events = await getPastCourseEvents(courseId);
+              // Add course information to each event
+              const eventsWithCourse = events.map(event => ({
+                ...event,
+                courseName: course.name || course.title || 'Unknown Course',
+                courseId: courseId
+              }));
+              allPastEvents.push(...eventsWithCourse);
+            }
+          } catch (err) {
+            console.error(`Error fetching past events for course ${course.id}:`, err);
+          }
+        }
+
+        // Sort by date (most recent first)
+        allPastEvents.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+        setPastCourseEvents(allPastEvents);
+      } catch (err) {
+        console.error('Error fetching past course events:', err);
+        setPastCourseEvents([]);
+      } finally {
+        setLoading(prev => ({ ...prev, pastCourseEvents: false }));
+      }
+    }
+    fetchPastEvents();
   }, []);
 
   // Filter events based on selected time period and settings
@@ -414,57 +465,140 @@ export function CalendarPage() {
         </div>
       </div>
       
-      {/* All Upcoming Events */}
+      {/* Tabs for Upcoming and Past Events */}
       <div className="mt-12">
-        <h3 className="text-xl font-semibold mb-6">All Upcoming Events ({getTimeFilterLabel()})</h3>
-        {loading.all ? (
-          <div>Loading upcoming events...</div>
-        ) : filteredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredEvents.map((event) => (
-              <Card key={event.id + (event.isOccurrence ? event.date.toISOString() : '')} className="p-4 hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{event.title}</h4>
-                    {event.isGrouped && event.occurrenceCount > 1 && (
-                      <Badge variant="secondary" className="text-xs">
-                        {event.occurrenceCount} occurrences
-                      </Badge>
-                    )}
-                    {event.isRecurring && !event.isGrouped && (
-                      <Badge variant="outline" className="text-xs">
-                        Recurring
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1 text-sm text-muted-foreground mb-2">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon size={12} />
-                    <span>{event.date ? formatDateForDisplay(event.date) : ''}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock size={12} />
-                    <span>{event.time}</span>
-                  </div>
-                  {event.location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin size={12} />
-                      <span>{event.location}</span>
+        <Tabs defaultValue="upcoming" className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="upcoming" className="flex items-center gap-2">
+              <CalendarIcon size={16} />
+              Upcoming Events
+            </TabsTrigger>
+            <TabsTrigger value="past" className="flex items-center gap-2">
+              <Clock size={16} />
+              Past Events
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Upcoming Events Tab */}
+          <TabsContent value="upcoming" className="mt-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold">All Upcoming Events ({getTimeFilterLabel()})</h3>
+            </div>
+            {loading.all ? (
+              <div className="text-center py-8">Loading upcoming events...</div>
+            ) : filteredEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredEvents.map((event) => (
+                  <Card key={event.id + (event.isOccurrence ? event.date.toISOString() : '')} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{event.title}</h4>
+                        {event.isGrouped && event.occurrenceCount > 1 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {event.occurrenceCount} occurrences
+                          </Badge>
+                        )}
+                        {event.isRecurring && !event.isGrouped && (
+                          <Badge variant="outline" className="text-xs">
+                            Recurring
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
-                {event.description && (
-                  <p className="text-xs text-muted-foreground">{event.description}</p>
-                )}
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 bg-card text-card-foreground rounded-lg">
-            <p className="text-muted-foreground">No upcoming events found for {getTimeFilterLabel().toLowerCase()}</p>
-          </div>
-        )}
+                    <div className="space-y-1 text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon size={12} />
+                        <span>{event.date ? formatDateForDisplay(event.date) : ''}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock size={12} />
+                        <span>{event.time}</span>
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={12} />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                    </div>
+                    {event.description && (
+                      <p className="text-xs text-muted-foreground">{event.description}</p>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-card text-card-foreground rounded-lg">
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No upcoming events found for {getTimeFilterLabel().toLowerCase()}</p>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Past Events Tab */}
+          <TabsContent value="past" className="mt-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold mb-2">Past Course Events (This Month)</h3>
+              <p className="text-sm text-muted-foreground">
+                Showing past live events from your enrolled courses for the current month
+              </p>
+            </div>
+            {loading.pastCourseEvents ? (
+              <div className="text-center py-8">Loading past course events...</div>
+            ) : pastCourseEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pastCourseEvents.map((event) => (
+                  <Card key={event.id} className="p-4 hover:shadow-md transition-shadow bg-gray-50/50">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex flex-col gap-1">
+                        <h4 className="font-medium">{event.title}</h4>
+                        <Badge variant="outline" className="text-xs w-fit">
+                          {event.courseName}
+                        </Badge>
+                      </div>
+                      <Badge className="bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        Past
+                      </Badge>
+                    </div>
+                    <div className="space-y-1 text-sm text-muted-foreground mb-2">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon size={12} />
+                        <span>{formatDateForDisplay(new Date(event.startTime))}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock size={12} />
+                        <span>
+                          {new Date(event.startTime).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            timeZone: getUserTimezone()
+                          })}
+                        </span>
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin size={12} />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                    </div>
+                    {event.description && (
+                      <p className="text-xs text-muted-foreground">{event.description}</p>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-card text-card-foreground rounded-lg">
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-xl font-semibold mb-2">No Past Events</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                  There are no past course events for this month. Past events from your enrolled courses will appear here.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

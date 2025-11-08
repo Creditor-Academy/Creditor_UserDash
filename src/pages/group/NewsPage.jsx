@@ -237,61 +237,7 @@ export function NewsPage() {
     return () => { isMounted = false; };
   }, [groupId]);
 
-  // Socket integration for real-time updates
-  useEffect(() => {
-    const socket = getSocket();
-    
-    // Listen for new posts
-    const onNewPost = (postData) => {
-      if (postData?.group_id === groupId) {
-        setRawPosts(prev => [postData, ...prev]);
-      }
-    };
-    
-    // Listen for new comments
-    const onCommentAdded = (data) => {
-      if (data?.postId) {
-        setRawPosts(prev => prev.map(post => 
-          post.id === data.postId 
-            ? { ...post, comments: [...(post.comments || []), data.comment] }
-            : post
-        ));
-      }
-    };
-    
-    // Listen for like changes
-    const onLikeAdded = (data) => {
-      if (data?.postId) {
-        setRawPosts(prev => prev.map(post => 
-          post.id === data.postId 
-            ? { ...post, likes: [...(post.likes || []), data.like] }
-            : post
-        ));
-      }
-    };
-    
-    const onLikeRemoved = (data) => {
-      if (data?.postId) {
-        setRawPosts(prev => prev.map(post => 
-          post.id === data.postId 
-            ? { ...post, likes: (post.likes || []).filter(like => like.user_id !== data.userId) }
-            : post
-        ));
-      }
-    };
-    
-    socket.on('groupPostCreated', onNewPost);
-    socket.on('commentAdded', onCommentAdded);
-    socket.on('likeAdded', onLikeAdded);
-    socket.on('likeRemoved', onLikeRemoved);
-    
-    return () => {
-      socket.off('groupPostCreated', onNewPost);
-      socket.off('commentAdded', onCommentAdded);
-      socket.off('likeAdded', onLikeAdded);
-      socket.off('likeRemoved', onLikeRemoved);
-    };
-  }, [groupId]);
+  // (Removed duplicate basic socket integration to prevent double listeners)
 
   // Re-normalize when userDirectory updates to fill in names/avatars post-refresh
   useEffect(() => {
@@ -377,10 +323,40 @@ export function NewsPage() {
       socket.on('post:like', onPostLike);
       socket.on('post:comment', onPostComment);
 
+      // Backward-compat: handle legacy event names if backend emits them
+      socket.on('groupPostCreated', onPostNew);
+      socket.on('commentAdded', (data) => {
+        // Normalize to onPostComment payload
+        const normalized = {
+          post_id: data?.postId || data?.post_id || (data?.post && (data.post.id || data.post.post_id)),
+          comment: data?.comment || data
+        };
+        onPostComment(normalized);
+      });
+      socket.on('likeAdded', (data) => {
+        // Normalize to onPostLike payload
+        const normalized = {
+          post_id: data?.postId || data?.post_id || data?.id,
+          likes_count: data?.likes_count
+        };
+        onPostLike(normalized);
+      });
+      socket.on('likeRemoved', (data) => {
+        const normalized = {
+          post_id: data?.postId || data?.post_id || data?.id,
+          likes_count: data?.likes_count
+        };
+        onPostLike(normalized);
+      });
+
       offFns = [
         () => socket.off('post:new', onPostNew),
         () => socket.off('post:like', onPostLike),
         () => socket.off('post:comment', onPostComment),
+        () => socket.off('groupPostCreated', onPostNew),
+        () => socket.off('commentAdded'),
+        () => socket.off('likeAdded'),
+        () => socket.off('likeRemoved'),
       ];
 
       return () => {
@@ -448,6 +424,8 @@ export function NewsPage() {
   }, [rawPosts]);
  
   // Safety net: auto-refresh posts every 2 seconds
+  const userDirectoryRef = useRef({});
+  useEffect(() => { userDirectoryRef.current = userDirectory; }, [userDirectory]);
   useEffect(() => {
     if (!groupId) return;
     let cancelled = false;
@@ -458,14 +436,14 @@ export function NewsPage() {
         const list = Array.isArray(res?.data) ? res.data : res;
         setRawPosts(list || []);
         // Only normalize if we have user directory data
-        if (Object.keys(userDirectory).length > 0) {
+        if (Object.keys(userDirectoryRef.current || {}).length > 0) {
           setPosts(normalizePosts(list || []));
         }
       } catch {}
     };
     const intervalId = setInterval(tick, 2000);
     return () => { cancelled = true; clearInterval(intervalId); };
-  }, [groupId, userDirectory]);
+  }, [groupId]);
   
   const handleCommentSubmit = async (postId) => {
     if (!newCommentContents[postId] || !newCommentContents[postId].trim()) return;

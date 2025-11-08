@@ -1,11 +1,12 @@
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Image } from "lucide-react";
+import { X, Image, BarChart2 } from "lucide-react";
 
 export function AttachmentModal({ 
   isOpen, 
   onClose, 
-  onImageSelect
+  onImageSelect,
+  onPollCreate
 }) {
   const imageInputRef = useRef(null);
 
@@ -41,7 +42,7 @@ export function AttachmentModal({
 
           {/* Options */}
           <div className="p-6">
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
               {/* Image Option */}
               <Button
                 variant="outline"
@@ -51,12 +52,20 @@ export function AttachmentModal({
                 <Image className="h-8 w-8 text-blue-500" />
                 <span className="text-sm font-medium text-gray-700">Image</span>
               </Button>
+
+              {/* Poll Option */}
+              <Button
+                variant="outline"
+                className="h-24 w-32 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                onClick={() => { onPollCreate?.(); onClose(); }}
+              >
+                <BarChart2 className="h-8 w-8 text-purple-600" />
+                <span className="text-sm font-medium text-gray-700">Poll</span>
+              </Button>
             </div>
 
             <div className="mt-4 text-center">
-              <p className="text-xs text-gray-500">
-                Select an image from your device
-              </p>
+              <p className="text-xs text-gray-500">Select an image or create a poll</p>
             </div>
           </div>
         </div>

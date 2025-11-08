@@ -1,0 +1,112 @@
+/* Container Styles */
+.about-hero-container {
+    padding: 0 2rem;
+    padding-top: 3rem;
+    position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* Heading Styles - Ensuring black color */
+  .about-hero-heading {
+    text-align: center;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #000000 !important;
+  }
+  
+  .heading-line {
+    display: block;
+    color: inherit;
+  }
+  
+  .normal-line {
+    color: #000000 !important;
+  }
+  
+  .highlighted-line {
+    color: #0284c7 !important;
+    font-weight: 700;
+    background: linear-gradient(to right, rgba(2, 132, 199, 0.1), transparent);
+    padding: 0.3rem 1rem;
+    border-radius: 12px;
+    display: inline-block;
+    margin: 0.5rem 0;
+  }
+  
+  /* Description Styles */
+  .about-hero-description {
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    color: #475569;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  
+  /* CTA Buttons Styles */
+  .cta-buttons-container {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .cta-button {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .cta-button.primary {
+    background-color: #0284c7;
+    color: white;
+  }
+  
+  .cta-button.secondary {
+    background-color: transparent;
+    color: #0284c7;
+    border: 2px solid #0284c7;
+  }
+  
+  .button-text {
+    position: relative;
+    z-index: 2;
+  }
+  
+  .button-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right, #0284c7, #0ea5e9);
+    z-index: 1;
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 768px) {
+    .about-hero-container {
+      padding: 0 1rem;
+      padding-top: 2rem;
+    }
+    
+    .cta-buttons-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .cta-button {
+      width: 100%;
+      max-width: 300px;
+    }
+  }

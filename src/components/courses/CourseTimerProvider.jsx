@@ -57,33 +57,35 @@ export function CourseTimerProvider({ courseId, children }) {
     // eslint-disable-next-line
   }, [courseId]);
 
-  // Save time periodically (every 10s)
+  // Save time periodically (every 10s) without recreating timer on every tick
+  const latestTimeRef = useRef(timeSpent);
+  useEffect(() => { latestTimeRef.current = timeSpent; }, [timeSpent]);
   useEffect(() => {
     const saveInterval = setInterval(() => {
-      localStorage.setItem(`course_time_${courseId}`, timeSpent.toString());
+      localStorage.setItem(`course_time_${courseId}`, latestTimeRef.current.toString());
     }, 10000);
     return () => clearInterval(saveInterval);
-  }, [courseId, timeSpent]);
+  }, [courseId]);
 
-  // Save time when tab is closed or user leaves
+  // Save time when tab is closed or user leaves (use ref to avoid re-binding)
   useEffect(() => {
     const handleBeforeUnload = () => {
-      localStorage.setItem(`course_time_${courseId}`, timeSpent.toString());
+      localStorage.setItem(`course_time_${courseId}`, latestTimeRef.current.toString());
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [courseId, timeSpent]);
+  }, [courseId]);
 
-  // Save time on route change (when leaving the course)
+  // Save time on route change (when leaving the course) - stable listener
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        localStorage.setItem(`course_time_${courseId}`, timeSpent.toString());
+        localStorage.setItem(`course_time_${courseId}`, latestTimeRef.current.toString());
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [courseId, timeSpent]);
+  }, [courseId]);
 
   return (
     <CourseTimerContext.Provider value={{ timeSpent, formatTime }}>

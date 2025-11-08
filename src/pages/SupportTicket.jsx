@@ -87,7 +87,7 @@ function SupportTicket() {
         }
       }
 
-      const response = await createTicket(formDataToSend, getAuthHeader());
+      const response = await createTicket(formDataToSend);
      
       // Extract ticket ID from response if available
       if (response?.data?.data?.id) {

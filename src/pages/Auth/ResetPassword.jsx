@@ -86,8 +86,10 @@ export function ResetPassword() {
       const response = await axios.post(`${API_BASE}/api/auth/reset-password`, {
         email: decodedEmail,
         password: newPassword,
-        // Optionally include token if backend adds verification later
-        // token
+      }, {
+        headers: {
+          'reset-token': token
+        }
       });
       setIsSuccess(true);
       toast.success(response.data?.message || "Password reset successfully!");

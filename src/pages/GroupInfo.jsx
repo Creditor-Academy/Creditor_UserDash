@@ -118,6 +118,29 @@ export default function GroupInfo({ group, onClose }) {
         </div>
 
         <div className="p-6 space-y-6">
+          {/* Group banner */}
+          <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+            {group?.thumbnail ? (
+              <img
+                src={group.thumbnail}
+                alt={`${group?.name || 'Group'} banner`}
+                className="w-full h-40 md:h-52 object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            {/* Placeholder when no image or on error */}
+            <div className={`w-full h-40 md:h-52 items-center justify-center text-gray-400 ${group?.thumbnail ? 'hidden' : 'flex'}`}>
+              <div className="flex flex-col items-center">
+                <Users className="h-8 w-8 mb-2" />
+                <span className="text-sm">No banner image</span>
+              </div>
+            </div>
+          </div>
+
           {/* Group meta */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
             <div className="text-center">

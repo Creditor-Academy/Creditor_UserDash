@@ -5,6 +5,7 @@ import { Send, Paperclip, Smile } from "lucide-react";
 import { AttachmentModal } from "./AttachmentModal";
 import { ImagePreview } from "./ImagePreview";
 import { EmojiPicker } from "./EmojiPicker";
+import PollComposer from "./PollComposer";
 
 export function ChatInput({
   newMessage,
@@ -12,11 +13,13 @@ export function ChatInput({
   onSendMessage,
   onFileSelect,
   onImageSelect,
+  onCreatePoll,
   selectedImage,
   isSending = false
 }) {
   const [showAttachmentModal, setShowAttachmentModal] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showPollComposer, setShowPollComposer] = useState(false);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -104,12 +107,22 @@ export function ChatInput({
         isOpen={showAttachmentModal}
         onClose={() => setShowAttachmentModal(false)}
         onImageSelect={handleImageSelect}
+        onPollCreate={() => setShowPollComposer(true)}
       />
 
       <EmojiPicker
         isOpen={showEmojiPicker}
         onClose={() => setShowEmojiPicker(false)}
         onEmojiSelect={handleEmojiSelect}
+      />
+
+      <PollComposer
+        isOpen={showPollComposer}
+        onClose={() => setShowPollComposer(false)}
+        onCreate={(payload) => {
+          onCreatePoll?.(payload);
+          setShowPollComposer(false);
+        }}
       />
     </div>
   );

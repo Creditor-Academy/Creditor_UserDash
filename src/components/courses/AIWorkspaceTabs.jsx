@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   Plus,
   Download,
   Copy,
@@ -10,10 +10,14 @@ import {
   RefreshCw,
   Search,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
 } from 'lucide-react';
 import LoadingBuffer from '../LoadingBuffer';
-import aiCourseService from '../../services/aiCourseService';
+import {
+  generateAndUploadCourseImage,
+  summarizeContent,
+  searchCourseContent,
+} from '../../services/aiCourseService';
 
 // Images Tab Component
 export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
@@ -23,12 +27,18 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
 
   const generateImage = async () => {
     if (!prompt.trim()) return;
-    
+
     setIsGenerating(true);
     try {
-      const result = await aiCourseService.generateCourseImage(prompt, { style });
+      const result = await generateAndUploadCourseImage(prompt, { style });
       if (result.success) {
-        setImages(prev => [result.data, ...prev]);
+        const imageData = {
+          ...result.data,
+          url: result.data.s3Url, // Use S3 URL for display
+          prompt: prompt,
+          style: style,
+        };
+        setImages(prev => [imageData, ...prev]);
         setPrompt('');
       }
     } catch (error) {
@@ -62,20 +72,20 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
           <ImageIcon className="w-5 h-5 text-purple-600" />
           Generate Course Images
         </h3>
-        
+
         <div className="space-y-4">
           <textarea
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            onChange={e => setPrompt(e.target.value)}
             placeholder="Describe the image you want to generate (e.g., 'A modern classroom with students learning React programming')"
             className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500"
             rows="3"
           />
-          
+
           <div className="flex gap-4">
             <select
               value={style}
-              onChange={(e) => setStyle(e.target.value)}
+              onChange={e => setStyle(e.target.value)}
               className="px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500"
             >
               <option value="realistic">Realistic</option>
@@ -83,7 +93,7 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
               <option value="cartoon">Cartoon</option>
               <option value="abstract">Abstract</option>
             </select>
-            
+
             <button
               onClick={generateImage}
               disabled={isGenerating || !prompt.trim()}
@@ -107,9 +117,9 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
 
       {isGenerating && (
         <div className="bg-white rounded-lg border">
-          <LoadingBuffer 
-            type="generation" 
-            message="Creating your image..." 
+          <LoadingBuffer
+            type="generation"
+            message="Creating your image..."
             showSparkles={true}
           />
         </div>
@@ -120,23 +130,35 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
           <h4 className="text-lg font-semibold mb-4">Generated Images</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {images.map((image, index) => (
-              <div key={index} className="border rounded-lg overflow-hidden group">
+              <div
+                key={index}
+                className="border rounded-lg overflow-hidden group"
+              >
                 <img
                   src={image.url}
                   alt={image.prompt}
                   className="w-full h-48 object-cover"
                 />
                 <div className="p-3">
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{image.prompt}</p>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                    {image.prompt}
+                  </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => onInsertIntoLesson(`![${image.prompt}](${image.url})`)}
+                      onClick={() =>
+                        onInsertIntoLesson(`![${image.prompt}](${image.url})`)
+                      }
                       className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                     >
                       Insert to Course
                     </button>
                     <button
-                      onClick={() => downloadImage(image.url, `course-image-${index + 1}.jpg`)}
+                      onClick={() =>
+                        downloadImage(
+                          image.url,
+                          `course-image-${index + 1}.jpg`
+                        )
+                      }
                       className="p-1 text-gray-500 hover:text-purple-600"
                     >
                       <Download className="w-4 h-4" />
@@ -153,7 +175,11 @@ export const ImagesTab = ({ images, setImages, onInsertIntoLesson }) => {
 };
 
 // Summarization Tab Component
-export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }) => {
+export const SummarizationTab = ({
+  summaries,
+  setSummaries,
+  onInsertIntoLesson,
+}) => {
   const [inputMethod, setInputMethod] = useState('text');
   const [textInput, setTextInput] = useState('');
   const [urlInput, setUrlInput] = useState('');
@@ -165,7 +191,7 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
 
   const generateSummary = async () => {
     let content = '';
-    
+
     if (inputMethod === 'text' && textInput.trim()) {
       content = textInput;
     } else if (inputMethod === 'url' && urlInput.trim()) {
@@ -175,16 +201,16 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
       // In a real implementation, you'd read the file content
       content = `Content from file: ${uploadedFile.name}`;
     }
-    
+
     if (!content) return;
-    
+
     setIsGenerating(true);
     try {
       const result = await aiCourseService.summarizeContent(content, {
         length: summaryLength,
-        type: summaryType
+        type: summaryType,
       });
-      
+
       if (result.success) {
         setSummaries(prev => [result.data, ...prev]);
         setTextInput('');
@@ -198,7 +224,7 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
     }
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = event => {
     const file = event.target.files[0];
     if (file) {
       setUploadedFile(file);
@@ -212,11 +238,11 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
           <FileText className="w-5 h-5 text-green-600" />
           Summarize Content
         </h3>
-        
+
         <div className="space-y-4">
           {/* Input Method Selection */}
           <div className="flex gap-2 mb-4">
-            {['text', 'url', 'file'].map((method) => (
+            {['text', 'url', 'file'].map(method => (
               <button
                 key={method}
                 onClick={() => setInputMethod(method)}
@@ -235,7 +261,7 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
           {inputMethod === 'text' && (
             <textarea
               value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
+              onChange={e => setTextInput(e.target.value)}
               placeholder="Paste your content here to summarize..."
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
               rows="6"
@@ -246,7 +272,7 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
             <input
               type="url"
               value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
+              onChange={e => setUrlInput(e.target.value)}
               placeholder="https://example.com/article"
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
             />
@@ -264,7 +290,9 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
               {uploadedFile ? (
                 <div className="flex items-center justify-center gap-2">
                   <FileText className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium">{uploadedFile.name}</span>
+                  <span className="text-sm font-medium">
+                    {uploadedFile.name}
+                  </span>
                   <button
                     onClick={() => setUploadedFile(null)}
                     className="text-red-500 hover:text-red-700"
@@ -294,7 +322,7 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
               </label>
               <select
                 value={summaryLength}
-                onChange={(e) => setSummaryLength(e.target.value)}
+                onChange={e => setSummaryLength(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
               >
                 <option value="short">Short (2-3 sentences)</option>
@@ -302,14 +330,14 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
                 <option value="long">Long (2-3 paragraphs)</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Summary Type
               </label>
               <select
                 value={summaryType}
-                onChange={(e) => setSummaryType(e.target.value)}
+                onChange={e => setSummaryType(e.target.value)}
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-500"
               >
                 <option value="bullet">Bullet Points</option>
@@ -321,11 +349,14 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
 
           <button
             onClick={generateSummary}
-            disabled={isGenerating || (
-              inputMethod === 'text' ? !textInput.trim() :
-              inputMethod === 'url' ? !urlInput.trim() :
-              !uploadedFile
-            )}
+            disabled={
+              isGenerating ||
+              (inputMethod === 'text'
+                ? !textInput.trim()
+                : inputMethod === 'url'
+                  ? !urlInput.trim()
+                  : !uploadedFile)
+            }
             className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isGenerating ? (
@@ -345,9 +376,9 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
 
       {isGenerating && (
         <div className="bg-white rounded-lg border">
-          <LoadingBuffer 
-            type="ai" 
-            message="Summarizing your content..." 
+          <LoadingBuffer
+            type="ai"
+            message="Summarizing your content..."
             showSparkles={true}
           />
         </div>
@@ -361,7 +392,8 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
                 <div>
                   <h4 className="font-semibold text-gray-900">Summary</h4>
                   <p className="text-sm text-gray-500">
-                    {summary.type} • {summary.originalLength} chars → {summary.summaryLength} chars
+                    {summary.type} • {summary.originalLength} chars →{' '}
+                    {summary.summaryLength} chars
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -372,7 +404,9 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
                     Insert to Course
                   </button>
                   <button
-                    onClick={() => navigator.clipboard.writeText(summary.summary)}
+                    onClick={() =>
+                      navigator.clipboard.writeText(summary.summary)
+                    }
                     className="p-2 text-gray-500 hover:text-green-600"
                   >
                     <Copy className="w-4 h-4" />
@@ -380,7 +414,9 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
                 </div>
               </div>
               <div className="prose max-w-none">
-                <pre className="whitespace-pre-wrap text-sm">{summary.summary}</pre>
+                <pre className="whitespace-pre-wrap text-sm">
+                  {summary.summary}
+                </pre>
               </div>
             </div>
           ))}
@@ -391,7 +427,11 @@ export const SummarizationTab = ({ summaries, setSummaries, onInsertIntoLesson }
 };
 
 // Search Tab Component (Q&A with Bytez.js)
-export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson }) => {
+export const SearchTab = ({
+  searchResults,
+  setSearchResults,
+  onInsertIntoLesson,
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [context, setContext] = useState('');
   const [showContext, setShowContext] = useState(false);
@@ -399,34 +439,23 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
 
   const performSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     try {
-      // Import bytezAPI dynamically to avoid circular imports
-      const bytezAPI = (await import('../../services/bytezAPI')).default;
-      
-      const result = await bytezAPI.answerQuestionWithFlanT5(
-        searchQuery,
-        context,
-        {
-          max_new_tokens: 200,
-          min_new_tokens: 50,
-          temperature: 0.5
-        }
-      );
-      
+      // AI Q&A functionality removed - Bytez API no longer used
       const qaResult = {
         id: Date.now(),
         question: searchQuery,
-        answer: result.answer,
+        answer:
+          'AI search feature is currently unavailable. This feature has been deprecated.',
         context: context || null,
-        model: result.model,
-        success: result.success,
-        confidence: result.confidence,
+        model: 'unavailable',
+        success: false,
+        confidence: 'none',
         type: 'Q&A',
-        difficulty: result.success ? 'Answered' : 'Failed'
+        difficulty: 'Failed',
       };
-      
+
       setSearchResults(prev => [qaResult, ...prev]);
       setSearchQuery('');
       setContext('');
@@ -441,7 +470,7 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
         success: false,
         confidence: 'none',
         type: 'Error',
-        difficulty: 'Failed'
+        difficulty: 'Failed',
       };
       setSearchResults(prev => [errorResult, ...prev]);
     } finally {
@@ -454,7 +483,7 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
     'How does JavaScript work?',
     'Database design principles',
     'Machine learning basics',
-    'Web security best practices'
+    'Web security best practices',
   ];
 
   return (
@@ -464,13 +493,15 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
           <Search className="w-5 h-5 text-orange-600" />
           Content Q&A Search
         </h3>
-        
+
         <div className="space-y-4">
           <div className="relative">
             <textarea
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && (e.ctrlKey || e.metaKey) && performSearch()}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyPress={e =>
+                e.key === 'Enter' && (e.ctrlKey || e.metaKey) && performSearch()
+              }
               placeholder="Ask any question... (Ctrl+Enter to submit)"
               className="w-full px-3 py-2 pr-12 border rounded-md focus:ring-2 focus:ring-orange-500 resize-none"
               rows="2"
@@ -503,7 +534,7 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
               </label>
               <textarea
                 value={context}
-                onChange={(e) => setContext(e.target.value)}
+                onChange={e => setContext(e.target.value)}
                 placeholder="Provide any relevant context or background information..."
                 className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-500"
                 rows="3"
@@ -531,9 +562,9 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
 
       {isSearching && (
         <div className="bg-white rounded-lg border">
-          <LoadingBuffer 
-            type="ai" 
-            message="Searching for answers..." 
+          <LoadingBuffer
+            type="ai"
+            message="Searching for answers..."
             showSparkles={true}
           />
         </div>
@@ -545,7 +576,9 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
             <div key={index} className="bg-white rounded-lg border p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900">{result.question}</h4>
+                  <h4 className="font-semibold text-gray-900">
+                    {result.question}
+                  </h4>
                   <p className="text-sm text-gray-500">
                     {result.type} • {result.difficulty}
                   </p>
@@ -577,7 +610,9 @@ export const SearchTab = ({ searchResults, setSearchResults, onInsertIntoLesson 
         <div className="text-center py-12 text-gray-500">
           <Search className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p className="text-lg mb-2">Search for any topic</p>
-          <p className="text-sm">Get AI-powered answers that you can insert directly into your course</p>
+          <p className="text-sm">
+            Get AI-powered answers that you can insert directly into your course
+          </p>
         </div>
       )}
     </div>

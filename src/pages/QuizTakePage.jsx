@@ -16,10 +16,10 @@ function QuizTakePage() {
   const location = useLocation();
   const moduleId = searchParams.get('module');
   const category = searchParams.get('category');
-  
+ 
   // Get quiz data from navigation state
   const { questions: initialQuestions, quizSession, startedAt } = location.state || {};
-  
+ 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
@@ -90,14 +90,14 @@ function QuizTakePage() {
     const initializeQuiz = async () => {
       try {
         setIsLoading(true);
-        
+       
         // Check if we have the required data from navigation state
         if (!initialQuestions || !quizSession) {
           toast.error('Quiz session not found. Please start the quiz again.');
           navigate(-1);
           return;
         }
-        
+       
         // Set quiz data and questions from navigation state
         setQuizData(quizSession);
         setQuestions(initialQuestions);
@@ -134,7 +134,7 @@ function QuizTakePage() {
             setAnswers((prev) => ({ ...initialSeqAnswers, ...prev }));
           }
         } catch {}
-        
+       
         // Debug logging to see what data we received
         console.log('Quiz initialized with:', {
           quizSession,
@@ -143,7 +143,7 @@ function QuizTakePage() {
           firstQuestion: initialQuestions?.[0],
           allQuestions: initialQuestions
         });
-        
+       
         setQuizStarted(true);
       } catch (error) {
         console.error('Error initializing quiz:', error);
@@ -190,13 +190,13 @@ function QuizTakePage() {
   // Format answers for API submission
   const formatAnswersForSubmission = (answersMap) => {
     const formattedAnswers = [];
-    
+   
     console.log('Formatting answers for submission. Raw answers:', answersMap);
     console.log('Questions data for formatting:', questions);
-    
+   
     Object.entries(answersMap).forEach(([questionId, answer]) => {
       const question = questions.find(q => String(q.id) === String(questionId) || String(q._id) === String(questionId) || String(q.questionId) === String(questionId));
-      
+     
       console.log(`Processing question ${questionId}:`, {
         question,
         answer,
@@ -204,12 +204,12 @@ function QuizTakePage() {
         backendQuestionType: question?.question_type,
         resolvedType: question.type?.toLowerCase() || question.question_type?.toLowerCase()
       });
-      
+     
       if (!question) {
         console.warn(`Question not found for ID: ${questionId}`);
         return;
       }
-      
+     
       const formattedAnswer = {
         // Server expects keys: questionId, selectedOptionId (array or null), answer
         questionId: String(question.id ?? questionId),
@@ -248,13 +248,13 @@ function QuizTakePage() {
           // If answer is a single value, wrap it in an array
           fillUpsAnswer = [String(answer).trim()].filter(Boolean);
         }
-        
+       
         formattedAnswer.answer = fillUpsAnswer;
         console.log(`Heuristic FILL_UPS for ${questionId}:`, { originalAnswer: answer, processedAnswer: fillUpsAnswer });
         formattedAnswers.push(formattedAnswer);
         return;
       }
-      
+     
       // Handle different question types - PREFER backend question_type when available
       const questionType = (question.question_type?.toLowerCase()) || (question.type?.toLowerCase());
       switch (questionType) {
@@ -363,7 +363,7 @@ function QuizTakePage() {
             const optionList = Array.isArray(question.options) ? question.options : [];
             let resolved = null;
             let resolvedIndex = -1;
-            
+           
             for (let i = 0; i < optionList.length; i += 1) {
               const opt = optionList[i];
               if (
@@ -379,7 +379,7 @@ function QuizTakePage() {
                 break;
               }
             }
-            
+           
             if (resolved) {
               const idForBackend = resolved.optionId ?? resolved.id ?? resolved._id ?? resolved.value ?? resolvedIndex;
               formattedAnswer.selectedOptionId = idForBackend != null ? [String(idForBackend)] : null;
@@ -391,7 +391,7 @@ function QuizTakePage() {
           }
           console.log(`Single choice question ${questionId} formatted:`, formattedAnswer);
           break;
-          
+         
         case 'truefalse':
         case 'true_false':
         case 'true-false':
@@ -404,7 +404,7 @@ function QuizTakePage() {
           }
           console.log(`True/False question ${questionId} formatted:`, formattedAnswer);
           break;
-          
+         
         case 'descriptive':
         case 'text':
         case 'essay':
@@ -415,7 +415,7 @@ function QuizTakePage() {
           formattedAnswer.answer = Array.isArray(answer) ? answer[0] : String(answer);
           console.log(`Descriptive question ${questionId} formatted:`, formattedAnswer);
           break;
-          
+         
         case 'fill_blank':
         case 'fill in the blank':
         case 'fillintheblank':
@@ -435,12 +435,12 @@ function QuizTakePage() {
               // If answer is a single value, wrap it in an array
               fillUpsAnswer = [String(answer).trim()].filter(Boolean);
             }
-            
+           
             formattedAnswer.answer = fillUpsAnswer;
           }
           console.log(`Fill blank question ${questionId} formatted:`, { originalAnswer: answer, processedAnswer: formattedAnswer.answer });
           break;
-          
+         
         case 'one_word':
         case 'oneword':
         case 'one word':
@@ -450,7 +450,7 @@ function QuizTakePage() {
           formattedAnswer.answer = String(Array.isArray(answer) ? answer[0] : answer).trim();
           console.log(`One word question ${questionId} formatted:`, formattedAnswer);
           break;
-          
+         
         case 'matching':
         case 'match':
           formattedAnswer.selectedOptionId = null;
@@ -508,10 +508,10 @@ function QuizTakePage() {
           console.log(`Default question ${questionId} formatted:`, formattedAnswer);
           break;
       }
-      
+     
       formattedAnswers.push(formattedAnswer);
     });
-    
+   
     console.log('Final formatted answers:', formattedAnswers);
     return formattedAnswers;
   };
@@ -535,58 +535,58 @@ function QuizTakePage() {
     try {
       // Format answers for API submission
       const formattedAnswers = formatAnswersForSubmission(savedAnswers);
-      
+     
       console.log('Submitting quiz with formatted answers:', formattedAnswers);
       console.log('Raw answers object:', savedAnswers);
       console.log('Questions data:', questions);
       console.log('Answers count:', Object.keys(savedAnswers).length);
       console.log('Total questions:', totalQuestions);
       console.log('Quiz ID:', quizId);
-      
+     
       // Validate that we have answers for most questions
       const answeredCount = Object.keys(savedAnswers).length;
       const unansweredCount = totalQuestions - answeredCount;
-      
+     
       if (unansweredCount > 0) {
         console.log(`Warning: ${unansweredCount} questions are unanswered`);
       }
-      
+     
       // Call the submit quiz API with formatted answers in expected key
       const submitPayload = { answers: formattedAnswers };
       console.log('Submit payload (frontend JSON):', JSON.stringify(submitPayload, null, 2));
       const result = await submitQuiz(quizId, submitPayload);
       console.log('Quiz submission result:', result);
-      
+     
       // Clear localStorage after successful submission
       try { localStorage.removeItem(`quiz_${quizId}_answers`); } catch {}
-      
+     
       // Extract the response data
       const responseData = result.data || result;
-      
+     
       // Validate the response contains scoring information
       if (responseData.score === undefined) {
         console.warn('Quiz submitted but no score received from backend');
         console.warn('Response data:', responseData);
       }
-      
+     
       toast.success('Quiz submitted successfully!');
-      
+     
       // Navigate to results page with the data from backend
-      const navigationState = { 
+      const navigationState = {
         quizResults: responseData,
         answers: savedAnswers,
         quizSession: quizData,
         startedAt: startedAt
       };
-      
+     
       console.log('Navigating to results page with state:', navigationState);
-      
-      navigate(`/dashboard/quiz/results/${quizId}?module=${moduleId}&category=${category}`, { 
+     
+      navigate(`/dashboard/quiz/results/${quizId}?module=${moduleId}&category=${category}`, {
         state: navigationState
       });
     } catch (error) {
       console.error('Error submitting quiz:', error);
-      
+     
       // Handle specific error cases
       if (error.message?.includes('NO_PENDING_ATTEMPT')) {
         toast.error('No active quiz attempt found. Please start the quiz again.');
@@ -602,10 +602,10 @@ function QuizTakePage() {
 
   const renderQuestion = () => {
     if (!questions[currentQuestion]) return null;
-    
+   
     const question = questions[currentQuestion];
     const userAnswer = answers[question.id];
-    
+   
     // Debug: Log the current answer state
     console.log('Current question answer state:', {
       questionId: question.id,
@@ -717,14 +717,14 @@ function QuizTakePage() {
       renderType: renderType,
       questionId: question.id
     });
-    
+   
     // Debug: Check if this is a multiple choice question
-    const isMultipleChoice = renderType === 'mcq_multiple' || 
-                            renderType === 'multiple_choice' || 
-                            renderType === 'multiple choice' || 
+    const isMultipleChoice = renderType === 'mcq_multiple' ||
+                            renderType === 'multiple_choice' ||
+                            renderType === 'multiple choice' ||
                             renderType === 'multiplechoice';
     console.log('Is multiple choice question?', isMultipleChoice, 'renderType:', renderType);
-    
+   
     // Question type handling:
     // - Single choice (SCQ, MCQ_SINGLE, etc.): Radio buttons, only one answer allowed
     // - Multiple choice (MCQ_MULTIPLE, etc.): Checkboxes, multiple answers allowed  
@@ -793,16 +793,16 @@ function QuizTakePage() {
         // Drag-and-drop categorization UI
         const qid = question.id;
         const options = question.options || [];
-        
+       
         // Debug logging to see the actual structure
         console.log('Categorization question options:', options);
         console.log('Question data:', question);
-        
+       
         // For the API response structure, we need to determine categories vs items differently
         // Try multiple approaches to identify categories vs items
-        
+       
         let categories, items;
-        
+       
         // Approach 1: Check for explicit isCategory field
         if (options.some(opt => opt.isCategory !== undefined)) {
           categories = options.filter(opt => opt.isCategory === true);
@@ -823,37 +823,37 @@ function QuizTakePage() {
           categories = options;
           items = [];
         }
-        
+       
         console.log('Filtered categories:', categories);
         console.log('Filtered items:', items);
-        
+       
         // Initialize answer structure if not exists
         const currentAnswer = answers[qid] || {};
         const categoryAssignments = currentAnswer.categoryAssignments || {};
-        
+       
         const handleItemDrop = (itemId, categoryId) => {
           const newAssignments = { ...categoryAssignments, [itemId]: categoryId };
           const newAnswer = { ...currentAnswer, categoryAssignments: newAssignments };
           handleAnswer(qid, newAnswer);
         };
-        
+       
         const handleItemRemove = (itemId) => {
           const newAssignments = { ...categoryAssignments };
           delete newAssignments[itemId];
           const newAnswer = { ...currentAnswer, categoryAssignments: newAssignments };
           handleAnswer(qid, newAnswer);
         };
-        
+       
         const onDragStart = (e, itemId) => {
           e.dataTransfer.effectAllowed = 'move';
           e.dataTransfer.setData('text/plain', itemId);
         };
-        
+       
         const onDragOver = (e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         };
-        
+       
         const onDrop = (e, categoryId) => {
           e.preventDefault();
           const itemId = e.dataTransfer.getData('text/plain');
@@ -861,7 +861,7 @@ function QuizTakePage() {
             handleItemDrop(itemId, categoryId);
           }
         };
-        
+       
         // Debug: If no categories found, show debug info
         if (categories.length === 0) {
           return (
@@ -927,7 +927,7 @@ function QuizTakePage() {
                 );
               })}
             </div>
-            
+           
             {/* Available Items */}
             <div className="mt-6">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Available Items:</h4>
@@ -935,7 +935,7 @@ function QuizTakePage() {
                 {items.map(item => {
                   const isAssigned = categoryAssignments[item.id];
                   if (isAssigned) return null; // Don't show assigned items
-                  
+                 
                   return (
                     <div
                       key={item.id}
@@ -957,7 +957,7 @@ function QuizTakePage() {
                 </div>
               )}
             </div>
-            
+           
             {/* Progress indicator */}
             <div className="text-sm text-gray-600">
               Progress: {Object.keys(categoryAssignments).length} / {items.length} items categorized
@@ -1123,7 +1123,7 @@ function QuizTakePage() {
             />
           </div>
         );
-        
+       
       case 'one_word':
       case 'oneword':
       case 'one word':
@@ -1143,7 +1143,7 @@ function QuizTakePage() {
             <p className="text-sm text-gray-500 mt-2">Please provide a single word or short phrase answer.</p>
           </div>
         );
-        
+       
       case 'fill_blank': {
         const textCandidate = question?.question || question?.questionText || question?.text || '';
         // Detect two or more underscores as a blank
@@ -1307,7 +1307,7 @@ function QuizTakePage() {
             {category === 'general' ? 'Practice Quiz' : 'Assessment Quiz'}
           </Badge>
         </div>
-        
+       
 
       </div>
 
@@ -1322,12 +1322,12 @@ function QuizTakePage() {
             <p className="text-muted-foreground">{quizData.description || 'Test your knowledge'}</p>
           </div>
         </div>
-        
+       
         {/* Progress bar */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
           <Progress value={progress} className="h-2" />
         </div>
-        
+       
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>Question {currentQuestion + 1} of {totalQuestions}</span>
           <div className="flex items-center gap-4">
@@ -1370,11 +1370,11 @@ function QuizTakePage() {
               );
             }
           })()}
-          
+         
           {/* Question Type Instructions */}
           {(() => {
             const renderType = (currentQ.question_type?.toLowerCase()) || (currentQ.type?.toLowerCase());
-            
+           
             const getInstruction = (type) => {
               switch (type) {
                 case 'mcq_single':
@@ -1383,61 +1383,61 @@ function QuizTakePage() {
                 case 'single choice':
                 case 'singlechoice':
                   return "Select the correct answer from the options below.";
-                  
+                 
                 case 'mcq_multiple':
                 case 'multiple_choice':
                 case 'multiple choice':
                 case 'multiplechoice':
                   return "Select all correct answers from the options below.";
-                  
+                 
                 case 'mcq':
                   return currentQ.options && Array.isArray(currentQ.options) && currentQ.options.length > 0
                     ? "Select all correct answers from the options below."
                     : "Enter your answer in the text field below.";
-                  
+                 
                 case 'sequence':
                   return "Drag and drop the items below to arrange them in the correct order.";
-                  
+                 
                 case 'true_false':
                 case 'truefalse':
                 case 'true-false':
                 case 'true false':
                   return "Select whether the statement is true or false.";
-                  
+                 
                 case 'descriptive':
                 case 'text':
                 case 'essay':
                 case 'long_answer':
                 case 'long answer':
                   return "Provide a detailed written response to the question.";
-                  
+                 
                 case 'fill_blank':
                 case 'fill in the blank':
                 case 'fillintheblank':
                 case 'fill_ups':
                   return "Fill in the blanks with the correct answers.";
-                  
+                 
                 case 'one_word':
                 case 'oneword':
                 case 'one word':
                 case 'single_word':
                 case 'singleword':
                   return "Provide a single word or short phrase answer.";
-                  
+                 
                 case 'matching':
                 case 'match':
                   return "Match the items correctly.";
-                  
+                 
                 case 'categorization':
                   return "Drag each item into the correct category container below.";
-                  
+                 
                 default:
                   return "Please provide your answer below.";
               }
             };
-            
+           
             const instruction = getInstruction(renderType);
-            
+           
             return (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800 font-medium">
@@ -1450,7 +1450,7 @@ function QuizTakePage() {
               </div>
             );
           })()}
-          
+         
           {renderQuestion()}
         </CardContent>
       </Card>
@@ -1464,14 +1464,14 @@ function QuizTakePage() {
         >
           Previous
         </Button>
-        
+       
         <div className="flex items-center gap-3">
           {currentQuestion < totalQuestions - 1 ? (
             <Button onClick={handleNext} disabled={!canProceed} title={!canProceed ? 'Categorize all items to continue' : undefined}>
               Next
             </Button>
           ) : (
-            <Button 
+            <Button
               onClick={() => setShowSubmitConfirm(true)}
               disabled={Object.keys(answers).length === 0 || !canProceed}
               className="bg-green-600 hover:bg-green-700"

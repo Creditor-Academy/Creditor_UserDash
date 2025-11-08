@@ -1,20 +1,67 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { FaCoins } from "react-icons/fa";
+import { Trash2 } from "lucide-react";
 import { useCredits } from "@/contexts/CreditsContext";
+import { fetchAllConsultations, updateConsultationStatus, deleteConsultation } from '@/services/consultationService';
+import { fetchAllWebsiteServices, updateWebsiteServiceStatus, deleteWebsiteService } from '@/services/websiteService';
 import { fetchAllUsersAdmin } from "@/services/userService";
 import { api } from "@/services/apiClient";
 
 const AdminPayments = () => {
   const { transactions, balance, addCredits, refreshBalance, refreshMembership } = useCredits();
+  
+  // DEFENSIVE: Debounced refresh to prevent triggering infinite loops in other components
+  const refreshBalanceRef = useRef(null);
+  const debouncedRefreshBalance = useCallback(() => {
+    if (refreshBalanceRef.current) {
+      clearTimeout(refreshBalanceRef.current);
+    }
+    refreshBalanceRef.current = setTimeout(() => {
+      if (refreshBalance) {
+        refreshBalance();
+      }
+    }, 1000); // 1 second debounce to prevent cascade effects
+  }, [refreshBalance]);
+  
+  // DEFENSIVE: Cleanup debounced refresh on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshBalanceRef.current) {
+        clearTimeout(refreshBalanceRef.current);
+      }
+    };
+  }, []);
   const [paymentsView, setPaymentsView] = useState("credits");
   const [ordersPage, setOrdersPage] = useState(1);
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [subsPage, setSubsPage] = useState(1);
+  const [servicesPage, setServicesPage] = useState(1); // consultations page
+  const [servicesWebPage, setServicesWebPage] = useState(1); // websites page
+  const [servicesTab, setServicesTab] = useState("consultations"); // "consultations" | "websites"
   const itemsPerPage = 5;
+  const [serviceStatus, setServiceStatus] = useState({});
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [grantCreditsAmount, setGrantCreditsAmount] = useState(10);
   const [userDetailModal, setUserDetailModal] = useState({ open: false, user: null });
   const [grantModal, setGrantModal] = useState({ open: false });
+  const [deductModal, setDeductModal] = useState({ open: false });
+  const [deductCreditsAmount, setDeductCreditsAmount] = useState(10);
+  const [isDeducting, setIsDeducting] = useState(false);
+  const [deductMessage, setDeductMessage] = useState("");
+
+  // Services search and filter states
+  const [consultationsSearch, setConsultationsSearch] = useState("");
+  const [websitesSearch, setWebsitesSearch] = useState("");
+  const [consultationsFilter, setConsultationsFilter] = useState({ status: "all" });
+  const [websitesFilter, setWebsitesFilter] = useState({ status: "all", websiteType: "all" });
+
+  // Services data state
+  const [consultationsData, setConsultationsData] = useState([]);
+  const [websitesData, setWebsitesData] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesError, setServicesError] = useState("");
+  const [deleting, setDeleting] = useState({ type: null, id: null }); // ensure single-item delete
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null, id: null, message: "" });
 
   // Mix dummy data with real transaction data
   const orders = useMemo(() => {
@@ -39,6 +86,66 @@ const AdminPayments = () => {
     
     return [...realOrders, ...dummyOrders].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [transactions]);
+  
+  // Services: consultations and websites (using real data)
+  const services = useMemo(() => {
+    return { consultations: consultationsData, websites: websitesData };
+  }, [consultationsData, websitesData]);
+
+  // Filtered consultations with search and filter
+  const filteredConsultations = useMemo(() => {
+    let filtered = services.consultations;
+    
+    // Apply search filter
+    if (consultationsSearch.trim()) {
+      const searchTerm = consultationsSearch.toLowerCase();
+      filtered = filtered.filter(consultation =>
+        consultation.user?.toLowerCase().includes(searchTerm) ||
+        consultation.topic?.toLowerCase().includes(searchTerm) ||
+        consultation.id?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Apply status filter
+    if (consultationsFilter.status !== "all") {
+      filtered = filtered.filter(consultation => 
+        (serviceStatus[consultation.id] || consultation.status) === consultationsFilter.status
+      );
+    }
+    
+    return filtered;
+  }, [services.consultations, consultationsSearch, consultationsFilter, serviceStatus]);
+
+  // Filtered websites with search and filter
+  const filteredWebsites = useMemo(() => {
+    let filtered = services.websites;
+    
+    // Apply search filter
+    if (websitesSearch.trim()) {
+      const searchTerm = websitesSearch.toLowerCase();
+      filtered = filtered.filter(website =>
+        website.user?.toLowerCase().includes(searchTerm) ||
+        website.product?.toLowerCase().includes(searchTerm) ||
+        website.id?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    // Apply status filter
+    if (websitesFilter.status !== "all") {
+      filtered = filtered.filter(website => 
+        (serviceStatus[website.id] || website.status) === websitesFilter.status
+      );
+    }
+    
+    // Apply website type filter
+    if (websitesFilter.websiteType !== "all") {
+      filtered = filtered.filter(website => 
+        website.type?.toLowerCase() === websitesFilter.websiteType
+      );
+    }
+    
+    return filtered;
+  }, [services.websites, websitesSearch, websitesFilter, serviceStatus]);
 
   const payments = useMemo(() => {
     const dummyPayments = [
@@ -159,18 +266,29 @@ const AdminPayments = () => {
 
   // Keep local membership (frontend-only) in sync with loaded users
   useEffect(() => {
-    if (!Array.isArray(realUsers)) return;
+    if (!Array.isArray(realUsers) || realUsers.length === 0) return;
+    
     setLocalMembership(prev => {
       const next = { ...prev };
+      let hasChanges = false;
+      
       for (const u of realUsers) {
         const id = u?.id;
         if (id == null) continue;
-        if (next[id] == null) {
-          next[id] = (u.membership || "active").toString().toLowerCase();
+        const membership = (u.membership || "active").toString().toLowerCase();
+        if (next[id] !== membership) {
+          next[id] = membership;
+          hasChanges = true;
         }
       }
-      if (next["current_user"] == null) next["current_user"] = "active";
-      return next;
+      
+      if (next["current_user"] == null) {
+        next["current_user"] = "active";
+        hasChanges = true;
+      }
+      
+      // Only return new object if there are actual changes
+      return hasChanges ? next : prev;
     });
   }, [realUsers]);
 
@@ -201,7 +319,185 @@ const AdminPayments = () => {
   }, [filteredUsers, usersPage, itemsPerPage]);
 
   useEffect(() => { setUsersPage(1); }, [usersSearch]);
+  useEffect(() => { setServicesPage(1); }, [consultationsSearch, consultationsFilter]);
+  useEffect(() => { setServicesWebPage(1); }, [websitesSearch, websitesFilter]);
+
+  // Fetch services data when services tab is selected
+  useEffect(() => {
+    if (paymentsView === "services" && consultationsData.length === 0 && websitesData.length === 0) {
+      fetchServicesData();
+    }
+  }, [paymentsView]);
   const remainingCredits = Math.max(credits.sold - credits.used, 0);
+
+  // Fetch services data
+  const fetchServicesData = async () => {
+    setServicesLoading(true);
+    setServicesError("");
+    
+    try {
+      console.log('[AdminPayments] Fetching services data');
+      
+      const [consultations, websites] = await Promise.all([
+        fetchAllConsultations(),
+        fetchAllWebsiteServices()
+      ]);
+      
+      console.log('[AdminPayments] Consultations data:', consultations);
+      console.log('[AdminPayments] Websites data:', websites);
+      console.log('[AdminPayments] Consultation data type:', typeof consultations);
+      console.log('[AdminPayments] Website data type:', typeof websites);
+      console.log('[AdminPayments] Consultation is array:', Array.isArray(consultations));
+      console.log('[AdminPayments] Website is array:', Array.isArray(websites));
+      
+      // Process consultations data
+      const processedConsultations = Array.isArray(consultations) ? consultations.map(consultation => ({
+        id: consultation.id,
+        user: consultation.user ? `${consultation.user.first_name || ''} ${consultation.user.last_name || ''}`.trim() || consultation.user.email || 'Unknown User' : 'Unknown User',
+        topic: 'Consultation Session',
+        scheduledAt: new Date(consultation.created_at).toLocaleDateString(),
+        duration: '30 mins',
+        payment: {
+          amount: consultation.pricing?.credits || 1000,
+          currency: 'credits',
+          method: 'credits'
+        },
+        status: consultation.status?.toLowerCase() || 'pending'
+      })) : [];
+      
+      // Process websites data
+      const processedWebsites = Array.isArray(websites) ? websites.map(website => {
+        // Determine service type and cost from pricing data
+        const cost = website.pricing?.credits || 750; // Default to basic if no pricing data
+        const serviceType = cost >= 5000 ? 'Premium' : 'Basic'; // Use cost to determine type
+        
+        return {
+          id: website.id,
+          user: website.user ? `${website.user.first_name || ''} ${website.user.last_name || ''}`.trim() || website.user.email || 'Unknown User' : 'Unknown User',
+          product: `${serviceType} Website Service`,
+          purchasedAt: new Date(website.created_at).toLocaleDateString(),
+          payment: {
+            amount: cost,
+            currency: 'credits',
+            method: 'credits'
+          },
+          status: website.status?.toLowerCase() || 'pending',
+          type: serviceType.toLowerCase()
+        };
+      }) : [];
+      
+      setConsultationsData(processedConsultations);
+      setWebsitesData(processedWebsites);
+      
+    } catch (error) {
+      console.error('[AdminPayments] Failed to fetch services data:', error);
+      setServicesError('Failed to load services data');
+    } finally {
+      setServicesLoading(false);
+    }
+  };
+
+  // Handle consultation status update
+  const handleConsultationStatusUpdate = async (consultationId, newStatus) => {
+    try {
+      console.log('[AdminPayments] Updating consultation status:', consultationId, 'to', newStatus);
+      
+      await updateConsultationStatus(consultationId, newStatus.toUpperCase());
+      
+      // Update local state
+      setConsultationsData(prev => 
+        prev.map(consultation => 
+          consultation.id === consultationId 
+            ? { ...consultation, status: newStatus.toLowerCase() }
+            : consultation
+        )
+      );
+      
+      console.log('[AdminPayments] Consultation status updated successfully');
+    } catch (error) {
+      console.error('[AdminPayments] Failed to update consultation status:', error);
+      console.error('[AdminPayments] Error details:', error?.response?.data);
+      console.error('[AdminPayments] Error status:', error?.response?.status);
+      alert(`Failed to update consultation status: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    }
+  };
+
+  // Handle website service status update
+  const handleWebsiteStatusUpdate = async (serviceId, newStatus) => {
+    try {
+      console.log('[AdminPayments] Updating website service status:', serviceId, 'to', newStatus);
+      
+      await updateWebsiteServiceStatus(serviceId, newStatus.toUpperCase());
+      
+      // Update local state
+      setWebsitesData(prev => 
+        prev.map(website => 
+          website.id === serviceId 
+            ? { ...website, status: newStatus.toLowerCase() }
+            : website
+        )
+      );
+      
+      console.log('[AdminPayments] Website service status updated successfully');
+    } catch (error) {
+      console.error('[AdminPayments] Failed to update website service status:', error);
+      console.error('[AdminPayments] Error details:', error?.response?.data);
+      console.error('[AdminPayments] Error status:', error?.response?.status);
+      alert(`Failed to update website service status: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    }
+  };
+
+  // Delete a single consultation (admin)
+  const handleDeleteConsultation = async (consultationId) => {
+    if (!consultationId || deleting.id) return;
+    try {
+      setDeleting({ type: 'consultation', id: consultationId });
+      await deleteConsultation(consultationId);
+      // Update local state to remove the deleted item
+      setConsultationsData((prev) => prev.filter((c) => c.id !== consultationId));
+    } catch (error) {
+      console.error('[AdminPayments] Failed to delete consultation:', error);
+      alert(`Failed to delete consultation: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting({ type: null, id: null });
+    }
+  };
+
+  // Delete a single website service (admin)
+  const handleDeleteWebsite = async (serviceId) => {
+    if (!serviceId || deleting.id) return;
+    try {
+      setDeleting({ type: 'website', id: serviceId });
+      await deleteWebsiteService(serviceId);
+      // Update local state to remove the deleted item
+      setWebsitesData((prev) => prev.filter((w) => w.id !== serviceId));
+    } catch (error) {
+      console.error('[AdminPayments] Failed to delete website service:', error);
+      alert(`Failed to delete website service: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
+    } finally {
+      setDeleting({ type: null, id: null });
+    }
+  };
+
+  // Open confirmation modal
+  const requestDelete = (type, id) => {
+    if (!id || deleting.id) return;
+    const message = type === 'consultation'
+      ? 'Delete this consultation record? This cannot be undone.'
+      : 'Delete this website service record? This cannot be undone.';
+    setConfirmDialog({ open: true, type, id, message });
+  };
+
+  // Confirm and perform deletion
+  const confirmDeletion = async () => {
+    const { type, id } = confirmDialog;
+    setConfirmDialog({ open: false, type: null, id: null, message: "" });
+    if (type === 'consultation') {
+      await handleDeleteConsultation(id);
+    } else if (type === 'website') {
+      await handleDeleteWebsite(id);
+    }
+  };
 
   return (
     <>
@@ -211,29 +507,534 @@ const AdminPayments = () => {
             <h2 className="text-2xl font-semibold text-gray-800">Payments & Subscriptions</h2>
             <p className="text-gray-600">Dummy data preview for admin payments dashboard.</p>
           </div>
-          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
-            <button onClick={() => setPaymentsView("credits")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "credits" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Credits</button>
-            <button onClick={() => setPaymentsView("orders")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "orders" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Orders</button>
-            <button onClick={() => setPaymentsView("payments")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "payments" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Payments</button>
-            <button onClick={() => setPaymentsView("subscriptions")} className={`px-3 py-1.5 text-sm rounded-md ${paymentsView === "subscriptions" ? "bg-white shadow-sm text-gray-900" : "text-gray-700 hover:text-gray-900"}`}>Subscriptions</button>
+          <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner">
+            <button 
+              onClick={() => setPaymentsView("credits")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "credits" 
+                  ? "bg-white shadow-md text-blue-700 border border-blue-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <FaCoins className="w-4 h-4" />
+              Credits
+            </button>
+            <button 
+              onClick={() => setPaymentsView("services")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "services" 
+                  ? "bg-white shadow-md text-green-700 border border-green-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Services
+            </button>
+            {/* Orders tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("orders")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "orders" 
+                  ? "bg-white shadow-md text-purple-700 border border-purple-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Orders
+            </button> */}
+            {/* Payments tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("payments")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "payments" 
+                  ? "bg-white shadow-md text-orange-700 border border-orange-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Payments
+            </button> */}
+            {/* Subscriptions tab - commented out for later use */}
+            {/* <button 
+              onClick={() => setPaymentsView("subscriptions")} 
+              className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                paymentsView === "subscriptions" 
+                  ? "bg-white shadow-md text-indigo-700 border border-indigo-200" 
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              Subscriptions
+            </button> */}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="border border-gray-200 rounded-lg p-4">
-          <h3 className="font-semibold text-gray-800 mb-1">Credits</h3>
-          <p className="text-sm text-gray-600 mb-3">Sold vs used</p>
-          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
-            <div className="flex justify-between py-1"><span className="text-gray-600">Sold</span><span className="font-medium">{credits.sold}</span></div>
-            <div className="flex justify-between py-1"><span className="text-gray-600">Used</span><span className="font-medium">{credits.used}</span></div>
-            <div className="flex justify-between py-1"><span className="text-gray-600">Remaining</span><span className="font-medium">{remainingCredits}</span></div>
-            <div className="mt-2 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-blue-500 rounded" style={{ width: `${Math.min((credits.used / Math.max(credits.sold, 1)) * 100, 100)}%` }} />
+      {false && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-semibold text-gray-800 mb-1">Credits</h3>
+            <p className="text-sm text-gray-600 mb-3">Sold vs used</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-sm">
+              <div className="flex justify-between py-1"><span className="text-gray-600">Sold</span><span className="font-medium">{credits.sold}</span></div>
+              <div className="flex justify-between py-1"><span className="text-gray-600">Used</span><span className="font-medium">{credits.used}</span></div>
+              <div className="flex justify-between py-1"><span className="text-gray-600">Remaining</span><span className="font-medium">{remainingCredits}</span></div>
+              <div className="mt-2 h-2 bg-gray-200 rounded">
+                <div className="h-2 bg-blue-500 rounded" style={{ width: `${Math.min((credits.used / Math.max(credits.sold, 1)) * 100, 100)}%` }} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {paymentsView === "services" && (
+        <div className="space-y-8">
+          {/* Services Header with Tabs */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Services</h3>
+                  <span className="text-sm text-blue-600 font-medium">Manage consultations and website services</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-white rounded-lg p-1 shadow-sm">
+                <button
+                  onClick={() => setServicesTab("consultations")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    servicesTab === "consultations"
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                  }`}
+                >
+                  Consultations
+                </button>
+                <button
+                  onClick={() => setServicesTab("websites")}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    servicesTab === "websites"
+                      ? "bg-green-500 text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                  }`}
+                >
+                  Websites
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Consultations Tab */}
+          {servicesTab === "consultations" && (
+            <>
+              {/* Enhanced Search and Filter Controls */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={consultationsSearch}
+                        onChange={(e) => setConsultationsSearch(e.target.value)}
+                        placeholder="Search by user, topic, or ID..."
+                        className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      />
+                      <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select
+                      value={consultationsFilter.status}
+                      onChange={(e) => setConsultationsFilter(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      {filteredConsultations.length} consultation{filteredConsultations.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {(consultationsSearch || consultationsFilter.status !== "all") && (
+                    <button
+                      onClick={() => {
+                        setConsultationsSearch("");
+                        setConsultationsFilter({ status: "all" });
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+                <table className="min-w-full text-sm">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700">
+                    <tr>
+                      <th className="text-left px-6 py-4 font-semibold">ID</th>
+                      <th className="text-left px-6 py-4 font-semibold">User</th>
+                      <th className="text-left px-6 py-4 font-semibold">Topic</th>
+                      <th className="text-left px-6 py-4 font-semibold">Booked</th>
+                      <th className="text-left px-6 py-4 font-semibold">Duration</th>
+                      <th className="text-left px-6 py-4 font-semibold">Payment</th>
+                      <th className="text-left px-6 py-4 font-semibold">Status</th>
+                  <th className="text-left px-6 py-4 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {servicesLoading ? (
+                      <tr>
+                    <td colSpan="8" className="px-3 py-8 text-center text-gray-500">
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                            Loading consultations...
+                          </div>
+                        </td>
+                      </tr>
+                    ) : servicesError ? (
+                      <tr>
+                    <td colSpan="8" className="px-3 py-8 text-center text-gray-500">
+                          <div className="text-red-600 mb-2">{servicesError}</div>
+                          <button 
+                            onClick={fetchServicesData}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                          >
+                            Try again
+                          </button>
+                        </td>
+                      </tr>
+                    ) : filteredConsultations.length === 0 ? (
+                      <tr>
+                    <td colSpan="8" className="px-3 py-8 text-center text-gray-500">
+                          {services.consultations.length === 0 
+                            ? "No consultations available" 
+                            : "No consultations match your search criteria"
+                          }
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredConsultations.slice((servicesPage-1)*itemsPerPage, servicesPage*itemsPerPage).map(c => {
+                      const status = (serviceStatus[c.id] || c.status || 'pending');
+                      const statusColors = {
+                        pending: 'bg-amber-100 text-amber-800 border-amber-200',
+                        in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+                        completed: 'bg-green-100 text-green-800 border-green-200'
+                      };
+                      return (
+                        <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 font-mono text-xs text-gray-600 bg-gray-50">{c.id}</td>
+                          <td className="px-6 py-4 font-medium text-gray-900">{c.user}</td>
+                          <td className="px-6 py-4 text-gray-700">{c.topic}</td>
+                          <td className="px-6 py-4 text-gray-600">{c.scheduledAt}</td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                              {c.duration}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-1">
+                              <span className="font-semibold text-gray-900">{c.payment.amount}</span>
+                              <span className="text-gray-600">{c.payment.currency}</span>
+                              <span className="text-xs text-gray-400">({c.payment.method})</span>
+                            </div>
+                          </td>
+                      <td className="px-6 py-4">
+                            <select
+                              value={status}
+                              onChange={(e)=>{ const v=e.target.value; handleConsultationStatusUpdate(c.id, v); }}
+                              className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                            >
+                              <option value="pending">pending</option>
+                              <option value="in_progress">in progress</option>
+                              <option value="completed">completed</option>
+                            </select>
+                          </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => requestDelete('consultation', c.id)}
+                          disabled={deleting.id === c.id}
+                          aria-label="Delete consultation"
+                          title="Delete"
+                          className={`p-2 rounded-full border transition-colors ${deleting.id === c.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                        </tr>
+                      );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Page {servicesPage} of {Math.max(Math.ceil(filteredConsultations.length / itemsPerPage), 1)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    disabled={servicesPage===1} 
+                    onClick={() => setServicesPage(p => Math.max(p-1,1))} 
+                    className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                      servicesPage===1 
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button 
+                    disabled={servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)} 
+                    onClick={() => setServicesPage(p => Math.min(p+1, Math.ceil(filteredConsultations.length/itemsPerPage)))} 
+                    className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                      servicesPage >= Math.ceil(filteredConsultations.length/itemsPerPage)
+                        ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                        : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Websites Tab */}
+          {servicesTab === "websites" && (
+            <>
+          
+          {/* Enhanced Websites Search and Filter Controls */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={websitesSearch}
+                    onChange={(e) => setWebsitesSearch(e.target.value)}
+                    placeholder="Search by user, product, or ID..."
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                  />
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <select
+                  value={websitesFilter.status}
+                  onChange={(e) => setWebsitesFilter(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Website Type</label>
+                <select
+                  value={websitesFilter.websiteType}
+                  onChange={(e) => setWebsitesFilter(prev => ({ ...prev, websiteType: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                >
+                  <option value="all">All Types</option>
+                  <option value="basic">Basic</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  {filteredWebsites.length} website{filteredWebsites.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+              {(websitesSearch || websitesFilter.status !== "all" || websitesFilter.websiteType !== "all") && (
+                <button
+                  onClick={() => {
+                    setWebsitesSearch("");
+                    setWebsitesFilter({ status: "all", websiteType: "all" });
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto bg-white border border-gray-200 rounded-xl shadow-sm">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700">
+                <tr>
+                  <th className="text-left px-6 py-4 font-semibold">ID</th>
+                  <th className="text-left px-6 py-4 font-semibold">User</th>
+                  <th className="text-left px-6 py-4 font-semibold">Website</th>
+                  <th className="text-left px-6 py-4 font-semibold">Purchased</th>
+                  <th className="text-left px-6 py-4 font-semibold">Payment</th>
+                  <th className="text-left px-6 py-4 font-semibold">Status</th>
+                  <th className="text-left px-6 py-4 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {servicesLoading ? (
+                  <tr>
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                        Loading websites...
+                      </div>
+                    </td>
+                  </tr>
+                ) : servicesError ? (
+                  <tr>
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                      <div className="text-red-600 mb-2">{servicesError}</div>
+                      <button 
+                        onClick={fetchServicesData}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        Try again
+                      </button>
+                    </td>
+                  </tr>
+                ) : filteredWebsites.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
+                      {services.websites.length === 0 
+                        ? "No websites available" 
+                        : "No websites match your search criteria"
+                      }
+                    </td>
+                  </tr>
+                ) : (
+                  filteredWebsites.slice((servicesWebPage-1)*itemsPerPage, servicesWebPage*itemsPerPage).map(w => {
+                  const status = (serviceStatus[w.id] || w.status || 'pending');
+                  const statusColors = {
+                    pending: 'bg-amber-100 text-amber-800 border-amber-200',
+                    in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
+                    completed: 'bg-green-100 text-green-800 border-green-200'
+                  };
+                  const websiteTypeColors = {
+                    basic: 'bg-blue-100 text-blue-800',
+                    premium: 'bg-purple-100 text-purple-800'
+                  };
+                  return (
+                    <tr key={w.id} className="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-gray-600 bg-gray-50">{w.id}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{w.user}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">{w.product}</span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${websiteTypeColors[w.type] || 'bg-gray-100 text-gray-800'}`}>
+                            {w.type}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">{w.purchasedAt}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1">
+                          <span className="font-semibold text-gray-900">{w.payment.amount}</span>
+                          <span className="text-gray-600">{w.payment.currency}</span>
+                          <span className="text-xs text-gray-400">({w.payment.method})</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={status}
+                          onChange={(e)=>{ const v=e.target.value; handleWebsiteStatusUpdate(w.id, v); }}
+                          className={`rounded-lg border px-3 py-2 text-xs font-medium capitalize focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors ${statusColors[status] || 'bg-gray-100 text-gray-800 border-gray-200'}`}
+                        >
+                          <option value="pending">pending</option>
+                          <option value="in_progress">in progress</option>
+                          <option value="completed">completed</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => requestDelete('website', w.id)}
+                          disabled={deleting.id === w.id}
+                          aria-label="Delete website service"
+                          title="Delete"
+                          className={`p-2 rounded-full border transition-colors ${deleting.id === w.id ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-red-600 border-red-200 hover:bg-red-50'}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Page {servicesWebPage} of {Math.max(Math.ceil(filteredWebsites.length / itemsPerPage), 1)}</span>
+            </div>
+            <div className="flex gap-2">
+              <button 
+                disabled={servicesWebPage===1} 
+                onClick={() => setServicesWebPage(p => Math.max(p-1,1))} 
+                className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                  servicesWebPage===1 
+                    ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                    : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Previous
+              </button>
+              <button 
+                disabled={servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)} 
+                onClick={() => setServicesWebPage(p => Math.min(p+1, Math.ceil(filteredWebsites.length/itemsPerPage)))} 
+                className={`px-4 py-2 rounded-lg border font-medium transition-colors ${
+                  servicesWebPage >= Math.ceil(filteredWebsites.length/itemsPerPage)
+                    ? "text-gray-400 bg-gray-50 border-gray-200 cursor-not-allowed" 
+                    : "text-gray-700 bg-white border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+            </>
+          )}
+        </div>
+      )}
 
       {paymentsView === "orders" && (
         <div className="mb-6">
@@ -274,6 +1075,33 @@ const AdminPayments = () => {
             <div className="flex gap-2">
               <button disabled={ordersPage===1} onClick={() => setOrdersPage(p => Math.max(p-1,1))} className={`px-3 py-1.5 rounded-md border ${ordersPage===1?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Prev</button>
               <button disabled={ordersPage >= Math.ceil(orders.length/itemsPerPage)} onClick={() => setOrdersPage(p => Math.min(p+1, Math.ceil(orders.length/itemsPerPage)))} className={`px-3 py-1.5 rounded-md border ${ordersPage >= Math.ceil(orders.length/itemsPerPage)?"text-gray-400 bg-gray-50":"hover:bg-gray-50"}`}>Next</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmDialog({ open: false, type: null, id: null, message: "" })} />
+          <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 w-full max-w-sm mx-4 p-5">
+            <div className="mb-3">
+              <h4 className="text-lg font-semibold text-gray-900">Confirm deletion</h4>
+              <p className="text-sm text-gray-600 mt-1">{confirmDialog.message}</p>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setConfirmDialog({ open: false, type: null, id: null, message: "" })}
+                className="px-4 py-2 rounded-lg border text-gray-700 bg-white hover:bg-gray-50 border-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeletion}
+                className="px-4 py-2 rounded-lg border bg-red-600 text-white hover:bg-red-700 border-red-600"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -379,17 +1207,40 @@ const AdminPayments = () => {
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
               </div>
-              <button
-                disabled={selectedUserIds.length === 0}
-                onClick={() => { if (selectedUserIds.length === 0) { return; } setGrantModal({ open: true }); }}
-                className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
-                  selectedUserIds.length === 0
-                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                }`}
-              >
-                <FaCoins /> Grant credits{selectedUserIds.length > 0 ? ` (${selectedUserIds.length})` : ""}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  disabled={selectedUserIds.length === 0}
+                  onClick={() => { if (selectedUserIds.length === 0) { return; } setGrantModal({ open: true }); }}
+                  className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
+                    selectedUserIds.length === 0
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white"
+                  }`}
+                >
+                  <FaCoins /> Grant credits{selectedUserIds.length > 0 ? ` (${selectedUserIds.length})` : ""}
+                </button>
+                <button
+                  disabled={selectedUserIds.length !== 1}
+                  onClick={() => { 
+                    if (selectedUserIds.length === 0) { 
+                      alert('Please select one user to deduct credits from.'); 
+                      return; 
+                    } 
+                    if (selectedUserIds.length > 1) { 
+                      alert('Please select only one user to deduct credits from.'); 
+                      return; 
+                    } 
+                    setDeductModal({ open: true }); 
+                  }}
+                  className={`px-4 py-2 rounded-md font-medium flex items-center gap-2 transition-colors ${
+                    selectedUserIds.length !== 1
+                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  <FaCoins /> Deduct credits{selectedUserIds.length === 1 ? " (1)" : ""}
+                </button>
+              </div>
             </div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-800">Users</h3>
@@ -413,7 +1264,23 @@ const AdminPayments = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedUsers.map((u)=>{
+                  {usersLoading ? (
+                    <tr>
+                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2"></div>
+                          Loading users...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : pagedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-3 py-8 text-center text-gray-500">
+                        No users found
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedUsers.map((u)=>{
                     const checked = selectedUserIds.includes(u.id);
                     return (
                       <tr key={u.id} className="border-t hover:bg-gray-50">
@@ -526,7 +1393,8 @@ const AdminPayments = () => {
                         <td className="px-3 py-2 text-gray-400">—</td>
                       </tr>
                     );
-                  })}
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -561,7 +1429,7 @@ const AdminPayments = () => {
                       await api.post('/payment-order/admin/credits/grant', { userIds: selectedUserIds, credits: grantCreditsAmount }, { withCredentials: true });
                       // Reflect change locally
                       setRealUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, credits: (Number(u.credits)||0) + (Number(grantCreditsAmount)||0) } : u));
-                      try { await refreshBalance?.(); } catch {}
+                      try { debouncedRefreshBalance(); } catch {}
                       setGrantMessage(`Granted ${grantCreditsAmount} credits to ${selectedUserIds.length} user(s).`);
                       // Optionally clear selection
                       setSelectedUserIds([]);
@@ -573,6 +1441,45 @@ const AdminPayments = () => {
                       setIsGranting(false);
                     }
                   }} className={`px-4 py-2 rounded-md text-white ${isGranting? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>{isGranting? 'Granting…' : 'Grant'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {deductModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/30" onClick={()=>setDeductModal({ open:false })} />
+              <div className="relative bg-white rounded-lg shadow-lg border border-gray-200 w-full max-w-md p-6">
+                <h4 className="text-xl font-semibold text-gray-900 mb-2">Deduct Credits</h4>
+                <p className="text-sm text-gray-600 mb-4">Selected user: {selectedUserIds.length === 1 ? realUsers.find(u => u.id === selectedUserIds[0])?.name || 'Unknown' : 'None'}</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Credits to Deduct</label>
+                <input value={deductCreditsAmount} onChange={(e)=>setDeductCreditsAmount(parseInt(e.target.value||"0",10))} type="number" min="1" className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-200 mb-4" />
+                {deductMessage && (
+                  <div className="mb-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">{deductMessage}</div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <button onClick={()=>{ if (!isDeducting) setDeductModal({ open:false }); }} className="px-4 py-2 rounded-md border hover:bg-gray-50" disabled={isDeducting}>Cancel</button>
+                  <button onClick={async ()=>{ 
+                    if (isDeducting) return; 
+                    try {
+                      setDeductMessage("");
+                      setIsDeducting(true);
+                      // Call backend to deduct credits
+                      await api.post('/payment-order/admin/credits/deduct', { userId: selectedUserIds[0], credits: deductCreditsAmount }, { withCredentials: true });
+                      // Reflect change locally
+                      setRealUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, credits: Math.max(0, (Number(u.credits)||0) - (Number(deductCreditsAmount)||0)) } : u));
+                      try { debouncedRefreshBalance(); } catch {}
+                      setDeductMessage(`Deducted ${deductCreditsAmount} credits from user.`);
+                      // Optionally clear selection
+                      setSelectedUserIds([]);
+                      // Close after brief delay
+                      setTimeout(()=>{ setDeductModal({ open:false }); setDeductMessage(""); }, 800);
+                    } catch (e) {
+                      alert('Failed to deduct credits.');
+                    } finally {
+                      setIsDeducting(false);
+                    }
+                  }} className={`px-4 py-2 rounded-md text-white ${isDeducting? 'bg-red-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}>{isDeducting? 'Deducting…' : 'Deduct'}</button>
                 </div>
               </div>
             </div>
@@ -791,5 +1698,6 @@ const AdminPayments = () => {
 };
 
 export default AdminPayments;
+
 
 
