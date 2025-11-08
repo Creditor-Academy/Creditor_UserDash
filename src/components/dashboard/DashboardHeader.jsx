@@ -13,7 +13,7 @@ import { search } from "@/services/searchService";
 import { fetchUserCourses } from "@/services/courseService";
 import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin, fetchUserProfile, fetchPublicUserProfile } from "@/services/userService";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchNotifications, markAllNotificationsRead } from "@/services/notificationService";
+import { fetchNotifications } from "@/services/notificationService";
 import { useCredits } from "@/contexts/CreditsContext";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
@@ -476,27 +476,20 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   };
 
   // Handler passed to modal when all marked as read
-  const handleAllMarkedRead = async () => {
-    try {
-      // Try to call backend to mark all as read (if route is enabled)
-      await markAllNotificationsRead();
-      console.log('Backend marked all notifications as read');
-    } catch (error) {
-      console.warn('Backend mark as read failed, using frontend fallback:', error);
-    }
-    
+  // Note: The API call is already handled in NotificationModal.handleMarkAllAsRead()
+  // This callback only handles local state updates and persistence
+  const handleAllMarkedRead = () => {
     // Persist read-all cutoff and update local storage
     const nowIso = new Date().toISOString();
     writeReadAllAt(nowIso);
     const locals = readLocalNotifications();
     const updatedLocals = locals.map(n => ({ ...n, read: true }));
     writeLocalNotifications(updatedLocals);
-    
-    // Update state
+
     setApiNotifications(prev => prev.map(n => ({ ...n, read: true })));
     setUnreadNotifications(0);
-    
-    // Refresh notifications from backend to ensure consistency
+
+    // Optionally re-fetch for UI sync
     setTimeout(() => {
       refreshNotifications();
     }, 500);

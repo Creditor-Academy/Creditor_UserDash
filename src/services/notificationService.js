@@ -1,5 +1,3 @@
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://creditor-backend-testing-branch.onrender.com";
-
 import axios from "axios";
 import { getAuthHeader } from "@/services/authHeader";
 
@@ -35,13 +33,16 @@ export async function fetchNotifications() {
 // Mark all notifications as read for current user
 export async function markAllNotificationsRead() {
 	const url = `${API_BASE}/api/notifications/mark-as-read`;
-	return axios.put(url, {}, {
+	console.log('Marking all notifications as read:', url);
+	const response = await axios.put(url, {}, {
 		headers: {
 			"Content-Type": "application/json",
 			...getAuthHeader(),
 		},
 		withCredentials: true,
 	});
+	console.log('Mark all as read response:', response.data);
+	return response;
 }
 
 // Create payment notification for current user
