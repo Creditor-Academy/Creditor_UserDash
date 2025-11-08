@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => ({
     strictPort: true,
     hmr: {
       overlay: false,
-      port: 3001,
+      port: 8081,
     },
     watch: {
       usePolling: false,
@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => ({
   },
   preview: {
     host: '0.0.0.0',
-    port: 3000,
+    port: 8080,
     allowedHosts: [
       'www.lmsathena.com',
       'lmsathena.com',
@@ -80,18 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://testbackend-hcoy.onrender.com'
-    ),
-    // AI Service API Keys - Injected at build time
-    'import.meta.env.VITE_OPENAI_API_KEY': JSON.stringify(
-      process.env.VITE_OPENAI_API_KEY || ''
-    ),
-    // Optional: Add other API keys if needed
-    'import.meta.env.VITE_DEEPAI_API_KEY': JSON.stringify(
-      process.env.VITE_DEEPAI_API_KEY || ''
-    ),
-    'import.meta.env.VITE_HUGGINGFACE_API_KEY': JSON.stringify(
-      process.env.VITE_HUGGINGFACE_API_KEY || ''
+      'https://creditor.onrender.com'
     ),
   },
 }));
