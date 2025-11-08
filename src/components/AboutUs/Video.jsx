@@ -64,18 +64,23 @@ const Video = () => {
         >
           {/* Video Wrapper with Shadow */}
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-            {/* Video Iframe */}
+            {/* Video Element */}
             <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-              {/* Add your video source link in the src attribute below */}
-              {/* Example: src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview" */}
-              <iframe
-                src="https://drive.google.com/file/d/1VHSrPG2_DH0Fd23eu8gYofyaPNfwcZcB/preview"
+              <video
+                src="https://websiteathena.s3.eu-north-1.amazonaws.com/Athena+LMS++website+video+2nd.mp4"
                 className="absolute top-0 left-0 w-full h-full"
-                title="Athena LMS Product Overview"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                style={{
+                  objectFit: 'cover',
+                  borderRadius: '16px',
+                }}
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
 
