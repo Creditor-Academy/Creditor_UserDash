@@ -80,7 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      'https://creditor.onrender.com'
+      'https://testbackend-hcoy.onrender.com'
     ),
   },
 }));
