@@ -471,14 +471,16 @@ const ListComponent = forwardRef(
               ${content.items
                 .map(
                   (item, index) => `
-                <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+                <div class="checkbox-wrapper flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200" data-checkbox-index="${index}">
                   <div class="flex-shrink-0 mt-1">
-                    <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors checkbox-container" data-index="${index}">
+                    <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors checkbox-container" data-index="${index}" role="checkbox" aria-checked="false" tabindex="0">
                       <input type="checkbox" class="hidden checkbox-item" data-index="${index}" />
-                      <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm opacity-0 transition-opacity"></div>
+                      <div class="checkbox-visual w-4 h-4 bg-pink-500 rounded-sm flex items-center justify-center text-white text-xs font-semibold leading-none opacity-0 transition-opacity">
+                        ✓
+                      </div>
                     </div>
                   </div>
-                  <div class="flex-1 text-gray-800 leading-relaxed">
+                  <div class="checkbox-text flex-1 text-gray-800 leading-relaxed">
                     ${item}
                   </div>
                 </div>
@@ -590,14 +592,16 @@ const ListComponent = forwardRef(
             ${listItems
               .map(
                 (item, index) => `
-              <div class="flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200">
+              <div class="checkbox-wrapper flex items-start space-x-4 p-4 rounded-lg bg-white/60 border border-pink-300/50 hover:shadow-md transition-all duration-200" data-checkbox-index="${index}">
                 <div class="flex-shrink-0 mt-1">
-                  <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors checkbox-container" data-index="${index}">
+                  <div class="w-5 h-5 border-2 border-pink-400 rounded bg-white flex items-center justify-center cursor-pointer hover:border-pink-500 transition-colors checkbox-container" data-index="${index}" role="checkbox" aria-checked="${checkedItems[index] ? 'true' : 'false'}" tabindex="0">
                     <input type="checkbox" class="hidden checkbox-item" data-index="${index}" ${checkedItems[index] ? 'checked' : ''} />
-                    <div class="checkbox-visual w-3 h-3 bg-pink-500 rounded-sm ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity"></div>
+                    <div class="checkbox-visual w-4 h-4 bg-pink-500 rounded-sm flex items-center justify-center text-white text-xs font-semibold leading-none ${checkedItems[index] ? 'opacity-100' : 'opacity-0'} transition-opacity">
+                      ✓
+                    </div>
                   </div>
                 </div>
-                <div class="flex-1 text-gray-800 leading-relaxed">
+                <div class="checkbox-text flex-1 text-gray-800 leading-relaxed ${checkedItems[index] ? 'line-through text-gray-500' : ''}">
                   ${item}
                 </div>
               </div>

@@ -1121,6 +1121,134 @@ const LessonPreview = () => {
     }
   }, [lessonData]);
 
+  // Enable interactive checkbox lists in preview
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!lessonData) return;
+
+    const containers = Array.from(
+      document.querySelectorAll('.checkbox-container')
+    );
+    if (containers.length === 0) return;
+
+    const updateVisualState = (container, isChecked) => {
+      const hiddenCheckbox = container.querySelector('.checkbox-item');
+      const visualCheckbox = container.querySelector('.checkbox-visual');
+      const wrapper =
+        container.closest('.checkbox-wrapper') || container.parentElement;
+      const textElement =
+        wrapper?.querySelector('.checkbox-text') ||
+        wrapper?.querySelector('.flex-1') ||
+        container.parentElement?.parentElement?.querySelector('.checkbox-text');
+
+      if (visualCheckbox && !visualCheckbox.dataset.enhanced) {
+        visualCheckbox.classList.add(
+          'flex',
+          'items-center',
+          'justify-center',
+          'text-white',
+          'text-xs',
+          'font-semibold',
+          'leading-none'
+        );
+        if (!visualCheckbox.textContent.trim()) {
+          visualCheckbox.textContent = '✓';
+        }
+        visualCheckbox.dataset.enhanced = 'true';
+      }
+
+      if (hiddenCheckbox) {
+        hiddenCheckbox.checked = isChecked;
+      }
+
+      container.setAttribute('data-checked', isChecked ? 'true' : 'false');
+      container.setAttribute('aria-checked', isChecked ? 'true' : 'false');
+
+      if (visualCheckbox) {
+        visualCheckbox.classList.toggle('opacity-100', isChecked);
+        visualCheckbox.classList.toggle('opacity-0', !isChecked);
+      }
+
+      if (textElement) {
+        textElement.classList.toggle('line-through', isChecked);
+        if (isChecked) {
+          textElement.classList.add('text-gray-500');
+          textElement.classList.remove('text-gray-800');
+        } else {
+          textElement.classList.remove('text-gray-500');
+          textElement.classList.add('text-gray-800');
+        }
+      }
+    };
+
+    const toggleContainer = container => {
+      if (!container) return;
+      const hiddenCheckbox = container.querySelector('.checkbox-item');
+      const currentChecked =
+        hiddenCheckbox && typeof hiddenCheckbox.checked === 'boolean'
+          ? hiddenCheckbox.checked
+          : container.getAttribute('data-checked') === 'true' ||
+            container.getAttribute('aria-checked') === 'true';
+      const newChecked = !currentChecked;
+      updateVisualState(container, newChecked);
+    };
+
+    const handleContainerClick = event => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleContainer(event.currentTarget);
+    };
+
+    const handleContainerKeyDown = event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleContainer(event.currentTarget);
+    };
+
+    const handleWrapperClick = event => {
+      if (event.target.closest('.checkbox-container')) {
+        return;
+      }
+      const container = event.currentTarget.querySelector(
+        '.checkbox-container'
+      );
+      if (!container) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toggleContainer(container);
+    };
+
+    containers.forEach(container => {
+      container.addEventListener('click', handleContainerClick);
+      container.addEventListener('keydown', handleContainerKeyDown);
+
+      const hiddenCheckbox = container.querySelector('.checkbox-item');
+      const initialChecked =
+        hiddenCheckbox && typeof hiddenCheckbox.checked === 'boolean'
+          ? hiddenCheckbox.checked
+          : container.getAttribute('data-checked') === 'true' ||
+            container.getAttribute('aria-checked') === 'true';
+      updateVisualState(container, Boolean(initialChecked));
+    });
+
+    const wrappers = Array.from(document.querySelectorAll('.checkbox-wrapper'));
+    wrappers.forEach(wrapper => {
+      wrapper.addEventListener('click', handleWrapperClick);
+    });
+
+    return () => {
+      containers.forEach(container => {
+        container.removeEventListener('click', handleContainerClick);
+        container.removeEventListener('keydown', handleContainerKeyDown);
+      });
+
+      wrappers.forEach(wrapper => {
+        wrapper.removeEventListener('click', handleWrapperClick);
+      });
+    };
+  }, [lessonData, currentPage]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
