@@ -1,17 +1,6 @@
 import { vi, expect } from 'vitest';
 
-// Mock Node.js inspector modules to prevent compatibility issues
-vi.mock('node:inspector/promises', () => ({}));
-vi.mock('inspector', () => ({}));
-
-// Mock the problematic Node.js modules to prevent bundling issues
-vi.mock('node:inspector', () => ({}));
-vi.mock('node:util', () => ({
-  inspect: vi.fn(),
-  format: vi.fn(),
-}));
-
-// Manually add essential DOM matchers to avoid jest-dom import issues
+// Essential DOM matchers without any external dependencies
 if (typeof expect !== 'undefined' && expect.extend) {
   expect.extend({
     toBeInTheDocument(received) {
