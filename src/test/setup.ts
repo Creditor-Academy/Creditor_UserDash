@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
+// Mock Node.js inspector module to prevent compatibility issues
+vi.mock('node:inspector/promises', () => ({}));
+vi.mock('inspector', () => ({}));
+
 // Make Jest globals available for compatibility
 global.jest = {
   fn: vi.fn,

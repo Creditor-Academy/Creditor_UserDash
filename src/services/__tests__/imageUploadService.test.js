@@ -64,9 +64,15 @@ describe('ImageUploadService', () => {
   });
 
   test('should validate file size correctly', async () => {
-    // Create a mock file that's too large (60MB - exceeds 50MB limit)
-    const largeFile = new File(['x'.repeat(60 * 1024 * 1024)], 'large.jpg', {
+    // Create a mock file that's too large (simulate 60MB file without actually creating large content)
+    const largeFile = new File(['test'], 'large.jpg', {
       type: 'image/jpeg',
+    });
+
+    // Mock the size property to simulate a large file
+    Object.defineProperty(largeFile, 'size', {
+      value: 60 * 1024 * 1024, // 60MB
+      writable: false,
     });
 
     await expect(uploadImage(largeFile)).rejects.toThrow(
