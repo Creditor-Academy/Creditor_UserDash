@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import team from "../../../assets/teamm.jpg";
 
-export default function ExpertScale() {
+export default function AnalyticsCta() {
   return (
     <section className="relative overflow-hidden bg-[#1e3a5f] py-20 lg:py-32">
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
@@ -23,16 +23,13 @@ export default function ExpertScale() {
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-normal mb-5 leading-tight">
-            Turn connections into
-             <span className="block">opportunities with </span>
-             <span className="block">coaching and webinars</span>
+            Elevate your
+             <span className="block">business with data-</span>
+             <span className="block">driven insights on</span>
+             <span className="block">Athena LMS Analytics</span>
               
             </h1>
 
-            {/* Description */}
-            <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">
-            Book a demo or start a free trial to discover how coaching and webinars can help you scale your business with Athena LMS.
-            </p>
 
            
 

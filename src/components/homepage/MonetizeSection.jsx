@@ -78,7 +78,7 @@ const MonetizeSection = () => {
                 Start Creating
                 <ArrowUpRight size={16} strokeWidth={2} />
               </a>
-              <a href="/trial" className="bg-transparent hover:bg-white/10 text-white font-semibold py-4 px-8 border border-white rounded-lg transition-all duration-300 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
+              <a href="/login" className="bg-transparent hover:bg-white/10 text-white font-semibold py-4 px-8 border border-white rounded-lg transition-all duration-300 flex items-center justify-center" style={{ fontFamily: 'Arial, sans-serif' }}>
                 Book a Demo
               </a>
             </motion.div>
