@@ -76,6 +76,7 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@lessonbuilder': path.resolve(__dirname, './src/lessonbuilder'),
     },
   },
   define: {

@@ -1,9 +1,9 @@
 import {
   textTypes,
   gradientOptions,
-} from '@/constants/LessonBuilder/textTypesConfig';
-import { imageTemplates } from '@/constants/LessonBuilder/imageTemplates';
-import { contentBlockTypes } from '@/constants/LessonBuilder/blockTypes';
+} from '@lessonbuilder/constants/textTypesConfig';
+import { imageTemplates } from '@lessonbuilder/constants/imageTemplates';
+import { contentBlockTypes } from '@lessonbuilder/constants/blockTypes';
 import openAIService from './openAIService';
 import { uploadAIGeneratedImage } from './aiUploadService';
 

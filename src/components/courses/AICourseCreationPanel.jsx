@@ -34,7 +34,7 @@ import {
 } from '@/services/aiUploadService';
 import EnhancedAILessonCreator from './EnhancedAILessonCreator';
 import AITextEditor from './AITextEditor';
-import '../../styles/AITextEditor.css';
+import '@lessonbuilder/styles/AITextEditor.css';
 
 const AICourseCreationPanel = ({ isOpen, onClose, onCourseCreated }) => {
   const [activeTab, setActiveTab] = useState('outline');

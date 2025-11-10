@@ -42,25 +42,30 @@ src/
 ## Key Benefits
 
 ### 1. **Improved Maintainability**
+
 - Each component has a single responsibility
 - Logic is separated from UI components
 - Constants are externalized and reusable
 
 ### 2. **Better Code Organization**
+
 - Feature-based folder structure
 - Barrel exports for clean imports
 - Logical separation of concerns
 
 ### 3. **Enhanced Readability**
+
 - Smaller, focused files (50-500 lines each)
 - Clear naming conventions
 - Consistent file structure
 
 ### 4. **TypeScript Ready**
+
 - All new components use .jsx extension but are ready for TypeScript conversion
 - Proper prop types and interfaces can be easily added
 
 ### 5. **Reusability**
+
 - Components can be reused across different parts of the application
 - Utilities and constants are shared resources
 - Hooks provide reusable state logic
@@ -70,21 +75,25 @@ src/
 ### Core Components
 
 #### 1. **LessonBuilder (index.jsx)**
+
 - Main container component
 - Orchestrates all sub-components
 - Handles routing and layout
 
 #### 2. **useLessonBuilder Hook**
+
 - Centralized state management
 - Contains all lesson builder logic
 - Provides clean API for components
 
 #### 3. **ContentLibrary**
+
 - Displays available content block types
 - Handles block selection
 - Manages sidebar positioning
 
 #### 4. **LessonHeader**
+
 - Contains action buttons (Save, Update, View)
 - Navigation controls
 - Lesson title display
@@ -92,15 +101,18 @@ src/
 ### Feature-Specific Components
 
 #### Text Editing
+
 - **TextEditor**: Rich text editing dialog
 - **TextTypeSidebar**: Text type selection
 - **textTypes.js**: Text configuration constants
 
 #### Media Components
+
 - **VideoDialog**: Video upload and management
 - **blockTypes.js**: Media block definitions
 
 #### Utilities
+
 - **quillConfig.js**: Rich text editor setup
 - **styleSheets.js**: Custom CSS styles
 - **blockHelpers.js**: Helper functions
@@ -108,6 +120,7 @@ src/
 ## Migration Status
 
 ### ✅ **Completed**
+
 - Core structure and folder hierarchy
 - Text editing functionality
 - Content library sidebar
@@ -116,6 +129,7 @@ src/
 - Utility functions
 
 ### 🚧 **In Progress** (Created structure, needs implementation)
+
 - Media block components (Image, Video, Audio, PDF)
 - Special block components (Statement, Quote, Table)
 - All dialog components
@@ -123,6 +137,7 @@ src/
 - File upload handlers
 
 ### 📋 **Future Enhancements**
+
 - TypeScript conversion
 - Unit tests for each component
 - Storybook documentation
@@ -132,33 +147,38 @@ src/
 ## Usage
 
 ### Importing Components
+
 ```javascript
 // Clean barrel imports
-import { ContentLibrary, TextEditor } from '@/components/LessonBuilder/ContentBlocks';
-import { TextTypeSidebar } from '@/components/LessonBuilder/Sidebars';
+import ContentLibrarySidebar from '@lessonbuilder/components/layout/ContentLibrarySidebar';
+import TextBlockComponent from '@lessonbuilder/components/blocks/TextBlock/TextBlockComponent';
 
 // Using the hook
-import { useLessonBuilder } from '@/pages/LessonBuilder/hooks/useLessonBuilder';
+import useLessonBlocks from '@lessonbuilder/hooks/useLessonBlocks';
 ```
 
 ### Adding New Block Types
-1. Add definition to `constants/LessonBuilder/blockTypes.js`
+
+1. Add definition to `lessonbuilder/constants/blockTypes.js`
 2. Create component in appropriate subfolder
 3. Add to barrel exports
 4. Update hook logic if needed
 
 ### Customizing Styles
-- Modify `utils/LessonBuilder/styleSheets.js`
+
+- Modify `lessonbuilder/utils/styleSheets.js`
 - Add component-specific styles in respective components
 - Use Tailwind classes for consistency
 
 ## Breaking Changes
 
 ### Import Path Updates
+
 - Old: `import LessonBuilder from './pages/LessonBuilder.jsx'`
 - New: `import LessonBuilder from './pages/LessonBuilder'` (points to index.jsx)
 
 ### Props Changes
+
 - Removed `viewMode` prop (functionality moved to modern preview)
 - State management moved to custom hook
 
@@ -172,6 +192,7 @@ import { useLessonBuilder } from '@/pages/LessonBuilder/hooks/useLessonBuilder';
 ## Development Guidelines
 
 ### When Adding New Features
+
 1. Identify the appropriate folder based on feature type
 2. Create focused, single-responsibility components
 3. Add to barrel exports for clean imports
@@ -179,6 +200,7 @@ import { useLessonBuilder } from '@/pages/LessonBuilder/hooks/useLessonBuilder';
 5. Add constants to appropriate files
 
 ### Code Style
+
 - Use functional components with hooks
 - Prefer composition over inheritance
 - Keep components under 300 lines when possible
@@ -187,6 +209,7 @@ import { useLessonBuilder } from '@/pages/LessonBuilder/hooks/useLessonBuilder';
 ## Testing Strategy
 
 Each component should have:
+
 - Unit tests for logic
 - Integration tests for component interaction
 - E2E tests for critical user flows
@@ -194,6 +217,7 @@ Each component should have:
 ## Conclusion
 
 This refactoring transforms a monolithic 7000-line file into a maintainable, scalable architecture that:
+
 - Improves developer experience
 - Enables better testing
 - Facilitates feature development

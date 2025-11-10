@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
-import ImageEditor from './ImageEditor';
+import ImageEditor from '../MediaBlocks/ImageEditor';
 
 const QuoteComponent = forwardRef(
   (
