@@ -25,7 +25,7 @@ const sections = [
     id: 3,
     title: 'Building a community',
     description:
-      'Include exclusive access to your Athena LMS community in your membership, giving members the chance to engage with like-minded peers, industry professionals, and your team’s expertise through live Q&As and peer discussions — fostering a sense of belonging, support, and long-term engagement.',
+      'Include exclusive access to your LMS Athena community in your membership, giving members the chance to engage with like-minded peers, industry professionals, and your team’s expertise through live Q&As and peer discussions — fostering a sense of belonging, support, and long-term engagement.',
     imagePosition: 'right',
     bgColor: 'bg-[#d0cbbf]', // warm beige like screenshot
     type: 'landing',

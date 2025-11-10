@@ -65,7 +65,7 @@ const Customerpay = () => {
 
             {/* Description */}
             <p className="text-base text-white mb-8 leading-relaxed" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Athena LMS's easy-to-use platform helps you create engaging, high-quality experiences that boost learner success and satisfaction.
+              LMS Athena's easy-to-use platform helps you create engaging, high-quality experiences that boost learner success and satisfaction.
             </p>
 
             {/* Accordion */}

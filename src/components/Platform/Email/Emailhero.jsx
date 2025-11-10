@@ -37,7 +37,7 @@ const Emailhero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-2xl mb-8">
-              Convert prospects into paying customers by capturing and nurturing leads directly in Athena LMS
+              Convert prospects into paying customers by capturing and nurturing leads directly in LMS Athena
               with targeted email tools that keep your content top‑of‑mind.
             </p>
 

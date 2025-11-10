@@ -98,7 +98,7 @@ const styles = {
 const Footer = () => (
   <footer
     style={styles.footer}
-    aria-label="Athena LMS site footer"
+    aria-label="LMS Athena site footer"
     className="athena-footer"
     role="contentinfo"
   >
@@ -149,7 +149,7 @@ const Footer = () => (
           style={{ ...styles.col, flex: "0 0 260px" }}
         >
           <div className="brand" style={styles.brand}>
-            Athena LMS
+            LMS Athena
           </div>
           <div className="tagline" style={styles.tagline}>
             Transforming education through innovative technology and personalized learning experiences.
@@ -224,12 +224,12 @@ const Footer = () => (
         </div>
 
         <div className="right" style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <div style={styles.copyright}>© 2025 Athena LMS. All rights reserved.</div>
+          <div style={styles.copyright}>© 2025 LMS Athena. All rights reserved.</div>
 
           <div style={styles.socialRow} aria-label="social links">
             <a
               className="social-anchor"
-              href="https://www.linkedin.com"
+              href="https://www.linkedin.com/company/lmsathena/ "
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"

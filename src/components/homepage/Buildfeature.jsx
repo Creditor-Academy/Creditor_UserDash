@@ -14,7 +14,7 @@ const Buildfeature = () => {
     {
       id: 0,
       title: "Build Exceptional Learning Experiences",
-      description: "Create immersive, branded, and high-performing learning environments with Athena LMS. Whether you're teaching a single class or scaling an entire academy, you'll have every tool to craft transformative experiences—without writing a single line of code.",
+      description: "Create immersive, branded, and high-performing learning environments with LMS Athena. Whether you're teaching a single class or scaling an entire academy, you'll have every tool to craft transformative experiences—without writing a single line of code.",
       items: [
         { text: "Drag-and-Drop Course Builder – Design stunning courses, quizzes, and multimedia lessons in minutes.", icon: BookOpen },
         { text: "Adaptive Learning Paths – Automatically guide learners based on progress, goals, and performance.", icon: Target },
@@ -28,7 +28,7 @@ const Buildfeature = () => {
     {
       id: 1,
       title: "Sell Smarter. Scale Faster.",
-      description: "Athena LMS turns your course catalog into a high-performing sales engine — blending education with automation. From effortless payments to AI-driven analytics, every feature is built to help you convert, retain, and grow.",
+      description: "LMS Athena turns your course catalog into a high-performing sales engine — blending education with automation. From effortless payments to AI-driven analytics, every feature is built to help you convert, retain, and grow.",
       items: [
         { text: "Instant Course Storefronts – Launch a professional sales page for each course in minutes, no coding required.", icon: Globe },
         { text: "Dynamic Pricing Engine – Create limited-time offers, seasonal discounts, and tiered pricing to boost urgency.", icon: CreditCard },
@@ -42,7 +42,7 @@ const Buildfeature = () => {
     {
       id: 2,
       title: "Analytics: Insights That Drive Impact",
-      description: "Athena LMS puts data to work for you. Go beyond surface metrics with deep analytics that connect learning outcomes, engagement trends, and business growth—all in one visual command center. Turn every course, campaign, and student interaction into a measurable advantage.",
+      description: "LMS Athena puts data to work for you. Go beyond surface metrics with deep analytics that connect learning outcomes, engagement trends, and business growth—all in one visual command center. Turn every course, campaign, and student interaction into a measurable advantage.",
       items: [
         { text: "Real-Time Performance Tracking – Monitor enrollment, completion, and engagement rates across all courses instantly.", icon: BarChart3 },
         { text: "Revenue & ROI Analytics – See exactly which programs and campaigns generate the most profit.", icon: TrendingUp },

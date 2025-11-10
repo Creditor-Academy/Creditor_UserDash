@@ -40,7 +40,7 @@ const Digitalhero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              With Digital Downloads on Athena LMS, you can earn new leads, expand your reach, and create new revenue streams — helping you scale with less effort.
+              With Digital Downloads on LMS Athena, you can earn new leads, expand your reach, and create new revenue streams — helping you scale with less effort.
             </p>
 
             {/* CTA Buttons */}

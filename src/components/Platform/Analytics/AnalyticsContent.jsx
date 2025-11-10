@@ -74,7 +74,7 @@ const Digitalunlock = () => {
         >
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-white mb-6 leading-tight">
           Stand out from the competition with{" "}
-          <span className="block">Athena LMS Analytics.</span>
+          <span className="block">LMS Athena Analytics.</span>
           </h2>
           
         </motion.div>

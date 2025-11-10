@@ -28,7 +28,7 @@ const CourseFinger = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed">
-              Connect anytime, anywhere with Branded Mobile by Athena LMS. Our team of experts will take care of creating and managing a custom mobile app for your online courses and communities — complete with your own unique branding.
+              Connect anytime, anywhere with Branded Mobile by LMS Athena. Our team of experts will take care of creating and managing a custom mobile app for your online courses and communities — complete with your own unique branding.
             </p>
 
             {/* CTA Button */}

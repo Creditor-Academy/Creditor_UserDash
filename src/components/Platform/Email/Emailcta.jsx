@@ -28,7 +28,7 @@ export default function ExpertScale() {
               
             </h1>
             <p className="text-sm lg:text-base text-gray-300 mb-6 leading-relaxed">Turn your audience into loyal, paying customers with email
-                <span className="block">automation on Athena LMS.</span></p>
+                <span className="block">automation on LMS Athena.</span></p>
            
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -55,7 +55,7 @@ export default function ExpertScale() {
             <div className="relative shadow-2xl overflow-hidden aspect-[4/3] w-full max-w-3xl lg:max-w-4xl mx-auto">
               <img 
                 src={showcase6} 
-                alt="Athena LMS Course Dashboard" 
+                alt="LMS Athena Course Dashboard" 
                 className="w-full h-full object-contain"
               />
             </div>

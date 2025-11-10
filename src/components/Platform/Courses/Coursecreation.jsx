@@ -76,7 +76,7 @@ const Coursecreation = () => {
             Top-tier course creation tools for education businesses
           </h2>
           <p className="text-base sm:text-lg text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Your knowledge is unique. Athena LMS gives you the power and flexibility to offer a course experience your audience won't find anywhere else — plus the tools to help you track your results.
+            Your knowledge is unique. LMS Athena gives you the power and flexibility to offer a course experience your audience won't find anywhere else — plus the tools to help you track your results.
           </p>
         </motion.div>
 
