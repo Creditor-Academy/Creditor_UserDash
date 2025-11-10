@@ -14,7 +14,6 @@ import {
   Clock,
   Play,
   FileText,
-  Loader2,
   AlertCircle,
   Search,
   RefreshCw,
@@ -389,6 +388,109 @@ const LessonView = () => {
   //   }
   // };
 
+  const LessonCardSkeleton = () => (
+    <Card className="hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+      <div className="relative h-48 bg-gray-200 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+      </div>
+      <CardHeader className="pb-3">
+        <div className="h-6 bg-gray-200 rounded-md w-3/4 mb-2 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+        </div>
+        <div className="h-4 bg-gray-200 rounded-md w-1/2 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+        </div>
+      </CardHeader>
+      <CardContent className="pb-4">
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 rounded-md w-full overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+          <div className="h-4 bg-gray-200 rounded-md w-full overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+          <div className="h-4 bg-gray-200 rounded-md w-5/6 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="pt-0">
+        <div className="h-10 bg-gray-200 rounded-md w-full overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+        </div>
+      </CardFooter>
+    </Card>
+  );
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="h-8 bg-gray-200 rounded-md w-32 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+          <div className="h-4 w-4 bg-gray-200 rounded" />
+          <div className="h-4 bg-gray-200 rounded-md w-48 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <div className="h-9 bg-gray-200 rounded-md w-2/3 mb-4 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+          <div className="space-y-2 mb-4">
+            <div className="h-4 bg-gray-200 rounded-md w-full overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+            </div>
+            <div className="h-4 bg-gray-200 rounded-md w-5/6 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4 mb-6">
+            {[1, 2].map(key => (
+              <div
+                key={key}
+                className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg min-w-[180px]"
+              >
+                <div className="w-8 h-8 bg-gray-200 rounded-lg overflow-hidden relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-20 overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+                  </div>
+                  <div className="h-3 bg-gray-200 rounded w-12 overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-5 bg-gray-200 rounded" />
+            <div className="h-4 bg-gray-200 rounded-md w-32 overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+            </div>
+          </div>
+          <div className="relative w-full sm:w-96 h-10 bg-gray-200 rounded-md overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-shimmer bg-[length:200%_100%]" />
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, index) => (
+            <LessonCardSkeleton key={index} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Breadcrumb Navigation */}
@@ -478,12 +580,7 @@ const LessonView = () => {
       </div>
 
       {/* Loading State */}
-      {loading ? (
-        <div className="flex items-center justify-center min-h-[200px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading lessons...</span>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="text-center p-6 bg-red-50 rounded-lg">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-red-900 mb-2">
