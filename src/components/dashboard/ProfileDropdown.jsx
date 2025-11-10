@@ -23,6 +23,8 @@ import { fetchUserProfile, clearUserData, updateProfilePicture } from "@/service
 import { useUser } from "@/contexts/UserContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Award } from "lucide-react";
+import { getBadgeData, renderBadgeIconSmall, getBadgeChipBg } from "@/components/profile/UserBadges";
 
 export function ProfileDropdown() {
   const [userAvatar, setUserAvatar] = useState(getUserAvatarUrlSync());
@@ -31,6 +33,8 @@ export function ProfileDropdown() {
   const { userProfile, setUserProfile } = useUser();
   const { logout: logoutAuth } = useAuth();
   const navigate = useNavigate();
+  const badgeData = getBadgeData();
+  const topBadge = badgeData.topBadge;
   
   useEffect(() => {
     // Load avatar from backend on component mount
@@ -65,11 +69,9 @@ export function ProfileDropdown() {
 
   const handleLogout = async () => {
     try {
-      // Use the logout function from AuthContext which handles everything
       await logoutAuth();
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if there's an error, redirect to login page
       window.location.href = '/login';
     }
   };
@@ -121,7 +123,7 @@ export function ProfileDropdown() {
           whileTap={{ scale: 0.98 }}
         >
           <div className="relative group/avatar">
-            <Avatar className="h-9 w-9 border border-border shadow-sm transition-all duration-300 group-hover/avatar:border-primary/30">
+            <Avatar className={`h-9 w-9 border border-border shadow-sm transition-all duration-300 group-hover/avatar:border-primary/30`}>
               <AvatarImage src={userAvatar} alt="User avatar" className="transition-all duration-500 group-hover/avatar:scale-110" />
               <AvatarFallback useSvgFallback={true} initials="AJ" className="bg-gradient-to-tr from-primary/80 to-primary text-white">
                 <motion.span animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}>
@@ -132,8 +134,13 @@ export function ProfileDropdown() {
             <div className="absolute inset-0 bg-primary/0 rounded-full transition-colors duration-300 group-hover/avatar:bg-primary/10 animate-pulse-subtle"></div>
           </div>
           <div className="hidden md:block text-left group/text">
-            <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300">
-              {userProfile ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User' : 'User'}
+            <p className="text-sm font-semibold group-hover/text:text-primary transition-colors duration-300 flex items-center gap-2">
+              <span>{userProfile ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'User' : 'User'}</span>
+              {topBadge && (
+                <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${getBadgeChipBg(topBadge.color)}`} title={topBadge.name} aria-label={topBadge.name}>
+                  {renderBadgeIconSmall(topBadge.icon)}
+                </span>
+              )}
             </p>
             <p className="text-xs text-muted-foreground group-hover/text:text-primary/70 transition-colors duration-300">
               {userProfile?.email || 'Loading...'}

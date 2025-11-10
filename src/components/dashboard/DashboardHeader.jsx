@@ -15,6 +15,8 @@ import { fetchDetailedUserProfile, fetchUserCoursesByUserId, fetchAllUsersAdmin,
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchNotifications } from "@/services/notificationService";
 import { useCredits } from "@/contexts/CreditsContext";
+import { Award } from "lucide-react";
+import { getBadgeData, getTopBadgeForUser, renderBadgeIconSmall, getBadgeChipBg } from "@/components/profile/UserBadges";
 
 export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const { isInstructorOrAdmin, hasRole } = useAuth();
@@ -43,6 +45,8 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const badgeData = getBadgeData();
+  const topBadge = badgeData.topBadge;
 
   // Display helper: format credit points using USD-style units (K, M, B, T)
   // Show exact numbers for 100-999 range, clamp others to 100 and append '+' if clamped
@@ -644,8 +648,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               <User className="h-4 w-4 text-green-600" />
                             )}
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">
-                                {user.first_name} {user.last_name}
+                              <div className="font-medium text-gray-900 flex items-center gap-2">
+                                <span>{user.first_name} {user.last_name}</span>
+                                {(() => { const ub = getTopBadgeForUser(user?.id || user?.email, badgeData.badges); return ub ? (
+                                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${getBadgeChipBg(ub.color)}`} title={ub.name} aria-label={ub.name}>
+                                    {renderBadgeIconSmall(ub.icon)}
+                                  </span>
+                                ) : null; })()}
                               </div>
                               <div className="text-sm text-gray-500 flex items-center gap-2">
                                 {user.email}
@@ -872,8 +881,13 @@ export function DashboardHeader({ sidebarCollapsed, onMobileMenuClick }) {
                               <User className="h-4 w-4 text-green-600" />
                             )}
                             <div className="flex-1">
-                              <div className="font-medium text-gray-900">
-                                {user.first_name} {user.last_name}
+                              <div className="font-medium text-gray-900 flex items-center gap-2">
+                                <span>{user.first_name} {user.last_name}</span>
+                                {(() => { const ub = getTopBadgeForUser(user?.id || user?.email, badgeData.badges); return ub ? (
+                                  <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full ${getBadgeChipBg(ub.color)}`} title={ub.name} aria-label={ub.name}>
+                                    {renderBadgeIconSmall(ub.icon)}
+                                  </span>
+                                ) : null; })()}
                               </div>
                               <div className="text-sm text-gray-500 flex items-center gap-2">
                                 {user.email}

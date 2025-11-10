@@ -49,8 +49,12 @@ import {
 import { fetchUserCoursesByUserId, fetchAllCourses } from "@/services/userService";
 import { fetchCourseModules, fetchCourseById, fetchCoursePrice } from "@/services/courseService";
 import { getUnlockedModulesByUser } from "@/services/modulesService";
+import UserBadges, { getBadgeData, getTopBadgeForUser, renderBadgeIconSmall, getBadgeChipBg } from "@/components/profile/UserBadges";
 
 const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isInstructorOrAdmin = false, viewerTimezone }) => {
+  // Get badge data for this user (will use user.id when API is integrated)
+  const badgeData = getBadgeData();
+  const topBadge = getTopBadgeForUser(user?.id || user?.email, badgeData.badges);
 
   const [courses, setCourses] = React.useState([]);
 
@@ -745,38 +749,42 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
             <CardContent className="px-6 py-6 space-y-6">
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-
-                {user.image ? (
-
-                  <img
-
-                    src={user.image}
-
-                    alt={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User avatar'}
-
-                    className="h-20 w-20 rounded-2xl object-cover flex-shrink-0 ring-4 ring-white shadow-lg"
-
-                  />
-
-                ) : (
-
-                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0 ring-4 ring-white shadow-lg">
-
-                    <span className="text-xl font-bold text-white">
-
-                      {user.first_name?.[0]}{user.last_name?.[0]}
-
-                    </span>
-
-                  </div>
-
-                )}
+                <div className="relative">
+                  {user.image ? (
+                    <img
+                      src={user.image}
+                      alt={`${user.first_name || ''} ${user.last_name || ''}`.trim() || 'User avatar'}
+                      className="h-20 w-20 rounded-2xl object-cover flex-shrink-0 shadow-lg ring-4 ring-white"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0 shadow-lg ring-4 ring-white">
+                      <span className="text-xl font-bold text-white">
+                        {user.first_name?.[0]}{user.last_name?.[0]}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Badge count indicator - top right corner */}
+                  {badgeData.hasBadges && (
+                    <div className="absolute -top-2 -right-2 z-10 flex items-center justify-center w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full border-[3px] border-white shadow-lg shadow-amber-500/50">
+                      <Award className="h-4 w-4 text-white" />
+                      <span className="absolute -bottom-1 -right-1 flex items-center justify-center w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full border-2 border-white shadow-md">
+                        {badgeData.count}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex-1 min-w-0">
 
-                  <h3 className="text-2xl font-bold text-gray-900 break-words mb-2">
+                  <h3 className="text-2xl font-bold text-gray-900 break-words mb-2 flex items-center gap-2">
 
-                    {user.first_name} {user.last_name}
+                    <span>{user.first_name} {user.last_name}</span>
+                    {topBadge && (
+                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${getBadgeChipBg(topBadge.color)}`} title={topBadge.name} aria-label={topBadge.name}>
+                        {renderBadgeIconSmall(topBadge.icon)}
+                      </span>
+                    )}
 
                   </h3>
 
@@ -1103,6 +1111,13 @@ const UserDetailsModal = ({ isOpen, onClose, user, isLoading = false, error, isI
             </CardContent>
 
           </Card>
+
+
+
+          {/* Badges Section - Only for instructors/admins */}
+          {isInstructorOrAdmin && (
+            <UserBadges />
+          )}
 
 
 

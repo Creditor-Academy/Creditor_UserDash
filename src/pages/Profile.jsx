@@ -10,9 +10,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import NotificationPreferences from "@/components/profile/NotificationPreferences";
 import ProfileSecurity from "@/components/profile/ProfileSecurity";
+import UserBadges, { getBadgeData } from "@/components/profile/UserBadges";
+import { renderBadgeIconSmall, getBadgeChipBg } from "@/components/profile/UserBadges";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Bell, Shield, Camera } from "lucide-react";
+import { User, Bell, Shield, Camera, Award } from "lucide-react";
 import { getUserAvatarUrl, getUserAvatarUrlSync, refreshAvatarFromBackend } from "@/lib/avatar-utils";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { fetchUserProfile, updateUserProfile } from "@/services/userService";
@@ -26,6 +28,8 @@ function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentAvatar, setCurrentAvatar] = useState(getUserAvatarUrlSync());
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
+  const badgeData = getBadgeData();
+  const topBadge = badgeData.topBadge;
 
   const form = useForm({
     defaultValues: {
@@ -195,12 +199,17 @@ function Profile() {
       <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
         <div className="flex items-center gap-6">
           <div className="relative group">
-            <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
+            <Avatar 
+              onClick={() => setIsAvatarPreviewOpen(true)} 
+              className="w-24 h-24 cursor-zoom-in border-4 border-primary/20"
+            >
               <AvatarImage src={currentAvatar} alt="Profile avatar" />
               <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
                 {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
               </AvatarFallback>
             </Avatar>
+            
+            {/* Badge indicator moved next to name; removed overlap on avatar */}
           </div>
           <div className="flex flex-col gap-1 sm:gap-2">
             <div className="flex flex-row items-center gap-2 sm:gap-4">
@@ -220,30 +229,41 @@ function Profile() {
   }
 
   return (
-    <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
-      <div className="flex items-center gap-6">
-        <div className="relative group">
-          <Avatar onClick={() => setIsAvatarPreviewOpen(true)} className="w-24 h-24 border-4 border-primary/20 cursor-zoom-in">
-            <AvatarImage src={currentAvatar} alt="Profile avatar" />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
-              {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
-            </AvatarFallback>
-          </Avatar>
-          
-          <Button 
-            size="icon"
-            variant="secondary" 
-            className="absolute bottom-0 right-0 rounded-full w-8 h-8 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-50 border-2 border-primary/30"
-            onClick={handleAvatarClick}
-          >
-            <Camera size={15} className="text-primary" />
-            <span className="sr-only">Change avatar</span>
-          </Button>
-        </div>
+          <div className="container max-w-4xl py-6 space-y-8 animate-fade-in">
+        <div className="flex items-center gap-6">
+          <div className="relative group">
+            <Avatar 
+              onClick={() => setIsAvatarPreviewOpen(true)} 
+              className="w-24 h-24 cursor-zoom-in border-4 border-primary/20"
+            >
+              <AvatarImage src={currentAvatar} alt="Profile avatar" />
+              <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-white">
+                {userProfile ? `${userProfile.first_name?.[0] || ''}${userProfile.last_name?.[0] || ''}`.toUpperCase() : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            
+            {/* Badge indicator moved next to name; removed overlap on avatar */}
+            
+            <Button 
+              size="icon"
+              variant="secondary" 
+              className="absolute bottom-0 right-0 rounded-full w-8 h-8 shadow-md opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-50 border-2 border-primary/30 z-10"
+              onClick={handleAvatarClick}
+            >
+              <Camera size={15} className="text-primary" />
+              <span className="sr-only">Change avatar</span>
+            </Button>
+          </div>
 
         <div className="flex flex-col gap-1 sm:gap-2">
           <div className="flex flex-row items-center gap-2 sm:gap-4">
-          <h1 className="text-2xl font-semibold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">Profile Settings</h1>
+            <h1 className="text-2xl font-semibold bg-gradient-to-r from-primary 
+          to-purple-400 bg-clip-text text-transparent">Profile Settings</h1>
+            {topBadge && (
+              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${getBadgeChipBg(topBadge.color)}`} title={topBadge.name} aria-label={topBadge.name}>
+                {renderBadgeIconSmall(topBadge.icon)}
+              </span>
+            )}
             {userRole && (
               <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20 capitalize">
                 {userRole}
@@ -481,6 +501,9 @@ function Profile() {
               </Form>
             </CardContent>
           </Card>
+
+          {/* Badges Section */}
+          <UserBadges />
         </div>
 
         {/* <TabsContent value="notifications" className="space-y-4">

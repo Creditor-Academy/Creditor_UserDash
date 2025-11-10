@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { fetchCourseUsers, unenrollUser } from '../../services/courseService';
-import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus, Download } from 'lucide-react';
+import { X, Users, Search, UserCheck, UserX, Mail, Shield, Crown, CheckSquare, Square, UserPlus, Download, Award } from 'lucide-react';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import AddToGroupModal from './AddToGroupModal';
+import AssignBadgeModal from './AssignBadgeModal';
 import * as XLSX from 'xlsx';
 
 const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
@@ -15,6 +16,8 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
   const [userToUnenroll, setUserToUnenroll] = useState(null);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [showAddToGroupModal, setShowAddToGroupModal] = useState(false);
+  const [showAssignBadgeModal, setShowAssignBadgeModal] = useState(false);
+  const [lastAssigned, setLastAssigned] = useState(null);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -301,6 +304,7 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
               </div>
               
               {isSomeSelected() && (
+                <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowAddToGroupModal(true)}
                   className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
@@ -308,6 +312,14 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
                   <UserPlus className="w-4 h-4" />
                   Add to Group
                 </button>
+                  <button
+                    onClick={() => setShowAssignBadgeModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-semibold"
+                  >
+                    <Award className="w-4 h-4" />
+                    Assign Badge
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -489,6 +501,21 @@ const CourseUsersModal = ({ isOpen, onClose, courseId }) => {
         selectedUsers={selectedUsers}
         courseId={courseId}
         onSuccess={handleGroupAdditionSuccess}
+      />
+
+      {/* Assign Badge Modal */}
+      <AssignBadgeModal
+        isOpen={showAssignBadgeModal}
+        onClose={() => {
+          setShowAssignBadgeModal(false);
+          setLastAssigned(null);
+        }}
+        selectedUsers={courseUsers.filter(user => selectedUsers.includes(user.user_id))}
+        onAssigned={({ badge, users, results }) => {
+          setLastAssigned({ badge, users, results });
+          console.log('[AssignBadgeModal] Badge assignment completed:', { badge, users, results });
+          // Optionally refresh user list or show updated badges
+        }}
       />
     </div>
   );
