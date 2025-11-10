@@ -15,11 +15,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'node:inspector/promises': path.resolve(
-        __dirname,
-        './src/test/mocks/inspector.js'
-      ),
-      inspector: path.resolve(__dirname, './src/test/mocks/inspector.js'),
     },
   },
   define: {

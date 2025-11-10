@@ -1,8 +1,39 @@
 import { vi } from 'vitest';
 
-// Mock Node.js inspector module to prevent compatibility issues
-vi.mock('node:inspector/promises', () => ({}));
-vi.mock('inspector', () => ({}));
+// Mock Node.js inspector modules before any other imports
+vi.mock('node:inspector/promises', () => ({
+  default: {},
+  open: vi.fn(),
+  close: vi.fn(),
+  url: vi.fn(() => undefined),
+  waitForDebugger: vi.fn(),
+  Session: vi.fn().mockImplementation(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    post: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+  })),
+}));
+
+vi.mock('inspector', () => ({
+  default: {},
+  open: vi.fn(),
+  close: vi.fn(),
+  url: vi.fn(() => undefined),
+  waitForDebugger: vi.fn(),
+  Session: vi.fn().mockImplementation(() => ({
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    post: vi.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
+  })),
+  console: {
+    enable: vi.fn(),
+    disable: vi.fn(),
+  },
+}));
 
 // Import jest-dom after mocking Node.js modules
 import '@testing-library/jest-dom';
