@@ -16,7 +16,7 @@ const questions = [
     id: 2,
     question: "How can I simplify my tech stack?",
     answer:
-      "LMS Athena consolidates all your essential features—course building, community management, payment processing, and more—in one place, allowing you to focus on growing your business rather than juggling multiple platforms.",
+      "Athena LMS consolidates all your essential features—course building, community management, payment processing, and more—in one place, allowing you to focus on growing your business rather than juggling multiple platforms.",
     imagePosition: "left",
     imageBg: "bg-gradient-to-br from-gray-300 to-gray-400",
     showTechStack: true,
@@ -25,7 +25,7 @@ const questions = [
     id: 3,
     question: "How can I go beyond trading my time for money?",
     answer:
-      "Turn your expertise into scalable, revenue-generating digital learning products. With LMS Athena, you can create on-demand courses, paid communities, and digital downloads that sell while you sleep—so you can earn more without always being 'on'.",
+      "Turn your expertise into scalable, revenue-generating digital learning products. With Athena LMS, you can create on-demand courses, paid communities, and digital downloads that sell while you sleep—so you can earn more without always being 'on'.",
     imagePosition: "right",
     imageBg: "bg-gradient-to-br from-blue-200 to-blue-300",
     showProductChooser: true,

@@ -51,7 +51,7 @@ const Video = () => {
           </h2>
           
           <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed font-normal" style={{ fontFamily: 'Arial, sans-serif' }}>
-            From online courses and communities to memberships and digital downloads. LMS Athena supports every way you want to share — and scale — your expertise.
+            From online courses and communities to memberships and digital downloads. Athena LMS supports every way you want to share — and scale — your expertise.
           </p>
         </motion.div>
 

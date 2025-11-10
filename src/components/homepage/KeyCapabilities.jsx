@@ -359,7 +359,7 @@ const KeyCapabilities = () => {
               Ready to transform your learning experience?
             </h3>
             <p className="text-gray-600 mb-8 text-base" style={{ fontFamily: 'Arial, sans-serif' }}>
-              Join thousands of educators worldwide who are already creating amazing courses with LMS Athena
+              Join thousands of educators worldwide who are already creating amazing courses with Athena LMS
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

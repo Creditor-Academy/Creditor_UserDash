@@ -98,7 +98,7 @@ const styles = {
 const Footer = () => (
   <footer
     style={styles.footer}
-    aria-label="LMS Athena site footer"
+    aria-label="Athena LMS site footer"
     className="athena-footer"
     role="contentinfo"
   >
@@ -149,7 +149,7 @@ const Footer = () => (
           style={{ ...styles.col, flex: "0 0 260px" }}
         >
           <div className="brand" style={styles.brand}>
-            LMS Athena
+            Athena LMS
           </div>
           <div className="tagline" style={styles.tagline}>
             Transforming education through innovative technology and personalized learning experiences.
@@ -167,9 +167,9 @@ const Footer = () => (
             Office
           </div>
           <address style={styles.address}>
-            LMS Athena<br />
+            Athena LMS<br />
             Kirkland, Washington, USA<br /><br />
-            GF-41, Omaxe Square, Jasola District Centre,Opposite Apollo Hospital<br />
+            GF-20, Omaxe Square, Jasola District<br /> Centre
             New Delhi - 110025
           </address>
 
@@ -180,8 +180,8 @@ const Footer = () => (
           </div>
 
           <div style={{ marginTop: 6 }}>
-            <a href="tel:+919818238969" style={{ ...styles.link, color: "#225e95" }}>
-              +91 98182 38969
+            <a href="tel:+919811773207" style={{ ...styles.link, color: "#225e95" }}>
+              +91 9811773207
             </a>
           </div>
         </div>
@@ -224,7 +224,7 @@ const Footer = () => (
         </div>
 
         <div className="right" style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <div style={styles.copyright}>© 2025 LMS Athena. All rights reserved.</div>
+          <div style={styles.copyright}>© 2025 Athena LMS. All rights reserved.</div>
 
           <div style={styles.socialRow} aria-label="social links">
             <a

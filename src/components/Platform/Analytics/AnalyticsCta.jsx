@@ -26,7 +26,7 @@ export default function AnalyticsCta() {
             Elevate your
              <span className="block">business with data-</span>
              <span className="block">driven insights on</span>
-             <span className="block">LMS Athena Analytics</span>
+             <span className="block">Athena LMS Analytics</span>
               
             </h1>
 

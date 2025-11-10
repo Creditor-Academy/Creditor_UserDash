@@ -51,7 +51,7 @@ const Courseready = () => {
             Ready to experience an elevated<br />course creation process?
           </h2>
           <p className="text-base sm:text-lg text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            With AI-powered tools and an easy-to-use interface, LMS Athena helps you create and launch your course faster — with no technical skills or design experience required.
+            With AI-powered tools and an easy-to-use interface, Athena LMS helps you create and launch your course faster — with no technical skills or design experience required.
           </p>
         </motion.div>
 
