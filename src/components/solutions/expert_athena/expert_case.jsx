@@ -6,7 +6,7 @@ const caseStudies = [
   {
     id: 1,
     icon: BookOpen,
-    title: "How Taylor Loren made $100,000 on LMS Athena",
+    title: "How Taylor Loren made $100,000 on Athena LMS",
     quote:
       "I knew that I had a lot of expertise that I wanted to share — and knew that courses were a really good way to scale my income.",
     author: "Taylor Loren, social media and content strategist",
@@ -28,7 +28,7 @@ const caseStudies = [
     icon: BookOpen,
     title: "How 'Miss Excel' launched a six-figure online course business",
     quote:
-      "I did two webinars in April, granting me my first six-figure month. 99% of the revenue was from core sales on LMS Athena.",
+      "I did two webinars in April, granting me my first six-figure month. 99% of the revenue was from core sales on Athena LMS.",
     author: "Kat Norton, Miss Excel",
     bgColor: "bg-orange-500",
     hoverColor: "hover:bg-orange-600",
@@ -41,7 +41,7 @@ const bottomCaseStudy = {
   icon: BookOpen,
   title: "How the brand stylist is helping entrepreneurs create exceptional brands",
   quote:
-    "I've got a beautiful, established brand, which really makes a difference. LMS Athena makes displaying all of that seamlessly possible.",
+    "I've got a beautiful, established brand, which really makes a difference. Athena LMS makes displaying all of that seamlessly possible.",
   author: "Fiona Humberstone, The Brand Stylist",
   bgColor: "bg-[#F8F7F4]",
   textColor: "text-gray-900",

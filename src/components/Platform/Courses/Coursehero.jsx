@@ -40,7 +40,7 @@ const Coursehero = () => {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-xl mb-8">
-              LMS Athena's proven platform gives you the easy-to-use and customizable tools you need to increase your impact and revenue through online courses.
+              Athena LMS's proven platform gives you the easy-to-use and customizable tools you need to increase your impact and revenue through online courses.
             </p>
 
             {/* CTA Buttons */}
@@ -68,7 +68,7 @@ const Coursehero = () => {
               <div className="relative w-full max-w-[650px]">
                 <img 
                   src={courseImage} 
-                  alt="LMS Athena Course Platform" 
+                  alt="Athena LMS Course Platform" 
                   className="w-full h-auto shadow-2xl"
                 />
               </div>
@@ -79,7 +79,7 @@ const Coursehero = () => {
 
       {/* Athena Branding - subtle watermark
       <div className="absolute bottom-8 right-8 text-xs text-gray-400 opacity-50 font-medium">
-        Powered by LMS Athena
+        Powered by Athena LMS
       </div> */}
     </section>
   );

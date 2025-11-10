@@ -99,7 +99,7 @@ const About = () => {
               margin: 0,
               fontFamily: '"NeueMontreal", sans-serif',
             }}>
-              We are <span style={{color: '#6495ED'}}>LMS Athena</span>
+              We are <span style={{color: '#6495ED'}}>Athena LMS</span>
             </h3>
             <p style={{
               fontSize: '1.125rem',
@@ -108,7 +108,7 @@ const About = () => {
               margin: 0,
               fontFamily: '"NeueMontreal", sans-serif',
             }}>
-              LMS Athena transforms the way teams learn, share, and grow.  
+              Athena LMS transforms the way teams learn, share, and grow.  
               We combine design, interactivity, and deep insights to empower 
               businesses with impactful learning journeys that win hearts and minds.
             </p>
@@ -143,7 +143,7 @@ const About = () => {
           >
             <BackgroundImg 
               src={backgroundAbout} 
-              alt="About LMS Athena" 
+              alt="About Athena LMS" 
               scrollSpeed="-0.2" 
             />
           </motion.div>

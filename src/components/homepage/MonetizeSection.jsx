@@ -109,7 +109,7 @@ const MonetizeSection = () => {
               {/* Image */}
               <img
                 src={DashLogo}
-                alt="LMS Athena Dashboard"
+                alt="Athena LMS Dashboard"
                 className="w-full rounded-lg shadow-2xl relative z-10"
               />
             </div>

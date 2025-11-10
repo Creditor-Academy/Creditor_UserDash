@@ -29,7 +29,7 @@ const Technology = () => {
       category: 'Authoring'
     },
     { 
-      name: 'LMS Athena', 
+      name: 'Athena LMS', 
       icon: Cloud, 
       color: 'from-blue-500 to-indigo-500',
       category: 'LMS'

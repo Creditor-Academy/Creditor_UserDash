@@ -256,7 +256,7 @@ const Hero = () => {
       <div className="hero-container">
         <div className="hero-left">
           <div className="text-sm" style={{ color: '#fff', fontWeight: 600, opacity: 0.9, marginBottom: '0.75rem' }}>
-            About | LMS Athena
+            About | Athena LMS
           </div>
           <h1 className="hero-heading" style={{ marginBottom: '1.5rem' }}>
             Empowering Learning. <span style={{ color: '#fbbf24' }}>Built for Impact.</span>
