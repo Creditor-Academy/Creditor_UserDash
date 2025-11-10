@@ -32,7 +32,7 @@ The Universal AI Lesson Content Generation system provides AI-powered lesson con
 ### Basic Button Usage
 
 ```jsx
-import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
+import UniversalAIContentButton from '@lessonbuilder/components/ai/UniversalAIContentButton';
 
 <UniversalAIContentButton
   lessonData={lesson}
@@ -48,7 +48,7 @@ import UniversalAIContentButton from '@/components/courses/UniversalAIContentBut
 ### LessonBuilder Integration
 
 ```jsx
-import LessonBuilderAIIntegration from '@/components/courses/LessonBuilderAIIntegration';
+import LessonBuilderAIIntegration from '@lessonbuilder/components/ai/LessonBuilderAIIntegration';
 
 <LessonBuilderAIIntegration
   lessonData={lessonData}
@@ -134,7 +134,7 @@ Each generated block includes:
 1. Import the component:
 
 ```jsx
-import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
+import UniversalAIContentButton from '@lessonbuilder/components/ai/UniversalAIContentButton';
 ```
 
 2. Add to header toolbar:

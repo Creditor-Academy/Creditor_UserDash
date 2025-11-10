@@ -45,7 +45,7 @@ import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
 import { getAuthHeader } from '@/services/authHeader';
 import { MoreVertical, Edit, Trash2, Settings, Sparkles } from 'lucide-react';
-import UniversalAIContentButton from '@/components/courses/UniversalAIContentButton';
+import UniversalAIContentButton from '@lessonbuilder/components/ai/UniversalAIContentButton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +62,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import ImageEditor from '@/components/ImageEditor';
+import ImageEditor from '@lessonbuilder/components/blocks/MediaBlocks/ImageEditor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { uploadImage } from '@/services/imageUploadService';
 

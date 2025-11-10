@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 import { uploadImage } from '@/services/imageUploadService';
 import { uploadAudio as uploadAudioResource } from '@/services/audioUploadService';
-import ImageEditor from './ImageEditor';
+import ImageEditor from '../MediaBlocks/ImageEditor';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
